@@ -1,0 +1,23 @@
+{
+  "cSpell.languageSettings": [
+    {
+      "languageId": "c,cpp,python",
+      "allowCompoundWords": false
+    }
+  ],
+  "editor.formatOnSave": true,
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": false,
+  "python.linting.flake8Enabled": true,
+  "python.formatting.provider": "black",
+  "[python]": {
+    "editor.tabSize": 4,
+    "editor.formatOnType": true,
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    },
+  },
+  "python.pythonPath": ".venv/bin/python3",
+}
