@@ -5,9 +5,9 @@ from typing import Tuple
 
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
-from awml_evaluation.evaluation.matching.matching import MatchingMode
-from awml_evaluation.evaluation.matching.matching import filter_ground_truth_objects
-from awml_evaluation.evaluation.matching.matching import filter_tp_objects
+from awml_evaluation.evaluation.matching.object_matching import MatchingMode
+from awml_evaluation.evaluation.matching.objects_filter import filter_ground_truth_objects
+from awml_evaluation.evaluation.matching.objects_filter import filter_tp_objects
 from awml_evaluation.evaluation.object_result import DynamicObjectWithResult
 
 logger = getLogger(__name__)

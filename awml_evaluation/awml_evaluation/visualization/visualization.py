@@ -1,10 +1,13 @@
 from enum import Enum
-from enum import unique
-from typing import Dict
+import os
 from typing import List
-from typing import Tuple
 
 from awml_evaluation.common.object import DynamicObject
+from awml_evaluation.evaluation.matching.object_matching import MatchingMode
+from awml_evaluation.evaluation.matching.objects_filter import divide_tp_fp_objects
+from awml_evaluation.evaluation.matching.objects_filter import filter_tp_objects
+from awml_evaluation.evaluation.matching.objects_filter import get_fn_objects
+from awml_evaluation.evaluation.object_result import DynamicObjectWithResult
 
 
 class Color(Enum):
@@ -17,15 +20,17 @@ class Color(Enum):
 class VisualizationConfig:
     def __init__(
         self,
+        visualization_directory_path: str,
         height: int = 640,
         width: int = 640,
         is_tracking_visualization: bool = False,
         is_prediction_visualization: bool = False,
     ) -> None:
-        height: int = 640
-        width: int = 640
-        is_tracking_visualization: bool = False
-        is_prediction_visualization: bool = False
+        self.visualization_directory_path: str = visualization_directory_path
+        self.height: int = height
+        self.width: int = width
+        self.is_tracking_visualization: bool = is_tracking_visualization
+        self.is_prediction_visualization: bool = is_prediction_visualization
 
 
 class VisualizationAppearanceConfig:
@@ -63,28 +68,47 @@ class VisualizationAppearanceConfig:
 class VisualizationBEV:
     def __init__(
         self,
+        visualization_directory_path: str,
         height: int = 640,
         width: int = 640,
         is_tracking_visualization: bool = False,
         is_prediction_visualization: bool = False,
     ) -> None:
-        self.height: int = height
-        self.width: int = width
-        self.is_tracking_visualization: bool = is_tracking_visualization
-        self.is_prediction_visualization: bool = is_prediction_visualization
+        self.visualization_config = VisualizationConfig(
+            visualization_directory_path,
+            height,
+            width,
+            is_tracking_visualization,
+            is_prediction_visualization,
+        )
 
     def visualize_bev(
         self,
-        file_path: str,
+        file_name: str,
+        object_results: List[DynamicObjectWithResult],
+        ground_truth_objects: List[DynamicObject],
         pointcloud: List[List[float]] = None,
+        matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
+        matching_threshold: float = 1.0,
         pointcloud_color: Color = Color.WHITE,
         objects_list: List[List[DynamicObject]] = None,
-        color_list: List[Color] = None,
-        line_width_list: List[int] = None,
+        color_list: List[Color] = [Color.GREEN, Color.YELLOW, Color.RED, Color.WHITE],
+        line_width_list: List[int] = [4.0, 4.0, 4.0, 1.0],
     ):
+        """[summary]
+        Visualize the frame result from bird eye view
+
+        Args:
+            file_name (Optional[str]): File name. Defaults to None.
         """
-        BEV可視化したpngを吐く
-        """
+
+        # set file name
+        if file_name is None:
+            file_name_: str = f"{self.unix_time}_{self.frame_name}.png"
+        else:
+            file_name_: str = file_name
+        file_path: str = os.join("bev_pictures", file_name_)
+        full_path: str = os.join(self.visualization_directory_path, file_path)
 
         # set default config
         appearance_config = VisualizationAppearanceConfig(
@@ -93,6 +117,15 @@ class VisualizationBEV:
             line_width_list,
             pointcloud_color,
         )
+
+        # set object
+        filtered_predicted_objects: List[DynamicObjectWithResult] = filter_tp_objects(
+            object_results=object_results,
+            matching_mode=matching_mode,
+            matching_threshold=matching_threshold,
+        )
+        tp_objects, fp_objects = divide_tp_fp_objects(filtered_predicted_objects)
+        fn_objects = get_fn_objects(tp_objects, self.ground_truth_objects)
 
         image_data = []
 

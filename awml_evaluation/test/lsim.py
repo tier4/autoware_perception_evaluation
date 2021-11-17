@@ -5,6 +5,8 @@ import logging
 import os
 from typing import List
 
+from pyquaternion.quaternion import Quaternion
+
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.frame_result import FrameResult
 from awml_evaluation.evaluation.metrics.metrics import MetricsScore
@@ -23,14 +25,15 @@ class LSim:
             evaluation_tasks=["detection"],
             # target_labels=["car", "truck", "bicycle", "pedestrian", "motorbike"],
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            detection_thresholds_distance=[0.5, 1.0, 2.0],
-            detection_thresholds_iou3d=[],
+            map_thresholds_center_distance=[0.5, 1.0, 2.0],
+            map_thresholds_plane_distance=[0.5, 1.0, 2.0],
+            map_thresholds_iou=[],
         )
 
         _ = configure_logger(
             log_file_directory=self.evaluator.evaluator_config.result_log_directory,
-            console_log_level=logging.DEBUG,
-            file_log_level=logging.DEBUG,
+            console_log_level=logging.INFO,
+            file_log_level=logging.INFO,
         )
 
     # rospy.init_node('LSim for perception', anonymous=True)
@@ -71,6 +74,40 @@ class LSim:
         )
         self.visualize(frame_result)
 
+    def evaluate_one_frame_with_diff(
+        self,
+        unix_time: int,
+        predicted_objects: List[DynamicObject],
+        diff_distance: float = 0.0,
+        diff_yaw: float = 0.0,
+    ) -> None:
+        test_objects_ = []
+        for predicted_object in predicted_objects:
+            position = (
+                predicted_object.state.position[0] + diff_distance,
+                predicted_object.state.position[1],
+                predicted_object.state.position[2],
+            )
+            orientation = Quaternion(
+                axis=predicted_object.state.orientation.axis,
+                radians=predicted_object.state.orientation.radians + diff_yaw,
+            )
+            test_object_ = DynamicObject(
+                predicted_object.unix_time,
+                position,
+                orientation,
+                predicted_object.state.size,
+                predicted_object.state.velocity,
+                predicted_object.semantic_score,
+                predicted_object.semantic_label,
+            )
+            test_objects_.append(test_object_)
+        frame_result = self.evaluator.add_frame_result(
+            unix_time,
+            test_objects_,
+        )
+        self.visualize(frame_result)
+
     def get_final_result(self) -> MetricsScore:
         """
         処理の最後に評価結果を出す
@@ -85,8 +122,8 @@ class LSim:
         可視化
         """
         if frame_result.metrics_score.maps[0].map < 0.7:
-            logging.warning(f"mAP is low")
-            logging.info(f"frame result {format_class_for_log(frame_result.metrics_score)}")
+            logging.debug(f"mAP is low")
+            logging.debug(f"frame result {format_class_for_log(frame_result.metrics_score)}")
 
 
 def CustomTextFormatter():
@@ -167,10 +204,19 @@ if __name__ == "__main__":
     # dummy data
 
     # example code for mAP 1.0
+    # for ground_truth_frame in lsim.evaluator.ground_truth_frames:
+    #     lsim.evaluate_one_frame(
+    #         ground_truth_frame.unix_time,
+    #         ground_truth_frame.objects,
+    #     )
+
     for ground_truth_frame in lsim.evaluator.ground_truth_frames:
-        lsim.evaluate_one_frame(
+        lsim.evaluate_one_frame_with_diff(
             ground_truth_frame.unix_time,
             ground_truth_frame.objects,
+            diff_distance=1.9,
+            diff_yaw=0.5,
+            # 1.4,
         )
 
     # example code for 1 frame difference
@@ -179,4 +225,5 @@ if __name__ == "__main__":
     #         lsim.evaluator.ground_truth_frames[i].unix_time,
     #         lsim.evaluator.ground_truth_frames[i - 1].objects,
     #     )
+
     final_metric_score = lsim.get_final_result()

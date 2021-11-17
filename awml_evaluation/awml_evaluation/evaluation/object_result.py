@@ -1,22 +1,28 @@
+from logging import getLogger
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 from awml_evaluation.common.object import DynamicObject
-from awml_evaluation.common.object import distance_between
+from awml_evaluation.common.object import distance_objects_2d
+from awml_evaluation.evaluation.matching.object_matching import get_iou_3d
+from awml_evaluation.evaluation.matching.object_matching import get_uc_plane_distance
+
+logger = getLogger(__name__)
 
 
 class DynamicObjectWithResult:
     """[summary]
-    Evaluation result class with each predicted object
+    Evaluation result for a predicted object
 
     Attributes:
         self.predicted_object (DynamicObject): The predicted object by inference like CenterPoint
-        self.ground_truth_object (DynamicObject): Ground truth object corresponding to
+        self.ground_truth_object (Optional[DynamicObject]): Ground truth object corresponding to
                                                   predicted object
         self.is_label_correct (bool): Whether the label of predicted_object is same as the label
                                       of ground truth object
-        self.center_distance (float): The center distance between predicted object and ground
-                                      truth object
+        self.center_distance (Optional[float]): The center distance between predicted object and
+                                                ground truth object
         self.iou_3d (float): The 3d IoU between predicted object and ground truth object
     """
 
@@ -26,6 +32,7 @@ class DynamicObjectWithResult:
         ground_truth_objects: List[DynamicObject],
     ) -> None:
         """[summary]
+        Evaluation result for an object predicted object
 
         Args:
             predicted_object (DynamicObject): The predicted object by inference like CenterPoint
@@ -33,96 +40,62 @@ class DynamicObjectWithResult:
         """
         self.predicted_object: DynamicObject = predicted_object
 
-        # iou and is_label_correct
-        self.ground_truth_object: DynamicObject
-        self.is_label_correct: bool = False
-        self.center_distance: float = 0.0
-        self.iou_3d: float = 0.0
+        self.ground_truth_object: Optional[DynamicObject] = None
+        self.center_distance: Optional[float] = None
+        self.ground_truth_object, self.center_distance = self._get_correspond_ground_truth_object(
+            predicted_object,
+            ground_truth_objects,
+        )
+        self.is_label_correct: bool = self._is_label_correct()
 
-        (
+        # detection
+        self.iou_3d: float = get_iou_3d(
+            self.predicted_object,
             self.ground_truth_object,
-            self.center_distance,
-            self.iou_3d,
-            self.is_label_correct,
-        ) = self._get_evaluation_result(predicted_object, ground_truth_objects)
-
-        # case a (distance result)
-        self.distance_case_a: float = self._get_distance_case_a(
-            predicted_object, ground_truth_objects
+        )
+        self.uc_plane_distance: Optional[float] = get_uc_plane_distance(
+            self.predicted_object,
+            self.ground_truth_object,
         )
 
-        # case b (True or False result)
-        self.is_passed_to_case_b: bool = self._is_passed_to_case_b(
-            predicted_object, ground_truth_objects
-        )
+    def _is_label_correct(self) -> bool:
+        """[summary]
+        Get whether label is correct.
+
+        Returns:
+            bool: Whether label is correct
+        """
+        if self.ground_truth_object:
+            return self.predicted_object.semantic_label == self.ground_truth_object.semantic_label
+        else:
+            return False
 
     @staticmethod
-    def _get_evaluation_result(
+    def _get_correspond_ground_truth_object(
         predicted_object: DynamicObject,
         ground_truth_objects: List[DynamicObject],
-    ) -> Tuple[DynamicObject, float, float, bool]:
+    ) -> Tuple[Optional[DynamicObject], Optional[float]]:
         """[summary]
-        Get evaluation result
+        Search correspond ground truth by minimum center distance
 
         Args:
             predicted_object (DynamicObject): The predicted object by inference like CenterPoint
-            ground_truth_objects (List[DynamicObject]): The list of Ground truth objects
+            ground_truth_objects (List[DynamicObject]): The list of ground truth objects
 
         Returns:
-            Tuple[DynamicObject, float, float, bool]:
-                min_distance_ground_truth_object (DynamicObject)
-                min_distance (float)
-                max_iou (float)
-                is_label_correct (bool)
+            DynamicObject: correspond ground truth
         """
         if not ground_truth_objects:
-            return None, float("inf"), 0.0, False
+            return None, None
 
         min_distance_ground_truth_object = ground_truth_objects[0]
-        min_distance = distance_between(min_distance_ground_truth_object, predicted_object)
+        min_distance = distance_objects_2d(min_distance_ground_truth_object, predicted_object)
 
         # object which is min distance from the center of object
         for ground_truth_object in ground_truth_objects:
-            center_distance = distance_between(ground_truth_object, predicted_object)
+            center_distance = distance_objects_2d(ground_truth_object, predicted_object)
             if center_distance < min_distance:
                 min_distance = center_distance
                 min_distance_ground_truth_object = ground_truth_object
 
-        max_iou = 0.0
-        # for ground_truth_object in ground_truth_objects:
-        #     iou = _get_iou_3d(predicted_object, ground_truths_object)
-        #     if iou > max_iou:
-        #         max_iou = iou
-        #         max_iou_ground_truth_object = ground_truth_object
-
-        # caliculate label
-        if min_distance < 1000:
-            if min_distance_ground_truth_object.semantic_label == predicted_object.semantic_label:
-                is_label_correct = True
-            else:
-                is_label_correct = False
-        else:
-            is_label_correct = False
-        return min_distance_ground_truth_object, min_distance, max_iou, is_label_correct
-
-    @staticmethod
-    def _get_distance_case_a(
-        predicted_object: DynamicObject,
-        ground_truth_objects: List[DynamicObject],
-    ) -> float:
-        # TODO impl
-        pass
-
-    @staticmethod
-    def _is_passed_to_case_b(
-        predicted_object: DynamicObject, ground_truth_objects: List[DynamicObject]
-    ) -> bool:
-        # TODO impl
-        pass
-
-    @staticmethod
-    def _caliculate_iou_3d(
-        predicted_object: DynamicObject, ground_truth_object: DynamicObject
-    ) -> float:
-        # TODO impl
-        return 0.0
+        return min_distance_ground_truth_object, min_distance

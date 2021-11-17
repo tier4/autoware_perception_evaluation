@@ -6,11 +6,28 @@ from typing import List
 from awml_evaluation.common.evaluation_task import EvaluationTask
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.label import LabelConverter
+from awml_evaluation.evaluation.metrics.configure import MetricsScoreConfig
 
 logger = getLogger(__name__)
 
 
+class EvaluatorConfigurationError(Exception):
+    def __init__(self, message) -> None:
+        super().__init__(message)
+
+
 class EvaluatorConfiguration:
+    """[summary]
+    Evaluation configure class
+
+    Attributes:
+        self.result_root_directory (str): The path to result directory
+        self.log_directory (str): The path to sub directory for log
+        self.visualization_directory (str): The path to sub directory for visualization
+        self.label_converter (LabelConverter): The label convert class
+        self.metrics_config (MetricsScoreConfig): The config for metrics
+    """
+
     def __init__(
         self,
         result_root_directory: str,
@@ -18,8 +35,9 @@ class EvaluatorConfiguration:
         visualization_directory: str,
         evaluation_tasks: List[str],
         target_labels: List[str],
-        detection_thresholds_distance: List[float],
-        detection_thresholds_iou3d: List[float],
+        map_thresholds_center_distance: List[float],
+        map_thresholds_plane_distance: List[float],
+        map_thresholds_iou: List[float],
     ) -> None:
         """[summary]
 
@@ -30,34 +48,35 @@ class EvaluatorConfiguration:
             evaluation_tasks (List[str]): Tasks for evaluation. Choose from common.EvaluationTask
                                           classes (ex. ["detection", "tracking", "prediction"])
             target_labels (List[str]): Target labels to evaluate. Choose from label
-            detection_thresholds_distance (List[float]): The detection threshold of center
-                                                         distance for matching
-            detection_thresholds_iou3d (List[float]): The detection threshold of 3d iou
-                                                      for matching
+            map_thresholds_center_distance (List[float]): The mAP threshold of center distance
+            map_thresholds_plane_distance (List[float]): The mAP threshold of plane distance
+            map_thresholds_iou (List[float]): The mAP threshold of 3d iou for matching
         """
 
         # directory
         time = "{0:%Y%m%d_%H%M%S}".format(datetime.datetime.now())
         self.result_root_directory: str = result_root_directory.format(TIME=time)
-
         self.log_directory: str = log_directory
         self.visualization_directory: str = visualization_directory
 
-        # task
-        self.evaluation_tasks: List[EvaluationTask] = self._set_task_lists(evaluation_tasks)
-
-        # label converter
+        # Labels
         self.label_converter = LabelConverter()
-        # self.target_labels: List[List[AutowareLabel]] = self._set_target_lists(target_labels)
-        self.target_labels: List[AutowareLabel] = self._set_target_lists(
+
+        # Config for Metrics
+        autoware_target_labels: List[AutowareLabel] = self._set_target_lists(
             target_labels, self.label_converter
         )
+        evaluation_tasks_: List[EvaluationTask] = self._set_task_lists(evaluation_tasks)
+        self.metrics_config: MetricsScoreConfig = MetricsScoreConfig(
+            target_labels=autoware_target_labels,
+            evaluation_tasks=evaluation_tasks_,
+            map_thresholds_center_distance=map_thresholds_center_distance,
+            map_thresholds_plane_distance=map_thresholds_plane_distance,
+            map_thresholds_iou=map_thresholds_iou,
+        )
 
-        # config for Evaluation
-        self.detection_thresholds_distance: List[float] = detection_thresholds_distance
-        self.detection_thresholds_iou3d: List[float] = detection_thresholds_iou3d
-
-    def _set_task_lists(self, evaluation_tasks: List[str]) -> List[EvaluationTask]:
+    @staticmethod
+    def _set_task_lists(evaluation_tasks: List[str]) -> List[EvaluationTask]:
         """[summary]
         Convert str to EvaluationTask class
 
@@ -76,7 +95,7 @@ class EvaluatorConfiguration:
             elif evaluation_task == EvaluationTask.PREDICTION.value:
                 output.append(EvaluationTask.PREDICTION)
             else:
-                logger.error(f"{evaluation_task} is not proper setting")
+                raise EvaluatorConfigurationError(f"{evaluation_task} is not proper setting")
         return output
 
     @staticmethod
