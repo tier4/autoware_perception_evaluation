@@ -1,10 +1,15 @@
+from logging import getLogger
+import math
 from typing import List
 from typing import Optional
 from typing import Tuple
 
+import numpy as np
 from pyquaternion import Quaternion
 
 from awml_evaluation.common.label import AutowareLabel
+
+logger = getLogger(__name__)
 
 
 class ObjectState:
@@ -149,21 +154,58 @@ class DynamicObject:
             predicted_twists,
         )
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         eq = True
         eq = eq and self.semantic_label == other.semantic_label
         eq = eq and self.state.position == other.state.position
-        eq = eq and self.state.shape_dimension == other.state.shape_dimension
+        eq = eq and self.state.orientation == other.state.orientation
         return eq
 
-    def get_distance_bev(self) -> float:
+    def get_distance(self) -> float:
         """[summary]
-        Get the distance to the object from ego vehicle in bird eye view
+        Get the 3d distance to the object from ego vehicle in bird eye view
 
         Returns:
-            float: The distance to the object from ego vehicle in bird eye view
+            float: The 3d distance to the object from ego vehicle in bird eye view
         """
-        return self.state.position[0] ** 2 + self.state.position[1] ** 2
+        return math.hypot(*self.state.position)
+
+    def get_distance_2d(self) -> float:
+        """[summary]
+        Get the 2d distance to the object from ego vehicle in bird eye view
+
+        Returns:
+            float: The 2d distance to the object from ego vehicle in bird eye view
+        """
+        return math.hypot(self.state.position[0], self.state.position[1])
+
+    def get_footprint(self) -> Tuple[Tuple[float, float]]:
+        """[summary]
+        Get footprint from an object
+
+        Returns:
+            Tuple[Tuple[float, float]]: The footprint of object. It consists of
+                                        4 corner 2d position of the object
+                                        ((x0, y0), (x1, y1), (x2, y2), (x3, y3))
+        Notes:
+            center_position: (xc, yc)
+            vector_center_to_corners[0]: (x0 - xc, y0 - yc)
+        """
+        footprint: List[Tuple[float, float]] = []
+        vector_center_to_corners: List[np.ndarray] = [
+            np.array([self.state.size[0], self.state.size[1], 0.0]) / 2.0,
+            np.array([-self.state.size[0], self.state.size[1], 0.0]) / 2.0,
+            np.array([-self.state.size[0], -self.state.size[1], 0.0]) / 2.0,
+            np.array([self.state.size[0], -self.state.size[1], 0.0]) / 2.0,
+        ]
+
+        # rotate vector_center_to_corners
+        for vector_center_to_corner in vector_center_to_corners:
+            rotated_vector = self.state.orientation.rotate(vector_center_to_corner)
+            corner_point: np.ndarray = self.state.position + rotated_vector
+            footprint.append(corner_point.tolist())
+
+        return footprint
 
     @staticmethod
     def _set_states(
@@ -198,23 +240,47 @@ class DynamicObject:
             return None
 
 
-def distance_between(
-    object_1: DynamicObject,
-    object_2: DynamicObject,
-) -> float:
+def distance_points(point_1: Tuple[float], point_2: Tuple[float]) -> float:
     """[summary]
-    Calculate the center distance between DynamicObject.
-    Calculate the center distance from object_1 to object_2.
-
+    Calculate the center distance between two points.
     Args:
-        object_1 (DynamicObject):
-        object_2 (DynamicObject):
-
-    Returns:
-        float: The center distance
+        point_1 (Tuple[float]): A point
+        point_2 (Tuple[float]): A point
+    Returns: float: The distance between two points
     """
-    x: float = object_1.state.position[0] - object_2.state.position[0]
-    y: float = object_1.state.position[1] - object_2.state.position[1]
-    z: float = object_1.state.position[2] - object_2.state.position[2]
+    return math.dist(point_1, point_2)
 
-    return x * x + y * y + z * z
+
+def distance_points_2d(point_1: Tuple[float], point_2: Tuple[float]) -> float:
+    """[summary]
+    Calculate the 2d center distance between two points.
+    Args:
+        point_1 (Tuple[float]): A point
+        point_2 (Tuple[float]): A point
+    Returns: float: The distance between two points
+    """
+    return math.dist(to_2d(point_1), to_2d(point_2))
+
+
+def distance_objects(object_1: DynamicObject, object_2: DynamicObject) -> float:
+    """[summary]
+    Args:
+         object_1 (DynamicObject): An object
+         object_2 (DynamicObject): An object
+    Returns: float: The center distance from object_1 (DynamicObject) to object_2.
+    """
+    return distance_points(object_1.state.position, object_2.state.position)
+
+
+def distance_objects_2d(object_1: DynamicObject, object_2: DynamicObject) -> float:
+    """[summary]
+    Args:
+         object_1 (DynamicObject): An object
+         object_2 (DynamicObject): An object
+    Returns: float: The 2d center distance from object_1 (DynamicObject) to object_2.
+    """
+    return distance_points_2d(object_1.state.position, object_2.state.position)
+
+
+def to_2d(point_1: Tuple[float, float, float]) -> Tuple[float, float]:
+    return (point_1[0], point_1[1])

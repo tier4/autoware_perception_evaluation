@@ -1,32 +1,10 @@
 from typing import List
 
 from awml_evaluation.common.dataset import DynamicObject
-from awml_evaluation.common.label import AutowareLabel
-from awml_evaluation.evaluation.matching.matching import MatchingMode
+from awml_evaluation.evaluation.matching.object_matching import MatchingMode
+from awml_evaluation.evaluation.metrics.configure import MetricsScoreConfig
 from awml_evaluation.evaluation.metrics.detection.map import Map
 from awml_evaluation.evaluation.object_result import DynamicObjectWithResult
-
-
-class MetricsScoreConfig:
-    """[summary]
-    The config for evaluation metrics
-    """
-
-    def __init__(
-        self,
-        target_labels: List[AutowareLabel],
-        detection_thresholds_distance: List[float],
-        detection_thresholds_iou: List[float],
-    ) -> None:
-        """[summary]
-        Args:
-            target_labels (List[AutowareLabel]): The list of targets to evaluate
-            detection_thresholds_distance (List[float]): The detection threshold of center distance
-            detection_thresholds_iou (List[float]):The detection threshold of 3d iou for matching
-        """
-        self.target_labels: List[AutowareLabel] = target_labels
-        self.detection_thresholds_distance: List[float] = detection_thresholds_distance
-        self.detection_thresholds_iou: List[float] = detection_thresholds_iou
 
 
 class MetricsScore:
@@ -40,21 +18,13 @@ class MetricsScore:
 
     def __init__(
         self,
-        target_labels: List[AutowareLabel],
-        detection_thresholds_distance: List[float],
-        detection_thresholds_iou: List[float],
+        metrics_config: MetricsScoreConfig,
     ) -> None:
         """[summary]
         Args:
-            target_labels (List[AutowareLabel]): The list of targets to evaluate
-            detection_thresholds_distance (List[float]): The detection threshold of center distance
-            detection_thresholds_iou (List[float]):The detection threshold of 3d iou for matching
+            metrics_config (MetricsScoreConfig) A config for metrics calculation
         """
-        self.config: MetricsScoreConfig = MetricsScoreConfig(
-            target_labels,
-            detection_thresholds_distance,
-            detection_thresholds_iou,
-        )
+        self.config: MetricsScoreConfig = metrics_config
 
         # for detection metrics
         self.maps: List[Map] = []
@@ -108,8 +78,8 @@ class MetricsScore:
             object_results (List[DynamicObjectWithResult]): The list of Object result
             ground_truth_objects (List[DynamicObject]): The ground truth objects
         """
-        if self.config.detection_thresholds_distance:
-            for distance_threshold_ in self.config.detection_thresholds_distance:
+        if self.config.map_thresholds_center_distance:
+            for distance_threshold_ in self.config.map_thresholds_center_distance:
                 map_ = Map(
                     object_results,
                     ground_truth_objects,
@@ -118,14 +88,24 @@ class MetricsScore:
                     distance_threshold_,
                 )
                 self.maps.append(map_)
-        if self.config.detection_thresholds_iou:
-            for iou_threshold_ in self.config.detection_thresholds_iou:
+        if self.config.map_thresholds_iou:
+            for iou_threshold_ in self.config.map_thresholds_iou:
                 map_ = Map(
                     object_results,
                     ground_truth_objects,
                     self.config.target_labels,
                     MatchingMode.IOU3d,
                     iou_threshold_,
+                )
+                self.maps.append(map_)
+        if self.config.map_thresholds_center_distance:
+            for distance_threshold_ in self.config.map_thresholds_plane_distance:
+                map_ = Map(
+                    object_results,
+                    ground_truth_objects,
+                    self.config.target_labels,
+                    MatchingMode.PLANEDISTANCE,
+                    distance_threshold_,
                 )
                 self.maps.append(map_)
 

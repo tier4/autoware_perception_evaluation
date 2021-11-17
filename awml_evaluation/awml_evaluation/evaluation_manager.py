@@ -8,6 +8,7 @@ from awml_evaluation.configure import EvaluatorConfiguration
 from awml_evaluation.evaluation.frame_result import FrameResult
 from awml_evaluation.evaluation.metrics.metrics import MetricsScore
 from awml_evaluation.evaluation.object_result import DynamicObjectWithResult
+from awml_evaluation.visualization.visualization import VisualizationBEV
 
 
 class EvaluationManager:
@@ -19,6 +20,7 @@ class EvaluationManager:
         self.evaluator_config (EvaluatorConfiguration): config for evaluation
         self.ground_truth_frames (List[FrameGroundTruth]): Ground truth frames from datasets
         self.frame_results (List[FrameResult]): Evaluation result
+        self.visualization (VisualizationBEV): Visualization class
 
     """
 
@@ -31,8 +33,9 @@ class EvaluationManager:
         visualization_directory: str,
         evaluation_tasks: List[str],
         target_labels: List[str],
-        detection_thresholds_distance: List[float],
-        detection_thresholds_iou3d: List[float],
+        map_thresholds_center_distance: List[float],
+        map_thresholds_plane_distance: List[float],
+        map_thresholds_iou: List[float],
     ) -> None:
         """[summary]
 
@@ -45,9 +48,9 @@ class EvaluationManager:
             evaluation_tasks (List[str]): Tasks for evaluation. Choose from common.EvaluationTask
                                           classes (ex. ["detection", "tracking", "prediction"])
             target_labels (List[str]): Target labels to evaluate. Choose from label
-            detection_thresholds_distance (List[float]): The detection threshold of center distance
-                                                         for matching
-            detection_thresholds_iou3d (List[float]): The detection threshold of 3d iou for matching
+            map_thresholds_distance (List[float]): The mAP detection threshold of center distance
+                                                   for matching
+            map_thresholds_iou3d (List[float]): The mAP detection threshold of 3d iou for matching
         """
 
         self.evaluator_config = EvaluatorConfiguration(
@@ -56,16 +59,20 @@ class EvaluationManager:
             visualization_directory,
             evaluation_tasks,
             target_labels,
-            detection_thresholds_distance,
-            detection_thresholds_iou3d,
+            map_thresholds_center_distance,
+            map_thresholds_plane_distance,
+            map_thresholds_iou,
         )
         self.ground_truth_frames: List[FrameGroundTruth] = load_datasets(
             dataset_path,
             does_use_pointcloud,
-            self.evaluator_config.evaluation_tasks,
+            self.evaluator_config.metrics_config.evaluation_tasks,
             self.evaluator_config.label_converter,
         )
         self.frame_results: List[FrameResult] = []
+        self.visualization: VisualizationBEV = VisualizationBEV(
+            self.evaluator_config.visualization_directory
+        )
 
     def add_frame_result(
         self,
@@ -95,7 +102,9 @@ class EvaluationManager:
         ground_truth_now_frame: FrameGroundTruth = get_now_frame(
             self.ground_truth_frames, unix_time
         )
-        result = FrameResult(self.evaluator_config, unix_time, ground_truth_now_frame.frame_name)
+        result = FrameResult(
+            self.evaluator_config.metrics_config, unix_time, ground_truth_now_frame.frame_name
+        )
         result.evaluate_frame(predicted_objects, ground_truth_now_frame.objects)
         self.frame_results.append(result)
         return result
@@ -129,17 +138,18 @@ class EvaluationManager:
             all_ground_truths += frame.ground_truth_objects
         # calculate results
         scene_metrics_score: MetricsScore = MetricsScore(
-            self.evaluator_config.target_labels,
-            self.evaluator_config.detection_thresholds_distance,
-            self.evaluator_config.detection_thresholds_iou3d,
+            self.evaluator_config.metrics_config,
         )
         scene_metrics_score.evaluate(all_frame_results, all_ground_truths)
         return scene_metrics_score
 
     def visualize_bev_all(self) -> None:
         """[summary]
-        Visualize objects and pointcloud from bird eye biew.
+        Visualize objects and pointcloud from bird eye view.
         """
 
         for frame_result in self.frame_results:
-            frame_result.visualize_bev()
+            self.visualization.visualize_bev(
+                frame_result.object_results,
+                frame_result.ground_truth_objects,
+            )

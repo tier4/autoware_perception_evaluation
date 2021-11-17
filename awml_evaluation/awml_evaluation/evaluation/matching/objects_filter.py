@@ -1,23 +1,28 @@
-from enum import Enum
+"""[summary]
+This module has filter function for objects.
+
+function(
+    object_results: List[DynamicObjectWithResult],
+    params*,
+) -> List[DynamicObjectWithResult]
+
+or
+
+function(
+    objects: List[DynamicObject],
+    params*,
+) -> List[DynamicObject]
+"""
+
+
 from typing import List
 from typing import Optional
 from typing import Tuple
 
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
+from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.object_result import DynamicObjectWithResult
-
-
-class MatchingMode(Enum):
-    """[summary]
-    The mode enum for matching algorithm.
-
-    CENTERDISTANCE: The center distance
-    IOU3d : 3d IoU (Intersection over Union)
-    """
-
-    CENTERDISTANCE = "center_distance"
-    IOU3d = "iou_3d"
 
 
 def filter_tp_objects(
@@ -74,8 +79,11 @@ def filter_tp_objects(
         is_target = is_target and is_target_object
         if matching_mode == MatchingMode.CENTERDISTANCE:
             is_target = is_target and object_result.center_distance < matching_threshold
+        if matching_mode == MatchingMode.PLANEDISTANCE:
+            is_target = is_target and object_result.uc_plane_distance < matching_threshold
         if matching_mode == MatchingMode.IOU3d:
             is_target = is_target and object_result.iou_3d > matching_threshold
+
         if threshold_confidence:
             is_target = (
                 is_target and object_result.predicted_object.semantic_score > threshold_confidence
@@ -143,11 +151,9 @@ def _is_target_object(
     if target_labels:
         is_target = is_target and dynamic_object.semantic_label in target_labels
     if max_pos_distance:
-        distance = dynamic_object.get_distance_bev()
-        is_target = is_target and distance < max_pos_distance
+        is_target = is_target and dynamic_object.get_distance_2d() < max_pos_distance
     if min_pos_distance:
-        distance = dynamic_object.get_distance_bev()
-        is_target = is_target and distance > min_pos_distance
+        is_target = is_target and dynamic_object.get_distance_2d() > min_pos_distance
 
     return is_target
 
