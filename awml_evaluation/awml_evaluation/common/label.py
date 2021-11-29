@@ -51,10 +51,8 @@ class LabelConverter:
     """
 
     def __init__(self) -> None:
-        # TODO read from comfig file
-
         self.labels: List[Label] = []
-        pair_list: List[Union[AutowareLabel, str]] = self._set_pair_list()
+        pair_list: List[Union[AutowareLabel, str]] = LabelConverter._set_pair_list()
         for label, autoware_label in pair_list:
             self.labels.append(Label(label, autoware_label))
         logger.debug(f"label {self.labels}")
@@ -65,7 +63,7 @@ class LabelConverter:
         count_label_number: bool = False,
     ) -> AutowareLabel:
         """[summary]
-        Convert form nuscenes label to autoware label
+        Convert from Nuscenes label to autoware label
 
         Args:
             label (str): The label you want to convert from predicted object
@@ -130,3 +128,23 @@ class LabelConverter:
             [AutowareLabel.UNKNOWN, "static_object.bicycle rack"],
         ]
         return pair_list
+
+
+def set_target_lists(
+    target_labels: List[str],
+    label_converter: LabelConverter,
+) -> List[AutowareLabel]:
+    """[summary]
+    Set the target class configure
+
+    Args:
+        target_labels (List[str]): The target class to evaluate
+        label_converter (LabelConverter): Label Converter class
+
+    Returns:
+        List[AutowareLabel]:  The list of target class
+    """
+    target_autoware_labels = []
+    for target_label in target_labels:
+        target_autoware_labels.append(label_converter.convert_label(target_label))
+    return target_autoware_labels

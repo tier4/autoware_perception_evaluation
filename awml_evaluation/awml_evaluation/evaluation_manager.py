@@ -4,68 +4,40 @@ from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.dataset import get_now_frame
 from awml_evaluation.common.dataset import load_datasets
 from awml_evaluation.common.object import DynamicObject
-from awml_evaluation.configure import EvaluatorConfiguration
-from awml_evaluation.evaluation.frame_result import FrameResult
 from awml_evaluation.evaluation.metrics.metrics import MetricsScore
-from awml_evaluation.evaluation.object_result import DynamicObjectWithResult
+from awml_evaluation.evaluation.result.frame_result import FrameResult
+from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
+from awml_evaluation.evaluation.result.pass_fail_result import CriticalObjectFilterConfig
+from awml_evaluation.evaluation.result.pass_fail_result import FramePassFailConfig
+from awml_evaluation.evaluation_config import EvaluationConfig
 from awml_evaluation.visualization.visualization import VisualizationBEV
 
 
 class EvaluationManager:
     """[summary]
-    EvaluationManager class
+    EvaluationManager class.
     This class is management interface for perception interface.
 
     Attributes:
-        self.evaluator_config (EvaluatorConfiguration): config for evaluation
+        self.evaluator_config (EvaluatorConfig): config for evaluation
         self.ground_truth_frames (List[FrameGroundTruth]): Ground truth frames from datasets
         self.frame_results (List[FrameResult]): Evaluation result
         self.visualization (VisualizationBEV): Visualization class
-
     """
 
     def __init__(
         self,
-        dataset_path: str,
-        does_use_pointcloud: bool,
-        result_root_directory: str,
-        log_directory: str,
-        visualization_directory: str,
-        evaluation_tasks: List[str],
-        target_labels: List[str],
-        map_thresholds_center_distance: List[float],
-        map_thresholds_plane_distance: List[float],
-        map_thresholds_iou: List[float],
+        evaluation_config: EvaluationConfig,
     ) -> None:
         """[summary]
 
         Args:
-            dataset_path (str): The path of dataset
-            does_use_pointcloud (bool): The flag for loading pointcloud data from dataset
-            result_root_directory (str): The path to result directory
-            log_directory (str): The path to sub directory for log
-            visualization_directory (str): The path to sub directory for visualization
-            evaluation_tasks (List[str]): Tasks for evaluation. Choose from common.EvaluationTask
-                                          classes (ex. ["detection", "tracking", "prediction"])
-            target_labels (List[str]): Target labels to evaluate. Choose from label
-            map_thresholds_distance (List[float]): The mAP detection threshold of center distance
-                                                   for matching
-            map_thresholds_iou3d (List[float]): The mAP detection threshold of 3d iou for matching
+            evaluation_config (EvaluatorConfig): Evaluation config
         """
-
-        self.evaluator_config = EvaluatorConfiguration(
-            result_root_directory,
-            log_directory,
-            visualization_directory,
-            evaluation_tasks,
-            target_labels,
-            map_thresholds_center_distance,
-            map_thresholds_plane_distance,
-            map_thresholds_iou,
-        )
+        self.evaluator_config: EvaluationConfig = evaluation_config
         self.ground_truth_frames: List[FrameGroundTruth] = load_datasets(
-            dataset_path,
-            does_use_pointcloud,
+            self.evaluator_config.dataset_path,
+            self.evaluator_config.does_use_pointcloud,
             self.evaluator_config.metrics_config.evaluation_tasks,
             self.evaluator_config.label_converter,
         )
@@ -74,38 +46,70 @@ class EvaluationManager:
             self.evaluator_config.visualization_directory
         )
 
+    def get_ground_truth_now_frame(
+        self,
+        unix_time: int,
+        threshold_min_time: int = 75000,
+    ) -> FrameGroundTruth:
+        """[summary]
+        Get now frame of ground truth
+
+        Args:
+            unix_time (int): Unix time of frame to evaluate.
+            threshold_min_time (int, optional):
+                    Min time for unix time difference [us].
+                    Default is 75000 usec = 75 ms.
+
+        Returns:
+            FrameGroundTruth: Now frame of ground truth
+        """
+        ground_truth_now_frame: FrameGroundTruth = get_now_frame(
+            self.ground_truth_frames,
+            unix_time,
+            threshold_min_time,
+        )
+        return ground_truth_now_frame
+
     def add_frame_result(
         self,
         unix_time: int,
+        ground_truth_now_frame: FrameGroundTruth,
         predicted_objects: List[DynamicObject],
+        ros_critical_ground_truth_objects: List[DynamicObject],
+        critical_object_filter_config: CriticalObjectFilterConfig,
+        frame_pass_fail_config: FramePassFailConfig,
     ) -> FrameResult:
         """[summary]
         Evaluate one frame
 
         Args:
-            unix_time (int): Unix time of frame to evaluate
+            unix_time (int): Unix time of frame to evaluate [us]
+            ground_truth_now_frame (FrameGroundTruth): Now frame ground truth
             predicted_objects (List[DynamicObject]): Predicted object which you want to evaluate
+            ros_critical_ground_truth_objects (List[DynamicObject]):
+                    Critical ground truth objects filtered by ROS node to evaluate pass fail result
+            critical_object_filter_config (CriticalObjectFilterConfig):
+                    The parameter config to choose critical ground truth objects
+            frame_pass_fail_config (FramePassFailConfig):
+                    The parameter config to evaluate
 
         Returns:
             FrameResult: Evaluation result
-
-        Example
-            evaluator = EvaluationManager()
-            predicted_objects : List[DynamicObject] = set_from_ros_topic(objects_from_topic)
-            frame_result = evaluator.add_frame_result(
-                unix_time,
-                predicted_objects,
-            )
-            logger.debug(f"metrics result {frame_result.metrics_score}")
         """
 
-        ground_truth_now_frame: FrameGroundTruth = get_now_frame(
-            self.ground_truth_frames, unix_time
-        )
         result = FrameResult(
-            self.evaluator_config.metrics_config, unix_time, ground_truth_now_frame.frame_name
+            metrics_config=self.evaluator_config.metrics_config,
+            critical_object_filter_config=critical_object_filter_config,
+            frame_pass_fail_config=frame_pass_fail_config,
+            unix_time=unix_time,
+            frame_name=ground_truth_now_frame.frame_name,
+            pointcloud=ground_truth_now_frame.pointcloud,
         )
-        result.evaluate_frame(predicted_objects, ground_truth_now_frame.objects)
+        result.evaluate_frame(
+            predicted_objects=predicted_objects,
+            ground_truth_objects=ground_truth_now_frame.objects,
+            ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
+        )
         self.frame_results.append(result)
         return result
 
@@ -119,6 +123,7 @@ class EvaluationManager:
         Example
             evaluator = EvaluationManager()
             for frame in frames:
+                # write in your application
                 predicted_objects : List[DynamicObject] = set_from_ros_topic(
                     frame.objects_from_topic
                 )

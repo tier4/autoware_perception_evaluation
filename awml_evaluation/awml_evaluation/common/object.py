@@ -138,7 +138,7 @@ class DynamicObject:
 
         # tracking
         self.uuid: Optional[str] = uuid
-        self.tracked_path: Optional[List[ObjectState]] = self._set_states(
+        self.tracked_path: Optional[List[ObjectState]] = DynamicObject._set_states(
             tracked_positions,
             tracked_orientations,
             tracked_sizes,
@@ -147,7 +147,7 @@ class DynamicObject:
 
         # prediction
         self.predicted_confidence: Optional[float] = predicted_confidence
-        self.predicted_path: Optional[List[ObjectState]] = self._set_states(
+        self.predicted_path: Optional[List[ObjectState]] = DynamicObject._set_states(
             predicted_positions,
             predicted_orientations,
             predicted_sizes,
@@ -170,7 +170,7 @@ class DynamicObject:
         """
         return math.hypot(*self.state.position)
 
-    def get_distance_2d(self) -> float:
+    def get_distance_bev(self) -> float:
         """[summary]
         Get the 2d distance to the object from ego vehicle in bird eye view
 
@@ -251,7 +251,7 @@ def distance_points(point_1: Tuple[float], point_2: Tuple[float]) -> float:
     return math.dist(point_1, point_2)
 
 
-def distance_points_2d(point_1: Tuple[float], point_2: Tuple[float]) -> float:
+def distance_points_bev(point_1: Tuple[float], point_2: Tuple[float]) -> float:
     """[summary]
     Calculate the 2d center distance between two points.
     Args:
@@ -259,7 +259,7 @@ def distance_points_2d(point_1: Tuple[float], point_2: Tuple[float]) -> float:
         point_2 (Tuple[float]): A point
     Returns: float: The distance between two points
     """
-    return math.dist(to_2d(point_1), to_2d(point_2))
+    return math.dist(to_bev(point_1), to_bev(point_2))
 
 
 def distance_objects(object_1: DynamicObject, object_2: DynamicObject) -> float:
@@ -272,15 +272,15 @@ def distance_objects(object_1: DynamicObject, object_2: DynamicObject) -> float:
     return distance_points(object_1.state.position, object_2.state.position)
 
 
-def distance_objects_2d(object_1: DynamicObject, object_2: DynamicObject) -> float:
+def distance_objects_bev(object_1: DynamicObject, object_2: DynamicObject) -> float:
     """[summary]
     Args:
          object_1 (DynamicObject): An object
          object_2 (DynamicObject): An object
-    Returns: float: The 2d center distance from object_1 (DynamicObject) to object_2.
+    Returns: float: The 2d center distance from object_1 to object_2.
     """
-    return distance_points_2d(object_1.state.position, object_2.state.position)
+    return distance_points_bev(object_1.state.position, object_2.state.position)
 
 
-def to_2d(point_1: Tuple[float, float, float]) -> Tuple[float, float]:
+def to_bev(point_1: Tuple[float, float, float]) -> Tuple[float, float]:
     return (point_1[0], point_1[1])

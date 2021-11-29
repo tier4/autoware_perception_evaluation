@@ -1,22 +1,23 @@
 # import rospy
 
-import datetime
 import logging
-import os
+from test.logger_config import configure_logger
 from typing import List
 
-from pyquaternion.quaternion import Quaternion
-
 from awml_evaluation.common.object import DynamicObject
-from awml_evaluation.evaluation.frame_result import FrameResult
 from awml_evaluation.evaluation.metrics.metrics import MetricsScore
+from awml_evaluation.evaluation.result.frame_result import FrameResult
+from awml_evaluation.evaluation.result.pass_fail_result import CriticalObjectFilterConfig
+from awml_evaluation.evaluation.result.pass_fail_result import FramePassFailConfig
+from awml_evaluation.evaluation_config import EvaluationConfig
 from awml_evaluation.evaluation_manager import EvaluationManager
 from awml_evaluation.util.debug import format_class_for_log
+from awml_evaluation.util.debug import get_objects_with_difference
 
 
-class LSim:
+class LSimMoc:
     def __init__(self, dataset_path: str):
-        self.evaluator: EvaluationManager = EvaluationManager(
+        evaluation_config: EvaluationConfig = EvaluationConfig(
             dataset_path=dataset_path,
             does_use_pointcloud=False,
             result_root_directory="data/result/{TIME}/",
@@ -25,10 +26,18 @@ class LSim:
             evaluation_tasks=["detection"],
             # target_labels=["car", "truck", "bicycle", "pedestrian", "motorbike"],
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            map_thresholds_center_distance=[0.5, 1.0, 2.0],
-            map_thresholds_plane_distance=[0.5, 1.0, 2.0],
+            max_x_position=120.0,
+            max_y_position=120.0,
+            # objectごとにparamを設定
+            map_thresholds_center_distance=[
+                [1.0, 1.0, 1.0, 1.0],
+                [2.0, 2.0, 2.0, 2.0],
+            ],
+            # objectごとに同じparamの場合はこのような指定が可能
+            map_thresholds_plane_distance=[1.0, 2.0],
             map_thresholds_iou=[],
         )
+        self.evaluator = EvaluationManager(evaluation_config=evaluation_config)
 
         _ = configure_logger(
             log_file_directory=self.evaluator.evaluator_config.result_log_directory,
@@ -36,77 +45,46 @@ class LSim:
             file_log_level=logging.INFO,
         )
 
-    # rospy.init_node('LSim for perception', anonymous=True)
-    # self.detection_sub = rospy.Subscriber("/perception/detection", DynamicObjectWithArray, callback_detection)
-    # self.ground_truth_sub = rospy.Subscriber("/perception/detection", DynamicObjectWithArray, callback_ground_truth)
-    # rospy.Timer(rospy.Duration(1.0), self.timerCallback)
-
-    def callback_detection(self, data):
-        self.predicted_objects: List[DynamicObject] = []
-        for d in data:
-            # will_collide_within_5s = self._will_collide_within_5s(d, )
-            will_collide_within_5s = True
-            self.predicted_objects.append(
-                DynamicObject(
-                    d.unix_time,
-                    d.semantic_score,
-                    d.semantic_label,
-                    d.pose,
-                    d.shape,
-                    d.twist,
-                    will_collide_within_5s,
-                )
-            )
-
-    def timer_callback(self, event):
-        # adjust for ROS interface
-        unix_time = 10000000  # dummy
-        self.evaluate_one_frame(unix_time, self.predicted_objects)
-
-    def evaluate_one_frame(
+    def callback(
         self,
         unix_time: int,
         predicted_objects: List[DynamicObject],
     ) -> None:
-        frame_result = self.evaluator.add_frame_result(
-            unix_time,
-            predicted_objects,
-        )
-        self.visualize(frame_result)
 
-    def evaluate_one_frame_with_diff(
-        self,
-        unix_time: int,
-        predicted_objects: List[DynamicObject],
-        diff_distance: float = 0.0,
-        diff_yaw: float = 0.0,
-    ) -> None:
-        test_objects_ = []
-        for predicted_object in predicted_objects:
-            position = (
-                predicted_object.state.position[0] + diff_distance,
-                predicted_object.state.position[1],
-                predicted_object.state.position[2],
-            )
-            orientation = Quaternion(
-                axis=predicted_object.state.orientation.axis,
-                radians=predicted_object.state.orientation.radians + diff_yaw,
-            )
-            test_object_ = DynamicObject(
-                predicted_object.unix_time,
-                position,
-                orientation,
-                predicted_object.state.size,
-                predicted_object.state.velocity,
-                predicted_object.semantic_score,
-                predicted_object.semantic_label,
-            )
-            test_objects_.append(test_object_)
-        frame_result = self.evaluator.add_frame_result(
-            unix_time,
-            test_objects_,
+        # 現frameに対応するGround truthを取得
+        ground_truth_now_frame = self.evaluator.get_ground_truth_now_frame(unix_time)
+
+        # [Option] ROS側でやる（Map情報・Planning結果を用いる）UC評価objectを選別
+        # ros_critical_ground_truth_objects : List[DynamicObject] = custom_critical_object_filter(
+        #   ground_truth_now_frame.objects
+        # )
+        ros_critical_ground_truth_objects = ground_truth_now_frame.objects
+
+        # 1 frameの評価
+        # 距離などでUC評価objectを選別するためのインターフェイス（EvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
+        # どれを注目物体とするかのparam
+        critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
+            evaluator_config=self.evaluator.evaluator_config,
+            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
+            max_x_position_list=[30.0, 30.0, 30.0, 30.0],
+            max_y_position_list=[30.0, 30.0, 30.0, 30.0],
         )
-        self.visualize(frame_result)
+        # Pass fail を決めるパラメータ
+        frame_pass_fail_config: FramePassFailConfig = FramePassFailConfig(
+            evaluator_config=self.evaluator.evaluator_config,
+            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
+            threshold_plane_distance_list=[2.0, 2.0, 2.0, 2.0],
+        )
+
+        frame_result = self.evaluator.add_frame_result(
+            unix_time=unix_time,
+            ground_truth_now_frame=ground_truth_now_frame,
+            predicted_objects=predicted_objects,
+            ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
+            critical_object_filter_config=critical_object_filter_config,
+            frame_pass_fail_config=frame_pass_fail_config,
+        )
+        LSimMoc.visualize(frame_result)
 
     def get_final_result(self) -> MetricsScore:
         """
@@ -121,109 +99,28 @@ class LSim:
         """
         可視化
         """
+        if len(frame_result.pass_fail_result.uc_fail_objects) > 0:
+            logging.warning(f"{len(frame_result.pass_fail_result.uc_fail_objects)} fail objects")
+            # logging.debug(f"frame result {format_class_for_log(frame_result.pass_fail_result)}")
+
         if frame_result.metrics_score.maps[0].map < 0.7:
-            logging.debug(f"mAP is low")
-            logging.debug(f"frame result {format_class_for_log(frame_result.metrics_score)}")
-
-
-def CustomTextFormatter():
-    """[summary]
-    Custom Formatter
-    """
-    return logging.Formatter(
-        "[%(asctime)s] [%(levelname)s] [func]  [%(filename)s:%(lineno)d %(funcName)s] %(message)s"
-    )
-
-
-class SensitiveWordFilter(logging.Filter):
-    """[summary]
-    The class to filer sensitive words like password
-    """
-
-    def filter(self, record):
-        sensitive_words = [
-            "password",
-            "auth_token",
-            "secret",
-        ]
-        log_message = record.getMessage()
-        for word in sensitive_words:
-            if word in log_message:
-                return False
-        return True
-
-
-def configure_logger(
-    log_file_directory: str,
-    console_log_level=logging.INFO,
-    file_log_level=logging.INFO,
-) -> None:
-    """[summary]
-    The function to make logger
-
-    Args:
-        log_file_directory (str): The directory path to save log
-        console_log_level ([type], optional): Log level for console. Defaults to logging.INFO.
-        file_log_level ([type], optional): Log level for log file. Defaults to logging.INFO.
-        modname ([type], optional): Modname for logger. Defaults to __name__.
-    """
-    # make directory
-    log_directory = os.path.dirname(log_file_directory)
-    os.makedirs(log_directory, exist_ok=True)
-
-    formatter = CustomTextFormatter()
-
-    logger = logging.getLogger("")
-    logger.addFilter(SensitiveWordFilter())
-    logger.setLevel(console_log_level)
-
-    # handler for console
-    stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(console_log_level)
-    stream_handler.setFormatter(formatter)
-    logger.addHandler(stream_handler)
-
-    # handler for file
-    time = "{0:%Y%m%d_%H%M%S}.txt".format(datetime.datetime.now())
-    log_file_path = os.path.join(log_directory, time)
-    file_handler = logging.FileHandler(filename=log_file_path, encoding="utf-8")
-    file_handler.setLevel(file_log_level)
-    file_formatter = CustomTextFormatter()
-    file_handler.setFormatter(file_formatter)
-    logger.addHandler(file_handler)
-
-    return logger
+            logging.debug("mAP is low")
+            # logging.debug(f"frame result {format_class_for_log(frame_result.metrics_score)}")
 
 
 if __name__ == "__main__":
-    # dataset_path = "../../dataset_3d/tier4/202108_3d_cuboid_v1_1_1_nishishinjuku_mini/5f97e3d5a3c9d30032763ab5"
-    # dataset_path = "../../dataset_3d/tier4/20210819_3d_cuboid_v1_2_sample/602625664232f4002ce37cef"
     dataset_path = "../../dataset_3d/tier4/202109_3d_cuboid_v2_0_1_sample/60f2669b1070d0002dcdd475"
-    lsim = LSim(dataset_path)
-    # rospy.spin()
-    # dummy data
-
-    # example code for mAP 1.0
-    # for ground_truth_frame in lsim.evaluator.ground_truth_frames:
-    #     lsim.evaluate_one_frame(
-    #         ground_truth_frame.unix_time,
-    #         ground_truth_frame.objects,
-    #     )
+    lsim = LSimMoc(dataset_path)
 
     for ground_truth_frame in lsim.evaluator.ground_truth_frames:
-        lsim.evaluate_one_frame_with_diff(
-            ground_truth_frame.unix_time,
-            ground_truth_frame.objects,
-            diff_distance=1.9,
-            diff_yaw=0.5,
-            # 1.4,
+        objects_with_diffrence = get_objects_with_difference(
+            ground_truth_objects=ground_truth_frame.objects,
+            diff_distance=(0.0, 0.0, 0.0),
+            diff_yaw=0.0,
         )
-
-    # example code for 1 frame difference
-    # for i in range(1, len(lsim.evaluator.ground_truth_frames)):
-    #     lsim.evaluate_one_frame(
-    #         lsim.evaluator.ground_truth_frames[i].unix_time,
-    #         lsim.evaluator.ground_truth_frames[i - 1].objects,
-    #     )
+        lsim.callback(
+            ground_truth_frame.unix_time,
+            objects_with_diffrence,
+        )
 
     final_metric_score = lsim.get_final_result()

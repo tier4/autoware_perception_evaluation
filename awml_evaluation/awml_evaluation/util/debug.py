@@ -1,5 +1,11 @@
 from enum import Enum
 import pprint
+from typing import List
+from typing import Tuple
+
+from pyquaternion.quaternion import Quaternion
+
+from awml_evaluation.common.object import DynamicObject
 
 
 def format_class_for_log(object: object) -> str:
@@ -64,6 +70,8 @@ def class_to_dict(object: object, class_key=None) -> dict:
 
 def format_dict_for_log(dict: dict) -> str:
     """
+    Format dict class to str for logger
+
     Args:
         dict (dict): dict which you want to format for logger
     Returns:
@@ -71,3 +79,51 @@ def format_dict_for_log(dict: dict) -> str:
     """
     formatted_str: str = "\n" + pprint.pformat(dict, indent=1, width=80, depth=None, compact=True)
     return formatted_str
+
+
+def get_objects_with_difference(
+    ground_truth_objects: List[DynamicObject],
+    diff_distance: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+    diff_yaw: float = 0.0,
+) -> List[DynamicObject]:
+    """[summary]
+    Get objects with distance and yaw difference for test.
+
+    Args:
+        ground_truth_objects (List[DynamicObject]):
+        diff_distance (float): [param]
+        diff_yaw (float): [description]
+
+    Args:
+        ground_truth_objects (List[DynamicObject]) The ground truth objects
+        diff_distance (Tuple[float, float, float], optional):
+                The parameter for difference of position. Defaults to (0.0, 0.0, 0.0).
+        diff_yaw (float, optional):
+                The parameter for difference of yaw angle. Defaults to 0.0.
+
+    Returns:
+        List[DynamicObject]: objects with distance and yaw difference.
+    """
+
+    output_objects = []
+    for object_ in ground_truth_objects:
+        position = (
+            object_.state.position[0] + diff_distance[0],
+            object_.state.position[1] + diff_distance[1],
+            object_.state.position[2] + diff_distance[2],
+        )
+        orientation = Quaternion(
+            axis=object_.state.orientation.axis,
+            radians=object_.state.orientation.radians + diff_yaw,
+        )
+        test_object_ = DynamicObject(
+            object_.unix_time,
+            position,
+            orientation,
+            object_.state.size,
+            object_.state.velocity,
+            object_.semantic_score,
+            object_.semantic_label,
+        )
+        output_objects.append(test_object_)
+    return output_objects
