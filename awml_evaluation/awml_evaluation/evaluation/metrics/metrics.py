@@ -2,30 +2,30 @@ from typing import List
 
 from awml_evaluation.common.dataset import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
-from awml_evaluation.evaluation.metrics.configure import MetricsScoreConfig
 from awml_evaluation.evaluation.metrics.detection.map import Map
-from awml_evaluation.evaluation.object_result import DynamicObjectWithResult
+from awml_evaluation.evaluation.metrics.metrics_config import MetricsScoreConfig
+from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
 
 
 class MetricsScore:
     """[summary]
+    Metrics score class.
 
     Attributes:
-        self.config (MetricsScoreConfig): The config for metrics calculation
+        self.config (MetricsScoreConfig): The config for metrics calculation.
         self.maps (List[Map]): The list of mAP class object. Each mAP is different from threshold
-                               for matching (ex. IoU0.3)
+                               for matching (ex. IoU 0.3).
     """
 
     def __init__(
         self,
-        metrics_config: MetricsScoreConfig,
+        config: MetricsScoreConfig,
     ) -> None:
         """[summary]
         Args:
-            metrics_config (MetricsScoreConfig) A config for metrics calculation
+            metrics_config (MetricsScoreConfig): A config for metrics
         """
-        self.config: MetricsScoreConfig = metrics_config
-
+        self.config: MetricsScoreConfig = config
         # for detection metrics
         self.maps: List[Map] = []
 
@@ -35,18 +35,18 @@ class MetricsScore:
         """
         str_: str = "\n"
         for map_ in self.maps:
-            str_ += f"{map_.map_config.matching_mode.value} {map_.map_config.matching_threshold}"
-            str_ += f" mAP: {map_.map}"
-
             object_num: int = 0
             for ap_ in map_.aps:
                 object_num += ap_.ground_truth_objects_num
-            str_ += f" (object num {object_num})"
+
+            str_ += f"mAP ({map_.map_config.matching_mode.value}): {map_.map:.3f}"
+            str_ += f" (num {object_num})\n"
+            str_ += "AP"
             for ap_ in map_.aps:
                 target_str: str = ""
                 for target in ap_.target_labels:
                     target_str += target.value
-                str_ += f", AP {target_str}: {ap_.ap}"
+                str_ += f", {target_str} ({ap_.matching_threshold_list}): {ap_.ap:.3f}"
             str_ += "\n"
         return str_
 
@@ -59,7 +59,7 @@ class MetricsScore:
         Evaluate API
 
         Args:
-            object_results (List[DynamicObjectWithResult]): The list of Object result
+            object_results (List[DynamicObjectWithResult]): The list of object result
             ground_truth_objects (List[DynamicObject]): The ground truth objects
         """
         self._evaluation_detection(object_results, ground_truth_objects)
@@ -75,37 +75,43 @@ class MetricsScore:
         Calculate detection metrics
 
         Args:
-            object_results (List[DynamicObjectWithResult]): The list of Object result
+            object_results (List[DynamicObjectWithResult]): The list of object result
             ground_truth_objects (List[DynamicObject]): The ground truth objects
         """
-        if self.config.map_thresholds_center_distance:
-            for distance_threshold_ in self.config.map_thresholds_center_distance:
+        for distance_threshold_ in self.config.map_thresholds_center_distance:
+            if distance_threshold_:
                 map_ = Map(
-                    object_results,
-                    ground_truth_objects,
-                    self.config.target_labels,
-                    MatchingMode.CENTERDISTANCE,
-                    distance_threshold_,
+                    object_results=object_results,
+                    ground_truth_objects=ground_truth_objects,
+                    target_labels=self.config.target_labels,
+                    max_x_position_list=self.config.max_x_position_list,
+                    max_y_position_list=self.config.max_y_position_list,
+                    matching_mode=MatchingMode.CENTERDISTANCE,
+                    matching_threshold_list=distance_threshold_,
                 )
                 self.maps.append(map_)
-        if self.config.map_thresholds_iou:
-            for iou_threshold_ in self.config.map_thresholds_iou:
+        for iou_threshold_ in self.config.map_thresholds_iou:
+            if iou_threshold_:
                 map_ = Map(
-                    object_results,
-                    ground_truth_objects,
-                    self.config.target_labels,
-                    MatchingMode.IOU3d,
-                    iou_threshold_,
+                    object_results=object_results,
+                    ground_truth_objects=ground_truth_objects,
+                    target_labels=self.config.target_labels,
+                    max_x_position_list=self.config.max_x_position_list,
+                    max_y_position_list=self.config.max_y_position_list,
+                    matching_mode=MatchingMode.IOU3d,
+                    matching_threshold_list=iou_threshold_,
                 )
                 self.maps.append(map_)
-        if self.config.map_thresholds_center_distance:
-            for distance_threshold_ in self.config.map_thresholds_plane_distance:
+        for plane_distance_threshold_ in self.config.map_thresholds_plane_distance:
+            if plane_distance_threshold_:
                 map_ = Map(
-                    object_results,
-                    ground_truth_objects,
-                    self.config.target_labels,
-                    MatchingMode.PLANEDISTANCE,
-                    distance_threshold_,
+                    object_results=object_results,
+                    ground_truth_objects=ground_truth_objects,
+                    target_labels=self.config.target_labels,
+                    max_x_position_list=self.config.max_x_position_list,
+                    max_y_position_list=self.config.max_y_position_list,
+                    matching_mode=MatchingMode.PLANEDISTANCE,
+                    matching_threshold_list=plane_distance_threshold_,
                 )
                 self.maps.append(map_)
 
@@ -117,7 +123,7 @@ class MetricsScore:
         Calculate tracking metrics
 
         Args:
-            object_results (List[DynamicObjectWithResult]): The list of Object result
+            object_results (List[DynamicObjectWithResult]): The list of object result
         """
         pass
 
@@ -129,6 +135,6 @@ class MetricsScore:
         Calculate prediction metrics
 
         Args:
-            object_results (List[DynamicObjectWithResult]): The list of Object result
+            object_results (List[DynamicObjectWithResult]): The list of object result
         """
         pass

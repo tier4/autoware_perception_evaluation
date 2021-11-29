@@ -16,21 +16,21 @@ from typing import Optional
 from typing import Tuple
 
 from awml_evaluation.common.object import DynamicObject
-from awml_evaluation.common.object import distance_points_2d
+from awml_evaluation.common.object import distance_points_bev
 
 
 class MatchingMode(Enum):
     """[summary]
     The mode enum for matching algorithm.
 
-    CENTERDISTANCE: The center distance
-    IOU3d : 3d IoU (Intersection over Union)
-    PLANEDISTANCE = The plane distance
+    CENTERDISTANCE: center distance 3d
+    IOU3d : IoU (Intersection over Union) 3d
+    PLANEDISTANCE: The plane distance
     """
 
-    CENTERDISTANCE = "center_distance"
-    IOU3d = "iou_3d"
-    PLANEDISTANCE = "plane_distance"
+    CENTERDISTANCE = "center distance 3d [m]"
+    IOU3d = "iou 3d"
+    PLANEDISTANCE = "plane_distance [m]"
 
 
 def get_uc_plane_distance(
@@ -38,10 +38,16 @@ def get_uc_plane_distance(
     ground_truth_object: Optional[DynamicObject],
 ) -> Optional[float]:
     """[summary]
-    Calculate use case plane distance
+    Calculate plane distance for use case evaluation.
+
+    Args:
+        predicted_object (DynamicObject): A predicted object
+        ground_truth_object (Optional[DynamicObject]): The correspond ground truth object
 
     Returns:
-        Optional[float]: [description]
+        Optional[float]: The value of plane distance.
+                         If predicted_object do not have corresponded ground truth object,
+                         return None.
     """
     if not ground_truth_object:
         return None
@@ -56,11 +62,11 @@ def get_uc_plane_distance(
     gt_footprint.sort(key=lambda_func)
 
     # Calculate plane distance
-    distance_1_1: float = abs(distance_points_2d(pr_footprint[0], gt_footprint[0]))
-    distance_1_2: float = abs(distance_points_2d(pr_footprint[1], gt_footprint[1]))
+    distance_1_1: float = abs(distance_points_bev(pr_footprint[0], gt_footprint[0]))
+    distance_1_2: float = abs(distance_points_bev(pr_footprint[1], gt_footprint[1]))
     distance_1: float = distance_1_1 + distance_1_2
-    distance_2_1: float = abs(distance_points_2d(pr_footprint[0], gt_footprint[1]))
-    distance_2_2: float = abs(distance_points_2d(pr_footprint[1], gt_footprint[0]))
+    distance_2_1: float = abs(distance_points_bev(pr_footprint[0], gt_footprint[1]))
+    distance_2_2: float = abs(distance_points_bev(pr_footprint[1], gt_footprint[0]))
     distance_2: float = distance_2_1 + distance_2_2
     uc_plane_distance: float = min(distance_1, distance_2) / 2.0
     # logger.info(f"Distance {uc_plane_distance}")
