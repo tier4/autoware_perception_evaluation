@@ -4,6 +4,8 @@
 
 ## v0.1
 
+- <https://github.com/tier4/AWMLevaluation/pull/15>
+  - 【Document追加】Perceptionの再現性が低い・mAPが想定より低い問題に対しての解決法をDocument化
 - <https://github.com/tier4/AWMLevaluation/pull/9>
   - 【追加機能】PassFail評価用のインターフェイス実装
   - 【追加機能】object filterにおいてx方向閾値y方向閾値を追加
