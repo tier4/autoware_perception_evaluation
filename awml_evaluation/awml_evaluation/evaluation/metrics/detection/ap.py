@@ -1,13 +1,15 @@
 from logging import getLogger
-import os
 from typing import List
 from typing import Tuple
+from typing import Union
 
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.matching.objects_filter import filter_ground_truth_objects
 from awml_evaluation.evaluation.matching.objects_filter import filter_tp_objects
+from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAp
+from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
 
 logger = getLogger(__name__)
@@ -18,20 +20,27 @@ class Ap:
     AP class
 
     Attributes:
-        self.target_labels (List[AutowareLabel]): Target labels to evaluate
+        self.target_labels (List[AutowareLabel]):
+                Target labels to evaluate
+        self.tp_metrics (TPMetrics):
+                The mode of TP (True positive) metrics. See TPMetrics class in detail.
         self.matching_mode (MatchingMode):
                 Matching mode like distance between the center of the object, 3d IoU
-        self.matching_threshold (List[float]): The threshold list for matching the predicted object
-        self.ground_truth_objects_num (int): The number of ground truth objects
+        self.matching_threshold (List[float]):
+                The threshold list for matching the predicted object
+        self.ground_truth_objects_num (int):
+                The number of ground truth objects
         self.tp_list (List[int]):
                 The list of the number of TP (True Positive) objects ordered by confidence
         self.fp_list (List[int]):
                 The list of the number of FP (False Positive) objects ordered by confidence
-        self.ap (float): AP (Average Precision) result
+        self.ap (float):
+                AP (Average Precision) result
     """
 
     def __init__(
         self,
+        tp_metrics: Union[TPMetricsAp, TPMetricsAph],
         object_results: List[DynamicObjectWithResult],
         ground_truth_objects: List[DynamicObject],
         target_labels: List[AutowareLabel],
@@ -43,6 +52,7 @@ class Ap:
         """[summary]
 
         Args:
+            tp_metrics (TPMetrics): The mode of TP (True positive) metrics
             object_results (List[DynamicObjectWithResult]) : The results to each predicted object
             ground_truth_objects (List[DynamicObject]) : The ground truth objects for the frame
             target_labels (List[AutowareLabel]): Target labels to evaluate
@@ -61,9 +71,10 @@ class Ap:
             matching_threshold (List[float]): The threshold list for matching the predicted object
         """
 
+        self.tp_metrics: Union[TPMetricsAp, TPMetricsAph] = tp_metrics
         self.target_labels: List[AutowareLabel] = target_labels
         self.matching_mode: MatchingMode = matching_mode
-        self.matching_threshold_list: float = matching_threshold_list
+        self.matching_threshold_list: List[float] = matching_threshold_list
 
         # filter predicted object and results by iou_threshold and target_labels
         filtered_object_results: List[DynamicObjectWithResult] = filter_tp_objects(
@@ -85,10 +96,12 @@ class Ap:
         self.ground_truth_objects_num: int = len(filtered_ground_truth_objects)
 
         # tp and fp from object results ordered by confidence
-        self.tp_list: List[int] = []
-        self.fp_list: List[int] = []
+        self.tp_list: List[float] = []
+        self.fp_list: List[float] = []
         self.tp_list, self.fp_list = Ap._calculate_tp_fp(
-            filtered_object_results, self.ground_truth_objects_num
+            tp_metrics,
+            filtered_object_results,
+            self.ground_truth_objects_num,
         )
 
         # caliculate precision recall
@@ -159,13 +172,15 @@ class Ap:
 
     @staticmethod
     def _calculate_tp_fp(
+        tp_metrics: Union[TPMetricsAp, TPMetricsAph],
         object_results: List[DynamicObjectWithResult],
         ground_truth_objects_num: int,
     ) -> Tuple[List[float], List[float]]:
         """
-        Calculate TP (true positive) and FP (false positive)
+        Calculate TP (true positive) and FP (false positive).
 
         Args:
+            tp_metrics (TPMetrics): The mode of TP (True positive) metrics
             object_results (List[DynamicObjectWithResult]): the list of objects with result
             ground_truth_objects_num (int): the number of ground truth objects
 
@@ -191,23 +206,26 @@ class Ap:
                 return [0 * ground_truth_objects_num], list(range(1, ground_truth_objects_num))
 
         object_results_num = len(object_results)
-        tp_list: List[int] = [0 for i in range(object_results_num)]
-        fp_list: List[int] = [0 for i in range(object_results_num)]
+        tp_list: List[float] = [0 for i in range(object_results_num)]
+        fp_list: List[float] = [0 for i in range(object_results_num)]
 
         # init
+        tp_value: float = tp_metrics.get_value(object_results[0])
         if object_results[0].is_label_correct:
-            tp_list[0] = 1
+            tp_list[0] = tp_value
             fp_list[0] = 0
         else:
             tp_list[0] = 0
-            fp_list[0] = 1
+            fp_list[0] = tp_value
 
         for i in range(1, len(object_results)):
+            tp_value: float = tp_metrics.get_value(object_results[i])
             if object_results[i].is_label_correct:
-                tp_list[i] = tp_list[i - 1] + 1
+                tp_list[i] = tp_list[i - 1] + tp_value
+                fp_list[i] = fp_list[i - 1]
             else:
                 tp_list[i] = tp_list[i - 1]
-            fp_list[i] = i + 1 - tp_list[i]
+                fp_list[i] = fp_list[i - 1] + 1.0
 
         return tp_list, fp_list
 
@@ -262,14 +280,14 @@ class Ap:
 
         return ap
 
-
-def _get_flat_str(str_list: List[str]) -> str:
-    """
-    Example:
-        a = _get_flat_str([aaa, bbb, ccc])
-        print(a) # aaa_bbb_ccc
-    """
-    output = ""
-    for one_str in str_list:
-        output = f"{output}_{one_str}"
-    return output
+    @staticmethod
+    def _get_flat_str(str_list: List[str]) -> str:
+        """
+        Example:
+            a = _get_flat_str([aaa, bbb, ccc])
+            print(a) # aaa_bbb_ccc
+        """
+        output = ""
+        for one_str in str_list:
+            output = f"{output}_{one_str}"
+        return output

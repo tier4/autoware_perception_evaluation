@@ -207,6 +207,18 @@ class DynamicObject:
 
         return footprint
 
+    def get_heading_bev(self) -> float:
+        """[sammary]
+        Get the object heading from ego vehicle in bird eye view
+        Returns:
+            float: The heading (radian)
+        """
+        rots = self.state.orientation.radians
+        trans_rots = -rots - math.pi / 2
+        trans_rots = np.where(trans_rots > math.pi, trans_rots - 2 * math.pi, trans_rots)
+        trans_rots = np.where(trans_rots < -math.pi, trans_rots + 2 * math.pi, trans_rots)
+        return trans_rots
+
     @staticmethod
     def _set_states(
         positions: Optional[List[Tuple[float, float, float]]] = None,
