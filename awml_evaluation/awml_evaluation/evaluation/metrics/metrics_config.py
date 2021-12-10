@@ -55,82 +55,86 @@ class MetricsScoreConfig:
         self.target_labels: List[AutowareLabel] = target_labels
         self.evaluation_tasks: List[EvaluationTask] = evaluation_tasks
 
-        self.max_x_position_list: List[float] = set_thresholds(
+        self.max_x_position_list: List[float] = MetricsScoreConfig.set_thresholds(
             max_x_position_list,
             self.target_labels,
         )
-        self.max_y_position_list: List[float] = set_thresholds(
+        self.max_y_position_list: List[float] = MetricsScoreConfig.set_thresholds(
             max_y_position_list,
             self.target_labels,
         )
 
         # detection
         # mAP
-        self.map_thresholds_center_distance: List[List[float]] = set_thresholds_list(
+        self.map_thresholds_center_distance: List[
+            List[float]
+        ] = MetricsScoreConfig.set_thresholds_list(
             map_thresholds_center_distance,
             self.target_labels,
         )
-        self.map_thresholds_plane_distance: List[List[float]] = set_thresholds_list(
+        self.map_thresholds_plane_distance: List[
+            List[float]
+        ] = MetricsScoreConfig.set_thresholds_list(
             map_thresholds_plane_distance,
             self.target_labels,
         )
-        self.map_thresholds_iou: List[List[float]] = set_thresholds_list(
+        self.map_thresholds_iou: List[List[float]] = MetricsScoreConfig.set_thresholds_list(
             map_thresholds_iou,
             self.target_labels,
         )
+
+    @staticmethod
+    def set_thresholds(
+        thresholds: List[Optional[float]],
+        target_labels: List[AutowareLabel],
+    ) -> List[Optional[float]]:
+        """[summary]
+        Check the config and set the thresholds.
+
+        Args:
+            thresholds (Optional[List[float]]): Thresholds
+            target_labels (List[AutowareLabel]): Target labels
+
+        Raises:
+            UseCaseThresholdsError: Error for use case thresholds
+
+        Returns:
+            List[Optional[List[float]]]: A thresholds
+        """
+        if len(thresholds) != len(target_labels):
+            raise MetricThresholdsError(
+                "Error: Metrics threshold is not proper! \
+                The length of the threshold is not same as target labels"
+            )
+        return thresholds
+
+    @staticmethod
+    def set_thresholds_list(
+        thresholds_list: List[List[float]],
+        target_labels: List[AutowareLabel],
+    ) -> List[List[float]]:
+        """[summary]
+        Check the config and set the thresholds.
+
+        Args:
+            thresholds_list (List[List[float]]): A thresholds list
+            target_labels (List[AutowareLabel]): Target labels
+
+        Raises:
+            MetricThresholdsError: Error for metrics thresholds
+
+        Returns:
+            List[List[float]]: A thresholds list
+        """
+        for thresholds in thresholds_list:
+            if len(thresholds) != 0 and len(thresholds) != len(target_labels):
+                raise MetricThresholdsError(
+                    "Error: Metrics threshold is not proper! \
+                    The length of the threshold is not same as target labels"
+                )
+        return thresholds_list
 
 
 class MetricThresholdsError(Exception):
     def __init__(self, message) -> None:
         super().__init__(message)
-
-
-def set_thresholds(
-    thresholds: List[Optional[float]],
-    target_labels: List[AutowareLabel],
-) -> List[Optional[float]]:
-    """[summary]
-    Check the config and set the thresholds.
-
-    Args:
-        thresholds (Optional[List[float]]): Thresholds
-        target_labels (List[AutowareLabel]): Target labels
-
-    Raises:
-        UseCaseThresholdsError: Error for use case thresholds
-
-    Returns:
-        List[Optional[List[float]]]: A thresholds
-    """
-    if len(thresholds) != len(target_labels):
-        raise MetricThresholdsError(
-            "Error: Metrics threshold is not proper! \
-            The length of the threshold is not same as target labels"
-        )
-    return thresholds
-
-
-def set_thresholds_list(
-    thresholds_list: List[List[float]],
-    target_labels: List[AutowareLabel],
-) -> List[List[float]]:
-    """[summary]
-    Check the config and set the thresholds.
-
-    Args:
-        thresholds_list (List[List[float]]): A thresholds list
-        target_labels (List[AutowareLabel]): Target labels
-
-    Raises:
-        MetricThresholdsError: Error for metrics thresholds
-
-    Returns:
-        List[List[float]]: A thresholds list
-    """
-    for thresholds in thresholds_list:
-        if len(thresholds) != 0 and len(thresholds) != len(target_labels):
-            raise MetricThresholdsError(
-                "Error: Metrics threshold is not proper! \
-                The length of the threshold is not same as target labels"
-            )
-    return thresholds_list

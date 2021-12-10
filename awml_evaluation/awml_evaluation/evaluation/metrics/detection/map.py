@@ -5,6 +5,8 @@ from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.metrics.detection.ap import Ap
+from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAp
+from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
 
 logger = getLogger(__name__)
@@ -32,10 +34,11 @@ class MapConfig:
 
         Args:
             target_labels (List[AutowareLabel]): Target labels to evaluate
-            matching_mode (MatchingMode): Matching mode like distance between the center of
-                                          the object, 3d IoU
-            matching_threshold_list (List[float]): Matching thresholds between the predicted object and
-                                              ground truth for each label
+            matching_mode (MatchingMode):
+                    Matching mode like distance between the center of the object, 3d IoU.
+            matching_threshold_list (List[float]):
+                    Matching thresholds between the predicted object and ground truth object
+                    for each label.
         """
         self.target_labels: List[AutowareLabel] = target_labels
         self.matching_mode: MatchingMode = matching_mode
@@ -96,6 +99,7 @@ class Map:
             matching_threshold_list=matching_threshold_list,
         )
 
+        # calculate AP
         self.aps: List[Ap] = []
         for target_label, max_x_position, max_y_position, matching_threshold in zip(
             self.map_config.target_labels,
@@ -104,6 +108,7 @@ class Map:
             matching_threshold_list,
         ):
             ap_ = Ap(
+                tp_metrics=TPMetricsAp(),
                 object_results=object_results,
                 ground_truth_objects=ground_truth_objects,
                 target_labels=[target_label],
@@ -112,6 +117,7 @@ class Map:
                 matching_mode=matching_mode,
                 matching_threshold_list=[matching_threshold],
             )
+
             self.aps.append(ap_)
 
         # calculate mAP
@@ -119,3 +125,30 @@ class Map:
         for ap in self.aps:
             sum_ap += ap.ap
         self.map: float = sum_ap / len(target_labels)
+
+        # calculate APH
+        self.aphs: List[Ap] = []
+        for target_label, max_x_position, max_y_position, matching_threshold in zip(
+            self.map_config.target_labels,
+            max_x_position_list,
+            max_y_position_list,
+            matching_threshold_list,
+        ):
+            aph_ = Ap(
+                tp_metrics=TPMetricsAph(),
+                object_results=object_results,
+                ground_truth_objects=ground_truth_objects,
+                target_labels=[target_label],
+                max_x_position_list=[max_x_position],
+                max_y_position_list=[max_y_position],
+                matching_mode=matching_mode,
+                matching_threshold_list=[matching_threshold],
+            )
+
+            self.aphs.append(aph_)
+
+        # calculate mAPH
+        sum_aph: float = 0.0
+        for aph in self.aphs:
+            sum_aph += aph.ap
+        self.maph: float = sum_aph / len(target_labels)

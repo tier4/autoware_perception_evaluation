@@ -2,8 +2,11 @@
 
 - 上ほど新しい
 
-## v0.1
+## Forthcoming -> 1.0
 
+- <https://github.com/tier4/AWMLevaluation/pull/8>
+  - 【改良】mAP計算の関数共通化
+  - 【追加機能】MetricsにmAPHを追加
 - <https://github.com/tier4/AWMLevaluation/pull/15>
   - 【Document追加】Perceptionの再現性が低い・mAPが想定より低い問題に対しての解決法をDocument化
 - <https://github.com/tier4/AWMLevaluation/pull/9>
@@ -30,3 +33,4 @@
   - 【追加機能】 ROS2 package化
 - <https://github.com/tier4/AWMLevaluation/pull/2>
   - 【追加機能】poetry projectの構築
+

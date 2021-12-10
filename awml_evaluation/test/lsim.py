@@ -11,8 +11,9 @@ from awml_evaluation.evaluation.result.pass_fail_result import CriticalObjectFil
 from awml_evaluation.evaluation.result.pass_fail_result import FramePassFailConfig
 from awml_evaluation.evaluation_config import EvaluationConfig
 from awml_evaluation.evaluation_manager import EvaluationManager
-from awml_evaluation.util.debug import format_class_for_log
 from awml_evaluation.util.debug import get_objects_with_difference
+
+# from awml_evaluation.util.debug import format_class_for_log
 
 
 class LSimMoc:
@@ -26,8 +27,8 @@ class LSimMoc:
             evaluation_tasks=["detection"],
             # target_labels=["car", "truck", "bicycle", "pedestrian", "motorbike"],
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            max_x_position=120.0,
-            max_y_position=120.0,
+            max_x_position=100.0,
+            max_y_position=100.0,
             # objectごとにparamを設定
             map_thresholds_center_distance=[
                 [1.0, 1.0, 1.0, 1.0],
@@ -113,14 +114,13 @@ if __name__ == "__main__":
     lsim = LSimMoc(dataset_path)
 
     for ground_truth_frame in lsim.evaluator.ground_truth_frames:
-        objects_with_diffrence = get_objects_with_difference(
+        objects_with_difference = get_objects_with_difference(
             ground_truth_objects=ground_truth_frame.objects,
             diff_distance=(0.0, 0.0, 0.0),
-            diff_yaw=0.0,
+            diff_yaw=0.6,
         )
         lsim.callback(
             ground_truth_frame.unix_time,
-            objects_with_diffrence,
+            objects_with_difference,
         )
-
     final_metric_score = lsim.get_final_result()
