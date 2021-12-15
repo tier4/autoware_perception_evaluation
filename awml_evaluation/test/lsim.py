@@ -27,15 +27,15 @@ class LSimMoc:
             evaluation_tasks=["detection"],
             # target_labels=["car", "truck", "bicycle", "pedestrian", "motorbike"],
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            max_x_position=100.0,
-            max_y_position=100.0,
+            max_x_position=102.4,
+            max_y_position=102.4,
             # objectごとにparamを設定
             map_thresholds_center_distance=[
                 [1.0, 1.0, 1.0, 1.0],
                 [2.0, 2.0, 2.0, 2.0],
             ],
             # objectごとに同じparamの場合はこのような指定が可能
-            map_thresholds_plane_distance=[1.0, 2.0],
+            map_thresholds_plane_distance=[2.0, 3.0],
             map_thresholds_iou=[],
         )
         self.evaluator = EvaluationManager(evaluation_config=evaluation_config)
@@ -91,6 +91,12 @@ class LSimMoc:
         """
         処理の最後に評価結果を出す
         """
+
+        # use case fail object num
+        number_use_case_fail_object: int = 0
+        for frame_results in self.evaluator.frame_results:
+            number_use_case_fail_object += len(frame_results.pass_fail_result.uc_fail_objects)
+        logging.info(f"final use case fail object: {number_use_case_fail_object}")
         final_metric_score = self.evaluator.get_scenario_result()
         logging.info(f"final metrics result {final_metric_score}")
         return final_metric_score
@@ -116,8 +122,9 @@ if __name__ == "__main__":
     for ground_truth_frame in lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference(
             ground_truth_objects=ground_truth_frame.objects,
-            diff_distance=(0.0, 0.0, 0.0),
-            diff_yaw=0.6,
+            diff_distance=(1.0, 1.0, 0.0),
+            diff_yaw=0.5,
+            is_confidence_with_distance=True,
         )
         lsim.callback(
             ground_truth_frame.unix_time,

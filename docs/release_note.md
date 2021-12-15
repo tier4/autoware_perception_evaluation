@@ -2,7 +2,15 @@
 
 - 上ほど新しい
 
-## Forthcoming -> 1.0
+## Now development for develop branch -> v1.1
+
+- <https://github.com/tier4/AWMLevaluation/pull/20>
+  - 【バグ修正】mAPの計算で、評価するobjectのfilterでFN objectが抜けて落ちているバグの修正
+  - 【バグ修正】mAPの計算で、confidence順のsortが抜けていたので追加
+  - 【機能追加】threshold_listからラベルごとのthresholdを取り出すインターフェイスを追加
+
+## Release for main branch
+### v1.0
 
 - <https://github.com/tier4/AWMLevaluation/pull/8>
   - 【改良】mAP計算の関数共通化
