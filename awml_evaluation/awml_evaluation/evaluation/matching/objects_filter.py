@@ -22,31 +22,27 @@ from typing import Tuple
 
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
+from awml_evaluation.common.threshold import LabelThreshold
+from awml_evaluation.common.threshold import get_label_threshold
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
 
 logger = getLogger(__name__)
 
 
-def filter_tp_objects(
+def filter_object_results(
     object_results: List[DynamicObjectWithResult],
     target_labels: Optional[List[AutowareLabel]] = None,
-    max_x_position_list: Optional[Tuple[float]] = None,
-    max_y_position_list: Optional[Tuple[float]] = None,
-    max_pos_distance_list: Optional[Tuple[float]] = None,
-    min_pos_distance_list: Optional[Tuple[float]] = None,
-    confidence_threshold_list: Optional[Tuple[float]] = None,
-    matching_mode: Optional[MatchingMode] = None,
-    matching_threshold_list: Optional[Tuple[float]] = None,
+    max_x_position_list: Optional[List[float]] = None,
+    max_y_position_list: Optional[List[float]] = None,
+    max_pos_distance_list: Optional[List[float]] = None,
+    min_pos_distance_list: Optional[List[float]] = None,
 ) -> List[DynamicObjectWithResult]:
     """[summary]
-    Filter DynamicObjectWithResult to TP object results.
+    Filter DynamicObjectWithResult fo filter ground truth objects.
 
     Args:
-        object_results (List[DynamicObjectWithResult]): The object results you want to filter
-        target_labels Optional[List[AutowareLabel]], optional):
-                The target label to evaluate. If object label is in this parameter,
-                this function appends to return objects. Defaults to None.
+        object_results (List[DynamicObjectWithResult]): The object results
         max_x_position_list (Optional[List[float]], optional):
                 The threshold list of maximum x-axis position for each object.
                 Return the object that
@@ -61,60 +57,27 @@ def filter_tp_objects(
                 Maximum distance threshold list for object. Defaults to None.
         min_pos_distance_list (Optional[List[float]], optional):
                 Minimum distance threshold list for object. Defaults to None.
-        confidence_threshold_list (Optional[List[float]], optional):
-                The confidence threshold list. If predicted object's confidence is higher than
-                this parameter, this function appends to return objects.
-                It is often used to visualization.
-                Defaults to None.
-        matching_mode (Optional[MatchingMode], optional):
-                The matching mode to evaluate. Defaults to None.
-        matching_threshold_list (Optional[List[float]], optional):
-                The matching threshold to evaluate. Defaults to None.
-                For example, if matching_mode = IOU3d and matching_threshold = 0.5,
-                and IoU of the object is higher than "matching_threshold",
-                this function appends to return objects.
-
-    Returns:
-        List[DynamicObjectWithResult]: Filtered object result
-
-    Example:
-        This function is used for use AP calculation to choose matching TP object
-        or FP object (like low IoU)
-
-        filtered_object_results: List[DynamicObjectWithResult] = filter_tp_objects(
-            object_results=object_results,
-            target_labels=self.target_labels,
-            max_x_position_list=max_x_position_list,
-            max_y_position_list=max_y_position_list,
-            matching_mode=self.matching_mode,
-            matching_threshold_list=self.matching_threshold_list,
-        )
     """
-    filtered_objects: List[DynamicObjectWithResult] = []
+    # list handling
+    if isinstance(target_labels, AutowareLabel):
+        target_labels_ = [target_labels]
+    else:
+        target_labels_ = target_labels
+
+    filtered_object_results: List[DynamicObjectWithResult] = []
     for object_result in object_results:
-        is_target: bool = True
-        is_target_object_: bool = _is_target_object(
+        is_target = True
+        is_target = _is_target_object(
             dynamic_object=object_result.predicted_object,
-            target_labels=target_labels,
+            target_labels=target_labels_,
             max_x_position_list=max_x_position_list,
             max_y_position_list=max_y_position_list,
             max_pos_distance_list=max_pos_distance_list,
             min_pos_distance_list=min_pos_distance_list,
-            confidence_threshold_list=confidence_threshold_list,
         )
-        is_result_correct_: bool = is_result_correct(
-            object_result=object_result,
-            target_labels=target_labels,
-            matching_mode=matching_mode,
-            matching_threshold_list=matching_threshold_list,
-            is_label_judgement=True,
-        )
-        is_target = is_target and is_target_object_ and is_result_correct_
-
         if is_target:
-            filtered_objects.append(object_result)
-
-    return filtered_objects
+            filtered_object_results.append(object_result)
+    return filtered_object_results
 
 
 def filter_ground_truth_objects(
@@ -168,6 +131,7 @@ def divide_tp_fp_objects(
     target_labels: Optional[List[AutowareLabel]],
     matching_mode: Optional[MatchingMode] = None,
     matching_threshold_list: Optional[Tuple[float]] = None,
+    confidence_threshold_list: Optional[Tuple[float]] = None,
 ) -> Tuple[List[DynamicObjectWithResult], List[DynamicObjectWithResult]]:
     """[summary]
     Divide TP (True Positive) objects and FP (False Positive) objects
@@ -185,20 +149,43 @@ def divide_tp_fp_objects(
                 For example, if matching_mode = IOU3d and matching_threshold = 0.5,
                 and IoU of the object is higher than "matching_threshold",
                 this function appends to return objects.
+        confidence_threshold_list (Optional[List[float]], optional):
+                The confidence threshold list. If predicted object's confidence is higher than
+                this parameter, this function appends to return objects.
+                It is often used to visualization.
+                Defaults to None.
 
     Returns:
         Tuple[List[DynamicObjectWithResult], List[DynamicObjectWithResult]]: tp_objects, fp_objects
     """
 
-    tp_objects = []
-    fp_objects = []
+    tp_objects: List[DynamicObjectWithResult] = []
+    fp_objects: List[DynamicObjectWithResult] = []
     for object_result in object_results:
-        is_correct: bool = is_result_correct(
-            object_result=object_result,
+        matching_threshold_ = get_label_threshold(
+            semantic_label=object_result.predicted_object.semantic_label,
             target_labels=target_labels,
-            matching_mode=matching_mode,
-            matching_threshold_list=matching_threshold_list,
+            threshold_list=matching_threshold_list,
         )
+        # Whether label is correct
+        is_correct: bool = object_result.is_result_correct(
+            matching_mode=matching_mode,
+            matching_threshold=matching_threshold_,
+        )
+
+        # Whether cofidence is above threshold
+        if confidence_threshold_list:
+            confidence_threshold: Optional[float] = get_label_threshold(
+                semantic_label=object_result.predicted_object.semantic_label,
+                target_labels=target_labels,
+                threshold_list=confidence_threshold_list,
+            )
+            if confidence_threshold:
+                is_confidence: bool = (
+                    object_result.predicted_object.semantic_score > confidence_threshold
+                )
+                is_correct = is_correct and is_confidence
+
         if is_correct:
             tp_objects.append(object_result)
         else:
@@ -246,60 +233,20 @@ def get_fn_objects(
                     correspond_result = object_result
 
         if correspond_result:
-            is_result_correct_: bool = is_result_correct(
-                object_result=correspond_result,
+            matching_threshold_ = get_label_threshold(
+                semantic_label=correspond_result.predicted_object.semantic_label,
                 target_labels=target_labels,
+                threshold_list=matching_threshold_list,
+            )
+            is_result_correct_: bool = correspond_result.is_result_correct(
                 matching_mode=matching_mode,
-                matching_threshold_list=matching_threshold_list,
-                is_label_judgement=True,
+                matching_threshold=matching_threshold_,
             )
             if not is_result_correct_:
                 fn_objects.append(ground_truth_object)
         else:
             fn_objects.append(ground_truth_object)
     return fn_objects
-
-
-def is_result_correct(
-    object_result: DynamicObjectWithResult,
-    target_labels: Optional[List[AutowareLabel]],
-    matching_mode: Optional[MatchingMode] = None,
-    matching_threshold_list: Optional[List[float]] = None,
-    is_label_judgement: bool = True,
-) -> bool:
-    """[summary]
-    The function judging whether the result is target or not.
-
-    Args:
-        object_result (DynamicObjectWithResult): The object result to filter
-        matching_mode (Optional[MatchingMode], optional):
-                The matching mode to evaluate. Defaults to None.
-        matching_threshold (Optional[List[float]], optional):
-                The matching threshold to evaluate. Defaults to None.
-                For example, if matching_mode = IOU3d and matching_threshold = 0.5,
-                and IoU of the object is higher than "matching_threshold",
-                this function appends to return objects.
-
-    Returns:
-        bool: If a result is filter target, return True
-    """
-    is_correct: bool = True
-    if is_label_judgement:
-        is_correct = is_correct and object_result.is_label_correct
-
-    label_threshold = LabelThreshold(
-        semantic_label=object_result.predicted_object.semantic_label,
-        target_labels=target_labels,
-    )
-
-    if object_result.predicted_object.semantic_label in target_labels and matching_threshold_list:
-        matching_threshold = label_threshold.get_label_threshold(matching_threshold_list)
-        is_matching_ = object_result.is_matching(
-            matching_mode,
-            matching_threshold,
-        )
-        is_correct = is_correct and is_matching_
-    return is_correct
 
 
 def _is_target_object(
@@ -373,39 +320,3 @@ def _is_target_object(
         is_target = is_target and dynamic_object.get_distance_bev() > min_pos_distance
 
     return is_target
-
-
-class LabelThreshold:
-    """[summary]
-    The manager of thresholds for each label
-    If target_labels is ["CAR", "PEDESTRIAN", "BIKE"] and threshold is [0.1, 0.2, 0.3],
-    and object.semantic_label is "PEDESTRIAN", then LabelThreshold return 0.2.
-
-    Attribute:
-        self.index (Optional[int]): The index of label. If semantic_label is not in target_labels,
-                                    self.index is None.
-    """
-
-    def __init__(
-        self,
-        semantic_label: AutowareLabel,
-        target_labels: Optional[List[AutowareLabel]],
-    ) -> None:
-        self.index: Optional[int] = None
-        if semantic_label in target_labels:
-            self.index = target_labels.index(semantic_label)
-
-    def get_label_threshold(
-        self,
-        threshold_list: List[float],
-    ) -> float:
-        """[summary]
-        Get label threshold from threshold list.
-
-        Args:
-            threshold_list (List[float]): Thresholds list
-
-        Returns:
-            float: The threshold for correspond label
-        """
-        return threshold_list[self.index]

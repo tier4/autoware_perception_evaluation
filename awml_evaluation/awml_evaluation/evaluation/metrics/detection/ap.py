@@ -1,13 +1,15 @@
 from logging import getLogger
+from typing import Callable
 from typing import List
 from typing import Tuple
 from typing import Union
 
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
+from awml_evaluation.common.threshold import get_label_threshold
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.matching.objects_filter import filter_ground_truth_objects
-from awml_evaluation.evaluation.matching.objects_filter import filter_tp_objects
+from awml_evaluation.evaluation.matching.objects_filter import filter_object_results
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
@@ -77,15 +79,17 @@ class Ap:
         self.matching_threshold_list: List[float] = matching_threshold_list
 
         # filter predicted object and results by iou_threshold and target_labels
-        filtered_object_results: List[DynamicObjectWithResult] = filter_tp_objects(
+        filtered_object_results: List[DynamicObjectWithResult] = filter_object_results(
             object_results=object_results,
             target_labels=self.target_labels,
             max_x_position_list=max_x_position_list,
             max_y_position_list=max_y_position_list,
-            matching_mode=self.matching_mode,
-            matching_threshold_list=self.matching_threshold_list,
         )
-        # TODO sort confidence
+        # sort by confidence
+        lambda_func: Callable[
+            [DynamicObjectWithResult], float
+        ] = lambda x: x.predicted_object.semantic_score
+        filtered_object_results.sort(key=lambda_func, reverse=True)
 
         filtered_ground_truth_objects: List[DynamicObject] = filter_ground_truth_objects(
             objects=ground_truth_objects,
@@ -98,7 +102,7 @@ class Ap:
         # tp and fp from object results ordered by confidence
         self.tp_list: List[float] = []
         self.fp_list: List[float] = []
-        self.tp_list, self.fp_list = Ap._calculate_tp_fp(
+        self.tp_list, self.fp_list = self._calculate_tp_fp(
             tp_metrics,
             filtered_object_results,
             self.ground_truth_objects_num,
@@ -170,8 +174,8 @@ class Ap:
 
         return precisions_list, recalls_list
 
-    @staticmethod
     def _calculate_tp_fp(
+        self,
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
         object_results: List[DynamicObjectWithResult],
         ground_truth_objects_num: int,
@@ -209,9 +213,18 @@ class Ap:
         tp_list: List[float] = [0 for i in range(object_results_num)]
         fp_list: List[float] = [0 for i in range(object_results_num)]
 
-        # init
+        # label threshold
+        matching_threshold_ = get_label_threshold(
+            semantic_label=object_results[0].predicted_object.semantic_label,
+            target_labels=self.target_labels,
+            threshold_list=self.matching_threshold_list,
+        )
+        is_result_correct: bool = object_results[0].is_result_correct(
+            matching_mode=self.matching_mode,
+            matching_threshold=matching_threshold_,
+        )
         tp_value: float = tp_metrics.get_value(object_results[0])
-        if object_results[0].is_label_correct:
+        if is_result_correct:
             tp_list[0] = tp_value
             fp_list[0] = 0
         else:
@@ -219,8 +232,17 @@ class Ap:
             fp_list[0] = tp_value
 
         for i in range(1, len(object_results)):
+            matching_threshold_ = get_label_threshold(
+                semantic_label=object_results[i].predicted_object.semantic_label,
+                target_labels=self.target_labels,
+                threshold_list=self.matching_threshold_list,
+            )
+            is_result_correct: bool = object_results[i].is_result_correct(
+                matching_mode=self.matching_mode,
+                matching_threshold=matching_threshold_,
+            )
             tp_value: float = tp_metrics.get_value(object_results[i])
-            if object_results[i].is_label_correct:
+            if is_result_correct:
                 tp_list[i] = tp_list[i - 1] + tp_value
                 fp_list[i] = fp_list[i - 1]
             else:

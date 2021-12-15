@@ -4,7 +4,7 @@ from typing import List
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.matching.objects_filter import divide_tp_fp_objects
-from awml_evaluation.evaluation.matching.objects_filter import filter_tp_objects
+from awml_evaluation.evaluation.matching.objects_filter import filter_object_results
 from awml_evaluation.evaluation.matching.objects_filter import get_fn_objects
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
 from awml_evaluation.visualization.visualization_config import Color

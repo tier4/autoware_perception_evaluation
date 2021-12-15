@@ -1,6 +1,7 @@
 from enum import Enum
 import pprint
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 from pyquaternion.quaternion import Quaternion
@@ -74,6 +75,7 @@ def format_dict_for_log(dict: dict) -> str:
 
     Args:
         dict (dict): dict which you want to format for logger
+
     Returns:
         (str) formatted str
     """
@@ -85,21 +87,28 @@ def get_objects_with_difference(
     ground_truth_objects: List[DynamicObject],
     diff_distance: Tuple[float, float, float] = (0.0, 0.0, 0.0),
     diff_yaw: float = 0.0,
+    is_confidence_with_distance: Optional[bool] = None,
 ) -> List[DynamicObject]:
     """[summary]
     Get objects with distance and yaw difference for test.
 
     Args:
         ground_truth_objects (List[DynamicObject]):
-        diff_distance (float): [param]
-        diff_yaw (float): [description]
-
-    Args:
-        ground_truth_objects (List[DynamicObject]) The ground truth objects
+                The ground truth objects.
         diff_distance (Tuple[float, float, float], optional):
-                The parameter for difference of position. Defaults to (0.0, 0.0, 0.0).
+                The parameter for difference of position. Defaults to
+                (0.0, 0.0, 0.0).
         diff_yaw (float, optional):
                 The parameter for difference of yaw angle. Defaults to 0.0.
+        is_confidence_with_distance (Optional[bool], optional):
+                If this param is None, confidence is same as input.
+                If this param is True, confidence is lower (0.2 - 0.8 times)
+                according to distance from base_link. Near object is higher
+                coefficient like 0.8 and far object is lower like 0.2.
+                If this param is False, confidence is lower (0.2 - 0.8 times).
+                Near object is lower coefficient like 0.2 and far object is
+                higher like 0.8.
+                Defaults is None.
 
     Returns:
         List[DynamicObject]: objects with distance and yaw difference.
@@ -112,18 +121,32 @@ def get_objects_with_difference(
             object_.state.position[1] + diff_distance[1],
             object_.state.position[2] + diff_distance[2],
         )
+
+        if is_confidence_with_distance is None:
+            semantic_score = object_.semantic_score
+        else:
+            distance_coefficient = object_.get_distance_bev() / 100.0
+            distance_coefficient = min(distance_coefficient, 0.8)
+            distance_coefficient = max(distance_coefficient, 0.2)
+            if is_confidence_with_distance:
+                semantic_score = object_.semantic_score * (1 - distance_coefficient)
+            else:
+                semantic_score = object_.semantic_score * distance_coefficient
+
         orientation = Quaternion(
             axis=object_.state.orientation.axis,
             radians=object_.state.orientation.radians + diff_yaw,
         )
+
         test_object_ = DynamicObject(
             object_.unix_time,
             position,
             orientation,
             object_.state.size,
             object_.state.velocity,
-            object_.semantic_score,
+            semantic_score,
             object_.semantic_label,
         )
+
         output_objects.append(test_object_)
     return output_objects

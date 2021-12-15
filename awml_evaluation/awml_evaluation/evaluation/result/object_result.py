@@ -66,36 +66,32 @@ class DynamicObjectWithResult:
             self.ground_truth_object,
         )
 
-    def _is_label_correct(self) -> bool:
+    def is_result_correct(
+        self,
+        matching_mode: MatchingMode,
+        matching_threshold: float,
+    ):
         """[summary]
-        Get whether label is correct.
+        The function judging whether the result is target or not.
+
+        Args:
+            matching_mode (Optional[MatchingMode], optional):
+                    The matching mode to evaluate. Defaults to None.
+            matching_threshold (Optional[List[float]], optional):
+                    The matching threshold to evaluate. Defaults to None.
+                    For example, if matching_mode = IOU3d and matching_threshold = 0.5,
+                    and IoU of the object is higher than "matching_threshold",
+                    this function appends to return objects.
 
         Returns:
-            bool: Whether label is correct
+            bool: If label is correct and satisfy matching threshold, return True
         """
-        if self.ground_truth_object:
-            return self.predicted_object.semantic_label == self.ground_truth_object.semantic_label
-        else:
-            return False
+        is_correct: bool = True
 
-    def matching_threshold(
-        self,
-        matching_mode: Optional[MatchingMode],
-    ) -> float:
-        if matching_mode == MatchingMode.CENTERDISTANCE:
-            return self.center_distance
-        elif matching_mode == MatchingMode.PLANEDISTANCE:
-            return self.uc_plane_distance
-        elif matching_mode == MatchingMode.IOU3d:
-            return self.iou_3d
-        else:
-            raise NotImplementedError
+        # Whether is label correct
+        is_correct = is_correct and self.is_label_correct
 
-    def is_matching(
-        self,
-        matching_mode: Optional[MatchingMode],
-        matching_threshold: Optional[float],
-    ) -> bool:
+        # Whether is matching to ground truth
         is_matching_ = True
         if not matching_mode:
             is_matching_ = False
@@ -109,7 +105,21 @@ class DynamicObjectWithResult:
             is_matching_ = is_matching_ and self.iou_3d > matching_threshold
         else:
             raise NotImplementedError
-        return is_matching_
+        is_correct = is_correct and is_matching_
+
+        return is_correct
+
+    def _is_label_correct(self) -> bool:
+        """[summary]
+        Get whether label is correct.
+
+        Returns:
+            bool: Whether label is correct
+        """
+        if self.ground_truth_object:
+            return self.predicted_object.semantic_label == self.ground_truth_object.semantic_label
+        else:
+            return False
 
     @property
     def distance_error_bev(self) -> float:
