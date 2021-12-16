@@ -43,7 +43,7 @@ class EvaluationConfig:
         max_y_position: float,
         map_thresholds_center_distance: Union[List[List[float]], List[float]],
         map_thresholds_plane_distance: Union[List[List[float]], List[float]],
-        map_thresholds_iou: Union[List[List[float]], List[float]],
+        map_thresholds_iou_bev: Union[List[List[float]], List[float]],
     ) -> None:
         """[summary]
 
@@ -83,8 +83,8 @@ class EvaluationConfig:
             map_thresholds_plane_distance (Union[List[List[float]], List[float]]):
                     The mAP threshold of plane distance.
                     The specification is same as map_thresholds_center_distance
-            map_thresholds_iou (Union[List[List[float]], List[float]]]:
-                    The mAP threshold of 3d iou for matching
+            map_thresholds_iou_bev (Union[List[List[float]], List[float]]]:
+                    The mAP threshold of BEV iou for matching
                     The specification is same as map_thresholds_center_distance
         """
         # dataset
@@ -118,8 +118,8 @@ class EvaluationConfig:
             map_thresholds_plane_distance,
             len(autoware_target_labels),
         )
-        map_thresholds_iou_ = EvaluationConfig._set_thresholds(
-            map_thresholds_iou,
+        map_thresholds_iou_bev_ = EvaluationConfig._set_thresholds(
+            map_thresholds_iou_bev,
             len(autoware_target_labels),
         )
 
@@ -130,7 +130,7 @@ class EvaluationConfig:
             max_y_position_list=[max_y_position] * len(autoware_target_labels),
             map_thresholds_center_distance=map_thresholds_center_distance_,
             map_thresholds_plane_distance=map_thresholds_plane_distance_,
-            map_thresholds_iou=map_thresholds_iou_,
+            map_thresholds_iou_bev=map_thresholds_iou_bev_,
         )
 
     @staticmethod

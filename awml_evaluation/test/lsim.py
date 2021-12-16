@@ -34,7 +34,7 @@ class LSimMoc:
             ],
             # objectごとに同じparamの場合はこのような指定が可能
             map_thresholds_plane_distance=[2.0, 3.0],
-            map_thresholds_iou=[],
+            map_thresholds_iou_bev=[0.5],
         )
         self.evaluator = EvaluationManager(evaluation_config=evaluation_config)
 
@@ -120,8 +120,8 @@ if __name__ == "__main__":
     for ground_truth_frame in lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference(
             ground_truth_objects=ground_truth_frame.objects,
-            diff_distance=(1.0, 1.0, 0.0),
-            diff_yaw=0.5,
+            diff_distance=(0.3, 0.0, 0.0),
+            diff_yaw=0.2,
             is_confidence_with_distance=True,
         )
         lsim.callback(

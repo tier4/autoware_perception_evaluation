@@ -24,7 +24,7 @@ class MetricsScoreConfig:
         max_y_position_list: List[float],
         map_thresholds_center_distance: List[List[float]],
         map_thresholds_plane_distance: List[List[float]],
-        map_thresholds_iou: List[List[float]],
+        map_thresholds_iou_bev: List[List[float]],
     ) -> None:
         """[summary]
         Args:
@@ -49,8 +49,8 @@ class MetricsScoreConfig:
                     center distance threshold for a pedestrian is 0.5.
             map_thresholds_plane_distance (List[List[float]]):
                     The mAP threshold of plane distance as map_thresholds_center_distance.
-            map_thresholds_iou (List[List[float])]:
-                    The mAP threshold of 3d iou for matching as map_thresholds_center_distance.
+            map_thresholds_iou_bev (List[List[float])]:
+                    The mAP threshold of BEV iou for matching as map_thresholds_center_distance.
         """
         self.target_labels: List[AutowareLabel] = target_labels
         self.evaluation_tasks: List[EvaluationTask] = evaluation_tasks
@@ -78,8 +78,8 @@ class MetricsScoreConfig:
             map_thresholds_plane_distance,
             self.target_labels,
         )
-        self.map_thresholds_iou: List[List[float]] = MetricsScoreConfig.set_thresholds_list(
-            map_thresholds_iou,
+        self.map_thresholds_iou_bev: List[List[float]] = MetricsScoreConfig.set_thresholds_list(
+            map_thresholds_iou_bev,
             self.target_labels,
         )
 
