@@ -1,7 +1,5 @@
-# import rospy
-
 import logging
-from test.logger_config import configure_logger
+from test.util.logger_config import configure_logger
 from typing import List
 
 from awml_evaluation.common.object import DynamicObject

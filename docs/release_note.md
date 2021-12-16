@@ -4,6 +4,10 @@
 
 ## Now development for develop branch -> v1.1
 
+- <https://github.com/tier4/AWMLevaluation/pull/23>
+  - 【追加機能】 dummy objectsを用いた，mAP, mAPHのテスト
+- <https://github.com/tier4/AWMLevaluation/pull/22>
+  - 【Document追加】develop branchを用いた開発プロセスをDocument化
 - <https://github.com/tier4/AWMLevaluation/pull/20>
   - 【バグ修正】mAPの計算で、評価するobjectのfilterでFN objectが抜けて落ちているバグの修正
   - 【バグ修正】mAPの計算で、confidence順のsortが抜けていたので追加
@@ -41,4 +45,3 @@
   - 【追加機能】 ROS2 package化
 - <https://github.com/tier4/AWMLevaluation/pull/2>
   - 【追加機能】poetry projectの構築
-

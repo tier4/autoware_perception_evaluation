@@ -2,6 +2,21 @@
 
 - See [detail](https://github.com/tier4/AWMLtools/blob/main/docs/development/contribution.md)
 
+## Test
+
+- unit test
+
+```
+cd awml_evaluation
+python3 -m unittest -v 
+```
+
+- API test
+```
+cd awml_evaluation
+poetry run python3 -m test.lsim
+```
+
 ## Branch rule
 ### Branch
 
