@@ -4,6 +4,10 @@
 
 ## Now development for develop branch -> v1.1
 
+- <https://github.com/tier4/AWMLevaluation/pull/24>
+  - 【追加機能】Object Matching に iou 3d を追加
+- <https://github.com/tier4/AWMLevaluation/pull/25>
+  - 【追加機能】Object Matching に iou bev を追加
 - <https://github.com/tier4/AWMLevaluation/pull/23>
   - 【追加機能】 dummy objectsを用いた，mAP, mAPHのテスト
 - <https://github.com/tier4/AWMLevaluation/pull/22>

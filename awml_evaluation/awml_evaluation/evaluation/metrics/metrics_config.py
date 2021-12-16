@@ -13,7 +13,8 @@ class MetricsScoreConfig:
         self.target_labels (List[AutowareLabel]): The list of targets to evaluate
         self.map_thresholds_center_distance (List[float]): The mAP threshold of center distance
         self.map_thresholds_plane_distance (List[float]): The mAP threshold of plane distance
-        self.map_thresholds_iou (List[float]): The mAP threshold of 3d iou for matching
+        self.map_thresholds_iou_bev (List[float]): The mAP threshold of bev iou for matching
+        self.map_thresholds_iou_3d (List[float]): The mAP threshold of 3d iou for matching
     """
 
     def __init__(
@@ -25,6 +26,7 @@ class MetricsScoreConfig:
         map_thresholds_center_distance: List[List[float]],
         map_thresholds_plane_distance: List[List[float]],
         map_thresholds_iou_bev: List[List[float]],
+        map_thresholds_iou_3d: List[List[float]],
     ) -> None:
         """[summary]
         Args:
@@ -51,6 +53,8 @@ class MetricsScoreConfig:
                     The mAP threshold of plane distance as map_thresholds_center_distance.
             map_thresholds_iou_bev (List[List[float])]:
                     The mAP threshold of BEV iou for matching as map_thresholds_center_distance.
+            map_thresholds_iou_3d (List[List[float])]:
+                    The mAP threshold of 3D iou for matching as map_thresholds_center_distance.
         """
         self.target_labels: List[AutowareLabel] = target_labels
         self.evaluation_tasks: List[EvaluationTask] = evaluation_tasks
@@ -80,6 +84,10 @@ class MetricsScoreConfig:
         )
         self.map_thresholds_iou_bev: List[List[float]] = MetricsScoreConfig.set_thresholds_list(
             map_thresholds_iou_bev,
+            self.target_labels,
+        )
+        self.map_thresholds_iou_3d: List[List[float]] = MetricsScoreConfig.set_thresholds_list(
+            map_thresholds_iou_3d,
             self.target_labels,
         )
 

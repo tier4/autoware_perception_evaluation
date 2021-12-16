@@ -7,6 +7,7 @@ from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.common.object import distance_objects
 from awml_evaluation.common.object import distance_objects_bev
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
+from awml_evaluation.evaluation.matching.object_matching import get_iou_3d
 from awml_evaluation.evaluation.matching.object_matching import get_iou_bev
 from awml_evaluation.evaluation.matching.object_matching import get_uc_plane_distance
 
@@ -28,6 +29,7 @@ class DynamicObjectWithResult:
                 The center distance between predicted object and ground truth object
         self.uc_plane_distance (Optional[float]):
                 The plane distance for use case evaluation
+        self.iou_bev (float): The bev IoU between predicted object and ground truth object
         self.iou_3d (float): The 3d IoU between predicted object and ground truth object
     """
 
@@ -58,6 +60,10 @@ class DynamicObjectWithResult:
 
         # detection
         self.iou_bev: float = get_iou_bev(
+            self.predicted_object,
+            self.ground_truth_object,
+        )
+        self.iou_3d: float = get_iou_3d(
             self.predicted_object,
             self.ground_truth_object,
         )
@@ -103,6 +109,8 @@ class DynamicObjectWithResult:
             is_matching_ = is_matching_ and self.uc_plane_distance < matching_threshold
         elif matching_mode == MatchingMode.IOUBEV:
             is_matching_ = is_matching_ and self.iou_bev > matching_threshold
+        elif matching_mode == MatchingMode.IOU3D:
+            is_matching_ = is_matching_ and self.iou_3d > matching_threshold
         else:
             raise NotImplementedError
         is_correct = is_correct and is_matching_

@@ -243,6 +243,10 @@ class DynamicObject:
         """
         return self.state.size[0] * self.state.size[1]
 
+    @property
+    def volume(self) -> float:
+        return self.area_bev * self.state.size[2]
+
     @staticmethod
     def _set_states(
         positions: Optional[List[Tuple[float, float, float]]] = None,

@@ -16,12 +16,10 @@ from awml_evaluation.util.debug import get_objects_with_difference
 
 class TestMap(unittest.TestCase):
     def setUp(self):
-        # init objects
         self.dummy_predicted_objects: List[DynamicObject] = []
         self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_predicted_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
-        # init config
         self.metrics_config: MetricsScoreConfig = MetricsScoreConfig(
             target_labels=[
                 AutowareLabel.CAR,
@@ -33,8 +31,12 @@ class TestMap(unittest.TestCase):
             max_x_position_list=[100.0, 100.0, 100.0, 100.0],
             max_y_position_list=[100.0, 100.0, 100.0, 100.0],
             map_thresholds_center_distance=[[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]],
-            map_thresholds_plane_distance=[[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]],
-            map_thresholds_iou_bev=[],
+            map_thresholds_plane_distance=[[]],
+            # map_thresholds_plane_distance=[[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]],
+            map_thresholds_iou_bev=[[]],
+            # map_thresholds_iou_bev=[[0.5, 0.5, 0.5, 0.5]],
+            map_thresholds_iou_3d=[[]],
+            # map_thresholds_iou_3d=[[0.5, 0.5, 0.5, 0.5]],
         )
 
     def test_map(self):

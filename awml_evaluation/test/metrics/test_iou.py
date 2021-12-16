@@ -1,14 +1,9 @@
 import math
 from test.util.dummy_object import make_dummy_data
 from typing import List
-from typing import Tuple
 import unittest
 
-from awml_evaluation.common.evaluation_task import EvaluationTask
-from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
-from awml_evaluation.evaluation.metrics.metrics import MetricsScore
-from awml_evaluation.evaluation.metrics.metrics_config import MetricsScoreConfig
 from awml_evaluation.evaluation.result.frame_result import FrameResult
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
 from awml_evaluation.util.debug import get_objects_with_difference
@@ -16,30 +11,13 @@ from awml_evaluation.util.debug import get_objects_with_difference
 
 class TestIoUBEV(unittest.TestCase):
     def setUp(self):
-        # init objects
         self.dummy_predicted_objects: List[DynamicObject] = []
         self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_predicted_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
-        # init config
-        self.metrics_config: MetricsScoreConfig = MetricsScoreConfig(
-            target_labels=[
-                AutowareLabel.CAR,
-                AutowareLabel.BICYCLE,
-                AutowareLabel.PEDESTRIAN,
-                AutowareLabel.MOTORBIKE,
-            ],
-            evaluation_tasks=[EvaluationTask.DETECTION],
-            max_x_position_list=[100.0, 100.0, 100.0, 100.0],
-            max_y_position_list=[100.0, 100.0, 100.0, 100.0],
-            map_thresholds_center_distance=[[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]],
-            map_thresholds_plane_distance=[[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]],
-            map_thresholds_iou_bev=[],
-        )
-
     def test_iou_bev_diff_distance(self):
         """[summary]
-        Test whether IoU BEV is correct for different distance.
+        Test whether BEV IoU is correct for different distance.
 
         test condition:
                 The same size(1.0, 1.0, 1.0) of dummy_ground_truth_objects vs dummy_ground_truth_objects with diff_distance

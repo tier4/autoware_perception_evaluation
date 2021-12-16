@@ -111,6 +111,18 @@ class MetricsScore:
                     matching_threshold_list=iou_threshold_bev_,
                 )
                 self.maps.append(map_)
+        for iou_threshold_3d_ in self.config.map_thresholds_iou_3d:
+            if iou_threshold_3d_:
+                map_ = Map(
+                    object_results=object_results,
+                    ground_truth_objects=ground_truth_objects,
+                    target_labels=self.config.target_labels,
+                    max_x_position_list=self.config.max_x_position_list,
+                    max_y_position_list=self.config.max_y_position_list,
+                    matching_mode=MatchingMode.IOU3D,
+                    matching_threshold_list=iou_threshold_3d_,
+                )
+                self.maps.append(map_)
         for plane_distance_threshold_ in self.config.map_thresholds_plane_distance:
             if plane_distance_threshold_:
                 map_ = Map(
