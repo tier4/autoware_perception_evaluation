@@ -79,15 +79,10 @@ class FrameResult:
                     Ground truth objects filtered by ROS node.
         """
         self.ground_truth_objects = ground_truth_objects
-        # set object results information
-        for predicted_object in predicted_objects:
-            # caliculate to results for each object
-            self.object_results.append(
-                DynamicObjectWithResult(
-                    predicted_object=predicted_object,
-                    ground_truth_objects=ground_truth_objects,
-                )
-            )
+        self.object_results = FrameResult.get_object_results(
+            predicted_objects,
+            ground_truth_objects,
+        )
         self.metrics_score.evaluate(
             object_results=self.object_results,
             ground_truth_objects=ground_truth_objects,
@@ -96,3 +91,32 @@ class FrameResult:
             object_results=self.object_results,
             ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
         )
+
+    @staticmethod
+    def get_object_results(
+        predicted_objects: List[DynamicObject],
+        ground_truth_objects: List[DynamicObject],
+    ) -> List[DynamicObjectWithResult]:
+        """[summary]
+        Get object results from the pair of predicted_objects and ground_truth_objects in a frame.
+
+        Args:
+            predicted_objects (List[DynamicObject]):
+                    Predicted object which you want to evaluate
+            ground_truth_objects (List[DynamicObject]):
+                    The ground truth objects in the same time frame as predicted object
+
+        Returns:
+            List[DynamicObjectWithResult]: List of Object results
+        """
+
+        object_results: List[DynamicObjectWithResult] = []
+        for predicted_object in predicted_objects:
+            # calculate to results for each object
+            object_results.append(
+                DynamicObjectWithResult(
+                    predicted_object=predicted_object,
+                    ground_truth_objects=ground_truth_objects,
+                )
+            )
+        return object_results
