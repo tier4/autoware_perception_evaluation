@@ -27,11 +27,13 @@ class MatchingMode(Enum):
 
     CENTERDISTANCE: center distance in 3d
     IOUBEV : IoU (Intersection over Union) in BEV (Bird Eye View)
+    IOU3D : IoU (Intersection over Union) in 3D
     PLANEDISTANCE: The plane distance
     """
 
     CENTERDISTANCE = "Center Distance 3d [m]"
     IOUBEV = "IoU BEV"
+    IOU3D = "IoU 3D"
     PLANEDISTANCE = "Plane Distance [m]"
 
 
@@ -97,6 +99,52 @@ def get_area_intersection(
     return area_intersection
 
 
+def get_height_intersection(
+    predicted_object: DynamicObject,
+    ground_truth_object: Optional[DynamicObject],
+) -> float:
+    """[summary]
+    Get the height at intersection
+
+    Args:
+        predicted_object (DynamicObject): The predicted object
+        ground_truth_object (DynamicObject): The corresponded ground truth object
+
+    Returns:
+        float: The height at intersection
+
+    """
+    min_z = max(
+        predicted_object.state.position[2] - predicted_object.state.size[2] / 2,
+        ground_truth_object.state.position[2] - ground_truth_object.state.size[2] / 2,
+    )
+    max_z = min(
+        predicted_object.state.position[2] + predicted_object.state.size[2] / 2,
+        ground_truth_object.state.position[2] + ground_truth_object.state.size[2] / 2,
+    )
+    return max(0, max_z - min_z)
+
+
+def get_intersection(
+    predicted_object: DynamicObject,
+    ground_truth_object: Optional[DynamicObject],
+) -> float:
+    """[summary]
+    Get the volume at intersection
+
+    Args:
+        predicted_object (DynamicObject): The predicted object
+        ground_truth_object (DynamicObject): The corresponded ground truth object
+
+    Returns:
+        float: The volume at intersection
+
+    """
+    area_intersection = get_area_intersection(predicted_object, ground_truth_object)
+    height_intersection = get_height_intersection(predicted_object, ground_truth_object)
+    return area_intersection * height_intersection
+
+
 def get_iou_bev(
     predicted_object: DynamicObject,
     ground_truth_object: Optional[DynamicObject],
@@ -126,3 +174,30 @@ def get_iou_bev(
     union_area: float = predicted_object_area + ground_truth_object_area - intersection_area
     iou_bev: float = intersection_area / union_area
     return iou_bev
+
+
+def get_iou_3d(
+    predicted_object: DynamicObject,
+    ground_truth_object: Optional[DynamicObject],
+) -> float:
+    """[summary]
+    Calculate 3D IoU
+
+    Args:
+        predicted_object (DynamicObject): The predicted object
+        ground_truth_object (DynamicObject): The corresponded ground truth object
+
+    Returns:
+        Optional[float]: The value of 3D IoU.
+                         If predicted_object do not have corresponded ground truth object,
+                         return 0.0.
+    """
+    if not ground_truth_object:
+        return 0.0
+
+    predicted_object_volume: float = predicted_object.volume
+    ground_truth_object_volume: float = ground_truth_object.volume
+    intersection: float = get_intersection(predicted_object, ground_truth_object)
+    union: float = predicted_object_volume + ground_truth_object_volume - intersection
+    iou_3d: float = intersection / union
+    return iou_3d

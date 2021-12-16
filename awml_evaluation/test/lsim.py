@@ -35,6 +35,7 @@ class LSimMoc:
             # objectごとに同じparamの場合はこのような指定が可能
             map_thresholds_plane_distance=[2.0, 3.0],
             map_thresholds_iou_bev=[0.5],
+            map_thresholds_iou_3d=[0.5],
         )
         self.evaluator = EvaluationManager(evaluation_config=evaluation_config)
 
