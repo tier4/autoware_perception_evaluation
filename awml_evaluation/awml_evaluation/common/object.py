@@ -6,8 +6,11 @@ from typing import Tuple
 
 import numpy as np
 from pyquaternion import Quaternion
+from shapely.geometry import Polygon
 
 from awml_evaluation.common.label import AutowareLabel
+from awml_evaluation.common.point import distance_points
+from awml_evaluation.common.point import distance_points_bev
 
 logger = getLogger(__name__)
 
@@ -184,9 +187,9 @@ class DynamicObject:
         Get footprint from an object
 
         Returns:
-            Tuple[Tuple[float, float]]: The footprint of object. It consists of
-                                        4 corner 2d position of the object
-                                        ((x0, y0), (x1, y1), (x2, y2), (x3, y3))
+            Tuple[Tuple[float, float]]:
+                    The footprint of object. It consists of 4 corner 2d position of the object
+                    ((x0, y0), (x1, y1), (x2, y2), (x3, y3))
         Notes:
             center_position: (xc, yc)
             vector_center_to_corners[0]: (x0 - xc, y0 - yc)
@@ -204,20 +207,41 @@ class DynamicObject:
             rotated_vector = self.state.orientation.rotate(vector_center_to_corner)
             corner_point: np.ndarray = self.state.position + rotated_vector
             footprint.append(corner_point.tolist())
-
         return footprint
 
     def get_heading_bev(self) -> float:
-        """[sammary]
+        """[summary]
         Get the object heading from ego vehicle in bird eye view
         Returns:
             float: The heading (radian)
         """
-        rots = self.state.orientation.radians
-        trans_rots = -rots - math.pi / 2
-        trans_rots = np.where(trans_rots > math.pi, trans_rots - 2 * math.pi, trans_rots)
-        trans_rots = np.where(trans_rots < -math.pi, trans_rots + 2 * math.pi, trans_rots)
+        rots: float = self.state.orientation.radians
+        trans_rots: float = -rots - math.pi / 2
+        trans_rots = float(np.where(trans_rots > math.pi, trans_rots - 2 * math.pi, trans_rots))
+        trans_rots = float(np.where(trans_rots < -math.pi, trans_rots + 2 * math.pi, trans_rots))
         return trans_rots
+
+    def get_footprint_polygon(self) -> Polygon:
+        """[summary]
+        Get footprint polygon
+        Returns:
+            Polygon: The footprint polygon
+        """
+        footprint = self.get_footprint()
+        footprint_polygon: Polygon = Polygon(
+            [footprint[0], footprint[1], footprint[2], footprint[3], footprint[0]]
+        )
+        return footprint_polygon
+
+    @property
+    def area_bev(self) -> float:
+        """[summary]
+        Get area of object BEV.
+
+        Returns:
+            float: The 2d area from object.
+        """
+        return self.state.size[0] * self.state.size[1]
 
     @staticmethod
     def _set_states(
@@ -252,30 +276,9 @@ class DynamicObject:
             return None
 
 
-def distance_points(point_1: Tuple[float], point_2: Tuple[float]) -> float:
-    """[summary]
-    Calculate the center distance between two points.
-    Args:
-        point_1 (Tuple[float]): A point
-        point_2 (Tuple[float]): A point
-    Returns: float: The distance between two points
-    """
-    return math.dist(point_1, point_2)
-
-
-def distance_points_bev(point_1: Tuple[float], point_2: Tuple[float]) -> float:
-    """[summary]
-    Calculate the 2d center distance between two points.
-    Args:
-        point_1 (Tuple[float]): A point
-        point_2 (Tuple[float]): A point
-    Returns: float: The distance between two points
-    """
-    return math.dist(to_bev(point_1), to_bev(point_2))
-
-
 def distance_objects(object_1: DynamicObject, object_2: DynamicObject) -> float:
     """[summary]
+    Calculate the 3d center distance between two objects.
     Args:
          object_1 (DynamicObject): An object
          object_2 (DynamicObject): An object
@@ -286,13 +289,10 @@ def distance_objects(object_1: DynamicObject, object_2: DynamicObject) -> float:
 
 def distance_objects_bev(object_1: DynamicObject, object_2: DynamicObject) -> float:
     """[summary]
+    Calculate the BEV 2d center distance between two objects.
     Args:
          object_1 (DynamicObject): An object
          object_2 (DynamicObject): An object
     Returns: float: The 2d center distance from object_1 to object_2.
     """
     return distance_points_bev(object_1.state.position, object_2.state.position)
-
-
-def to_bev(point_1: Tuple[float, float, float]) -> Tuple[float, float]:
-    return (point_1[0], point_1[1])

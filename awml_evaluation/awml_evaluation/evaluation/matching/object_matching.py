@@ -15,6 +15,8 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
+from shapely.geometry import Polygon
+
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.common.object import distance_points_bev
 
@@ -23,14 +25,14 @@ class MatchingMode(Enum):
     """[summary]
     The mode enum for matching algorithm.
 
-    CENTERDISTANCE: center distance 3d
-    IOU3d : IoU (Intersection over Union) 3d
+    CENTERDISTANCE: center distance in 3d
+    IOUBEV : IoU (Intersection over Union) in BEV (Bird Eye View)
     PLANEDISTANCE: The plane distance
     """
 
-    CENTERDISTANCE = "center distance 3d [m]"
-    IOU3d = "iou 3d"
-    PLANEDISTANCE = "plane_distance [m]"
+    CENTERDISTANCE = "Center Distance 3d [m]"
+    IOUBEV = "IoU BEV"
+    PLANEDISTANCE = "Plane Distance [m]"
 
 
 def get_uc_plane_distance(
@@ -74,24 +76,53 @@ def get_uc_plane_distance(
     return uc_plane_distance
 
 
-def get_iou_3d(
+def get_area_intersection(
     predicted_object: DynamicObject,
     ground_truth_object: Optional[DynamicObject],
 ) -> float:
     """[summary]
-    Calculate 3d IoU
+    Get the area at intersection
 
     Args:
         predicted_object (DynamicObject): The predicted object
         ground_truth_object (DynamicObject): The corresponded ground truth object
 
     Returns:
-        Optional[float]: The value of 3d IoU.
+        float: The area at intersection
+    """
+    # Predicted object footprint and Ground truth object footprint
+    pr_footprint_polygon: Polygon = predicted_object.get_footprint_polygon()
+    gt_footprint_polygon: Polygon = ground_truth_object.get_footprint_polygon()
+    area_intersection: float = pr_footprint_polygon.intersection(gt_footprint_polygon).area
+    return area_intersection
+
+
+def get_iou_bev(
+    predicted_object: DynamicObject,
+    ground_truth_object: Optional[DynamicObject],
+) -> float:
+    """[summary]
+    Calculate BEV IoU
+
+    Args:
+        predicted_object (DynamicObject): The predicted object
+        ground_truth_object (DynamicObject): The corresponded ground truth object
+
+    Returns:
+        Optional[float]: The value of BEV IoU.
                          If predicted_object do not have corresponded ground truth object,
                          return 0.0.
+    Reference:
+        https://github.com/lyft/nuscenes-devkit/blob/49c36da0a85da6bc9e8f2a39d5d967311cd75069/lyft_dataset_sdk/eval/detection/mAP_evaluation.py
     """
 
-    # TODO impl
     if not ground_truth_object:
         return 0.0
-    return 0.0
+
+    # TODO: if tiny box dim seen return 0.0 IOU
+    predicted_object_area: float = predicted_object.area_bev
+    ground_truth_object_area: float = ground_truth_object.area_bev
+    intersection_area: float = get_area_intersection(predicted_object, ground_truth_object)
+    union_area: float = predicted_object_area + ground_truth_object_area - intersection_area
+    iou_bev: float = intersection_area / union_area
+    return iou_bev

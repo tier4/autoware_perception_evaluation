@@ -34,7 +34,7 @@ class TestMap(unittest.TestCase):
             max_y_position_list=[100.0, 100.0, 100.0, 100.0],
             map_thresholds_center_distance=[[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]],
             map_thresholds_plane_distance=[[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]],
-            map_thresholds_iou=[],
+            map_thresholds_iou_bev=[],
         )
 
     def test_map(self):
@@ -82,8 +82,9 @@ class TestMap(unittest.TestCase):
         ]
         for diff_distance, ans_map, ans_maph in patterns:
             with self.subTest("diff_yaw make map"):
-                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = []
-                diff_distance_dummy_ground_truth_objects = get_objects_with_difference(
+                diff_distance_dummy_ground_truth_objects: List[
+                    DynamicObject
+                ] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
@@ -130,8 +131,9 @@ class TestMap(unittest.TestCase):
         ]
         for diff_yaw, ans_map, ans_maph in patterns:
             with self.subTest("diff_yaw make map"):
-                diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = []
-                diff_yaw_dummy_ground_truth_objects = get_objects_with_difference(
+                diff_yaw_dummy_ground_truth_objects: List[
+                    DynamicObject
+                ] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,

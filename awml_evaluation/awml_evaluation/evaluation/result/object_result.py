@@ -7,7 +7,7 @@ from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.common.object import distance_objects
 from awml_evaluation.common.object import distance_objects_bev
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
-from awml_evaluation.evaluation.matching.object_matching import get_iou_3d
+from awml_evaluation.evaluation.matching.object_matching import get_iou_bev
 from awml_evaluation.evaluation.matching.object_matching import get_uc_plane_distance
 
 logger = getLogger(__name__)
@@ -57,7 +57,7 @@ class DynamicObjectWithResult:
         self.is_label_correct: bool = self._is_label_correct()
 
         # detection
-        self.iou_3d: float = get_iou_3d(
+        self.iou_bev: float = get_iou_bev(
             self.predicted_object,
             self.ground_truth_object,
         )
@@ -101,8 +101,8 @@ class DynamicObjectWithResult:
             is_matching_ = is_matching_ and self.center_distance < matching_threshold
         elif matching_mode == MatchingMode.PLANEDISTANCE:
             is_matching_ = is_matching_ and self.uc_plane_distance < matching_threshold
-        elif matching_mode == MatchingMode.IOU3d:
-            is_matching_ = is_matching_ and self.iou_3d > matching_threshold
+        elif matching_mode == MatchingMode.IOUBEV:
+            is_matching_ = is_matching_ and self.iou_bev > matching_threshold
         else:
             raise NotImplementedError
         is_correct = is_correct and is_matching_
