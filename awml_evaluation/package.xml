@@ -8,6 +8,7 @@
   <maintainer email="satoshi.tanaka@tier4.jp">Satoshi Tanaka</maintainer>
   <license>Apache V2</license>
 
+  <exec_depend>python3-nuscenes-devkit-pip</exec_depend>
   <exec_depend>python3-tqdm</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
