@@ -227,7 +227,10 @@ def get_fn_objects(
         for object_result in object_results:
             if object_result.ground_truth_object == ground_truth_object:
                 if correspond_result:
-                    if correspond_result.distance_error_bev < object_result.distance_error_bev:
+                    if (
+                        correspond_result.get_distance_error_bev()
+                        < object_result.get_distance_error_bev()
+                    ):
                         correspond_result = object_result
                 else:
                     correspond_result = object_result

@@ -233,8 +233,7 @@ class DynamicObject:
         )
         return footprint_polygon
 
-    @property
-    def area_bev(self) -> float:
+    def get_area_bev(self) -> float:
         """[summary]
         Get area of object BEV.
 
@@ -243,9 +242,8 @@ class DynamicObject:
         """
         return self.state.size[0] * self.state.size[1]
 
-    @property
-    def volume(self) -> float:
-        return self.area_bev * self.state.size[2]
+    def get_volume(self) -> float:
+        return self.get_area_bev() * self.state.size[2]
 
     @staticmethod
     def _set_states(

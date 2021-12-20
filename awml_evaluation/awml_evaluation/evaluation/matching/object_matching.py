@@ -168,8 +168,8 @@ def get_iou_bev(
         return 0.0
 
     # TODO: if tiny box dim seen return 0.0 IOU
-    predicted_object_area: float = predicted_object.area_bev
-    ground_truth_object_area: float = ground_truth_object.area_bev
+    predicted_object_area: float = predicted_object.get_area_bev()
+    ground_truth_object_area: float = ground_truth_object.get_area_bev()
     intersection_area: float = get_area_intersection(predicted_object, ground_truth_object)
     union_area: float = predicted_object_area + ground_truth_object_area - intersection_area
     iou_bev: float = intersection_area / union_area
@@ -195,8 +195,8 @@ def get_iou_3d(
     if not ground_truth_object:
         return 0.0
 
-    predicted_object_volume: float = predicted_object.volume
-    ground_truth_object_volume: float = ground_truth_object.volume
+    predicted_object_volume: float = predicted_object.get_volume()
+    ground_truth_object_volume: float = ground_truth_object.get_volume()
     intersection: float = get_intersection(predicted_object, ground_truth_object)
     union: float = predicted_object_volume + ground_truth_object_volume - intersection
     iou_3d: float = intersection / union
