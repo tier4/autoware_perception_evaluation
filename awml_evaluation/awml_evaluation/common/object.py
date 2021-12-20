@@ -182,33 +182,6 @@ class DynamicObject:
         """
         return math.hypot(self.state.position[0], self.state.position[1])
 
-    def get_footprint(self) -> Tuple[Tuple[float, float]]:
-        """[summary]
-        Get footprint from an object
-
-        Returns:
-            Tuple[Tuple[float, float]]:
-                    The footprint of object. It consists of 4 corner 2d position of the object
-                    ((x0, y0), (x1, y1), (x2, y2), (x3, y3))
-        Notes:
-            center_position: (xc, yc)
-            vector_center_to_corners[0]: (x0 - xc, y0 - yc)
-        """
-        footprint: List[Tuple[float, float]] = []
-        vector_center_to_corners: List[np.ndarray] = [
-            np.array([self.state.size[0], self.state.size[1], 0.0]) / 2.0,
-            np.array([-self.state.size[0], self.state.size[1], 0.0]) / 2.0,
-            np.array([-self.state.size[0], -self.state.size[1], 0.0]) / 2.0,
-            np.array([self.state.size[0], -self.state.size[1], 0.0]) / 2.0,
-        ]
-
-        # rotate vector_center_to_corners
-        for vector_center_to_corner in vector_center_to_corners:
-            rotated_vector = self.state.orientation.rotate(vector_center_to_corner)
-            corner_point: np.ndarray = self.state.position + rotated_vector
-            footprint.append(corner_point.tolist())
-        return footprint
-
     def get_heading_bev(self) -> float:
         """[summary]
         Get the object heading from ego vehicle in bird eye view
@@ -221,17 +194,41 @@ class DynamicObject:
         trans_rots = float(np.where(trans_rots < -math.pi, trans_rots + 2 * math.pi, trans_rots))
         return trans_rots
 
-    def get_footprint_polygon(self) -> Polygon:
+    def get_footprint(self) -> Polygon:
         """[summary]
-        Get footprint polygon
+        Get footprint polygon from an object
+
         Returns:
-            Polygon: The footprint polygon
+            Polygon: The footprint polygon of object. It consists of 4 corner 2d position of
+                     the object and  start and end points are same point.
+                     ((x0, y0, 0), (x1, y1, 0), (x2, y2, 0), (x3, y3, 0), (x0, y0, 0))
+        Notes:
+            center_position: (xc, yc)
+            vector_center_to_corners[0]: (x0 - xc, y0 - yc)
         """
-        footprint = self.get_footprint()
-        footprint_polygon: Polygon = Polygon(
-            [footprint[0], footprint[1], footprint[2], footprint[3], footprint[0]]
+        corner_points: List[Tuple[float, float]] = []
+        vector_center_to_corners: List[np.ndarray] = [
+            np.array([self.state.size[0], self.state.size[1], 0.0]) / 2.0,
+            np.array([-self.state.size[0], self.state.size[1], 0.0]) / 2.0,
+            np.array([-self.state.size[0], -self.state.size[1], 0.0]) / 2.0,
+            np.array([self.state.size[0], -self.state.size[1], 0.0]) / 2.0,
+        ]
+        # rotate vector_center_to_corners
+        for vector_center_to_corner in vector_center_to_corners:
+            rotated_vector = self.state.orientation.rotate(vector_center_to_corner)
+            corner_point: np.ndarray = self.state.position + rotated_vector
+            corner_points.append(corner_point.tolist())
+        # corner point to footprint
+        footprint: Polygon = Polygon(
+            [
+                corner_points[0],
+                corner_points[1],
+                corner_points[2],
+                corner_points[3],
+                corner_points[0],
+            ]
         )
-        return footprint_polygon
+        return footprint
 
     def get_area_bev(self) -> float:
         """[summary]
