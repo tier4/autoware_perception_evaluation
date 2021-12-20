@@ -32,7 +32,7 @@ class EvaluationConfig:
 
     def __init__(
         self,
-        dataset_path: str,
+        dataset_paths: List[str],
         does_use_pointcloud: bool,
         result_root_directory: str,
         log_directory: str,
@@ -49,7 +49,7 @@ class EvaluationConfig:
         """[summary]
 
         Args:
-            dataset_path (str): The path of dataset
+            dataset_paths (List[str]): The paths of dataset
             does_use_pointcloud (bool): The flag for loading pointcloud data from dataset
             result_root_directory (str): The path to result directory
             log_directory (str): The path to sub directory for log
@@ -92,7 +92,7 @@ class EvaluationConfig:
                     The specification is same as map_thresholds_center_distance
         """
         # dataset
-        self.dataset_path: str = dataset_path
+        self.dataset_paths: List[str] = dataset_paths
         self.does_use_pointcloud: bool = does_use_pointcloud
 
         # directory

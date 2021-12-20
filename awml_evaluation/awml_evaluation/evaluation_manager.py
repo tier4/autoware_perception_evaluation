@@ -2,7 +2,7 @@ from typing import List
 
 from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.dataset import get_now_frame
-from awml_evaluation.common.dataset import load_datasets
+from awml_evaluation.common.dataset import load_all_datasets
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.metrics.metrics import MetricsScore
 from awml_evaluation.evaluation.result.frame_result import FrameResult
@@ -35,8 +35,8 @@ class EvaluationManager:
             evaluation_config (EvaluatorConfig): Evaluation config
         """
         self.evaluator_config: EvaluationConfig = evaluation_config
-        self.ground_truth_frames: List[FrameGroundTruth] = load_datasets(
-            self.evaluator_config.dataset_path,
+        self.ground_truth_frames: List[FrameGroundTruth] = load_all_datasets(
+            self.evaluator_config.dataset_paths,
             self.evaluator_config.does_use_pointcloud,
             self.evaluator_config.metrics_config.evaluation_tasks,
             self.evaluator_config.label_converter,

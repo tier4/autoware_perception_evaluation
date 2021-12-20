@@ -2,6 +2,11 @@
 
 - 上ほど新しい
 
+## Now development for develop branch -> v1.2
+
+- <https://github.com/tier4/AWMLevaluation/pull/34>
+  - 【機能追加】複数scene入力対応
+
 ## Release for main branch
 ### v1.1
 
@@ -9,6 +14,7 @@
   - 【release】v1.1 release
 - <https://github.com/tier4/AWMLevaluation/pull/33>
   - 【改良】datasetにあるobjectをlabelごとに個数を表示
+  - 【バグ修正】test/lsim.pyにおいてEvaluateManagerがloggerの反映されていなかったのを修正
 - <https://github.com/tier4/AWMLevaluation/pull/32>
   - 【document追加】releaseする時のtest方法について追記
 - <https://github.com/tier4/AWMLevaluation/pull/31>

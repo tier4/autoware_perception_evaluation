@@ -15,9 +15,9 @@ from awml_evaluation.util.debug import get_objects_with_difference
 
 
 class LSimMoc:
-    def __init__(self, dataset_path: str):
+    def __init__(self, dataset_paths: List[str]):
         evaluation_config: EvaluationConfig = EvaluationConfig(
-            dataset_path=dataset_path,
+            dataset_paths=dataset_paths,
             does_use_pointcloud=False,
             result_root_directory="data/result/{TIME}/",
             log_directory="",
@@ -114,8 +114,14 @@ class LSimMoc:
 
 
 if __name__ == "__main__":
-    dataset_path = "../../dataset_3d/tier4/202109_3d_cuboid_v2_0_1_sample/60f2669b1070d0002dcdd475"
-    lsim = LSimMoc(dataset_path)
+    # dataset_paths = [
+    #     "../../dataset_3d/tier4/202109_3d_cuboid_v2_0_1_sample/60f2669b1070d0002dcdd475",
+    #     "../../dataset_3d/tier4/202108_3d_cuboid_v1_1_1_nishishinjuku_mini/5f772b2ca6ace800391c3e74",
+    # ]
+    dataset_paths = [
+        "../../dataset_3d/tier4/202109_3d_cuboid_v2_0_1_sample/60f2669b1070d0002dcdd475",
+    ]
+    lsim = LSimMoc(dataset_paths)
 
     for ground_truth_frame in lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference(
