@@ -100,9 +100,24 @@ def load_datasets(
             label_converter=label_converter,
         )
         datasets.append(frame)
-
-    logger.info("Finish loading dataset")
+    logger.info("Finish loading dataset\n" + _get_str_objects_number_info(label_converter))
     return datasets
+
+
+def _get_str_objects_number_info(
+    label_converter: LabelConverter,
+) -> str:
+    """[summary]
+    Get str for the information of object label number
+    Args:
+        label_converter (LabelConverter): label convertor
+    Returns:
+        str: print str
+    """
+    str_: str = ""
+    for label in label_converter.labels:
+        str_ += f"{label.label} (-> {label.autoware_label}): {label.num} \n"
+    return str_
 
 
 class DatasetLoadingError(Exception):
