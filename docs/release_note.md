@@ -4,6 +4,8 @@
 
 ## Now development for develop branch -> v1.1
 
+- <https://github.com/tier4/AWMLevaluation/pull/30>
+  - 【改良】polygon と foot print をmerge
 - <https://github.com/tier4/AWMLevaluation/pull/28>
   - 【改良】get_fn_objects の中の関数を分割
 - <https://github.com/tier4/AWMLevaluation/pull/27>

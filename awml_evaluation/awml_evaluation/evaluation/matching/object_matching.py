@@ -55,22 +55,27 @@ def get_uc_plane_distance(
     """
     if not ground_truth_object:
         return None
+    # Get corner_points of predicted object from footprint
+    # from ((x0, y0, 0), (x1, y1, 0), (x2, y2, 0), (x3, y3, 0), (x0, y0, 0))
+    # to ((x0, y0, 0), (x1, y1, 0), (x2, y2, 0), (x3, y3, 0))
+    pr_footprint_polygon: Polygon = predicted_object.get_footprint()
+    pr_corner_points: List[Tuple[float]] = list(set(pr_footprint_polygon.exterior.coords))
 
-    # Predicted object footprint and Ground truth object footprint
-    pr_footprint: List[Tuple[float]] = predicted_object.get_footprint()
-    gt_footprint: List[Tuple[float]] = ground_truth_object.get_footprint()
+    # Get corner_points of ground truth object from footprint
+    gt_footprint_polygon: Polygon = ground_truth_object.get_footprint()
+    gt_corner_points: List[Tuple[float]] = list(set(gt_footprint_polygon.exterior.coords))
 
     # Sort by 2d distance
     lambda_func: Callable[[Tuple[float]], float] = lambda x: math.hypot(x[0], x[1])
-    pr_footprint.sort(key=lambda_func)
-    gt_footprint.sort(key=lambda_func)
+    pr_corner_points.sort(key=lambda_func)
+    gt_corner_points.sort(key=lambda_func)
 
     # Calculate plane distance
-    distance_1_1: float = abs(distance_points_bev(pr_footprint[0], gt_footprint[0]))
-    distance_1_2: float = abs(distance_points_bev(pr_footprint[1], gt_footprint[1]))
+    distance_1_1: float = abs(distance_points_bev(pr_corner_points[0], gt_corner_points[0]))
+    distance_1_2: float = abs(distance_points_bev(pr_corner_points[1], gt_corner_points[1]))
     distance_1: float = distance_1_1 + distance_1_2
-    distance_2_1: float = abs(distance_points_bev(pr_footprint[0], gt_footprint[1]))
-    distance_2_2: float = abs(distance_points_bev(pr_footprint[1], gt_footprint[0]))
+    distance_2_1: float = abs(distance_points_bev(pr_corner_points[0], gt_corner_points[1]))
+    distance_2_2: float = abs(distance_points_bev(pr_corner_points[1], gt_corner_points[0]))
     distance_2: float = distance_2_1 + distance_2_2
     uc_plane_distance: float = min(distance_1, distance_2) / 2.0
     # logger.info(f"Distance {uc_plane_distance}")
@@ -93,8 +98,8 @@ def get_area_intersection(
         float: The area at intersection
     """
     # Predicted object footprint and Ground truth object footprint
-    pr_footprint_polygon: Polygon = predicted_object.get_footprint_polygon()
-    gt_footprint_polygon: Polygon = ground_truth_object.get_footprint_polygon()
+    pr_footprint_polygon: Polygon = predicted_object.get_footprint()
+    gt_footprint_polygon: Polygon = ground_truth_object.get_footprint()
     area_intersection: float = pr_footprint_polygon.intersection(gt_footprint_polygon).area
     return area_intersection
 
