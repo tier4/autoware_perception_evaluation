@@ -4,6 +4,9 @@
 
 ## Now development for develop branch -> v1.1
 
+- <https://github.com/tier4/AWMLevaluation/pull/31>
+  - 【改良】metricsの表示でpredicted objectの総数も表示するようにする
+  - 【改良】metricsの表示をmarkdown tableに変更
 - <https://github.com/tier4/AWMLevaluation/pull/30>
   - 【改良】polygon と foot print をmerge
 - <https://github.com/tier4/AWMLevaluation/pull/28>

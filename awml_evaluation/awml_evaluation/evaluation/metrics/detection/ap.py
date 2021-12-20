@@ -90,6 +90,7 @@ class Ap:
             [DynamicObjectWithResult], float
         ] = lambda x: x.predicted_object.semantic_score
         filtered_object_results.sort(key=lambda_func, reverse=True)
+        self.objects_results_num: int = len(filtered_object_results)
 
         filtered_ground_truth_objects: List[DynamicObject] = filter_ground_truth_objects(
             objects=ground_truth_objects,
