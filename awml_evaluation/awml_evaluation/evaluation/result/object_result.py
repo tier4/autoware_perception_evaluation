@@ -129,8 +129,7 @@ class DynamicObjectWithResult:
         else:
             return False
 
-    @property
-    def distance_error_bev(self) -> float:
+    def get_distance_error_bev(self) -> float:
         """[summary]
         Get error center distance between ground truth and predicted object.
 

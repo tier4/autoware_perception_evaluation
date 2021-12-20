@@ -40,7 +40,7 @@ class LSimMoc:
         self.evaluator = EvaluationManager(evaluation_config=evaluation_config)
 
         _ = configure_logger(
-            log_file_directory=self.evaluator.evaluator_config.result_log_directory,
+            log_file_directory=self.evaluator.evaluator_config.get_result_log_directory(),
             console_log_level=logging.INFO,
             file_log_level=logging.INFO,
         )

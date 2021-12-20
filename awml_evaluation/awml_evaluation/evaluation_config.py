@@ -165,8 +165,7 @@ class EvaluationConfig:
                 raise EvaluationConfigError(f"{evaluation_task} is not proper setting")
         return output
 
-    @property
-    def result_log_directory(self) -> str:
+    def get_result_log_directory(self) -> str:
         """[summary]
         Get the full path to put logs
         Returns:
@@ -174,8 +173,7 @@ class EvaluationConfig:
         """
         return os.path.join(self.result_root_directory, self.log_directory)
 
-    @property
-    def result_visualization_directory(self) -> str:
+    def get_result_visualization_directory(self) -> str:
         """[summary]
         Get the full path to put the visualization images
         Returns:
