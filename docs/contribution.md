@@ -125,7 +125,7 @@ Evaluation:
 - topic branch-> develop branch
   - Squash and mergeでPRごとのcommitにする
 - develop branch -> master branch
-  - Create a merge commitでPRごとのcommitを維持する
+  - 手動merge merge commitを作ってPRごとのcommitを維持する
   - アプリケーションとの結合を行うリリース作業に当たる
   - 何か問題が出たらtopic branch release/v1.x などを作って結合作業を行う
 
