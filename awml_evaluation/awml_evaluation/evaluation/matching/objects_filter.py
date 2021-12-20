@@ -223,18 +223,10 @@ def get_fn_objects(
 
     fn_objects: List[DynamicObject] = []
     for ground_truth_object in ground_truth_objects:
-        correspond_result: Optional[DynamicObjectWithResult] = None
-        for object_result in object_results:
-            if object_result.ground_truth_object == ground_truth_object:
-                if correspond_result:
-                    if (
-                        correspond_result.get_distance_error_bev()
-                        < object_result.get_distance_error_bev()
-                    ):
-                        correspond_result = object_result
-                else:
-                    correspond_result = object_result
-
+        correspond_result: Optional[DynamicObjectWithResult] = _get_correspond_object_result(
+            ground_truth_object,
+            object_results,
+        )
         if correspond_result:
             matching_threshold_ = get_label_threshold(
                 semantic_label=correspond_result.predicted_object.semantic_label,
@@ -250,6 +242,35 @@ def get_fn_objects(
         else:
             fn_objects.append(ground_truth_object)
     return fn_objects
+
+
+def _get_correspond_object_result(
+    ground_truth_object: List[DynamicObject],
+    object_results: List[DynamicObjectWithResult],
+) -> Optional[DynamicObjectWithResult]:
+    """[summary]
+    Get the correspond object result to ground truth object
+
+    Args:
+        ground_truth_object (List[DynamicObject]): Ground truth object
+        object_results (List[DynamicObjectWithResult]): object result
+
+    Returns:
+        Optional[DynamicObjectWithResult]: Correspond object result to ground truth object
+    """
+
+    correspond_result: Optional[DynamicObjectWithResult] = None
+    for object_result in object_results:
+        if ground_truth_object == object_result.ground_truth_object:
+            if correspond_result:
+                if (
+                    correspond_result.get_distance_error_bev()
+                    < object_result.get_distance_error_bev()
+                ):
+                    correspond_result = object_result
+            else:
+                correspond_result = object_result
+    return correspond_result
 
 
 def _is_target_object(
