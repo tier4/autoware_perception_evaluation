@@ -37,13 +37,12 @@ class LSimMoc:
             map_thresholds_iou_bev=[0.5],
             map_thresholds_iou_3d=[0.5],
         )
-        self.evaluator = EvaluationManager(evaluation_config=evaluation_config)
-
         _ = configure_logger(
-            log_file_directory=self.evaluator.evaluator_config.get_result_log_directory(),
+            log_file_directory=evaluation_config.get_result_log_directory(),
             console_log_level=logging.INFO,
             file_log_level=logging.INFO,
         )
+        self.evaluator = EvaluationManager(evaluation_config=evaluation_config)
 
     def callback(
         self,

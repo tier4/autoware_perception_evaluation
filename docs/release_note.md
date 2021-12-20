@@ -4,6 +4,8 @@
 
 ## Now development for develop branch -> v1.1
 
+- <https://github.com/tier4/AWMLevaluation/pull/33>
+  - 【改良】datasetにあるobjectをlabelごとに個数を表示
 - <https://github.com/tier4/AWMLevaluation/pull/32>
   - 【document追加】releaseする時のtest方法について追記
 - <https://github.com/tier4/AWMLevaluation/pull/31>
