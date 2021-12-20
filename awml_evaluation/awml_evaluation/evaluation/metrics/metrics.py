@@ -38,24 +38,42 @@ class MetricsScore:
         object_num: int = 0
         for ap_ in self.maps[0].aps:
             object_num += ap_.ground_truth_objects_num
-        str_ += f"Num: {object_num}\n"
+        str_ += f"Ground Truth Num: {object_num}\n"
 
         for map_ in self.maps:
+            # whole result
+            str_ += "\n"
             str_ += f"mAP: {map_.map:.3f}, mAPH: {map_.maph:.3f} "
             str_ += f"({map_.map_config.matching_mode.value})\n"
-            str_ += "AP "
+            # Table
+            str_ += "\n"
+            # label
+            str_ += "|      Label |"
             for ap_ in map_.aps:
                 target_str: str = ""
                 for target in ap_.target_labels:
                     target_str += target.value
-                str_ += f", {target_str} ({ap_.matching_threshold_list}): {ap_.ap:.3f}"
+                str_ += f" {target_str}({ap_.matching_threshold_list}) | "
             str_ += "\n"
-            str_ += "APH"
+            str_ += "| :--------: |"
+            for ap_ in map_.aps:
+                str_ += " :---: |"
+            str_ += "\n"
+            str_ += "| Predict_num |"
+            for ap_ in map_.aps:
+                str_ += f" {ap_.objects_results_num} |"
+            # Each label result
+            str_ += "\n"
+            str_ += "|         AP |"
+            for ap_ in map_.aps:
+                str_ += f" {ap_.ap:.3f} | "
+            str_ += "\n"
+            str_ += "|        APH |"
             for aph_ in map_.aphs:
                 target_str: str = ""
                 for target in aph_.target_labels:
                     target_str += target.value
-                str_ += f", {target_str} ({aph_.matching_threshold_list}): {aph_.ap:.3f}"
+                str_ += f" {aph_.ap:.3f} | "
             str_ += "\n"
         return str_
 
