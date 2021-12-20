@@ -2,8 +2,11 @@
 
 - 上ほど新しい
 
-## Now development for develop branch -> v1.1
+## Release for main branch
+### v1.1
 
+- <https://github.com/tier4/AWMLevaluation/pull/35>
+  - 【release】v1.1 release
 - <https://github.com/tier4/AWMLevaluation/pull/33>
   - 【改良】datasetにあるobjectをlabelごとに個数を表示
 - <https://github.com/tier4/AWMLevaluation/pull/32>
@@ -30,7 +33,6 @@
   - 【バグ修正】mAPの計算で、confidence順のsortが抜けていたので追加
   - 【機能追加】threshold_listからラベルごとのthresholdを取り出すインターフェイスを追加
 
-## Release for main branch
 ### v1.0
 
 - <https://github.com/tier4/AWMLevaluation/pull/8>
