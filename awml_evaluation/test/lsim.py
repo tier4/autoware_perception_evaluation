@@ -1,5 +1,4 @@
 import logging
-from test.util.logger_config import configure_logger
 from typing import List
 
 from awml_evaluation.common.object import DynamicObject
@@ -10,6 +9,7 @@ from awml_evaluation.evaluation.result.pass_fail_result import FramePassFailConf
 from awml_evaluation.evaluation_config import EvaluationConfig
 from awml_evaluation.evaluation_manager import EvaluationManager
 from awml_evaluation.util.debug import get_objects_with_difference
+from awml_evaluation.util.logger_config import configure_logger
 
 # from awml_evaluation.util.debug import format_class_for_log
 
