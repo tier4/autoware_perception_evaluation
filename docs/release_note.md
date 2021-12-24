@@ -4,6 +4,8 @@
 
 ## Now development for develop branch -> v1.2
 
+- <https://github.com/tier4/AWMLevaluation/pull/39>
+  - 【test追加】matching/objects_filter.py のtestの追加
 - <https://github.com/tier4/AWMLevaluation/pull/37/>
   - 【test追加】common/object.py のtestの追加
 - <https://github.com/tier4/AWMLevaluation/pull/36>
