@@ -4,6 +4,9 @@
 
 ## Now development for develop branch -> v1.2
 
+- <https://github.com/tier4/AWMLevaluation/pull/36>
+  - 【test追加】common/point.py のtestの追加
+  - 【改良】 common/point.py の引数におけるエラーハンドリングを追加
 - <https://github.com/tier4/AWMLevaluation/pull/34>
   - 【機能追加】複数scene入力対応
 - <https://github.com/tier4/AWMLevaluation/pull/42>
