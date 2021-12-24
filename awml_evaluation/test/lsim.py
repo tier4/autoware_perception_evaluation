@@ -8,10 +8,9 @@ from awml_evaluation.evaluation.result.pass_fail_result import CriticalObjectFil
 from awml_evaluation.evaluation.result.pass_fail_result import FramePassFailConfig
 from awml_evaluation.evaluation_config import EvaluationConfig
 from awml_evaluation.evaluation_manager import EvaluationManager
+from awml_evaluation.util.debug import format_class_for_log
 from awml_evaluation.util.debug import get_objects_with_difference
 from awml_evaluation.util.logger_config import configure_logger
-
-# from awml_evaluation.util.debug import format_class_for_log
 
 
 class LSimMoc:
@@ -96,13 +95,15 @@ class LSimMoc:
             number_use_case_fail_object += len(frame_results.pass_fail_result.uc_fail_objects)
         logging.info(f"final use case fail object: {number_use_case_fail_object}")
         final_metric_score = self.evaluator.get_scenario_result()
+
+        # final result
         logging.info(f"final metrics result {final_metric_score}")
         return final_metric_score
 
     @staticmethod
     def visualize(frame_result: FrameResult):
         """
-        可視化
+        Frameごとの可視化
         """
         if len(frame_result.pass_fail_result.uc_fail_objects) > 0:
             logging.warning(f"{len(frame_result.pass_fail_result.uc_fail_objects)} fail objects")
@@ -134,4 +135,8 @@ if __name__ == "__main__":
             ground_truth_frame.unix_time,
             objects_with_difference,
         )
+    # Debug
+    logging.info(
+        f"Object result example: {format_class_for_log(lsim.evaluator.frame_results[0].object_results[0])}"
+    )
     final_metric_score = lsim.get_final_result()

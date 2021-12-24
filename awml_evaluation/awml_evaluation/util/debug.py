@@ -139,13 +139,14 @@ def get_objects_with_difference(
         )
 
         test_object_ = DynamicObject(
-            object_.unix_time,
-            position,
-            orientation,
-            object_.state.size,
-            object_.state.velocity,
-            semantic_score,
-            object_.semantic_label,
+            unix_time=object_.unix_time,
+            position=position,
+            orientation=orientation,
+            size=object_.state.size,
+            velocity=object_.state.velocity,
+            semantic_score=semantic_score,
+            semantic_label=object_.semantic_label,
+            uuid=object_.uuid,
         )
 
         output_objects.append(test_object_)

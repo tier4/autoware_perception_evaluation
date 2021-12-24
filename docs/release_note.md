@@ -6,6 +6,10 @@
 
 - <https://github.com/tier4/AWMLevaluation/pull/34>
   - 【機能追加】複数scene入力対応
+- <https://github.com/tier4/AWMLevaluation/pull/42>
+  - 【改良】logger_configureのutil化
+- <https://github.com/tier4/AWMLevaluation/pull/43>
+  - 【追加機能】dataset読み込み時にObjectのuuidも読み込むように変更
 
 ## Release for main branch
 ### v1.1

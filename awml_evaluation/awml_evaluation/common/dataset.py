@@ -275,6 +275,7 @@ def _convert_nuscenes_annotation_to_dynamic_object(
         label=object_annotation.name,
         count_label_number=True,
     )
+    token = object_annotation.token
     # TODO impl for velocity
     velocity_ = tuple(object_annotation.velocity.tolist())
     # TODO impl for pointcloud_num
@@ -295,6 +296,7 @@ def _convert_nuscenes_annotation_to_dynamic_object(
         velocity=velocity_,
         semantic_score=semantic_score_,
         semantic_label=autoware_label_,
+        uuid=token,
     )
     return dynamic_object
 
