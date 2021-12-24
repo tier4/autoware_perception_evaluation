@@ -4,6 +4,8 @@
 
 ## Now development for develop branch -> v1.2
 
+- <https://github.com/tier4/AWMLevaluation/pull/37/>
+  - 【test追加】common/object.py のtestの追加
 - <https://github.com/tier4/AWMLevaluation/pull/36>
   - 【test追加】common/point.py のtestの追加
   - 【改良】 common/point.py の引数におけるエラーハンドリングを追加
