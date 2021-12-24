@@ -185,6 +185,7 @@ class DynamicObject:
     def get_heading_bev(self) -> float:
         """[summary]
         Get the object heading from ego vehicle in bird eye view
+
         Returns:
             float: The heading (radian)
         """
