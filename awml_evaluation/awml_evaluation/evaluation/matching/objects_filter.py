@@ -39,7 +39,7 @@ def filter_object_results(
     min_pos_distance_list: Optional[List[float]] = None,
 ) -> List[DynamicObjectWithResult]:
     """[summary]
-    Filter DynamicObjectWithResult fo filter ground truth objects.
+    Filter DynamicObjectWithResult to filter ground truth objects.
 
     Args:
         object_results (List[DynamicObjectWithResult]): The object results
@@ -89,7 +89,7 @@ def filter_ground_truth_objects(
     min_pos_distance_list: Optional[List[float]] = None,
 ) -> List[DynamicObject]:
     """[summary]
-    Filter DynamicObject fo filter ground truth objects.
+    Filter DynamicObject to filter ground truth objects.
 
     Args:
         objects (List[DynamicObject]): The objects you want to filter
@@ -130,8 +130,8 @@ def divide_tp_fp_objects(
     object_results: List[DynamicObjectWithResult],
     target_labels: Optional[List[AutowareLabel]],
     matching_mode: Optional[MatchingMode] = None,
-    matching_threshold_list: Optional[Tuple[float]] = None,
-    confidence_threshold_list: Optional[Tuple[float]] = None,
+    matching_threshold_list: Optional[List[float]] = None,
+    confidence_threshold_list: Optional[List[float]] = None,
 ) -> Tuple[List[DynamicObjectWithResult], List[DynamicObjectWithResult]]:
     """[summary]
     Divide TP (True Positive) objects and FP (False Positive) objects
