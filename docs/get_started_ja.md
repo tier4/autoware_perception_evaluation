@@ -1,6 +1,6 @@
 ## Case 1. rosbagを用いずにデータセットのみで評価を行う
 
-- 評価Metricsの開発などに
+- 評価 Metrics の開発などに
 - poetry install
 
 ```
@@ -12,7 +12,7 @@ pip3 install poetry
 ```
 git clone https://github.com/tier4/AWMLevaluation.git
 cd AWMLevaluation
-poetory update
+poetory install
 ```
 
 - 実行
@@ -43,3 +43,6 @@ repositories:
 
 - <https://github.com/tier4/AWMLevaluation/blob/main/awml_evaluation/test/lsim.py> を参照
 
+## Case 3. localでmodelの評価を行う
+
+TBD

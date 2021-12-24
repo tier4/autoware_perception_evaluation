@@ -77,7 +77,6 @@ class DynamicObject:
         semantic_score: float,
         semantic_label: AutowareLabel,
         pointcloud_num: Optional[int] = None,
-        will_collide_within_5s: Optional[bool] = None,
         uuid: Optional[str] = None,
         tracked_positions: Optional[List[Tuple[float, float, float]]] = None,
         tracked_orientations: Optional[List[Quaternion]] = None,
@@ -88,6 +87,7 @@ class DynamicObject:
         predicted_sizes: Optional[List[Tuple[float, float, float]]] = None,
         predicted_twists: Optional[List[Tuple[float, float, float]]] = None,
         predicted_confidence: Optional[float] = None,
+        will_collide_within_5s: Optional[bool] = None,
     ) -> None:
         """[summary]
 
@@ -101,8 +101,6 @@ class DynamicObject:
             semantic_label (AutowareLabel): [description]
             pointcloud_num (Optional[int], optional):
                     Pointcloud number inside bounding box. Defaults to None.
-            will_collide_within_5s (Optional[bool], optional):
-                    Use case evaluation for example. Defaults to None.
             uuid (Optional[str], optional): The uuid for tracking. Defaults to None.
             tracked_positions (Optional[List[Tuple[float, float, float]]], optional):
                     The list of position for tracked object. Defaults to None.
@@ -121,6 +119,8 @@ class DynamicObject:
             predicted_twists (Optional[List[Tuple[float, float, float]]], optional):
                     The list of twist for predicted object. Defaults to None.
             predicted_confidence (Optional[float], optional): Prediction score. Defaults to None.
+            will_collide_within_5s (Optional[bool], optional):
+                    Use case evaluation for example. Defaults to None.
         """
 
         # detection
