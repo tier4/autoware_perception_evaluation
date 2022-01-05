@@ -22,6 +22,7 @@ from shapely.geometry import Polygon
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.common.object import distance_objects
 from awml_evaluation.common.object import distance_points_bev
+from awml_evaluation.common.point import polygon_to_list
 
 
 class MatchingMode(Enum):
@@ -138,7 +139,15 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
 
     Attributes:
         self.mode (MatchingMode): Matching mode
-        self.value (Optional[float]): Plane distance
+        self.value (Optional[float]):
+                Plane distance value [m].
+                If predicted_object do not have corresponded ground truth object, value is None.
+        self.ground_truth_nn_plane (Optional[Tuple[Tuple[float, float]]]):
+                The nearest neighbor plane coordinate of ground truth object ((x1, y1), (x2, y2)).
+                If predicted_object do not have corresponded ground truth object, value is None.
+        self.predicted_nn_plane (Optional[Tuple[Tuple[float, float]]])]:
+                The nearest neighbor plane coordinate of predicted object ((x1, y1), (x2, y2)).
+                If predicted_object do not have corresponded ground truth object, value is None.
     """
 
     def __init__(
@@ -152,7 +161,10 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
             ground_truth_object (Optional[DynamicObject]): The ground truth object
         """
         self.mode: MatchingMode = MatchingMode.PLANEDISTANCE
-        self.value: Optional[float] = self._get_plane_distance(
+        self.value: Optional[float] = None
+        self.ground_truth_nn_plane: Optional[Tuple[Tuple[float, float]]] = None
+        self.predicted_nn_plane: Optional[Tuple[Tuple[float, float]]] = None
+        self.value, self.ground_truth_nn_plane, self.predicted_nn_plane = self._get_plane_distance(
             predicted_object,
             ground_truth_object,
         )
@@ -176,7 +188,12 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
         self,
         predicted_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
-    ) -> Optional[float]:
+    ) -> Tuple[
+        Optional[float],
+        Optional[Tuple[Tuple[float, float]]],
+        Optional[Tuple[Tuple[float, float]]],
+    ]:
+
         """[summary]
         Calculate plane distance for use case evaluation.
 
@@ -185,21 +202,19 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
             ground_truth_object (Optional[DynamicObject]): The correspond ground truth object
 
         Returns:
-            Optional[float]: The value of plane distance.
-                            If predicted_object do not have corresponded ground truth object,
-                            return None.
+            Tuple[value, ground_truth_nn_plane, predicted_nn_plane]
+            See class attribute in detail
         """
         if not ground_truth_object:
-            return None
+            return None, None, None
+
         # Get corner_points of predicted object from footprint
-        # from ((x0, y0, 0), (x1, y1, 0), (x2, y2, 0), (x3, y3, 0), (x0, y0, 0))
-        # to ((x0, y0, 0), (x1, y1, 0), (x2, y2, 0), (x3, y3, 0))
         pr_footprint_polygon: Polygon = predicted_object.get_footprint()
-        pr_corner_points: List[Tuple[float]] = list(set(pr_footprint_polygon.exterior.coords))
+        pr_corner_points: List[Tuple[float]] = polygon_to_list(pr_footprint_polygon)
 
         # Get corner_points of ground truth object from footprint
         gt_footprint_polygon: Polygon = ground_truth_object.get_footprint()
-        gt_corner_points: List[Tuple[float]] = list(set(gt_footprint_polygon.exterior.coords))
+        gt_corner_points: List[Tuple[float]] = polygon_to_list(gt_footprint_polygon)
 
         # Sort by 2d distance
         lambda_func: Callable[[Tuple[float]], float] = lambda x: math.hypot(x[0], x[1])
@@ -213,10 +228,17 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
         distance_2_1: float = abs(distance_points_bev(pr_corner_points[0], gt_corner_points[1]))
         distance_2_2: float = abs(distance_points_bev(pr_corner_points[1], gt_corner_points[0]))
         distance_2: float = distance_2_1 + distance_2_2
-        plane_distance: float = min(distance_1, distance_2) / 2.0
-        # logger.info(f"Distance {uc_plane_distance}")
 
-        return plane_distance
+        plane_distance: float = min(distance_1, distance_2) / 2.0
+        ground_truth_nn_plane: Tuple[Tuple[float, float]] = (
+            gt_corner_points[0],
+            gt_corner_points[1],
+        )
+        predicted_nn_plane: Tuple[Tuple[float, float]] = (
+            pr_corner_points[0],
+            pr_corner_points[1],
+        )
+        return plane_distance, ground_truth_nn_plane, predicted_nn_plane
 
 
 class IOUBEVMatching(metaclass=ABCMeta):
