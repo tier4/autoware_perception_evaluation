@@ -59,18 +59,24 @@ sudo ifconfig lo multicast
 
 ## FAQ for usage
 
-### Q. sensor_model, vehicle_model, vehicle_idが変わっても、PerceptionEvaluationConfigは共通で良いのか
+### Q. predicted_objectとは何か
 
-- database評価(= PerceptionEvaluationConfigで設定するもの）に関しては、基本的に検出能力が変わらない限り同じconfigで良いかなと思っています
-- 例えば
-  - センサの数が変わりました -> 検出能力が変わっている（例えば検出距離が変わる）のでPerceptionEvaluationConfigを変えて評価（=database評価したいn個のrosbagのセンサ構成は同じであってほしい）
-  - calibrationし直しました -> 検出能力は買わないはずなので同じ設定で良い
-  - 異なる車 -> センサが同じ配置なら検出能力は変わらないはず
+- predicted_object = Autowareの推論結果のこと
+
+### Q. Plane distanceとは何か
+
+- メトリクスにおけるTP/FPの判定において，Usecase評価でGround truth object とPredicted objectの**自車近傍の2点の距離のRMS**を以って判定する．具体的には，
+1. GTとDetそれぞれにおいて，footprintの端点のうちEgoから近い面(=2点)を選択する．
+2. その面同士における2通りの端点のペアから，合計距離が短いペアを選択し，これを自車近傍の2点する．
+3. 各ペアの距離の2乗平均平方根をとり，これを*自車近傍の2点の距離のRMS**と呼ぶ．
+- 例
+1. GTにおいて，Egoから近い面として面g3g4を選択する．Detにおいては，面d3d4を選択する．
+2. 端点のペアは，(g3d3, g4d4)と(g3d4, g4d3)の2通りある．合計距離が短いペアを選択する．図例では，(g3d3, g4d4)を選択する．
+3. 自車近傍の2点の距離のRMS = sqrt ( ( g3d3^2 + g4d4^2 ) / 2 )
+   - 詳しくは，`get_uc_plane_distance`関数を参照
+   - 1の背景：検出された物体の奥行きが不明瞭なので，確度の高い自車近傍の点を選択している．
+![pipeline](uc_plane_distance.svg)
   - なぜか各rosbagごとに（crop_box_filterを変更させてrecordして）点群の最大距離が異なる -> 検出能力が変わっているのでPerceptionEvaluationConfigを変えて評価
-
-### Q. predicted_objectってなにか？
-
-- predicted_object = Autowareの推論結果です
 
 ### Q. uuidで具体的にできることはなにか？
 
@@ -80,4 +86,13 @@ sudo ifconfig lo multicast
 - 全Frameの大量のObjectResult (objectごとの結果）の結果に対して、「object "79151c9c4ebc7380555f25aecc031422" の結果は？」と投げると、そのobjectの
   - ground truth との誤差（center disntace, 面距離等々）
   - pointcloudが何点当たっているか
-  - などの時間推移みたいなのが表示できる
+  - などの時間推移が表示できるようになる
+
+### Q. sensor_model, vehicle_model, vehicle_idが変わっても、PerceptionEvaluationConfigは共通で良いのか
+
+- database評価(= PerceptionEvaluationConfigで設定するもの）に関しては、基本的に検出能力が変わらない限り同じconfigで良いと思っている
+- 例えば
+  - センサの数が変わりました -> 検出能力が変わっている（例えば検出距離が変わる）のでPerceptionEvaluationConfigを変えて評価（=database評価したいn個のrosbagのセンサ構成は同じであってほしい）
+  - calibrationし直しました -> 検出能力は買わないはずなので同じ設定で良い
+  - 異なる車 -> センサが同じ配置なら検出能力は変わらないはず
+  - （レアケース）各rosbagごとに（crop_box_filterを変更させてrecordして）点群の最大距離が異なる -> 検出能力が変わっているのでEvaluationConfigを変えて評価

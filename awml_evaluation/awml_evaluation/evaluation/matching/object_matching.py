@@ -224,12 +224,12 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
         # Calculate plane distance
         distance_1_1: float = abs(distance_points_bev(pr_corner_points[0], gt_corner_points[0]))
         distance_1_2: float = abs(distance_points_bev(pr_corner_points[1], gt_corner_points[1]))
-        distance_1: float = distance_1_1 + distance_1_2
+        distance_1: float = distance_1_1 ** 2 + distance_1_2 ** 2
         distance_2_1: float = abs(distance_points_bev(pr_corner_points[0], gt_corner_points[1]))
         distance_2_2: float = abs(distance_points_bev(pr_corner_points[1], gt_corner_points[0]))
-        distance_2: float = distance_2_1 + distance_2_2
+        distance_2: float = distance_2_1 ** 2 + distance_2_2 ** 2
 
-        plane_distance: float = min(distance_1, distance_2) / 2.0
+        plane_distance: float = math.sqrt(min(distance_1, distance_2) / 2.0)
         ground_truth_nn_plane: Tuple[Tuple[float, float]] = (
             gt_corner_points[0],
             gt_corner_points[1],
@@ -361,56 +361,56 @@ class IOU3dMatching(metaclass=ABCMeta):
 
         predicted_object_volume: float = predicted_object.get_volume()
         ground_truth_object_volume: float = ground_truth_object.get_volume()
-        intersection: float = self._get_intersection(predicted_object, ground_truth_object)
+        intersection: float = _get_volume_intersection(predicted_object, ground_truth_object)
         union: float = predicted_object_volume + ground_truth_object_volume - intersection
         iou_3d: float = intersection / union
         return iou_3d
 
-    def _get_intersection(
-        self,
-        predicted_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
-    ) -> float:
-        """[summary]
-        Get the volume at intersection
 
-        Args:
-            predicted_object (DynamicObject): The predicted object
-            ground_truth_object (DynamicObject): The corresponded ground truth object
+def _get_volume_intersection(
+    predicted_object: DynamicObject,
+    ground_truth_object: Optional[DynamicObject],
+) -> float:
+    """[summary]
+    Get the volume at intersection
 
-        Returns:
-            float: The volume at intersection
+    Args:
+        predicted_object (DynamicObject): The predicted object
+        ground_truth_object (DynamicObject): The corresponded ground truth object
 
-        """
-        area_intersection = _get_area_intersection(predicted_object, ground_truth_object)
-        height_intersection = self._get_height_intersection(predicted_object, ground_truth_object)
-        return area_intersection * height_intersection
+    Returns:
+        float: The volume at intersection
 
-    def _get_height_intersection(
-        self,
-        predicted_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
-    ) -> float:
-        """[summary]
-        Get the height at intersection
+    """
+    area_intersection = _get_area_intersection(predicted_object, ground_truth_object)
+    height_intersection = _get_height_intersection(predicted_object, ground_truth_object)
+    return area_intersection * height_intersection
 
-        Args:
-            predicted_object (DynamicObject): The predicted object
-            ground_truth_object (DynamicObject): The corresponded ground truth object
 
-        Returns:
-            float: The height at intersection
+def _get_height_intersection(
+    predicted_object: DynamicObject,
+    ground_truth_object: Optional[DynamicObject],
+) -> float:
+    """[summary]
+    Get the height at intersection
 
-        """
-        min_z = max(
-            predicted_object.state.position[2] - predicted_object.state.size[2] / 2,
-            ground_truth_object.state.position[2] - ground_truth_object.state.size[2] / 2,
-        )
-        max_z = min(
-            predicted_object.state.position[2] + predicted_object.state.size[2] / 2,
-            ground_truth_object.state.position[2] + ground_truth_object.state.size[2] / 2,
-        )
-        return max(0, max_z - min_z)
+    Args:
+        predicted_object (DynamicObject): The predicted object
+        ground_truth_object (DynamicObject): The corresponded ground truth object
+
+    Returns:
+        float: The height at intersection
+
+    """
+    min_z = max(
+        predicted_object.state.position[2] - predicted_object.state.size[2] / 2,
+        ground_truth_object.state.position[2] - ground_truth_object.state.size[2] / 2,
+    )
+    max_z = min(
+        predicted_object.state.position[2] + predicted_object.state.size[2] / 2,
+        ground_truth_object.state.position[2] + ground_truth_object.state.size[2] / 2,
+    )
+    return max(0, max_z - min_z)
 
 
 def _get_area_intersection(
