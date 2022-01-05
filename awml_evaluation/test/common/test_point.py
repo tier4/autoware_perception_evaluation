@@ -3,7 +3,9 @@ from typing import List
 from typing import Tuple
 import unittest
 
-from awml_evaluation.common.point import distance_points, distance_points_bev, to_bev
+from awml_evaluation.common.point import distance_points
+from awml_evaluation.common.point import distance_points_bev
+from awml_evaluation.common.point import to_bev
 
 
 class TestPoint(unittest.TestCase):
@@ -21,10 +23,10 @@ class TestPoint(unittest.TestCase):
         # patterns: (point_1, point_2, ans_distance)
         patterns: List[Tuple[Tuple[float, float, float], Tuple[float, float, float], float]] = [
             ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.0),
-            ((0.0, 0.0, 0.0), (1.0, 1.0, 1.0), math.sqrt(3*1.0**2)),
-            ((0.0, 0.0, 0.0), (1.0, -1.0, 1.0), math.sqrt(3*1.0**2)),
-            ((0.0, 0.0, 0.0), (-1.0, -1.0, 1.0), math.sqrt(3*1.0**2)),
-            ((0.0, 0.0, 0.0), (-1.0, -1.0, -1.0), math.sqrt(3*1.0**2)),
+            ((0.0, 0.0, 0.0), (1.0, 1.0, 1.0), math.sqrt(3 * 1.0 ** 2)),
+            ((0.0, 0.0, 0.0), (1.0, -1.0, 1.0), math.sqrt(3 * 1.0 ** 2)),
+            ((0.0, 0.0, 0.0), (-1.0, -1.0, 1.0), math.sqrt(3 * 1.0 ** 2)),
+            ((0.0, 0.0, 0.0), (-1.0, -1.0, -1.0), math.sqrt(3 * 1.0 ** 2)),
         ]
         for point_1, point_2, ans_distance in patterns:
             with self.subTest("Test get_distance_points"):
@@ -42,10 +44,10 @@ class TestPoint(unittest.TestCase):
         # patterns: (point_1, point_2, ans_distance)
         patterns: List[Tuple[Tuple[float, float, float], Tuple[float, float, float], float]] = [
             ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.0),
-            ((0.0, 0.0, 0.0), (1.0, 1.0, 1.0), math.sqrt(2*1.0**2)),
-            ((0.0, 0.0, 0.0), (1.0, -1.0, 1.0), math.sqrt(2*1.0**2)),
-            ((0.0, 0.0, 0.0), (-1.0, -1.0, 5.0), math.sqrt(2*1.0**2)),
-            ((0.0, 0.0, 0.0), (-1.0, -1.0, -10.0), math.sqrt(2*1.0**2)),
+            ((0.0, 0.0, 0.0), (1.0, 1.0, 1.0), math.sqrt(2 * 1.0 ** 2)),
+            ((0.0, 0.0, 0.0), (1.0, -1.0, 1.0), math.sqrt(2 * 1.0 ** 2)),
+            ((0.0, 0.0, 0.0), (-1.0, -1.0, 5.0), math.sqrt(2 * 1.0 ** 2)),
+            ((0.0, 0.0, 0.0), (-1.0, -1.0, -10.0), math.sqrt(2 * 1.0 ** 2)),
         ]
         for point_1, point_2, ans_distance in patterns:
             with self.subTest("Test get_distance_points_bev"):
@@ -63,7 +65,7 @@ class TestPoint(unittest.TestCase):
         patterns: List[Tuple[Tuple[float, float, float], Tuple[float, float]]] = [
             ((0.0, 0.0, 0.0), (0.0, 0.0)),
             ((1.0, 0.0, 1.0), (1.0, 0.0)),
-            ((0.0, -1.0, 5.0), (0.0, -1.0))
+            ((0.0, -1.0, 5.0), (0.0, -1.0)),
         ]
         for point_1, ans_point in patterns:
             with self.subTest("Test to_bev"):

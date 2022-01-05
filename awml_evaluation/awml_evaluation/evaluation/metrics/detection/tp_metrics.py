@@ -6,15 +6,32 @@ from awml_evaluation.evaluation.result.object_result import DynamicObjectWithRes
 
 
 class TPMetrics(metaclass=ABCMeta):
+    """
+    Tp metrics meta class
+    """
+
     @abstractmethod
     def get_value(
         self,
         object_result: DynamicObjectWithResult,
     ) -> float:
+        """[summary]
+        Get TP metrics value
+
+        Args:
+            object_result (DynamicObjectWithResult): The object result
+
+        Returns:
+            float: Tp metrics value
+        """
         pass
 
 
 class TPMetricsAp(TPMetrics):
+    """
+    Ap metrics class
+    """
+
     def get_value(
         self,
         object_result: DynamicObjectWithResult,
@@ -33,6 +50,10 @@ class TPMetricsAp(TPMetrics):
 
 
 class TPMetricsAph(TPMetrics):
+    """
+    Aph metrics class
+    """
+
     def get_value(
         self,
         object_result: DynamicObjectWithResult,

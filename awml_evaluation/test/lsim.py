@@ -127,7 +127,7 @@ if __name__ == "__main__":
     for ground_truth_frame in lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference(
             ground_truth_objects=ground_truth_frame.objects,
-            diff_distance=(0.3, 0.0, 0.0),
+            diff_distance=(0.3, 0.0, 0.2),
             diff_yaw=0.2,
             is_confidence_with_distance=True,
         )

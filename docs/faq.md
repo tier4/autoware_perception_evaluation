@@ -61,9 +61,23 @@ sudo ifconfig lo multicast
 
 ### Q. sensor_model, vehicle_model, vehicle_idが変わっても、EvaluationConfigは共通で良いのか
 
-- A. database評価(= EvaluationConfigで設定するもの）に関しては、基本的に検出能力が変わらない限り同じconfigで良いかなと思っています
+- database評価(= EvaluationConfigで設定するもの）に関しては、基本的に検出能力が変わらない限り同じconfigで良いかなと思っています
 - 例えば
   - センサの数が変わりました -> 検出能力が変わっている（例えば検出距離が変わる）のでEvaluationConfigを変えて評価（=database評価したいn個のrosbagのセンサ構成は同じであってほしい）
   - calibrationし直しました -> 検出能力は買わないはずなので同じ設定で良い
   - 異なる車 -> センサが同じ配置なら検出能力は変わらないはず
   - なぜか各rosbagごとに（crop_box_filterを変更させてrecordして）点群の最大距離が異なる -> 検出能力が変わっているのでEvaluationConfigを変えて評価
+
+### Q. predicted_objectってなにか？
+
+- predicted_object = Autowareの推論結果です
+
+### Q. uuidで具体的にできることはなにか？
+
+- uuid = objectを一意に定めるためのid
+  - Autowareだとuuid <https://github.com/tier4/autoware_iv_msgs/blob/main/autoware_perception_msgs/msg/object_recognition/DynamicObject.msg#L1>の表現を行う
+  - nuscenesの表現だとinstance_token という名称
+- 全Frameの大量のObjectResult (objectごとの結果）の結果に対して、「object "79151c9c4ebc7380555f25aecc031422" の結果は？」と投げると、そのobjectの
+  - ground truth との誤差（center disntace, 面距離等々）
+  - pointcloudが何点当たっているか
+  - などの時間推移みたいなのが表示できる
