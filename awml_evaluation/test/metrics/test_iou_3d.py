@@ -3,8 +3,8 @@ from typing import List
 import unittest
 
 from awml_evaluation.common.object import DynamicObject
-from awml_evaluation.evaluation.result.frame_result import FrameResult
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
+from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
 from awml_evaluation.util.debug import get_objects_with_difference
 
 
@@ -42,7 +42,9 @@ class TestIoU3d(unittest.TestCase):
                     diff_yaw=0.0,
                 )
 
-                object_results: List[DynamicObjectWithResult] = FrameResult.get_object_results(
+                object_results: List[
+                    DynamicObjectWithResult
+                ] = PerceptionFrameResult.get_object_results(
                     predicted_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )

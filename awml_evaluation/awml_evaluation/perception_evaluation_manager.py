@@ -5,43 +5,45 @@ from awml_evaluation.common.dataset import get_now_frame
 from awml_evaluation.common.dataset import load_all_datasets
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.metrics.metrics import MetricsScore
-from awml_evaluation.evaluation.result.frame_result import FrameResult
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
-from awml_evaluation.evaluation.result.pass_fail_result import CriticalObjectFilterConfig
-from awml_evaluation.evaluation.result.pass_fail_result import FramePassFailConfig
-from awml_evaluation.evaluation_config import EvaluationConfig
+from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
+from awml_evaluation.evaluation.result.perception_pass_fail_result import PerceptionPassFailConfig
+from awml_evaluation.evaluation.result.perception_pass_fail_result import (
+    CriticalObjectFilterConfig,
+)
+from awml_evaluation.perception_evaluation_config import PerceptionEvaluationConfig
 from awml_evaluation.visualization.visualization import VisualizationBEV
 
 
-class EvaluationManager:
+class PerceptionEvaluationManager:
     """[summary]
-    EvaluationManager class.
+    PerceptionEvaluationManager class.
     This class is management interface for perception interface.
 
     Attributes:
         self.evaluator_config (EvaluatorConfig): config for evaluation
         self.ground_truth_frames (List[FrameGroundTruth]): Ground truth frames from datasets
-        self.frame_results (List[FrameResult]): Evaluation result
+        self.frame_results (List[PerceptionFrameResult]): Evaluation result
         self.visualization (VisualizationBEV): Visualization class
     """
 
     def __init__(
         self,
-        evaluation_config: EvaluationConfig,
+        evaluation_config: PerceptionEvaluationConfig,
     ) -> None:
         """[summary]
 
         Args:
             evaluation_config (EvaluatorConfig): Evaluation config
         """
-        self.evaluator_config: EvaluationConfig = evaluation_config
+        self.evaluator_config: PerceptionEvaluationConfig = evaluation_config
         self.ground_truth_frames: List[FrameGroundTruth] = load_all_datasets(
             self.evaluator_config.dataset_paths,
             self.evaluator_config.does_use_pointcloud,
             self.evaluator_config.metrics_config.evaluation_tasks,
             self.evaluator_config.label_converter,
         )
-        self.frame_results: List[FrameResult] = []
+        self.frame_results: List[PerceptionFrameResult] = []
         self.visualization: VisualizationBEV = VisualizationBEV(
             self.evaluator_config.visualization_directory
         )
@@ -64,21 +66,21 @@ class EvaluationManager:
             FrameGroundTruth: Now frame of ground truth
         """
         ground_truth_now_frame: FrameGroundTruth = get_now_frame(
-            self.ground_truth_frames,
-            unix_time,
-            threshold_min_time,
+            ground_truth_frames=self.ground_truth_frames,
+            unix_time=unix_time,
+            threshold_min_time=threshold_min_time,
         )
         return ground_truth_now_frame
 
-    def add_frame_result(
+    def add_perception_frame_result(
         self,
         unix_time: int,
         ground_truth_now_frame: FrameGroundTruth,
         predicted_objects: List[DynamicObject],
         ros_critical_ground_truth_objects: List[DynamicObject],
         critical_object_filter_config: CriticalObjectFilterConfig,
-        frame_pass_fail_config: FramePassFailConfig,
-    ) -> FrameResult:
+        frame_pass_fail_config: PerceptionPassFailConfig,
+    ) -> PerceptionFrameResult:
         """[summary]
         Evaluate one frame
 
@@ -90,14 +92,14 @@ class EvaluationManager:
                     Critical ground truth objects filtered by ROS node to evaluate pass fail result
             critical_object_filter_config (CriticalObjectFilterConfig):
                     The parameter config to choose critical ground truth objects
-            frame_pass_fail_config (FramePassFailConfig):
+            frame_pass_fail_config (PerceptionPassFailConfig):
                     The parameter config to evaluate
 
         Returns:
-            FrameResult: Evaluation result
+            PerceptionFrameResult: Evaluation result
         """
 
-        result = FrameResult(
+        result = PerceptionFrameResult(
             metrics_config=self.evaluator_config.metrics_config,
             critical_object_filter_config=critical_object_filter_config,
             frame_pass_fail_config=frame_pass_fail_config,
@@ -121,7 +123,7 @@ class EvaluationManager:
             MetricsScore: Metrics score
 
         Example
-            evaluator = EvaluationManager()
+            evaluator = PerceptionEvaluationManager()
             for frame in frames:
                 # write in your application
                 predicted_objects : List[DynamicObject] = set_from_ros_topic(

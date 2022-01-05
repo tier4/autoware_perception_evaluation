@@ -9,3 +9,4 @@ class EvaluationTask(Enum):
     DETECTION = "detection"
     TRACKING = "tracking"
     PREDICTION = "prediction"
+    SENSING = "sensing"
