@@ -3,11 +3,11 @@ from typing import List
 
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.metrics.metrics import MetricsScore
-from awml_evaluation.evaluation.result.frame_result import FrameResult
-from awml_evaluation.evaluation.result.pass_fail_result import CriticalObjectFilterConfig
-from awml_evaluation.evaluation.result.pass_fail_result import FramePassFailConfig
-from awml_evaluation.evaluation_config import EvaluationConfig
-from awml_evaluation.evaluation_manager import EvaluationManager
+from awml_evaluation.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
+from awml_evaluation.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
+from awml_evaluation.perception_evaluation_config import PerceptionEvaluationConfig
+from awml_evaluation.perception_evaluation_manager import PerceptionEvaluationManager
 from awml_evaluation.util.debug import format_class_for_log
 from awml_evaluation.util.debug import get_objects_with_difference
 from awml_evaluation.util.logger_config import configure_logger
@@ -15,7 +15,7 @@ from awml_evaluation.util.logger_config import configure_logger
 
 class LSimMoc:
     def __init__(self, dataset_paths: List[str]):
-        evaluation_config: EvaluationConfig = EvaluationConfig(
+        evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=dataset_paths,
             does_use_pointcloud=False,
             result_root_directory="data/result/{TIME}/",
@@ -41,7 +41,7 @@ class LSimMoc:
             console_log_level=logging.INFO,
             file_log_level=logging.INFO,
         )
-        self.evaluator = EvaluationManager(evaluation_config=evaluation_config)
+        self.evaluator = PerceptionEvaluationManager(evaluation_config=evaluation_config)
 
     def callback(
         self,
@@ -59,7 +59,7 @@ class LSimMoc:
         ros_critical_ground_truth_objects = ground_truth_now_frame.objects
 
         # 1 frameの評価
-        # 距離などでUC評価objectを選別するためのインターフェイス（EvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
+        # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam
         critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
@@ -68,13 +68,13 @@ class LSimMoc:
             max_y_position_list=[30.0, 30.0, 30.0, 30.0],
         )
         # Pass fail を決めるパラメータ
-        frame_pass_fail_config: FramePassFailConfig = FramePassFailConfig(
+        frame_pass_fail_config: PerceptionPassFailConfig = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
             threshold_plane_distance_list=[2.0, 2.0, 2.0, 2.0],
         )
 
-        frame_result = self.evaluator.add_frame_result(
+        frame_result = self.evaluator.add_perception_frame_result(
             unix_time=unix_time,
             ground_truth_now_frame=ground_truth_now_frame,
             predicted_objects=predicted_objects,
@@ -101,7 +101,7 @@ class LSimMoc:
         return final_metric_score
 
     @staticmethod
-    def visualize(frame_result: FrameResult):
+    def visualize(frame_result: PerceptionFrameResult):
         """
         Frameごとの可視化
         """

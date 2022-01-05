@@ -13,7 +13,7 @@
 - Scene: 1 連続 rosbagの単位
   - 1 rosbagから構成されるデータ群
   - 1 rosbag + pcd + jpeg + annotationの塊
-- FrameResult: 1 pointcloudの入力と、その入力に対しての結果のまとまり
+- PerceptionFrameResult: 1 pointcloudの入力と、その入力に対しての結果のまとまり
   - 1 pointcloud + n ground truth objects + n object results (List[DynamicObjectWithResult])
 - DynamicObjectWithResult: 1 predicted object（認識の推論結果のbounding box）に対しての結果
   - ground_truth_object: Ground truth
@@ -26,8 +26,8 @@
 - Scenario
   - List[Scene]
 - Scene
-  - List[FrameResult]
-- FrameResult
+  - List[PerceptionFrameResult]
+- PerceptionFrameResult
   - pointcloud
   - List[ground_truth_object]
   - List[DynamicObjectWithResult]
@@ -47,7 +47,7 @@
   - 評価を行うros packageのこと
   - [Perception logsim](https://github.com/tier4/logsim/blob/ros2/logsim/scripts/perception_evaluator_node.py)
 - AWMLevaluation: Perception評価用リポジトリの名前
-  - EvaluationManager: 評価の計算等を行うclass
+  - PerceptionEvaluationManager: 評価の計算等を行うclass
 
 ## 評価について
 

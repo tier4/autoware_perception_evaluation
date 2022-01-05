@@ -59,14 +59,14 @@ sudo ifconfig lo multicast
 
 ## FAQ for usage
 
-### Q. sensor_model, vehicle_model, vehicle_idが変わっても、EvaluationConfigは共通で良いのか
+### Q. sensor_model, vehicle_model, vehicle_idが変わっても、PerceptionEvaluationConfigは共通で良いのか
 
-- database評価(= EvaluationConfigで設定するもの）に関しては、基本的に検出能力が変わらない限り同じconfigで良いかなと思っています
+- database評価(= PerceptionEvaluationConfigで設定するもの）に関しては、基本的に検出能力が変わらない限り同じconfigで良いかなと思っています
 - 例えば
-  - センサの数が変わりました -> 検出能力が変わっている（例えば検出距離が変わる）のでEvaluationConfigを変えて評価（=database評価したいn個のrosbagのセンサ構成は同じであってほしい）
+  - センサの数が変わりました -> 検出能力が変わっている（例えば検出距離が変わる）のでPerceptionEvaluationConfigを変えて評価（=database評価したいn個のrosbagのセンサ構成は同じであってほしい）
   - calibrationし直しました -> 検出能力は買わないはずなので同じ設定で良い
   - 異なる車 -> センサが同じ配置なら検出能力は変わらないはず
-  - なぜか各rosbagごとに（crop_box_filterを変更させてrecordして）点群の最大距離が異なる -> 検出能力が変わっているのでEvaluationConfigを変えて評価
+  - なぜか各rosbagごとに（crop_box_filterを変更させてrecordして）点群の最大距離が異なる -> 検出能力が変わっているのでPerceptionEvaluationConfigを変えて評価
 
 ### Q. predicted_objectってなにか？
 

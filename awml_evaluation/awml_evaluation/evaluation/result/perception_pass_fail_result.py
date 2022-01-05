@@ -17,8 +17,8 @@ from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.matching.objects_filter import filter_ground_truth_objects
 from awml_evaluation.evaluation.matching.objects_filter import get_fn_objects
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
-from awml_evaluation.evaluation.result.pass_fail_config import CriticalObjectFilterConfig
-from awml_evaluation.evaluation.result.pass_fail_config import FramePassFailConfig
+from awml_evaluation.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
+from awml_evaluation.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 
 logger = getLogger(__name__)
 
@@ -28,7 +28,7 @@ class PassFailResult:
     Attributes:
         self.critical_object_filter_config (CriticalObjectFilterConfig):
                 Critical object filter config
-        self.frame_pass_fail_config (FramePassFailConfig):
+        self.frame_pass_fail_config (PerceptionPassFailConfig):
                 Frame pass fail config
         self.critical_ground_truth_objects (Optional[List[DynamicObject]]):
                 Critical ground truth objects to evaluate for use case
@@ -39,20 +39,20 @@ class PassFailResult:
     def __init__(
         self,
         critical_object_filter_config: CriticalObjectFilterConfig,
-        frame_pass_fail_config: FramePassFailConfig,
+        frame_pass_fail_config: PerceptionPassFailConfig,
     ) -> None:
         """[summary]
 
         Args:
             critical_object_filter_config (CriticalObjectFilterConfig):
                     Critical object filter config
-            frame_pass_fail_config (FramePassFailConfig):
+            frame_pass_fail_config (PerceptionPassFailConfig):
                     Frame pass fail config
         """
         self.critical_object_filter_config: CriticalObjectFilterConfig = (
             critical_object_filter_config
         )
-        self.frame_pass_fail_config: FramePassFailConfig = frame_pass_fail_config
+        self.frame_pass_fail_config: PerceptionPassFailConfig = frame_pass_fail_config
         self.critical_ground_truth_objects: Optional[List[DynamicObject]] = None
         self.uc_fail_objects: Optional[List[DynamicObject]] = None
 

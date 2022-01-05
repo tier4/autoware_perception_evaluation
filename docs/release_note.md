@@ -4,6 +4,8 @@
 
 ## Now development for develop branch -> v1.2
 
+- <https://github.com/tier4/AWMLevaluation/pull/48>
+  - 【機能追加】Sensing logsim用の関数の箱を用意
 - <https://github.com/tier4/AWMLevaluation/pull/44>
   - 【改良】objectのmatchingする計算のmeta classを object_matching.py に追加
 - <https://github.com/tier4/AWMLevaluation/pull/47>
