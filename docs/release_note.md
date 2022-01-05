@@ -4,6 +4,10 @@
 
 ## Now development for develop branch -> v1.2
 
+- <https://github.com/tier4/AWMLevaluation/pull/40>
+  - 【test追加】matching/object_matching.py のtestの追加
+  - 【Document追加】Plane distance の説明を追加
+  - 【バグ修正】Plane distance の計算におけるバグ修正
 - <https://github.com/tier4/AWMLevaluation/pull/49>
   - 【機能追加】PlaneDistanceData classに Pass fail判断根拠に使う最近傍平面の座標点を追加
 - <https://github.com/tier4/AWMLevaluation/pull/48>
