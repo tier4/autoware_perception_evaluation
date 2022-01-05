@@ -4,6 +4,8 @@
 
 ## Now development for develop branch -> v1.2
 
+- <https://github.com/tier4/AWMLevaluation/pull/49>
+  - 【機能追加】PlaneDistanceData classに Pass fail判断根拠に使う最近傍平面の座標点を追加
 - <https://github.com/tier4/AWMLevaluation/pull/48>
   - 【機能追加】Sensing logsim用の関数の箱を用意
 - <https://github.com/tier4/AWMLevaluation/pull/44>
