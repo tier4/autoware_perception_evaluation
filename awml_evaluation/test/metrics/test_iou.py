@@ -50,7 +50,7 @@ class TestIoUBEV(unittest.TestCase):
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 for object_result in object_results:
-                    self.assertAlmostEqual(object_result.iou_bev, ans_iou_bev)
+                    self.assertAlmostEqual(object_result.iou_bev.value, ans_iou_bev)
 
     def test_iou_bev_diff_yaw(self):
         """
@@ -103,7 +103,7 @@ class TestIoUBEV(unittest.TestCase):
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 for object_result in object_results:
-                    self.assertAlmostEqual(object_result.iou_bev, ans_iou_bev)
+                    self.assertAlmostEqual(object_result.iou_bev.value, ans_iou_bev)
 
 
 if __name__ == "__main__":

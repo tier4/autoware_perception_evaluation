@@ -47,7 +47,7 @@ class TestIoU3d(unittest.TestCase):
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 for object_result in object_results:
-                    self.assertAlmostEqual(object_result.iou_3d, ans_iou_bev)
+                    self.assertAlmostEqual(object_result.iou_3d.value, ans_iou_bev)
 
 
 if __name__ == "__main__":

@@ -4,6 +4,10 @@
 
 ## Now development for develop branch -> v1.2
 
+- <https://github.com/tier4/AWMLevaluation/pull/44>
+  - 【改良】objectのmatchingする計算のmeta classを object_matching.py に追加
+- <https://github.com/tier4/AWMLevaluation/pull/47>
+  - 【document追加】README修正
 - <https://github.com/tier4/AWMLevaluation/pull/39>
   - 【test追加】matching/objects_filter.py のtestの追加
 - <https://github.com/tier4/AWMLevaluation/pull/37/>
@@ -33,6 +37,8 @@
   - 【改良】metricsの表示をmarkdown tableに変更
 - <https://github.com/tier4/AWMLevaluation/pull/30>
   - 【改良】polygon と foot print をmerge
+- <https://github.com/tier4/AWMLevaluation/pull/29>
+  - 【改良】package.xml にnuscenes devkit dependencyを追加
 - <https://github.com/tier4/AWMLevaluation/pull/28>
   - 【改良】get_fn_objects の中の関数を分割
 - <https://github.com/tier4/AWMLevaluation/pull/27>
