@@ -75,7 +75,7 @@ sudo ifconfig lo multicast
 3. 自車近傍の2点の距離のRMS = sqrt ( ( g3d3^2 + g4d4^2 ) / 2 )
    - 詳しくは，`get_uc_plane_distance`関数を参照
    - 1の背景：検出された物体の奥行きが不明瞭なので，確度の高い自車近傍の点を選択している．
-![pipeline](uc_plane_distance.svg)
+![pipeline](figure/uc_plane_distance.svg)
   - なぜか各rosbagごとに（crop_box_filterを変更させてrecordして）点群の最大距離が異なる -> 検出能力が変わっているのでPerceptionEvaluationConfigを変えて評価
 
 ### Q. uuidで具体的にできることはなにか？

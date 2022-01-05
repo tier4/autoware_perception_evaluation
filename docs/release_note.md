@@ -4,9 +4,11 @@
 
 ## Now development for develop branch -> v1.2
 
+- <https://github.com/tier4/AWMLevaluation/pull/50>
+  - 【document追加】figureを整理
 - <https://github.com/tier4/AWMLevaluation/pull/40>
   - 【test追加】matching/object_matching.py のtestの追加
-  - 【Document追加】Plane distance の説明を追加
+  - 【document追加】Plane distance の説明を追加
   - 【バグ修正】Plane distance の計算におけるバグ修正
 - <https://github.com/tier4/AWMLevaluation/pull/49>
   - 【機能追加】PlaneDistanceData classに Pass fail判断根拠に使う最近傍平面の座標点を追加
@@ -58,7 +60,7 @@
 - <https://github.com/tier4/AWMLevaluation/pull/23>
   - 【追加機能】 dummy objectsを用いた，mAP, mAPHのテスト
 - <https://github.com/tier4/AWMLevaluation/pull/22>
-  - 【Document追加】develop branchを用いた開発プロセスをDocument化
+  - 【document追加】develop branchを用いた開発プロセスをDocument化
 - <https://github.com/tier4/AWMLevaluation/pull/20>
   - 【バグ修正】mAPの計算で、評価するobjectのfilterでFN objectが抜けて落ちているバグの修正
   - 【バグ修正】mAPの計算で、confidence順のsortが抜けていたので追加
@@ -70,7 +72,7 @@
   - 【改良】mAP計算の関数共通化
   - 【追加機能】MetricsにmAPHを追加
 - <https://github.com/tier4/AWMLevaluation/pull/15>
-  - 【Document追加】Perceptionの再現性が低い・mAPが想定より低い問題に対しての解決法をDocument化
+  - 【document追加】Perceptionの再現性が低い・mAPが想定より低い問題に対しての解決法をdocument化
 - <https://github.com/tier4/AWMLevaluation/pull/9>
   - 【追加機能】PassFail評価用のインターフェイス実装
   - 【追加機能】object filterにおいてx方向閾値y方向閾値を追加
