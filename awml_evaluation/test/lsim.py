@@ -135,8 +135,23 @@ if __name__ == "__main__":
             ground_truth_frame.unix_time,
             objects_with_difference,
         )
+
+    # final result
+    final_metric_score = lsim.get_final_result()
+
     # Debug
     logging.info(
-        f"Object result example: {format_class_for_log(lsim.evaluator.frame_results[0].object_results[0])}"
+        f"Frame result example (frame_results[0]): {format_class_for_log(lsim.evaluator.frame_results[0], 5)}"
     )
-    final_metric_score = lsim.get_final_result()
+
+    logging.info(
+        f"Object result example (frame_results[0].object_results[0]): {format_class_for_log(lsim.evaluator.frame_results[0].object_results[0])}"
+    )
+
+    logging.info(
+        f"Metrics example (final_metric_score): {format_class_for_log(final_metric_score, len(final_metric_score.config.target_labels))}"
+    )
+
+    logging.info(
+        f"AP result example (final_metric_score.maps[0].aps[0]): {format_class_for_log(final_metric_score.maps[0], 100)}"
+    )

@@ -11,6 +11,10 @@ class TPMetrics(metaclass=ABCMeta):
     """
 
     @abstractmethod
+    def __init__(self) -> None:
+        self.mode: str = "TPMetrics"
+
+    @abstractmethod
     def get_value(
         self,
         object_result: DynamicObjectWithResult,
@@ -31,6 +35,9 @@ class TPMetricsAp(TPMetrics):
     """
     Ap metrics class
     """
+
+    def __init__(self) -> None:
+        self.mode: str = "TPMetricsAp"
 
     def get_value(
         self,
@@ -53,6 +60,9 @@ class TPMetricsAph(TPMetrics):
     """
     Aph metrics class
     """
+
+    def __init__(self) -> None:
+        self.mode: str = "TPMetricsAph"
 
     def get_value(
         self,

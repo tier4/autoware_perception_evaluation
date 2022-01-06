@@ -9,12 +9,17 @@ from pyquaternion.quaternion import Quaternion
 from awml_evaluation.common.object import DynamicObject
 
 
-def format_class_for_log(object: object) -> str:
+def format_class_for_log(
+    object: object,
+    abbreviation: Optional[int] = None,
+) -> str:
     """[summary]
     Convert class object to str to save log
 
     Args:
         object (object): Class object which you want to convert for str
+        abbreviation (Optional[int]): If len(list_object) > abbreviation,
+                                      then abbreviate the result.
 
     Returns:
         str: str converted from class object
@@ -24,15 +29,22 @@ def format_class_for_log(object: object) -> str:
         https://stackoverflow.com/questions/1036409/recursively-convert-python-object-graph-to-dictionary
 
     """
-    return format_dict_for_log(class_to_dict(object))
+    return format_dict_for_log(class_to_dict(object, abbreviation))
 
 
-def class_to_dict(object: object, class_key=None) -> dict:
+def class_to_dict(
+    object: object,
+    abbreviation: Optional[int] = None,
+    class_key: Optional[str] = None,
+) -> dict:
     """[summary]
     Convert class object to dict
 
     Args:
         object (object): Class object which you want to convert to dict
+        abbreviation (Optional[int]): If len(list_object) > abbreviation,
+                                      then abbreviate the result
+        class_key (Optional[str]): class key for dict
 
     Returns:
         dict: Dict converted from class object
@@ -46,18 +58,20 @@ def class_to_dict(object: object, class_key=None) -> dict:
     if isinstance(object, dict):
         data = {}
         for (k, v) in object.items():
-            data[k] = class_to_dict(v, class_key)
+            data[k] = class_to_dict(v, abbreviation, class_key)
         return data
     elif isinstance(object, Enum):
         return str(object)
     elif hasattr(object, "_ast"):
-        return class_to_dict(object._ast())
+        return class_to_dict(object._ast(), abbreviation)
     elif hasattr(object, "__iter__") and not isinstance(object, str):
-        return [class_to_dict(v, class_key) for v in object]
+        if abbreviation and len(object) > abbreviation:
+            return f" --- length of element {len(object)} ---,"
+        return [class_to_dict(v, abbreviation, class_key) for v in object]
     elif hasattr(object, "__dict__"):
         data = dict(
             [
-                (key, class_to_dict(value, class_key))
+                (key, class_to_dict(value, abbreviation, class_key))
                 for key, value in object.__dict__.items()
                 if not callable(value) and not key.startswith("_")
             ]
@@ -69,7 +83,9 @@ def class_to_dict(object: object, class_key=None) -> dict:
         return object
 
 
-def format_dict_for_log(dict: dict) -> str:
+def format_dict_for_log(
+    dict: dict,
+) -> str:
     """
     Format dict class to str for logger
 
@@ -79,7 +95,9 @@ def format_dict_for_log(dict: dict) -> str:
     Returns:
         (str) formatted str
     """
-    formatted_str: str = "\n" + pprint.pformat(dict, indent=1, width=80, depth=None, compact=True)
+    formatted_str: str = (
+        "\n" + pprint.pformat(dict, indent=1, width=120, depth=None, compact=True) + "\n"
+    )
     return formatted_str
 
 
