@@ -4,6 +4,8 @@
 
 ## Now development for develop branch -> v1.2
 
+- <https://github.com/tier4/AWMLevaluation/pull/52>
+  - 【改良】unit testの階層を整理
 - <https://github.com/tier4/AWMLevaluation/pull/51>
   - 【機能追加】AP classに、matching指標（中心間距離、面距離など）の平均・分散を追加
   - 【機能追加】debug用class一覧printする関数に、長いlistの省略機能を追加
