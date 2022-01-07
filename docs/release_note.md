@@ -4,6 +4,8 @@
 
 ## Now development for develop branch -> v1.2
 
+- <https://github.com/tier4/AWMLevaluation/pull/53>
+  - 【document追加】Design documentを追加
 - <https://github.com/tier4/AWMLevaluation/pull/52>
   - 【改良】unit testの階層を整理
 - <https://github.com/tier4/AWMLevaluation/pull/51>
