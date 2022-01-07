@@ -153,5 +153,5 @@ if __name__ == "__main__":
     )
 
     logging.info(
-        f"AP result example (final_metric_score.maps[0].aps[0]): {format_class_for_log(final_metric_score.maps[0], 100)}"
+        f"mAP result example (final_metric_score.maps[0].aps[0]): {format_class_for_log(final_metric_score.maps[0], 100)}"
     )
