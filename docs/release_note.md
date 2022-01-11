@@ -2,8 +2,13 @@
 
 - 上ほど新しい
 
-## Now development for develop branch -> v1.2
+## Now development for develop branch -> v1.3
 
+## Release for main branch
+### v1.2
+
+- <https://github.com/tier4/AWMLevaluation/pull/56>
+  - 【release】v1.2 release
 - <https://github.com/tier4/AWMLevaluation/pull/55>
   - 【バグ修正】 matching class のis_better_than()関数でNoneのハンドリングを追加
   - 【バグ修正】get_fn_objects()関数におけるFN判定で、一つでもResultがあれば良い形に変更
@@ -47,7 +52,6 @@
 - <https://github.com/tier4/AWMLevaluation/pull/43>
   - 【追加機能】dataset読み込み時にObjectのuuidも読み込むように変更
 
-## Release for main branch
 ### v1.1
 
 - <https://github.com/tier4/AWMLevaluation/pull/35>
