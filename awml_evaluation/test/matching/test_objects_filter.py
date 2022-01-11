@@ -179,8 +179,7 @@ class TestObjectsFilter(unittest.TestCase):
 
     def test_get_fn_objects(self):
         """[summary]
-        Test getting FN (False Negative) objects from ground truth objects
-        by using object result.
+        Test getting FN (False Negative) objects from ground truth objects by using object result.
 
         test objects:
             4 ground_truth_objects with object_results made from dummy_ground_truth_objects
@@ -189,25 +188,32 @@ class TestObjectsFilter(unittest.TestCase):
         test patterns:
             Given diff_distance, check if fn_objects and ans_fn_objects are the same.
         """
-        # patterns: (diff_distance, List[ans_fn_idx])
-        patterns: List[Tuple[float, List[int]]] = [
-            # Given no diff_distance, there are no fn.
-            (0.0, []),
-            # Given 1.5 diff_distance for one axis, two ground_truth_objects are fn
-            # since they don't match any predicted_objects in wrong target_labels.
-            (1.5, [2, 3]),
-            # Given 2.5 diff_distance for one axis, all ground_truth_objects are fn
-            # since they don't match any predicted_objects beyond matching_threshold.
-            (2.5, [0, 1, 2, 3]),
+        # patterns: (x_diff, y_diff, List[ans_fn_idx])
+        patterns: List[Tuple[float, float, List[int]]] = [
+            # Given difference (0.0, 0.0), there are no fn.
+            (0.0, 0.0, []),
+            # Given difference (0.5, 0.0), there are no fn.
+            (0.5, 0.0, []),
+            # Given difference (0.0, -0.5), there are no fn.
+            (0.0, -0.5, []),
+            # Given difference (1.5, 0.0), two ground_truth_objects are fn
+            # The object results do not have two ground truth
+            (1.5, 0.0, [2, 3]),
+            # Given difference (2.5, 0.0), two ground_truth_objects are fn
+            # The object results have two ground truth
+            (2.5, 0.0, [2, 3]),
+            # Given difference (2.5, 2.5), three ground_truth_objects are fn
+            # The object results have only one ground truth
+            (2.5, 2.5, [1, 2, 3]),
         ]
 
-        for diff_distance, ans_fn_idx in patterns:
+        for x_diff, y_diff, ans_fn_idx in patterns:
             with self.subTest("Test get_fn_objects."):
                 diff_distance_dummy_ground_truth_objects: List[
                     DynamicObject
                 ] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=(diff_distance, 0.0, 0.0),
+                    diff_distance=(x_diff, y_diff, 0.0),
                     diff_yaw=0,
                 )
                 object_results: List[
@@ -219,9 +225,67 @@ class TestObjectsFilter(unittest.TestCase):
                 fn_objects = get_fn_objects(
                     self.dummy_ground_truth_objects,
                     object_results,
-                    self.target_labels,
-                    self.matching_mode,
-                    self.matching_threshold_list,
+                )
+
+                ans_fn_objects = [
+                    x for idx, x in enumerate(self.dummy_ground_truth_objects) if idx in ans_fn_idx
+                ]
+                self.assertEqual(fn_objects, ans_fn_objects)
+
+    def test_get_fn_objects_for_different_label(self):
+        """[summary]
+        Test getting FN (False Negative) objects from ground truth objects with different label
+        by using object result.
+
+        test objects:
+            4 ground_truth_objects with object_results made from dummy_ground_truth_objects
+            with diff_distance
+
+        test patterns:
+            Given diff_distance, check if fn_objects and ans_fn_objects are the same.
+        """
+
+        # patterns: (x_diff, y_diff, List[ans_fn_idx])
+        patterns: List[Tuple[float, float, List[int]]] = [
+            # Given difference (0.0, 0.0), there are no fn.
+            (0.0, 0.0, []),
+            # Given difference (0.5, 0.0), there are no fn.
+            (0.5, 0.0, []),
+            # Given difference (0.0, -0.5), there are no fn.
+            (0.0, -0.5, []),
+            # Given difference (1.5, 0.0), two ground_truth_objects are fn
+            # The object results do not have two ground truth
+            (1.5, 0.0, [2, 3]),
+            # Given difference (2.5, 0.0), two ground_truth_objects are fn
+            # The object results have two ground truth
+            (2.5, 0.0, [2, 3]),
+            # Given difference (2.5, 2.5), three ground_truth_objects are fn
+            # The object results have only one ground truth
+            (2.5, 2.5, [1, 2, 3]),
+        ]
+        for x_diff, y_diff, ans_fn_idx in patterns:
+            with self.subTest("Test get_fn_objects."):
+                diff_distance_dummy_ground_truth_objects: List[
+                    DynamicObject
+                ] = get_objects_with_difference(
+                    ground_truth_objects=self.dummy_ground_truth_objects,
+                    diff_distance=(x_diff, y_diff, 0.0),
+                    diff_yaw=0,
+                )
+
+                # make dummy data with difference label
+                diff_distance_dummy_ground_truth_objects[0].semantic_label = AutowareLabel.UNKNOWN
+                diff_distance_dummy_ground_truth_objects[1].semantic_label = AutowareLabel.ANIMAL
+
+                object_results: List[
+                    DynamicObjectWithResult
+                ] = PerceptionFrameResult.get_object_results(
+                    predicted_objects=diff_distance_dummy_ground_truth_objects,
+                    ground_truth_objects=self.dummy_ground_truth_objects,
+                )
+                fn_objects = get_fn_objects(
+                    self.dummy_ground_truth_objects,
+                    object_results,
                 )
 
                 ans_fn_objects = [

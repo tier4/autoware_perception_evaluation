@@ -8,7 +8,7 @@ def CustomTextFormatter():
     Custom Formatter
     """
     return logging.Formatter(
-        "[%(asctime)s] [%(levelname)s] [func]  [%(filename)s:%(lineno)d %(funcName)s] %(message)s"
+        "[%(asctime)s] [%(levelname)s] [%(filename)s:%(lineno)d %(funcName)s] %(message)s"
     )
 
 

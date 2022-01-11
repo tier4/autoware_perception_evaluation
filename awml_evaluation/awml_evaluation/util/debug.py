@@ -132,31 +132,31 @@ def get_objects_with_difference(
         List[DynamicObject]: objects with distance and yaw difference.
     """
 
-    output_objects = []
+    output_objects: List[DynamicObject] = []
     for object_ in ground_truth_objects:
-        position = (
+        position: Tuple[float, float, float] = (
             object_.state.position[0] + diff_distance[0],
             object_.state.position[1] + diff_distance[1],
             object_.state.position[2] + diff_distance[2],
         )
 
+        semantic_score: float = 0.0
         if is_confidence_with_distance is None:
             semantic_score = object_.semantic_score
         else:
-            distance_coefficient = object_.get_distance_bev() / 100.0
-            distance_coefficient = min(distance_coefficient, 0.8)
-            distance_coefficient = max(distance_coefficient, 0.2)
+            distance_coefficient: float = object_.get_distance_bev() / 100.0
+            distance_coefficient = max(min(distance_coefficient, 0.8), 0.2)
             if is_confidence_with_distance:
                 semantic_score = object_.semantic_score * (1 - distance_coefficient)
             else:
                 semantic_score = object_.semantic_score * distance_coefficient
 
-        orientation = Quaternion(
+        orientation: Quaternion = Quaternion(
             axis=object_.state.orientation.axis,
             radians=object_.state.orientation.radians + diff_yaw,
         )
 
-        test_object_ = DynamicObject(
+        test_object_: DynamicObject = DynamicObject(
             unix_time=object_.unix_time,
             position=position,
             orientation=orientation,

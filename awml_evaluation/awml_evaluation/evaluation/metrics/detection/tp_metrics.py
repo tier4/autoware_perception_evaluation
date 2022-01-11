@@ -85,9 +85,9 @@ class TPMetricsAph(TPMetrics):
                 https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/metrics/metrics_utils.cc#L101-L116
         """
 
-        pd_heading = object_result.predicted_object.get_heading_bev()
-        gt_heading = object_result.ground_truth_object.get_heading_bev()
-        diff_heading = abs(pd_heading - gt_heading)
+        pd_heading: float = object_result.predicted_object.get_heading_bev()
+        gt_heading: float = object_result.ground_truth_object.get_heading_bev()
+        diff_heading: float = abs(pd_heading - gt_heading)
 
         # Normalize heading error to [0, pi] (+pi and -pi are the same).
         if diff_heading > pi:

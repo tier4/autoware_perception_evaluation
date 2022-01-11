@@ -92,7 +92,7 @@ class LSimMoc:
         # use case fail object num
         number_use_case_fail_object: int = 0
         for frame_results in self.evaluator.frame_results:
-            number_use_case_fail_object += len(frame_results.pass_fail_result.uc_fail_objects)
+            number_use_case_fail_object += frame_results.pass_fail_result.get_fail_object_num()
         logging.info(f"final use case fail object: {number_use_case_fail_object}")
         final_metric_score = self.evaluator.get_scenario_result()
 
@@ -105,8 +105,10 @@ class LSimMoc:
         """
         Frameごとの可視化
         """
-        if len(frame_result.pass_fail_result.uc_fail_objects) > 0:
-            logging.warning(f"{len(frame_result.pass_fail_result.uc_fail_objects)} fail objects")
+        if frame_result.pass_fail_result.get_fail_object_num() > 0:
+            logging.warning(
+                f"{len(frame_result.pass_fail_result.fp_objects_result)} FP objects, {len(frame_result.pass_fail_result.fn_objects)} FN objects,"
+            )
             # logging.debug(f"frame result {format_class_for_log(frame_result.pass_fail_result)}")
 
         if frame_result.metrics_score.maps[0].map < 0.7:
@@ -127,10 +129,11 @@ if __name__ == "__main__":
     for ground_truth_frame in lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference(
             ground_truth_objects=ground_truth_frame.objects,
-            diff_distance=(0.3, 0.0, 0.2),
+            diff_distance=(2.3, 0.0, 0.2),
             diff_yaw=0.2,
             is_confidence_with_distance=True,
         )
+        objects_with_difference.pop(0)
         lsim.callback(
             ground_truth_frame.unix_time,
             objects_with_difference,

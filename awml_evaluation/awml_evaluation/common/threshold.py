@@ -46,7 +46,7 @@ class LabelThreshold:
 def get_label_threshold(
     semantic_label: AutowareLabel,
     target_labels: Optional[List[AutowareLabel]],
-    threshold_list: List[float],
+    threshold_list: Optional[List[float]],
 ) -> Optional[float]:
     """[summary]
     If target_labels is ["CAR", "PEDESTRIAN", "BIKE"] and threshold is [0.1, 0.2, 0.3],
@@ -55,12 +55,18 @@ def get_label_threshold(
     Args:
         semantic_label (AutowareLabel): Target label
         target_labels: (Optional[List[AutowareLabel]]): Label list
-        threshold_list (List[float]): Thresholds list
+        threshold_list (Optional[List[float]]): Thresholds list
 
     Returns:
-        Optional[float]: The threshold for correspond label
+        Optional[float]: The threshold for correspond label.
+                         If there is no threshold, return None
     """
     label_threshold: Optional[float] = None
+    if target_labels is None:
+        return None
+    if threshold_list is None:
+        return None
+
     if semantic_label in target_labels:
         label_index: int = target_labels.index(semantic_label)
         label_threshold = threshold_list[label_index]
