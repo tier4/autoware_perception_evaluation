@@ -97,7 +97,6 @@ class VisualizationBEV:
         """
         pointcloudの描画
         """
-        print("visualize pointcloud")
         raise NotImplementedError()
 
     def _add_bbox(

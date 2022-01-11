@@ -35,10 +35,8 @@ class VisualizationAppearanceConfig:
     ) -> None:
 
         # object setting check
-        try:
-            len(color_list) != objects_list_num or len(line_width_list) != objects_list_num
-        except:
-            print("VisualizationObjectConfig Error")
+        if len(color_list) != objects_list_num or len(line_width_list) != objects_list_num:
+            RuntimeError("VisualizationObjectConfig Error")
 
         self.color_list: List[Color] = self._set_color(color_list, objects_list_num)
         self.line_width: List[str] = self._set_line_width(line_width_list, objects_list_num)

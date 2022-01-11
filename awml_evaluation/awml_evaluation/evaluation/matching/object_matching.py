@@ -1,11 +1,10 @@
 """[summary]
-This module has matching function.
+This module has matching class.
 
-function(
-    object_1: DynamicObject,
-    object_2: DynamicObject,
-) -> Any
-
+Matching(
+    predicted_object: DynamicObject,
+    ground_truth_object: Optional[DynamicObject],
+)
 """
 
 from abc import ABCMeta
@@ -115,7 +114,10 @@ class CenterDistanceMatching(Matching):
         Returns:
             bool: If value is better than threshold, return True.
         """
-        return self.value < threshold_value
+        if self.value is None:
+            return False
+        else:
+            return self.value < threshold_value
 
     def _get_center_distance(
         self,
@@ -128,7 +130,7 @@ class CenterDistanceMatching(Matching):
             predicted_object (DynamicObject): The predicted object
             ground_truth_object (Optional[DynamicObject]): The ground truth object
         """
-        if not ground_truth_object:
+        if ground_truth_object is None:
             return None
         return distance_objects(predicted_object, ground_truth_object)
 
@@ -182,7 +184,10 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
         Returns:
             bool: If value is better than threshold, return True.
         """
-        return self.value < threshold_value
+        if self.value is None:
+            return False
+        else:
+            return self.value < threshold_value
 
     def _get_plane_distance(
         self,
@@ -205,7 +210,7 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
             Tuple[value, ground_truth_nn_plane, predicted_nn_plane]
             See class attribute in detail
         """
-        if not ground_truth_object:
+        if ground_truth_object is None:
             return None, None, None
 
         # Get corner_points of predicted object from footprint
@@ -255,6 +260,11 @@ class IOUBEVMatching(metaclass=ABCMeta):
         predicted_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> None:
+        """[summary]
+        Args:
+            predicted_object (DynamicObject): The predicted object
+            ground_truth_object (Optional[DynamicObject]): The ground truth object
+        """
         self.mode: MatchingMode = MatchingMode.IOUBEV
         self.value: Optional[float] = self._get_iou_bev(
             predicted_object,
@@ -265,7 +275,19 @@ class IOUBEVMatching(metaclass=ABCMeta):
         self,
         threshold_value: float,
     ) -> bool:
-        return self.value > threshold_value
+        """[summary]
+        Judge whether value is better than threshold.
+
+        Args:
+            threshold_value (float): The threshold value
+
+        Returns:
+            bool: If value is better than threshold, return True.
+        """
+        if self.value is None:
+            return False
+        else:
+            return self.value > threshold_value
 
     def _get_iou_bev(
         self,
@@ -287,7 +309,7 @@ class IOUBEVMatching(metaclass=ABCMeta):
             https://github.com/lyft/nuscenes-devkit/blob/49c36da0a85da6bc9e8f2a39d5d967311cd75069/lyft_dataset_sdk/eval/detection/mAP_evaluation.py
         """
 
-        if not ground_truth_object:
+        if ground_truth_object is None:
             return 0.0
 
         # TODO: if tiny box dim seen return 0.0 IOU
@@ -337,7 +359,10 @@ class IOU3dMatching(metaclass=ABCMeta):
         Returns:
             bool: If value is better than threshold, return True.
         """
-        return self.value > threshold_value
+        if self.value is None:
+            return False
+        else:
+            return self.value > threshold_value
 
     def _get_iou_3d(
         self,
@@ -356,7 +381,7 @@ class IOU3dMatching(metaclass=ABCMeta):
                             If predicted_object do not have corresponded ground truth object,
                             return 0.0.
         """
-        if not ground_truth_object:
+        if ground_truth_object is None:
             return 0.0
 
         predicted_object_volume: float = predicted_object.get_volume()

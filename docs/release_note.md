@@ -4,6 +4,13 @@
 
 ## Now development for develop branch -> v1.2
 
+- <https://github.com/tier4/AWMLevaluation/pull/55>
+  - 【バグ修正】 matching class のis_better_than()関数でNoneのハンドリングを追加
+  - 【バグ修正】get_fn_objects()関数におけるFN判定で、一つでもResultがあれば良い形に変更
+  - 【バグ修正】get_fn_objects()にFP objectが含まれていたのを削除
+  - 【バグ修正】UseCase Fail objectをFN objectとTN objectに分離
+  - 【機能追加】ground truthを用いてObjectResultをfilterする機能を追加
+  - 【改良】全体的にrefactoring
 - <https://github.com/tier4/AWMLevaluation/pull/53>
   - 【document追加】Design documentを追加
 - <https://github.com/tier4/AWMLevaluation/pull/52>

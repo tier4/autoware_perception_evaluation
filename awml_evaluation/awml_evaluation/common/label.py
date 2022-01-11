@@ -77,10 +77,10 @@ class LabelConverter:
             if label == label_class.label:
                 if count_label_number:
                     label_class.num += 1
-                    if return_label:
-                        logger.warning(f"Label {label} is already converted to {return_label}")
+                    if return_label is not None:
+                        logger.error(f"Label {label} is already converted to {return_label}")
                 return_label = label_class.autoware_label
-        if not return_label:
+        if return_label is None:
             logger.warning(f"Label {label} is not registered")
             return_label = AutowareLabel.UNKNOWN
         return return_label

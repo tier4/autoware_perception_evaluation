@@ -4,18 +4,14 @@ import os
 from typing import List
 from typing import Union
 
+from awml_evaluation.common.evaluation_task import EvaluationTask
+from awml_evaluation.common.evaluation_task import set_task_lists
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.label import LabelConverter
 from awml_evaluation.common.label import set_target_lists
 from awml_evaluation.evaluation.metrics.metrics_config import MetricsScoreConfig
-from awml_evaluation.common.evaluation_task import EvaluationTask
 
 logger = getLogger(__name__)
-
-
-class PerceptionEvaluationConfigError(Exception):
-    def __init__(self, message) -> None:
-        super().__init__(message)
 
 
 class PerceptionEvaluationConfig:
@@ -109,9 +105,7 @@ class PerceptionEvaluationConfig:
             target_labels,
             self.label_converter,
         )
-        evaluation_tasks_: List[EvaluationTask] = PerceptionEvaluationConfig._set_task_lists(
-            evaluation_tasks
-        )
+        evaluation_tasks_: List[EvaluationTask] = set_task_lists(evaluation_tasks)
 
         # Set for thresholds Union[List[List[float]], List[float]]
         map_thresholds_center_distance_ = PerceptionEvaluationConfig._set_thresholds(
@@ -141,29 +135,6 @@ class PerceptionEvaluationConfig:
             map_thresholds_iou_bev=map_thresholds_iou_bev_,
             map_thresholds_iou_3d=map_thresholds_iou_3d_,
         )
-
-    @staticmethod
-    def _set_task_lists(evaluation_tasks: List[str]) -> List[EvaluationTask]:
-        """[summary]
-        Convert str to EvaluationTask class
-
-        Args:
-            evaluation_tasks (List[str]): The tasks to evaluate
-
-        Returns:
-            List[EvaluationTask]: The tasks to evaluate
-        """
-        output = []
-        for evaluation_task in evaluation_tasks:
-            if evaluation_task == EvaluationTask.DETECTION.value:
-                output.append(EvaluationTask.DETECTION)
-            elif evaluation_task == EvaluationTask.TRACKING.value:
-                output.append(EvaluationTask.TRACKING)
-            elif evaluation_task == EvaluationTask.PREDICTION.value:
-                output.append(EvaluationTask.PREDICTION)
-            else:
-                raise PerceptionEvaluationConfigError(f"{evaluation_task} is not proper setting")
-        return output
 
     def get_result_log_directory(self) -> str:
         """[summary]

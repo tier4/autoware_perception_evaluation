@@ -60,10 +60,13 @@
   - 入力データ: 1 pointcloud + List[ground truth objects]
   - object_results (List[DynamicObjectWithResult]): Objectごとの評価
   - metrics_score (MetricsScore): Metrics評価
-  - uc_fail_objects (List[DynamicObject]): Use case評価でfailしたobject
+  - pass_fail_result (PassFailResult): Use case評価の結果
+    - fp_objects (List[DynamicObjectWithResult]): Use case評価でFP (False Positive) のObjectResult
+    - fn_objects (List[DynamicObject]): Use case評価でFN (False Negative) のDynamicObject
 - 詳細は<https://github.com/tier4/AWMLevaluation/blob/develop/awml_evaluation/awml_evaluation/evaluation/result/perception_frame_result.py>
 
 ```
+[2022-01-11 10:37:00,854] [INFO] [lsim.py:146 <module>] Frame result example (frame_results[0]): 
 {'frame_name': '0',
  'ground_truth_objects': ' --- length of element 98 ---,',
  'metrics_score': {'config': {'evaluation_tasks': ['EvaluationTask.DETECTION'],
@@ -76,31 +79,19 @@
                               'target_labels': ['AutowareLabel.CAR', 'AutowareLabel.BICYCLE',
                                                 'AutowareLabel.PEDESTRIAN', 'AutowareLabel.MOTORBIKE']},
                    'maps': ' --- length of element 6 ---,'},
- 'object_results': ' --- length of element 98 ---,',
+ 'object_results': ' --- length of element 97 ---,',
  'pass_fail_result': {'critical_ground_truth_objects': ' --- length of element 23 ---,',
                       'critical_object_filter_config': {'max_x_position_list': [30.0, 30.0, 30.0, 30.0],
                                                         'max_y_position_list': [30.0, 30.0, 30.0, 30.0],
                                                         'target_labels': ['AutowareLabel.CAR', 'AutowareLabel.BICYCLE',
                                                                           'AutowareLabel.PEDESTRIAN',
                                                                           'AutowareLabel.MOTORBIKE']},
+                      'fn_objects': ' --- length of element 6 ---,',
+                      'fp_objects_result': ' --- length of element 16 ---,',
                       'frame_pass_fail_config': {'target_labels': ['AutowareLabel.CAR', 'AutowareLabel.BICYCLE',
                                                                    'AutowareLabel.PEDESTRIAN',
                                                                    'AutowareLabel.MOTORBIKE'],
-                                                 'threshold_plane_distance_list': [2.0, 2.0, 2.0, 2.0]},
-                      'uc_fail_objects': [{'pointcloud_num': None,
-                                           'predicted_confidence': None,
-                                           'predicted_path': None,
-                                           'semantic_label': 'AutowareLabel.CAR',
-                                           'semantic_score': 1.0,
-                                           'state': {'orientation': {'q': [0.9995503596923971, 0.011962719046655275,
-                                                                           0.0010540351218293678, 0.027474730240206302]},
-                                                     'position': [-20.693627169587383, 6.296423230281428, 0.8502673711851305],
-                                                     'size': [2.289, 4.428, 1.722],
-                                                     'velocity': [nan, nan, nan]},
-                                           'tracked_path': None,
-                                           'unix_time': 1624164470849887,
-                                           'uuid': 'ed75146e62d9ef789cd2d885a13e218f',
-                                           'will_collide_within_5s': None}]},
+                                                 'threshold_plane_distance_list': [2.0, 2.0, 2.0, 2.0]}},
  'pointcloud': None,
  'unix_time': 1624164470849887}
 ```
@@ -111,7 +102,6 @@
   - ground_truth_object: Ground truth
   - predicted_object: (Autowareの) 認識の推論結果
   - metrics_score: 評価数値
-
 - List[DynamicObjectWithResult]
   - predicted_object (DynamicObject): 推論結果のObject
   - ground_truth_object (Optional[DynamicObject]): Ground truth
@@ -128,46 +118,43 @@
   - yaw角 <https://github.com/tier4/AWMLevaluation/blob/develop/awml_evaluation/awml_evaluation/common/object.py#L185>
 
 ```
-[2022-01-06 17:38:57,086] [INFO] [func]  [lsim.py:147 <module>] Object result example (frame_results[0].object_results[0]): 
-{'center_distance': {'mode': 'MatchingMode.CENTERDISTANCE', 'value': 0.36055512754639657},
+[2022-01-11 13:30:22,041] [INFO] [lsim.py:150 <module>] Object result example (frame_results[0].object_results[0]): 
+{'center_distance': {'mode': 'MatchingMode.CENTERDISTANCE', 'value': 2.3086792761230366},
  'ground_truth_object': {'pointcloud_num': None,
                          'predicted_confidence': None,
                          'predicted_path': None,
-                         'semantic_label': 'AutowareLabel.BICYCLE',
+                         'semantic_label': 'AutowareLabel.PEDESTRIAN',
                          'semantic_score': 1.0,
-                         'state': {'orientation': {'q': [0.9320199253171807, 0.010618363831163744, 0.005609633372716289,
-                                                         -0.36220800815930304]},
-                                   'position': [46.24486199080278, -30.359881371249305, -0.054543594144321084],
-                                   'size': [0.836, 2.295, 1.36],
+                         'state': {'orientation': {'q': [0.9999188233118326, 0.011923246709992032,
+                                                         0.0014331172038332752, -0.00425783391558715]},
+                                   'position': [51.36128164198862, 13.387720045757435, 0.9432761344718263],
+                                   'size': [0.94, 1.135, 1.879],
                                    'velocity': [nan, nan, nan]},
                          'tracked_path': None,
                          'unix_time': 1624164470849887,
-                         'uuid': '79151c9c4ebc7380555f25aecc031422',
-                         'will_collide_within_5s': None},
- 'iou_3d': {'mode': 'MatchingMode.IOU3D', 'value': 0.41834636476377174},
- 'iou_bev': {'mode': 'MatchingMode.IOUBEV', 'value': 0.5286024469816659},
+                         'uuid': '5e5edc8ab20a8d6b13920ace32e93efe'},
+ 'iou_3d': {'mode': 'MatchingMode.IOU3D', 'value': 0.0},
+ 'iou_bev': {'mode': 'MatchingMode.IOUBEV', 'value': 0.0},
  'is_label_correct': True,
- 'plane_distance': {'ground_truth_nn_plane': [[45.161672555854175, -30.92385957827578, -0.06500686394505989],
-                                              [46.711461480269094, -29.231560502163358, -0.02890801701181337]],
+ 'plane_distance': {'ground_truth_nn_plane': [[50.88644897057802, 12.824387955085653, 0.9311460157404472],
+                                              [50.896152257391414, 13.959024090062458, 0.9581957371792247]],
                     'mode': 'MatchingMode.PLANEDISTANCE',
-                    'predicted_nn_plane': [[45.37123088523096, -30.69748757728394, 0.13584767643026147],
-                                           [45.8634417250657, -31.372915323047906, 0.11530870368598917]],
-                    'value': 1.5230382900991921},
+                    'predicted_nn_plane': [[53.148849138551, 12.868266796561109, 1.0406238022039516],
+                                           [53.23667235571584, 13.974898952448491, 1.2770077146913759]],
+                    'value': 2.3020280422585797},
  'predicted_object': {'pointcloud_num': None,
                       'predicted_confidence': None,
                       'predicted_path': None,
-                      'semantic_label': 'AutowareLabel.BICYCLE',
-                      'semantic_score': 0.4467993440509379,
-                      'state': {'orientation': {'q': [0.8911833753201498, 0.013291543866430743, 0.0070218622410756805,
-                                                      -0.45339411097333304]},
-                                'position': [46.54486199080278, -30.359881371249305, 0.14545640585567893],
-                                'size': [0.836, 2.295, 1.36],
+                      'semantic_label': 'AutowareLabel.PEDESTRIAN',
+                      'semantic_score': 0.46922582015218073,
+                      'state': {'orientation': {'q': [0.993651362878679, 0.10527797935871155, 0.012653909381690113,
+                                                      -0.037595141825116654]},
+                                'position': [53.661281641988616, 13.387720045757435, 1.1432761344718263],
+                                'size': [0.94, 1.135, 1.879],
                                 'velocity': [nan, nan, nan]},
                       'tracked_path': None,
                       'unix_time': 1624164470849887,
-                      'uuid': '79151c9c4ebc7380555f25aecc031422',
-                      'will_collide_within_5s': None}}
-
+                      'uuid': '5e5edc8ab20a8d6b13920ace32e93efe'}}
 ```
 
 ### Metrics について

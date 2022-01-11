@@ -113,9 +113,9 @@ class Ap:
         self.tp_list: List[float] = []
         self.fp_list: List[float] = []
         self.tp_list, self.fp_list = self._calculate_tp_fp(
-            tp_metrics,
-            filtered_object_results,
-            self.ground_truth_objects_num,
+            tp_metrics=tp_metrics,
+            object_results=filtered_object_results,
+            ground_truth_objects_num=self.ground_truth_objects_num,
         )
 
         # caliculate precision recall

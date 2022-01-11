@@ -84,9 +84,9 @@ class DynamicObjectWithResult:
 
         Args:
             matching_mode (MatchingMode):
-                    The matching mode to evaluate. Defaults to None.
+                    The matching mode to evaluate.
             matching_threshold (float):
-                    The matching threshold to evaluate. Defaults to None.
+                    The matching threshold to evaluate.
                     For example, if matching_mode = IOU3d and matching_threshold = 0.5,
                     and IoU of the object is higher than "matching_threshold",
                     this function appends to return objects.
@@ -169,19 +169,19 @@ class DynamicObjectWithResult:
             return None
 
         correspond_ground_truth_object: DynamicObject = ground_truth_objects[0]
-        # TODO: impl for abstruct to matching
-        best_matching_distance: Matching = CenterDistanceMatching(
-            predicted_object,
-            correspond_ground_truth_object,
+        best_matching_distance: CenterDistanceMatching = CenterDistanceMatching(
+            predicted_object=predicted_object,
+            ground_truth_object=correspond_ground_truth_object,
         )
 
         # object which is min distance from the center of object
         for ground_truth_object in ground_truth_objects:
             matching_distance: Matching = CenterDistanceMatching(
-                predicted_object,
-                ground_truth_object,
+                predicted_object=predicted_object,
+                ground_truth_object=ground_truth_object,
             )
-            if matching_distance.is_better_than(best_matching_distance.value):
-                best_matching_distance = matching_distance
-                correspond_ground_truth_object = ground_truth_object
+            if best_matching_distance.value is not None:
+                if matching_distance.is_better_than(best_matching_distance.value):
+                    best_matching_distance = matching_distance
+                    correspond_ground_truth_object = ground_truth_object
         return correspond_ground_truth_object
