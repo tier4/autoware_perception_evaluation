@@ -1,5 +1,6 @@
 import os
 from typing import List
+from typing import Optional
 
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
@@ -32,9 +33,9 @@ class VisualizationBEV:
     def visualize_bev(
         self,
         file_name: str,
-        object_results: List[DynamicObjectWithResult],
-        ground_truth_objects: List[DynamicObject],
-        pointcloud: List[List[float]] = None,
+        object_results: Optional[List[DynamicObjectWithResult]] = None,
+        ground_truth_objects: Optional[List[DynamicObject]] = None,
+        pointcloud: Optional[List[List[float]]] = None,
         matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
         matching_threshold: float = 1.0,
         pointcloud_color: Color = Color.WHITE,
@@ -96,7 +97,6 @@ class VisualizationBEV:
         """
         pointcloudの描画
         """
-        print("visualize pointcloud")
         raise NotImplementedError()
 
     def _add_bbox(

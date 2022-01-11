@@ -56,7 +56,6 @@ class DynamicObject:
 
         # Use case object evaluation for detection
         self.pointcloud_num (Optional[int]): Pointcloud number inside bounding box
-        self.will_collide_within_5s (Optional[bool]): Use case evaluation for example
 
         # Tracking
         self.uuid (Optional[str]): The uuid for tracking
@@ -77,7 +76,6 @@ class DynamicObject:
         semantic_score: float,
         semantic_label: AutowareLabel,
         pointcloud_num: Optional[int] = None,
-        will_collide_within_5s: Optional[bool] = None,
         uuid: Optional[str] = None,
         tracked_positions: Optional[List[Tuple[float, float, float]]] = None,
         tracked_orientations: Optional[List[Quaternion]] = None,
@@ -101,8 +99,6 @@ class DynamicObject:
             semantic_label (AutowareLabel): [description]
             pointcloud_num (Optional[int], optional):
                     Pointcloud number inside bounding box. Defaults to None.
-            will_collide_within_5s (Optional[bool], optional):
-                    Use case evaluation for example. Defaults to None.
             uuid (Optional[str], optional): The uuid for tracking. Defaults to None.
             tracked_positions (Optional[List[Tuple[float, float, float]]], optional):
                     The list of position for tracked object. Defaults to None.
@@ -126,10 +122,10 @@ class DynamicObject:
         # detection
         self.unix_time: int = unix_time
         self.state: ObjectState = ObjectState(
-            position,
-            orientation,
-            size,
-            velocity,
+            position=position,
+            orientation=orientation,
+            size=size,
+            velocity=velocity,
         )
         self.semantic_score: float = semantic_score
         self.semantic_label: AutowareLabel = semantic_label
@@ -137,28 +133,27 @@ class DynamicObject:
         # for detection label for case evaluation
         # pointcloud number inside bounding box
         self.pointcloud_num: Optional[int] = pointcloud_num
-        self.will_collide_within_5s: Optional[bool] = will_collide_within_5s
 
         # tracking
         self.uuid: Optional[str] = uuid
         self.tracked_path: Optional[List[ObjectState]] = DynamicObject._set_states(
-            tracked_positions,
-            tracked_orientations,
-            tracked_sizes,
-            tracked_twists,
+            positions=tracked_positions,
+            orientations=tracked_orientations,
+            sizes=tracked_sizes,
+            twists=tracked_twists,
         )
 
         # prediction
         self.predicted_confidence: Optional[float] = predicted_confidence
         self.predicted_path: Optional[List[ObjectState]] = DynamicObject._set_states(
-            predicted_positions,
-            predicted_orientations,
-            predicted_sizes,
-            predicted_twists,
+            positions=predicted_positions,
+            orientations=predicted_orientations,
+            sizes=predicted_sizes,
+            twists=predicted_twists,
         )
 
     def __eq__(self, other: object) -> bool:
-        eq = True
+        eq: bool = True
         eq = eq and self.semantic_label == other.semantic_label
         eq = eq and self.state.position == other.state.position
         eq = eq and self.state.orientation == other.state.orientation
@@ -185,6 +180,7 @@ class DynamicObject:
     def get_heading_bev(self) -> float:
         """[summary]
         Get the object heading from ego vehicle in bird eye view
+
         Returns:
             float: The heading (radian)
         """
@@ -266,7 +262,12 @@ class DynamicObject:
             Optional[List[ObjectState]]: The list of ObjectState
         """
 
-        if positions and orientations and sizes and twists:
+        if (
+            positions is not None
+            and orientations is not None
+            and sizes is not None
+            and twists is not None
+        ):
             states: List[ObjectState] = []
             for position, orientation, size, twist in positions, orientations, sizes, twists:
                 states.append(ObjectState(position, orientation, size, twist))

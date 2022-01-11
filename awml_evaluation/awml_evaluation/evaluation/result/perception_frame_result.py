@@ -5,12 +5,12 @@ from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.metrics.metrics import MetricsScore
 from awml_evaluation.evaluation.metrics.metrics_config import MetricsScoreConfig
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
-from awml_evaluation.evaluation.result.pass_fail_result import CriticalObjectFilterConfig
-from awml_evaluation.evaluation.result.pass_fail_result import FramePassFailConfig
-from awml_evaluation.evaluation.result.pass_fail_result import PassFailResult
+from awml_evaluation.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
+from awml_evaluation.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from awml_evaluation.evaluation.result.perception_pass_fail_result import PassFailResult
 
 
-class FrameResult:
+class PerceptionFrameResult:
     """[summary]
     The result for 1 frame (the pair of predicted objects and ground truth objects)
 
@@ -28,7 +28,7 @@ class FrameResult:
         self,
         metrics_config: MetricsScoreConfig,
         critical_object_filter_config: CriticalObjectFilterConfig,
-        frame_pass_fail_config: FramePassFailConfig,
+        frame_pass_fail_config: PerceptionPassFailConfig,
         unix_time: int,
         frame_name: str,
         pointcloud: Optional[List[float]] = None,
@@ -38,7 +38,7 @@ class FrameResult:
             metrics_config (MetricsConfiguration): Metrics config class
             critical_object_filter_config (CriticalObjectFilterConfig):
                     Critical object filter config.
-            frame_pass_fail_config (FramePassFailConfig):
+            frame_pass_fail_config (PerceptionPassFailConfig):
                     Frame pass fail config.
             unix_time (int): The unix time for frame [us]
             frame_name (str): The file name of frame in the datasets
@@ -79,7 +79,7 @@ class FrameResult:
                     Ground truth objects filtered by ROS node.
         """
         self.ground_truth_objects = ground_truth_objects
-        self.object_results = FrameResult.get_object_results(
+        self.object_results = PerceptionFrameResult.get_object_results(
             predicted_objects,
             ground_truth_objects,
         )

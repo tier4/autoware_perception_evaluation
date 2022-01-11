@@ -1,8 +1,11 @@
 from logging import getLogger
 from typing import Callable
 from typing import List
+from typing import Optional
 from typing import Tuple
 from typing import Union
+
+import numpy as np
 
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
@@ -22,22 +25,28 @@ class Ap:
     AP class
 
     Attributes:
-        self.target_labels (List[AutowareLabel]):
-                Target labels to evaluate
-        self.tp_metrics (TPMetrics):
-                The mode of TP (True positive) metrics. See TPMetrics class in detail.
+        self.ap (float):
+                AP (Average Precision) result
+        self.matching_average (Optional[float]):
+                The average for matching score (ex. IoU, center distance).
+                If there are no object results, this variable is None.
         self.matching_mode (MatchingMode):
                 Matching mode like distance between the center of the object, 3d IoU
         self.matching_threshold (List[float]):
                 The threshold list for matching the predicted object
+        self.matching_standard_deviation (Optional[float]):
+                The standard deviation for matching score (ex. IoU, center distance)
+                If there are no object results, this variable is None.
+        self.target_labels (List[AutowareLabel]):
+                Target labels to evaluate
+        self.tp_metrics (TPMetrics):
+                The mode of TP (True positive) metrics. See TPMetrics class in detail.
         self.ground_truth_objects_num (int):
                 The number of ground truth objects
-        self.tp_list (List[int]):
+        self.tp_list (List[float]):
                 The list of the number of TP (True Positive) objects ordered by confidence
-        self.fp_list (List[int]):
+        self.fp_list (List[float]):
                 The list of the number of FP (False Positive) objects ordered by confidence
-        self.ap (float):
-                AP (Average Precision) result
     """
 
     def __init__(
@@ -104,9 +113,9 @@ class Ap:
         self.tp_list: List[float] = []
         self.fp_list: List[float] = []
         self.tp_list, self.fp_list = self._calculate_tp_fp(
-            tp_metrics,
-            filtered_object_results,
-            self.ground_truth_objects_num,
+            tp_metrics=tp_metrics,
+            object_results=filtered_object_results,
+            ground_truth_objects_num=self.ground_truth_objects_num,
         )
 
         # caliculate precision recall
@@ -116,6 +125,14 @@ class Ap:
 
         # AP
         self.ap: float = Ap._calculate_ap(precision_list, recall_list)
+
+        # average and standard deviation
+        self.matching_average: Optional[float] = None
+        self.matching_standard_deviation: Optional[float] = None
+        self.matching_average, self.matching_standard_deviation = self._calculate_average_sd(
+            object_results=object_results,
+            matching_mode=self.matching_mode,
+        )
 
     def save_precision_recall_graph(
         self,
@@ -302,6 +319,34 @@ class Ap:
             ap += score
 
         return ap
+
+    @staticmethod
+    def _calculate_average_sd(
+        object_results: List[DynamicObjectWithResult],
+        matching_mode: MatchingMode,
+    ) -> Tuple[Optional[float], Optional[float]]:
+        """[summary]
+        Calculate average and standard deviation.
+
+        Args:
+            object_results (List[DynamicObjectWithResult]): The object results
+            matching_mode (MatchingMode): [description]
+
+        Returns:
+            Tuple[float, float]: [description]
+        """
+
+        matching_score_list: List[float] = [
+            object_result.get_matching(matching_mode).value for object_result in object_results
+        ]
+        matching_score_list_without_none = list(
+            filter(lambda x: x is not None, matching_score_list)
+        )
+        if len(matching_score_list_without_none) == 0:
+            return None, None
+        mean: float = np.mean(matching_score_list_without_none)
+        standard_deviation: float = np.std(matching_score_list_without_none)
+        return mean, standard_deviation
 
     @staticmethod
     def _get_flat_str(str_list: List[str]) -> str:

@@ -54,13 +54,48 @@ class FrameGroundTruth:
         self.pointcloud: Optional[List[Tuple[float, float, float, float]]] = pointcloud
 
 
-def load_datasets(
+def load_all_datasets(
+    dataset_paths: List[str],
+    does_use_pointcloud: bool,
+    evaluation_tasks: List[EvaluationTask],
+    label_converter: LabelConverter,
+) -> List[FrameGroundTruth]:
+    """
+    Load tier4 datasets.
+    Args:
+        dataset_paths (List[str]): The list of root paths to dataset
+        does_use_pointcloud (bool): The flag of setting pointcloud
+        evaluation_tasks (List[EvaluationTask]): The evaluation tasks
+        label_converter (LabelConverter): Label convertor
+
+    Reference
+        https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
+    """
+    logger.info(f"Start to load dataset {dataset_paths}")
+    logger.info(
+        f"config: does_set_pointcloud {does_use_pointcloud}, evaluation_tasks {evaluation_tasks}"
+    )
+
+    all_datasets: List[FrameGroundTruth] = []
+    for dataset_path in dataset_paths:
+        all_datasets += _load_dataset(
+            dataset_path=dataset_path,
+            does_use_pointcloud=does_use_pointcloud,
+            evaluation_tasks=evaluation_tasks,
+            label_converter=label_converter,
+        )
+    logger.info("Finish loading dataset\n" + _get_str_objects_number_info(label_converter))
+    return all_datasets
+
+
+def _load_dataset(
     dataset_path: str,
     does_use_pointcloud: bool,
     evaluation_tasks: List[EvaluationTask],
     label_converter: LabelConverter,
 ) -> List[FrameGroundTruth]:
     """
+    Load one tier4 dataset.
     Args:
         dataset_path (str): The root path to dataset
         does_use_pointcloud (bool): The flag of setting pointcloud
@@ -70,11 +105,6 @@ def load_datasets(
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
     """
-
-    logger.info(f"Start to load dataset {dataset_path}")
-    logger.info(
-        f"config: does_set_pointcloud {does_use_pointcloud}, evaluation_tasks {evaluation_tasks}"
-    )
 
     nusc: NuScenes = NuScenes(version="annotation", dataroot=dataset_path, verbose=False)
 
@@ -89,7 +119,7 @@ def load_datasets(
     # Read out all sample_tokens in DB.
     sample_tokens = _get_sample_tokens(nusc.sample)
 
-    datasets: List[FrameGroundTruth] = []
+    dataset: List[FrameGroundTruth] = []
 
     for sample_token in tqdm.tqdm(sample_tokens):
         frame = _sample_to_frame(
@@ -99,9 +129,8 @@ def load_datasets(
             evaluation_tasks=evaluation_tasks,
             label_converter=label_converter,
         )
-        datasets.append(frame)
-    logger.info("Finish loading dataset\n" + _get_str_objects_number_info(label_converter))
-    return datasets
+        dataset.append(frame)
+    return dataset
 
 
 def _get_str_objects_number_info(
@@ -246,6 +275,7 @@ def _convert_nuscenes_annotation_to_dynamic_object(
         label=object_annotation.name,
         count_label_number=True,
     )
+    token = object_annotation.token
     # TODO impl for velocity
     velocity_ = tuple(object_annotation.velocity.tolist())
     # TODO impl for pointcloud_num
@@ -266,6 +296,7 @@ def _convert_nuscenes_annotation_to_dynamic_object(
         velocity=velocity_,
         semantic_score=semantic_score_,
         semantic_label=autoware_label_,
+        uuid=token,
     )
     return dynamic_object
 

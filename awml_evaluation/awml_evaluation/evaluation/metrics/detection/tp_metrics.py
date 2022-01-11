@@ -6,15 +6,39 @@ from awml_evaluation.evaluation.result.object_result import DynamicObjectWithRes
 
 
 class TPMetrics(metaclass=ABCMeta):
+    """
+    Tp metrics meta class
+    """
+
+    @abstractmethod
+    def __init__(self) -> None:
+        self.mode: str = "TPMetrics"
+
     @abstractmethod
     def get_value(
         self,
         object_result: DynamicObjectWithResult,
     ) -> float:
+        """[summary]
+        Get TP metrics value
+
+        Args:
+            object_result (DynamicObjectWithResult): The object result
+
+        Returns:
+            float: Tp metrics value
+        """
         pass
 
 
 class TPMetricsAp(TPMetrics):
+    """
+    Ap metrics class
+    """
+
+    def __init__(self) -> None:
+        self.mode: str = "TPMetricsAp"
+
     def get_value(
         self,
         object_result: DynamicObjectWithResult,
@@ -33,6 +57,13 @@ class TPMetricsAp(TPMetrics):
 
 
 class TPMetricsAph(TPMetrics):
+    """
+    Aph metrics class
+    """
+
+    def __init__(self) -> None:
+        self.mode: str = "TPMetricsAph"
+
     def get_value(
         self,
         object_result: DynamicObjectWithResult,
@@ -54,9 +85,9 @@ class TPMetricsAph(TPMetrics):
                 https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/metrics/metrics_utils.cc#L101-L116
         """
 
-        pd_heading = object_result.predicted_object.get_heading_bev()
-        gt_heading = object_result.ground_truth_object.get_heading_bev()
-        diff_heading = abs(pd_heading - gt_heading)
+        pd_heading: float = object_result.predicted_object.get_heading_bev()
+        gt_heading: float = object_result.ground_truth_object.get_heading_bev()
+        diff_heading: float = abs(pd_heading - gt_heading)
 
         # Normalize heading error to [0, pi] (+pi and -pi are the same).
         if diff_heading > pi:

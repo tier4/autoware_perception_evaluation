@@ -5,6 +5,7 @@ from typing import List
 from typing import Union
 
 from awml_evaluation.common.evaluation_task import EvaluationTask
+from awml_evaluation.common.evaluation_task import set_task_lists
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.label import LabelConverter
 from awml_evaluation.common.label import set_target_lists
@@ -13,12 +14,7 @@ from awml_evaluation.evaluation.metrics.metrics_config import MetricsScoreConfig
 logger = getLogger(__name__)
 
 
-class EvaluationConfigError(Exception):
-    def __init__(self, message) -> None:
-        super().__init__(message)
-
-
-class EvaluationConfig:
+class PerceptionEvaluationConfig:
     """[summary]
     Evaluation configure class
 
@@ -32,7 +28,7 @@ class EvaluationConfig:
 
     def __init__(
         self,
-        dataset_path: str,
+        dataset_paths: List[str],
         does_use_pointcloud: bool,
         result_root_directory: str,
         log_directory: str,
@@ -49,7 +45,7 @@ class EvaluationConfig:
         """[summary]
 
         Args:
-            dataset_path (str): The path of dataset
+            dataset_paths (List[str]): The paths of dataset
             does_use_pointcloud (bool): The flag for loading pointcloud data from dataset
             result_root_directory (str): The path to result directory
             log_directory (str): The path to sub directory for log
@@ -92,7 +88,7 @@ class EvaluationConfig:
                     The specification is same as map_thresholds_center_distance
         """
         # dataset
-        self.dataset_path: str = dataset_path
+        self.dataset_paths: List[str] = dataset_paths
         self.does_use_pointcloud: bool = does_use_pointcloud
 
         # directory
@@ -109,24 +105,22 @@ class EvaluationConfig:
             target_labels,
             self.label_converter,
         )
-        evaluation_tasks_: List[EvaluationTask] = EvaluationConfig._set_task_lists(
-            evaluation_tasks
-        )
+        evaluation_tasks_: List[EvaluationTask] = set_task_lists(evaluation_tasks)
 
         # Set for thresholds Union[List[List[float]], List[float]]
-        map_thresholds_center_distance_ = EvaluationConfig._set_thresholds(
+        map_thresholds_center_distance_ = PerceptionEvaluationConfig._set_thresholds(
             map_thresholds_center_distance,
             len(autoware_target_labels),
         )
-        map_thresholds_plane_distance_ = EvaluationConfig._set_thresholds(
+        map_thresholds_plane_distance_ = PerceptionEvaluationConfig._set_thresholds(
             map_thresholds_plane_distance,
             len(autoware_target_labels),
         )
-        map_thresholds_iou_bev_ = EvaluationConfig._set_thresholds(
+        map_thresholds_iou_bev_ = PerceptionEvaluationConfig._set_thresholds(
             map_thresholds_iou_bev,
             len(autoware_target_labels),
         )
-        map_thresholds_iou_3d_ = EvaluationConfig._set_thresholds(
+        map_thresholds_iou_3d_ = PerceptionEvaluationConfig._set_thresholds(
             map_thresholds_iou_3d,
             len(autoware_target_labels),
         )
@@ -141,29 +135,6 @@ class EvaluationConfig:
             map_thresholds_iou_bev=map_thresholds_iou_bev_,
             map_thresholds_iou_3d=map_thresholds_iou_3d_,
         )
-
-    @staticmethod
-    def _set_task_lists(evaluation_tasks: List[str]) -> List[EvaluationTask]:
-        """[summary]
-        Convert str to EvaluationTask class
-
-        Args:
-            evaluation_tasks (List[str]): The tasks to evaluate
-
-        Returns:
-            List[EvaluationTask]: The tasks to evaluate
-        """
-        output = []
-        for evaluation_task in evaluation_tasks:
-            if evaluation_task == EvaluationTask.DETECTION.value:
-                output.append(EvaluationTask.DETECTION)
-            elif evaluation_task == EvaluationTask.TRACKING.value:
-                output.append(EvaluationTask.TRACKING)
-            elif evaluation_task == EvaluationTask.PREDICTION.value:
-                output.append(EvaluationTask.PREDICTION)
-            else:
-                raise EvaluationConfigError(f"{evaluation_task} is not proper setting")
-        return output
 
     def get_result_log_directory(self) -> str:
         """[summary]

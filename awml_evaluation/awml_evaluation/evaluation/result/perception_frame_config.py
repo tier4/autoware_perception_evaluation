@@ -1,9 +1,8 @@
 from typing import List
-from typing import Optional
 
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.label import set_target_lists
-from awml_evaluation.evaluation_config import EvaluationConfig
+from awml_evaluation.perception_evaluation_config import PerceptionEvaluationConfig
 
 
 class CriticalObjectFilterConfig:
@@ -20,7 +19,7 @@ class CriticalObjectFilterConfig:
 
     def __init__(
         self,
-        evaluator_config: EvaluationConfig,
+        evaluator_config: PerceptionEvaluationConfig,
         target_labels: List[str],
         max_x_position_list: List[float],
         max_y_position_list: List[float],
@@ -28,7 +27,7 @@ class CriticalObjectFilterConfig:
         """[summary]
 
         Args:
-            evaluator_config (EvaluationConfig): Evaluation config
+            evaluator_config (PerceptionEvaluationConfig): Evaluation config
             target_labels (List[str]): Target list
             max_pos_distance_list (List[float]]):
                     Maximum distance threshold list for object. Defaults to None.
@@ -49,7 +48,7 @@ class CriticalObjectFilterConfig:
         )
 
 
-class FramePassFailConfig:
+class PerceptionPassFailConfig:
     """[summary]
     Config filter for pass fail to frame result
 
@@ -60,13 +59,13 @@ class FramePassFailConfig:
 
     def __init__(
         self,
-        evaluator_config: EvaluationConfig,
+        evaluator_config: PerceptionEvaluationConfig,
         target_labels: List[str],
         threshold_plane_distance_list: List[float],
     ) -> None:
         """[summary]
         Args:
-            evaluator_config (EvaluationConfig): Evaluation config
+            evaluator_config (PerceptionEvaluationConfig): Evaluation config
             target_labels (List[str]): Target list
             threshold_plane_distance_list (List[float]): The threshold list for plane distance
         """
