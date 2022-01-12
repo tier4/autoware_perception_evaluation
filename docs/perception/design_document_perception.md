@@ -11,6 +11,27 @@
   - PerceptionEvaluationManager: 評価の計算等を行うclass
 
 ## 評価について
+### logsim側で出力するべき情報
+
+- logsim側で出力するべき情報
+  - [frame_results](https://github.com/tier4/AWMLevaluation/blob/v1.2.0/awml_evaluation/awml_evaluation/perception_evaluation_manager.py#L46)
+  - [scene_metrics_result](https://github.com/tier4/AWMLevaluation/blob/v1.2.0/awml_evaluation/test/lsim.py#L97)
+- frame_results: 評価を再計算するのに必要な情報
+  - rosbag, annotation -> 評価に必要な情報 -> Metrics計算 という流れで、rosbag, annotationからもう一度評価することなくMetricsを再計算するのに必要な情報、という意味
+  - Use Case としてはscenario評価がある
+    - 例えば10個のrosbagを（クラウド上で）分散してlogsimを回してresult(scene_result.json)を出す
+    - その10個のscene_result.json を用いてscenario評価としてresult.jsonを作る
+    - 時にscene_result.jsonに必要な情報がframe_results
+- scene_metrics_result: sceneの評価情報
+  - rosbagごとの評価値を見て解析が可能
+- json化について
+  - class object -> dict -> jsonが一番簡単なはず
+  - [便利関数](https://github.com/tier4/AWMLevaluation/blob/v1.2.0/awml_evaluation/awml_evaluation/util/debug.py#L35)
+
+```
+dict_result = class_to_dict(self.frame_results)
+json_result = json.dump(dict_result)
+```
 
 ### 座標系とnuscenes-devkitについて
 

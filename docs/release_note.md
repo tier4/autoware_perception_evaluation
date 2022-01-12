@@ -4,7 +4,15 @@
 
 ## Now development for develop branch -> v1.3
 
+
 ## Release for main branch
+### v1.2.1
+
+- <https://github.com/tier4/AWMLevaluation/pull/57>
+  - 【改良】get_scenario_result() -> get_scene_result() のrename
+  - 【document追加】分散評価に関するdocument追加
+  - 【release】v1.2.1 release
+
 ### v1.2
 
 - <https://github.com/tier4/AWMLevaluation/pull/56>
