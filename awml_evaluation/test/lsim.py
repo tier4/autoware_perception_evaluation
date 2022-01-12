@@ -94,7 +94,7 @@ class LSimMoc:
         for frame_results in self.evaluator.frame_results:
             number_use_case_fail_object += frame_results.pass_fail_result.get_fail_object_num()
         logging.info(f"final use case fail object: {number_use_case_fail_object}")
-        final_metric_score = self.evaluator.get_scenario_result()
+        final_metric_score = self.evaluator.get_scene_result()
 
         # final result
         logging.info(f"final metrics result {final_metric_score}")

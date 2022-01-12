@@ -115,7 +115,7 @@ class PerceptionEvaluationManager:
         self.frame_results.append(result)
         return result
 
-    def get_scenario_result(self) -> MetricsScore:
+    def get_scene_result(self) -> MetricsScore:
         """[summary]
         Evaluate scenario
 
