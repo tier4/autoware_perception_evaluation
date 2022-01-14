@@ -4,6 +4,8 @@
 
 ## Now development for develop branch -> v1.3
 
+- <https://github.com/tier4/AWMLevaluation/pull/59>
+  - 【改良】poetry update
 
 ## Release for main branch
 ### v1.2.1
