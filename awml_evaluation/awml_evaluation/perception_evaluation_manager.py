@@ -5,7 +5,7 @@ from awml_evaluation.common.dataset import get_now_frame
 from awml_evaluation.common.dataset import load_all_datasets
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.metrics.metrics import MetricsScore
-from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
+from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
 from awml_evaluation.evaluation.result.perception_pass_fail_result import PerceptionPassFailConfig
 from awml_evaluation.evaluation.result.perception_pass_fail_result import (
@@ -138,7 +138,7 @@ class PerceptionEvaluationManager:
         """
 
         # gather objects from frame results
-        all_frame_results: List[DynamicObjectWithResult] = []
+        all_frame_results: List[DynamicObjectWithPerceptionResult] = []
         all_ground_truths: List[DynamicObject] = []
         for frame in self.frame_results:
             all_frame_results += frame.object_results
