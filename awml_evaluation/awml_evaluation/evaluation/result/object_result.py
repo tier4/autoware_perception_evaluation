@@ -14,7 +14,7 @@ from awml_evaluation.evaluation.matching.object_matching import PlaneDistanceMat
 logger = getLogger(__name__)
 
 
-class DynamicObjectWithResult:
+class DynamicObjectWithPerceptionResult:
     """[summary]
     Evaluation result for a predicted object
 

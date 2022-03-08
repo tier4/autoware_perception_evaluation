@@ -79,10 +79,10 @@ json_result = json.dump(dict_result)
 
 - PerceptionFrameResult: 1 pointcloudの入力と、その入力に対しての結果のまとまり
   - 入力データ: 1 pointcloud + List[ground truth objects]
-  - object_results (List[DynamicObjectWithResult]): Objectごとの評価
+  - object_results (List[DynamicObjectWithPerceptionResult]): Objectごとの評価
   - metrics_score (MetricsScore): Metrics評価
   - pass_fail_result (PassFailResult): Use case評価の結果
-    - fp_objects (List[DynamicObjectWithResult]): Use case評価でFP (False Positive) のObjectResult
+    - fp_objects (List[DynamicObjectWithPerceptionResult]): Use case評価でFP (False Positive) のObjectResult
     - fn_objects (List[DynamicObject]): Use case評価でFN (False Negative) のDynamicObject
 - 詳細は<https://github.com/tier4/AWMLevaluation/blob/develop/awml_evaluation/awml_evaluation/evaluation/result/perception_frame_result.py>
 
@@ -119,11 +119,11 @@ json_result = json.dump(dict_result)
 
 ### Object単位でのデータ構造
 
-- DynamicObjectWithResult: 1 predicted object（認識の推論結果のbounding box）に対しての結果
+- DynamicObjectWithPerceptionResult: 1 predicted object（認識の推論結果のbounding box）に対しての結果
   - ground_truth_object: Ground truth
   - predicted_object: (Autowareの) 認識の推論結果
   - metrics_score: 評価数値
-- List[DynamicObjectWithResult]
+- List[DynamicObjectWithPerceptionResult]
   - predicted_object (DynamicObject): 推論結果のObject
   - ground_truth_object (Optional[DynamicObject]): Ground truth
   - center_distance (CenterDistanceMatching): 中心間距離
@@ -131,7 +131,7 @@ json_result = json.dump(dict_result)
     - NNの2点座標も入っている
   - iou_bev (IOUBEVMatching): BEVのIoU
   - iou_3d (IOU3dMatching): 3dのIoU
-- 関数を叩く必要があるもの (DynamicObjectWithResult method)
+- 関数を叩く必要があるもの (DynamicObjectWithPerceptionResult method)
   - 結果: <https://github.com/tier4/AWMLevaluation/blob/develop/awml_evaluation/awml_evaluation/evaluation/result/object_result.py#L77>
 - 関数を叩く必要があるもの (DynamicObject method)
   - 推論結果なら object_result.predicted_object.get_footprint() などになる

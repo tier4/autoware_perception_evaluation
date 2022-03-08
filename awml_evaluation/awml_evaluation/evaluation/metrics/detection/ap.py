@@ -15,7 +15,7 @@ from awml_evaluation.evaluation.matching.objects_filter import filter_ground_tru
 from awml_evaluation.evaluation.matching.objects_filter import filter_object_results
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAph
-from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
+from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 logger = getLogger(__name__)
 
@@ -52,7 +52,7 @@ class Ap:
     def __init__(
         self,
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
-        object_results: List[DynamicObjectWithResult],
+        object_results: List[DynamicObjectWithPerceptionResult],
         ground_truth_objects: List[DynamicObject],
         target_labels: List[AutowareLabel],
         max_x_position_list: List[float],
@@ -64,7 +64,7 @@ class Ap:
 
         Args:
             tp_metrics (TPMetrics): The mode of TP (True positive) metrics
-            object_results (List[DynamicObjectWithResult]) : The results to each predicted object
+            object_results (List[DynamicObjectWithPerceptionResult]) : The results to each predicted object
             ground_truth_objects (List[DynamicObject]) : The ground truth objects for the frame
             target_labels (List[AutowareLabel]): Target labels to evaluate
             max_x_position (List[float]):
@@ -88,7 +88,7 @@ class Ap:
         self.matching_threshold_list: List[float] = matching_threshold_list
 
         # filter predicted object and results by iou_threshold and target_labels
-        filtered_object_results: List[DynamicObjectWithResult] = filter_object_results(
+        filtered_object_results: List[DynamicObjectWithPerceptionResult] = filter_object_results(
             object_results=object_results,
             target_labels=self.target_labels,
             max_x_position_list=max_x_position_list,
@@ -96,7 +96,7 @@ class Ap:
         )
         # sort by confidence
         lambda_func: Callable[
-            [DynamicObjectWithResult], float
+            [DynamicObjectWithPerceptionResult], float
         ] = lambda x: x.predicted_object.semantic_score
         filtered_object_results.sort(key=lambda_func, reverse=True)
         self.objects_results_num: int = len(filtered_object_results)
@@ -195,7 +195,7 @@ class Ap:
     def _calculate_tp_fp(
         self,
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
-        object_results: List[DynamicObjectWithResult],
+        object_results: List[DynamicObjectWithPerceptionResult],
         ground_truth_objects_num: int,
     ) -> Tuple[List[float], List[float]]:
         """
@@ -203,7 +203,7 @@ class Ap:
 
         Args:
             tp_metrics (TPMetrics): The mode of TP (True positive) metrics
-            object_results (List[DynamicObjectWithResult]): the list of objects with result
+            object_results (List[DynamicObjectWithPerceptionResult]): the list of objects with result
             ground_truth_objects_num (int): the number of ground truth objects
 
         Return:
@@ -322,14 +322,14 @@ class Ap:
 
     @staticmethod
     def _calculate_average_sd(
-        object_results: List[DynamicObjectWithResult],
+        object_results: List[DynamicObjectWithPerceptionResult],
         matching_mode: MatchingMode,
     ) -> Tuple[Optional[float], Optional[float]]:
         """[summary]
         Calculate average and standard deviation.
 
         Args:
-            object_results (List[DynamicObjectWithResult]): The object results
+            object_results (List[DynamicObjectWithPerceptionResult]): The object results
             matching_mode (MatchingMode): [description]
 
         Returns:

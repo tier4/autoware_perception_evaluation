@@ -7,7 +7,7 @@ from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.matching.objects_filter import divide_tp_fp_objects
 from awml_evaluation.evaluation.matching.objects_filter import filter_object_results
 from awml_evaluation.evaluation.matching.objects_filter import get_fn_objects
-from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
+from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from awml_evaluation.visualization.visualization_config import Color
 from awml_evaluation.visualization.visualization_config import VisualizationAppearanceConfig
 from awml_evaluation.visualization.visualization_config import VisualizationConfig
@@ -33,7 +33,7 @@ class VisualizationBEV:
     def visualize_bev(
         self,
         file_name: str,
-        object_results: Optional[List[DynamicObjectWithResult]] = None,
+        object_results: Optional[List[DynamicObjectWithPerceptionResult]] = None,
         ground_truth_objects: Optional[List[DynamicObject]] = None,
         pointcloud: Optional[List[List[float]]] = None,
         matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
@@ -67,7 +67,7 @@ class VisualizationBEV:
         )
 
         # set object
-        # filtered_predicted_objects: List[DynamicObjectWithResult] = filter_tp_objects(
+        # filtered_predicted_objects: List[DynamicObjectWithPerceptionResult] = filter_tp_objects(
         #     object_results=object_results,
         #     matching_mode=matching_mode,
         #     matching_threshold=matching_threshold,
