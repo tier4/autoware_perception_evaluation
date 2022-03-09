@@ -238,6 +238,14 @@ class DynamicObject:
     def get_volume(self) -> float:
         return self.get_area_bev() * self.state.size[2]
 
+    def get_inside_pointcloud_num(self, pointcloud) -> int:
+        # [TODO] Implement
+        return 0
+
+    def point_exist(self, point) -> bool:
+        # [TODO] Implement
+        return False
+
     @staticmethod
     def _set_states(
         positions: Optional[List[Tuple[float, float, float]]] = None,
