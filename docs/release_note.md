@@ -4,6 +4,9 @@
 
 ## Now development for develop branch -> v1.3
 
+- <https://github.com/tier4/AWMLevaluation/pull/66>
+  - 【改良】Sensing lsimのresult.jsonに残す情報を変更
+  - 【document追加】Sensing lsimのdocumentを追加
 - <https://github.com/tier4/AWMLevaluation/pull/65>
   - 【追加】Sensing logsimのための枠組みを実装
 - <https://github.com/tier4/AWMLevaluation/pull/62>

@@ -51,10 +51,10 @@ class SensingFrameResult:
                 ground_truth_object,
                 pointcloud_for_detection,
             )
-            if sensing_result.pointcloud_exist(pointcloud_for_detection):
-                self.detection_success_results.append(ground_truth_object)
+            if sensing_result.is_detected:
+                self.detection_success_results.append(sensing_result)
             else:
-                self.detection_fail_results.append(ground_truth_object)
+                self.detection_fail_results.append(sensing_result)
 
     def _evaluate_pointcloud_for_non_detection(
         self,
