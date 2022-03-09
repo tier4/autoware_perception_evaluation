@@ -164,8 +164,12 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
         """
         self.mode: MatchingMode = MatchingMode.PLANEDISTANCE
         self.value: Optional[float] = None
-        self.ground_truth_nn_plane: Optional[Tuple[Tuple[float, float]]] = None
-        self.predicted_nn_plane: Optional[Tuple[Tuple[float, float]]] = None
+        self.ground_truth_nn_plane: Optional[
+            Tuple[Tuple[float, float, float], Tuple[float, float, float]]
+        ] = None
+        self.predicted_nn_plane: Optional[
+            Tuple[Tuple[float, float, float], Tuple[float, float, float]]
+        ] = None
         self.value, self.ground_truth_nn_plane, self.predicted_nn_plane = self._get_plane_distance(
             predicted_object,
             ground_truth_object,
@@ -195,8 +199,8 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
         ground_truth_object: Optional[DynamicObject],
     ) -> Tuple[
         Optional[float],
-        Optional[Tuple[Tuple[float, float]]],
-        Optional[Tuple[Tuple[float, float]]],
+        Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float]]],
+        Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float]]],
     ]:
 
         """[summary]
@@ -215,14 +219,16 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
 
         # Get corner_points of predicted object from footprint
         pr_footprint_polygon: Polygon = predicted_object.get_footprint()
-        pr_corner_points: List[Tuple[float]] = polygon_to_list(pr_footprint_polygon)
+        pr_corner_points: List[Tuple[float, float, float]] = polygon_to_list(pr_footprint_polygon)
 
         # Get corner_points of ground truth object from footprint
         gt_footprint_polygon: Polygon = ground_truth_object.get_footprint()
-        gt_corner_points: List[Tuple[float]] = polygon_to_list(gt_footprint_polygon)
+        gt_corner_points: List[Tuple[float, float, float]] = polygon_to_list(gt_footprint_polygon)
 
         # Sort by 2d distance
-        lambda_func: Callable[[Tuple[float]], float] = lambda x: math.hypot(x[0], x[1])
+        lambda_func: Callable[[Tuple[float, float, float]], float] = lambda x: math.hypot(
+            x[0], x[1]
+        )
         pr_corner_points.sort(key=lambda_func)
         gt_corner_points.sort(key=lambda_func)
 
@@ -235,11 +241,11 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
         distance_2: float = distance_2_1 ** 2 + distance_2_2 ** 2
 
         plane_distance: float = math.sqrt(min(distance_1, distance_2) / 2.0)
-        ground_truth_nn_plane: Tuple[Tuple[float, float]] = (
+        ground_truth_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
             gt_corner_points[0],
             gt_corner_points[1],
         )
-        predicted_nn_plane: Tuple[Tuple[float, float]] = (
+        predicted_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
             pr_corner_points[0],
             pr_corner_points[1],
         )
@@ -394,7 +400,7 @@ class IOU3dMatching(metaclass=ABCMeta):
 
 def _get_volume_intersection(
     predicted_object: DynamicObject,
-    ground_truth_object: Optional[DynamicObject],
+    ground_truth_object: DynamicObject,
 ) -> float:
     """[summary]
     Get the volume at intersection
@@ -414,7 +420,7 @@ def _get_volume_intersection(
 
 def _get_height_intersection(
     predicted_object: DynamicObject,
-    ground_truth_object: Optional[DynamicObject],
+    ground_truth_object: DynamicObject,
 ) -> float:
     """[summary]
     Get the height at intersection
@@ -440,7 +446,7 @@ def _get_height_intersection(
 
 def _get_area_intersection(
     predicted_object: DynamicObject,
-    ground_truth_object: Optional[DynamicObject],
+    ground_truth_object: DynamicObject,
 ) -> float:
     """[summary]
     Get the area at intersection

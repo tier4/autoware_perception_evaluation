@@ -73,22 +73,24 @@ class PassFailResult:
             ros_critical_ground_truth_objects (List[DynamicObject]):
                     Ground truth objects filtered by ROS node.
         """
-        self.critical_ground_truth_objects: List[DynamicObject] = filter_ground_truth_objects(
+        self.critical_ground_truth_objects = filter_ground_truth_objects(
             objects=ros_critical_ground_truth_objects,
             target_labels=self.critical_object_filter_config.target_labels,
             max_x_position_list=self.critical_object_filter_config.max_x_position_list,
             max_y_position_list=self.critical_object_filter_config.max_y_position_list,
         )
-        self.fn_objects: List[DynamicObject] = get_fn_objects(
-            ground_truth_objects=self.critical_ground_truth_objects,
-            object_results=object_results,
-        )
-        self.fp_objects_result: List[
-            DynamicObjectWithPerceptionResult
-        ] = self.get_fp_objects_result(
-            object_results=object_results,
-            critical_ground_truth_objects=self.critical_ground_truth_objects,
-        )
+        if self.critical_ground_truth_objects is not None:
+            self.fn_objects = get_fn_objects(
+                ground_truth_objects=self.critical_ground_truth_objects,
+                object_results=object_results,
+            )
+            self.fp_objects_result = self.get_fp_objects_result(
+                object_results=object_results,
+                critical_ground_truth_objects=self.critical_ground_truth_objects,
+            )
+        else:
+            self.fn_objects = None
+            self.fp_objects_result = None
 
     def get_fail_object_num(self) -> int:
         """[summary]
@@ -97,7 +99,10 @@ class PassFailResult:
         Returns:
             int: The number of fail objects
         """
-        return len(self.fn_objects) + len(self.fp_objects_result)
+        if self.fn_objects is not None and self.fp_objects_result is not None:
+            return len(self.fn_objects) + len(self.fp_objects_result)
+        else:
+            return 0
 
     def get_fp_objects_result(
         self,

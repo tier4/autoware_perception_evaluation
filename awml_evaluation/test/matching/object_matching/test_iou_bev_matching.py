@@ -43,8 +43,7 @@ class TestIouBEVMatching(unittest.TestCase):
                     area_intersection = _get_area_intersection(
                         predicted_object, ground_truth_object
                     )
-                    self.assertAlmostEqual(
-                        area_intersection, ans_area_intersection)
+                    self.assertAlmostEqual(area_intersection, ans_area_intersection)
 
     def test_get_iou_bev_matching(self):
         """[summary]
@@ -66,7 +65,7 @@ class TestIouBEVMatching(unittest.TestCase):
             # Given diff_distance is 1.0 for one axis, iou is 0.0
             # since ground_truth_objects and predicted_objects are no overlapping.
             # Given no diff_yaw, iou is 1.0.
-            (0.0, 1.0)
+            (0.0, 1.0),
         ]
         # patterns: (diff_yaw, ans_iou_bev)
         yaw_patterns: List[Tuple[float, float]] = [
@@ -93,7 +92,7 @@ class TestIouBEVMatching(unittest.TestCase):
             (math.pi / 4, 0.7071067811865472),
             (-math.pi / 4, 0.7071067811865472),
             (3 * math.pi / 4, 0.7071067811865472),
-            (-3 * math.pi / 4, 0.7071067811865472)
+            (-3 * math.pi / 4, 0.7071067811865472),
         ]
 
         for diff_distance, ans_iou_bev in distance_patterns:
@@ -108,8 +107,7 @@ class TestIouBEVMatching(unittest.TestCase):
                 for predicted_object, ground_truth_object in zip(
                     diff_yaw_dummy_ground_truth_objects, self.dummy_ground_truth_objects
                 ):
-                    iou_bev = IOUBEVMatching(
-                        predicted_object, ground_truth_object)
+                    iou_bev = IOUBEVMatching(predicted_object, ground_truth_object)
                     self.assertAlmostEqual(iou_bev.value, ans_iou_bev)
 
         for diff_yaw, ans_iou_bev in yaw_patterns:
@@ -124,8 +122,7 @@ class TestIouBEVMatching(unittest.TestCase):
                 for predicted_object, ground_truth_object in zip(
                     diff_yaw_dummy_ground_truth_objects, self.dummy_ground_truth_objects
                 ):
-                    iou_bev = IOUBEVMatching(
-                        predicted_object, ground_truth_object)
+                    iou_bev = IOUBEVMatching(predicted_object, ground_truth_object)
                     self.assertAlmostEqual(iou_bev.value, ans_iou_bev)
 
 

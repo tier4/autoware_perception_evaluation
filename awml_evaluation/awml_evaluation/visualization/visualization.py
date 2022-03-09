@@ -41,7 +41,7 @@ class VisualizationBEV:
         pointcloud_color: Color = Color.WHITE,
         objects_list: List[List[DynamicObject]] = None,
         color_list: List[Color] = [Color.GREEN, Color.YELLOW, Color.RED, Color.WHITE],
-        line_width_list: List[int] = [4.0, 4.0, 4.0, 1.0],
+        line_width_list: List[int] = [4, 4, 4, 1],
     ):
         """[summary]
         Visualize the frame result from bird eye view
@@ -51,20 +51,27 @@ class VisualizationBEV:
         """
 
         # set file name
-        if file_name is None:
-            file_name_: str = f"{self.unix_time}_{self.frame_name}.png"
+        file_name_: str
+        if file_name is None and object_results is not None:
+            unix_time = object_results[0].predicted_object.unix_time
+            file_name_ = f"{unix_time}.png"
         else:
-            file_name_: str = file_name
-        file_path: str = os.join("bev_pictures", file_name_)
-        full_path: str = os.join(self.visualization_directory_path, file_path)
+            file_name_ = file_name
+        file_path: str = os.path.join("bev_pictures", file_name_)
+        full_path: str = os.path.join(
+            self.visualization_config.visualization_directory_path, file_path
+        )
 
         # set default config
-        appearance_config = VisualizationAppearanceConfig(
-            len(objects_list),
-            color_list,
-            line_width_list,
-            pointcloud_color,
-        )
+        if object_results is not None:
+            appearance_config = VisualizationAppearanceConfig(
+                len(object_results),
+                color_list,
+                line_width_list,
+                pointcloud_color,
+            )
+        else:
+            appearance_config = None
 
         # set object
         # filtered_predicted_objects: List[DynamicObjectWithPerceptionResult] = filter_tp_objects(
@@ -93,13 +100,14 @@ class VisualizationBEV:
         # self.save_png_file()
         raise NotImplementedError()
 
-    def _add_pointcloud(pointcloud: List[List[float]], color: Color):
+    def _add_pointcloud(self, pointcloud: List[List[float]], color: Color):
         """
         pointcloudの描画
         """
         raise NotImplementedError()
 
     def _add_bbox(
+        self,
         object: DynamicObject,
         color: Color,
         width: int,
