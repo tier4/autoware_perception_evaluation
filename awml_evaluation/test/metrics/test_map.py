@@ -4,6 +4,7 @@ from typing import List
 from typing import Tuple
 import unittest
 
+from awml_evaluation.common.evaluation_task import EvaluationTask
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode

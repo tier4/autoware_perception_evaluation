@@ -255,11 +255,11 @@ class Ap:
                 target_labels=self.target_labels,
                 threshold_list=self.matching_threshold_list,
             )
-            is_result_correct: bool = object_results[i].is_result_correct(
+            is_result_correct = object_results[i].is_result_correct(
                 matching_mode=self.matching_mode,
                 matching_threshold=matching_threshold_,
             )
-            tp_value: float = tp_metrics.get_value(object_results[i])
+            tp_value = tp_metrics.get_value(object_results[i])
             if is_result_correct:
                 tp_list[i] = tp_list[i - 1] + tp_value
                 fp_list[i] = fp_list[i - 1]

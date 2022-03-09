@@ -49,8 +49,9 @@ class MetricsScore:
             str_ += "\n"
             # label
             str_ += "|      Label |"
+            target_str: str
             for ap_ in map_.aps:
-                target_str: str = ""
+                target_str = ""
                 for target in ap_.target_labels:
                     target_str += target.value
                 str_ += f" {target_str}({ap_.matching_threshold_list}) | "
@@ -70,7 +71,7 @@ class MetricsScore:
             str_ += "\n"
             str_ += "|        APH |"
             for aph_ in map_.aphs:
-                target_str: str = ""
+                target_str = ""
                 for target in aph_.target_labels:
                     target_str += target.value
                 str_ += f" {aph_.ap:.3f} | "

@@ -3,7 +3,7 @@ from enum import Enum
 from logging import getLogger
 from typing import List
 from typing import Optional
-from typing import Union
+from typing import Tuple
 
 logger = getLogger(__name__)
 
@@ -52,9 +52,9 @@ class LabelConverter:
 
     def __init__(self) -> None:
         self.labels: List[Label] = []
-        pair_list: List[Union[AutowareLabel, str]] = LabelConverter._set_pair_list()
-        for label, autoware_label in pair_list:
-            self.labels.append(Label(label, autoware_label))
+        pair_list: List[Tuple[AutowareLabel, str]] = LabelConverter._set_pair_list()
+        for autoware_label, label in pair_list:
+            self.labels.append(Label(autoware_label, label))
         logger.debug(f"label {self.labels}")
 
     def convert_label(
@@ -86,46 +86,46 @@ class LabelConverter:
         return return_label
 
     @staticmethod
-    def _set_pair_list() -> List[Union[AutowareLabel, str]]:
-        pair_list: List[Union[AutowareLabel, str]] = [
-            [AutowareLabel.BICYCLE, "bicycle"],
-            [AutowareLabel.BICYCLE, "BICYCLE"],
-            [AutowareLabel.BICYCLE, "vehicle.bicycle"],
-            [AutowareLabel.BUS, "bus"],
-            [AutowareLabel.BUS, "BUS"],
-            [AutowareLabel.BUS, "vehicle.bus (bendy & rigid)"],
-            [AutowareLabel.BUS, "vehicle.bus"],
-            [AutowareLabel.CAR, "car"],
-            [AutowareLabel.CAR, "CAR"],
-            [AutowareLabel.CAR, "vehicle.car"],
-            [AutowareLabel.CAR, "vehicle.construction"],
-            [AutowareLabel.CAR, "vehicle.emergency (ambulance & police)"],
-            [AutowareLabel.MOTORBIKE, "motorbike"],
-            [AutowareLabel.MOTORBIKE, "MOTORBIKE"],
-            [AutowareLabel.MOTORBIKE, "vehicle.motorcycle"],
-            [AutowareLabel.PEDESTRIAN, "pedestrian"],
-            [AutowareLabel.PEDESTRIAN, "PEDESTRIAN"],
-            [AutowareLabel.PEDESTRIAN, "pedestrian.adult"],
-            [AutowareLabel.PEDESTRIAN, "pedestrian.child"],
-            [AutowareLabel.PEDESTRIAN, "pedestrian.construction_worker"],
-            [AutowareLabel.PEDESTRIAN, "pedestrian.personal_mobility"],
-            [AutowareLabel.PEDESTRIAN, "pedestrian.police_officer"],
-            [AutowareLabel.PEDESTRIAN, "pedestrian.stroller"],
-            [AutowareLabel.PEDESTRIAN, "pedestrian.wheelchair"],
-            [AutowareLabel.TRUCK, "truck"],
-            [AutowareLabel.TRUCK, "TRUCK"],
-            [AutowareLabel.TRUCK, "vehicle.truck"],
-            [AutowareLabel.TRUCK, "vehicle.trailer"],
-            [AutowareLabel.UNKNOWN, "animal"],
-            [AutowareLabel.UNKNOWN, "ANIMAL"],
-            [AutowareLabel.UNKNOWN, "unknown"],
-            [AutowareLabel.UNKNOWN, "UNKNOWN"],
-            [AutowareLabel.UNKNOWN, "movable_object.barrier"],
-            [AutowareLabel.UNKNOWN, "movable_object.debris"],
-            [AutowareLabel.UNKNOWN, "movable_object.pushable_pullable"],
-            [AutowareLabel.UNKNOWN, "movable_object.trafficcone"],
-            [AutowareLabel.UNKNOWN, "movable_object.traffic_cone"],
-            [AutowareLabel.UNKNOWN, "static_object.bicycle rack"],
+    def _set_pair_list() -> List[Tuple[AutowareLabel, str]]:
+        pair_list: List[Tuple[AutowareLabel, str]] = [
+            (AutowareLabel.BICYCLE, "bicycle"),
+            (AutowareLabel.BICYCLE, "BICYCLE"),
+            (AutowareLabel.BICYCLE, "vehicle.bicycle"),
+            (AutowareLabel.BUS, "bus"),
+            (AutowareLabel.BUS, "BUS"),
+            (AutowareLabel.BUS, "vehicle.bus (bendy & rigid)"),
+            (AutowareLabel.BUS, "vehicle.bus"),
+            (AutowareLabel.CAR, "car"),
+            (AutowareLabel.CAR, "CAR"),
+            (AutowareLabel.CAR, "vehicle.car"),
+            (AutowareLabel.CAR, "vehicle.construction"),
+            (AutowareLabel.CAR, "vehicle.emergency (ambulance & police)"),
+            (AutowareLabel.MOTORBIKE, "motorbike"),
+            (AutowareLabel.MOTORBIKE, "MOTORBIKE"),
+            (AutowareLabel.MOTORBIKE, "vehicle.motorcycle"),
+            (AutowareLabel.PEDESTRIAN, "pedestrian"),
+            (AutowareLabel.PEDESTRIAN, "PEDESTRIAN"),
+            (AutowareLabel.PEDESTRIAN, "pedestrian.adult"),
+            (AutowareLabel.PEDESTRIAN, "pedestrian.child"),
+            (AutowareLabel.PEDESTRIAN, "pedestrian.construction_worker"),
+            (AutowareLabel.PEDESTRIAN, "pedestrian.personal_mobility"),
+            (AutowareLabel.PEDESTRIAN, "pedestrian.police_officer"),
+            (AutowareLabel.PEDESTRIAN, "pedestrian.stroller"),
+            (AutowareLabel.PEDESTRIAN, "pedestrian.wheelchair"),
+            (AutowareLabel.TRUCK, "truck"),
+            (AutowareLabel.TRUCK, "TRUCK"),
+            (AutowareLabel.TRUCK, "vehicle.truck"),
+            (AutowareLabel.TRUCK, "vehicle.trailer"),
+            (AutowareLabel.UNKNOWN, "animal"),
+            (AutowareLabel.UNKNOWN, "ANIMAL"),
+            (AutowareLabel.UNKNOWN, "unknown"),
+            (AutowareLabel.UNKNOWN, "UNKNOWN"),
+            (AutowareLabel.UNKNOWN, "movable_object.barrier"),
+            (AutowareLabel.UNKNOWN, "movable_object.debris"),
+            (AutowareLabel.UNKNOWN, "movable_object.pushable_pullable"),
+            (AutowareLabel.UNKNOWN, "movable_object.trafficcone"),
+            (AutowareLabel.UNKNOWN, "movable_object.traffic_cone"),
+            (AutowareLabel.UNKNOWN, "static_object.bicycle rack"),
         ]
         return pair_list
 

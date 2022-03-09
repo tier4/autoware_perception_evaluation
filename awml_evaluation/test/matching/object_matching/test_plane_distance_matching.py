@@ -31,8 +31,7 @@ class TestPlaneDistanceMatching(unittest.TestCase):
             (1.0, [1.0, 1.0, 1.0, 1.0]),
             (
                 2.0,
-                [2.0, 2.0, math.sqrt((1.0 + 5.0) / 2.0),
-                 math.sqrt((1.0 + 5.0) / 2.0)],
+                [2.0, 2.0, math.sqrt((1.0 + 5.0) / 2.0), math.sqrt((1.0 + 5.0) / 2.0)],
             ),
         ]
         fixed_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
@@ -92,9 +91,7 @@ class TestPlaneDistanceMatching(unittest.TestCase):
         # patterns: List[ans_plane_distance]
         ans_plane_distance_list = [1.2747548783981963, 0.3535533905932738, 0.0]
         for predicted_object, ground_truth_object, ans_plane_distance in zip(
-            self.dummy_predicted_objects,
-            self.dummy_ground_truth_objects,
-            ans_plane_distance_list
+            self.dummy_predicted_objects, self.dummy_ground_truth_objects, ans_plane_distance_list
         ):
             plane_distance = PlaneDistanceMatching(
                 predicted_object,

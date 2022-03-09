@@ -173,12 +173,15 @@ class PerceptionEvaluationConfig:
             _set_thresholds([[1.0, 2.0], [3.0, 4.0]] 2)
             # [[1.0, 2.0], [3.0, 4.0]]
         """
-        thresholds_list: List[List[float]] = []
+        thresholds_list: List[List[float]] = [[]]
         if len(thresholds) == 0:
             thresholds_list = [[]]
         elif isinstance(thresholds[0], float):
             for float_value in thresholds:
-                thresholds_list.append([float_value] * target_objects_num)
+                if isinstance(float_value, float):
+                    thresholds_list.append([float_value] * target_objects_num)
+                else:
+                    thresholds_list.append(float_value * target_objects_num)
         else:
-            thresholds_list = thresholds
+            thresholds_list = thresholds  # type: ignore
         return thresholds_list

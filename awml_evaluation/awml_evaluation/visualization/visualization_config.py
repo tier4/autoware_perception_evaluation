@@ -39,16 +39,16 @@ class VisualizationAppearanceConfig:
             RuntimeError("VisualizationObjectConfig Error")
 
         self.color_list: List[Color] = self._set_color(color_list, objects_list_num)
-        self.line_width: List[str] = self._set_line_width(line_width_list, objects_list_num)
+        self.line_width: List[int] = self._set_line_width(line_width_list, objects_list_num)
         self.pointcloud_color: Color = pointcloud_color
 
-    def _set_line_width(line_width_list: List[str], object_num: int):
+    def _set_line_width(self, line_width_list: List[int], object_num: int) -> List[int]:
         if line_width_list:
             return line_width_list
         else:
-            return [2.0 for i in range(object_num)]
+            return [2 for i in range(object_num)]
 
-    def _set_color(color_list: List[str], object_num: int):
+    def _set_color(self, color_list: List[Color], object_num: int) -> List[Color]:
         if color_list:
             return color_list
         else:

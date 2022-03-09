@@ -196,7 +196,7 @@ def _sample_to_frame(
     Convert Nuscenes sample to FrameGroundTruth
 
     Args:
-        nusc (NuScenes): Nuscenes insatance
+        nusc (NuScenes): Nuscenes instance
         sample_token (Any): Nuscenese sample token
         does_use_pointcloud (bool): The flag of setting pointcloud
         evaluation_tasks (List[EvaluationTask]): The evaluation tasks
@@ -221,11 +221,12 @@ def _sample_to_frame(
     lidar_path, object_boxes, _ = nusc.get_sample_data(frame_data["token"])
 
     # pointcloud
+    pointcloud_: Optional[List[Tuple[float, float, float, float]]] = None
     if does_use_pointcloud:
         assert lidar_path.endswith(".bin"), f"Error: Unsupported filetype {lidar_path}"
         pointcloud_arr_: np.ndarray = np.fromfile(lidar_path, dtype=np.float32)
         pointcloud_arr_ = pointcloud_arr_.reshape(-1, 5)[:, :4]
-        pointcloud_: list[tuple[float]] = [tuple(point.tolist()) for point in pointcloud_arr_]
+        pointcloud_ = [tuple(point.tolist()) for point in pointcloud_arr_]  # type: ignore
     else:
         pointcloud_ = None
 
@@ -274,9 +275,9 @@ def _convert_nuscenes_box_to_dynamic_object(
         DynamicObject: Converted dynamic object class
     """
 
-    position_: Tuple[float, float, float] = tuple(object_box.center.tolist())
+    position_: Tuple[float, float, float] = tuple(object_box.center.tolist())  # type: ignore
     orientation_: Quaternion = object_box.orientation
-    size_: Tuple[float, float, float] = tuple(object_box.wlh.tolist())
+    size_: Tuple[float, float, float] = tuple(object_box.wlh.tolist())  # type: ignore
     semantic_score_: float = 1.0
     autoware_label_: AutowareLabel = label_converter.convert_label(
         label=object_box.name,
