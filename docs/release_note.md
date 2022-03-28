@@ -4,6 +4,9 @@
 
 ## Now development for develop branch -> v1.3
 
+- <https://github.com/tier4/AWMLevaluation/pull/70>
+  - 【バグ修正】colcon を使って install すると，install 以下にサブモジュールが存在しない状態になるのを解消
+  - 【バグ修正】pre-commit の mypy を disable
 - <https://github.com/tier4/AWMLevaluation/pull/61>
   - 【改良】pre-commit の追加
 - <https://github.com/tier4/AWMLevaluation/pull/26>
