@@ -2,8 +2,16 @@
 
 - 上ほど新しい
 
-## Now development for develop branch -> v1.3
+## Now development for develop branch -> v1.4
 
+## Release for main branch
+
+### v1.3.0
+
+- <https://github.com/tier4/AWMLevaluation/pull/71>
+  - 【release】v1.3.0 release
+- <https://github.com/tier4/AWMLevaluation/pull/68>
+  - 【改良】pointcluod の型を List[Tuple[float, float, float]] -> numpy.ndarray に変更
 - <https://github.com/tier4/AWMLevaluation/pull/70>
   - 【バグ修正】colcon を使って install すると，install 以下にサブモジュールが存在しない状態になるのを解消
   - 【バグ修正】pre-commit の mypy を disable
@@ -23,8 +31,6 @@
   - 【改良】poetry update
 - <https://github.com/tier4/AWMLevaluation/pull/59>
   - 【改良】poetry update
-
-## Release for main branch
 
 ### v1.2.1
 
