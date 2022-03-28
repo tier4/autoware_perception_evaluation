@@ -2,6 +2,8 @@ import os
 from typing import List
 from typing import Optional
 
+import numpy as np
+
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.matching.objects_filter import divide_tp_fp_objects
@@ -35,7 +37,7 @@ class VisualizationBEV:
         file_name: str,
         object_results: Optional[List[DynamicObjectWithPerceptionResult]] = None,
         ground_truth_objects: Optional[List[DynamicObject]] = None,
-        pointcloud: Optional[List[List[float]]] = None,
+        pointcloud: Optional[np.ndarray] = None,
         matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
         matching_threshold: float = 1.0,
         pointcloud_color: Color = Color.WHITE,
@@ -100,7 +102,7 @@ class VisualizationBEV:
         # self.save_png_file()
         raise NotImplementedError()
 
-    def _add_pointcloud(self, pointcloud: List[List[float]], color: Color):
+    def _add_pointcloud(pointcloud: np.ndarray, color: Color):
         """
         pointcloudの描画
         """

@@ -3,6 +3,8 @@ from typing import List
 from typing import Tuple
 import unittest
 
+import numpy as np
+
 from awml_evaluation.common.point import distance_points
 from awml_evaluation.common.point import distance_points_bev
 from awml_evaluation.common.point import to_bev
@@ -21,12 +23,12 @@ class TestPoint(unittest.TestCase):
             almost equal to ans_distance.
         """
         # patterns: (point_1, point_2, ans_distance)
-        patterns: List[Tuple[Tuple[float, float, float], Tuple[float, float, float], float]] = [
-            ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.0),
-            ((0.0, 0.0, 0.0), (1.0, 1.0, 1.0), math.sqrt(3 * 1.0 ** 2)),
-            ((0.0, 0.0, 0.0), (1.0, -1.0, 1.0), math.sqrt(3 * 1.0 ** 2)),
-            ((0.0, 0.0, 0.0), (-1.0, -1.0, 1.0), math.sqrt(3 * 1.0 ** 2)),
-            ((0.0, 0.0, 0.0), (-1.0, -1.0, -1.0), math.sqrt(3 * 1.0 ** 2)),
+        patterns: List[Tuple[np.ndarray, np.ndarray, float]] = [
+            (np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0)), 0.0),
+            (np.array((0.0, 0.0, 0.0)), np.array((1.0, 1.0, 1.0)), math.sqrt(3 * 1.0 ** 2)),
+            (np.array((0.0, 0.0, 0.0)), np.array((1.0, -1.0, 1.0)), math.sqrt(3 * 1.0 ** 2)),
+            (np.array((0.0, 0.0, 0.0)), np.array((-1.0, -1.0, 1.0)), math.sqrt(3 * 1.0 ** 2)),
+            (np.array((0.0, 0.0, 0.0)), np.array((-1.0, -1.0, -1.0)), math.sqrt(3 * 1.0 ** 2)),
         ]
         for point_1, point_2, ans_distance in patterns:
             with self.subTest("Test get_distance_points"):
@@ -42,12 +44,12 @@ class TestPoint(unittest.TestCase):
             almost equal to ans_distance.
         """
         # patterns: (point_1, point_2, ans_distance)
-        patterns: List[Tuple[Tuple[float, float, float], Tuple[float, float, float], float]] = [
-            ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.0),
-            ((0.0, 0.0, 0.0), (1.0, 1.0, 1.0), math.sqrt(2 * 1.0 ** 2)),
-            ((0.0, 0.0, 0.0), (1.0, -1.0, 1.0), math.sqrt(2 * 1.0 ** 2)),
-            ((0.0, 0.0, 0.0), (-1.0, -1.0, 5.0), math.sqrt(2 * 1.0 ** 2)),
-            ((0.0, 0.0, 0.0), (-1.0, -1.0, -10.0), math.sqrt(2 * 1.0 ** 2)),
+        patterns: List[Tuple[np.ndarray, np.ndarray, float]] = [
+            (np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0)), 0.0),
+            (np.array((0.0, 0.0, 0.0)), np.array((1.0, 1.0, 1.0)), math.sqrt(2 * 1.0 ** 2)),
+            (np.array((0.0, 0.0, 0.0)), np.array((1.0, -1.0, 1.0)), math.sqrt(2 * 1.0 ** 2)),
+            (np.array((0.0, 0.0, 0.0)), np.array((-1.0, -1.0, 5.0)), math.sqrt(2 * 1.0 ** 2)),
+            (np.array((0.0, 0.0, 0.0)), np.array((-1.0, -1.0, -10.0)), math.sqrt(2 * 1.0 ** 2)),
         ]
         for point_1, point_2, ans_distance in patterns:
             with self.subTest("Test get_distance_points_bev"):
@@ -62,15 +64,15 @@ class TestPoint(unittest.TestCase):
             Test if 3d point_1 is converted to 2d point_1 (=ans_point).
         """
         # patterns: (point_1,  ans_point)
-        patterns: List[Tuple[Tuple[float, float, float], Tuple[float, float]]] = [
-            ((0.0, 0.0, 0.0), (0.0, 0.0)),
-            ((1.0, 0.0, 1.0), (1.0, 0.0)),
-            ((0.0, -1.0, 5.0), (0.0, -1.0)),
+        patterns: List[Tuple[np.ndarray, np.ndarray]] = [
+            (np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0))),
+            (np.array((1.0, 0.0, 1.0)), np.array((1.0, 0.0))),
+            (np.array((0.0, -1.0, 5.0)), np.array((0.0, -1.0))),
         ]
         for point_1, ans_point in patterns:
             with self.subTest("Test to_bev"):
                 point = to_bev(point_1)
-                self.assertEqual(point, ans_point)
+                self.assertEqual(point.tolist(), ans_point.tolist())
 
 
 if __name__ == "__main__":

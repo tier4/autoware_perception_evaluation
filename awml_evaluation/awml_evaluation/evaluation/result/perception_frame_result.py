@@ -1,6 +1,8 @@
 from typing import List
 from typing import Optional
 
+import numpy as np
+
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.metrics.metrics import MetricsScore
 from awml_evaluation.evaluation.metrics.metrics_config import MetricsScoreConfig
@@ -19,7 +21,7 @@ class PerceptionFrameResult:
             The file name of frame in the datasets.
         self.ground_truth_objects (List[DynamicObject]):
             The ground truth objects for the frame.
-        self.pointcloud (Optional[List[float]]):
+        self.pointcloud (Optional[numpy.ndarray]):
             The pointcloud for the frame.
         self.unix_time (int):
             The unix time for frame [us].
@@ -38,7 +40,7 @@ class PerceptionFrameResult:
         frame_pass_fail_config: PerceptionPassFailConfig,
         unix_time: int,
         frame_name: str,
-        pointcloud: Optional[List[float]] = None,
+        pointcloud: Optional[np.ndarray] = None,
     ):
         """[summary]
         Args:
@@ -49,14 +51,14 @@ class PerceptionFrameResult:
                     Frame pass fail config.
             unix_time (int): The unix time for frame [us]
             frame_name (str): The file name of frame in the datasets
-            pointcloud (Optional[List[float]], optional):
+            pointcloud (Optional[numpy.ndarray], optional):
                     The pointcloud for the frame. Defaults to None.
         """
 
         # frame information
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
-        self.pointcloud: Optional[List[float]] = pointcloud
+        self.pointcloud: Optional[np.ndarray] = pointcloud
 
         # results to each predicted object
         self.ground_truth_objects: List[DynamicObject] = []

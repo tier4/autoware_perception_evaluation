@@ -27,7 +27,7 @@ class FrameGroundTruth:
         self.unix_time (float): The unix time for the frame [us]
         self.frame_name (str): The file name for the frame
         self.objects (List[DynamicObject]): Objects data
-        self.pointcloud (Optional[List[Tuple[float, float, float, float]]], optional):
+        self.pointcloud (Optional[numpy.ndarray], optional):
                 Pointcloud data. Defaults to None, but if you want to visualize dataset,
                 you should load pointcloud data
     """
@@ -37,7 +37,7 @@ class FrameGroundTruth:
         unix_time: int,
         frame_name: str,
         objects: List[DynamicObject],
-        pointcloud: Optional[List[Tuple[float, float, float, float]]] = None,
+        pointcloud: Optional[np.ndarray] = None,
     ) -> None:
         """[summary]
 
@@ -45,14 +45,14 @@ class FrameGroundTruth:
             unix_time (int): The unix time for the frame [us]
             frame_name (str): The file name for the frame
             objects (List[DynamicObject]): Objects data
-            pointcloud (Optional[List[Tuple[float, float, float, float]]], optional):
-                    Pointcloud data (List[Tuple[x, y, z, i]]). Defaults to None, but if you want to visualize dataset,
+            pointcloud (Optional[numpy.ndarray], optional):
+                    Pointcloud data (N-length numpy.ndarray[x, y, z, i]). Defaults to None, but if you want to visualize dataset,
                     you should load pointcloud data
         """
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
         self.objects: List[DynamicObject] = objects
-        self.pointcloud: Optional[List[Tuple[float, float, float, float]]] = pointcloud
+        self.pointcloud: Optional[np.ndarray] = pointcloud
 
 
 def load_all_datasets(
@@ -221,12 +221,10 @@ def _sample_to_frame(
     lidar_path, object_boxes, _ = nusc.get_sample_data(frame_data["token"])
 
     # pointcloud
-    pointcloud_: Optional[List[Tuple[float, float, float, float]]] = None
     if does_use_pointcloud:
         assert lidar_path.endswith(".bin"), f"Error: Unsupported filetype {lidar_path}"
-        pointcloud_arr_: np.ndarray = np.fromfile(lidar_path, dtype=np.float32)
-        pointcloud_arr_ = pointcloud_arr_.reshape(-1, 5)[:, :4]
-        pointcloud_ = [tuple(point.tolist()) for point in pointcloud_arr_]  # type: ignore
+        pointcloud_: np.ndarray = np.fromfile(lidar_path, dtype=np.float32)
+        pointcloud_ = pointcloud_.reshape(-1, 5)[:, :4]
     else:
         pointcloud_ = None
 

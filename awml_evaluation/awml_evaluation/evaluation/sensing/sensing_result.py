@@ -1,6 +1,6 @@
 from logging import getLogger
-from typing import List
-from typing import Tuple
+
+import numpy as np
 
 from awml_evaluation.common.object import DynamicObject
 
@@ -11,7 +11,7 @@ class DynamicObjectWithSensingResult:
     def __init__(
         self,
         ground_truth_object: DynamicObject,
-        pointcloud: List[Tuple[float]],
+        pointcloud: np.ndarray,
         scale_factor: float = 1.0,
     ) -> None:
         self.ground_truth_object: DynamicObject = []
