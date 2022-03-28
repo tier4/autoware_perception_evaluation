@@ -154,9 +154,9 @@ class DynamicObject:
 
     def __eq__(self, other: object) -> bool:
         eq: bool = True
-        eq = eq and self.semantic_label == other.semantic_label
-        eq = eq and self.state.position == other.state.position
-        eq = eq and self.state.orientation == other.state.orientation
+        eq = eq and self.semantic_label == other.semantic_label  # type: ignore
+        eq = eq and self.state.position == other.state.position  # type: ignore
+        eq = eq and self.state.orientation == other.state.orientation  # type: ignore
         return eq
 
     def get_distance(self) -> float:
@@ -166,7 +166,7 @@ class DynamicObject:
         Returns:
             float: The 3d distance to the object from ego vehicle in bird eye view
         """
-        return math.hypot(*self.state.position)
+        return np.linalg.norm(self.state.position)
 
     def get_distance_bev(self) -> float:
         """[summary]
@@ -211,7 +211,7 @@ class DynamicObject:
         ]
         # rotate vector_center_to_corners
         for vector_center_to_corner in vector_center_to_corners:
-            rotated_vector = self.state.orientation.rotate(vector_center_to_corner)
+            rotated_vector: np.ndarray = self.state.orientation.rotate(vector_center_to_corner)
             corner_point: np.ndarray = self.state.position + rotated_vector
             corner_points.append(corner_point.tolist())
         # corner point to footprint
@@ -238,10 +238,18 @@ class DynamicObject:
     def get_volume(self) -> float:
         return self.get_area_bev() * self.state.size[2]
 
+    def get_inside_pointcloud_num(self, pointcloud) -> int:
+        # [TODO] Implement
+        return 0
+
+    def point_exist(self, point) -> bool:
+        # [TODO] Implement
+        return False
+
     @staticmethod
     def _set_states(
         positions: Optional[List[Tuple[float, float, float]]] = None,
-        orientations: Optional[List[Tuple[float, float, float, float]]] = None,
+        orientations: Optional[List[Quaternion]] = None,
         sizes: Optional[List[Tuple[float, float, float]]] = None,
         twists: Optional[List[Tuple[float, float, float]]] = None,
     ) -> Optional[List[ObjectState]]:
@@ -269,8 +277,12 @@ class DynamicObject:
             and twists is not None
         ):
             states: List[ObjectState] = []
-            for position, orientation, size, twist in positions, orientations, sizes, twists:
-                states.append(ObjectState(position, orientation, size, twist))
+            for position, orientation, size, twist in zip(positions, orientations, sizes, twists):
+                states.append(
+                    ObjectState(
+                        position=position, orientation=orientation, size=size, velocity=twist
+                    )
+                )
             return states
         else:
             return None

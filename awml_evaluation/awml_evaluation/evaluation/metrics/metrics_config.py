@@ -1,5 +1,4 @@
 from typing import List
-from typing import Optional
 
 from awml_evaluation.common.evaluation_task import EvaluationTask
 from awml_evaluation.common.label import AutowareLabel
@@ -93,9 +92,9 @@ class MetricsScoreConfig:
 
     @staticmethod
     def set_thresholds(
-        thresholds: List[Optional[float]],
+        thresholds: List[float],
         target_labels: List[AutowareLabel],
-    ) -> List[Optional[float]]:
+    ) -> List[float]:
         """[summary]
         Check the config and set the thresholds.
 

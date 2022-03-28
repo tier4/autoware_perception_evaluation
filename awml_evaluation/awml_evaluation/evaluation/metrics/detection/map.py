@@ -7,7 +7,7 @@ from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.metrics.detection.ap import Ap
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAph
-from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
+from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 logger = getLogger(__name__)
 
@@ -57,7 +57,7 @@ class Map:
 
     def __init__(
         self,
-        object_results: List[DynamicObjectWithResult],
+        object_results: List[DynamicObjectWithPerceptionResult],
         ground_truth_objects: List[DynamicObject],
         target_labels: List[AutowareLabel],
         max_x_position_list: List[float],
@@ -68,7 +68,7 @@ class Map:
         """[summary]
 
         Args:
-            object_results (DynamicObjectWithResult): The list of object results
+            object_results (DynamicObjectWithPerceptionResult): The list of object results
             ground_truth_objects (List[DynamicObject]) : The ground truth objects for the frame
             target_labels (List[AutowareLabel]): Target labels to evaluate mAP
             max_x_position_list (List[float]]):

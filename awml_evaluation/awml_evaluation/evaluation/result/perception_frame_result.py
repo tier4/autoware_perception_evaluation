@@ -1,10 +1,12 @@
 from typing import List
 from typing import Optional
 
+import numpy as np
+
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.metrics.metrics import MetricsScore
 from awml_evaluation.evaluation.metrics.metrics_config import MetricsScoreConfig
-from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
+from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from awml_evaluation.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from awml_evaluation.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from awml_evaluation.evaluation.result.perception_pass_fail_result import PassFailResult
@@ -15,13 +17,20 @@ class PerceptionFrameResult:
     The result for 1 frame (the pair of predicted objects and ground truth objects)
 
     Attributes:
-        self.frame_name (str): The file name of frame in the datasets
-        self.ground_truth_objects (List[DynamicObject]): The ground truth objects for the frame
-        self.pointcloud (Optional[List[float]]): The pointcloud for the frame
-        self.unix_time (int): The unix time for frame [us]
-        self.object_results (List[DynamicObjectWithResult]): The results to each predicted object
-        self.metrics_score (MetricsScore): Metrics score results
-        self.pass_fail_result (PassFailResult): Pass fail results
+        self.frame_name (str):
+            The file name of frame in the datasets.
+        self.ground_truth_objects (List[DynamicObject]):
+            The ground truth objects for the frame.
+        self.pointcloud (Optional[numpy.ndarray]):
+            The pointcloud for the frame.
+        self.unix_time (int):
+            The unix time for frame [us].
+        self.object_results (List[DynamicObjectWithPerceptionResult]):
+            The results to each predicted object.
+        self.metrics_score (MetricsScore):
+            Metrics score results.
+        self.pass_fail_result (PassFailResult):
+            Pass fail results.
     """
 
     def __init__(
@@ -31,7 +40,7 @@ class PerceptionFrameResult:
         frame_pass_fail_config: PerceptionPassFailConfig,
         unix_time: int,
         frame_name: str,
-        pointcloud: Optional[List[float]] = None,
+        pointcloud: Optional[np.ndarray] = None,
     ):
         """[summary]
         Args:
@@ -42,18 +51,18 @@ class PerceptionFrameResult:
                     Frame pass fail config.
             unix_time (int): The unix time for frame [us]
             frame_name (str): The file name of frame in the datasets
-            pointcloud (Optional[List[float]], optional):
+            pointcloud (Optional[numpy.ndarray], optional):
                     The pointcloud for the frame. Defaults to None.
         """
 
         # frame information
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
-        self.pointcloud: Optional[List[float]] = pointcloud
+        self.pointcloud: Optional[np.ndarray] = pointcloud
 
         # results to each predicted object
         self.ground_truth_objects: List[DynamicObject] = []
-        self.object_results: List[DynamicObjectWithResult] = []
+        self.object_results: List[DynamicObjectWithPerceptionResult] = []
 
         # init evaluation
         self.metrics_score: MetricsScore = MetricsScore(metrics_config)
@@ -96,7 +105,7 @@ class PerceptionFrameResult:
     def get_object_results(
         predicted_objects: List[DynamicObject],
         ground_truth_objects: List[DynamicObject],
-    ) -> List[DynamicObjectWithResult]:
+    ) -> List[DynamicObjectWithPerceptionResult]:
         """[summary]
         Get object results from the pair of predicted_objects and ground_truth_objects in a frame.
 
@@ -107,14 +116,14 @@ class PerceptionFrameResult:
                     The ground truth objects in the same time frame as predicted object
 
         Returns:
-            List[DynamicObjectWithResult]: List of Object results
+            List[DynamicObjectWithPerceptionResult]: List of Object results
         """
 
-        object_results: List[DynamicObjectWithResult] = []
+        object_results: List[DynamicObjectWithPerceptionResult] = []
         for predicted_object in predicted_objects:
             # calculate to results for each object
             object_results.append(
-                DynamicObjectWithResult(
+                DynamicObjectWithPerceptionResult(
                     predicted_object=predicted_object,
                     ground_truth_objects=ground_truth_objects,
                 )

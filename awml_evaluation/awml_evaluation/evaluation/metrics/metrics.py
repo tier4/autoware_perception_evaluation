@@ -4,7 +4,7 @@ from awml_evaluation.common.dataset import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.metrics.detection.map import Map
 from awml_evaluation.evaluation.metrics.metrics_config import MetricsScoreConfig
-from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
+from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
 class MetricsScore:
@@ -49,8 +49,9 @@ class MetricsScore:
             str_ += "\n"
             # label
             str_ += "|      Label |"
+            target_str: str
             for ap_ in map_.aps:
-                target_str: str = ""
+                target_str = ""
                 for target in ap_.target_labels:
                     target_str += target.value
                 str_ += f" {target_str}({ap_.matching_threshold_list}) | "
@@ -70,7 +71,7 @@ class MetricsScore:
             str_ += "\n"
             str_ += "|        APH |"
             for aph_ in map_.aphs:
-                target_str: str = ""
+                target_str = ""
                 for target in aph_.target_labels:
                     target_str += target.value
                 str_ += f" {aph_.ap:.3f} | "
@@ -79,14 +80,14 @@ class MetricsScore:
 
     def evaluate(
         self,
-        object_results: List[DynamicObjectWithResult],
+        object_results: List[DynamicObjectWithPerceptionResult],
         ground_truth_objects: List[DynamicObject],
     ) -> None:
         """[summary]
         Evaluate API
 
         Args:
-            object_results (List[DynamicObjectWithResult]): The list of object result
+            object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
             ground_truth_objects (List[DynamicObject]): The ground truth objects
         """
         self._evaluation_detection(object_results, ground_truth_objects)
@@ -95,14 +96,14 @@ class MetricsScore:
 
     def _evaluation_detection(
         self,
-        object_results: List[DynamicObjectWithResult],
+        object_results: List[DynamicObjectWithPerceptionResult],
         ground_truth_objects: List[DynamicObject],
     ) -> None:
         """[summary]
         Calculate detection metrics
 
         Args:
-            object_results (List[DynamicObjectWithResult]): The list of object result
+            object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
             ground_truth_objects (List[DynamicObject]): The ground truth objects
         """
         for distance_threshold_ in self.config.map_thresholds_center_distance:
@@ -156,24 +157,24 @@ class MetricsScore:
 
     def _evaluation_tracking(
         self,
-        object_results: List[DynamicObjectWithResult],
+        object_results: List[DynamicObjectWithPerceptionResult],
     ) -> None:
         """[summary]
         Calculate tracking metrics
 
         Args:
-            object_results (List[DynamicObjectWithResult]): The list of object result
+            object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
         """
         pass
 
     def _evaluation_prediction(
         self,
-        object_results: List[DynamicObjectWithResult],
+        object_results: List[DynamicObjectWithPerceptionResult],
     ) -> None:
         """[summary]
         Calculate prediction metrics
 
         Args:
-            object_results (List[DynamicObjectWithResult]): The list of object result
+            object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
         """
         pass

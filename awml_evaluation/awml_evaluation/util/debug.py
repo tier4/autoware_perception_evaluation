@@ -61,13 +61,13 @@ def class_to_dict(
             data[k] = class_to_dict(v, abbreviation, class_key)
         return data
     elif isinstance(object, Enum):
-        return str(object)
+        return str(object)  # type: ignore
     elif hasattr(object, "_ast"):
-        return class_to_dict(object._ast(), abbreviation)
+        return class_to_dict(object._ast(), abbreviation)  # type: ignore
     elif hasattr(object, "__iter__") and not isinstance(object, str):
-        if abbreviation and len(object) > abbreviation:
-            return f" --- length of element {len(object)} ---,"
-        return [class_to_dict(v, abbreviation, class_key) for v in object]
+        if abbreviation and len(object) > abbreviation:  # type: ignore
+            return f" --- length of element {len(object)} ---,"  # type: ignore
+        return [class_to_dict(v, abbreviation, class_key) for v in object]  # type: ignore
     elif hasattr(object, "__dict__"):
         data = dict(
             [
@@ -77,10 +77,10 @@ def class_to_dict(
             ]
         )
         if class_key is not None and hasattr(object, "__class__"):
-            data[class_key] = object.__class__.__name__
+            data[class_key] = object.__class__.__name__  # type: ignore
         return data
     else:
-        return object
+        return object  # type: ignore
 
 
 def format_dict_for_log(

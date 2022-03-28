@@ -13,7 +13,7 @@ from awml_evaluation.util.debug import get_objects_with_difference
 from awml_evaluation.util.logger_config import configure_logger
 
 
-class LSimMoc:
+class PerceptionLSimMoc:
     def __init__(self, dataset_paths: List[str]):
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=dataset_paths,
@@ -82,7 +82,7 @@ class LSimMoc:
             critical_object_filter_config=critical_object_filter_config,
             frame_pass_fail_config=frame_pass_fail_config,
         )
-        LSimMoc.visualize(frame_result)
+        PerceptionLSimMoc.visualize(frame_result)
 
     def get_final_result(self) -> MetricsScore:
         """
@@ -116,6 +116,12 @@ class LSimMoc:
             # logging.debug(f"frame result {format_class_for_log(frame_result.metrics_score)}")
 
 
+class SeinsingLSimMoc:
+    # [TODO]
+    def __init__(self, dataset_paths: List[str]):
+        pass
+
+
 if __name__ == "__main__":
     # dataset_paths = [
     #     "../../dataset_3d/tier4/202109_3d_cuboid_v2_0_1_sample/60f2669b1070d0002dcdd475",
@@ -124,7 +130,7 @@ if __name__ == "__main__":
     dataset_paths = [
         "../../dataset_3d/tier4/202109_3d_cuboid_v2_0_1_sample/60f2669b1070d0002dcdd475",
     ]
-    lsim = LSimMoc(dataset_paths)
+    lsim = PerceptionLSimMoc(dataset_paths)
 
     for ground_truth_frame in lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference(

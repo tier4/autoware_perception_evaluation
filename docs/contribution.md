@@ -2,12 +2,28 @@
 
 - See [detail](https://github.com/tier4/AWMLtools/blob/main/docs/development/contribution.md)
 
+### Static code analysis using pre-commit
+
+- installation
+
+```bash
+pip3 install pre-commit
+pre-commit install
+```
+
+- formatting
+
+```bash
+pre-commit run -a
+```
+
 ## Test
+
 ### Set dataset
 
 - Add scenario.yaml to Tier4 dataset
 
-```
+```yaml
 ├── AWMLevaluation
 │   ├── awml_evaluation
 ├── dataset_3d
@@ -22,21 +38,20 @@
 │       │       ├── ros2bag
 │       │       ├── scenario.yaml
 │       │       └── status.json
-
 ```
-
 
 ### Test for merge to develop branch
 
 - unit test
 
-```
+```bash
 cd awml_evaluation
 python3 -m unittest -v
 ```
 
 - API test
-```
+
+```bash
 cd awml_evaluation
 poetry run python3 -m test.lsim
 ```
@@ -48,7 +63,7 @@ poetry run python3 -m test.lsim
 - Set dataset for logsim
   - rename ros2bag to input_bag
 
-```
+```yaml
 ├── lsim
 │   ├── input
 │   │   └── sample
@@ -62,7 +77,7 @@ poetry run python3 -m test.lsim
 
 - Check rosbag replay and ros2 topic echo
 
-```sh
+```bash
 ros2 launch autoware_launch logging_simulator.launch.xml map_path:=$HOME/local/results/input/maps vehicle_model:=gsm8 sensor_model:=aip_x2 control:=false planning:=false vehicle_id:=ps1/20210620/CAL_000015
 ros2 bag play ./input_bag/ --clock 200 --rate 0.1
 ros2 topic echo /sensing/lidar/concatenated/pointcloud --no-arr
@@ -70,13 +85,13 @@ ros2 topic echo /sensing/lidar/concatenated/pointcloud --no-arr
 
 - set cli
 
-```
+```bash
 pipx install git+ssh://git@github.com/tier4/logsim.git
 ```
 
 - set cli setting to HOME/.logsim.config.toml
 
-```
+```yaml
 [default]
 data_directory = "$HOME/autoware/lsim/input"
 output_directory = "$HOME/autoware/lsim/output"
@@ -86,7 +101,7 @@ proj_directory = "$HOME/autoware/autoware.proj.gsm8"
 - set scenario.yaml
 
 ```yaml
-ScenarioFormatVersion : 2.2.0
+ScenarioFormatVersion: 2.2.0
 ScenarioName: perception_sample
 ScenarioDescription: perception_sample
 
@@ -104,35 +119,35 @@ Evaluation:
   Config: null # to set awml_evaluator config
   Conditions:
     PassRate: 99.0
-
 ```
 
 ## Branch rule
+
 ### Branch
 
-- Main branch: logsimに使われているbranch
-  - mergeするたびにversionが上がる(ex. 1.0 -> 1.1)
-  - 基本的にdevelopブランチ以外をmergeしない
-- Develop branch: 開発用branch
-  - topic_branchからのpull_requestはここに受ける
+- Main branch: logsim に使われている branch
+  - merge するたびに version が上がる(ex. 1.0 -> 1.1)
+  - 基本的に develop ブランチ以外を merge しない
+- Develop branch: 開発用 branch
+  - topic_branch からの pull_request はここに受ける
 - topic_branch
-  - developに取り込んだのち削除
-  - 開発速度優先で細かくcommitしコミットメッセージもある程度適当でも良い
-  - feature/fix などのprefixをつける
+  - develop に取り込んだのち削除
+  - 開発速度優先で細かく commit しコミットメッセージもある程度適当でも良い
+  - feature/fix などの prefix をつける
 
 ### Merge rule
 
 - topic branch-> develop branch
-  - Squash and mergeでPRごとのcommitにする
+  - Squash and merge で PR ごとの commit にする
 - develop branch -> master branch
-  - 手動merge merge commitを作ってPRごとのcommitを維持する
+  - 手動 merge merge commit を作って PR ごとの commit を維持する
   - アプリケーションとの結合を行うリリース作業に当たる
-  - 何か問題が出たらtopic branch release/v1.x などを作って結合作業を行う
+  - 何か問題が出たら topic branch release/v1.x などを作って結合作業を行う
 
 ## library の構成について
 
-- ros package化
-  - 使われる時はros packageとしてincludeされる
-    - autoware_utilsと同様な感じになる
-  - package.xmlを追加する
-  - 縛り：/awml_evaluation/awml_evaluation 以下に全てのcodeを入れる(ROSパッケージとしてimportするため)
+- ros package 化
+  - 使われる時は ros package として include される
+    - autoware_utils と同様な感じになる
+  - package.xml を追加する
+  - 縛り：/awml_evaluation/awml_evaluation 以下に全ての code を入れる(ROS パッケージとして import するため)

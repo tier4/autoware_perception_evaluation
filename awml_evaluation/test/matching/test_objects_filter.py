@@ -10,7 +10,7 @@ from awml_evaluation.evaluation.matching.objects_filter import divide_tp_fp_obje
 from awml_evaluation.evaluation.matching.objects_filter import filter_ground_truth_objects
 from awml_evaluation.evaluation.matching.objects_filter import filter_object_results
 from awml_evaluation.evaluation.matching.objects_filter import get_fn_objects
-from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
+from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
 from awml_evaluation.util.debug import get_objects_with_difference
 
@@ -37,7 +37,7 @@ class TestObjectsFilter(unittest.TestCase):
 
     def test_filter_object_results(self):
         """[summary]
-        Test filtering DynamicObjectWithResult to filter ground truth objects.
+        Test filtering DynamicObjectWithPerceptionResult to filter ground truth objects.
 
         test objects:
             4 object_results made from dummy_ground_truth_objects with diff_distance
@@ -65,7 +65,7 @@ class TestObjectsFilter(unittest.TestCase):
                     diff_yaw=0,
                 )
                 object_results: List[
-                    DynamicObjectWithResult
+                    DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
                     predicted_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
@@ -157,7 +157,7 @@ class TestObjectsFilter(unittest.TestCase):
                     diff_yaw=0,
                 )
                 object_results: List[
-                    DynamicObjectWithResult
+                    DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
                     predicted_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
@@ -217,7 +217,7 @@ class TestObjectsFilter(unittest.TestCase):
                     diff_yaw=0,
                 )
                 object_results: List[
-                    DynamicObjectWithResult
+                    DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
                     predicted_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
@@ -278,7 +278,7 @@ class TestObjectsFilter(unittest.TestCase):
                 diff_distance_dummy_ground_truth_objects[1].semantic_label = AutowareLabel.ANIMAL
 
                 object_results: List[
-                    DynamicObjectWithResult
+                    DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
                     predicted_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,

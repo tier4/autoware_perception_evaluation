@@ -1,15 +1,15 @@
-## Case 1. rosbagを用いずにデータセットのみで評価を行う
+## Case 1. rosbag を用いずにデータセットのみで評価を行う
 
 - 評価 Metrics の開発などに
 - poetry install
 
-```
+```bash
 pip3 install poetry
 ```
 
 - setting
 
-```
+```bash
 git clone https://github.com/tier4/AWMLevaluation.git
 cd AWMLevaluation
 poetory install
@@ -17,20 +17,20 @@ poetory install
 
 - 実行
 
-```
+```bash
 cd awml_evaluation
 poetry run python3 -m test.lsim
 ```
 
+## Case 2. Lsim 側に組み込む
 
-## Case 2. Lsim側に組み込む
 ### install
 
-- pip, submodule等は使わない
-- reposに追加
-  - 評価地点に関してはhashで管理する
+- pip, submodule 等は使わない
+- repos に追加
+  - 評価地点に関しては hash で管理する
 
-```
+```yaml
 repositories:
   # autoware
   simulator/AWMLevaluation:
@@ -43,6 +43,6 @@ repositories:
 
 - <https://github.com/tier4/AWMLevaluation/blob/main/awml_evaluation/test/lsim.py> を参照
 
-## Case 3. localでmodelの評価を行う
+## Case 3. local で model の評価を行う
 
 TBD

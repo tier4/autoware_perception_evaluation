@@ -45,22 +45,18 @@ class TestIouBEVMatching(unittest.TestCase):
                     )
                     self.assertAlmostEqual(area_intersection, ans_area_intersection)
 
-    def test_iou_bev_matching_diff_distance(self):
+    def test_get_iou_bev_matching(self):
         """[summary]
-        Test whether BEV IoU is correct for different distance.
+        Test calculating BEV IoU.
 
         test objects:
             dummy_ground_truth_objects
-
-        test condition:
-                The same size(1.0, 1.0, 1.0) of dummy_ground_truth_objects
-                vs dummy_ground_truth_objects with diff_distance.
 
         test patterns:
             Given diff_distance, check if iou_bev and ans_iou_bev are equal.
         """
         # patterns: (diff_distance, ans_iou_bev)
-        patterns = [
+        distance_patterns: List[Tuple[float, float]] = [
             # Given no diff_distance, iou is 1.0.
             (0.0, 1.0),
             # Given diff_distance is 0.5 for one axis, iou is 0.5 / 1.5
@@ -68,36 +64,11 @@ class TestIouBEVMatching(unittest.TestCase):
             (0.5, 0.5 / 1.5),
             # Given diff_distance is 1.0 for one axis, iou is 0.0
             # since ground_truth_objects and predicted_objects are no overlapping.
-            (1.0, 0.0),
-        ]
-        for diff_distance, ans_iou_bev in patterns:
-            with self.subTest("Test get_iou_bev."):
-                diff_distance_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=(diff_distance, 0.0, 0.0),
-                    diff_yaw=0,
-                )
-                for predicted_object, ground_truth_object in zip(
-                    diff_distance_dummy_ground_truth_objects, self.dummy_ground_truth_objects
-                ):
-                    iou_bev = IOUBEVMatching(predicted_object, ground_truth_object)
-                    self.assertAlmostEqual(iou_bev.value, ans_iou_bev)
-
-    def test_iou_bev_matching_diff_yaw(self):
-        """
-        Test whether IoU BEV is correct for different yaw.
-
-        test evalluation:
-            The same size of dummy_ground_truth_objects vs dummy_ground_truth_objects with diff_yaw
-        test patterns:
-            Given diff_yaw, check if iou_bev is correct.
-        """
-        # patterns: (diff_yaw, ans_iou_bev)
-        patterns = [
             # Given no diff_yaw, iou is 1.0.
             (0.0, 1.0),
+        ]
+        # patterns: (diff_yaw, ans_iou_bev)
+        yaw_patterns: List[Tuple[float, float]] = [
             # Given vertical diff_yaw, iou is 1.0
             # since ground_truth_objects and predicted_objects overlap exactly.
             (math.pi / 2.0, 1.0),
@@ -123,8 +94,24 @@ class TestIouBEVMatching(unittest.TestCase):
             (3 * math.pi / 4, 0.7071067811865472),
             (-3 * math.pi / 4, 0.7071067811865472),
         ]
-        for diff_yaw, ans_iou_bev in patterns:
-            with self.subTest("diff_yaw make map"):
+
+        for diff_distance, ans_iou_bev in distance_patterns:
+            with self.subTest("Test diff_distance iou_bev"):
+                diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = []
+                diff_yaw_dummy_ground_truth_objects = get_objects_with_difference(
+                    ground_truth_objects=self.dummy_ground_truth_objects,
+                    diff_distance=(diff_distance, 0.0, 0.0),
+                    diff_yaw=0.0,
+                )
+
+                for predicted_object, ground_truth_object in zip(
+                    diff_yaw_dummy_ground_truth_objects, self.dummy_ground_truth_objects
+                ):
+                    iou_bev = IOUBEVMatching(predicted_object, ground_truth_object)
+                    self.assertAlmostEqual(iou_bev.value, ans_iou_bev)
+
+        for diff_yaw, ans_iou_bev in yaw_patterns:
+            with self.subTest("Test diff_yaw iou_bev"):
                 diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = []
                 diff_yaw_dummy_ground_truth_objects = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,

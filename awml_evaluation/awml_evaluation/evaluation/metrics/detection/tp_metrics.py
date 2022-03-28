@@ -2,7 +2,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 from math import pi
 
-from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
+from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
 class TPMetrics(metaclass=ABCMeta):
@@ -17,13 +17,13 @@ class TPMetrics(metaclass=ABCMeta):
     @abstractmethod
     def get_value(
         self,
-        object_result: DynamicObjectWithResult,
+        object_result: DynamicObjectWithPerceptionResult,
     ) -> float:
         """[summary]
         Get TP metrics value
 
         Args:
-            object_result (DynamicObjectWithResult): The object result
+            object_result (DynamicObjectWithPerceptionResult): The object result
 
         Returns:
             float: Tp metrics value
@@ -41,14 +41,14 @@ class TPMetricsAp(TPMetrics):
 
     def get_value(
         self,
-        object_result: DynamicObjectWithResult,
+        object_result: DynamicObjectWithPerceptionResult,
     ) -> float:
         """[summary]
         Get TP (True positive) value.
         If TP metrics is AP, return 1.0.
 
         Args:
-            object_result (DynamicObjectWithResult): The object result
+            object_result (DynamicObjectWithPerceptionResult): The object result
 
         Returns:
             float: TP (True positive) value, 1.0.
@@ -66,14 +66,14 @@ class TPMetricsAph(TPMetrics):
 
     def get_value(
         self,
-        object_result: DynamicObjectWithResult,
+        object_result: DynamicObjectWithPerceptionResult,
     ) -> float:
         """[summary]
         Get TP (True positive) value, the heading similarity rate using for APH.
         APH is used in evaluation for waymo dataset.
 
         Args:
-            object_result (DynamicObjectWithResult): The object result
+            object_result (DynamicObjectWithPerceptionResult): The object result
 
         Returns:
             float: The heading similarity rate using for APH.

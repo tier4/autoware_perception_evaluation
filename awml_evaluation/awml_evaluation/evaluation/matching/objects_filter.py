@@ -2,9 +2,9 @@
 This module has filter function for objects.
 
 function(
-    object_results: List[DynamicObjectWithResult],
+    object_results: List[DynamicObjectWithPerceptionResult],
     params*,
-) -> List[DynamicObjectWithResult]
+) -> List[DynamicObjectWithPerceptionResult]
 
 or
 
@@ -25,24 +25,24 @@ from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.common.threshold import LabelThreshold
 from awml_evaluation.common.threshold import get_label_threshold
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
-from awml_evaluation.evaluation.result.object_result import DynamicObjectWithResult
+from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 logger = getLogger(__name__)
 
 
 def filter_object_results(
-    object_results: List[DynamicObjectWithResult],
+    object_results: List[DynamicObjectWithPerceptionResult],
     target_labels: Optional[List[AutowareLabel]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
     max_pos_distance_list: Optional[List[float]] = None,
     min_pos_distance_list: Optional[List[float]] = None,
-) -> List[DynamicObjectWithResult]:
+) -> List[DynamicObjectWithPerceptionResult]:
     """[summary]
-    Filter DynamicObjectWithResult to filter ground truth objects.
+    Filter DynamicObjectWithPerceptionResult to filter ground truth objects.
 
     Args:
-        object_results (List[DynamicObjectWithResult]): The object results
+        object_results (List[DynamicObjectWithPerceptionResult]): The object results
         max_x_position_list (Optional[List[float]], optional):
                 The threshold list of maximum x-axis position for each object.
                 Return the object that
@@ -59,7 +59,7 @@ def filter_object_results(
                 Minimum distance threshold list for object. Defaults to None.
     """
 
-    filtered_object_results: List[DynamicObjectWithResult] = []
+    filtered_object_results: List[DynamicObjectWithPerceptionResult] = []
     for object_result in object_results:
         is_target: bool = _is_target_object(
             dynamic_object=object_result.predicted_object,
@@ -115,18 +115,18 @@ def filter_ground_truth_objects(
 
 
 def divide_tp_fp_objects(
-    object_results: List[DynamicObjectWithResult],
+    object_results: List[DynamicObjectWithPerceptionResult],
     target_labels: Optional[List[AutowareLabel]],
     matching_mode: Optional[MatchingMode] = None,
     matching_threshold_list: Optional[List[float]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
-) -> Tuple[List[DynamicObjectWithResult], List[DynamicObjectWithResult]]:
+) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
     """[summary]
     Divide TP (True Positive) objects and FP (False Positive) objects
     from Prediction condition positive objects.
 
     Args:
-        object_results (List[DynamicObjectWithResult]): The object results you want to filter
+        object_results (List[DynamicObjectWithPerceptionResult]): The object results you want to filter
         target_labels Optional[List[AutowareLabel]], optional):
                 The target label to evaluate. If object label is in this parameter,
                 this function appends to return objects. Defaults to None.
@@ -144,11 +144,11 @@ def divide_tp_fp_objects(
                 Defaults to None.
 
     Returns:
-        Tuple[List[DynamicObjectWithResult], List[DynamicObjectWithResult]]: tp_objects, fp_objects
+        Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]: tp_objects, fp_objects
     """
 
-    tp_objects: List[DynamicObjectWithResult] = []
-    fp_objects: List[DynamicObjectWithResult] = []
+    tp_objects: List[DynamicObjectWithPerceptionResult] = []
+    fp_objects: List[DynamicObjectWithPerceptionResult] = []
     for object_result in object_results:
         matching_threshold_: Optional[float] = get_label_threshold(
             semantic_label=object_result.predicted_object.semantic_label,
@@ -187,14 +187,14 @@ def divide_tp_fp_objects(
 
 def get_fn_objects(
     ground_truth_objects: List[DynamicObject],
-    object_results: Optional[List[DynamicObjectWithResult]],
+    object_results: Optional[List[DynamicObjectWithPerceptionResult]],
 ) -> List[DynamicObject]:
     """[summary]
     Get FN (False Negative) objects from ground truth objects by using object result
 
     Args:
         ground_truth_objects (List[DynamicObject]): The ground truth objects
-        object_results (Optional[List[DynamicObjectWithResult]]): The object results
+        object_results (Optional[List[DynamicObjectWithPerceptionResult]]): The object results
 
     Returns:
         List[DynamicObject]: FN (False Negative) objects
@@ -216,7 +216,7 @@ def get_fn_objects(
 
 def _is_fn_object(
     ground_truth_object: DynamicObject,
-    object_results: List[DynamicObjectWithResult],
+    object_results: List[DynamicObjectWithPerceptionResult],
 ) -> bool:
     """[summary]
     Judge whether ground truth object is FN (False Negative) object.
@@ -224,7 +224,7 @@ def _is_fn_object(
 
     Args:
         ground_truth_object (DynamicObject): A ground truth object
-        object_results (List[DynamicObjectWithResult]): object result
+        object_results (List[DynamicObjectWithPerceptionResult]): object result
 
     Returns:
         bool: Whether ground truth object is FN (False Negative) object.

@@ -34,7 +34,7 @@ def configure_logger(
     log_file_directory: str,
     console_log_level=logging.INFO,
     file_log_level=logging.INFO,
-) -> None:
+) -> logging.Logger:
     """[summary]
     The function to make logger
 
