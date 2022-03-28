@@ -1,5 +1,6 @@
 from typing import List
-from typing import Tuple
+
+import numpy as np
 
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.sensing.sensing_frame_config import SensingFrameConfig
@@ -23,13 +24,13 @@ class SensingFrameResult:
         # Result
         self.detection_success_results: List[DynamicObjectWithSensingResult] = []
         self.detection_fail_results: List[DynamicObjectWithSensingResult] = []
-        self.non_detected_pointcloud: List[Tuple[float]] = []
+        self.non_detected_pointcloud: List[np.ndarray] = []
 
     def evaluate_frame(
         self,
         ground_truth_objects: List[DynamicObject],
-        pointcloud_for_detection: List[Tuple[float]],
-        pointcloud_for_non_detection: List[Tuple[float]],
+        pointcloud_for_detection: np.ndarray,
+        pointcloud_for_non_detection: List[np.ndarray],
     ) -> None:
         self._evaluate_pointcloud_for_detection(
             ground_truth_objects,
@@ -43,7 +44,7 @@ class SensingFrameResult:
     def _evaluate_pointcloud_for_detection(
         self,
         ground_truth_objects: List[DynamicObject],
-        pointcloud_for_detection: List[Tuple[float]],
+        pointcloud_for_detection: np.ndarray,
     ):
         # [TODO] implement
         for ground_truth_object in ground_truth_objects:
@@ -59,7 +60,7 @@ class SensingFrameResult:
     def _evaluate_pointcloud_for_non_detection(
         self,
         ground_truth_objects: List[DynamicObject],
-        pointcloud_for_non_detection: List[Tuple[float]],
+        pointcloud_for_non_detection: List[np.ndarray],
     ):
         # [TODO] implement
         for point_non_detection in pointcloud_for_non_detection:

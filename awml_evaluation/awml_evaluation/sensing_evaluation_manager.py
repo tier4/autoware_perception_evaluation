@@ -1,5 +1,6 @@
 from typing import List
-from typing import Tuple
+
+import numpy as np
 
 from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.dataset import get_now_frame
@@ -55,8 +56,8 @@ class SensingEvaluationManager:
         self,
         unix_time: int,
         ground_truth_now_frame: FrameGroundTruth,
-        pointcloud_for_detection: List[Tuple[float]],
-        pointcloud_for_non_detection: List[Tuple[float]],
+        pointcloud_for_detection: np.ndarray,
+        pointcloud_for_non_detection: List[np.ndarray],
     ) -> SensingFrameResult:
         result = SensingFrameResult(
             sensing_frame_config=self.evaluator_config.sensing_frame_config,
