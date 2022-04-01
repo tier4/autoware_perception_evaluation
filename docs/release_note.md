@@ -6,6 +6,14 @@
 
 ## Release for main branch
 
+### v1.3.1
+
+- <https://github.com/tier4/AWMLevaluation/pull/80>
+  - 【release】v1.3.1 release
+- <https://github.com/tier4/AWMLevaluation/pull/78>
+  - 【改良】autoware の linter, formatter 設定を適用
+  - 【改良】Tool の version の更新
+
 ### v1.3.0
 
 - <https://github.com/tier4/AWMLevaluation/pull/71>
