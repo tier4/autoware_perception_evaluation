@@ -140,9 +140,14 @@ Evaluation:
 - topic branch-> develop branch
   - Squash and merge で PR ごとの commit にする
 - develop branch -> master branch
+  - topic branch release/v1.x を作って結合作業を行う
+    - version を書き換える
+      - pyproject.toml
+      - package.xml
+      - setup.py
+    - develop に merge する
   - 手動 merge merge commit を作って PR ごとの commit を維持する
   - アプリケーションとの結合を行うリリース作業に当たる
-  - 何か問題が出たら topic branch release/v1.x などを作って結合作業を行う
 
 ## library の構成について
 
