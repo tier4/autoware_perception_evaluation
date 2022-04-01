@@ -235,10 +235,10 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
         # Calculate plane distance
         distance_1_1: float = abs(distance_points_bev(pr_corner_points[0], gt_corner_points[0]))
         distance_1_2: float = abs(distance_points_bev(pr_corner_points[1], gt_corner_points[1]))
-        distance_1: float = distance_1_1 ** 2 + distance_1_2 ** 2
+        distance_1: float = distance_1_1**2 + distance_1_2**2
         distance_2_1: float = abs(distance_points_bev(pr_corner_points[0], gt_corner_points[1]))
         distance_2_2: float = abs(distance_points_bev(pr_corner_points[1], gt_corner_points[0]))
-        distance_2: float = distance_2_1 ** 2 + distance_2_2 ** 2
+        distance_2: float = distance_2_1**2 + distance_2_2**2
 
         plane_distance: float = math.sqrt(min(distance_1, distance_2) / 2.0)
         ground_truth_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
