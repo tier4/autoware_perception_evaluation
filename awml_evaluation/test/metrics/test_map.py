@@ -334,9 +334,7 @@ class TestMap(unittest.TestCase):
             (0.5, 0.0, 0.0),
         ]
         for diff_distance, ans_map, ans_maph in patterns:
-            with self.subTest(
-                "Test mAP and mAPH with iou 3d matching for translation difference."
-            ):
+            with self.subTest("Test mAP and mAPH with iou 3d matching for translation difference."):
                 diff_distance_dummy_ground_truth_objects: List[
                     DynamicObject
                 ] = get_objects_with_difference(
@@ -533,9 +531,7 @@ class TestMap(unittest.TestCase):
         ]
 
         for diff_yaw, ans_map, ans_maph in patterns:
-            with self.subTest(
-                "Test mAP and mAPH with plane distance matching for yaw difference."
-            ):
+            with self.subTest("Test mAP and mAPH with plane distance matching for yaw difference."):
                 diff_yaw_dummy_ground_truth_objects: List[
                     DynamicObject
                 ] = get_objects_with_difference(

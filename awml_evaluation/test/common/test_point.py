@@ -25,10 +25,10 @@ class TestPoint(unittest.TestCase):
         # patterns: (point_1, point_2, ans_distance)
         patterns: List[Tuple[np.ndarray, np.ndarray, float]] = [
             (np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0)), 0.0),
-            (np.array((0.0, 0.0, 0.0)), np.array((1.0, 1.0, 1.0)), math.sqrt(3 * 1.0 ** 2)),
-            (np.array((0.0, 0.0, 0.0)), np.array((1.0, -1.0, 1.0)), math.sqrt(3 * 1.0 ** 2)),
-            (np.array((0.0, 0.0, 0.0)), np.array((-1.0, -1.0, 1.0)), math.sqrt(3 * 1.0 ** 2)),
-            (np.array((0.0, 0.0, 0.0)), np.array((-1.0, -1.0, -1.0)), math.sqrt(3 * 1.0 ** 2)),
+            (np.array((0.0, 0.0, 0.0)), np.array((1.0, 1.0, 1.0)), math.sqrt(3 * 1.0**2)),
+            (np.array((0.0, 0.0, 0.0)), np.array((1.0, -1.0, 1.0)), math.sqrt(3 * 1.0**2)),
+            (np.array((0.0, 0.0, 0.0)), np.array((-1.0, -1.0, 1.0)), math.sqrt(3 * 1.0**2)),
+            (np.array((0.0, 0.0, 0.0)), np.array((-1.0, -1.0, -1.0)), math.sqrt(3 * 1.0**2)),
         ]
         for point_1, point_2, ans_distance in patterns:
             with self.subTest("Test get_distance_points"):
@@ -46,10 +46,10 @@ class TestPoint(unittest.TestCase):
         # patterns: (point_1, point_2, ans_distance)
         patterns: List[Tuple[np.ndarray, np.ndarray, float]] = [
             (np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0)), 0.0),
-            (np.array((0.0, 0.0, 0.0)), np.array((1.0, 1.0, 1.0)), math.sqrt(2 * 1.0 ** 2)),
-            (np.array((0.0, 0.0, 0.0)), np.array((1.0, -1.0, 1.0)), math.sqrt(2 * 1.0 ** 2)),
-            (np.array((0.0, 0.0, 0.0)), np.array((-1.0, -1.0, 5.0)), math.sqrt(2 * 1.0 ** 2)),
-            (np.array((0.0, 0.0, 0.0)), np.array((-1.0, -1.0, -10.0)), math.sqrt(2 * 1.0 ** 2)),
+            (np.array((0.0, 0.0, 0.0)), np.array((1.0, 1.0, 1.0)), math.sqrt(2 * 1.0**2)),
+            (np.array((0.0, 0.0, 0.0)), np.array((1.0, -1.0, 1.0)), math.sqrt(2 * 1.0**2)),
+            (np.array((0.0, 0.0, 0.0)), np.array((-1.0, -1.0, 5.0)), math.sqrt(2 * 1.0**2)),
+            (np.array((0.0, 0.0, 0.0)), np.array((-1.0, -1.0, -10.0)), math.sqrt(2 * 1.0**2)),
         ]
         for point_1, point_2, ans_distance in patterns:
             with self.subTest("Test get_distance_points_bev"):
