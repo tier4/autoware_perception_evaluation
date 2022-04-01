@@ -31,10 +31,10 @@ class TestObject(unittest.TestCase):
         # patterns: (ans_distance)
         patterns: List[float] = [
             # 3d_distance to the dummy_ground_truth_object from ego vehicle.
-            math.sqrt(3 * 1.0 ** 2),
-            math.sqrt(3 * 1.0 ** 2),
-            math.sqrt(3 * 1.0 ** 2),
-            math.sqrt(3 * 1.0 ** 2),
+            math.sqrt(3 * 1.0**2),
+            math.sqrt(3 * 1.0**2),
+            math.sqrt(3 * 1.0**2),
+            math.sqrt(3 * 1.0**2),
         ]
         for ans_distance in patterns:
             with self.subTest("Test get_distance"):
@@ -54,10 +54,10 @@ class TestObject(unittest.TestCase):
         """
         # patterns: (ans_distance_bev)
         patterns: List[float] = [
-            math.sqrt(2 * 1.0 ** 2),
-            math.sqrt(2 * 1.0 ** 2),
-            math.sqrt(2 * 1.0 ** 2),
-            math.sqrt(2 * 1.0 ** 2),
+            math.sqrt(2 * 1.0**2),
+            math.sqrt(2 * 1.0**2),
+            math.sqrt(2 * 1.0**2),
+            math.sqrt(2 * 1.0**2),
         ]
         for ans_distance_bev in patterns:
             with self.subTest("Test get_distance_bev"):
@@ -153,10 +153,10 @@ class TestObject(unittest.TestCase):
         """
         # patterns: (ans_volume)
         patterns: List[float] = [
-            math.sqrt(1.0 ** 3),
-            math.sqrt(1.0 ** 3),
-            math.sqrt(1.0 ** 3),
-            math.sqrt(1.0 ** 3),
+            math.sqrt(1.0**3),
+            math.sqrt(1.0**3),
+            math.sqrt(1.0**3),
+            math.sqrt(1.0**3),
         ]
         for ans_volume in patterns:
             with self.subTest("Test get_volume"):
@@ -178,8 +178,8 @@ class TestObject(unittest.TestCase):
         # patterns: (diff_distance, ans_distance)
         patterns: List[Tuple[float, float]] = [
             (0.0, 0.0),
-            (2.0, math.sqrt(3 * 2.0 ** 2)),
-            (-2.0, math.sqrt(3 * 2.0 ** 2)),
+            (2.0, math.sqrt(3 * 2.0**2)),
+            (-2.0, math.sqrt(3 * 2.0**2)),
         ]
         for diff_distance, ans_distance in patterns:
             with self.subTest("Test distance_objects"):
@@ -210,8 +210,8 @@ class TestObject(unittest.TestCase):
         # patterns: (diff_distance, ans_distance_bev)
         patterns: List[Tuple[float, float]] = [
             (0.0, 0.0),
-            (2.0, math.sqrt(2 * 2.0 ** 2)),
-            (-2.0, math.sqrt(2 * 2.0 ** 2)),
+            (2.0, math.sqrt(2 * 2.0**2)),
+            (-2.0, math.sqrt(2 * 2.0**2)),
         ]
         for diff_distance, ans_distance_bev in patterns:
             with self.subTest("Test distance_objects_bev"):

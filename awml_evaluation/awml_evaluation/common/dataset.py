@@ -331,7 +331,7 @@ def get_now_frame(
     """
 
     # error handling
-    threshold_max_time = 10 ** 17
+    threshold_max_time = 10**17
     if unix_time > threshold_max_time:
         raise DatasetLoadingError(
             f"Error: The unit time of unix time is micro second,\
