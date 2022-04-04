@@ -4,6 +4,9 @@
 
 ## Now development for develop branch -> v1.4
 
+- <https://github.com/tier4/AWMLevaluation/pull/82>
+  - 【document 追加】document 追加
+
 ## Release for main branch
 
 ### v1.3.1
