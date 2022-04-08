@@ -4,13 +4,12 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-import numpy as np
-from pyquaternion import Quaternion
-from shapely.geometry import Polygon
-
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.point import distance_points
 from awml_evaluation.common.point import distance_points_bev
+import numpy as np
+from pyquaternion import Quaternion
+from shapely.geometry import Polygon
 
 logger = getLogger(__name__)
 

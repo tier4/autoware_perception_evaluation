@@ -3,11 +3,10 @@ from typing import List
 from typing import Tuple
 import unittest
 
-import numpy as np
-
 from awml_evaluation.common.point import distance_points
 from awml_evaluation.common.point import distance_points_bev
 from awml_evaluation.common.point import to_bev
+import numpy as np
 
 
 class TestPoint(unittest.TestCase):

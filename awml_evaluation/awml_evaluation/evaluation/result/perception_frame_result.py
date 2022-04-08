@@ -1,8 +1,6 @@
 from typing import List
 from typing import Optional
 
-import numpy as np
-
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.metrics.metrics import MetricsScore
 from awml_evaluation.evaluation.metrics.metrics_config import MetricsScoreConfig
@@ -10,6 +8,7 @@ from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPer
 from awml_evaluation.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from awml_evaluation.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from awml_evaluation.evaluation.result.perception_pass_fail_result import PassFailResult
+import numpy as np
 
 
 class PerceptionFrameResult:

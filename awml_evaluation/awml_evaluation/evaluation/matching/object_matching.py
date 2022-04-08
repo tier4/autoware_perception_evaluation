@@ -16,12 +16,11 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-from shapely.geometry import Polygon
-
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.common.object import distance_objects
 from awml_evaluation.common.object import distance_points_bev
 from awml_evaluation.common.point import polygon_to_list
+from shapely.geometry import Polygon
 
 
 class MatchingMode(Enum):

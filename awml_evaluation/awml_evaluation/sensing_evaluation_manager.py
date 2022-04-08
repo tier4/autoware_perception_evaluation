@@ -1,7 +1,5 @@
 from typing import List
 
-import numpy as np
-
 from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.dataset import get_now_frame
 from awml_evaluation.common.dataset import load_all_datasets
@@ -9,6 +7,7 @@ from awml_evaluation.common.evaluation_task import EvaluationTask
 from awml_evaluation.evaluation.sensing.sensing_frame_result import SensingFrameResult
 from awml_evaluation.sensing_evaluation_config import SensingEvaluationConfig
 from awml_evaluation.visualization.visualization import VisualizationBEV
+import numpy as np
 
 
 class SensingEvaluationManager:
