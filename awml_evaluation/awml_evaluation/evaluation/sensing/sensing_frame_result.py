@@ -1,10 +1,9 @@
 from typing import List
 
-import numpy as np
-
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.sensing.sensing_frame_config import SensingFrameConfig
 from awml_evaluation.evaluation.sensing.sensing_result import DynamicObjectWithSensingResult
+import numpy as np
 
 
 class SensingFrameResult:

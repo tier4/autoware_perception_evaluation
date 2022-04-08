@@ -1,8 +1,7 @@
 from logging import getLogger
 
-import numpy as np
-
 from awml_evaluation.common.object import DynamicObject
+import numpy as np
 
 logger = getLogger(__name__)
 

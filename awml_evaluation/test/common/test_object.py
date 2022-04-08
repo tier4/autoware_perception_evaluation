@@ -4,12 +4,11 @@ from typing import List
 from typing import Tuple
 import unittest
 
-from shapely.geometry import Polygon
-
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.common.object import distance_objects
 from awml_evaluation.common.object import distance_objects_bev
 from awml_evaluation.util.debug import get_objects_with_difference
+from shapely.geometry import Polygon
 
 
 class TestObject(unittest.TestCase):

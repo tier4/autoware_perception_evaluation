@@ -4,17 +4,16 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-import numpy as np
-from nuscenes.nuscenes import NuScenes
-from nuscenes.utils.data_classes import Box
-from pyquaternion.quaternion import Quaternion
-import tqdm
-
 from awml_evaluation.common.evaluation_task import EvaluationTask
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.label import LabelConverter
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.util.file import divide_file_path
+import numpy as np
+from nuscenes.nuscenes import NuScenes
+from nuscenes.utils.data_classes import Box
+from pyquaternion.quaternion import Quaternion
+import tqdm
 
 logger = getLogger(__name__)
 

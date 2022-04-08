@@ -1,10 +1,9 @@
 from typing import List
 from typing import Tuple
 
-from pyquaternion.quaternion import Quaternion
-
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
+from pyquaternion.quaternion import Quaternion
 
 
 def make_dummy_data() -> Tuple[List[DynamicObject], List[DynamicObject]]:

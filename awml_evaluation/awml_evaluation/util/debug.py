@@ -4,9 +4,8 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-from pyquaternion.quaternion import Quaternion
-
 from awml_evaluation.common.object import DynamicObject
+from pyquaternion.quaternion import Quaternion
 
 
 def format_class_for_log(

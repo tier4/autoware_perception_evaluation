@@ -5,8 +5,6 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-import numpy as np
-
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.common.threshold import get_label_threshold
@@ -16,6 +14,7 @@ from awml_evaluation.evaluation.matching.objects_filter import filter_object_res
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+import numpy as np
 
 logger = getLogger(__name__)
 

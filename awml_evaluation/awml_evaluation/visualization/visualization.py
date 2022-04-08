@@ -2,8 +2,6 @@ import os
 from typing import List
 from typing import Optional
 
-import numpy as np
-
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.matching.objects_filter import divide_tp_fp_objects
@@ -13,6 +11,7 @@ from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPer
 from awml_evaluation.visualization.visualization_config import Color
 from awml_evaluation.visualization.visualization_config import VisualizationAppearanceConfig
 from awml_evaluation.visualization.visualization_config import VisualizationConfig
+import numpy as np
 
 
 class VisualizationBEV:
