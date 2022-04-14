@@ -1,4 +1,6 @@
 import math
+from typing import List
+from typing import Tuple
 
 import numpy as np
 from shapely.geometry import Polygon
@@ -50,6 +52,55 @@ def to_bev(point_1: np.ndarray) -> np.ndarray:
     if not len(point_1) == 3:
         raise RuntimeError(f"The length of a point is {len(point_1)}, it needs 3.")
     return point_1[:2]
+
+
+def crop_pointcloud(
+    pointcloud: np.ndarray,
+    area: List[Tuple[float, float, float]],
+) -> np.ndarray:
+    """Crop pointcloud from (N, 3) to (M, 3) with Crossing Number Algorithm.
+
+    TODO:
+        Implement to support the case area min/max height is not constant.
+
+    Args:
+        pointcloud (numpy.ndarray): The array of pointcloud, in shape (N, 3)
+        area (List[Tuple[float, float, float]]): The 3D-polygon area to be cropped
+
+    Returns:
+        numpy.ndarray: The  of cropped pointcloud, in shape (M, 3)
+    """
+    if pointcloud.ndim != 2 or pointcloud.shape[1] < 2:
+        raise RuntimeError(
+            f"The shape of pointcloud is {pointcloud.shape}, it needs (N, k>=2) and k is (x,y,z,i) order."
+        )
+    if len(area) < 6 or len(area) % 2 != 0:
+        raise RuntimeError(
+            f"The area must be a 3D-polygon, it needs the edges more than 6, but got {len(area)}."
+        )
+
+    z_min: float = min(area, key=(lambda x: x[2]))[2]
+    z_max: float = max(area, key=(lambda x: x[2]))[2]
+
+    # crop with polygon in xy-plane
+    num_vertices = len(area)
+    cnts_arr_: np.ndarray = np.zeros(pointcloud.shape[0], dtype=np.uint8)
+    for i in range(num_vertices // 2 - 1):
+        flags_ = ((area[i][1] <= pointcloud[:, 1]) * (area[i + 1][1] > pointcloud[:, 1])) + (
+            (area[i][1] > pointcloud[:, 1]) * (area[i + 1][1] <= pointcloud[:, 1])
+        )
+
+        if area[i + 1][1] != area[i][1]:
+            vt = (pointcloud[:, 1] - area[i][1]) / (area[i + 1][1] - area[i][1])
+        else:
+            vt = pointcloud[:, 0]
+
+        flags_ *= pointcloud[:, 0] < (area[i][0] + (vt * (area[i + 1][0] - area[i][0])))
+        cnts_arr_[flags_] += 1
+
+    xy_cropped: np.ndarray = pointcloud[cnts_arr_ % 2 != 0]
+
+    return xy_cropped[(z_min <= xy_cropped[:, 2]) * (z_max >= xy_cropped[:, 2])]
 
 
 def polygon_to_list(polygon: Polygon):

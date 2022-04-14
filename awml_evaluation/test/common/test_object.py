@@ -8,6 +8,7 @@ from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.common.object import distance_objects
 from awml_evaluation.common.object import distance_objects_bev
 from awml_evaluation.util.debug import get_objects_with_difference
+import numpy as np
 from shapely.geometry import Polygon
 
 
@@ -226,6 +227,89 @@ class TestObject(unittest.TestCase):
                 ):
                     distance_bev = distance_objects_bev(dummy_object, diff_dummy_object)
                     self.assertAlmostEqual(distance_bev, ans_distance_bev)
+
+    def test_inside_pointcloud(self):
+        """[summary]"""
+        pointcloud: np.ndarray = np.array(
+            [
+                (1.0, 1.0, 1.0),
+                (1.0, -1.0, 1.0),
+                (-1.0, 1.0, 1.0),
+                (-1.0, -1.0, 1.0),
+            ]
+        )
+        bbox_scale: float = 1.1
+        # patterns: (ans_inside_pointcloud)
+        patterns: List[np.ndarray] = [
+            np.array([(1.0, 1.0, 1.0)]),
+            np.array([(1.0, -1.0, 1.0)]),
+            np.array([(-1.0, 1.0, 1.0)]),
+            np.array([(-1.0, -1.0, 1.0)]),
+        ]
+        with self.subTest("Test get_inside_pointcloud_num"):
+            for dummy_object, ans_inside_pointcloud in zip(
+                self.dummy_ground_truth_objects, patterns
+            ):
+                inside_pointcloud: np.ndarray = dummy_object.get_inside_pointcloud(
+                    pointcloud, bbox_scale
+                )
+                self.assertEqual(
+                    inside_pointcloud.tolist(),
+                    ans_inside_pointcloud.tolist(),
+                )
+
+    def test_get_inside_poincloud_num(self):
+        """[summary]
+        Test calculating the number of pointcloud inside of bounding box.
+
+        test objects:
+            dummy_ground_truth_objects (List[DynamicObject])
+
+        test patterns:
+            Test if the calculated the number is equal to ans_num_inside
+        """
+        pointcloud: np.ndarray = np.array(
+            [
+                (1.0, 1.0, 1.0),
+                (1.0, -1.0, 1.0),
+                (-1.0, 1.0, 1.0),
+                (-1.0, -1.0, 1.0),
+            ]
+        )
+        bbox_scale: float = 1.0
+
+        # patterns: (ans_num_inside)
+        patterns: List[int] = [1, 1, 1, 1]
+        with self.subTest("Test get_inside_pointcloud_num"):
+            for dummy_object, ans_num_inside in zip(self.dummy_ground_truth_objects, patterns):
+                num_inside = dummy_object.get_inside_pointcloud_num(pointcloud, bbox_scale)
+                self.assertEqual(num_inside, ans_num_inside)
+
+    def test_point_exist(self):
+        """[summary]
+        Test evaluating whether any input points are inside of bounding box.
+
+        test objects:
+            dummy_ground_truth_objects (List[DynamicObject])
+
+        test patterns:
+            Test if the evaluated flag is equal to ans_is_exist
+        """
+        pointcloud = np.array(
+            [
+                (1.0, 1.0, 1.0),
+                (1.0, -1.0, 1.0),
+                (-1.0, 1.0, 1.0),
+                (-1.0, -1.0, 1.0),
+            ]
+        )
+        bbox_scale = 1.0
+        # patterns: (ans_is_exist)
+        patterns: List[bool] = [True, True, True, True]
+        with self.subTest("Test point_exist"):
+            for dummy_object, ans_is_exist in zip(self.dummy_ground_truth_objects, patterns):
+                is_exist = dummy_object.point_exist(pointcloud, bbox_scale)
+                self.assertEqual(is_exist, ans_is_exist)
 
 
 if __name__ == "__main__":

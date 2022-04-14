@@ -189,6 +189,36 @@ class DynamicObject:
         trans_rots = float(np.where(trans_rots < -math.pi, trans_rots + 2 * math.pi, trans_rots))
         return trans_rots
 
+    def get_corners(self, bbox_scale: float) -> np.ndarray:
+        """[summary]
+        Get the bounding box corners.
+
+        Args:
+            bbox_scale (float): The factor to scale the box. Defaults to 1.0.
+
+        Returns:
+            corners (numpy.ndarray)
+        """
+        width = self.state.size[0] * bbox_scale
+        length = self.state.size[1] * bbox_scale
+        height = self.state.size[2] * bbox_scale
+
+        # 3D bounding box corners.
+        # (Convention: x points forward, y to the left, z up.)
+        # upper plane -> lower plane
+        x_corners = length / 2 * np.array([1, 1, -1, -1, 1, 1, -1, -1])
+        y_corners = width / 2 * np.array([1, -1, -1, 1, 1, -1, -1, 1])
+        z_corners = height / 2 * np.array([1, 1, 1, 1, -1, -1, -1, -1])
+        corners = np.stack((x_corners, y_corners, z_corners), axis=-1)
+
+        # Rotate to the object heading
+        corners = np.dot(corners, self.state.orientation.rotation_matrix)
+
+        # Translate by object position
+        corners = corners + self.state.position
+
+        return corners
+
     def get_footprint(self) -> Polygon:
         """[summary]
         Get footprint polygon from an object
@@ -237,13 +267,70 @@ class DynamicObject:
     def get_volume(self) -> float:
         return self.get_area_bev() * self.state.size[2]
 
-    def get_inside_pointcloud_num(self, pointcloud) -> int:
-        # [TODO] Implement
-        return 0
+    def get_inside_pointcloud(
+        self,
+        pointcloud: np.ndarray,
+        bbox_scale: float,
+    ) -> np.ndarray:
+        """[summary]
+        Get pointcloud inside of bounding box.
 
-    def point_exist(self, point) -> bool:
-        # [TODO] Implement
-        return False
+        Args:
+            poinrcloud (np.ndarray): The Array of pointcloud, in shape (N, 3).
+            bbox_scale (float): Scale factor for bounding box.
+
+        Returns:
+            numpy.ndarray: The array of pointcloud in bounding box.
+        """
+        scaled_bbox_size_object_coords: np.ndarray = np.array(
+            [
+                bbox_scale * self.state.size[1],
+                bbox_scale * self.state.size[0],
+                bbox_scale * self.state.size[2],
+            ]
+        )
+
+        # Convert pointcloud coordinates from ego pose to relative to object
+        pointcloud_object_coords: np.ndarray = pointcloud[:, :3] - self.state.position
+
+        # Calculte the indices of pointcloud in bounding box
+        inside_idx: np.ndarray = (
+            (pointcloud_object_coords > -0.5 * scaled_bbox_size_object_coords)
+            * (pointcloud_object_coords < 0.5 * scaled_bbox_size_object_coords)
+        ).all(axis=1)
+
+        return pointcloud[inside_idx]
+
+    def get_inside_pointcloud_num(
+        self,
+        pointcloud: np.ndarray,
+        bbox_scale: float,
+    ) -> int:
+        """[summary]
+        Calculate the number of pointcloud inside of bounding box.
+
+        Args:
+            poinrcloud (np.ndarray): The Array of pointcloud, in shape (N, 3).
+            bbox_scale (float): Scale factor for bounding box.
+
+        Returns:
+            int: The number of points in bounding box.
+        """
+        inside_pointcloud: np.ndarray = self.get_inside_pointcloud(pointcloud, bbox_scale)
+        return len(inside_pointcloud)
+
+    def point_exist(self, pointcloud: np.ndarray, bbox_scale: float) -> bool:
+        """Evaluate whether any input points are inside of bounding box.
+
+        Args:
+            pointcloud (numpy.ndarray): The array of pointcloud.
+            bbox_scale (float): Scale factor for bounding box.
+
+        Returns:
+            bool: Return True if exists.
+        """
+        num_inside: int = self.get_inside_pointcloud_num(pointcloud, bbox_scale)
+        return num_inside > 0
 
     @staticmethod
     def _set_states(
