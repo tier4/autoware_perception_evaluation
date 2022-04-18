@@ -4,17 +4,16 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-import numpy as np
-from nuscenes.nuscenes import NuScenes
-from nuscenes.utils.data_classes import Box
-from pyquaternion.quaternion import Quaternion
-import tqdm
-
 from awml_evaluation.common.evaluation_task import EvaluationTask
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.label import LabelConverter
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.util.file import divide_file_path
+import numpy as np
+from nuscenes.nuscenes import NuScenes
+from nuscenes.utils.data_classes import Box
+from pyquaternion.quaternion import Quaternion
+import tqdm
 
 logger = getLogger(__name__)
 
@@ -24,12 +23,12 @@ class FrameGroundTruth:
     Ground truth data per frame
 
     Attributes:
-        self.unix_time (float): The unix time for the frame [us]
-        self.frame_name (str): The file name for the frame
-        self.objects (List[DynamicObject]): Objects data
+        self.unix_time (float): The unix time for the frame [us].
+        self.frame_name (str): The file name for the frame.
+        self.objects (List[DynamicObject]): Objects data.
         self.pointcloud (Optional[numpy.ndarray], optional):
                 Pointcloud data. Defaults to None, but if you want to visualize dataset,
-                you should load pointcloud data
+                you should load pointcloud data.
     """
 
     def __init__(
@@ -45,9 +44,10 @@ class FrameGroundTruth:
             unix_time (int): The unix time for the frame [us]
             frame_name (str): The file name for the frame
             objects (List[DynamicObject]): Objects data
-            pointcloud (Optional[numpy.ndarray], optional):
-                    Pointcloud data (N-length numpy.ndarray[x, y, z, i]). Defaults to None, but if you want to visualize dataset,
-                    you should load pointcloud data
+            pointcloud (Optional[numpy.ndarray]):
+                    Pointcloud data in (x, y, z, i).
+                    Defaults to None, but if you want to visualize dataset,
+                    you should load pointcloud data.
         """
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
@@ -60,6 +60,7 @@ def load_all_datasets(
     does_use_pointcloud: bool,
     evaluation_tasks: List[EvaluationTask],
     label_converter: LabelConverter,
+    target_uuids: Optional[List[str]] = None,
 ) -> List[FrameGroundTruth]:
     """
     Load tier4 datasets.
@@ -68,6 +69,11 @@ def load_all_datasets(
         does_use_pointcloud (bool): The flag of setting pointcloud
         evaluation_tasks (List[EvaluationTask]): The evaluation tasks
         label_converter (LabelConverter): Label convertor
+        target_uuids: List[str]:
+                The list of object instance tokens for all data in all frames.
+                It should be specified in case of selecting specific objects.
+                The order of the list is same as dataset paths. Defaults to None.
+                NOTE: assuming dataset_paths is only one.
 
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
@@ -78,12 +84,14 @@ def load_all_datasets(
     )
 
     all_datasets: List[FrameGroundTruth] = []
+
     for dataset_path in dataset_paths:
         all_datasets += _load_dataset(
             dataset_path=dataset_path,
             does_use_pointcloud=does_use_pointcloud,
             evaluation_tasks=evaluation_tasks,
             label_converter=label_converter,
+            target_uuids=target_uuids,
         )
     logger.info("Finish loading dataset\n" + _get_str_objects_number_info(label_converter))
     return all_datasets
@@ -94,6 +102,7 @@ def _load_dataset(
     does_use_pointcloud: bool,
     evaluation_tasks: List[EvaluationTask],
     label_converter: LabelConverter,
+    target_uuids: Optional[List[str]] = None,
 ) -> List[FrameGroundTruth]:
     """
     Load one tier4 dataset.
@@ -102,6 +111,9 @@ def _load_dataset(
         does_use_pointcloud (bool): The flag of setting pointcloud
         evaluation_tasks (List[EvaluationTask]): The evaluation tasks
         label_converter (LabelConverter): Label convertor
+        target_uuids: (Optional[List[str]]):
+                The list of object instance tokens for the data will be loaded in all frames.
+                It should be specified in case of selecting specific objects. Defaults to None
 
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
@@ -122,6 +134,10 @@ def _load_dataset(
 
     dataset: List[FrameGroundTruth] = []
 
+    # If target_uuids is not specified, set it as empty list
+    if target_uuids is None:
+        target_uuids = []
+
     for sample_token in tqdm.tqdm(sample_tokens):
         frame = _sample_to_frame(
             nusc=nusc,
@@ -129,6 +145,7 @@ def _load_dataset(
             does_use_pointcloud=does_use_pointcloud,
             evaluation_tasks=evaluation_tasks,
             label_converter=label_converter,
+            target_uuids=target_uuids,
         )
         dataset.append(frame)
     return dataset
@@ -191,6 +208,7 @@ def _sample_to_frame(
     does_use_pointcloud: bool,
     evaluation_tasks: List[EvaluationTask],
     label_converter: LabelConverter,
+    target_uuids: List[str],
 ) -> FrameGroundTruth:
     """[summary]
     Convert Nuscenes sample to FrameGroundTruth
@@ -201,6 +219,9 @@ def _sample_to_frame(
         does_use_pointcloud (bool): The flag of setting pointcloud
         evaluation_tasks (List[EvaluationTask]): The evaluation tasks
         label_converter (LabelConverter): Label convertor
+        target_uuids (Optional[List[str]]):
+                The list of specific objects' instance tokens.
+                It should be specified in case of selecting specific objects. Defaults to None
 
     Raises:
         NotImplementedError:
@@ -212,7 +233,7 @@ def _sample_to_frame(
 
     # frame information
     unix_time_ = sample["timestamp"]
-    lidar_path_token = sample["data"]["LIDAR_TOP"]
+    lidar_path_token = sample["data"]["LIDAR_CONCAT"]
     # lidar_path = nusc.get_sample_data_path(lidar_path_token)
     frame_data = nusc.get("sample_data", lidar_path_token)
 
@@ -234,12 +255,26 @@ def _sample_to_frame(
     objects_: List[DynamicObject] = []
 
     for object_box in object_boxes:
+        sample_annotation_: dict = nusc.get("sample_annotation", object_box.token)
+        instance_token_: str = sample_annotation_["instance_token"]
+        # Skip if target_uuids is not specified(=empty list)
+        # or it is specified but object token is not in target_uuids
+        if len(target_uuids) != 0 and instance_token_ not in target_uuids:
+            continue
+
+        pointcloud_num_: int = sample_annotation_["num_lidar_pts"]
+        velocity_: Tuple[float, float, float] = tuple(
+            nusc.box_velocity(sample_annotation_["token"]).tolist()
+        )
+
         object_: DynamicObject = _convert_nuscenes_box_to_dynamic_object(
-            nusc,
             object_box,
             unix_time_,
             evaluation_tasks,
             label_converter,
+            instance_token_,
+            pointcloud_num_,
+            velocity_,
         )
         objects_.append(object_)
 
@@ -253,21 +288,25 @@ def _sample_to_frame(
 
 
 def _convert_nuscenes_box_to_dynamic_object(
-    nusc: NuScenes,
     object_box: Box,
     unix_time: int,
     evaluation_tasks: List[EvaluationTask],
     label_converter: LabelConverter,
+    instance_token: str,
+    pointcloud_num: int,
+    velocity: Tuple[float, float, float],
 ) -> DynamicObject:
     """[summary]
     Convert nuscenes object bounding box to dynamic object
 
     Args:
-        nusc (NuScenes): NuScenes instance
         object_box (Box): Annotation data from nuscenes dataset defined by Box
         unix_time (int): The unix time [us]
         evaluation_tasks (List[EvaluationTask]): Evaluation task
         label_converter (LabelConverter): LabelConverter
+        instance_token (str): Instance token
+        pointcloud_num (int): The number of pointcloud in object box
+        velocity (Tuple[float, float, float]): The Veclocity of object
 
     Returns:
         DynamicObject: Converted dynamic object class
@@ -282,11 +321,6 @@ def _convert_nuscenes_box_to_dynamic_object(
         count_label_number=True,
     )
 
-    sample_annotation_: dict = nusc.get("sample_annotation", object_box.token)
-    pointcloud_num_: int = sample_annotation_["num_lidar_pts"]
-    instance_token_: str = sample_annotation_["instance_token"]
-    velocity_: tuple = tuple(nusc.box_velocity(sample_annotation_["token"]).tolist())
-
     # tracking data
     if EvaluationTask.TRACKING in evaluation_tasks:
         raise NotImplementedError()
@@ -300,11 +334,11 @@ def _convert_nuscenes_box_to_dynamic_object(
         position=position_,
         orientation=orientation_,
         size=size_,
-        velocity=velocity_,
+        velocity=velocity,
         semantic_score=semantic_score_,
         semantic_label=autoware_label_,
-        pointcloud_num=pointcloud_num_,
-        uuid=instance_token_,
+        pointcloud_num=pointcloud_num,
+        uuid=instance_token,
     )
     return dynamic_object
 

@@ -2,9 +2,22 @@
 
 - 上ほど新しい
 
-## Now development for develop branch -> v1.4
+## Now development for develop branch -> v1.5
 
 ## Release for main branch
+
+### v1.4.0
+
+- <https://github.com/tier4/AWMLevaluation/pull/86>
+  - 【release】v1.4.0 release
+- <https://github.com/tier4/AWMLevaluation/pull/85>
+  - 【改良】buid type の ament_cmake への変更
+- <https://github.com/tier4/AWMLevaluation/pull/83>
+  - 【機能追加】Sensing lsim の機能部分を実装
+  - 【機能追加】検出・被検出エリア内の点群数の算出
+  - 【test 追加】test/lsim.py に Sensing lsim 用 mock を追加
+- <https://github.com/tier4/AWMLevaluation/pull/82>
+  - 【document 追加】document 追加
 
 ### v1.3.1
 

@@ -3,11 +3,11 @@ from typing import List
 from typing import Tuple
 import unittest
 
-import numpy as np
-
+from awml_evaluation.common.point import crop_pointcloud
 from awml_evaluation.common.point import distance_points
 from awml_evaluation.common.point import distance_points_bev
 from awml_evaluation.common.point import to_bev
+import numpy as np
 
 
 class TestPoint(unittest.TestCase):
@@ -73,6 +73,76 @@ class TestPoint(unittest.TestCase):
             with self.subTest("Test to_bev"):
                 point = to_bev(point_1)
                 self.assertEqual(point.tolist(), ans_point.tolist())
+
+    def test_crop_pointcloud(self):
+        """[summary]
+        Test crop pointclout (N, 3) -> (M, 3)
+
+        test parameter
+            Test if 3d in_point is same as cropped ans_point
+        """
+        # patterns: (in_points, area, ans_points)
+        patterns: List[Tuple[np.ndarray, List[Tuple[float, float]], np.ndarray]] = [
+            (
+                # in_points
+                np.array(
+                    (
+                        (0.0, 0.0, 0.0),
+                        (0.05, 0.05, 0.05),
+                        (0.1, 0.1, 0.1),
+                        (0.3, 0.3, 0.3),
+                    )
+                ),
+                # area
+                [
+                    (0.0, 0.0, 0.0),
+                    (0.2, 0.0, 0.0),
+                    (0.2, 0.2, 0.0),
+                    (0.0, 0.2, 0.0),
+                    (0.0, 0.0, 0.2),
+                    (0.2, 0.0, 0.2),
+                    (0.2, 0.2, 0.2),
+                    (0.0, 0.2, 0.2),
+                ],
+                # ans_points
+                np.array(
+                    (
+                        (0.0, 0.0, 0.0),
+                        (0.05, 0.05, 0.05),
+                        (0.1, 0.1, 0.1),
+                    )
+                ),
+            ),
+            (
+                # in_points
+                np.array(
+                    (
+                        (0.0, 0.0, 0.0),
+                        (0.1, 0.1, 0.1),
+                        (0.3, 0.3, 0.3),
+                    )
+                ),
+                # area
+                [
+                    (0.05, 0.05, 0.0),
+                    (0.2, 0.0, 0.0),
+                    (0.2, 0.2, 0.0),
+                    (0.1, 0.3, 0.0),
+                    (0.0, 0.2, 0.0),
+                    (0.05, 0.05, 0.2),
+                    (0.2, 0.0, 0.2),
+                    (0.2, 0.2, 0.2),
+                    (0.1, 0.3, 0.2),
+                    (0.0, 0.2, 0.2),
+                ],
+                # ans_points
+                np.array([(0.1, 0.1, 0.1)]),
+            ),
+        ]
+        for in_points, area, ans_points in patterns:
+            with self.subTest("Test crop_pointcloud"):
+                out_points = crop_pointcloud(in_points, area)
+                self.assertEqual(out_points.tolist(), ans_points.tolist())
 
 
 if __name__ == "__main__":
