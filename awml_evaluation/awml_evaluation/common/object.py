@@ -233,10 +233,10 @@ class DynamicObject:
         """
         corner_points: List[Tuple[float, float]] = []
         vector_center_to_corners: List[np.ndarray] = [
-            np.array([self.state.size[0], self.state.size[1], 0.0]) / 2.0,
-            np.array([-self.state.size[0], self.state.size[1], 0.0]) / 2.0,
-            np.array([-self.state.size[0], -self.state.size[1], 0.0]) / 2.0,
-            np.array([self.state.size[0], -self.state.size[1], 0.0]) / 2.0,
+            np.array([self.state.size[1], self.state.size[0], 0.0]) / 2.0,
+            np.array([-self.state.size[1], self.state.size[0], 0.0]) / 2.0,
+            np.array([-self.state.size[1], -self.state.size[0], 0.0]) / 2.0,
+            np.array([self.state.size[1], -self.state.size[0], 0.0]) / 2.0,
         ]
         # rotate vector_center_to_corners
         for vector_center_to_corner in vector_center_to_corners:

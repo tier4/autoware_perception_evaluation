@@ -233,8 +233,12 @@ def _sample_to_frame(
 
     # frame information
     unix_time_ = sample["timestamp"]
-    lidar_path_token = sample["data"]["LIDAR_CONCAT"]
-    # lidar_path = nusc.get_sample_data_path(lidar_path_token)
+    if "LIDAR_TOP" in sample["data"]:
+        lidar_path_token = sample["data"]["LIDAR_TOP"]
+    elif "LIDAR_CONCAT" in sample["data"]:
+        lidar_path_token = sample["data"]["LIDAR_CONCAT"]
+    else:
+        raise ValueError("lidar data isn't found")
     frame_data = nusc.get("sample_data", lidar_path_token)
 
     lidar_path: str
