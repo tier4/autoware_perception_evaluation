@@ -1,3 +1,4 @@
+import argparse
 import logging
 from typing import List
 from typing import Tuple
@@ -226,13 +227,12 @@ class SensingLSimMoc:
 
 
 if __name__ == "__main__":
-    # dataset_paths = [
-    #     "../../dataset_3d/tier4/202109_3d_cuboid_v2_0_1_sample/60f2669b1070d0002dcdd475",
-    #     "../../dataset_3d/tier4/202108_3d_cuboid_v1_1_1_nishishinjuku_mini/5f772b2ca6ace800391c3e74",
-    # ]
-    dataset_paths = [
-        "../../dataset_3d/tier4/sensing_lsim_data",
-    ]
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("dataset_paths", nargs="+", type=str, help="The path(s) of dataset")
+    args = parser.parse_args()
+
+    dataset_paths = args.dataset_paths
+
     perception_lsim = PerceptionLSimMoc(dataset_paths)
 
     for ground_truth_frame in perception_lsim.evaluator.ground_truth_frames:

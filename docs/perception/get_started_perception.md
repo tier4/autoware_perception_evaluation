@@ -19,7 +19,7 @@ poetory install
 
 ```bash
 cd awml_evaluation
-poetry run python3 -m test.lsim
+poetry run python3 -m test.lsim <DATASET_PATH1> <DATASET_PATH2> ...
 ```
 
 ## Case 2. Lsim 側に組み込む
