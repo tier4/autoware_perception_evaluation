@@ -1,12 +1,15 @@
 [tool.poetry]
-name = "awmlevaluation"
+name = "awml_evaluation"
 version = "1.4.0"
 description = ""
 authors = ["Satoshi Tanaka <satoshi.tanaka@tier4.jp>", "Kotaro Uetake <kotaro.uetake@tier4.jp>"]
 license = "Apache V2"
+packages = [
+	 { include = "awml_evaluation", from = "awml_evaluation"},
+]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7.11"
 nuscenes-devkit = "^1.1.9"
 tqdm = "^4.62.3"
 
