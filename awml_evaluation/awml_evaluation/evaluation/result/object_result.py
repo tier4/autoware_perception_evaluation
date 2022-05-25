@@ -1,6 +1,7 @@
 from logging import getLogger
 from typing import List
 from typing import Optional
+from typing import Tuple
 
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.common.object import distance_objects_bev
@@ -48,9 +49,10 @@ class DynamicObjectWithPerceptionResult:
             ground_truth_objects (List[DynamicObject]): The list of Ground truth objects
         """
         self.predicted_object: DynamicObject = predicted_object
-        self.ground_truth_object: Optional[
-            DynamicObject
-        ] = self._get_correspond_ground_truth_object(
+        (
+            self.ground_truth_object,
+            self.ground_truth_object_index,
+        ) = self._get_correspond_ground_truth_object(
             predicted_object,
             ground_truth_objects,
         )
@@ -154,7 +156,7 @@ class DynamicObjectWithPerceptionResult:
         self,
         predicted_object: DynamicObject,
         ground_truth_objects: List[DynamicObject],
-    ) -> Optional[DynamicObject]:
+    ) -> Optional[Tuple[DynamicObject, int]]:
         """[summary]
         Search correspond ground truth by minimum center distance
 
@@ -163,19 +165,20 @@ class DynamicObjectWithPerceptionResult:
             ground_truth_objects (List[DynamicObject]): The list of ground truth objects
 
         Returns:
-            Optional[DynamicObject]: Correspond ground truth
+            Optional[Tuple[DynamicObject, int]]: Correspond ground truth, index
         """
         if not ground_truth_objects:
-            return None
+            return (None, None)
 
         correspond_ground_truth_object: DynamicObject = ground_truth_objects[0]
+        correspond_ground_truth_object_index: int = 0
         best_matching_distance: CenterDistanceMatching = CenterDistanceMatching(
             predicted_object=predicted_object,
             ground_truth_object=correspond_ground_truth_object,
         )
 
         # object which is min distance from the center of object
-        for ground_truth_object in ground_truth_objects:
+        for index, ground_truth_object in enumerate(ground_truth_objects):
             matching_distance: Matching = CenterDistanceMatching(
                 predicted_object=predicted_object,
                 ground_truth_object=ground_truth_object,
@@ -184,4 +187,5 @@ class DynamicObjectWithPerceptionResult:
                 if matching_distance.is_better_than(best_matching_distance.value):
                     best_matching_distance = matching_distance
                     correspond_ground_truth_object = ground_truth_object
-        return correspond_ground_truth_object
+                    correspond_ground_truth_object_index = index
+        return (correspond_ground_truth_object, correspond_ground_truth_object_index)

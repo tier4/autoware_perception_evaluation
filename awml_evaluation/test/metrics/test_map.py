@@ -521,7 +521,7 @@ class TestMap(unittest.TestCase):
             (-math.pi / 2.0, 1.0, 0.25),
             # Given opposite direction, maph is 0.0.
             (math.pi, 1.0, 0.0),
-            (-math.pi, 1.0, 0.0),
+            (-math.pi, 0.0, 0.0),
             # Given diff_yaw is pi/4, maph is 0.75**2 times map
             (math.pi / 4, 1.0, 0.5625),
             (-math.pi / 4, 1.0, 0.5625),
@@ -569,30 +569,30 @@ class TestMap(unittest.TestCase):
             Check if map and maph are almost correct.
         """
         # dummy_predicted_objects[0] (CAR) and dummy_ground_truth_objects[0] (CAR):
-        #   sorted pr_corner_points[:2] = [(0.25, 0.25, 1.0), (0.25, 1.75, 1.0)]
-        #   sorted gt_corner_points[:2] = [(0.5, 0.5, 1.0), (1.5, 0.5, 1.0)]
-        #   plane_distance = 1.2747548783981963
+        #   pr_corner_points(left, right) = [(0.25, 0.25, 1.0), (0.25, 1.75, 1.0)]
+        #   gt_corner_points(left, right) = [(0.5, 0.5, 1.0), (0.5, 1.5, 1.0)]
+        #   plane_distance = 0.3535533905932738
         #
         # dummy_predicted_objects[1] (BICYCLE) and dummy_ground_truth_objects[1] (BICYCLE):
-        #   sorted pr_corner_points[:2] = [(0.75, -0.75, 1.0), (1.25, -0.75, 1.0)]
-        #   sorted gt_corner_points[:2] = [(0.5, -0.5, 1.0), (1.5, -0.5, 1.0)]
+        #   pr_corner_points(left, right) = [(1.25, -0.75, 1.0), (0.75, -0.75, 1.0)]
+        #   gt_corner_points(left, right) = [(1.5, -0.5, 1.0), (0.5, -0.5, 1.0)]
         #   plane_distance = 0.3535533905932738
         #
         # dummy_predicted_objects[2] (PEDESTRIAN) and dummy_ground_truth_objects[2] (CAR):
-        #   sorted pr_corner_points[:2] = [(-0.5, 0.5, 1.0), (-0.5, 1.5, 1.0)]
-        #   sorted gt_corner_points[:2] = [(-0.5, 0.5, 1.0), (-0.5, 1.5, 1.0)]
+        #   pr_corner_points(left, right) = [(-0.5, 0.5, 1.0), (-0.5, 1.5, 1.0)]
+        #   gt_corner_points(left, right) = [(-0.5, 0.5, 1.0), (-0.5, 1.5, 1.0)]
         #   plane_distance = 0.0
 
-        # CAR: beyond the threshold
-        #   ap and aph: 0.0
+        # CAR: under the threshold
+        #   ap and aph: 1.0
         # BICYCLE: under the threshold
         #   ap and aph: 1.0
         # PEDESTRIAN: under the threshold but label does not match
         #   ap and aph: 0.0
         # MOTORBIKE: not predicted
         #   ap and aph: 0.0
-        ans_map: float = (0.0 + 1.0 + 0.0 + 0.0) / 4.0
-        ans_maph: float = (0.0 + 1.0 + 0.0 + 0.0) / 4.0
+        ans_map: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
+        ans_maph: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
 
         object_results: List[
             DynamicObjectWithPerceptionResult
