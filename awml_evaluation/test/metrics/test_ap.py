@@ -643,7 +643,7 @@ class TestAp(unittest.TestCase):
             (-math.pi / 2.0, 1.0, 0.25),
             # Given opposite direction, aph is 0.0.
             (math.pi, 1.0, 0.0),
-            (-math.pi, 1.0, 0.0),
+            (-math.pi, 0.0, 0.0),
             # Given diff_yaw is pi/4, aph is 0.75**2 times ap
             (math.pi / 4, 1.0, 0.5625),
             (-math.pi / 4, 1.0, 0.5625),
@@ -703,12 +703,13 @@ class TestAp(unittest.TestCase):
             Check if ap and aph are almost correct.
         """
         # dummy_predicted_objects[0] (CAR) and dummy_ground_truth_objects[0] (CAR):
-        #   sorted pr_corner_points[:2] = [(0.25, 0.25, 1.0), (0.25, 1.75, 1.0)]
-        #   sorted gt_corner_points[:2] = [(0.5, 0.5, 1.0), (1.5, 0.5, 1.0)]
-        #   plane_distance = 1.2747548783981963
-        # plane_distance is over the threshold
-        ans_ap: float = 0.0
-        ans_aph: float = 0.0
+        #   pr_corner_points(left, right) = [(0.25, 0.25, 1.0), (0.25, 1.75, 1.0)]
+        #   gt_corner_points(left, right) = [(0.5, 0.5, 1.0), (0.5, 1.5, 1.0)]
+        #   plane_distance = 0.3535533905932738
+        ans_ap_tp: float = 1.0
+        ans_ap_tn: float = 0.0
+        ans_aph_tp: float = 1.0
+        ans_aph_tn: float = 0.0
 
         object_results: List[
             DynamicObjectWithPerceptionResult
@@ -716,7 +717,7 @@ class TestAp(unittest.TestCase):
             predicted_objects=self.dummy_predicted_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,
         )
-        ap: Ap = Ap(
+        ap_tp: Ap = Ap(
             tp_metrics=TPMetricsAp(),
             object_results=object_results,
             ground_truth_objects=self.dummy_ground_truth_objects,
@@ -726,7 +727,7 @@ class TestAp(unittest.TestCase):
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[1.0],
         )
-        aph: Ap = Ap(
+        aph_tp: Ap = Ap(
             tp_metrics=TPMetricsAph(),
             object_results=object_results,
             ground_truth_objects=self.dummy_ground_truth_objects,
@@ -736,9 +737,30 @@ class TestAp(unittest.TestCase):
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[1.0],
         )
-
-        self.assertAlmostEqual(ap.ap, ans_ap)
-        self.assertAlmostEqual(aph.ap, ans_aph)
+        ap_tn: Ap = Ap(
+            tp_metrics=TPMetricsAp(),
+            object_results=object_results,
+            ground_truth_objects=self.dummy_ground_truth_objects,
+            target_labels=self.target_labels,
+            max_x_position_list=self.max_x_position_list,
+            max_y_position_list=self.max_y_position_list,
+            matching_mode=MatchingMode.PLANEDISTANCE,
+            matching_threshold_list=[0.2],
+        )
+        aph_tn: Ap = Ap(
+            tp_metrics=TPMetricsAph(),
+            object_results=object_results,
+            ground_truth_objects=self.dummy_ground_truth_objects,
+            target_labels=self.target_labels,
+            max_x_position_list=self.max_x_position_list,
+            max_y_position_list=self.max_y_position_list,
+            matching_mode=MatchingMode.PLANEDISTANCE,
+            matching_threshold_list=[0.2],
+        )
+        self.assertAlmostEqual(ap_tp.ap, ans_ap_tp)
+        self.assertAlmostEqual(aph_tp.ap, ans_aph_tp)
+        self.assertAlmostEqual(ap_tn.ap, ans_ap_tn)
+        self.assertAlmostEqual(aph_tn.ap, ans_aph_tn)
 
 
 if __name__ == "__main__":

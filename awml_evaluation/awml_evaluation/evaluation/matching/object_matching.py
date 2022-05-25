@@ -19,6 +19,7 @@ from typing import Tuple
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.common.object import distance_objects
 from awml_evaluation.common.object import distance_points_bev
+from awml_evaluation.common.point import get_point_left_right
 from awml_evaluation.common.point import polygon_to_list
 from shapely.geometry import Polygon
 
@@ -231,22 +232,26 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
         pr_corner_points.sort(key=lambda_func)
         gt_corner_points.sort(key=lambda_func)
 
-        # Calculate plane distance
-        distance_1_1: float = abs(distance_points_bev(pr_corner_points[0], gt_corner_points[0]))
-        distance_1_2: float = abs(distance_points_bev(pr_corner_points[1], gt_corner_points[1]))
-        distance_1: float = distance_1_1**2 + distance_1_2**2
-        distance_2_1: float = abs(distance_points_bev(pr_corner_points[0], gt_corner_points[1]))
-        distance_2_2: float = abs(distance_points_bev(pr_corner_points[1], gt_corner_points[0]))
-        distance_2: float = distance_2_1**2 + distance_2_2**2
+        pr_left_point, pr_right_point = get_point_left_right(
+            pr_corner_points[0], pr_corner_points[1]
+        )
+        gt_left_point, gt_right_point = get_point_left_right(
+            gt_corner_points[0], gt_corner_points[1]
+        )
 
-        plane_distance: float = math.sqrt(min(distance_1, distance_2) / 2.0)
+        # Calculate plane distance
+        distance_left_point: float = abs(distance_points_bev(pr_left_point, gt_left_point))
+        distance_right_point: float = abs(distance_points_bev(pr_right_point, gt_right_point))
+        distance_squared: float = distance_left_point**2 + distance_right_point**2
+        plane_distance: float = math.sqrt(distance_squared / 2.0)
+
         ground_truth_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
-            gt_corner_points[0],
-            gt_corner_points[1],
+            gt_left_point,
+            gt_right_point,
         )
         predicted_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
-            pr_corner_points[0],
-            pr_corner_points[1],
+            pr_left_point,
+            pr_right_point,
         )
         return plane_distance, ground_truth_nn_plane, predicted_nn_plane
 

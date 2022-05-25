@@ -114,6 +114,7 @@ class PerceptionLSimMoc:
         """
         if frame_result.pass_fail_result.get_fail_object_num() > 0:
             logging.warning(
+                f"{len(frame_result.pass_fail_result.tp_objects)} TP objects, "
                 f"{len(frame_result.pass_fail_result.fp_objects_result)} FP objects, "
                 f"{len(frame_result.pass_fail_result.fn_objects)} FN objects,",
             )
