@@ -1,6 +1,6 @@
 ## coding rule
 
-- See [detail](https://github.com/tier4/AWMLtools/blob/main/docs/development/contribution.md)
+- See [detail](../docs/contribution.md)
 
 ### Static code analysis using pre-commit
 

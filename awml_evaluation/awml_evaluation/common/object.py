@@ -276,7 +276,7 @@ class DynamicObject:
         Get pointcloud inside of bounding box.
 
         Args:
-            poinrcloud (np.ndarray): The Array of pointcloud, in shape (N, 3).
+            pointcloud (np.ndarray): The Array of pointcloud, in shape (N, 3).
             bbox_scale (float): Scale factor for bounding box.
 
         Returns:
@@ -293,7 +293,7 @@ class DynamicObject:
         # Convert pointcloud coordinates from ego pose to relative to object
         pointcloud_object_coords: np.ndarray = pointcloud[:, :3] - self.state.position
 
-        # Calculte the indices of pointcloud in bounding box
+        # Calculate the indices of pointcloud in bounding box
         inside_idx: np.ndarray = (
             (pointcloud_object_coords > -0.5 * scaled_bbox_size_object_coords)
             * (pointcloud_object_coords < 0.5 * scaled_bbox_size_object_coords)
@@ -310,7 +310,7 @@ class DynamicObject:
         Calculate the number of pointcloud inside of bounding box.
 
         Args:
-            poinrcloud (np.ndarray): The Array of pointcloud, in shape (N, 3).
+            pointcloud (np.ndarray): The Array of pointcloud, in shape (N, 3).
             bbox_scale (float): Scale factor for bounding box.
 
         Returns:

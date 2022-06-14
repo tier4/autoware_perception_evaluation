@@ -17,7 +17,7 @@
 
 ### 評価単位でのデータ構造
 
-- SensingEvaluationConfig: 評価全体に関する config, シナリオファイルを読み込むことで設定する[(参照)](https://github.com/tier4/AWMLevaluation/blob/feature/sensing_evaluation/awml_evaluation/awml_evaluation/sensing_evaluation_config.py)
+- SensingEvaluationConfig: 評価全体に関する config, シナリオファイルを読み込むことで設定する[(参照)](../../awml_evaluation/awml_evaluation/config/sensing_evaluation_config.py)
 
   ```txt
     Arguments:
@@ -32,11 +32,11 @@
       min_points_threshold (int): bounding box内で検出されるべき最低限の点群数の閾値
   ```
 
-- SensingEvaluationManager: 評価全体のための manager[(参照)](https://github.com/tier4/AWMLevaluation/blob/feature/sensing_evaluation/awml_evaluation/awml_evaluation/sensing_evaluation_manager.py)
+- SensingEvaluationManager: 評価全体のための manager[(参照)](../../awml_evaluation/awml_evaluation/manager/perception_evaluation_manager.py)
 
 ### Frame 単位でのデータ構造
 
-- SensingFrameResult: 1 frame に対しての検出・非検出対象エリアに対する点群のセンシング結果[(参照)](https://github.com/tier4/AWMLevaluation/blob/feature/sensing_evaluation/awml_evaluation/awml_evaluation/evaluation/sensing/sensing_frame_result.py)
+- SensingFrameResult: 1 frame に対しての検出・非検出対象エリアに対する点群のセンシング結果[(参照)](../../awml_evaluation/awml_evaluation/evaluation/sensing/sensing_frame_result.py)
 
   ```txt
     Arguments:
@@ -65,7 +65,7 @@
 
   メソッドを呼ぶことで評価が実行される．
 
-- SensingFrameConfig: Frame 単位での評価用の config[(参照)](https://github.com/tier4/AWMLevaluation/blob/feature/sensing_evaluation/awml_evaluation/awml_evaluation/evaluation/sensing/sensing_frame_config.py)
+- SensingFrameConfig: Frame 単位での評価用の config[(参照)](../../awml_evaluation/awml_evaluation/evaluation/sensing/sensing_frame_config.py)
 
   ```txt
     Arguments:
@@ -82,7 +82,7 @@
 
 ### Object 単位でのデータ構造
 
-- DynamicObjectWithSensingResult: 1 ground truth object（アノテーションされた bounding box）に対しての結果[(参照)](https://github.com/tier4/AWMLevaluation/blob/feature/sensing_evaluation/awml_evaluation/awml_evaluation/evaluation/sensing/sensing_result.py)
+- DynamicObjectWithSensingResult: 1 ground truth object（アノテーションされた bounding box）に対しての結果[(参照)](../../awml_evaluation/awml_evaluation/evaluation/sensing/sensing_result.py)
 
   ```txt
     Arguments:

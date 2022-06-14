@@ -1,9 +1,5 @@
-from logging import getLogger
-
 from awml_evaluation.common.object import DynamicObject
 import numpy as np
-
-logger = getLogger(__name__)
 
 
 class DynamicObjectWithSensingResult:
@@ -29,7 +25,7 @@ class DynamicObjectWithSensingResult:
             ground_truth_object (DynamicObject): Ground truth object.
             pointcloud (numpy.ndarray): Array of pointcloud after removing ground.
             scale_factor (float): Scale factor for bounding box.
-            min_points_threshold (int): The minibmum number of points should be detected in bounding box.
+            min_points_threshold (int): The minimum number of points should be detected in bounding box.
         """
         self.ground_truth_object: DynamicObject = ground_truth_object
 

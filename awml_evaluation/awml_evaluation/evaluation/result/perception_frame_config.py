@@ -2,7 +2,8 @@ from typing import List
 
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.label import set_target_lists
-from awml_evaluation.perception_evaluation_config import PerceptionEvaluationConfig
+from awml_evaluation.common.threshold import check_thresholds
+from awml_evaluation.config.perception_evaluation_config import PerceptionEvaluationConfig
 
 
 class CriticalObjectFilterConfig:
@@ -38,11 +39,11 @@ class CriticalObjectFilterConfig:
             target_labels,
             evaluator_config.label_converter,
         )
-        self.max_x_position_list: List[float] = set_thresholds(
+        self.max_x_position_list: List[float] = check_thresholds(
             max_x_position_list,
             self.target_labels,
         )
-        self.max_y_position_list: List[float] = set_thresholds(
+        self.max_y_position_list: List[float] = check_thresholds(
             max_y_position_list,
             self.target_labels,
         )
@@ -73,7 +74,7 @@ class PerceptionPassFailConfig:
             target_labels,
             evaluator_config.label_converter,
         )
-        self.threshold_plane_distance_list: List[float] = set_thresholds(
+        self.threshold_plane_distance_list: List[float] = check_thresholds(
             threshold_plane_distance_list,
             self.target_labels,
         )
@@ -82,28 +83,3 @@ class PerceptionPassFailConfig:
 class UseCaseThresholdsError(Exception):
     def __init__(self, message) -> None:
         super().__init__(message)
-
-
-def set_thresholds(
-    thresholds: List[float],
-    target_labels: List[AutowareLabel],
-) -> List[float]:
-    """[summary]
-    Check the config and set the thresholds.
-
-    Args:
-        thresholds (Optional[List[float]]): Thresholds
-        target_labels (List[AutowareLabel]): Target labels
-
-    Raises:
-        UseCaseThresholdsError: Error for use case thresholds
-
-    Returns:
-        List[Optional[List[float]]]: A thresholds
-    """
-    if len(thresholds) != len(target_labels):
-        raise UseCaseThresholdsError(
-            "Error: UseCase threshold is not proper! \
-            The length of the threshold is not same as target labels",
-        )
-    return thresholds

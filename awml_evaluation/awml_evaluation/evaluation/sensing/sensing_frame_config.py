@@ -5,7 +5,7 @@ class SensingFrameConfig:
     Attributes:
         self.box_scale_0m (float): Scale factor for bounding box at 0m.
         self.box_scale_100m (float): Scale factor for bounding box at 100m.
-        self.min_points_threshold (int): The minimum number of points should be detected in bouding box.
+        self.min_points_threshold (int): The minimum number of points should be detected in bounding box.
     """
 
     def __init__(
@@ -18,7 +18,7 @@ class SensingFrameConfig:
         Args:
             box_scale_0m (float): Scale factor for bounding box at 0m.
             box_scale_100m (float): Scale factor for bounding box at 100m.
-            min_points_threshold (int): The minimum number of points should be detected in bouding box.
+            min_points_threshold (int): The minimum number of points should be detected in bounding box.
         """
         self.box_scale_0m: float = box_scale_0m
         self.box_scale_100m: float = box_scale_100m

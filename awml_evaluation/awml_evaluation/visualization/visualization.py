@@ -54,7 +54,7 @@ class VisualizationBEV:
         # set file name
         file_name_: str
         if file_name is None and object_results is not None:
-            unix_time = object_results[0].predicted_object.unix_time
+            unix_time = object_results[0].estimated_object.unix_time
             file_name_ = f"{unix_time}.png"
         else:
             file_name_ = file_name
@@ -75,12 +75,12 @@ class VisualizationBEV:
             appearance_config = None
 
         # set object
-        # filtered_predicted_objects: List[DynamicObjectWithPerceptionResult] = filter_tp_objects(
+        # filtered_estimated_objects: List[DynamicObjectWithPerceptionResult] = filter_tp_objects(
         #     object_results=object_results,
         #     matching_mode=matching_mode,
         #     matching_threshold=matching_threshold,
         # )
-        # tp_objects, fp_objects = divide_tp_fp_objects(filtered_predicted_objects)
+        # tp_objects, fp_objects = divide_tp_fp_objects(filtered_estimated_objects)
         # fn_objects = get_fn_objects(tp_objects, self.ground_truth_objects)
 
         # image_data = []
@@ -101,7 +101,7 @@ class VisualizationBEV:
         # self.save_png_file()
         raise NotImplementedError()
 
-    def _add_pointcloud(pointcloud: np.ndarray, color: Color):
+    def _add_pointcloud(self, pointcloud: np.ndarray, color: Color):
         """
         pointcloudの描画
         """

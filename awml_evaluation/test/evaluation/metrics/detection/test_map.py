@@ -16,9 +16,9 @@ from awml_evaluation.util.debug import get_objects_with_difference
 
 class TestMap(unittest.TestCase):
     def setUp(self):
-        self.dummy_predicted_objects: List[DynamicObject] = []
+        self.dummy_estimated_objects: List[DynamicObject] = []
         self.dummy_ground_truth_objects: List[DynamicObject] = []
-        self.dummy_predicted_objects, self.dummy_ground_truth_objects = make_dummy_data()
+        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
@@ -65,7 +65,7 @@ class TestMap(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 map: Map = Map(
@@ -124,7 +124,7 @@ class TestMap(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_yaw_dummy_ground_truth_objects,
+                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 map: Map = Map(
@@ -144,7 +144,7 @@ class TestMap(unittest.TestCase):
         Test mAP and mAPH with center distance matching for random objects.
 
         test objects:
-            dummy_predicted_objects (List[DynamicObject])
+            dummy_estimated_objects (List[DynamicObject])
             dummy_ground_truth_objects (List[DynamicObject])
 
         test patterns:
@@ -156,7 +156,7 @@ class TestMap(unittest.TestCase):
         object_results: List[
             DynamicObjectWithPerceptionResult
         ] = PerceptionFrameResult.get_object_results(
-            predicted_objects=self.dummy_predicted_objects,
+            estimated_objects=self.dummy_estimated_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,
         )
         map: Map = Map(
@@ -207,7 +207,7 @@ class TestMap(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 map: Map = Map(
@@ -264,7 +264,7 @@ class TestMap(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_yaw_dummy_ground_truth_objects,
+                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 map: Map = Map(
@@ -296,7 +296,7 @@ class TestMap(unittest.TestCase):
         object_results: List[
             DynamicObjectWithPerceptionResult
         ] = PerceptionFrameResult.get_object_results(
-            predicted_objects=self.dummy_predicted_objects,
+            estimated_objects=self.dummy_estimated_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,
         )
         map: Map = Map(
@@ -345,7 +345,7 @@ class TestMap(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 map: Map = Map(
@@ -402,7 +402,7 @@ class TestMap(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_yaw_dummy_ground_truth_objects,
+                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 map: Map = Map(
@@ -434,7 +434,7 @@ class TestMap(unittest.TestCase):
         object_results: List[
             DynamicObjectWithPerceptionResult
         ] = PerceptionFrameResult.get_object_results(
-            predicted_objects=self.dummy_predicted_objects,
+            estimated_objects=self.dummy_estimated_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,
         )
         map: Map = Map(
@@ -485,7 +485,7 @@ class TestMap(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 map: Map = Map(
@@ -542,7 +542,7 @@ class TestMap(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_yaw_dummy_ground_truth_objects,
+                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 map: Map = Map(
@@ -568,17 +568,17 @@ class TestMap(unittest.TestCase):
         test patterns:
             Check if map and maph are almost correct.
         """
-        # dummy_predicted_objects[0] (CAR) and dummy_ground_truth_objects[0] (CAR):
+        # dummy_estimated_objects[0] (CAR) and dummy_ground_truth_objects[0] (CAR):
         #   pr_corner_points(left, right) = [(0.25, 0.25, 1.0), (0.25, 1.75, 1.0)]
         #   gt_corner_points(left, right) = [(0.5, 0.5, 1.0), (0.5, 1.5, 1.0)]
         #   plane_distance = 0.3535533905932738
         #
-        # dummy_predicted_objects[1] (BICYCLE) and dummy_ground_truth_objects[1] (BICYCLE):
+        # dummy_estimated_objects[1] (BICYCLE) and dummy_ground_truth_objects[1] (BICYCLE):
         #   pr_corner_points(left, right) = [(1.25, -0.75, 1.0), (0.75, -0.75, 1.0)]
         #   gt_corner_points(left, right) = [(1.5, -0.5, 1.0), (0.5, -0.5, 1.0)]
         #   plane_distance = 0.3535533905932738
         #
-        # dummy_predicted_objects[2] (PEDESTRIAN) and dummy_ground_truth_objects[2] (CAR):
+        # dummy_estimated_objects[2] (PEDESTRIAN) and dummy_ground_truth_objects[2] (CAR):
         #   pr_corner_points(left, right) = [(-0.5, 0.5, 1.0), (-0.5, 1.5, 1.0)]
         #   gt_corner_points(left, right) = [(-0.5, 0.5, 1.0), (-0.5, 1.5, 1.0)]
         #   plane_distance = 0.0
@@ -589,7 +589,7 @@ class TestMap(unittest.TestCase):
         #   ap and aph: 1.0
         # PEDESTRIAN: under the threshold but label does not match
         #   ap and aph: 0.0
-        # MOTORBIKE: not predicted
+        # MOTORBIKE: not estimated
         #   ap and aph: 0.0
         ans_map: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
         ans_maph: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
@@ -597,7 +597,7 @@ class TestMap(unittest.TestCase):
         object_results: List[
             DynamicObjectWithPerceptionResult
         ] = PerceptionFrameResult.get_object_results(
-            predicted_objects=self.dummy_predicted_objects,
+            estimated_objects=self.dummy_estimated_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,
         )
         map: Map = Map(

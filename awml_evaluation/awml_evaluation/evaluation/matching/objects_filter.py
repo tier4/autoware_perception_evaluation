@@ -26,17 +26,20 @@ from awml_evaluation.common.threshold import LabelThreshold
 from awml_evaluation.common.threshold import get_label_threshold
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+import numpy as np
 
 logger = getLogger(__name__)
 
 
 def filter_object_results(
+    frame_id: str,
     object_results: List[DynamicObjectWithPerceptionResult],
     target_labels: Optional[List[AutowareLabel]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
     max_pos_distance_list: Optional[List[float]] = None,
     min_pos_distance_list: Optional[List[float]] = None,
+    ego2map: Optional[np.ndarray] = None,
 ) -> List[DynamicObjectWithPerceptionResult]:
     """[summary]
     Filter DynamicObjectWithPerceptionResult to filter ground truth objects.
@@ -62,12 +65,14 @@ def filter_object_results(
     filtered_object_results: List[DynamicObjectWithPerceptionResult] = []
     for object_result in object_results:
         is_target: bool = _is_target_object(
-            dynamic_object=object_result.predicted_object,
+            frame_id=frame_id,
+            dynamic_object=object_result.estimated_object,
             target_labels=target_labels,
             max_x_position_list=max_x_position_list,
             max_y_position_list=max_y_position_list,
             max_pos_distance_list=max_pos_distance_list,
             min_pos_distance_list=min_pos_distance_list,
+            ego2map=ego2map,
         )
         if is_target:
             filtered_object_results.append(object_result)
@@ -75,12 +80,14 @@ def filter_object_results(
 
 
 def filter_ground_truth_objects(
+    frame_id: str,
     objects: List[DynamicObject],
     target_labels: Optional[List[AutowareLabel]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
     max_pos_distance_list: Optional[List[float]] = None,
     min_pos_distance_list: Optional[List[float]] = None,
+    ego2map: Optional[np.ndarray] = None,
 ) -> List[DynamicObject]:
     """[summary]
     Filter DynamicObject to filter ground truth objects.
@@ -102,12 +109,14 @@ def filter_ground_truth_objects(
     filtered_objects: List[DynamicObject] = []
     for object_ in objects:
         is_target: bool = _is_target_object(
+            frame_id=frame_id,
             dynamic_object=object_,
             target_labels=target_labels,
             max_x_position_list=max_x_position_list,
             max_y_position_list=max_y_position_list,
             max_pos_distance_list=max_pos_distance_list,
             min_pos_distance_list=min_pos_distance_list,
+            ego2map=ego2map,
         )
         if is_target:
             filtered_objects.append(object_)
@@ -138,7 +147,7 @@ def divide_tp_fp_objects(
                 and IoU of the object is higher than "matching_threshold",
                 this function appends to return objects.
         confidence_threshold_list (Optional[List[float]], optional):
-                The confidence threshold list. If predicted object's confidence is higher than
+                The confidence threshold list. If estimated object's confidence is higher than
                 this parameter, this function appends to return objects.
                 It is often used to visualization.
                 Defaults to None.
@@ -151,7 +160,7 @@ def divide_tp_fp_objects(
     fp_objects: List[DynamicObjectWithPerceptionResult] = []
     for object_result in object_results:
         matching_threshold_: Optional[float] = get_label_threshold(
-            semantic_label=object_result.predicted_object.semantic_label,
+            semantic_label=object_result.estimated_object.semantic_label,
             target_labels=target_labels,
             threshold_list=matching_threshold_list,
         )
@@ -168,13 +177,13 @@ def divide_tp_fp_objects(
 
         # confidence threshold
         confidence_threshold_: Optional[float] = get_label_threshold(
-            semantic_label=object_result.predicted_object.semantic_label,
+            semantic_label=object_result.estimated_object.semantic_label,
             target_labels=target_labels,
             threshold_list=confidence_threshold_list,
         )
         if confidence_threshold_ is not None:
             is_confidence: bool = (
-                object_result.predicted_object.semantic_score > confidence_threshold_
+                object_result.estimated_object.semantic_score > confidence_threshold_
             )
             is_correct = is_correct and is_confidence
 
@@ -237,6 +246,7 @@ def _is_fn_object(
 
 
 def _is_target_object(
+    frame_id: str,
     dynamic_object: DynamicObject,
     target_labels: Optional[List[AutowareLabel]] = None,
     max_x_position_list: Optional[List[float]] = None,
@@ -244,6 +254,7 @@ def _is_target_object(
     max_pos_distance_list: Optional[List[float]] = None,
     min_pos_distance_list: Optional[List[float]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
+    ego2map: Optional[np.ndarray] = None,
 ) -> bool:
     """[summary]
     The function judging whether the dynamic object is target or not.
@@ -269,7 +280,7 @@ def _is_target_object(
         min_pos_distance_list (Optional[List[float]], optional):
                 Minimum distance threshold list for object. Defaults to None.
         confidence_threshold_list (Optional[List[float]], optional):
-                The confidence threshold list. If predicted object's confidence is higher than
+                The confidence threshold list. If estimated object's confidence is higher than
                 this parameter, this function appends to return objects.
                 It is often used to visualization.
                 Defaults to None.
@@ -290,13 +301,23 @@ def _is_target_object(
         confidence_threshold = label_threshold.get_label_threshold(confidence_threshold_list)
         is_target = is_target and dynamic_object.semantic_score > confidence_threshold
 
+    assert frame_id in (
+        "map",
+        "base_link",
+    ), f"frame_id myst be in (map, base_link), but got {frame_id}"
+    position_: Tuple[float, float, float] = dynamic_object.state.position
+    if frame_id == "map":
+        assert ego2map is not None, "When frame_id is map, ego2map must be specified"
+        pos_arr: np.ndarray = np.append(position_, 1.0)
+        position_ = tuple(np.linalg.inv(ego2map).dot(pos_arr)[:3].tolist())
+
     if is_target and max_x_position_list is not None:
         max_x_position = label_threshold.get_label_threshold(max_x_position_list)
-        is_target = is_target and abs(dynamic_object.state.position[0]) < max_x_position
+        is_target = is_target and abs(position_[0]) < max_x_position
 
     if is_target and max_y_position_list is not None:
         max_y_position = label_threshold.get_label_threshold(max_y_position_list)
-        is_target = is_target and abs(dynamic_object.state.position[1]) < max_y_position
+        is_target = is_target and abs(position_[1]) < max_y_position
 
     if is_target and max_pos_distance_list is not None:
         max_pos_distance = label_threshold.get_label_threshold(max_pos_distance_list)

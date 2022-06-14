@@ -12,9 +12,9 @@ from awml_evaluation.util.debug import get_objects_with_difference
 
 class TestIouBEVMatching(unittest.TestCase):
     def setUp(self):
-        self.dummy_predicted_objects: List[DynamicObject] = []
+        self.dummy_estimated_objects: List[DynamicObject] = []
         self.dummy_ground_truth_objects: List[DynamicObject] = []
-        self.dummy_predicted_objects, self.dummy_ground_truth_objects = make_dummy_data()
+        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
     def test_get_area_intersection(self):
         """[summary]
@@ -37,11 +37,11 @@ class TestIouBEVMatching(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                for predicted_object, ground_truth_object in zip(
+                for estimated_object, ground_truth_object in zip(
                     diff_distance_dummy_ground_truth_objects, self.dummy_ground_truth_objects
                 ):
                     area_intersection = _get_area_intersection(
-                        predicted_object, ground_truth_object
+                        estimated_object, ground_truth_object
                     )
                     self.assertAlmostEqual(area_intersection, ans_area_intersection)
 
@@ -60,24 +60,24 @@ class TestIouBEVMatching(unittest.TestCase):
             # Given no diff_distance, iou is 1.0.
             (0.0, 1.0),
             # Given diff_distance is 0.5 for one axis, iou is 0.5 / 1.5
-            # since ground_truth_objects and predicted_objects are half overlapping.
+            # since ground_truth_objects and estimated_objects are half overlapping.
             (0.5, 0.5 / 1.5),
             # Given diff_distance is 1.0 for one axis, iou is 0.0
-            # since ground_truth_objects and predicted_objects are no overlapping.
+            # since ground_truth_objects and estimated_objects are no overlapping.
             # Given no diff_yaw, iou is 1.0.
             (0.0, 1.0),
         ]
         # patterns: (diff_yaw, ans_iou_bev)
         yaw_patterns: List[Tuple[float, float]] = [
             # Given vertical diff_yaw, iou is 1.0
-            # since ground_truth_objects and predicted_objects overlap exactly.
+            # since ground_truth_objects and estimated_objects overlap exactly.
             (math.pi / 2.0, 1.0),
             (-math.pi / 2.0, 1.0),
             # Given opposite direction, iou is 1.0.
-            # since ground_truth_objects and predicted_objects overlap exactly.
+            # since ground_truth_objects and estimated_objects overlap exactly.
             (math.pi, 1.0),
             (-math.pi, 1.0),
-            # Given the ground_truth_objects and predicted_objects are the same size and crossed
+            # Given the ground_truth_objects and estimated_objects are the same size and crossed
             # at pi/4 or 3*pi/4, intersection_area is 2*(math.sqrt(2)-1)=0.8284271247461903 and union_area
             # is 2*(2-math.sqrt(2))=1.1715728752538097 thus iou is intersection_area/union_area
             # =0.7071067811865472.
@@ -104,10 +104,10 @@ class TestIouBEVMatching(unittest.TestCase):
                     diff_yaw=0.0,
                 )
 
-                for predicted_object, ground_truth_object in zip(
+                for estimated_object, ground_truth_object in zip(
                     diff_yaw_dummy_ground_truth_objects, self.dummy_ground_truth_objects
                 ):
-                    iou_bev = IOUBEVMatching(predicted_object, ground_truth_object)
+                    iou_bev = IOUBEVMatching(estimated_object, ground_truth_object)
                     self.assertAlmostEqual(iou_bev.value, ans_iou_bev)
 
         for diff_yaw, ans_iou_bev in yaw_patterns:
@@ -119,10 +119,10 @@ class TestIouBEVMatching(unittest.TestCase):
                     diff_yaw=diff_yaw,
                 )
 
-                for predicted_object, ground_truth_object in zip(
+                for estimated_object, ground_truth_object in zip(
                     diff_yaw_dummy_ground_truth_objects, self.dummy_ground_truth_objects
                 ):
-                    iou_bev = IOUBEVMatching(predicted_object, ground_truth_object)
+                    iou_bev = IOUBEVMatching(estimated_object, ground_truth_object)
                     self.assertAlmostEqual(iou_bev.value, ans_iou_bev)
 
 

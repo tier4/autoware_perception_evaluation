@@ -1,9 +1,10 @@
 from typing import List
 
-from awml_evaluation.common.dataset import DynamicObject
+from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.metrics.detection.map import Map
-from awml_evaluation.evaluation.metrics.metrics_config import MetricsScoreConfig
+from awml_evaluation.evaluation.metrics.metrics_score_config import MetricsScoreConfig
+from awml_evaluation.evaluation.metrics.tracking.tracking_metrics_score import TrackingMetricsScore
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
@@ -12,9 +13,13 @@ class MetricsScore:
     Metrics score class.
 
     Attributes:
-        self.config (MetricsScoreConfig): The config for metrics calculation.
+        self.detection_config (Optional[DetectionMetricsConfig])
+        self.tracking_config (Optional[TrackingMetricsConfig])
+        self.prediction_config (Optional[PredictionMetricsConfig]): TBD
         self.maps (List[Map]): The list of mAP class object. Each mAP is different from threshold
                                for matching (ex. IoU 0.3).
+        self.tracking_scores (List[TrackingMetricsScore])
+        self.prediction_scores (List[TODO]): TBD
     """
 
     def __init__(
@@ -25,9 +30,15 @@ class MetricsScore:
         Args:
             metrics_config (MetricsScoreConfig): A config for metrics
         """
-        self.config: MetricsScoreConfig = config
-        # for detection metrics
+        self.detection_config = config.detection_config
+        self.tracking_config = config.tracking_config
+        self.prediction_config = config.prediction_config
+        # detection metrics scores for each matching method
         self.maps: List[Map] = []
+        # tracking metrics scores for each matching method
+        self.tracking_scores: List[TrackingMetricsScore] = []
+        # TODO: prediction metrics scores for each matching method
+        self.prediction_scores: List = []
 
     def __str__(self) -> str:
         """[summary]
@@ -40,136 +51,142 @@ class MetricsScore:
             object_num += ap_.ground_truth_objects_num
         str_ += f"Ground Truth Num: {object_num}\n"
 
+        # detection
         for map_ in self.maps:
             # whole result
-            str_ += "\n"
-            str_ += f"mAP: {map_.map:.3f}, mAPH: {map_.maph:.3f} "
-            str_ += f"({map_.map_config.matching_mode.value})\n"
-            # Table
-            str_ += "\n"
-            # label
-            str_ += "|      Label |"
-            target_str: str
-            for ap_ in map_.aps:
-                target_str = ""
-                for target in ap_.target_labels:
-                    target_str += target.value
-                str_ += f" {target_str}({ap_.matching_threshold_list}) | "
-            str_ += "\n"
-            str_ += "| :--------: |"
-            for ap_ in map_.aps:
-                str_ += " :---: |"
-            str_ += "\n"
-            str_ += "| Predict_num |"
-            for ap_ in map_.aps:
-                str_ += f" {ap_.objects_results_num} |"
-            # Each label result
-            str_ += "\n"
-            str_ += "|         AP |"
-            for ap_ in map_.aps:
-                str_ += f" {ap_.ap:.3f} | "
-            str_ += "\n"
-            str_ += "|        APH |"
-            for aph_ in map_.aphs:
-                target_str = ""
-                for target in aph_.target_labels:
-                    target_str += target.value
-                str_ += f" {aph_.ap:.3f} | "
-            str_ += "\n"
+            str_ += str(map_)
+
+        # tracking
+        for track_score in self.tracking_scores:
+            str_ += str(track_score)
+
+        # TODO: prediction
+
         return str_
 
-    def evaluate(
+    def evaluate_detection(
         self,
-        object_results: List[DynamicObjectWithPerceptionResult],
-        ground_truth_objects: List[DynamicObject],
-    ) -> None:
-        """[summary]
-        Evaluate API
-
-        Args:
-            object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
-            ground_truth_objects (List[DynamicObject]): The ground truth objects
-        """
-        self._evaluation_detection(object_results, ground_truth_objects)
-        self._evaluation_tracking(object_results)
-        self._evaluation_prediction(object_results)
-
-    def _evaluation_detection(
-        self,
-        object_results: List[DynamicObjectWithPerceptionResult],
-        ground_truth_objects: List[DynamicObject],
+        object_results: List[List[DynamicObjectWithPerceptionResult]],
+        frame_ground_truths: List[FrameGroundTruth],
     ) -> None:
         """[summary]
         Calculate detection metrics
 
         Args:
-            object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
-            ground_truth_objects (List[DynamicObject]): The ground truth objects
+            object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object result
+            frame_ground_truths (List[FrameGroundTruth]): The list ground truth for each frame.
         """
-        for distance_threshold_ in self.config.map_thresholds_center_distance:
-            if distance_threshold_:
-                map_ = Map(
-                    object_results=object_results,
-                    ground_truth_objects=ground_truth_objects,
-                    target_labels=self.config.target_labels,
-                    max_x_position_list=self.config.max_x_position_list,
-                    max_y_position_list=self.config.max_y_position_list,
-                    matching_mode=MatchingMode.CENTERDISTANCE,
-                    matching_threshold_list=distance_threshold_,
-                )
-                self.maps.append(map_)
-        for iou_threshold_bev_ in self.config.map_thresholds_iou_bev:
-            if iou_threshold_bev_:
-                map_ = Map(
-                    object_results=object_results,
-                    ground_truth_objects=ground_truth_objects,
-                    target_labels=self.config.target_labels,
-                    max_x_position_list=self.config.max_x_position_list,
-                    max_y_position_list=self.config.max_y_position_list,
-                    matching_mode=MatchingMode.IOUBEV,
-                    matching_threshold_list=iou_threshold_bev_,
-                )
-                self.maps.append(map_)
-        for iou_threshold_3d_ in self.config.map_thresholds_iou_3d:
-            if iou_threshold_3d_:
-                map_ = Map(
-                    object_results=object_results,
-                    ground_truth_objects=ground_truth_objects,
-                    target_labels=self.config.target_labels,
-                    max_x_position_list=self.config.max_x_position_list,
-                    max_y_position_list=self.config.max_y_position_list,
-                    matching_mode=MatchingMode.IOU3D,
-                    matching_threshold_list=iou_threshold_3d_,
-                )
-                self.maps.append(map_)
-        for plane_distance_threshold_ in self.config.map_thresholds_plane_distance:
-            if plane_distance_threshold_:
-                map_ = Map(
-                    object_results=object_results,
-                    ground_truth_objects=ground_truth_objects,
-                    target_labels=self.config.target_labels,
-                    max_x_position_list=self.config.max_x_position_list,
-                    max_y_position_list=self.config.max_y_position_list,
-                    matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_threshold_list=plane_distance_threshold_,
-                )
-                self.maps.append(map_)
+        for distance_threshold_ in self.detection_config.center_distance_thresholds:
+            map_ = Map(
+                object_results=object_results,
+                frame_ground_truths=frame_ground_truths,
+                target_labels=self.detection_config.target_labels,
+                max_x_position_list=self.detection_config.max_x_position_list,
+                max_y_position_list=self.detection_config.max_y_position_list,
+                matching_mode=MatchingMode.CENTERDISTANCE,
+                matching_threshold_list=distance_threshold_,
+            )
+            self.maps.append(map_)
+        for iou_threshold_bev_ in self.detection_config.iou_bev_thresholds:
+            map_ = Map(
+                object_results=object_results,
+                frame_ground_truths=frame_ground_truths,
+                target_labels=self.detection_config.target_labels,
+                max_x_position_list=self.detection_config.max_x_position_list,
+                max_y_position_list=self.detection_config.max_y_position_list,
+                matching_mode=MatchingMode.IOUBEV,
+                matching_threshold_list=iou_threshold_bev_,
+            )
+            self.maps.append(map_)
+        for iou_threshold_3d_ in self.detection_config.iou_3d_thresholds:
+            map_ = Map(
+                object_results=object_results,
+                frame_ground_truths=frame_ground_truths,
+                target_labels=self.detection_config.target_labels,
+                max_x_position_list=self.detection_config.max_x_position_list,
+                max_y_position_list=self.detection_config.max_y_position_list,
+                matching_mode=MatchingMode.IOU3D,
+                matching_threshold_list=iou_threshold_3d_,
+            )
+            self.maps.append(map_)
+        for plane_distance_threshold_ in self.detection_config.plane_distance_thresholds:
+            map_ = Map(
+                object_results=object_results,
+                frame_ground_truths=frame_ground_truths,
+                target_labels=self.detection_config.target_labels,
+                max_x_position_list=self.detection_config.max_x_position_list,
+                max_y_position_list=self.detection_config.max_y_position_list,
+                matching_mode=MatchingMode.PLANEDISTANCE,
+                matching_threshold_list=plane_distance_threshold_,
+            )
+            self.maps.append(map_)
 
-    def _evaluation_tracking(
+    def evaluate_tracking(
         self,
-        object_results: List[DynamicObjectWithPerceptionResult],
+        object_results: List[List[DynamicObjectWithPerceptionResult]],
+        frame_ground_truths: List[FrameGroundTruth],
     ) -> None:
         """[summary]
-        Calculate tracking metrics
+        Calculate tracking metrics.
+
+        NOTE:
+            object_results and ground_truth_objects must be nested list.
+            In case of evaluating single frame, [[previous], [current]].
+            In case of evaluating multi frame, [[], [t1], [t2], ..., [tn]]
 
         Args:
-            object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
+            object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object result for each frame.
+            ground_truth_objects (List[List[DynamicObject]]): The list of ground truth object for each frame.
         """
-        pass
+        for distance_threshold_ in self.tracking_config.center_distance_thresholds:
+            tracking_score_ = TrackingMetricsScore(
+                object_results=object_results,
+                frame_ground_truths=frame_ground_truths,
+                target_labels=self.tracking_config.target_labels,
+                max_x_position_list=self.tracking_config.max_x_position_list,
+                max_y_position_list=self.tracking_config.max_y_position_list,
+                matching_mode=MatchingMode.CENTERDISTANCE,
+                matching_threshold_list=distance_threshold_,
+            )
+            self.tracking_scores.append(tracking_score_)
+        for iou_threshold_bev_ in self.tracking_config.iou_bev_thresholds:
+            tracking_score_ = TrackingMetricsScore(
+                object_results=object_results,
+                frame_ground_truths=frame_ground_truths,
+                target_labels=self.tracking_config.target_labels,
+                max_x_position_list=self.tracking_config.max_x_position_list,
+                max_y_position_list=self.tracking_config.max_y_position_list,
+                matching_mode=MatchingMode.IOUBEV,
+                matching_threshold_list=iou_threshold_bev_,
+            )
+            self.tracking_scores.append(tracking_score_)
+        for iou_threshold_3d_ in self.tracking_config.iou_3d_thresholds:
+            tracking_score_ = TrackingMetricsScore(
+                object_results=object_results,
+                frame_ground_truths=frame_ground_truths,
+                target_labels=self.tracking_config.target_labels,
+                max_x_position_list=self.tracking_config.max_x_position_list,
+                max_y_position_list=self.tracking_config.max_y_position_list,
+                matching_mode=MatchingMode.IOU3D,
+                matching_threshold_list=iou_threshold_3d_,
+            )
+            self.tracking_scores.append(tracking_score_)
+        for plane_distance_threshold_ in self.tracking_config.plane_distance_thresholds:
+            tracking_score_ = TrackingMetricsScore(
+                object_results=object_results,
+                frame_ground_truths=frame_ground_truths,
+                target_labels=self.tracking_config.target_labels,
+                max_x_position_list=self.tracking_config.max_x_position_list,
+                max_y_position_list=self.tracking_config.max_y_position_list,
+                matching_mode=MatchingMode.PLANEDISTANCE,
+                matching_threshold_list=plane_distance_threshold_,
+            )
+            self.tracking_scores.append(tracking_score_)
 
-    def _evaluation_prediction(
+    def evaluate_prediction(
         self,
-        object_results: List[DynamicObjectWithPerceptionResult],
+        object_results: List[List[DynamicObjectWithPerceptionResult]],
+        frame_ground_truths: List[FrameGroundTruth],
     ) -> None:
         """[summary]
         Calculate prediction metrics
