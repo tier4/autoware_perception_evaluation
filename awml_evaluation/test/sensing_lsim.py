@@ -1,0 +1,169 @@
+import argparse
+import logging
+from typing import List
+from typing import Tuple
+
+from awml_evaluation.common.dataset import FrameGroundTruth
+from awml_evaluation.config.sensing_evaluation_config import SensingEvaluationConfig
+from awml_evaluation.evaluation.sensing.sensing_frame_result import SensingFrameResult
+from awml_evaluation.manager.sensing_evaluation_manager import SensingEvaluationManager
+from awml_evaluation.util.logger_config import configure_logger
+import numpy as np
+
+
+class SensingLSimMoc:
+    """Moc to evaluate sensing in LogSim.
+
+    Args:
+        dataset_paths: List[str]: The list of dataset paths.
+    """
+
+    def __init__(self, dataset_paths: List[str]):
+        # sensing
+        evaluation_config_dict = {
+            "evaluation_task": "sensing",
+            # object uuids to be detected
+            "target_uuids": ["1b40c0876c746f96ac679a534e1037a2"],
+            # The scale factor for boxes at 0 and 100[m]
+            "box_scale_0m": 1.0,
+            "box_scale_100m": 1.0,
+            "min_points_threshold": 1,
+        }
+        evaluation_config: SensingEvaluationConfig = SensingEvaluationConfig(
+            dataset_paths=dataset_paths,
+            frame_id="base_link",
+            does_use_pointcloud=False,
+            result_root_directory="data/result/{TIME}/",
+            log_directory="",
+            visualization_directory="visualization/",
+            evaluation_config_dict=evaluation_config_dict,
+        )
+
+        _ = configure_logger(
+            log_file_directory=evaluation_config.get_result_log_directory(),
+            console_log_level=logging.INFO,
+            file_log_level=logging.INFO,
+        )
+
+        self.evaluator = SensingEvaluationManager(evaluation_config=evaluation_config)
+
+    def callback(
+        self,
+        unix_time: int,
+        pointcloud: np.ndarray,
+        non_detection_areas: List[List[Tuple[float, float, float]]],
+    ) -> SensingFrameResult:
+        """[summary]
+
+        Args:
+            unix_time (int): Unix time [us]
+            pointcloud (numpy.ndarray): Array of pointcloud after removing ground
+            non_detection_areas (List[List[[Tuple[float, float, float]]]):
+                The list of 3D-polygon areas for non-detection.
+
+        Returns:
+            frame_result (SensingFrameResult): Result per frame.
+        """
+        ground_truth_now_frame: FrameGroundTruth = self.evaluator.get_ground_truth_now_frame(
+            unix_time=unix_time,
+        )
+
+        pointcloud_for_non_detection: List[np.ndarray] = self.evaluator.crop_pointcloud(
+            pointcloud=pointcloud,
+            non_detection_areas=non_detection_areas,
+        )
+
+        frame_result: SensingFrameResult = self.evaluator.add_frame_result(
+            unix_time=unix_time,
+            ground_truth_now_frame=ground_truth_now_frame,
+            pointcloud_for_detection=pointcloud,
+            pointcloud_for_non_detection=pointcloud_for_non_detection,
+        )
+
+        self.visualize(frame_result)
+
+        return frame_result
+
+    def get_final_result(self) -> None:
+        """Output the evaluation results on the command line"""
+        # use case fail object num
+        num_use_case_fail: int = 0
+        for frame_results in self.evaluator.frame_results:
+            num_use_case_fail += len(frame_results.detection_fail_results)
+        logging.warning(f"{num_use_case_fail} fail results.")
+
+    @staticmethod
+    def visualize(frame_result: SensingFrameResult) -> None:
+        """Visualize results per frame
+        Args:
+            frame_result (SensingFrameResult)
+        """
+        if len(frame_result.detection_fail_results) > 0:
+            logging.warning(f"Fail {len(frame_result.detection_fail_results)} detection.")
+            for fail_result in frame_result.detection_fail_results:
+                logging.info(
+                    f"[FAIL] Inside points: {fail_result.inside_pointcloud_num}, Is detected: {fail_result.is_detected}"
+                )
+        else:
+            logging.info("all detections were succeeded.")
+
+        for success_result in frame_result.detection_success_results:
+            logging.info(
+                f"[SUCCESS] Inside points: {success_result.inside_pointcloud_num}, Is detected: {success_result.is_detected}"
+            )
+
+        if len(frame_result.pointcloud_failed_non_detection) > 0:
+            logging.warn(
+                f"The number of Failed non-detection pointcloud: {len(frame_result.pointcloud_failed_non_detection)}"
+            )
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("dataset_paths", nargs="+", type=str, help="The path(s) of dataset")
+    args = parser.parse_args()
+
+    dataset_paths = args.dataset_paths
+
+    sensing_lsim = SensingLSimMoc(dataset_paths)
+
+    non_detection_areas: List[List[Tuple[float, float, float]]] = [
+        [
+            # lower plane
+            (1.0, 1.0, 0.5),
+            (100.0, 1.0, 0.5),
+            (100.0, -1.0, 0.5),
+            (1.0, -1.0, 0.5),
+            # upper plane
+            (1.0, 1.0, 2.0),
+            (100.0, 1.0, 2.0),
+            (100.0, -1.0, 2.0),
+            (1.0, -1.0, 2.0),
+        ],
+    ]
+    num_frames = len(sensing_lsim.evaluator.ground_truth_frames)
+    pointcloud_frames = np.random.rand(num_frames, 100, 3) * 10
+    for ground_truth_frame, pointcloud in zip(
+        sensing_lsim.evaluator.ground_truth_frames,
+        pointcloud_frames,
+    ):
+        frame_result: SensingFrameResult = sensing_lsim.callback(
+            ground_truth_frame.unix_time,
+            pointcloud,
+            non_detection_areas,
+        )
+
+    # final result
+    final_sensing_score = sensing_lsim.get_final_result()
+
+    # Debug
+    logging.info(
+        "Frame result example (frame_results[0]: "
+        f"{len(sensing_lsim.evaluator.frame_results[0].detection_success_results)} success, "
+        f"{len(sensing_lsim.evaluator.frame_results[0].detection_fail_results)} fail"
+    )
+
+    logging.info(
+        "Failed to be Non-detected pointclouds example (frame_results[0]): "
+        f"{len(sensing_lsim.evaluator.frame_results[0].pointcloud_failed_non_detection)}"
+    )

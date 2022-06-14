@@ -2,12 +2,12 @@
 This module has matching class.
 
 Matching(
-    predicted_object: DynamicObject,
+    estimated_object: DynamicObject,
     ground_truth_object: Optional[DynamicObject],
 )
 """
 
-from abc import ABCMeta
+from abc import ABC
 from abc import abstractmethod
 from enum import Enum
 import math
@@ -40,7 +40,7 @@ class MatchingMode(Enum):
     PLANEDISTANCE = "Plane Distance [m]"
 
 
-class Matching(metaclass=ABCMeta):
+class MatchingMethod(ABC):
     """[summary]
     Meta class for matching
     """
@@ -48,12 +48,12 @@ class Matching(metaclass=ABCMeta):
     @abstractmethod
     def __init__(
         self,
-        predicted_object: DynamicObject,
+        estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> None:
         """[summary]
         Args:
-            predicted_object (DynamicObject): The predicted obeject
+            estimated_object (DynamicObject): The estimated object
             ground_truth_object (Optional[DynamicObject]): The ground truth object
         """
         self.mode: MatchingMode = MatchingMode.CENTERDISTANCE
@@ -76,7 +76,7 @@ class Matching(metaclass=ABCMeta):
         pass
 
 
-class CenterDistanceMatching(Matching):
+class CenterDistanceMatching(MatchingMethod):
     """[summary]
     Matching by center distance
 
@@ -87,17 +87,17 @@ class CenterDistanceMatching(Matching):
 
     def __init__(
         self,
-        predicted_object: DynamicObject,
+        estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> None:
         """[summary]
         Args:
-            predicted_object (DynamicObject): The predicted object
+            estimated_object (DynamicObject): The estimated object
             ground_truth_object (Optional[DynamicObject]): The ground truth object
         """
         self.mode: MatchingMode = MatchingMode.CENTERDISTANCE
         self.value: Optional[float] = self._get_center_distance(
-            predicted_object,
+            estimated_object,
             ground_truth_object,
         )
 
@@ -121,21 +121,21 @@ class CenterDistanceMatching(Matching):
 
     def _get_center_distance(
         self,
-        predicted_object: DynamicObject,
+        estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> Optional[float]:
         """[summary]
         Get center distance
         Args:
-            predicted_object (DynamicObject): The predicted object
+            estimated_object (DynamicObject): The estimated object
             ground_truth_object (Optional[DynamicObject]): The ground truth object
         """
         if ground_truth_object is None:
             return None
-        return distance_objects(predicted_object, ground_truth_object)
+        return distance_objects(estimated_object, ground_truth_object)
 
 
-class PlaneDistanceMatching(metaclass=ABCMeta):
+class PlaneDistanceMatching(MatchingMethod):
     """[summary]
     Matching by plane distance
 
@@ -143,23 +143,23 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
         self.mode (MatchingMode): Matching mode
         self.value (Optional[float]):
                 Plane distance value [m].
-                If predicted_object do not have corresponded ground truth object, value is None.
+                If estimated_object do not have corresponded ground truth object, value is None.
         self.ground_truth_nn_plane (Optional[Tuple[Tuple[float, float]]]):
                 The nearest neighbor plane coordinate of ground truth object ((x1, y1), (x2, y2)).
-                If predicted_object do not have corresponded ground truth object, value is None.
-        self.predicted_nn_plane (Optional[Tuple[Tuple[float, float]]])]:
-                The nearest neighbor plane coordinate of predicted object ((x1, y1), (x2, y2)).
-                If predicted_object do not have corresponded ground truth object, value is None.
+                If estimated_object do not have corresponded ground truth object, value is None.
+        self.estimated_nn_plane (Optional[Tuple[Tuple[float, float]]])]:
+                The nearest neighbor plane coordinate of estimated object ((x1, y1), (x2, y2)).
+                If estimated_object do not have corresponded ground truth object, value is None.
     """
 
     def __init__(
         self,
-        predicted_object: DynamicObject,
+        estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> None:
         """[summary]
         Args:
-            predicted_object (DynamicObject): The predicted object
+            estimated_object (DynamicObject): The estimated object
             ground_truth_object (Optional[DynamicObject]): The ground truth object
         """
         self.mode: MatchingMode = MatchingMode.PLANEDISTANCE
@@ -167,11 +167,11 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
         self.ground_truth_nn_plane: Optional[
             Tuple[Tuple[float, float, float], Tuple[float, float, float]]
         ] = None
-        self.predicted_nn_plane: Optional[
+        self.estimated_nn_plane: Optional[
             Tuple[Tuple[float, float, float], Tuple[float, float, float]]
         ] = None
-        self.value, self.ground_truth_nn_plane, self.predicted_nn_plane = self._get_plane_distance(
-            predicted_object,
+        self.value, self.ground_truth_nn_plane, self.estimated_nn_plane = self._get_plane_distance(
+            estimated_object,
             ground_truth_object,
         )
 
@@ -195,7 +195,7 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
 
     def _get_plane_distance(
         self,
-        predicted_object: DynamicObject,
+        estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> Tuple[
         Optional[float],
@@ -207,18 +207,18 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
         Calculate plane distance for use case evaluation.
 
         Args:
-            predicted_object (DynamicObject): A predicted object
+            estimated_object (DynamicObject): A estimated object
             ground_truth_object (Optional[DynamicObject]): The correspond ground truth object
 
         Returns:
-            Tuple[value, ground_truth_nn_plane, predicted_nn_plane]
+            Tuple[value, ground_truth_nn_plane, estimated_nn_plane]
             See class attribute in detail
         """
         if ground_truth_object is None:
             return None, None, None
 
-        # Get corner_points of predicted object from footprint
-        pr_footprint_polygon: Polygon = predicted_object.get_footprint()
+        # Get corner_points of estimated object from footprint
+        pr_footprint_polygon: Polygon = estimated_object.get_footprint()
         pr_corner_points: List[Tuple[float, float, float]] = polygon_to_list(pr_footprint_polygon)
 
         # Get corner_points of ground truth object from footprint
@@ -249,14 +249,14 @@ class PlaneDistanceMatching(metaclass=ABCMeta):
             gt_left_point,
             gt_right_point,
         )
-        predicted_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
+        estimated_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
             pr_left_point,
             pr_right_point,
         )
-        return plane_distance, ground_truth_nn_plane, predicted_nn_plane
+        return plane_distance, ground_truth_nn_plane, estimated_nn_plane
 
 
-class IOUBEVMatching(metaclass=ABCMeta):
+class IOUBEVMatching(MatchingMethod):
     """[summary]
     Matching by IoU BEV
 
@@ -267,17 +267,17 @@ class IOUBEVMatching(metaclass=ABCMeta):
 
     def __init__(
         self,
-        predicted_object: DynamicObject,
+        estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> None:
         """[summary]
         Args:
-            predicted_object (DynamicObject): The predicted object
+            estimated_object (DynamicObject): The estimated object
             ground_truth_object (Optional[DynamicObject]): The ground truth object
         """
         self.mode: MatchingMode = MatchingMode.IOUBEV
         self.value: Optional[float] = self._get_iou_bev(
-            predicted_object,
+            estimated_object,
             ground_truth_object,
         )
 
@@ -301,19 +301,19 @@ class IOUBEVMatching(metaclass=ABCMeta):
 
     def _get_iou_bev(
         self,
-        predicted_object: DynamicObject,
+        estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> float:
         """[summary]
         Calculate BEV IoU
 
         Args:
-            predicted_object (DynamicObject): The predicted object
+            estimated_object (DynamicObject): The estimated object
             ground_truth_object (DynamicObject): The corresponded ground truth object
 
         Returns:
             Optional[float]: The value of BEV IoU.
-                            If predicted_object do not have corresponded ground truth object,
+                            If estimated_object do not have corresponded ground truth object,
                             return 0.0.
         Reference:
             https://github.com/lyft/nuscenes-devkit/blob/49c36da0a85da6bc9e8f2a39d5d967311cd75069/lyft_dataset_sdk/eval/detection/mAP_evaluation.py
@@ -323,15 +323,15 @@ class IOUBEVMatching(metaclass=ABCMeta):
             return 0.0
 
         # TODO: if tiny box dim seen return 0.0 IOU
-        predicted_object_area: float = predicted_object.get_area_bev()
+        estimated_object_area: float = estimated_object.get_area_bev()
         ground_truth_object_area: float = ground_truth_object.get_area_bev()
-        intersection_area: float = _get_area_intersection(predicted_object, ground_truth_object)
-        union_area: float = predicted_object_area + ground_truth_object_area - intersection_area
+        intersection_area: float = _get_area_intersection(estimated_object, ground_truth_object)
+        union_area: float = estimated_object_area + ground_truth_object_area - intersection_area
         iou_bev: float = intersection_area / union_area
         return iou_bev
 
 
-class IOU3dMatching(metaclass=ABCMeta):
+class IOU3dMatching(MatchingMethod):
     """[summary]
     Matching by IoU 3d
 
@@ -342,17 +342,17 @@ class IOU3dMatching(metaclass=ABCMeta):
 
     def __init__(
         self,
-        predicted_object: DynamicObject,
+        estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> None:
         """[summary]
         Args:
-            predicted_object (DynamicObject): The predicted object
+            estimated_object (DynamicObject): The estimated object
             ground_truth_object (Optional[DynamicObject]): The ground truth object
         """
         self.mode: MatchingMode = MatchingMode.IOU3D
         self.value: Optional[float] = self._get_iou_3d(
-            predicted_object,
+            estimated_object,
             ground_truth_object,
         )
 
@@ -376,61 +376,61 @@ class IOU3dMatching(metaclass=ABCMeta):
 
     def _get_iou_3d(
         self,
-        predicted_object: DynamicObject,
+        estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> float:
         """[summary]
         Calculate 3D IoU
 
         Args:
-            predicted_object (DynamicObject): The predicted object
+            estimated_object (DynamicObject): The estimated object
             ground_truth_object (DynamicObject): The corresponded ground truth object
 
         Returns:
             Optional[float]: The value of 3D IoU.
-                            If predicted_object do not have corresponded ground truth object,
+                            If estimated_object do not have corresponded ground truth object,
                             return 0.0.
         """
         if ground_truth_object is None:
             return 0.0
 
-        predicted_object_volume: float = predicted_object.get_volume()
+        estimated_object_volume: float = estimated_object.get_volume()
         ground_truth_object_volume: float = ground_truth_object.get_volume()
-        intersection: float = _get_volume_intersection(predicted_object, ground_truth_object)
-        union: float = predicted_object_volume + ground_truth_object_volume - intersection
+        intersection: float = _get_volume_intersection(estimated_object, ground_truth_object)
+        union: float = estimated_object_volume + ground_truth_object_volume - intersection
         iou_3d: float = intersection / union
         return iou_3d
 
 
 def _get_volume_intersection(
-    predicted_object: DynamicObject,
+    estimated_object: DynamicObject,
     ground_truth_object: DynamicObject,
 ) -> float:
     """[summary]
     Get the volume at intersection
 
     Args:
-        predicted_object (DynamicObject): The predicted object
+        estimated_object (DynamicObject): The estimated object
         ground_truth_object (DynamicObject): The corresponded ground truth object
 
     Returns:
         float: The volume at intersection
 
     """
-    area_intersection = _get_area_intersection(predicted_object, ground_truth_object)
-    height_intersection = _get_height_intersection(predicted_object, ground_truth_object)
+    area_intersection = _get_area_intersection(estimated_object, ground_truth_object)
+    height_intersection = _get_height_intersection(estimated_object, ground_truth_object)
     return area_intersection * height_intersection
 
 
 def _get_height_intersection(
-    predicted_object: DynamicObject,
+    estimated_object: DynamicObject,
     ground_truth_object: DynamicObject,
 ) -> float:
     """[summary]
     Get the height at intersection
 
     Args:
-        predicted_object (DynamicObject): The predicted object
+        estimated_object (DynamicObject): The estimated object
         ground_truth_object (DynamicObject): The corresponded ground truth object
 
     Returns:
@@ -438,32 +438,32 @@ def _get_height_intersection(
 
     """
     min_z = max(
-        predicted_object.state.position[2] - predicted_object.state.size[2] / 2,
+        estimated_object.state.position[2] - estimated_object.state.size[2] / 2,
         ground_truth_object.state.position[2] - ground_truth_object.state.size[2] / 2,
     )
     max_z = min(
-        predicted_object.state.position[2] + predicted_object.state.size[2] / 2,
+        estimated_object.state.position[2] + estimated_object.state.size[2] / 2,
         ground_truth_object.state.position[2] + ground_truth_object.state.size[2] / 2,
     )
     return max(0, max_z - min_z)
 
 
 def _get_area_intersection(
-    predicted_object: DynamicObject,
+    estimated_object: DynamicObject,
     ground_truth_object: DynamicObject,
 ) -> float:
     """[summary]
     Get the area at intersection
 
     Args:
-        predicted_object (DynamicObject): The predicted object
+        estimated_object (DynamicObject): The estimated object
         ground_truth_object (DynamicObject): The corresponded ground truth object
 
     Returns:
         float: The area at intersection
     """
-    # Predicted object footprint and Ground truth object footprint
-    pr_footprint_polygon: Polygon = predicted_object.get_footprint()
+    # estimated object footprint and Ground truth object footprint
+    pr_footprint_polygon: Polygon = estimated_object.get_footprint()
     gt_footprint_polygon: Polygon = ground_truth_object.get_footprint()
     area_intersection: float = pr_footprint_polygon.intersection(gt_footprint_polygon).area
     return area_intersection

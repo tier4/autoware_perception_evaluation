@@ -1,5 +1,6 @@
 from logging import getLogger
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -11,6 +12,7 @@ from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.util.file import divide_file_path
 import numpy as np
 from nuscenes.nuscenes import NuScenes
+from nuscenes.prediction.helper import PredictHelper
 from nuscenes.utils.data_classes import Box
 from pyquaternion.quaternion import Quaternion
 import tqdm
@@ -29,13 +31,16 @@ class FrameGroundTruth:
         self.pointcloud (Optional[numpy.ndarray], optional):
                 Pointcloud data. Defaults to None, but if you want to visualize dataset,
                 you should load pointcloud data.
+        self.transform_matrix (Optional[np.ndarray]): The numpy array to transform position.
     """
 
     def __init__(
         self,
         unix_time: int,
         frame_name: str,
+        frame_id: str,
         objects: List[DynamicObject],
+        ego2map: Optional[np.ndarray] = None,
         pointcloud: Optional[np.ndarray] = None,
     ) -> None:
         """[summary]
@@ -43,23 +48,29 @@ class FrameGroundTruth:
         Args:
             unix_time (int): The unix time for the frame [us]
             frame_name (str): The file name for the frame
+            frame_id (str): The coord system which objects with respected to, base_link or map.
             objects (List[DynamicObject]): Objects data
             pointcloud (Optional[numpy.ndarray]):
                     Pointcloud data in (x, y, z, i).
                     Defaults to None, but if you want to visualize dataset,
                     you should load pointcloud data.
+            ego2map (Optional[np.ndarray]): The array of 4x4 matrix.
+                Transform position with respect to vehicle coord system to map one.
         """
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
+        self.frame_id: str = frame_id
         self.objects: List[DynamicObject] = objects
         self.pointcloud: Optional[np.ndarray] = pointcloud
+        self.ego2map: Optional[np.ndarray] = ego2map
 
 
 def load_all_datasets(
     dataset_paths: List[str],
     does_use_pointcloud: bool,
-    evaluation_tasks: List[EvaluationTask],
+    evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
+    frame_id: str,
     target_uuids: Optional[List[str]] = None,
 ) -> List[FrameGroundTruth]:
     """
@@ -67,7 +78,7 @@ def load_all_datasets(
     Args:
         dataset_paths (List[str]): The list of root paths to dataset
         does_use_pointcloud (bool): The flag of setting pointcloud
-        evaluation_tasks (List[EvaluationTask]): The evaluation tasks
+        evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
         target_uuids: List[str]:
                 The list of object instance tokens for all data in all frames.
@@ -80,7 +91,7 @@ def load_all_datasets(
     """
     logger.info(f"Start to load dataset {dataset_paths}")
     logger.info(
-        f"config: does_set_pointcloud {does_use_pointcloud}, evaluation_tasks {evaluation_tasks}"
+        f"config: does_use_pointcloud: {does_use_pointcloud}, evaluation_task: {evaluation_task}, frame_id: {frame_id}"
     )
 
     all_datasets: List[FrameGroundTruth] = []
@@ -89,8 +100,9 @@ def load_all_datasets(
         all_datasets += _load_dataset(
             dataset_path=dataset_path,
             does_use_pointcloud=does_use_pointcloud,
-            evaluation_tasks=evaluation_tasks,
+            evaluation_task=evaluation_task,
             label_converter=label_converter,
+            frame_id=frame_id,
             target_uuids=target_uuids,
         )
     logger.info("Finish loading dataset\n" + _get_str_objects_number_info(label_converter))
@@ -100,8 +112,9 @@ def load_all_datasets(
 def _load_dataset(
     dataset_path: str,
     does_use_pointcloud: bool,
-    evaluation_tasks: List[EvaluationTask],
+    evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
+    frame_id: str,
     target_uuids: Optional[List[str]] = None,
 ) -> List[FrameGroundTruth]:
     """
@@ -109,7 +122,7 @@ def _load_dataset(
     Args:
         dataset_path (str): The root path to dataset
         does_use_pointcloud (bool): The flag of setting pointcloud
-        evaluation_tasks (List[EvaluationTask]): The evaluation tasks
+        evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
         target_uuids: (Optional[List[str]]):
                 The list of object instance tokens for the data will be loaded in all frames.
@@ -120,6 +133,7 @@ def _load_dataset(
     """
 
     nusc: NuScenes = NuScenes(version="annotation", dataroot=dataset_path, verbose=False)
+    helper: PredictHelper = PredictHelper(nusc)
 
     # Load category list
     category_list = []
@@ -141,10 +155,12 @@ def _load_dataset(
     for sample_token in tqdm.tqdm(sample_tokens):
         frame = _sample_to_frame(
             nusc=nusc,
+            helper=helper,
             sample_token=sample_token,
             does_use_pointcloud=does_use_pointcloud,
-            evaluation_tasks=evaluation_tasks,
+            evaluation_task=evaluation_task,
             label_converter=label_converter,
+            frame_id=frame_id,
             target_uuids=target_uuids,
         )
         dataset.append(frame)
@@ -180,7 +196,7 @@ def _get_sample_tokens(nuscenes_sample: dict) -> List[Any]:
         nuscenes_sample (dict): nusc.sample
 
     Raises:
-        DatasetLoadingError: Dataset loding error
+        DatasetLoadingError: Dataset loading error
 
     Returns:
         List[Any]: [description]
@@ -204,10 +220,12 @@ def _get_sample_tokens(nuscenes_sample: dict) -> List[Any]:
 
 def _sample_to_frame(
     nusc: NuScenes,
+    helper: PredictHelper,
     sample_token: Any,
     does_use_pointcloud: bool,
-    evaluation_tasks: List[EvaluationTask],
+    evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
+    frame_id: str,
     target_uuids: List[str],
 ) -> FrameGroundTruth:
     """[summary]
@@ -215,9 +233,10 @@ def _sample_to_frame(
 
     Args:
         nusc (NuScenes): Nuscenes instance
-        sample_token (Any): Nuscenese sample token
+        helper (PredictHelper): PredictHelper instance
+        sample_token (Any): Nuscenes sample token
         does_use_pointcloud (bool): The flag of setting pointcloud
-        evaluation_tasks (List[EvaluationTask]): The evaluation tasks
+        evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
         target_uuids (Optional[List[str]]):
                 The list of specific objects' instance tokens.
@@ -241,9 +260,7 @@ def _sample_to_frame(
         raise ValueError("lidar data isn't found")
     frame_data = nusc.get("sample_data", lidar_path_token)
 
-    lidar_path: str
-    object_boxes: List[Box]
-    lidar_path, object_boxes, _ = nusc.get_sample_data(frame_data["token"])
+    lidar_path, object_boxes, ego2map = _get_sample_boxes(nusc, frame_data, frame_id)
 
     # pointcloud
     if does_use_pointcloud:
@@ -266,56 +283,57 @@ def _sample_to_frame(
         if len(target_uuids) != 0 and instance_token_ not in target_uuids:
             continue
 
-        pointcloud_num_: int = sample_annotation_["num_lidar_pts"]
-        velocity_: Tuple[float, float, float] = tuple(
-            nusc.box_velocity(sample_annotation_["token"]).tolist()
-        )
-
         object_: DynamicObject = _convert_nuscenes_box_to_dynamic_object(
+            nusc,
+            helper,
             object_box,
             unix_time_,
-            evaluation_tasks,
+            evaluation_task,
             label_converter,
             instance_token_,
-            pointcloud_num_,
-            velocity_,
+            sample_token,
         )
         objects_.append(object_)
 
     frame = FrameGroundTruth(
         unix_time=unix_time_,
         frame_name=basename_without_ext,
+        frame_id=frame_id,
         objects=objects_,
         pointcloud=pointcloud_,
+        ego2map=ego2map,
     )
     return frame
 
 
 def _convert_nuscenes_box_to_dynamic_object(
+    nusc: NuScenes,
+    helper: PredictHelper,
     object_box: Box,
     unix_time: int,
-    evaluation_tasks: List[EvaluationTask],
+    evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
     instance_token: str,
-    pointcloud_num: int,
-    velocity: Tuple[float, float, float],
+    sample_token: str,
+    seconds: float = 3.0,
 ) -> DynamicObject:
     """[summary]
     Convert nuscenes object bounding box to dynamic object
 
     Args:
+        nusc (NuScenes): NuScenes instance
+        helper (PredictHelper): PredictHelper instance
         object_box (Box): Annotation data from nuscenes dataset defined by Box
         unix_time (int): The unix time [us]
-        evaluation_tasks (List[EvaluationTask]): Evaluation task
+        evaluation_task (EvaluationTask): Evaluation task
         label_converter (LabelConverter): LabelConverter
         instance_token (str): Instance token
-        pointcloud_num (int): The number of pointcloud in object box
-        velocity (Tuple[float, float, float]): The Veclocity of object
+        sample_token (str): Sample token, used to get past/future record
+        seconds (float): Seconds to be referenced past/future record
 
     Returns:
         DynamicObject: Converted dynamic object class
     """
-
     position_: Tuple[float, float, float] = tuple(object_box.center.tolist())  # type: ignore
     orientation_: Quaternion = object_box.orientation
     size_: Tuple[float, float, float] = tuple(object_box.wlh.tolist())  # type: ignore
@@ -325,26 +343,154 @@ def _convert_nuscenes_box_to_dynamic_object(
         count_label_number=True,
     )
 
-    # tracking data
-    if EvaluationTask.TRACKING in evaluation_tasks:
-        raise NotImplementedError()
+    sample_annotation_: dict = nusc.get("sample_annotation", object_box.token)
+    pointcloud_num_: int = sample_annotation_["num_lidar_pts"]
+    velocity_: Tuple[float, float, float] = tuple(
+        nusc.box_velocity(sample_annotation_["token"]).tolist()
+    )
 
-    # prediction data
-    if EvaluationTask.PREDICTION in evaluation_tasks:
-        raise NotImplementedError()
+    if evaluation_task == EvaluationTask.TRACKING:
+        tracked_positions, tracked_orientations, tracked_sizes = _get_tracking_data(
+            helper,
+            instance_token,
+            sample_token,
+            seconds,
+        )
+    else:
+        tracked_positions = None
+        tracked_orientations = None
+        tracked_sizes = None
+
+    if evaluation_task == EvaluationTask.PREDICTION:
+        pass
 
     dynamic_object = DynamicObject(
         unix_time=unix_time,
         position=position_,
         orientation=orientation_,
         size=size_,
-        velocity=velocity,
+        velocity=velocity_,
         semantic_score=semantic_score_,
         semantic_label=autoware_label_,
-        pointcloud_num=pointcloud_num,
+        pointcloud_num=pointcloud_num_,
         uuid=instance_token,
+        tracked_positions=tracked_positions,
+        tracked_orientations=tracked_orientations,
+        tracked_sizes=tracked_sizes,
     )
     return dynamic_object
+
+
+def _get_sample_boxes(
+    nusc: NuScenes,
+    frame_data: Dict[str, Any],
+    frame_id: str,
+    use_sensor_frame: bool = True,
+) -> Tuple[str, List[Box], np.ndarray]:
+    """[summary]
+    Get bbox from frame data.
+
+    Args:
+        nusc (NuScenes): NuScenes object.
+        frame_data (Dict[str, Any]):
+        frame_id (str): base_link or map.
+
+    Returns:
+        lidar_path (str)
+        object_boxes (List[Box])
+        ego2map (np.ndarray)
+        use_sensor_frame (bool): The fla
+
+    Raises:
+        ValueError: If got unexpected frame_id except of base_link or map.
+    """
+    lidar_path: str
+    object_boxes: List[Box]
+    if frame_id == "base_link":
+        # Get boxes moved to ego vehicle coord system.
+        lidar_path, object_boxes, _ = nusc.get_sample_data(frame_data["token"])
+    elif frame_id == "map":
+        # Get boxes map based coord system.
+        lidar_path = nusc.get_sample_data_path(frame_data["token"])
+        object_boxes = nusc.get_boxes(frame_data["token"])
+    else:
+        raise ValueError(f"Expected frame_id base_link or map, but got {frame_id}")
+
+    # Get a sensor2map transform matrix
+    vehicle2map = np.eye(4)
+    vehicle_pose = nusc.get("ego_pose", frame_data["ego_pose_token"])
+    vehicle2map[:3, :3] = Quaternion(vehicle_pose["rotation"]).rotation_matrix
+    vehicle2map[:3, 3] = vehicle_pose["translation"]
+
+    if use_sensor_frame:
+        sensor2vehicle = np.eye(4)
+        sensor_pose = nusc.get("calibrated_sensor", frame_data["calibrated_sensor_token"])
+        sensor2vehicle[:3, :3] = Quaternion(sensor_pose["rotation"]).rotation_matrix
+        sensor2vehicle[:3, 3] = sensor_pose["translation"]
+        ego2map: np.ndarray = vehicle2map.dot(sensor2vehicle)
+    else:
+        ego2map: np.ndarray = vehicle2map
+
+    return lidar_path, object_boxes, ego2map
+
+
+def _get_tracking_data(
+    helper: PredictHelper,
+    instance_token: str,
+    sample_token: str,
+    seconds: float,
+) -> Tuple[List[Tuple[float, float, float]], List[Quaternion], List[Tuple[float, float, float]]]:
+    """Get tracking data with PredictHelper.get_past_for_agent()
+
+    Args:
+        helper (PredictHelper): PredictHelper instance.
+        instance_token (str): The unique token to access to instance.
+        sample_token (str): The unique Token to access to sample.
+        seconds (float): Seconds to be referenced.[s]
+
+    Returns:
+        past_positions (List[Tuple[float, float, float]])
+        past_orientations (List[Quaternion])
+        past_sizes (List[Tuple[float, float]]])
+    """
+    past_records_: List[Dict[str, Any]] = helper.get_past_for_agent(
+        instance_token,
+        sample_token,
+        seconds=seconds,
+        in_agent_frame=True,
+        just_xy=False,
+    )
+    past_positions: List[Tuple[float, float, float]] = []
+    past_orientations: List[Quaternion] = []
+    past_sizes: List[Tuple[float, float, float]] = []
+    for record_ in past_records_:
+        past_positions.append(record_["translation"])
+        past_orientations.append(Quaternion(record_["rotation"]))
+        past_sizes.append(record_["size"])
+
+    return past_positions, past_orientations, past_sizes
+
+
+def _get_prediction_data(
+    helper: PredictHelper,
+    instance_token: str,
+    sample_token: str,
+    seconds: str,
+):
+    """Get prediction data with PredictHelper.get_future_for_agent()
+
+    Args:
+        helper (PredictHelper): PredictHelper instance.
+        instance_token (str): The unique token to access to instance.
+        sample_token (str): The unique token to access to sample.
+        seconds (float): Seconds to be referenced.[s]
+
+    Returns:
+        future_positions (Optional[List[Tuple[float, float, float]]])
+        future_orientations (Optional[List[Tuple[float, float, float]]])
+        future_sizes (Optional[List[Tuple[float, float, float]]])
+    """
+    pass
 
 
 def get_now_frame(

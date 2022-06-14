@@ -1,5 +1,6 @@
 from typing import List
 from typing import Optional
+from typing import Union
 
 from awml_evaluation.common.label import AutowareLabel
 
@@ -71,3 +72,100 @@ def get_label_threshold(
         label_index: int = target_labels.index(semantic_label)
         label_threshold = threshold_list[label_index]
     return label_threshold
+
+
+def set_thresholds(
+    thresholds: Union[List[List[float]], List[float]],
+    target_objects_num: int,
+) -> List[List[float]]:
+    """[summary]
+    Set List[List[float]] thresholds
+    If the threshold is List[float], convert to List[List[float]].
+
+    Args:
+        thresholds (Union[List[List[float]], List[float]]): THresholds to convert
+        target_objects_num (int): The number of targets
+
+    Returns:
+        List[List[float]]: Thresholds list
+
+    Examples:
+        _set_thresholds([1.0, 2.0], 3)
+        # [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0]]
+        _set_thresholds([[1.0, 2.0], [3.0, 4.0]] 2)
+        # [[1.0, 2.0], [3.0, 4.0]]
+    """
+    assert len(thresholds) > 0, "The list of thresholds must be set, but got 0."
+
+    thresholds_list: List[List[float]] = []
+    if isinstance(thresholds[0], (int, float)):
+        for element in thresholds:
+            thresholds_list.append([element] * target_objects_num)
+    elif isinstance(thresholds[0], list):
+        assert len(thresholds) * target_objects_num == sum(
+            [len(e) for e in thresholds]
+        ), f"Invalid input: thresholds: {thresholds}, target_object_num: {target_objects_num}"
+        thresholds_list = thresholds  # type: ignore
+    else:
+        raise ThresholdsError(f"Unexpected type: {type(thresholds[0])}")
+    return thresholds_list
+
+
+class ThresholdsError(Exception):
+    def __init__(self, message) -> None:
+        super().__init__(message)
+
+
+def check_thresholds(
+    thresholds: List[float],
+    target_labels: List[AutowareLabel],
+    exception: Exception = ThresholdsError,
+) -> List[float]:
+    """[summary]
+    Check the config and set the thresholds.
+
+    Args:
+        thresholds (Optional[List[float]]): Thresholds
+        target_labels (List[AutowareLabel]): Target labels
+        exception (Exception): The exception class. Defaults ThresholdError.
+
+    Raises:
+        ThresholdsError: Error for use case thresholds
+
+    Returns:
+        List[Optional[List[float]]]: A thresholds
+    """
+    if len(thresholds) != len(target_labels):
+        raise exception(
+            "Error: Thresholds is not proper! \
+            The length of the thresholds is not same as target labels",
+        )
+    return thresholds
+
+
+def check_thresholds_list(
+    thresholds_list: List[List[float]],
+    target_labels: List[AutowareLabel],
+    exception: Exception = ThresholdsError,
+) -> List[List[float]]:
+    """[summary]
+    Check the config and set the thresholds.
+
+    Args:
+        thresholds_list (List[List[float]]): A thresholds list.
+        target_labels (List[AutowareLabel]): Target labels.
+        exception (Exception): The exception class. Defaults ThresholdError.
+
+    Raises:
+        MetricThresholdsError: Error for metrics thresholds
+
+    Returns:
+        List[List[float]]: A thresholds list
+    """
+    for thresholds in thresholds_list:
+        if len(thresholds) != 0 and len(thresholds) != len(target_labels):
+            raise exception(
+                "Error: Metrics threshold is not proper! \
+                The length of the threshold is not same as target labels"
+            )
+    return thresholds_list

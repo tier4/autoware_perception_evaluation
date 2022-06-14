@@ -12,9 +12,9 @@ from awml_evaluation.util.debug import get_objects_with_difference
 
 class TestIou3dMatching(unittest.TestCase):
     def setUp(self):
-        self.dummy_predicted_objects: List[DynamicObject] = []
+        self.dummy_estimated_objects: List[DynamicObject] = []
         self.dummy_ground_truth_objects: List[DynamicObject] = []
-        self.dummy_predicted_objects, self.dummy_ground_truth_objects = make_dummy_data()
+        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
     def test_get_height_intersection(self):
         """[summary]
@@ -38,11 +38,11 @@ class TestIou3dMatching(unittest.TestCase):
                     diff_distance=(0.0, 0.0, diff_distance),
                     diff_yaw=0,
                 )
-                for predicted_object, ground_truth_object in zip(
+                for estimated_object, ground_truth_object in zip(
                     diff_distance_dummy_ground_truth_objects, self.dummy_ground_truth_objects
                 ):
                     height_intersection = _get_height_intersection(
-                        predicted_object,
+                        estimated_object,
                         ground_truth_object,
                     )
                     self.assertAlmostEqual(height_intersection, ans_height_intersection)
@@ -68,10 +68,10 @@ class TestIou3dMatching(unittest.TestCase):
                     diff_distance=(diff_distance, diff_distance, diff_distance),
                     diff_yaw=0,
                 )
-                for predicted_object, ground_truth_object in zip(
+                for estimated_object, ground_truth_object in zip(
                     diff_distance_dummy_ground_truth_objects, self.dummy_ground_truth_objects
                 ):
-                    intersection = _get_volume_intersection(predicted_object, ground_truth_object)
+                    intersection = _get_volume_intersection(estimated_object, ground_truth_object)
                     self.assertAlmostEqual(intersection, ans_intersection)
 
     def test_get_iou_3d_matching(self):
@@ -95,10 +95,10 @@ class TestIou3dMatching(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                for predicted_object, ground_truth_object in zip(
+                for estimated_object, ground_truth_object in zip(
                     diff_x_dummy_ground_truth_objects, self.dummy_ground_truth_objects
                 ):
-                    iou_3d = IOU3dMatching(predicted_object, ground_truth_object)
+                    iou_3d = IOU3dMatching(estimated_object, ground_truth_object)
                     self.assertAlmostEqual(iou_3d.value, ans_iou_3d)
 
             with self.subTest("Test diff_z get_iou_3d."):
@@ -109,10 +109,10 @@ class TestIou3dMatching(unittest.TestCase):
                     diff_distance=(0.0, 0.0, diff_distance),
                     diff_yaw=0,
                 )
-                for predicted_object, ground_truth_object in zip(
+                for estimated_object, ground_truth_object in zip(
                     diff_z_dummy_ground_truth_objects, self.dummy_ground_truth_objects
                 ):
-                    iou_3d = IOU3dMatching(predicted_object, ground_truth_object)
+                    iou_3d = IOU3dMatching(estimated_object, ground_truth_object)
                     self.assertAlmostEqual(iou_3d.value, ans_iou_3d)
 
 

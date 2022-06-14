@@ -47,7 +47,7 @@ def to_bev(point_1: np.ndarray) -> np.ndarray:
     (x, y, z) -> (x, y)
     Args:
          point_1 (numpy.ndarray[3,]): A point
-    Returns: numpy.ndarra[2,]: The 2d point of point_1.
+    Returns: numpy.ndarray[2,]: The 2d point of point_1.
     """
     if not len(point_1) == 3:
         raise RuntimeError(f"The length of a point is {len(point_1)}, it needs 3.")
@@ -84,7 +84,7 @@ def crop_pointcloud(
 
     # crop with polygon in xy-plane
     num_vertices = len(area)
-    cnts_arr_: np.ndarray = np.zeros(pointcloud.shape[0], dtype=np.uint8)
+    cnt_arr_: np.ndarray = np.zeros(pointcloud.shape[0], dtype=np.uint8)
     for i in range(num_vertices // 2 - 1):
         flags_ = ((area[i][1] <= pointcloud[:, 1]) * (area[i + 1][1] > pointcloud[:, 1])) + (
             (area[i][1] > pointcloud[:, 1]) * (area[i + 1][1] <= pointcloud[:, 1])
@@ -96,9 +96,9 @@ def crop_pointcloud(
             vt = pointcloud[:, 0]
 
         flags_ *= pointcloud[:, 0] < (area[i][0] + (vt * (area[i + 1][0] - area[i][0])))
-        cnts_arr_[flags_] += 1
+        cnt_arr_[flags_] += 1
 
-    xy_cropped: np.ndarray = pointcloud[cnts_arr_ % 2 != 0]
+    xy_cropped: np.ndarray = pointcloud[cnt_arr_ % 2 != 0]
 
     return xy_cropped[(z_min <= xy_cropped[:, 2]) * (z_max >= xy_cropped[:, 2])]
 

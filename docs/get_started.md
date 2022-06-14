@@ -70,9 +70,10 @@ repositories:
 ## 実装
 
 - ライブラリ or ROS パッケージとして使う場合
-  - <https://github.com/tier4/AWMLevaluation/blob/main/awml_evaluation/test/lsim.py> を参照
+  - Perception: [awml_evaluation/test/perception_lsim.py](../awml_evaluation/test/perception_lsim.py)
+  - Sensing: [awml_evaluation/test/sensing_lsim.py](../awml_evaluation/test/sensing_lsim.py)
 
 ## その他の case
 
-- Perception: <https://github.com/tier4/AWMLevaluation/blob/main/docs/perception/perception_other_cases.md>を参照
-- Sensing: <https://github.com/tier4/AWMLevaluation/blob/main/docs/sensing/sensing_other_cases.md>を参照
+- Perception: [Perception Other Case](./perception/perception_other_cases.md)を参照
+- Sensing: [Sensing Other Case](./sensing/sensing_other_cases.md)を参照

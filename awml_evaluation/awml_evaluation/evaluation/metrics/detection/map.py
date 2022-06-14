@@ -1,15 +1,12 @@
-from logging import getLogger
 from typing import List
 
+from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.label import AutowareLabel
-from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.metrics.detection.ap import Ap
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-
-logger = getLogger(__name__)
 
 
 class MapConfig:
@@ -21,7 +18,7 @@ class MapConfig:
         self.matching_mode (MatchingMode):
                 Matching mode like distance between the center of the object, 3d IoU
         self.matching_threshold_list (List[float]):
-                Matching thresholds between the predicted object and ground truth for each label
+                Matching thresholds between the estimated object and ground truth for each label
     """
 
     def __init__(
@@ -37,7 +34,7 @@ class MapConfig:
             matching_mode (MatchingMode):
                     Matching mode like distance between the center of the object, 3d IoU.
             matching_threshold_list (List[float]):
-                    Matching thresholds between the predicted object and ground truth object
+                    Matching thresholds between the estimated object and ground truth object
                     for each label.
         """
         self.target_labels: List[AutowareLabel] = target_labels
@@ -57,8 +54,8 @@ class Map:
 
     def __init__(
         self,
-        object_results: List[DynamicObjectWithPerceptionResult],
-        ground_truth_objects: List[DynamicObject],
+        object_results: List[List[DynamicObjectWithPerceptionResult]],
+        frame_ground_truths: List[FrameGroundTruth],
         target_labels: List[AutowareLabel],
         max_x_position_list: List[float],
         max_y_position_list: List[float],
@@ -68,8 +65,8 @@ class Map:
         """[summary]
 
         Args:
-            object_results (DynamicObjectWithPerceptionResult): The list of object results
-            ground_truth_objects (List[DynamicObject]) : The ground truth objects for the frame
+            object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results
+            ground_truth_objects (List[FrameGroundTruth]) : The list of ground truth for each frame
             target_labels (List[AutowareLabel]): Target labels to evaluate mAP
             max_x_position_list (List[float]]):
                     The threshold list of maximum x-axis position for each object.
@@ -89,9 +86,12 @@ class Map:
                     and IoU of the object is higher than "matching_threshold",
                     this function appends to return objects.
         """
-        if not target_labels:
-            logger.error(f"target_labels is empty ({target_labels})")
-            return
+        assert (
+            len(target_labels)
+            == len(max_x_position_list)
+            == len(max_y_position_list)
+            == len(matching_threshold_list)
+        )
 
         self.map_config = MapConfig(
             target_labels=target_labels,
@@ -110,7 +110,7 @@ class Map:
             ap_ = Ap(
                 tp_metrics=TPMetricsAp(),
                 object_results=object_results,
-                ground_truth_objects=ground_truth_objects,
+                frame_ground_truths=frame_ground_truths,
                 target_labels=[target_label],
                 max_x_position_list=[max_x_position],
                 max_y_position_list=[max_y_position],
@@ -137,7 +137,7 @@ class Map:
             aph_ = Ap(
                 tp_metrics=TPMetricsAph(),
                 object_results=object_results,
-                ground_truth_objects=ground_truth_objects,
+                frame_ground_truths=frame_ground_truths,
                 target_labels=[target_label],
                 max_x_position_list=[max_x_position],
                 max_y_position_list=[max_y_position],
@@ -152,3 +152,43 @@ class Map:
         for aph in self.aphs:
             sum_aph += aph.ap
         self.maph: float = sum_aph / len(target_labels)
+
+    def __str__(self) -> str:
+        """__str__ method"""
+
+        str_: str = "\n"
+        str_ += f"mAP: {self.map:.3f}, mAPH: {self.maph:.3f} "
+        str_ += f"({self.map_config.matching_mode.value})\n"
+        # Table
+        str_ += "\n"
+        # label
+        str_ += "|      Label |"
+        target_str: str
+        for ap_ in self.aps:
+            target_str = ""
+            for target in ap_.target_labels:
+                target_str += target.value
+            str_ += f" {target_str}({ap_.matching_threshold_list}) | "
+        str_ += "\n"
+        str_ += "| :--------: |"
+        for ap_ in self.aps:
+            str_ += " :---: |"
+        str_ += "\n"
+        str_ += "| Predict_num |"
+        for ap_ in self.aps:
+            str_ += f" {ap_.objects_results_num} |"
+        # Each label result
+        str_ += "\n"
+        str_ += "|         AP |"
+        for ap_ in self.aps:
+            str_ += f" {ap_.ap:.3f} | "
+        str_ += "\n"
+        str_ += "|        APH |"
+        for aph_ in self.aphs:
+            target_str = ""
+            for target in aph_.target_labels:
+                target_str += target.value
+            str_ += f" {aph_.ap:.3f} | "
+        str_ += "\n"
+
+        return str_

@@ -1,11 +1,13 @@
-# awml_evaluator
+# awml_evaluation
 
-## awml_evaluator
+awml_evaluation is a tool to evaluate perception/sensing result.
+
+## awml_evaluation
 
 - [Contribution](docs/contribution.md)
 - [Release Note](docs/release_note.md)
 
-### Document
+## Documents
 
 - Get started
 
