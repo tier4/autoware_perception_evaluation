@@ -10,7 +10,7 @@ logger = getLogger(__name__)
 
 class AutowareLabel(Enum):
     """[summary]
-    Autoware lable enum.
+    Autoware label enum.
     See https://github.com/tier4/autoware_iv_msgs/blob/main/autoware_perception_msgs/msg/object_recognition/Semantic.msg
     """
 
@@ -32,7 +32,7 @@ class Label:
     Attributes:
         self.autoware_label (AutowareLabel): Corresponded Autoware label
         label (str): Label before converted
-        num (int): The number of a lable
+        num (int): The number of a label
     """
 
     autoware_label: AutowareLabel

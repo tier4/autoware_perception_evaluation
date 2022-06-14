@@ -17,9 +17,9 @@ from awml_evaluation.util.debug import get_objects_with_difference
 
 class TestAp(unittest.TestCase):
     def setUp(self):
-        self.dummy_predicted_objects: List[DynamicObject] = []
+        self.dummy_estimated_objects: List[DynamicObject] = []
         self.dummy_ground_truth_objects: List[DynamicObject] = []
-        self.dummy_predicted_objects, self.dummy_ground_truth_objects = make_dummy_data()
+        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
@@ -60,7 +60,7 @@ class TestAp(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 ap: Ap = Ap(
@@ -128,7 +128,7 @@ class TestAp(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_yaw_dummy_ground_truth_objects,
+                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 ap: Ap = Ap(
@@ -160,7 +160,7 @@ class TestAp(unittest.TestCase):
         Test AP and APH with center distance matching for random objects.
 
         test objects:
-            dummy_predicted_objects (List[DynamicObject])
+            dummy_estimated_objects (List[DynamicObject])
             dummy_ground_truth_objects (List[DynamicObject])
 
         test target_labels:
@@ -169,14 +169,14 @@ class TestAp(unittest.TestCase):
         test patterns:
             Check if ap and aph are almost correct.
         """
-        # ap and aph is 0.0 since no MOTORBIKE in the predicted_objects
+        # ap and aph is 0.0 since no MOTORBIKE in the estimated_objects
         ans_ap: float = 0.0
         ans_aph: float = 0.0
 
         object_results: List[
             DynamicObjectWithPerceptionResult
         ] = PerceptionFrameResult.get_object_results(
-            predicted_objects=self.dummy_predicted_objects,
+            estimated_objects=self.dummy_estimated_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,
         )
         ap: Ap = Ap(
@@ -234,7 +234,7 @@ class TestAp(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 ap: Ap = Ap(
@@ -312,7 +312,7 @@ class TestAp(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_yaw_dummy_ground_truth_objects,
+                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 ap: Ap = Ap(
@@ -357,7 +357,7 @@ class TestAp(unittest.TestCase):
         object_results: List[
             DynamicObjectWithPerceptionResult
         ] = PerceptionFrameResult.get_object_results(
-            predicted_objects=self.dummy_predicted_objects,
+            estimated_objects=self.dummy_estimated_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,
         )
         ap: Ap = Ap(
@@ -415,7 +415,7 @@ class TestAp(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 ap: Ap = Ap(
@@ -488,7 +488,7 @@ class TestAp(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_yaw_dummy_ground_truth_objects,
+                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 ap: Ap = Ap(
@@ -535,7 +535,7 @@ class TestAp(unittest.TestCase):
         object_results: List[
             DynamicObjectWithPerceptionResult
         ] = PerceptionFrameResult.get_object_results(
-            predicted_objects=self.dummy_predicted_objects,
+            estimated_objects=self.dummy_estimated_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,
         )
         ap: Ap = Ap(
@@ -595,7 +595,7 @@ class TestAp(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 ap: Ap = Ap(
@@ -643,7 +643,7 @@ class TestAp(unittest.TestCase):
             (-math.pi / 2.0, 1.0, 0.25),
             # Given opposite direction, aph is 0.0.
             (math.pi, 1.0, 0.0),
-            (-math.pi, 1.0, 0.0),
+            (-math.pi, 0.0, 0.0),
             # Given diff_yaw is pi/4, aph is 0.75**2 times ap
             (math.pi / 4, 1.0, 0.5625),
             (-math.pi / 4, 1.0, 0.5625),
@@ -664,7 +664,7 @@ class TestAp(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_yaw_dummy_ground_truth_objects,
+                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 ap: Ap = Ap(
@@ -702,21 +702,22 @@ class TestAp(unittest.TestCase):
         test patterns:
             Check if ap and aph are almost correct.
         """
-        # dummy_predicted_objects[0] (CAR) and dummy_ground_truth_objects[0] (CAR):
-        #   sorted pr_corner_points[:2] = [(0.25, 0.25, 1.0), (0.25, 1.75, 1.0)]
-        #   sorted gt_corner_points[:2] = [(0.5, 0.5, 1.0), (1.5, 0.5, 1.0)]
-        #   plane_distance = 1.2747548783981963
-        # plane_distance is over the threshold
-        ans_ap: float = 0.0
-        ans_aph: float = 0.0
+        # dummy_estimated_objects[0] (CAR) and dummy_ground_truth_objects[0] (CAR):
+        #   pr_corner_points(left, right) = [(0.25, 0.25, 1.0), (0.25, 1.75, 1.0)]
+        #   gt_corner_points(left, right) = [(0.5, 0.5, 1.0), (0.5, 1.5, 1.0)]
+        #   plane_distance = 0.3535533905932738
+        ans_ap_tp: float = 1.0
+        ans_ap_tn: float = 0.0
+        ans_aph_tp: float = 1.0
+        ans_aph_tn: float = 0.0
 
         object_results: List[
             DynamicObjectWithPerceptionResult
         ] = PerceptionFrameResult.get_object_results(
-            predicted_objects=self.dummy_predicted_objects,
+            estimated_objects=self.dummy_estimated_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,
         )
-        ap: Ap = Ap(
+        ap_tp: Ap = Ap(
             tp_metrics=TPMetricsAp(),
             object_results=object_results,
             ground_truth_objects=self.dummy_ground_truth_objects,
@@ -726,7 +727,7 @@ class TestAp(unittest.TestCase):
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[1.0],
         )
-        aph: Ap = Ap(
+        aph_tp: Ap = Ap(
             tp_metrics=TPMetricsAph(),
             object_results=object_results,
             ground_truth_objects=self.dummy_ground_truth_objects,
@@ -736,9 +737,30 @@ class TestAp(unittest.TestCase):
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[1.0],
         )
-
-        self.assertAlmostEqual(ap.ap, ans_ap)
-        self.assertAlmostEqual(aph.ap, ans_aph)
+        ap_tn: Ap = Ap(
+            tp_metrics=TPMetricsAp(),
+            object_results=object_results,
+            ground_truth_objects=self.dummy_ground_truth_objects,
+            target_labels=self.target_labels,
+            max_x_position_list=self.max_x_position_list,
+            max_y_position_list=self.max_y_position_list,
+            matching_mode=MatchingMode.PLANEDISTANCE,
+            matching_threshold_list=[0.2],
+        )
+        aph_tn: Ap = Ap(
+            tp_metrics=TPMetricsAph(),
+            object_results=object_results,
+            ground_truth_objects=self.dummy_ground_truth_objects,
+            target_labels=self.target_labels,
+            max_x_position_list=self.max_x_position_list,
+            max_y_position_list=self.max_y_position_list,
+            matching_mode=MatchingMode.PLANEDISTANCE,
+            matching_threshold_list=[0.2],
+        )
+        self.assertAlmostEqual(ap_tp.ap, ans_ap_tp)
+        self.assertAlmostEqual(aph_tp.ap, ans_aph_tp)
+        self.assertAlmostEqual(ap_tn.ap, ans_ap_tn)
+        self.assertAlmostEqual(aph_tn.ap, ans_aph_tn)
 
 
 if __name__ == "__main__":

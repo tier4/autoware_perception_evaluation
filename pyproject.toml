@@ -1,12 +1,15 @@
 [tool.poetry]
-name = "awmlevaluation"
-version = "1.4.0"
+name = "awml_evaluation"
+version = "1.5.0"
 description = ""
-authors = ["Satoshi Tanaka <satoshi.tanaka@tier4.jp>", "Kotaro Uetake <kotaro.uetake@tier4.jp>"]
+authors = ["Satoshi Tanaka <satoshi.tanaka@tier4.jp>", "Kotaro Uetake <kotaro.uetake@tier4.jp>", "Shunsuke Miura <shunsuke.miura@tier4.jp>"]
 license = "Apache V2"
+packages = [
+	 { include = "awml_evaluation", from = "awml_evaluation"},
+]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7.11"
 nuscenes-devkit = "^1.1.9"
 tqdm = "^4.62.3"
 
@@ -16,6 +19,8 @@ flake8 = "^4.0.1"
 pep8-naming = "^0.12.1"
 isort = "^5.9.3"
 pre-commit = "^2.10"
+pytest = "^7.1.2"
+pydocstyle = "^6.1.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -1,16 +1,25 @@
-# awml_evaluator
+# awml_evaluation
 
-## awml_evaluator
+awml_evaluation is a tool to evaluate perception/sensing result.
+
+## awml_evaluation
 
 - [Contribution](docs/contribution.md)
 - [Release Note](docs/release_note.md)
 
-### Document
+## Documents
+
+- Get started
+
+  - [Get started for basic usage of AWMLevaluation in both perception and sensing](docs/get_started.md)
 
 - Perception evaluation
+
   - [Design document for perception evaluation](docs/perception/design_document_perception.md)
-  - [Get started for perception evaluation](docs/perception/get_started_perception.md)
+  - [Other evaluation cases in perception](docs/perception/perception_other_cases.md)
   - [FAQ for perception](docs/perception/faq_perception.md)
+
 - Sensing evaluation
   - [Design document for sensing evaluation](docs/sensing/design_document_sensing.md)
+  - [Other evaluation cases in sensing](docs/sensing/sensing_other_cases.md)
   - [FAQ for sensing](docs/sensing/faq_sensing.md)

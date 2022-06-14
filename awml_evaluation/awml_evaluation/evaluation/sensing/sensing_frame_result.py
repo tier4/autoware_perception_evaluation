@@ -18,7 +18,7 @@ class SensingFrameResult:
         self.unix_time (int): Unix time [us]
         self.frame_name (str): The name of frame.
         self.detection_success_results (list[DynamicObjectWithSensingResult]):
-            The container for succeded results of detection.
+            The container for succeeded results of detection.
         self.detection_fail_results (list[DynamicObjectWithSensingResult]):
             The container for failed results of detection.
         self.pointcloud_failed_non_detection (np.ndarray): The array of pointcloud for non-detected.

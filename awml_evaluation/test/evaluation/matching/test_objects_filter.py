@@ -17,9 +17,9 @@ from awml_evaluation.util.debug import get_objects_with_difference
 
 class TestObjectsFilter(unittest.TestCase):
     def setUp(self):
-        self.dummy_predicted_objects: List[DynamicObject] = []
+        self.dummy_estimated_objects: List[DynamicObject] = []
         self.dummy_ground_truth_objects: List[DynamicObject] = []
-        self.dummy_predicted_objects, self.dummy_ground_truth_objects = make_dummy_data()
+        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
@@ -67,7 +67,7 @@ class TestObjectsFilter(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 filtered_object_results = filter_object_results(
@@ -138,12 +138,12 @@ class TestObjectsFilter(unittest.TestCase):
         """
         # patterns: (diff_distance, List[ans_tp_idx])
         patterns: List[Tuple[float, List[int]]] = [
-            # Given no diff_distance, all predicted_objects are tp.
+            # Given no diff_distance, all estimated_objects are tp.
             (0.0, [0, 1, 2, 3]),
-            # Given 1.5 diff_distance for one axis, two predicted_objects are tp
-            # and the other predicted_objects are fp since they have wrong target_labels.
+            # Given 1.5 diff_distance for one axis, two estimated_objects are tp
+            # and the other estimated_objects are fp since they have wrong target_labels.
             (1.5, [0, 1]),
-            # Given 2.5 diff_distance for one axis, all predicted_objects are fp
+            # Given 2.5 diff_distance for one axis, all estimated_objects are fp
             # since they are beyond matching_threshold.
             (2.5, []),
         ]
@@ -159,7 +159,7 @@ class TestObjectsFilter(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 tp_results, fp_results = divide_tp_fp_objects(
@@ -219,7 +219,7 @@ class TestObjectsFilter(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 fn_objects = get_fn_objects(
@@ -280,7 +280,7 @@ class TestObjectsFilter(unittest.TestCase):
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
-                    predicted_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 fn_objects = get_fn_objects(

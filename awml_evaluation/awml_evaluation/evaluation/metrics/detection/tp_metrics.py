@@ -37,6 +37,7 @@ class TPMetricsAp(TPMetrics):
     """
 
     def __init__(self) -> None:
+        super().__init__()
         self.mode: str = "TPMetricsAp"
 
     def get_value(
@@ -62,6 +63,7 @@ class TPMetricsAph(TPMetrics):
     """
 
     def __init__(self) -> None:
+        super().__init__()
         self.mode: str = "TPMetricsAph"
 
     def get_value(
@@ -81,11 +83,11 @@ class TPMetricsAph(TPMetrics):
                    The minimum rate is 0 and maximum rate is 1.
                    0 means the heading difference is pi, and 1 means no heading difference.
 
-        Refference:
+        Reference:
                 https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/metrics/metrics_utils.cc#L101-L116
         """
 
-        pd_heading: float = object_result.predicted_object.get_heading_bev()
+        pd_heading: float = object_result.estimated_object.get_heading_bev()
         gt_heading: float = object_result.ground_truth_object.get_heading_bev()
         diff_heading: float = abs(pd_heading - gt_heading)
 
@@ -94,3 +96,25 @@ class TPMetricsAph(TPMetrics):
             diff_heading = 2.0 * pi - diff_heading
         # Clamp the range to avoid numerical errors.
         return min(1.0, max(0.0, 1.0 - diff_heading / pi))
+
+
+class TPMetricsConfidence(TPMetrics):
+    """
+    Confidence TP class
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.mode: str = "TPMetricsConfidence"
+
+    def get_value(self, object_result: DynamicObjectWithPerceptionResult) -> float:
+        """[summary]
+        Get TP (True positive) value, the heading similarity rate using with confidence.
+
+        Args:
+            object_result (DynamicObjectWithPerceptionResult): The object result
+
+        Returns:
+            float: TP (True positive) value, confidence score of estimated object.
+        """
+        return object_result.estimated_object.semantic_score

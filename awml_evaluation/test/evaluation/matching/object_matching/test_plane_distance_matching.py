@@ -11,9 +11,9 @@ from awml_evaluation.util.debug import get_objects_with_difference
 
 class TestPlaneDistanceMatching(unittest.TestCase):
     def setUp(self):
-        self.dummy_predicted_objects: List[DynamicObject] = []
+        self.dummy_estimated_objects: List[DynamicObject] = []
         self.dummy_ground_truth_objects: List[DynamicObject] = []
-        self.dummy_predicted_objects, self.dummy_ground_truth_objects = make_dummy_data()
+        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
     def test_plane_distance_matching(self):
         """[summary]
@@ -49,13 +49,13 @@ class TestPlaneDistanceMatching(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                for predicted_object, ground_truth_object, ans_plane_distance in zip(
+                for estimated_object, ground_truth_object, ans_plane_distance in zip(
                     diff_distance_dummy_ground_truth_objects,
                     fixed_dummy_ground_truth_objects,
                     ans_plane_distance_list,
                 ):
                     plane_distance = PlaneDistanceMatching(
-                        predicted_object,
+                        estimated_object,
                         ground_truth_object,
                     )
                     self.assertAlmostEqual(
@@ -68,33 +68,33 @@ class TestPlaneDistanceMatching(unittest.TestCase):
         Test calculating plane distance for use case evaluation.
 
         test objects:
-            dummy_predicted_objects and dummy_ground_truth_objects
+            dummy_estimated_objects and dummy_ground_truth_objects
 
         test patterns:
             Check if plane_distance and ans_plane_distance are equal.
         """
-        # dummy_predicted_objects[0] (CAR) and dummy_ground_truth_objects[0] (CAR):
-        #   sorted pr_corner_points[:2] = [(0.25, 0.25, 1.0), (0.25, 1.75, 1.0)]
-        #   sorted gt_corner_points[:2] = [(0.5, 0.5, 1.0), (1.5, 0.5, 1.0)]
-        #   plane_distance = 1.2747548783981963
-        #
-        # dummy_predicted_objects[1] (BICYCLE) and dummy_ground_truth_objects[1] (BICYCLE):
-        #   sorted pr_corner_points[:2] = [(0.75, -0.75, 1.0), (1.25, -0.75, 1.0)]
-        #   sorted gt_corner_points[:2] = [(0.5, -0.5, 1.0), (1.5, -0.5, 1.0)]
+        # dummy_estimated_objects[0] (CAR) and dummy_ground_truth_objects[0] (CAR):
+        #   pr_corner_points(left, right) = [(0.25, 0.25, 1.0), (0.25, 1.75, 1.0)]
+        #   gt_corner_points(left, right) = [(0.5, 0.5, 1.0), (0.5, 1.5, 1.0)]
         #   plane_distance = 0.3535533905932738
         #
-        # dummy_predicted_objects[2] (PEDESTRIAN) and dummy_ground_truth_objects[2] (CAR):
-        #   sorted pr_corner_points[:2] = [(-0.5, 0.5, 1.0), (-0.5, 1.5, 1.0)]
-        #   sorted gt_corner_points[:2] = [(-0.5, 0.5, 1.0), (-0.5, 1.5, 1.0)]
+        # dummy_estimated_objects[1] (BICYCLE) and dummy_ground_truth_objects[1] (BICYCLE):
+        #   pr_corner_points(left, right) = [(1.25, -0.75, 1.0), (0.75, -0.75, 1.0)]
+        #   gt_corner_points(left, right) = [(1.5, -0.5, 1.0), (0.5, -0.5, 1.0)]
+        #   plane_distance = 0.3535533905932738
+        #
+        # dummy_estimated_objects[2] (PEDESTRIAN) and dummy_ground_truth_objects[2] (CAR):
+        #   pr_corner_points(left, right) = [(-0.5, 0.5, 1.0), (-0.5, 1.5, 1.0)]
+        #   gt_corner_points(left, right) = [(-0.5, 0.5, 1.0), (-0.5, 1.5, 1.0)]
         #   plane_distance = 0.0
 
         # patterns: List[ans_plane_distance]
-        ans_plane_distance_list = [1.2747548783981963, 0.3535533905932738, 0.0]
-        for predicted_object, ground_truth_object, ans_plane_distance in zip(
-            self.dummy_predicted_objects, self.dummy_ground_truth_objects, ans_plane_distance_list
+        ans_plane_distance_list = [0.3535533905932738, 0.3535533905932738, 0.0]
+        for estimated_object, ground_truth_object, ans_plane_distance in zip(
+            self.dummy_estimated_objects, self.dummy_ground_truth_objects, ans_plane_distance_list
         ):
             plane_distance = PlaneDistanceMatching(
-                predicted_object,
+                estimated_object,
                 ground_truth_object,
             )
             self.assertAlmostEqual(
