@@ -2,9 +2,38 @@
 
 - 上ほど新しい
 
-## Now development for develop branch -> v1.5
+## Now development for develop branch -> v1.5.x
 
 ## Release for main branch
+
+### v1.5.0
+
+- <https://github.com/tier4/AWMLevaluation/pull/105>
+  - 【release】v1.5.0 release
+- <https://github.com/tier4/AWMLevaluation/pull/101>
+  - 【機能追加】Tracking 評価メトリクス(CLEAR)の追加
+  - 【改良】基底クラス作成
+  - 【改良】ディレクトリ構造の変更
+  - 【改良】PerceptionEvaluationConfig の引数の変更
+- <https://github.com/tier4/AWMLevaluation/pull/96>
+  - 【機能追加】Plane distance マッチングの際に近傍点の選定方法の変更
+  - 【機能追加】PassFailResult 内で TP オブジェクトの算出機能を追加
+  - 【test 追加】Unit test の追加
+- <https://github.com/tier4/AWMLevaluation/pull/97>
+  - 【chore】python パッケージとして install される際の version 情報を追加
+- <https://github.com/tier4/AWMLevaluation/pull/95>
+  - 【バグ修正】awml_evaluation を python パッケージとして install できるように修正
+- <https://github.com/tier4/AWMLevaluation/pull/94>
+  - 【chore】test 実行のための依存パッケージが poetry install されるように変更
+- <https://github.com/tier4/AWMLevaluation/pull/90>
+  - 【chore】Issue テンプレートの追加
+- <https://github.com/tier4/AWMLevaluation/pull/87>
+  - 【改良】lsim.py 実行時にコマンドライン引数として dataset path を指定するよう変更
+- <https://github.com/tier4/AWMLevaluation/pull/89>
+  - 【バグ修正】get_footprint 関数のバグ修正
+  - 【改良】"LIDAR_CONCAT"だけでなく"LIDAR_TOP"の両方を許容するよう変更
+- <https://github.com/tier4/AWMLevaluation/pull/88>
+  - 【chore】PR テンプレートの追加
 
 ### v1.4.0
 
