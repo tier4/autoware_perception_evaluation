@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "awml_evaluation"
-version = "1.4.0"
+version = "1.5.0"
 description = ""
-authors = ["Satoshi Tanaka <satoshi.tanaka@tier4.jp>", "Kotaro Uetake <kotaro.uetake@tier4.jp>"]
+authors = ["Satoshi Tanaka <satoshi.tanaka@tier4.jp>", "Kotaro Uetake <kotaro.uetake@tier4.jp>", "Shunsuke Miura <shunsuke.miura@tier4.jp>"]
 license = "Apache V2"
 packages = [
 	 { include = "awml_evaluation", from = "awml_evaluation"},
