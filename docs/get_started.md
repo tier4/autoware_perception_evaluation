@@ -25,7 +25,8 @@ pip3 install poetry
 
   ```bash
   cd awml_evaluation
-  poetry run python3 -m test.lsim <DATASET_PATH1> <DATASET_PATH2> ...
+  poetry run python3 -m test.sensing_lsim <DATASET_PATH1> <DATASET_PATH2> ...
+  poetry run python3 -m test.perception_lsim <DATASET_PATH1> <DATASET_PATH2> ...
   ```
 
 - ライブラリとして使用
