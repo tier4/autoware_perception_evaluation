@@ -30,6 +30,36 @@
 
 <!-- Describe how you have tested this PR. -->
 
+- [ ] unit test
+
+<details>
+<pre>
+<code>
+<!-- Please paste test result here. -->
+</code>
+</pre>
+</details>
+
+- [ ] test.sensing_lsim
+
+<details>
+<pre>
+<code>
+<!-- Please paste test result here. -->
+</code>
+</pre>
+</details>
+
+- [ ] test.perception_lsim
+
+<details>
+<pre>
+<code>
+<!-- Please paste test result here. -->
+</code>
+</pre>
+</details>
+
 ## Reference
 
 <!-- Please write external reference if any. -->

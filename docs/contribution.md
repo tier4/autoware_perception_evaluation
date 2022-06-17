@@ -21,7 +21,7 @@ pre-commit run -a
 
 ### Set dataset
 
-- Add scenario.yaml to Tier4 dataset
+- Add scenario.yaml to TIER IV dataset
 
 ```yaml
 ├── AWMLevaluation
@@ -40,20 +40,25 @@ pre-commit run -a
 │       │       └── status.json
 ```
 
+- tips : `202109_3d_cuboid_v2_0_1_sample/60f2669b1070d0002dcdd475` is [here](https://drive.google.com/drive/u/0/folders/1WuMBQld6VPnTZ8ZVLhAJW39R_9B-w2cy) as of 2022/06/16
+
 ### Test for merge to develop branch
 
 - unit test
+  - prerequisite : ROS
 
 ```bash
 cd awml_evaluation
-python3 -m unittest -v
+poetry run python3 -m unittest -v
 ```
 
 - API test
+  - e.g. `<DATASET_PATH1>` : `/dataset_3d/tier4/202109_3d_cuboid_v2_0_1_sample/60f2669b1070d0002dcdd475/`
 
 ```bash
 cd awml_evaluation
-poetry run python3 -m test.lsim
+poetry run python3 -m test.sensing_lsim <DATASET_PATH1> <DATASET_PATH2> ...
+poetry run python3 -m test.perception_lsim <DATASET_PATH1> <DATASET_PATH2> ...
 ```
 
 ### Test for merge to main branch
@@ -145,7 +150,8 @@ Evaluation:
       - pyproject.toml
       - package.xml
     - develop に merge する
-  - 手動 merge merge commit を作って PR ごとの commit を維持する
+  - 手動 merge
+    - merge commit を作って PR ごとの commit を維持する
   - アプリケーションとの結合を行うリリース作業に当たる
 
 ## library の構成について
