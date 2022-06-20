@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from logging import getLogger
 import math
 from typing import List
@@ -151,12 +153,24 @@ class DynamicObject:
             twists=predicted_twists,
         )
 
-    def __eq__(self, other: object) -> bool:
-        eq: bool = True
-        eq = eq and self.semantic_label == other.semantic_label  # type: ignore
-        eq = eq and self.state.position == other.state.position  # type: ignore
-        eq = eq and self.state.orientation == other.state.orientation  # type: ignore
-        return eq
+    def __eq__(self, other: Optional[DynamicObject]) -> bool:
+        """[summary]
+        Check if other equals this object.
+        If other is not None and does NOT has attributes unix_time, semantic_label, state.position, state.orientation \
+        it causes error.
+
+        Returns:
+            bool
+        """
+        if other is None:
+            return False
+        else:
+            eq: bool = True
+            eq = eq and self.unix_time == other.unix_time
+            eq = eq and self.semantic_label == other.semantic_label  # type: ignore
+            eq = eq and self.state.position == other.state.position  # type: ignore
+            eq = eq and self.state.orientation == other.state.orientation  # type: ignore
+            return eq
 
     def get_distance(self) -> float:
         """[summary]
