@@ -14,6 +14,7 @@ class _EvaluationConfigBase(ABC):
 
     Attributes:
         self.dataset_paths (List[str]): The list of dataset path.
+        self.frame_id (str): The frame_id, base_link or map.
         self.does_use_pointcloud (bool): Whether use pointcloud of dataset.
         self.result_root_directory (str): The directory path to save result.
         self.log_directory (str): The directory path to save log.
@@ -55,6 +56,9 @@ class _EvaluationConfigBase(ABC):
 
         # dataset
         self.dataset_paths: List[str] = dataset_paths
+
+        if frame_id not in ("base_link", "map"):
+            raise ValueError(f"Unexpected frame_id: {frame_id}")
         self.frame_id: str = frame_id
         self.does_use_pointcloud: bool = does_use_pointcloud
 

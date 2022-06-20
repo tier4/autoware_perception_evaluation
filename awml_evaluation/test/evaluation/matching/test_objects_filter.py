@@ -52,11 +52,12 @@ class TestObjectsFilter(unittest.TestCase):
             (0.0, [0, 1, 2, 3]),
             # Given 1.5 diff_distance for one axis, two object_results beyond max_pos_distance.
             (1.5, [2, 3]),
-            # Given 2.5 diff_distance for one axis, all object_resultss beyond max_pos_distance.
+            # Given 2.5 diff_distance for one axis, all object_results beyond max_pos_distance.
             (2.5, []),
         ]
-        for diff_distance, ans_idx in patterns:
-            with self.subTest("Test filtered_object_results."):
+        frame_id: str = "base_link"
+        for n, (diff_distance, ans_idx) in enumerate(patterns):
+            with self.subTest(f"Test filtered_object_results: {n + 1}"):
                 diff_distance_dummy_ground_truth_objects: List[
                     DynamicObject
                 ] = get_objects_with_difference(
@@ -71,6 +72,7 @@ class TestObjectsFilter(unittest.TestCase):
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 filtered_object_results = filter_object_results(
+                    frame_id,
                     object_results,
                     self.target_labels,
                     self.max_x_position_list,
@@ -100,8 +102,9 @@ class TestObjectsFilter(unittest.TestCase):
             # Given 2.5 diff_distance for one axis, all objects beyond max_pos_distance.
             (2.5, []),
         ]
-        for diff_distance, ans_idx in patterns:
-            with self.subTest("Test filter_ground_truth_objects."):
+        frame_id: str = "base_link"
+        for n, (diff_distance, ans_idx) in enumerate(patterns):
+            with self.subTest(f"Test filter_ground_truth_objects: {n + 1}"):
                 diff_distance_dummy_ground_truth_objects: List[
                     DynamicObject
                 ] = get_objects_with_difference(
@@ -110,6 +113,7 @@ class TestObjectsFilter(unittest.TestCase):
                     diff_yaw=0,
                 )
                 filtered_objects = filter_ground_truth_objects(
+                    frame_id,
                     diff_distance_dummy_ground_truth_objects,
                     self.target_labels,
                     self.max_x_position_list,
@@ -140,15 +144,15 @@ class TestObjectsFilter(unittest.TestCase):
         patterns: List[Tuple[float, List[int]]] = [
             # Given no diff_distance, all estimated_objects are tp.
             (0.0, [0, 1, 2, 3]),
-            # Given 1.5 diff_distance for one axis, two estimated_objects are tp
-            # and the other estimated_objects are fp since they have wrong target_labels.
-            (1.5, [0, 1]),
+            # Given 1.5 diff_distance for one axis, all estimated_objects are tp
+            # since they are matched by filtering label.
+            (1.5, [0, 1, 2, 3]),
             # Given 2.5 diff_distance for one axis, all estimated_objects are fp
             # since they are beyond matching_threshold.
             (2.5, []),
         ]
-        for diff_distance, ans_tp_idx in patterns:
-            with self.subTest("Test divide_tp_fp_objects."):
+        for n, (diff_distance, ans_tp_idx) in enumerate(patterns):
+            with self.subTest(f"Test divide_tp_fp_objects: {n + 1}"):
                 diff_distance_dummy_ground_truth_objects: List[
                     DynamicObject
                 ] = get_objects_with_difference(
@@ -207,8 +211,8 @@ class TestObjectsFilter(unittest.TestCase):
             (2.5, 2.5, [1, 2, 3]),
         ]
 
-        for x_diff, y_diff, ans_fn_idx in patterns:
-            with self.subTest("Test get_fn_objects."):
+        for n, (x_diff, y_diff, ans_fn_idx) in enumerate(patterns):
+            with self.subTest(f"Test get_fn_objects: {n + 1}"):
                 diff_distance_dummy_ground_truth_objects: List[
                     DynamicObject
                 ] = get_objects_with_difference(
@@ -263,8 +267,8 @@ class TestObjectsFilter(unittest.TestCase):
             # The object results have only one ground truth
             (2.5, 2.5, [1, 2, 3]),
         ]
-        for x_diff, y_diff, ans_fn_idx in patterns:
-            with self.subTest("Test get_fn_objects."):
+        for n, (x_diff, y_diff, ans_fn_idx) in enumerate(patterns):
+            with self.subTest(f"Test get_fn_objects: {n + 1}"):
                 diff_distance_dummy_ground_truth_objects: List[
                     DynamicObject
                 ] = get_objects_with_difference(
