@@ -15,7 +15,12 @@ from awml_evaluation.evaluation.metrics.metrics_score_config import MetricsScore
 
 class TestMetricsScoreConfig(unittest.TestCase):
     def test_check_parameters(self):
-        """Test if it can detect the exception."""
+        """[summary]
+        Test if it can detect the exception.
+
+        test patterns:
+            Check if the exception is raised when wrong key is specified.
+        """
         patterns: List[Tuple[_MetricsConfigBase, Dict[str, Any]]] = [
             (DetectionMetricsConfig, {"foo": 0.0}),
             (

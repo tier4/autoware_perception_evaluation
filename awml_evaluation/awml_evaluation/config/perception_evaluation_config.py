@@ -16,6 +16,9 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
     Evaluation configure class
 
     Attributes:
+    self.dataset_paths (List[str]): The list of dataset path.
+        self.frame_id (str): The frame_id, base_link or map.
+        self.does_use_pointcloud (bool): The boolean flag if load pointcloud data from dataset.
         self.result_root_directory (str): The path to result directory
         self.log_directory (str): The path to sub directory for log
         self.visualization_directory (str): The path to sub directory for visualization
