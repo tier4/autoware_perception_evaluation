@@ -1,4 +1,5 @@
 from test.util.dummy_object import make_dummy_data
+from typing import Dict
 from typing import List
 from typing import Tuple
 import unittest
@@ -140,19 +141,27 @@ class TestObjectsFilter(unittest.TestCase):
             Given diff_distance, check if tp_results and ans_tp_results
             (fp_results and ans_fp_results) are the same.
         """
-        # patterns: (diff_distance, List[ans_tp_idx])
-        patterns: List[Tuple[float, List[int]]] = [
+        # patterns: (diff_distance, List[ans_tp_idx], label_change_dict: Dict[str, str])
+        patterns: List[Tuple[float, List[int], Dict[str, str]]] = [
             # Given no diff_distance, all estimated_objects are tp.
-            (0.0, [0, 1, 2, 3]),
-            # Given 1.5 diff_distance for one axis, all estimated_objects are tp
-            # since they are matched by filtering label.
-            (1.5, [0, 1, 2, 3]),
+            (0.0, [0, 1, 2, 3], {}),
+            # Given no diff_distance and 2 labels changed, 2 estimated_objects are tp.
+            (0.0, [1, 2], {'0': AutowareLabel.UNKNOWN, '3': AutowareLabel.ANIMAL}),
+            # Given 1.5 diff_distance for one axis, all estimated_objects are tp.
+            (1.5, [0, 1, 2, 3], {}),
+            # Given 1.5 diff_distance for one axis and 1 labels changed, 3 estimated_objects are tp.
+            (1.5, [0, 1, 3], {'2': AutowareLabel.UNKNOWN}),
+            # TODO(Shin-kyoto): 以下のtestも通る必要あり．現在，ground truth一つに対しestimated objectが複数紐づくため通らなくなっている
+            # Given 1.5 diff_distance for one axis and 1 labels changed, 3 estimated_objects are tp.
+            # (1.5, [0, 1, 3], {'2' : AutowareLabel.CAR}),
             # Given 2.5 diff_distance for one axis, all estimated_objects are fp
             # since they are beyond matching_threshold.
-            (2.5, []),
+            (2.5, [], {}),
         ]
-        for n, (diff_distance, ans_tp_idx) in enumerate(patterns):
+
+        for n, (diff_distance, ans_tp_idx, label_change_dict) in enumerate(patterns):
             with self.subTest(f"Test divide_tp_fp_objects: {n + 1}"):
+
                 diff_distance_dummy_ground_truth_objects: List[
                     DynamicObject
                 ] = get_objects_with_difference(
@@ -160,6 +169,11 @@ class TestObjectsFilter(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
+
+                # make dummy data with different label
+                for idx, label in label_change_dict.items():
+                    diff_distance_dummy_ground_truth_objects[int(idx)].semantic_label = label
+
                 object_results: List[
                     DynamicObjectWithPerceptionResult
                 ] = PerceptionFrameResult.get_object_results(
@@ -200,15 +214,14 @@ class TestObjectsFilter(unittest.TestCase):
             (0.5, 0.0, []),
             # Given difference (0.0, -0.5), there are no fn.
             (0.0, -0.5, []),
-            # Given difference (1.5, 0.0), two ground_truth_objects are fn
-            # The object results do not have two ground truth
-            (1.5, 0.0, [2, 3]),
-            # Given difference (2.5, 0.0), two ground_truth_objects are fn
-            # The object results have two ground truth
-            (2.5, 0.0, [2, 3]),
-            # Given difference (2.5, 2.5), three ground_truth_objects are fn
-            # The object results have only one ground truth
-            (2.5, 2.5, [1, 2, 3]),
+            # Given difference (1.5, 0.0), there are no fn.
+            (1.5, 0.0, []),
+            # Given difference (2.0, 0.0), all ground_truth_objects are fn
+            (2.0, 0.0, [0, 1, 2, 3]),
+            # Given difference (2.5, 0.0), all ground_truth_objects are fn
+            (2.5, 0.0, [0, 1, 2, 3]),
+            # Given difference (2.5, 2.5), all ground_truth_objects are fn
+            (2.5, 2.5, [0, 1, 2, 3]),
         ]
 
         for n, (x_diff, y_diff, ans_fn_idx) in enumerate(patterns):
@@ -226,9 +239,19 @@ class TestObjectsFilter(unittest.TestCase):
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
+
+                tp_results, _ = divide_tp_fp_objects(
+                    object_results,
+                    self.target_labels,
+                    self.matching_mode,
+                    self.matching_threshold_list,
+                    self.confidence_threshold_list,
+                )
+
                 fn_objects = get_fn_objects(
                     self.dummy_ground_truth_objects,
                     object_results,
+                    tp_results,
                 )
 
                 ans_fn_objects = [
@@ -249,25 +272,30 @@ class TestObjectsFilter(unittest.TestCase):
             Given diff_distance, check if fn_objects and ans_fn_objects are the same.
         """
 
-        # patterns: (x_diff, y_diff, List[ans_fn_idx])
-        patterns: List[Tuple[float, float, List[int]]] = [
+        # patterns: (x_diff, y_diff, List[ans_fn_idx], label_change_dict: Dict[str, str]))
+        patterns: List[Tuple[float, float, List[int], Dict[str, str]]] = [
             # Given difference (0.0, 0.0), there are no fn.
-            (0.0, 0.0, []),
+            (0.0, 0.0, [], {}),
+            # Given no diff_distance and 2 labels changed, 2 estimated_objects are fp.
+            (0.0, 0.0, [0, 3], {'0': AutowareLabel.UNKNOWN, '3': AutowareLabel.ANIMAL}),
+            # TODO(Shin-kyoto): 以下のtestも通る必要あり．現在，ground truth一つに対しestimated objectが複数紐づくため通らなくなっている
+            # Given no diff_distance and 2 labels changed, 2 estimated_objects are fp.
+            # (0.0, 0.0, [0, 3], {'0' : AutowareLabel.CAR, '3' : AutowareLabel.ANIMAL}),
             # Given difference (0.5, 0.0), there are no fn.
-            (0.5, 0.0, []),
+            (0.5, 0.0, [], {}),
             # Given difference (0.0, -0.5), there are no fn.
-            (0.0, -0.5, []),
-            # Given difference (1.5, 0.0), two ground_truth_objects are fn
-            # The object results do not have two ground truth
-            (1.5, 0.0, [2, 3]),
-            # Given difference (2.5, 0.0), two ground_truth_objects are fn
-            # The object results have two ground truth
-            (2.5, 0.0, [2, 3]),
-            # Given difference (2.5, 2.5), three ground_truth_objects are fn
-            # The object results have only one ground truth
-            (2.5, 2.5, [1, 2, 3]),
+            (0.0, -0.5, [], {}),
+            # Given difference (1.5, 0.0), there are no fn.
+            (1.5, 0.0, [], {}),
+            # Given difference (1.5, 0.0) and 1 labels changed, 1 estimated_objects are fp.
+            (1.5, 0.0, [1], {'1': AutowareLabel.UNKNOWN}),
+            # Given difference (2.5, 0.0), all ground_truth_objects are fn
+            (2.5, 0.0, [0, 1, 2, 3], {}),
+            # Given difference (2.5, 2.5), all ground_truth_objects are fn
+            (2.5, 2.5, [0, 1, 2, 3], {}),
         ]
-        for n, (x_diff, y_diff, ans_fn_idx) in enumerate(patterns):
+
+        for n, (x_diff, y_diff, ans_fn_idx, label_change_dict) in enumerate(patterns):
             with self.subTest(f"Test get_fn_objects: {n + 1}"):
                 diff_distance_dummy_ground_truth_objects: List[
                     DynamicObject
@@ -277,9 +305,9 @@ class TestObjectsFilter(unittest.TestCase):
                     diff_yaw=0,
                 )
 
-                # make dummy data with difference label
-                diff_distance_dummy_ground_truth_objects[0].semantic_label = AutowareLabel.UNKNOWN
-                diff_distance_dummy_ground_truth_objects[1].semantic_label = AutowareLabel.ANIMAL
+                # make dummy data with different label
+                for idx, label in label_change_dict.items():
+                    diff_distance_dummy_ground_truth_objects[int(idx)].semantic_label = label
 
                 object_results: List[
                     DynamicObjectWithPerceptionResult
@@ -287,9 +315,17 @@ class TestObjectsFilter(unittest.TestCase):
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
+                tp_results, _ = divide_tp_fp_objects(
+                    object_results,
+                    self.target_labels,
+                    self.matching_mode,
+                    self.matching_threshold_list,
+                    self.confidence_threshold_list,
+                )
                 fn_objects = get_fn_objects(
                     self.dummy_ground_truth_objects,
                     object_results,
+                    tp_results,
                 )
 
                 ans_fn_objects = [
