@@ -35,6 +35,7 @@ class TestObjectsFilter(unittest.TestCase):
         self.matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE
         self.matching_threshold_list: List[float] = [2.0, 2.0, 2.0, 2.0]
         self.confidence_threshold_list: List[float] = [0.5, 0.5, 0.5, 0.5]
+        self.min_point_numbers: List[int] = [0, 1, 10, 0]
 
     def test_filter_object_results(self):
         """[summary]
@@ -90,21 +91,28 @@ class TestObjectsFilter(unittest.TestCase):
 
         test objects:
             4 ground_truth_objects made from dummy_ground_truth_objects with diff_distance
+            0 : AutowareLabel.CAR, 1 : AutowareLabel.BICYCLE, 2 : AutowareLabel.PEDESTRIAN, 3 : AutowareLabel.MOTORBIKE
 
         test patterns:
             Given diff_distance, check if filtered_objects and ans_objects are the same.
         """
-        # patterns: (diff_distance, List[ans_idx])
-        patterns: List[Tuple[float, List[int]]] = [
+        # patterns: (diff_distance, List[ans_idx], point_number_dict: Dict[str, int])
+        patterns: List[Tuple[float, List[int], Dict[str, int]]] = [
             # Given no diff_distance, no diff_distance_dummy_ground_truth_objects are filtered out.
-            (0.0, [0, 1, 2, 3]),
+            (0.0, [0, 1, 2, 3], {}),
+            # Given no diff_distance and no point clouds, 2 diff_distance_dummy_ground_truth_objects are filtered out.
+            (0.0, [0, 3], {'0': 0, '1': 0, '2': 0, '3': 0}),
+            # Given no diff_distance and 9 point clouds, 2 diff_distance_dummy_ground_truth_objects are filtered out.
+            (0.0, [0, 1, 3], {'0': 9, '1': 9, '2': 9, '3': 9}),
             # Given 1.5 diff_distance for one axis, two objects beyond max_pos_distance.
-            (1.5, [0, 1]),
+            (1.5, [0, 1], {}),
+            # Given 1.5 diff_distance and 1 point cloud, 2 diff_distance_dummy_ground_truth_objects are filtered out.
+            (1.5, [0, 1], {'0': 1, '1': 1, '2': 1, '3': 1}),
             # Given 2.5 diff_distance for one axis, all objects beyond max_pos_distance.
-            (2.5, []),
+            (2.5, [], {}),
         ]
         frame_id: str = "base_link"
-        for n, (diff_distance, ans_idx) in enumerate(patterns):
+        for n, (diff_distance, ans_idx, point_number_dict) in enumerate(patterns):
             with self.subTest(f"Test filter_ground_truth_objects: {n + 1}"):
                 diff_distance_dummy_ground_truth_objects: List[
                     DynamicObject
@@ -113,6 +121,13 @@ class TestObjectsFilter(unittest.TestCase):
                     diff_distance=(-diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
+
+                # make dummy data with different point cloud numbers
+                for idx, pointcloud_num in point_number_dict.items():
+                    diff_distance_dummy_ground_truth_objects[
+                        int(idx)
+                    ].pointcloud_num = pointcloud_num
+
                 filtered_objects = filter_ground_truth_objects(
                     frame_id,
                     diff_distance_dummy_ground_truth_objects,
@@ -121,6 +136,7 @@ class TestObjectsFilter(unittest.TestCase):
                     self.max_y_position_list,
                     self.max_pos_distance_list,
                     self.min_pos_distance_list,
+                    self.min_point_numbers,
                 )
                 ans_objects = [
                     x

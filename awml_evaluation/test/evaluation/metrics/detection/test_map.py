@@ -84,6 +84,7 @@ class TestMap(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
+                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -150,6 +151,7 @@ class TestMap(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
+                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -189,6 +191,7 @@ class TestMap(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.CENTERDISTANCE,
             matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
+            min_point_numbers=[0, 0, 0, 0],
         )
         self.assertAlmostEqual(map.map, ans_map)
         self.assertAlmostEqual(map.maph, ans_maph)
@@ -247,6 +250,7 @@ class TestMap(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
+                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -311,6 +315,7 @@ class TestMap(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
+                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -350,6 +355,7 @@ class TestMap(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.IOUBEV,
             matching_threshold_list=[0.2, 0.5, 0.5, 0.5],
+            min_point_numbers=[0, 0, 0, 0],
         )
         self.assertAlmostEqual(map.map, ans_map)
         self.assertAlmostEqual(map.maph, ans_maph)
@@ -406,6 +412,7 @@ class TestMap(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
+                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -470,6 +477,7 @@ class TestMap(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
+                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -509,6 +517,7 @@ class TestMap(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.IOU3D,
             matching_threshold_list=[0.2, 0.5, 0.5, 0.5],
+            min_point_numbers=[0, 0, 0, 0],
         )
         self.assertAlmostEqual(map.map, ans_map)
         self.assertAlmostEqual(map.maph, ans_maph)
@@ -567,6 +576,7 @@ class TestMap(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
+                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -631,6 +641,7 @@ class TestMap(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
+                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -693,6 +704,7 @@ class TestMap(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
+            min_point_numbers=[0, 0, 0, 0],
         )
 
         self.assertAlmostEqual(map.map, ans_map)

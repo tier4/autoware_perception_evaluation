@@ -59,6 +59,7 @@ class Map:
         target_labels: List[AutowareLabel],
         max_x_position_list: List[float],
         max_y_position_list: List[float],
+        min_point_numbers: List[int],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
     ) -> None:
@@ -78,6 +79,13 @@ class Map:
                     Return the object that
                     - max_y_position < object y-axis position < max_y_position.
                     This param use for range limitation of detection algorithm.
+            min_point_numbers (List[int]):
+                    min point numbers.
+                    For example, if target_labels is ["car", "bike", "pedestrian"],
+                    min_point_numbers [5, 0, 0] means
+                    Car bboxes including 4 points are filtered out.
+                    Car bboxes including 5 points are NOT filtered out.
+                    Bike and Pedestrian bboxes are not filtered out(All bboxes are used when calculating metrics.)
             matching_mode (MatchingMode): Matching mode like distance between the center of
                                            the object, 3d IoU.
             matching_threshold_list (List[float]):
@@ -91,6 +99,7 @@ class Map:
             == len(max_x_position_list)
             == len(max_y_position_list)
             == len(matching_threshold_list)
+            == len(min_point_numbers)
         )
 
         self.map_config = MapConfig(
@@ -101,11 +110,18 @@ class Map:
 
         # calculate AP
         self.aps: List[Ap] = []
-        for target_label, max_x_position, max_y_position, matching_threshold in zip(
+        for (
+            target_label,
+            max_x_position,
+            max_y_position,
+            matching_threshold,
+            min_point_number,
+        ) in zip(
             self.map_config.target_labels,
             max_x_position_list,
             max_y_position_list,
             matching_threshold_list,
+            min_point_numbers,
         ):
             ap_ = Ap(
                 tp_metrics=TPMetricsAp(),
@@ -114,6 +130,7 @@ class Map:
                 target_labels=[target_label],
                 max_x_position_list=[max_x_position],
                 max_y_position_list=[max_y_position],
+                min_point_numbers=[min_point_number],
                 matching_mode=matching_mode,
                 matching_threshold_list=[matching_threshold],
             )
@@ -141,6 +158,7 @@ class Map:
                 target_labels=[target_label],
                 max_x_position_list=[max_x_position],
                 max_y_position_list=[max_y_position],
+                min_point_numbers=min_point_numbers,
                 matching_mode=matching_mode,
                 matching_threshold_list=[matching_threshold],
             )

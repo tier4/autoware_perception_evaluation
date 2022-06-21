@@ -39,6 +39,7 @@ class PerceptionLSimMoc:
             frame_id: str = "base_link"  # objectのframe_id: base_link or map
             # evaluation_task指定 + 今後各taskで異なるパラメータが入るかも
             evaluation_config_dict.update({"evaluation_task": evaluation_task})
+            evaluation_config_dict.update({"min_point_numbers": [0, 0, 0, 0]})
         elif evaluation_task == "tracking":
             # tracking
             frame_id: str = "map"
