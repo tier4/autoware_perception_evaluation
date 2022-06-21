@@ -92,13 +92,14 @@ class PassFailResult:
             ego2map=self.ego2map,
         )
         if self.critical_ground_truth_objects is not None:
-            self.fn_objects = get_fn_objects(
-                ground_truth_objects=self.critical_ground_truth_objects,
-                object_results=object_results,
-            )
             self.tp_objects, self.fp_objects_result = self.get_tp_fp_objects_result(
                 object_results=object_results,
                 critical_ground_truth_objects=self.critical_ground_truth_objects,
+            )
+            self.fn_objects = get_fn_objects(
+                ground_truth_objects=self.critical_ground_truth_objects,
+                object_results=object_results,
+                tp_objects=self.tp_objects,
             )
         else:
             self.fn_objects = None

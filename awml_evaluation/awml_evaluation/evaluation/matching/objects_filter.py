@@ -197,6 +197,7 @@ def divide_tp_fp_objects(
 def get_fn_objects(
     ground_truth_objects: List[DynamicObject],
     object_results: Optional[List[DynamicObjectWithPerceptionResult]],
+    tp_objects: Optional[List[DynamicObjectWithPerceptionResult]],
 ) -> List[DynamicObject]:
     """[summary]
     Get FN (False Negative) objects from ground truth objects by using object result
@@ -204,6 +205,7 @@ def get_fn_objects(
     Args:
         ground_truth_objects (List[DynamicObject]): The ground truth objects
         object_results (Optional[List[DynamicObjectWithPerceptionResult]]): The object results
+        tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results in object results
 
     Returns:
         List[DynamicObject]: FN (False Negative) objects
@@ -217,6 +219,7 @@ def get_fn_objects(
         is_fn_object: bool = _is_fn_object(
             ground_truth_object=ground_truth_object,
             object_results=object_results,
+            tp_objects=tp_objects,
         )
         if is_fn_object:
             fn_objects.append(ground_truth_object)
@@ -226,6 +229,7 @@ def get_fn_objects(
 def _is_fn_object(
     ground_truth_object: DynamicObject,
     object_results: List[DynamicObjectWithPerceptionResult],
+    tp_objects: List[DynamicObjectWithPerceptionResult],
 ) -> bool:
     """[summary]
     Judge whether ground truth object is FN (False Negative) object.
@@ -234,13 +238,14 @@ def _is_fn_object(
     Args:
         ground_truth_object (DynamicObject): A ground truth object
         object_results (List[DynamicObjectWithPerceptionResult]): object result
+        tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results in object results
 
     Returns:
         bool: Whether ground truth object is FN (False Negative) object.
     """
 
     for object_result in object_results:
-        if ground_truth_object == object_result.ground_truth_object:
+        if ground_truth_object == object_result.ground_truth_object and object_result in tp_objects:
             return False
     return True
 
@@ -304,7 +309,7 @@ def _is_target_object(
     assert frame_id in (
         "map",
         "base_link",
-    ), f"frame_id myst be in (map, base_link), but got {frame_id}"
+    ), f"frame_id must be in (map, base_link), but got {frame_id}"
     position_: Tuple[float, float, float] = dynamic_object.state.position
     if frame_id == "map":
         assert ego2map is not None, "When frame_id is map, ego2map must be specified"
