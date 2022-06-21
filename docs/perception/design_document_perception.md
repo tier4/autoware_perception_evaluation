@@ -66,6 +66,7 @@ json_result = json.dump(dict_result)
       - plane_distance_thresholds (List[float]): 平面距離マッチング時の閾値
       - iou_bev_thresholds (List[float]): BEV IoU 　マッチング時の閾値
       - iou_3d_thresholds (List[float]): 3D IoU マッチング時の閾値
+      - min_point_numbers (List[int]): ground truth object における，bbox 内の最小点群数．min_point_numbers が 0 であれば，全 ground truth object が使用される．min_point_numbers が N であれば，bbox 内に N 点以上の点群を持つ ground truth object が使用される．
     - tracking
       - target_labels (List[str]): 評価対象ラベル名
       - max_x_position (float): 評価対象 object の最大 x 位置
@@ -93,6 +94,7 @@ json_result = json.dump(dict_result)
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_bev_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
+      "min_point_numbers": [0, 0, 0, 0],
     },
     ```
 
@@ -137,6 +139,7 @@ json_result = json.dump(dict_result)
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_bev_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
+      "min_point_numbers": [0, 0, 0, 0],
       "hogehoge_thresholds": [0.8],  # 追加
     }
     ```

@@ -87,6 +87,7 @@ def filter_ground_truth_objects(
     max_y_position_list: Optional[List[float]] = None,
     max_pos_distance_list: Optional[List[float]] = None,
     min_pos_distance_list: Optional[List[float]] = None,
+    min_point_numbers: List[int] = None,
     ego2map: Optional[np.ndarray] = None,
 ) -> List[DynamicObject]:
     """[summary]
@@ -101,6 +102,13 @@ def filter_ground_truth_objects(
                 Maximum distance threshold list for object. Defaults to None.
         min_pos_distance_list (Optional[List[float]], optional):
                 Minimum distance threshold list for object. Defaults to None.
+        min_point_numbers (List[int]):
+                Min point numbers.
+                For example, if target_labels is ["car", "bike", "pedestrian"],
+                min_point_numbers [5, 0, 0] means
+                Car bboxes including 4 points are filtered out.
+                Car bboxes including 5 points are NOT filtered out.
+                Bike and Pedestrian bboxes are not filtered out(All bboxes are used when calculating metrics.)
 
     Returns:
         List[DynamicObject]: Filtered object
@@ -116,6 +124,7 @@ def filter_ground_truth_objects(
             max_y_position_list=max_y_position_list,
             max_pos_distance_list=max_pos_distance_list,
             min_pos_distance_list=min_pos_distance_list,
+            min_point_numbers=min_point_numbers,
             ego2map=ego2map,
         )
         if is_target:
@@ -197,6 +206,7 @@ def divide_tp_fp_objects(
 def get_fn_objects(
     ground_truth_objects: List[DynamicObject],
     object_results: Optional[List[DynamicObjectWithPerceptionResult]],
+    tp_objects: Optional[List[DynamicObjectWithPerceptionResult]],
 ) -> List[DynamicObject]:
     """[summary]
     Get FN (False Negative) objects from ground truth objects by using object result
@@ -204,6 +214,7 @@ def get_fn_objects(
     Args:
         ground_truth_objects (List[DynamicObject]): The ground truth objects
         object_results (Optional[List[DynamicObjectWithPerceptionResult]]): The object results
+        tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results in object results
 
     Returns:
         List[DynamicObject]: FN (False Negative) objects
@@ -217,6 +228,7 @@ def get_fn_objects(
         is_fn_object: bool = _is_fn_object(
             ground_truth_object=ground_truth_object,
             object_results=object_results,
+            tp_objects=tp_objects,
         )
         if is_fn_object:
             fn_objects.append(ground_truth_object)
@@ -226,6 +238,7 @@ def get_fn_objects(
 def _is_fn_object(
     ground_truth_object: DynamicObject,
     object_results: List[DynamicObjectWithPerceptionResult],
+    tp_objects: List[DynamicObjectWithPerceptionResult],
 ) -> bool:
     """[summary]
     Judge whether ground truth object is FN (False Negative) object.
@@ -234,13 +247,14 @@ def _is_fn_object(
     Args:
         ground_truth_object (DynamicObject): A ground truth object
         object_results (List[DynamicObjectWithPerceptionResult]): object result
+        tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results in object results
 
     Returns:
         bool: Whether ground truth object is FN (False Negative) object.
     """
 
     for object_result in object_results:
-        if ground_truth_object == object_result.ground_truth_object:
+        if ground_truth_object == object_result.ground_truth_object and object_result in tp_objects:
             return False
     return True
 
@@ -254,6 +268,7 @@ def _is_target_object(
     max_pos_distance_list: Optional[List[float]] = None,
     min_pos_distance_list: Optional[List[float]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
+    min_point_numbers: Optional[List[int]] = None,
     ego2map: Optional[np.ndarray] = None,
 ) -> bool:
     """[summary]
@@ -284,6 +299,13 @@ def _is_target_object(
                 this parameter, this function appends to return objects.
                 It is often used to visualization.
                 Defaults to None.
+        min_point_numbers (List[int]):
+                Min point numbers.
+                For example, if target_labels is ["car", "bike", "pedestrian"],
+                min_point_numbers [5, 0, 0] means
+                Car bboxes including 4 points are filtered out.
+                Car bboxes including 5 points are NOT filtered out.
+                Bike and Pedestrian bboxes are not filtered out(All bboxes are used when calculating metrics.)
 
     Returns:
         bool: If the object is filter target, return True
@@ -304,7 +326,7 @@ def _is_target_object(
     assert frame_id in (
         "map",
         "base_link",
-    ), f"frame_id myst be in (map, base_link), but got {frame_id}"
+    ), f"frame_id must be in (map, base_link), but got {frame_id}"
     position_: Tuple[float, float, float] = dynamic_object.state.position
     if frame_id == "map":
         assert ego2map is not None, "When frame_id is map, ego2map must be specified"
@@ -326,5 +348,9 @@ def _is_target_object(
     if is_target and min_pos_distance_list is not None:
         min_pos_distance = label_threshold.get_label_threshold(min_pos_distance_list)
         is_target = is_target and dynamic_object.get_distance_bev() > min_pos_distance
+
+    if is_target and min_point_numbers is not None:
+        min_point_number = label_threshold.get_label_threshold(min_point_numbers)
+        is_target = is_target and dynamic_object.pointcloud_num >= min_point_number
 
     return is_target

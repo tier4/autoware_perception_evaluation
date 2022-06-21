@@ -6,6 +6,7 @@ from typing import List
 from typing import Tuple
 import unittest
 
+from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
@@ -13,6 +14,7 @@ from awml_evaluation.evaluation.metrics.tracking.tracking_metrics_score import T
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
 from awml_evaluation.util.debug import get_objects_with_difference
+import numpy as np
 
 
 class TestTrackingMetricsScore(unittest.TestCase):
@@ -33,15 +35,18 @@ class TestTrackingMetricsScore(unittest.TestCase):
         self.max_y_position_list: List[float] = [100.0, 100.0, 100.0, 100.0]
 
     def test_sum_clear(self):
-        """Test summing up CLEAR scores.
+        """[summary]
+        Test summing up CLEAR scores.
 
-        Test patterns:
+        test patterns:
             Check the summed up MOTA/MOTP and ID switch score with translated previous and current results.
         """
         # patterns: (prev_diff_trans, cur_diff_trans, ans_mota, ans_motp, ans_id_switch)
         patterns: List[Tuple[DiffTranslation, DiffTranslation, float, float, int]] = [
             (
+                # prev: (trans est, trans gt)
                 DiffTranslation((1.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+                # cur: (trans est, trans gt)
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 0.25,
                 0.0,
@@ -59,11 +64,13 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 DiffTranslation((0.25, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 0.25,
                 0.25,
-                0,
+                1,
             ),
         ]
-        for prev_diff_trans, cur_diff_trans, ans_mota, ans_motp, ans_id_switch in patterns:
-            with self.subTest("Test sum CLEAR"):
+        for n, (prev_diff_trans, cur_diff_trans, ans_mota, ans_motp, ans_id_switch) in enumerate(
+            patterns
+        ):
+            with self.subTest(f"Test sum CLEAR: {n + 1}"):
                 prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
                     diff_distance=prev_diff_trans.diff_estimated,
@@ -103,9 +110,24 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     ground_truth_objects=cur_ground_truth_objects,
                 )
 
+                prev_frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+                    unix_time=0,
+                    frame_name="0",
+                    frame_id="base_link",
+                    objects=prev_ground_truth_objects,
+                    ego2map=np.eye(4),
+                )
+                cur_frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+                    unix_time=0,
+                    frame_name="0",
+                    frame_id="base_link",
+                    objects=prev_ground_truth_objects,
+                    ego2map=np.eye(4),
+                )
+
                 tracking_score: TrackingMetricsScore = TrackingMetricsScore(
                     object_results=[prev_object_results, cur_object_results],
-                    ground_truth_objects=[prev_ground_truth_objects, cur_ground_truth_objects],
+                    frame_ground_truths=[prev_frame_ground_truth, cur_frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
@@ -118,7 +140,8 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 self.assertEqual(id_switch, ans_id_switch)
 
     def test_center_distance_translation_difference(self):
-        """Test TrackingMetricsScore with center distance matching, when each object result is translated by xy axis.
+        """[summary]
+        Test TrackingMetricsScore with center distance matching, when each object result is translated by xy axis.
 
         Test patterns:
             Check the clear score for each target label with translated previous and current results.
@@ -177,9 +200,24 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     ground_truth_objects=cur_ground_truth_objects,
                 )
 
+                prev_frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+                    unix_time=0,
+                    frame_name="0",
+                    frame_id="base_link",
+                    objects=prev_ground_truth_objects,
+                    ego2map=np.eye(4),
+                )
+                cur_frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+                    unix_time=0,
+                    frame_name="0",
+                    frame_id="base_link",
+                    objects=prev_ground_truth_objects,
+                    ego2map=np.eye(4),
+                )
+
                 tracking_score: TrackingMetricsScore = TrackingMetricsScore(
                     object_results=[prev_object_results, cur_object_results],
-                    ground_truth_objects=[prev_ground_truth_objects, cur_ground_truth_objects],
+                    frame_ground_truths=[prev_frame_ground_truth, cur_frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
@@ -197,6 +235,9 @@ class TestTrackingMetricsScore(unittest.TestCase):
     def test_center_distance_yaw_difference(self):
         """[summary]
         Test TrackingMetricsScore with center distance matching, when each object result is rotated by yaw angle.
+
+        Test patterns:
+            Check the clear score for each target label with rotated previous and current results around yaw angle.
         """
         # patterns: (prev_diff_yaw, cur_diff_yaw, ans_clears)
         patterns: List[Tuple[DiffYaw, DiffYaw, List[AnswerCLEAR]]] = [
@@ -252,9 +293,24 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     ground_truth_objects=cur_ground_truth_objects,
                 )
 
+                prev_frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+                    unix_time=0,
+                    frame_name="0",
+                    frame_id="base_link",
+                    objects=prev_ground_truth_objects,
+                    ego2map=np.eye(4),
+                )
+                cur_frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+                    unix_time=0,
+                    frame_name="0",
+                    frame_id="base_link",
+                    objects=prev_ground_truth_objects,
+                    ego2map=np.eye(4),
+                )
+
                 tracking_score: TrackingMetricsScore = TrackingMetricsScore(
                     object_results=[prev_object_results, cur_object_results],
-                    ground_truth_objects=[prev_ground_truth_objects, cur_ground_truth_objects],
+                    frame_ground_truths=[prev_frame_ground_truth, cur_frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,

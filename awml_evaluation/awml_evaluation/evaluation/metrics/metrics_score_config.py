@@ -44,7 +44,11 @@ class MetricsScoreConfig:
             self.tracking_config = TrackingMetricsConfig(**metrics_config_dict)
             # NOTE: In tracking, evaluate mAP too
             # TODO: Check and extract parameters for detection from parameters for tracking
-            self.detection_config = DetectionMetricsConfig(**metrics_config_dict)
+            detection_metrics_config_dict = metrics_config_dict.copy()
+            detection_metrics_config_dict.update(
+                {"min_point_numbers": [0] * len(metrics_config_dict["target_labels"])}
+            )
+            self.detection_config = DetectionMetricsConfig(**detection_metrics_config_dict)
         elif self.evaluation_task == EvaluationTask.PREDICTION:
             self._check_parameters(PredictionMetricsConfig, metrics_config_dict)
             raise NotImplementedError("Prediction config is under construction")

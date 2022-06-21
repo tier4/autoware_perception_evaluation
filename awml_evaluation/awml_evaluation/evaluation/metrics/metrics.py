@@ -83,6 +83,7 @@ class MetricsScore:
                 target_labels=self.detection_config.target_labels,
                 max_x_position_list=self.detection_config.max_x_position_list,
                 max_y_position_list=self.detection_config.max_y_position_list,
+                min_point_numbers=self.detection_config.min_point_numbers,
                 matching_mode=MatchingMode.CENTERDISTANCE,
                 matching_threshold_list=distance_threshold_,
             )
@@ -94,6 +95,7 @@ class MetricsScore:
                 target_labels=self.detection_config.target_labels,
                 max_x_position_list=self.detection_config.max_x_position_list,
                 max_y_position_list=self.detection_config.max_y_position_list,
+                min_point_numbers=self.detection_config.min_point_numbers,
                 matching_mode=MatchingMode.IOUBEV,
                 matching_threshold_list=iou_threshold_bev_,
             )
@@ -105,6 +107,7 @@ class MetricsScore:
                 target_labels=self.detection_config.target_labels,
                 max_x_position_list=self.detection_config.max_x_position_list,
                 max_y_position_list=self.detection_config.max_y_position_list,
+                min_point_numbers=self.detection_config.min_point_numbers,
                 matching_mode=MatchingMode.IOU3D,
                 matching_threshold_list=iou_threshold_3d_,
             )
@@ -116,6 +119,7 @@ class MetricsScore:
                 target_labels=self.detection_config.target_labels,
                 max_x_position_list=self.detection_config.max_x_position_list,
                 max_y_position_list=self.detection_config.max_y_position_list,
+                min_point_numbers=self.detection_config.min_point_numbers,
                 matching_mode=MatchingMode.PLANEDISTANCE,
                 matching_threshold_list=plane_distance_threshold_,
             )

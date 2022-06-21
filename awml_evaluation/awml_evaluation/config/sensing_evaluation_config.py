@@ -14,6 +14,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
 
     Attributes:
         self.dataset_paths (List[str]): The path(s) of dataset(s).
+        self.frame_id (str): The frame_id, base_link or map.
         self.does_use_pointcloud (bool): The boolean flag if load pointcloud data from dataset.
         self.result_root_directory (str): The directory path to save result.
         self.log_directory (str): The directory path to save log.

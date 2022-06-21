@@ -169,12 +169,9 @@ class DynamicObjectWithPerceptionResult:
         if not ground_truth_objects:
             return (None, None)
 
-        correspond_ground_truth_object: DynamicObject = ground_truth_objects[0]
-        correspond_ground_truth_object_index: int = 0
-        best_matching_distance: CenterDistanceMatching = CenterDistanceMatching(
-            estimated_object=estimated_object,
-            ground_truth_object=correspond_ground_truth_object,
-        )
+        correspond_ground_truth_object: Optional[DynamicObject] = None
+        correspond_ground_truth_object_index: Optional[int] = None
+        best_matching_distance: Optional[CenterDistanceMatching] = None
 
         # object which is min distance from the center of object
         for index, ground_truth_object in enumerate(ground_truth_objects):
@@ -182,8 +179,16 @@ class DynamicObjectWithPerceptionResult:
                 estimated_object=estimated_object,
                 ground_truth_object=ground_truth_object,
             )
-            if best_matching_distance.value is not None:
-                if matching_distance.is_better_than(best_matching_distance.value):
+            is_same_label: bool = (
+                estimated_object.semantic_label == ground_truth_object.semantic_label
+            )
+            if best_matching_distance is None:
+                if is_same_label:
+                    correspond_ground_truth_object = ground_truth_object
+                    correspond_ground_truth_object_index = index
+                    best_matching_distance = matching_distance
+            elif best_matching_distance.value is not None:
+                if matching_distance.is_better_than(best_matching_distance.value) and is_same_label:
                     best_matching_distance = matching_distance
                     correspond_ground_truth_object = ground_truth_object
                     correspond_ground_truth_object_index = index

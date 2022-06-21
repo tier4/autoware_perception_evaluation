@@ -64,6 +64,7 @@ def make_dummy_data(use_unique_id: bool = True) -> Tuple[List[DynamicObject], Li
             semantic_label=AutowareLabel.CAR,
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16),
+            pointcloud_num=10,
         ),
         DynamicObject(
             unix_time=100,
@@ -74,6 +75,7 @@ def make_dummy_data(use_unique_id: bool = True) -> Tuple[List[DynamicObject], Li
             semantic_label=AutowareLabel.BICYCLE,
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16),
+            pointcloud_num=10,
         ),
         DynamicObject(
             unix_time=100,
@@ -84,6 +86,7 @@ def make_dummy_data(use_unique_id: bool = True) -> Tuple[List[DynamicObject], Li
             semantic_label=AutowareLabel.PEDESTRIAN,
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16),
+            pointcloud_num=10,
         ),
         DynamicObject(
             unix_time=100,
@@ -94,6 +97,7 @@ def make_dummy_data(use_unique_id: bool = True) -> Tuple[List[DynamicObject], Li
             semantic_label=AutowareLabel.MOTORBIKE,
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16),
+            pointcloud_num=10,
         ),
     ]
     return dummy_estimated_objects, dummy_ground_truth_objects

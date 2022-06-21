@@ -6,6 +6,25 @@
 
 ## Release for main branch
 
+### v1.5.1
+
+- <https://github.com/tier4/AWMLevaluation/pull/117>
+  - 【release】v1.5.1 release
+- <https://github.com/tier4/AWMLevaluation/pull/111>
+  - 【機能追加】Detection 評価時，Ground truth の点群数に応じたフィルタ機能の追加
+- <https://github.com/tier4/AWMLevaluation/pull/115>
+  - 【バグ修正】TP オブジェクトかどうかの比較を FN オブジェクト判定の追加によって，FN オブジェクトと判定されないバグを修正
+- <https://github.com/tier4/AWMLevaluation/pull/113>
+  - 【test 修正】<https://github.com/tier4/AWMLevaluation/pull/101>によって Fail になっていた test の修正
+- <https://github.com/tier4/AWMLevaluation/pull/112>
+  - 【機能追加】DynamicObject の==比較演算時に None との比較を可能にし，かつ unix time を参照する機能の追加
+- <https://github.com/tier4/AWMLevaluation/pull/99>
+  - 【chore】tag が追加された際に，Release Note の draft を自動生成させるように変更
+- <https://github.com/tier4/AWMLevaluation/pull/108>
+  - 【機能追加】DynamicObjectWithPerceptionResult の対応ペア生成時に，同一ラベルのみとペアを組むように修正
+- <https://github.com/tier4/AWMLevaluation/pull/112>
+  - 【document 修正】v.1.5.0 までの変更内容を document に追加
+
 ### v1.5.0
 
 - <https://github.com/tier4/AWMLevaluation/pull/105>

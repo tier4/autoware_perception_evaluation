@@ -4,6 +4,7 @@ from typing import List
 from typing import Tuple
 import unittest
 
+from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
@@ -13,6 +14,7 @@ from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
 from awml_evaluation.util.debug import get_objects_with_difference
+import numpy as np
 
 
 class TestAp(unittest.TestCase):
@@ -63,25 +65,35 @@ class TestAp(unittest.TestCase):
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
+                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+                    unix_time=0,
+                    frame_name="0",
+                    frame_id="base_link",
+                    objects=diff_distance_dummy_ground_truth_objects,
+                    ego2map=np.eye(4),
+                )
                 ap: Ap = Ap(
                     tp_metrics=TPMetricsAp(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_distance_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.5],
+                    min_point_numbers=[0],
                 )
+
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_distance_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.5],
+                    min_point_numbers=[0],
                 )
                 self.assertAlmostEqual(ap.ap, ans_ap)
                 self.assertAlmostEqual(aph.ap, ans_aph)
@@ -131,25 +143,34 @@ class TestAp(unittest.TestCase):
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
+                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+                    unix_time=0,
+                    frame_name="0",
+                    frame_id="base_link",
+                    objects=diff_yaw_dummy_ground_truth_objects,
+                    ego2map=np.eye(4),
+                )
                 ap: Ap = Ap(
                     tp_metrics=TPMetricsAp(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_yaw_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.1],
+                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_yaw_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.1],
+                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -179,25 +200,34 @@ class TestAp(unittest.TestCase):
             estimated_objects=self.dummy_estimated_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,
         )
+        frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+            unix_time=0,
+            frame_name="0",
+            frame_id="base_link",
+            objects=self.dummy_ground_truth_objects,
+            ego2map=np.eye(4),
+        )
         ap: Ap = Ap(
             tp_metrics=TPMetricsAp(),
-            object_results=object_results,
-            ground_truth_objects=self.dummy_ground_truth_objects,
+            object_results=[object_results],
+            frame_ground_truths=[frame_ground_truth],
             target_labels=[AutowareLabel.MOTORBIKE],
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.CENTERDISTANCE,
             matching_threshold_list=[0.1],
+            min_point_numbers=[0],
         )
         aph: Ap = Ap(
             tp_metrics=TPMetricsAph(),
-            object_results=object_results,
-            ground_truth_objects=self.dummy_ground_truth_objects,
+            object_results=[object_results],
+            frame_ground_truths=[frame_ground_truth],
             target_labels=[AutowareLabel.MOTORBIKE],
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.CENTERDISTANCE,
             matching_threshold_list=[0.1],
+            min_point_numbers=[0],
         )
 
         self.assertAlmostEqual(ap.ap, ans_ap)
@@ -237,25 +267,36 @@ class TestAp(unittest.TestCase):
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
+
+                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+                    unix_time=0,
+                    frame_name="0",
+                    frame_id="base_link",
+                    objects=diff_distance_dummy_ground_truth_objects,
+                    ego2map=np.eye(4),
+                )
+
                 ap: Ap = Ap(
                     tp_metrics=TPMetricsAp(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_distance_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.7],
+                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_distance_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.7],
+                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -315,25 +356,34 @@ class TestAp(unittest.TestCase):
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
+                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+                    unix_time=0,
+                    frame_name="0",
+                    frame_id="base_link",
+                    objects=diff_yaw_dummy_ground_truth_objects,
+                    ego2map=np.eye(4),
+                )
                 ap: Ap = Ap(
                     tp_metrics=TPMetricsAp(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_yaw_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.8],
+                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_yaw_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.7],
+                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -360,25 +410,34 @@ class TestAp(unittest.TestCase):
             estimated_objects=self.dummy_estimated_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,
         )
+        frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+            unix_time=0,
+            frame_name="0",
+            frame_id="base_link",
+            objects=self.dummy_ground_truth_objects,
+            ego2map=np.eye(4),
+        )
         ap: Ap = Ap(
             tp_metrics=TPMetricsAp(),
-            object_results=object_results,
-            ground_truth_objects=self.dummy_ground_truth_objects,
+            object_results=[object_results],
+            frame_ground_truths=[frame_ground_truth],
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.IOUBEV,
             matching_threshold_list=[0.4],
+            min_point_numbers=[0],
         )
         aph: Ap = Ap(
             tp_metrics=TPMetricsAph(),
-            object_results=object_results,
-            ground_truth_objects=self.dummy_ground_truth_objects,
+            object_results=[object_results],
+            frame_ground_truths=[frame_ground_truth],
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.IOUBEV,
             matching_threshold_list=[0.4],
+            min_point_numbers=[0],
         )
 
         self.assertAlmostEqual(ap.ap, ans_ap)
@@ -418,25 +477,35 @@ class TestAp(unittest.TestCase):
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
+                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+                    unix_time=0,
+                    frame_name="0",
+                    frame_id="base_link",
+                    objects=diff_distance_dummy_ground_truth_objects,
+                    ego2map=np.eye(4),
+                )
+
                 ap: Ap = Ap(
                     tp_metrics=TPMetricsAp(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_distance_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.6],
+                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_distance_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.6],
+                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -491,25 +560,34 @@ class TestAp(unittest.TestCase):
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
+                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+                    unix_time=0,
+                    frame_name="0",
+                    frame_id="base_link",
+                    objects=diff_yaw_dummy_ground_truth_objects,
+                    ego2map=np.eye(4),
+                )
                 ap: Ap = Ap(
                     tp_metrics=TPMetricsAp(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_yaw_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.8],
+                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_yaw_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.8],
+                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -538,25 +616,34 @@ class TestAp(unittest.TestCase):
             estimated_objects=self.dummy_estimated_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,
         )
+        frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+            unix_time=0,
+            frame_name="0",
+            frame_id="base_link",
+            objects=self.dummy_ground_truth_objects,
+            ego2map=np.eye(4),
+        )
         ap: Ap = Ap(
             tp_metrics=TPMetricsAp(),
-            object_results=object_results,
-            ground_truth_objects=self.dummy_ground_truth_objects,
+            object_results=[object_results],
+            frame_ground_truths=[frame_ground_truth],
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.IOU3D,
             matching_threshold_list=[0.3],
+            min_point_numbers=[0],
         )
         aph: Ap = Ap(
             tp_metrics=TPMetricsAph(),
-            object_results=object_results,
-            ground_truth_objects=self.dummy_ground_truth_objects,
+            object_results=[object_results],
+            frame_ground_truths=[frame_ground_truth],
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.IOU3D,
             matching_threshold_list=[0.2],
+            min_point_numbers=[0],
         )
 
         self.assertAlmostEqual(ap.ap, ans_ap)
@@ -598,25 +685,34 @@ class TestAp(unittest.TestCase):
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
+                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+                    unix_time=0,
+                    frame_name="0",
+                    frame_id="base_link",
+                    objects=diff_distance_dummy_ground_truth_objects,
+                    ego2map=np.eye(4),
+                )
                 ap: Ap = Ap(
                     tp_metrics=TPMetricsAp(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_distance_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[0.1],
+                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_distance_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[1.0],
+                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -667,25 +763,34 @@ class TestAp(unittest.TestCase):
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
+                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+                    unix_time=0,
+                    frame_name="0",
+                    frame_id="base_link",
+                    objects=diff_yaw_dummy_ground_truth_objects,
+                    ego2map=np.eye(4),
+                )
                 ap: Ap = Ap(
                     tp_metrics=TPMetricsAp(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_yaw_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[1.0],
+                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
-                    object_results=object_results,
-                    ground_truth_objects=diff_yaw_dummy_ground_truth_objects,
+                    object_results=[object_results],
+                    frame_ground_truths=[frame_ground_truth],
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[1.0],
+                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -717,45 +822,57 @@ class TestAp(unittest.TestCase):
             estimated_objects=self.dummy_estimated_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,
         )
+        frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
+            unix_time=0,
+            frame_name="0",
+            frame_id="base_link",
+            objects=self.dummy_ground_truth_objects,
+            ego2map=np.eye(4),
+        )
+
         ap_tp: Ap = Ap(
             tp_metrics=TPMetricsAp(),
-            object_results=object_results,
-            ground_truth_objects=self.dummy_ground_truth_objects,
+            object_results=[object_results],
+            frame_ground_truths=[frame_ground_truth],
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[1.0],
+            min_point_numbers=[0],
         )
         aph_tp: Ap = Ap(
             tp_metrics=TPMetricsAph(),
-            object_results=object_results,
-            ground_truth_objects=self.dummy_ground_truth_objects,
+            object_results=[object_results],
+            frame_ground_truths=[frame_ground_truth],
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[1.0],
+            min_point_numbers=[0],
         )
         ap_tn: Ap = Ap(
             tp_metrics=TPMetricsAp(),
-            object_results=object_results,
-            ground_truth_objects=self.dummy_ground_truth_objects,
+            object_results=[object_results],
+            frame_ground_truths=[frame_ground_truth],
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[0.2],
+            min_point_numbers=[0],
         )
         aph_tn: Ap = Ap(
             tp_metrics=TPMetricsAph(),
-            object_results=object_results,
-            ground_truth_objects=self.dummy_ground_truth_objects,
+            object_results=[object_results],
+            frame_ground_truths=[frame_ground_truth],
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[0.2],
+            min_point_numbers=[0],
         )
         self.assertAlmostEqual(ap_tp.ap, ans_ap_tp)
         self.assertAlmostEqual(aph_tp.ap, ans_aph_tp)
