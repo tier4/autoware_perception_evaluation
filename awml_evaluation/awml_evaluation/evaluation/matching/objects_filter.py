@@ -87,6 +87,7 @@ def filter_ground_truth_objects(
     max_y_position_list: Optional[List[float]] = None,
     max_pos_distance_list: Optional[List[float]] = None,
     min_pos_distance_list: Optional[List[float]] = None,
+    min_point_numbers: List[int] = None,
     ego2map: Optional[np.ndarray] = None,
 ) -> List[DynamicObject]:
     """[summary]
@@ -101,6 +102,13 @@ def filter_ground_truth_objects(
                 Maximum distance threshold list for object. Defaults to None.
         min_pos_distance_list (Optional[List[float]], optional):
                 Minimum distance threshold list for object. Defaults to None.
+        min_point_numbers (List[int]):
+                Min point numbers.
+                For example, if target_labels is ["car", "bike", "pedestrian"],
+                min_point_numbers [5, 0, 0] means
+                Car bboxes including 4 points are filtered out.
+                Car bboxes including 5 points are NOT filtered out.
+                Bike and Pedestrian bboxes are not filtered out(All bboxes are used when calculating metrics.)
 
     Returns:
         List[DynamicObject]: Filtered object
@@ -116,6 +124,7 @@ def filter_ground_truth_objects(
             max_y_position_list=max_y_position_list,
             max_pos_distance_list=max_pos_distance_list,
             min_pos_distance_list=min_pos_distance_list,
+            min_point_numbers=min_point_numbers,
             ego2map=ego2map,
         )
         if is_target:
@@ -259,6 +268,7 @@ def _is_target_object(
     max_pos_distance_list: Optional[List[float]] = None,
     min_pos_distance_list: Optional[List[float]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
+    min_point_numbers: Optional[List[int]] = None,
     ego2map: Optional[np.ndarray] = None,
 ) -> bool:
     """[summary]
@@ -289,6 +299,13 @@ def _is_target_object(
                 this parameter, this function appends to return objects.
                 It is often used to visualization.
                 Defaults to None.
+        min_point_numbers (List[int]):
+                Min point numbers.
+                For example, if target_labels is ["car", "bike", "pedestrian"],
+                min_point_numbers [5, 0, 0] means
+                Car bboxes including 4 points are filtered out.
+                Car bboxes including 5 points are NOT filtered out.
+                Bike and Pedestrian bboxes are not filtered out(All bboxes are used when calculating metrics.)
 
     Returns:
         bool: If the object is filter target, return True
@@ -331,5 +348,9 @@ def _is_target_object(
     if is_target and min_pos_distance_list is not None:
         min_pos_distance = label_threshold.get_label_threshold(min_pos_distance_list)
         is_target = is_target and dynamic_object.get_distance_bev() > min_pos_distance
+
+    if is_target and min_point_numbers is not None:
+        min_point_number = label_threshold.get_label_threshold(min_point_numbers)
+        is_target = is_target and dynamic_object.pointcloud_num >= min_point_number
 
     return is_target

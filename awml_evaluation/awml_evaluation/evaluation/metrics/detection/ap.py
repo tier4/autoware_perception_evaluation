@@ -57,6 +57,7 @@ class Ap:
         target_labels: List[AutowareLabel],
         max_x_position_list: List[float],
         max_y_position_list: List[float],
+        min_point_numbers: List[int],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
     ) -> None:
@@ -77,6 +78,13 @@ class Ap:
                     Return the object that
                     - max_y_position < object y-axis position < max_y_position.
                     This param use for range limitation of detection algorithm.
+            min_point_numbers (List[int]):
+                    Min point numbers.
+                    For example, if target_labels is ["car", "bike", "pedestrian"],
+                    min_point_numbers [5, 0, 0] means
+                    Car bboxes including 4 points are filtered out.
+                    Car bboxes including 5 points are NOT filtered out.
+                    Bike and Pedestrian bboxes are not filtered out(All bboxes are used when calculating metrics.)
             matching_mode (MatchingMode):
                     Matching mode like distance between the center of the object, 3d IoU
             matching_threshold (List[float]): The threshold list for matching the estimated object
@@ -116,6 +124,7 @@ class Ap:
                 target_labels=self.target_labels,
                 max_x_position_list=max_x_position_list,
                 max_y_position_list=max_y_position_list,
+                min_point_numbers=min_point_numbers,
                 ego2map=frame_gt_.ego2map,
             )
             self.ground_truth_objects_num += len(filtered_ground_truth_objects)

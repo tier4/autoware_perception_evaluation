@@ -163,6 +163,7 @@ def get_objects_with_difference(
             velocity=object_.state.velocity,
             semantic_score=semantic_score,
             semantic_label=object_.semantic_label,
+            pointcloud_num=object_.pointcloud_num,
             uuid=object_.uuid,
         )
 

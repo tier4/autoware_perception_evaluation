@@ -81,6 +81,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.5],
+                    min_point_numbers=[0],
                 )
 
                 aph: Ap = Ap(
@@ -92,6 +93,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.5],
+                    min_point_numbers=[0],
                 )
                 self.assertAlmostEqual(ap.ap, ans_ap)
                 self.assertAlmostEqual(aph.ap, ans_aph)
@@ -157,6 +159,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.1],
+                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -167,6 +170,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.1],
+                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -212,6 +216,7 @@ class TestAp(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.CENTERDISTANCE,
             matching_threshold_list=[0.1],
+            min_point_numbers=[0],
         )
         aph: Ap = Ap(
             tp_metrics=TPMetricsAph(),
@@ -222,6 +227,7 @@ class TestAp(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.CENTERDISTANCE,
             matching_threshold_list=[0.1],
+            min_point_numbers=[0],
         )
 
         self.assertAlmostEqual(ap.ap, ans_ap)
@@ -279,6 +285,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.7],
+                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -289,6 +296,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.7],
+                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -364,6 +372,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.8],
+                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -374,6 +383,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.7],
+                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -416,6 +426,7 @@ class TestAp(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.IOUBEV,
             matching_threshold_list=[0.4],
+            min_point_numbers=[0],
         )
         aph: Ap = Ap(
             tp_metrics=TPMetricsAph(),
@@ -426,6 +437,7 @@ class TestAp(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.IOUBEV,
             matching_threshold_list=[0.4],
+            min_point_numbers=[0],
         )
 
         self.assertAlmostEqual(ap.ap, ans_ap)
@@ -482,6 +494,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.6],
+                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -492,6 +505,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.6],
+                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -562,6 +576,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.8],
+                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -572,6 +587,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.8],
+                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -616,6 +632,7 @@ class TestAp(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.IOU3D,
             matching_threshold_list=[0.3],
+            min_point_numbers=[0],
         )
         aph: Ap = Ap(
             tp_metrics=TPMetricsAph(),
@@ -626,6 +643,7 @@ class TestAp(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.IOU3D,
             matching_threshold_list=[0.2],
+            min_point_numbers=[0],
         )
 
         self.assertAlmostEqual(ap.ap, ans_ap)
@@ -683,6 +701,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[0.1],
+                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -693,6 +712,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[1.0],
+                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -759,6 +779,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[1.0],
+                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -769,6 +790,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[1.0],
+                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -817,6 +839,7 @@ class TestAp(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[1.0],
+            min_point_numbers=[0],
         )
         aph_tp: Ap = Ap(
             tp_metrics=TPMetricsAph(),
@@ -827,6 +850,7 @@ class TestAp(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[1.0],
+            min_point_numbers=[0],
         )
         ap_tn: Ap = Ap(
             tp_metrics=TPMetricsAp(),
@@ -837,6 +861,7 @@ class TestAp(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[0.2],
+            min_point_numbers=[0],
         )
         aph_tn: Ap = Ap(
             tp_metrics=TPMetricsAph(),
@@ -847,6 +872,7 @@ class TestAp(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[0.2],
+            min_point_numbers=[0],
         )
         self.assertAlmostEqual(ap_tp.ap, ans_ap_tp)
         self.assertAlmostEqual(aph_tp.ap, ans_aph_tp)
