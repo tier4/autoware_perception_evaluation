@@ -2,12 +2,13 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>awml_evaluation</name>
-  <version>1.5.0</version>
+  <version>1.5.1</version>
   <description>Autoware Machine Learning Evaluator</description>
   <author email="satoshi.tanaka@tier4.jp">Satoshi Tanaka</author>
   <maintainer email="satoshi.tanaka@tier4.jp">Satoshi Tanaka</maintainer>
   <maintainer email="kotaro.uetake@tier4.jp">Kotaro Uetake</maintainer>
   <maintainer email="shunsuke.miura@tier4.jp">Shunsuke Miura</maintainer>
+  <maintainer email="shitaro.tomie@tier4.jp">Shintaro Tomie</maintainer>
   <license>Apache V2</license>
 
   <exec_depend>python3-nuscenes-devkit-pip</exec_depend>
