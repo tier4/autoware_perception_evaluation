@@ -1,12 +1,14 @@
 ## Category
 
 <!-- Please check an item that is most relative category to your changes. -->
+<!-- Please delete options that are not relevant. -->
 
 - [ ] Perception
   - [ ] Detection
   - [ ] Tracking
   - [ ] Prediction
 - [ ] Sensing
+- [ ] Other
 
 ## What
 
@@ -29,16 +31,6 @@
 ## Test perrformed
 
 <!-- Describe how you have tested this PR. -->
-
-- [ ] unit test
-
-<details>
-<pre>
-<code>
-<!-- Please paste test result here. -->
-</code>
-</pre>
-</details>
 
 - [ ] test.sensing_lsim
 
