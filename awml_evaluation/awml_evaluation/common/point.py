@@ -1,4 +1,3 @@
-import math
 from typing import List
 from typing import Tuple
 
@@ -21,7 +20,8 @@ def distance_points(
         raise RuntimeError(
             f"The length of a point is {len(point_1)} and {len(point_2)}, it needs 3."
         )
-    return math.dist(point_1, point_2)
+    vec: np.ndarray = np.array(point_1) - np.array(point_2)
+    return np.linalg.norm(vec, ord=2, axis=0).item()
 
 
 def distance_points_bev(
@@ -33,21 +33,26 @@ def distance_points_bev(
     Args:
         point_1 (numpy.ndarray[3,]): A point
         point_2 (numpy.ndarray[3,]): A point
-    Returns: float: The distance between two points
+    Returns:
+        float: The distance between two points
     """
     if not (len(point_1) == 3 and len(point_2) == 3):
         raise RuntimeError(
             f"The length of a point is {len(point_1)} and {len(point_2)}, it needs 3."
         )
-    return math.dist(to_bev(point_1), to_bev(point_2))
+    p1_bev: np.ndarray = np.array(to_bev(point_1))
+    p2_bev: np.ndarray = np.array(to_bev(point_2))
+    vec: np.ndarray = p1_bev - p2_bev
+    return np.linalg.norm(vec, ord=2, axis=0).item()
 
 
 def to_bev(point_1: np.ndarray) -> np.ndarray:
     """[summary]
     (x, y, z) -> (x, y)
     Args:
-         point_1 (numpy.ndarray[3,]): A point
-    Returns: numpy.ndarray[2,]: The 2d point of point_1.
+        point_1 (np.ndarray): A 3d point.
+    Returns:
+        np.ndarray: The 2d point of point_1.
     """
     if not len(point_1) == 3:
         raise RuntimeError(f"The length of a point is {len(point_1)}, it needs 3.")
