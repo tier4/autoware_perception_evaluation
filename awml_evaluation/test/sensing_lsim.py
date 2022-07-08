@@ -1,5 +1,6 @@
 import argparse
 import logging
+import tempfile
 from typing import List
 from typing import Tuple
 
@@ -16,9 +17,10 @@ class SensingLSimMoc:
 
     Args:
         dataset_paths: List[str]: The list of dataset paths.
+        result_root_directory (str): The directory path to save results.
     """
 
-    def __init__(self, dataset_paths: List[str]):
+    def __init__(self, dataset_paths: List[str], result_roor_direcotry: str):
         # sensing
         evaluation_config_dict = {
             "evaluation_task": "sensing",
@@ -33,7 +35,7 @@ class SensingLSimMoc:
             dataset_paths=dataset_paths,
             frame_id="base_link",
             does_use_pointcloud=False,
-            result_root_directory="data/result/{TIME}/",
+            result_root_directory=result_roor_direcotry,
             log_directory="",
             visualization_directory="visualization/",
             evaluation_config_dict=evaluation_config_dict,
@@ -121,11 +123,21 @@ class SensingLSimMoc:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("dataset_paths", nargs="+", type=str, help="The path(s) of dataset")
+    parser.add_argument(
+        "--use_tmpdir",
+        action="store_true",
+        help="Whether save results to temporal directory",
+    )
     args = parser.parse_args()
 
     dataset_paths = args.dataset_paths
+    if args.use_tmpdir:
+        tmpdir = tempfile.TemporaryDirectory()
+        result_root_directory: str = tmpdir.name
+    else:
+        result_root_directory: str = "data/result/{TIME}/"
 
-    sensing_lsim = SensingLSimMoc(dataset_paths)
+    sensing_lsim = SensingLSimMoc(dataset_paths, result_root_directory)
 
     non_detection_areas: List[List[Tuple[float, float, float]]] = [
         [
@@ -167,3 +179,7 @@ if __name__ == "__main__":
         "Failed to be Non-detected pointclouds example (frame_results[0]): "
         f"{len(sensing_lsim.evaluator.frame_results[0].pointcloud_failed_non_detection)}"
     )
+
+    # Clean up tmpdir
+    if args.use_tmpdir:
+        tmpdir.cleanup()
