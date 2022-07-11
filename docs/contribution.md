@@ -50,6 +50,7 @@ pre-commit run -a
 ```bash
 cd awml_evaluation
 poetry run python3 -m unittest -v
+poetry run python3 -m pytest test/visualization/
 ```
 
 - API test
@@ -59,6 +60,7 @@ poetry run python3 -m unittest -v
 cd awml_evaluation
 poetry run python3 -m test.sensing_lsim <DATASET_PATH1> <DATASET_PATH2> ...
 poetry run python3 -m test.perception_lsim <DATASET_PATH1> <DATASET_PATH2> ...
+poetry run python3 -m test.eda <DATASET_PATH1> ...
 ```
 
 ### Test for merge to main branch

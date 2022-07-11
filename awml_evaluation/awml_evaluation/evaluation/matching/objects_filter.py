@@ -354,3 +354,23 @@ def _is_target_object(
         is_target = is_target and dynamic_object.pointcloud_num >= min_point_number
 
     return is_target
+
+
+def filter_object_results_by_confidence(
+    object_results: List[DynamicObjectWithPerceptionResult], confidence_thereshold: float
+) -> List[DynamicObjectWithPerceptionResult]:
+    """[summary]
+    Filter object_results by confidence
+
+    Args:
+        object_results (List[DynamicObjectWithPerceptionResult]): The objects you want to filter
+        confidence_thereshold (float): Confidence used by filtering. Remove objects which does not have low confidence
+
+    Returns:
+        object_results_with_high_confidence (List[DynamicObjectWithPerceptionResult]): The objects whose confidences are higher than confidence_thereshold
+    """
+    object_results_with_high_confidence: List[DynamicObjectWithPerceptionResult] = []
+    for object_result in object_results:
+        if object_result.estimated_object.semantic_score > confidence_thereshold:
+            object_results_with_high_confidence.append(object_result)
+    return object_results_with_high_confidence

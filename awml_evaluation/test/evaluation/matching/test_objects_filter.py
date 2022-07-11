@@ -10,6 +10,7 @@ from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.matching.objects_filter import divide_tp_fp_objects
 from awml_evaluation.evaluation.matching.objects_filter import filter_ground_truth_objects
 from awml_evaluation.evaluation.matching.objects_filter import filter_object_results
+from awml_evaluation.evaluation.matching.objects_filter import filter_object_results_by_confidence
 from awml_evaluation.evaluation.matching.objects_filter import get_fn_objects
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
@@ -348,6 +349,50 @@ class TestObjectsFilter(unittest.TestCase):
                     x for idx, x in enumerate(self.dummy_ground_truth_objects) if idx in ans_fn_idx
                 ]
                 self.assertEqual(fn_objects, ans_fn_objects)
+
+    def test_filter_object_results_by_confidence(self):
+        """[summary]
+        Test filtering DynamicObjectWithPerceptionResult by confidence
+
+        test objects:
+            4 object_results made from dummy_ground_truth_objects with diff_distance
+
+        test patterns:
+            Given diff_distance, check if filtered_object_results and ans_object_results
+            are the same.
+        """
+        # patterns: (confidence_thereshold, confidence_change_dict: Dict[str, float], List[ans_idx])
+        patterns: List[Tuple[float, Dict[str, float], List[int]]] = [
+            # When confidence_thereshold is 0, no object_results are filtered out.
+            (0.0, {}, [0, 1, 2, 3]),
+            # When confidence_thereshold is 0.3 and confidences of 1 objects change to 0.1, 1 object_results are filtered out.
+            (0.3, {'0': 0.1}, [1, 2, 3]),
+            # When confidence_thereshold is 0.3 and confidences of 2 objects change to 0.1, 0.3, 2 object_results are filtered out.
+            (0.3, {'0': 0.1, '1': 0.3}, [2, 3]),
+            # When confidence_thereshold is 0.3 and confidences of 2 objects change to 0.1, 0.31, 1 object_results are filtered out.
+            (0.3, {'0': 0.1, '1': 0.31}, [1, 2, 3]),
+            # When confidence_thereshold is 0.9, all object_results are filtered out.
+            (0.9, {}, []),
+        ]
+        for n, (confidence_thereshold, confidence_change_dict, ans_idx) in enumerate(patterns):
+            with self.subTest(f"Test filtered_object_results by confidence: {n + 1}"):
+                object_results: List[
+                    DynamicObjectWithPerceptionResult
+                ] = PerceptionFrameResult.get_object_results(
+                    estimated_objects=self.dummy_ground_truth_objects,
+                    ground_truth_objects=self.dummy_ground_truth_objects,
+                )
+
+                # change semantic score
+                for idx, confidence in confidence_change_dict.items():
+                    object_results[int(idx)].estimated_object.semantic_score = confidence
+
+                filtered_object_results = filter_object_results_by_confidence(
+                    object_results,
+                    confidence_thereshold,
+                )
+                ans_object_results = [x for idx, x in enumerate(object_results) if idx in ans_idx]
+                self.assertEqual(filtered_object_results, ans_object_results)
 
 
 if __name__ == "__main__":
