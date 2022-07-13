@@ -21,6 +21,13 @@ pip3 install poetry
   poetry install
   ```
 
+  - 暫定的な措置として，EDA ツール用のライブラリを pip で install
+
+    ```bash
+    poetry shell
+    pip install -r requirements.txt
+    ```
+
   - 実行
 
   ```bash

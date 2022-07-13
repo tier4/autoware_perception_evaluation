@@ -1,5 +1,6 @@
 import argparse
 import logging
+import tempfile
 from typing import List
 
 from awml_evaluation.common.object import DynamicObject
@@ -18,7 +19,12 @@ has_logger: bool = False
 
 
 class PerceptionLSimMoc:
-    def __init__(self, dataset_paths: List[str], evaluation_task: str):
+    def __init__(
+        self,
+        dataset_paths: List[str],
+        evaluation_task: str,
+        result_root_directory: str,
+    ):
         evaluation_config_dict = {
             # ラベル，max x/y，マッチング閾値 (detection/tracking/predictionで共通)
             "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
@@ -52,7 +58,7 @@ class PerceptionLSimMoc:
             dataset_paths=dataset_paths,
             frame_id=frame_id,
             does_use_pointcloud=False,
-            result_root_directory="data/result/{TIME}/",
+            result_root_directory=result_root_directory,
             log_directory="",
             visualization_directory="visualization/",
             evaluation_config_dict=evaluation_config_dict,
@@ -149,13 +155,23 @@ class PerceptionLSimMoc:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("dataset_paths", nargs="+", type=str, help="The path(s) of dataset")
+    parser.add_argument(
+        "--use_tmpdir",
+        action="store_true",
+        help="Whether save results to temporal directory",
+    )
     args = parser.parse_args()
 
     dataset_paths = args.dataset_paths
+    if args.use_tmpdir:
+        tmpdir = tempfile.TemporaryDirectory()
+        result_root_directory: str = tmpdir.name
+    else:
+        result_root_directory: str = "data/result/{TIME}/"
 
     # ========================================= Detection =========================================
     print("=" * 50 + "Start Detection" + "=" * 50)
-    detection_lsim = PerceptionLSimMoc(dataset_paths, "detection")
+    detection_lsim = PerceptionLSimMoc(dataset_paths, "detection", result_root_directory)
 
     for ground_truth_frame in detection_lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference(
@@ -202,7 +218,7 @@ if __name__ == "__main__":
 
     # ========================================= Tracking =========================================
     print("=" * 50 + "Start Tracking" + "=" * 50)
-    tracking_lsim = PerceptionLSimMoc(dataset_paths, "tracking")
+    tracking_lsim = PerceptionLSimMoc(dataset_paths, "tracking", result_root_directory)
 
     for ground_truth_frame in tracking_lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference(
@@ -252,3 +268,7 @@ if __name__ == "__main__":
         "CLEAR result example (tracking_final_metric_score.tracking_scores[0].clears[0]): "
         f"{format_class_for_log(tracking_final_metric_score.tracking_scores[0], 100)}"
     )
+
+    # Clean up tmpdir
+    if args.use_tmpdir:
+        tmpdir.cleanup()
