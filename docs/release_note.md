@@ -6,6 +6,19 @@
 
 ## Release for main branch
 
+### v1.5.2
+
+- <https://github.com/tier4/AWMLevaluation/pull/129>
+  - 【release】v1.5.2 release
+- <https://github.com/tier4/AWMLevaluation/pull/123>
+  - 【機能追加】EDA のための可視化機能の追加
+- <https://github.com/tier4/AWMLevaluation/pull/128>
+  - 【CI】github actions で lsim mock を実行する機能の追加
+- <https://github.com/tier4/AWMLevaluation/pull/126>
+  - 【バグ修正】Python3.7.11 で math.dist()がないため修正
+- <https://github.com/tier4/AWMLevaluation/pull/125>
+  - 【CI】github actions で unittest を実行する機能の追加
+
 ### v1.5.1
 
 - <https://github.com/tier4/AWMLevaluation/pull/117>
