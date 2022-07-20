@@ -176,9 +176,6 @@ class CLEAR(_TrackingMetricsBase):
         num_id_switch: int = 0
         tp_matching_score: float = 0.0
 
-        # Assign previous results if same matching pair has
-        has_same_tp: bool = False
-        is_id_switched: bool = False
         for cur_obj_result in cur_object_results:
             # Assign previous results if same matching pair has
             matching_threshold_: float = get_label_threshold(
@@ -186,34 +183,33 @@ class CLEAR(_TrackingMetricsBase):
                 target_labels=self.target_labels,
                 threshold_list=self.matching_threshold_list,
             )
-            has_same_tp: bool = False
+            is_same_match: bool = False
             is_id_switched: bool = False
             for prev_obj_result in prev_object_results:
-                is_id_switched: bool = self._is_id_switched(
-                    cur_obj_result,
-                    prev_obj_result,
-                )
-                if is_id_switched:
-                    break
-                is_same_result: bool = self._is_same_result(
-                    cur_obj_result,
-                    prev_obj_result,
-                )
-                if is_same_result is False:
-                    continue
-
                 is_tp_prev: bool = prev_obj_result.is_result_correct(
                     self.matching_mode,
                     matching_threshold_,
                 )
+                # is_tp_cur: bool = cur_obj_result.is_result_correct(
+                #     self.matching_mode,
+                #     matching_threshold_,
+                # )
+                # if is_tp_prev is False or is_tp_cur is False:
+                if not is_tp_prev:
+                    continue
 
-                has_same_tp = is_same_result * is_tp_prev
-                if has_same_tp:
-                    # NOTE: The One GT can have multi matching estimated object
-                    tp += self.tp_metrics.get_value(cur_obj_result)
-                    tp_matching_score += cur_obj_result.get_matching(self.matching_mode).value
+                is_id_switched = self._is_id_switched(cur_obj_result, prev_obj_result)
+                if is_id_switched:
                     break
-            if has_same_tp:
+
+                is_same_match: bool = self._is_same_match(cur_obj_result, prev_obj_result)
+                if is_same_match:
+                    # NOTE: If current/previous has same matching pair and both current/previous is TP,
+                    #       previous TP score is assigned.
+                    tp += self.tp_metrics.get_value(prev_obj_result)
+                    tp_matching_score += prev_obj_result.get_matching(self.matching_mode).value
+                    break
+            if is_same_match:
                 continue
 
             # If there is no same matching pair with previous results
@@ -236,7 +232,7 @@ class CLEAR(_TrackingMetricsBase):
         cur_object_result: DynamicObjectWithPerceptionResult,
         prev_object_result: DynamicObjectWithPerceptionResult,
     ) -> bool:
-        """Check whether current and previous object result have switched ID.
+        """Check whether current and previous object result have switched ID for TP pairs.
 
         NOTE:
             There is a case the label is not same inspite of the same ID is given.
@@ -249,19 +245,26 @@ class CLEAR(_TrackingMetricsBase):
         Returns:
             bool: Return True if ID switched.
         """
+        # current GT = None -> FP
         if (
             cur_object_result.ground_truth_object is None
             or prev_object_result.ground_truth_object is None
         ):
             return False
 
+        # 1. Check whether current/previous estimated objects has same ID.
+        # NOTE: There is a case current/previous estimated objects has same ID,
+        #       but different label(Checked by 2.)
         has_same_estimated_id: bool = (
             cur_object_result.estimated_object.uuid == prev_object_result.estimated_object.uuid
         )
+        # 2. Check whether current/previous estimated objects has same label.
         has_same_estimated_label: bool = (
             cur_object_result.estimated_object.semantic_label
             == prev_object_result.estimated_object.semantic_label
         )
+        # 3. Check whether current/previous GT has same ID.
+        # NOTE: There is no case GT has same ID, but different label. (Like 1.)
         has_same_ground_truth_id: bool = (
             cur_object_result.ground_truth_object.uuid
             == prev_object_result.ground_truth_object.uuid
@@ -274,11 +277,12 @@ class CLEAR(_TrackingMetricsBase):
         return False
 
     @staticmethod
-    def _is_same_result(
+    def _is_same_match(
         cur_object_result: DynamicObjectWithPerceptionResult,
         prev_object_result: DynamicObjectWithPerceptionResult,
     ) -> bool:
         """Check whether current and previous object result have same matching pair.
+        When previous or current GT is None(=FP), return False regardless the ID of estimated.
 
         Args:
             cur_object_result (DynamicObjectWithPerceptionResult): An object result at current frame.
