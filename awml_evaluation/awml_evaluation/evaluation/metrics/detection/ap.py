@@ -1,4 +1,5 @@
 from logging import getLogger
+import os.path as osp
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -15,6 +16,7 @@ from awml_evaluation.evaluation.matching.objects_filter import filter_object_res
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+import matplotlib.pyplot as plt
 import numpy as np
 
 logger = getLogger(__name__)
@@ -141,7 +143,6 @@ class Ap:
         self.tp_list, self.fp_list = self._calculate_tp_fp(
             tp_metrics=tp_metrics,
             object_results=filtered_object_results,
-            ground_truth_objects_num=self.ground_truth_objects_num,
         )
 
         # calculate precision recall
@@ -150,7 +151,7 @@ class Ap:
         precision_list, recall_list = self.get_precision_recall_list()
 
         # AP
-        self.ap: float = Ap._calculate_ap(precision_list, recall_list)
+        self.ap: float = self._calculate_ap(precision_list, recall_list)
 
         # average and standard deviation
         self.matching_average: Optional[float] = None
@@ -166,28 +167,45 @@ class Ap:
         frame_name: str,
     ) -> None:
         """[summary]
-        Save visualization image of precision and recall
+        Save visualization image of precision and recall curve.
+        The circle points represent original values and the square points represent interpolated ones.
 
         Args:
-            result_directory (str): The directory path to save images
-            frame_name (str): The frame name
+            result_directory (str): The directory path to save images.
+            frame_name (str): The frame name.
         """
 
-        # base_name = f"{frame_name}_precision_recall_iou{self.iou_threshold}_"
-        # target_str = f"{_get_flat_str(self.target_labels)}"
-        # file_name = base_name + target_str + ".png"
-        # file_path = os.join(result_directory, file_name)
+        base_name = f"{frame_name}_pr_curve_{self._get_flat_str(self.matching_threshold_list)}_"
+        target_str = f"{self._get_flat_str(self.target_labels)}"
+        file_name = base_name + target_str + ".png"
+        file_path = osp.join(result_directory, file_name)
 
-        # precision_list: List[float] = []
-        # recall_list: List[float] = []
-        # precision_list, recall_list = self.get_precision_recall_list(
-        #     self.tp_list,
-        #     self.fp_list,
-        #     self.ground_truth_objects_num,
-        # )
-        # save(file_path, recall_list, precision_list)
-
-        raise NotImplementedError
+        precision_list: List[float] = []
+        recall_list: List[float] = []
+        precision_list, recall_list = self.get_precision_recall_list()
+        max_precision_list, max_precision_recall_list = self.interpolate_precision_recall_list(
+            precision_list, recall_list
+        )
+        # plot original values
+        plt.plot(
+            recall_list,
+            precision_list,
+            label="original",
+            marker="o",
+            color=(1, 0, 0, 0.3),
+        )
+        # plot interpolated values
+        plt.plot(
+            max_precision_recall_list,
+            max_precision_list,
+            label="interpolate",
+            marker="s",
+            color=(1, 0, 0),
+        )
+        plt.title("PR-curve")
+        plt.xlabel("Recall")
+        plt.ylabel("Precision")
+        plt.savefig(file_path)
 
     def get_precision_recall_list(
         self,
@@ -206,8 +224,8 @@ class Ap:
                 precision_list = [1.0, 0.5, 0.67, 0.75]
                 recall_list = [0.25, 0.25, 0.5, 0.75]
         """
-        precisions_list: List[float] = [0.0 for i in range(len(self.tp_list))]
-        recalls_list: List[float] = [0.0 for i in range(len(self.tp_list))]
+        precisions_list: List[float] = [0.0 for _ in range(len(self.tp_list))]
+        recalls_list: List[float] = [0.0 for _ in range(len(self.tp_list))]
 
         for i in range(len(precisions_list)):
             precisions_list[i] = float(self.tp_list[i]) / (i + 1)
@@ -218,11 +236,36 @@ class Ap:
 
         return precisions_list, recalls_list
 
+    def interpolate_precision_recall_list(
+        self,
+        precision_list: List[float],
+        recall_list: List[float],
+    ):
+        """[summary]
+        Interpolate precision and recall with maximum precision value per recall bins.
+
+        Args:
+            precision_list (List[float])
+            recall_list (List[float])
+        """
+        max_precision_list: List[float] = [precision_list[-1]]
+        max_precision_recall_list: List[float] = [recall_list[-1]]
+
+        for i in reversed(range(len(recall_list) - 1)):
+            if precision_list[i] > max_precision_list[-1]:
+                max_precision_list.append(precision_list[i])
+                max_precision_recall_list.append(recall_list[i])
+
+        # append min recall
+        max_precision_list.append(max_precision_list[-1])
+        max_precision_recall_list.append(0.0)
+
+        return max_precision_list, max_precision_recall_list
+
     def _calculate_tp_fp(
         self,
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
         object_results: List[DynamicObjectWithPerceptionResult],
-        ground_truth_objects_num: int,
     ) -> Tuple[List[float], List[float]]:
         """
         Calculate TP (true positive) and FP (false positive).
@@ -230,7 +273,6 @@ class Ap:
         Args:
             tp_metrics (TPMetrics): The mode of TP (True positive) metrics
             object_results (List[DynamicObjectWithPerceptionResult]): the list of objects with result
-            ground_truth_objects_num (int): the number of ground truth objects
 
         Return:
             Tuple[tp_list, fp_list]
@@ -247,37 +289,24 @@ class Ap:
 
         # When result num is 0
         if len(object_results) == 0:
-            if ground_truth_objects_num != 0:
+            if self.ground_truth_objects_num != 0:
                 logger.debug("The size of object_results is 0")
                 return [], []
             else:
-                return [0 * ground_truth_objects_num], list(range(1, ground_truth_objects_num))
+                tp_list: List[float] = [0.0] * self.ground_truth_objects_num
+                fp_list: List[float] = np.arange(
+                    1,
+                    self.ground_truth_objects_num + 1,
+                    dtype=np.float,
+                ).tolist()
+                return tp_list, fp_list
 
-        object_results_num = len(object_results)
-        tp_list: List[float] = [0 for i in range(object_results_num)]
-        fp_list: List[float] = [0 for i in range(object_results_num)]
+        tp_list: List[float] = [0.0 for _ in range(self.objects_results_num)]
+        fp_list: List[float] = [0.0 for _ in range(self.objects_results_num)]
 
-        # label threshold
-        matching_threshold_ = get_label_threshold(
-            semantic_label=object_results[0].estimated_object.semantic_label,
-            target_labels=self.target_labels,
-            threshold_list=self.matching_threshold_list,
-        )
-        is_result_correct: bool = object_results[0].is_result_correct(
-            matching_mode=self.matching_mode,
-            matching_threshold=matching_threshold_,
-        )
-        tp_value: float = tp_metrics.get_value(object_results[0])
-        if is_result_correct:
-            tp_list[0] = tp_value
-            fp_list[0] = 0
-        else:
-            tp_list[0] = 0
-            fp_list[0] = tp_value
-
-        for i in range(1, len(object_results)):
+        for i, obj_result in enumerate(object_results):
             matching_threshold_ = get_label_threshold(
-                semantic_label=object_results[i].estimated_object.semantic_label,
+                semantic_label=obj_result.estimated_object.semantic_label,
                 target_labels=self.target_labels,
                 threshold_list=self.matching_threshold_list,
             )
@@ -285,18 +314,18 @@ class Ap:
                 matching_mode=self.matching_mode,
                 matching_threshold=matching_threshold_,
             )
-            tp_value = tp_metrics.get_value(object_results[i])
             if is_result_correct:
-                tp_list[i] = tp_list[i - 1] + tp_value
-                fp_list[i] = fp_list[i - 1]
+                tp_list[i] = tp_metrics.get_value(obj_result)
             else:
-                tp_list[i] = tp_list[i - 1]
-                fp_list[i] = fp_list[i - 1] + 1.0
+                fp_list[i] = 1.0
+
+        tp_list = np.cumsum(tp_list).tolist()
+        fp_list = np.cumsum(fp_list).tolist()
 
         return tp_list, fp_list
 
-    @staticmethod
     def _calculate_ap(
+        self,
         precision_list: List[float],
         recall_list: List[float],
     ) -> float:
@@ -325,17 +354,10 @@ class Ap:
         if len(precision_list) == 0:
             return 0.0
 
-        max_precision_list: List[float] = [precision_list[-1]]
-        max_precision_recall_list: List[float] = [recall_list[-1]]
-
-        for i in reversed(range(len(recall_list) - 1)):
-            if precision_list[i] > max_precision_list[-1]:
-                max_precision_list.append(precision_list[i])
-                max_precision_recall_list.append(recall_list[i])
-
-        # append min recall
-        max_precision_list.append(max_precision_list[-1])
-        max_precision_recall_list.append(0.0)
+        max_precision_list, max_precision_recall_list = self.interpolate_precision_recall_list(
+            precision_list,
+            recall_list,
+        )
 
         ap: float = 0.0
         for i in range(len(max_precision_list) - 1):
@@ -370,8 +392,8 @@ class Ap:
         )
         if len(matching_score_list_without_none) == 0:
             return None, None
-        mean: float = np.mean(matching_score_list_without_none)
-        standard_deviation: float = np.std(matching_score_list_without_none)
+        mean: float = np.mean(matching_score_list_without_none).item()
+        standard_deviation: float = np.std(matching_score_list_without_none).item()
         return mean, standard_deviation
 
     @staticmethod

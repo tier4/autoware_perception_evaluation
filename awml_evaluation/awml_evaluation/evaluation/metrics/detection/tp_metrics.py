@@ -86,6 +86,8 @@ class TPMetricsAph(TPMetrics):
         Reference:
                 https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/metrics/metrics_utils.cc#L101-L116
         """
+        if object_result.ground_truth_object is None:
+            return 0.0
 
         pd_heading: float = object_result.estimated_object.get_heading_bev()
         gt_heading: float = object_result.ground_truth_object.get_heading_bev()

@@ -2,9 +2,11 @@ from typing import List
 
 from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.object import DynamicObject
+from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.metrics.metrics import MetricsScore
 from awml_evaluation.evaluation.metrics.metrics_score_config import MetricsScoreConfig
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+from awml_evaluation.evaluation.result.object_result import get_object_results
 from awml_evaluation.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from awml_evaluation.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from awml_evaluation.evaluation.result.perception_pass_fail_result import PassFailResult
@@ -108,26 +110,22 @@ class PerceptionFrameResult:
     def get_object_results(
         estimated_objects: List[DynamicObject],
         ground_truth_objects: List[DynamicObject],
+        matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
     ) -> List[DynamicObjectWithPerceptionResult]:
         """[summary]
         Get object results from the pair of estimated_objects and ground_truth_objects in a frame.
 
         Args:
-            estimated_objects (List[DynamicObject]):
-                    estimated object which you want to evaluate
-            ground_truth_objects (List[DynamicObject]):
-                    The ground truth objects in the same time frame as estimated object
+            estimated_objects (List[DynamicObject]): The list of estimated object to be evaluated.
+            ground_truth_objects (List[DynamicObject]): The list of ground truth objects.
+            matching_mode (MatchingMode): The MatchingMode instance.
 
         Returns:
-            List[DynamicObjectWithPerceptionResult]: List of Object results
+            List[DynamicObjectWithPerceptionResult]: The list of Object results
         """
-        object_results: List[DynamicObjectWithPerceptionResult] = []
-        for estimated_object in estimated_objects:
-            # calculate to results for each object
-            object_results.append(
-                DynamicObjectWithPerceptionResult(
-                    estimated_object=estimated_object,
-                    ground_truth_objects=ground_truth_objects,
-                )
-            )
+        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            estimated_objects=estimated_objects,
+            ground_truth_objects=ground_truth_objects,
+            matching_mode=matching_mode,
+        )
         return object_results
