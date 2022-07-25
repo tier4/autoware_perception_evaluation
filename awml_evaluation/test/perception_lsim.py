@@ -14,9 +14,6 @@ from awml_evaluation.util.debug import format_class_for_log
 from awml_evaluation.util.debug import get_objects_with_difference
 from awml_evaluation.util.logger_config import configure_logger
 
-# tmp: logger-handlerが複数できないようにする変数
-has_logger: bool = False
-
 
 class PerceptionLSimMoc:
     def __init__(
@@ -59,21 +56,16 @@ class PerceptionLSimMoc:
             frame_id=frame_id,
             does_use_pointcloud=False,
             result_root_directory=result_root_directory,
-            log_directory="",
-            visualization_directory="visualization/",
             evaluation_config_dict=evaluation_config_dict,
         )
 
-        global has_logger
-        if has_logger is False:
-            _ = configure_logger(
-                log_file_directory=evaluation_config.get_result_log_directory(),
-                console_log_level=logging.INFO,
-                file_log_level=logging.INFO,
-            )
-            has_logger = True
-
         self.evaluator = PerceptionEvaluationManager(evaluation_config=evaluation_config)
+
+        _ = configure_logger(
+            log_file_directory=evaluation_config.log_directory,
+            console_log_level=logging.INFO,
+            file_log_level=logging.INFO,
+        )
 
     def callback(
         self,
@@ -114,7 +106,7 @@ class PerceptionLSimMoc:
             critical_object_filter_config=critical_object_filter_config,
             frame_pass_fail_config=frame_pass_fail_config,
         )
-        PerceptionLSimMoc.visualize(frame_result)
+        self.visualize(frame_result)
 
     def get_final_result(self) -> MetricsScore:
         """
@@ -132,8 +124,7 @@ class PerceptionLSimMoc:
         logging.info(f"final metrics result {final_metric_score}")
         return final_metric_score
 
-    @staticmethod
-    def visualize(frame_result: PerceptionFrameResult):
+    def visualize(self, frame_result: PerceptionFrameResult):
         """
         Frameごとの可視化
         """
@@ -150,6 +141,9 @@ class PerceptionLSimMoc:
         if frame_result.metrics_score.maps[0].map < 0.7:
             logging.debug("mAP is low")
             # logging.debug(f"frame result {format_class_for_log(frame_result.metrics_score)}")
+
+        # Visualize the latest frame result
+        # self.evaluator.visualize_frame()
 
 
 if __name__ == "__main__":
@@ -216,8 +210,17 @@ if __name__ == "__main__":
         f"{format_class_for_log(detection_final_metric_score.maps[0], 100)}",
     )
 
+    # Visualize all frame results.
+    logging.info("Start visualizing detection results")
+    detection_lsim.evaluator.visualize_all()
+
     # ========================================= Tracking =========================================
     print("=" * 50 + "Start Tracking" + "=" * 50)
+    if args.use_tmpdir:
+        tmpdir = tempfile.TemporaryDirectory()
+        result_root_directory: str = tmpdir.name
+    else:
+        result_root_directory: str = "data/result/{TIME}/"
     tracking_lsim = PerceptionLSimMoc(dataset_paths, "tracking", result_root_directory)
 
     for ground_truth_frame in tracking_lsim.evaluator.ground_truth_frames:
@@ -268,6 +271,10 @@ if __name__ == "__main__":
         "CLEAR result example (tracking_final_metric_score.tracking_scores[0].clears[0]): "
         f"{format_class_for_log(tracking_final_metric_score.tracking_scores[0], 100)}"
     )
+
+    # Visualize all frame results
+    logging.info("Start visualizing tracking results")
+    tracking_lsim.evaluator.visualize_all()
 
     # Clean up tmpdir
     if args.use_tmpdir:

@@ -34,18 +34,15 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         frame_id: str,
         does_use_pointcloud: bool,
         result_root_directory: str,
-        log_directory: str,
-        visualization_directory: str,
         evaluation_config_dict: Dict[str, Any],
     ) -> None:
         """[summary]
 
         Args:
             dataset_paths (List[str]): The paths of dataset
+            frame_id (str): The frame_id base_link or map
             does_use_pointcloud (bool): The flag for loading pointcloud data from dataset
             result_root_directory (str): The path to result directory
-            log_directory (str): The path to sub directory for log
-            visualization_directory (str): The path to sub directory for visualization
             evaluation_config_dict (Dict[str, Dict[str, Any]]): The dictionary of evaluation config for each task.
                                           This has a key of evaluation task name which support in EvaluationTask class(ex. ["detection", "tracking", "prediction"])
         """
@@ -54,8 +51,6 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             frame_id=frame_id,
             does_use_pointcloud=does_use_pointcloud,
             result_root_directory=result_root_directory,
-            log_directory=log_directory,
-            visualization_directory=visualization_directory,
             evaluation_config_dict=evaluation_config_dict,
         )
 

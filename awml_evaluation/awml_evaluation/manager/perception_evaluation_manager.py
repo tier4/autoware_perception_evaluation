@@ -9,6 +9,7 @@ from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPer
 from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
 from awml_evaluation.evaluation.result.perception_pass_fail_result import CriticalObjectFilterConfig
 from awml_evaluation.evaluation.result.perception_pass_fail_result import PerceptionPassFailConfig
+from awml_evaluation.visualization.perception_visualizer import PerceptionVisualizer
 
 from ._evaluation_manager_base import _EvaluationMangerBase
 
@@ -22,7 +23,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         self.evaluator_config (EvaluatorConfig): config for evaluation
         self.ground_truth_frames (List[FrameGroundTruth]): Ground truth frames from datasets
         self.frame_results (List[PerceptionFrameResult]): Evaluation result
-        self.visualization (VisualizationBEV): Visualization class
+        self.visualizer (PerceptionVisualizer): Visualization class for perception result.
     """
 
     def __init__(
@@ -44,6 +45,15 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             label_converter=self.evaluator_config.label_converter,
         )
         self.frame_results: List[PerceptionFrameResult] = []
+
+        self.visualizer: PerceptionVisualizer = PerceptionVisualizer.from_args(
+            evaluation_config.visualization_directory,
+            evaluation_config.frame_id,
+            evaluation_config.evaluation_task,
+            target_labels=evaluation_config.evaluation_config_dict["target_labels"],
+            max_x_position=evaluation_config.evaluation_config_dict["max_x_position"],
+            max_y_position=evaluation_config.evaluation_config_dict["max_y_position"],
+        )
 
     def add_frame_result(
         self,
@@ -135,13 +145,20 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
 
         return scene_metrics_score
 
-    def visualize_bev_all(self) -> None:
+    def visualize_all(self, animation: bool = False) -> None:
         """[summary]
-        Visualize objects and pointcloud from bird eye view.
-        """
+        Visualize object result in BEV space for all frames.
 
-        for frame_result in self.frame_results:
-            self.visualization.visualize_bev(
-                frame_result.object_results,
-                frame_result.ground_truth_objects,
-            )
+        Args:
+            animation (bool): Whether make animation. Defaults to True.
+        """
+        self.visualizer.visualize_all(self.frame_results, animation=animation)
+
+    def visualize_frame(self, frame_index: int = -1) -> None:
+        """[summary]
+        Visualize object result in BEV space at specified frame.
+
+        Args:
+            frame_index (int): The index of frame to be visualized. Defaults to -1 (latest frame).
+        """
+        self.visualizer.visualize_frame(self.frame_results[frame_index])

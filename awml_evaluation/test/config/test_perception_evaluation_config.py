@@ -41,7 +41,5 @@ class TestPerceptionEvaluationConfig(unittest.TestCase):
                         frame_id=frame_id,
                         does_use_pointcloud=False,
                         result_root_directory="/tmp",
-                        log_directory="/tmp",
-                        visualization_directory="/tmp",
                         evaluation_config_dict=evaluation_config_dict,
                     )

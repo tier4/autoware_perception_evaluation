@@ -32,7 +32,5 @@ class TestSensingEvaluationConfig(unittest.TestCase):
                         does_use_pointcloud=False,
                         frame_id=frame_id,
                         result_root_directory="/tmp/path",
-                        log_directory="/tmp/path",
-                        visualization_directory="/tmp/path",
                         evaluation_config_dict=evaluation_config_dict,
                     )
