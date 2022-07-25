@@ -6,6 +6,19 @@
 
 ## Release for main branch
 
+### v1.5.3
+
+- <https://github.com/tier4/AWMLevaluation/pull/134>
+  - 【release】v1.5.3 release
+- <https://github.com/tier4/AWMLevaluation/pull/121>
+  - 【機能追加】Perception 結果を BEV 空間で可視化する機能の追加
+- <https://github.com/tier4/AWMLevaluation/pull/128>
+  - 【バグ修正】configure_logger()を複数回呼んだ際に log が重複しないように修正
+- <https://github.com/tier4/AWMLevaluation/pull/134>
+  - 【CI】スペルチェックの追加
+- <https://github.com/tier4/AWMLevaluation/pull/120>
+  - 【バグ修正】マッチング時に 1GT に対して最大 1 予測がペアになるように修正
+
 ### v1.5.2
 
 - <https://github.com/tier4/AWMLevaluation/pull/129>
