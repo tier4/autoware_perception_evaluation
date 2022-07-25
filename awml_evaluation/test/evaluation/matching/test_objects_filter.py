@@ -1,6 +1,7 @@
 from test.util.dummy_object import make_dummy_data
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Tuple
 import unittest
 
@@ -15,6 +16,7 @@ from awml_evaluation.evaluation.matching.objects_filter import get_fn_objects
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
 from awml_evaluation.util.debug import get_objects_with_difference
+import numpy as np
 
 
 class TestObjectsFilter(unittest.TestCase):
@@ -48,18 +50,32 @@ class TestObjectsFilter(unittest.TestCase):
         test patterns:
             Given diff_distance, check if filtered_object_results and ans_object_results
             are the same.
+
+            NOTE:
+                - Estimated object is only matched with GT that has same label.
+                - The estimations & GTs are following (number represents the index)
+                    Estimation = 4
+                        (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
+                    GT = 4
+                        (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
         """
         # patterns: (diff_distance, List[ans_idx])
-        patterns: List[Tuple[float, List[int]]] = [
+        patterns: List[Tuple[float, np.ndarray]] = [
+            # (1)
+            # Pair: (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2]), (Est[3], GT[3])
             # Given no diff_distance, no object_results are filtered out.
-            (0.0, [0, 1, 2, 3]),
+            (0.0, np.array([[0, 0], [1, 1], [2, 2], [3, 3]])),
+            # (2)
+            # Pair: (Est[2], GT[2]), (Est[3], GT[3])
             # Given 1.5 diff_distance for one axis, two object_results beyond max_pos_distance.
-            (1.5, [2, 3]),
+            (1.5, np.array([[2, 2], [3, 3]])),
+            # (3)
+            # Pair:
             # Given 2.5 diff_distance for one axis, all object_results beyond max_pos_distance.
             (2.5, []),
         ]
         frame_id: str = "base_link"
-        for n, (diff_distance, ans_idx) in enumerate(patterns):
+        for n, (diff_distance, ans_pair_indices) in enumerate(patterns):
             with self.subTest(f"Test filtered_object_results: {n + 1}"):
                 diff_distance_dummy_ground_truth_objects: List[
                     DynamicObject
@@ -83,8 +99,24 @@ class TestObjectsFilter(unittest.TestCase):
                     self.max_pos_distance_list,
                     self.min_pos_distance_list,
                 )
-                ans_object_results = [x for idx, x in enumerate(object_results) if idx in ans_idx]
-                self.assertEqual(filtered_object_results, ans_object_results)
+                self.assertEqual(len(filtered_object_results), len(ans_pair_indices))
+                if len(ans_pair_indices) == 0:
+                    continue
+                for i, object_result_ in enumerate(filtered_object_results):
+                    self.assertIn(
+                        object_result_.estimated_object,
+                        diff_distance_dummy_ground_truth_objects,
+                        f"Unexpected estimated object at {i}",
+                    )
+                    est_idx: int = diff_distance_dummy_ground_truth_objects.index(
+                        object_result_.estimated_object
+                    )
+                    gt_idx: int = ans_pair_indices[ans_pair_indices[:, 0] == est_idx][0, 1]
+                    self.assertEqual(
+                        object_result_.ground_truth_object,
+                        self.dummy_ground_truth_objects[gt_idx],
+                        f"Unexpected estimated object at {i}",
+                    )
 
     def test_filter_ground_truth_objects(self):
         """[summary]
@@ -102,13 +134,13 @@ class TestObjectsFilter(unittest.TestCase):
             # Given no diff_distance, no diff_distance_dummy_ground_truth_objects are filtered out.
             (0.0, [0, 1, 2, 3], {}),
             # Given no diff_distance and no point clouds, 2 diff_distance_dummy_ground_truth_objects are filtered out.
-            (0.0, [0, 3], {'0': 0, '1': 0, '2': 0, '3': 0}),
+            (0.0, [0, 3], {"0": 0, "1": 0, "2": 0, "3": 0}),
             # Given no diff_distance and 9 point clouds, 2 diff_distance_dummy_ground_truth_objects are filtered out.
-            (0.0, [0, 1, 3], {'0': 9, '1': 9, '2': 9, '3': 9}),
+            (0.0, [0, 1, 3], {"0": 9, "1": 9, "2": 9, "3": 9}),
             # Given 1.5 diff_distance for one axis, two objects beyond max_pos_distance.
             (1.5, [0, 1], {}),
             # Given 1.5 diff_distance and 1 point cloud, 2 diff_distance_dummy_ground_truth_objects are filtered out.
-            (1.5, [0, 1], {'0': 1, '1': 1, '2': 1, '3': 1}),
+            (1.5, [0, 1], {"0": 1, "1": 1, "2": 1, "3": 1}),
             # Given 2.5 diff_distance for one axis, all objects beyond max_pos_distance.
             (2.5, [], {}),
         ]
@@ -157,26 +189,85 @@ class TestObjectsFilter(unittest.TestCase):
         test patterns:
             Given diff_distance, check if tp_results and ans_tp_results
             (fp_results and ans_fp_results) are the same.
+            NOTE:
+                - Estimated object is only matched with GT that has same label.
+                - The estimations & GTs are following (number represents the index)
+                    Estimation = 4
+                        (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
+                    GT = 4
+                        (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
         """
         # patterns: (diff_distance, List[ans_tp_idx], label_change_dict: Dict[str, str])
         patterns: List[Tuple[float, List[int], Dict[str, str]]] = [
+            # (1)
+            # TP: (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2]), (Est[3], GT[3])
+            # FP:
             # Given no diff_distance, all estimated_objects are tp.
-            (0.0, [0, 1, 2, 3], {}),
+            (
+                0.0,
+                np.array([(0, 0), (1, 1), (2, 2), (3, 3)]),
+                np.array([]),
+                {},
+            ),
+            # (2)
+            # TP: (Est[1], GT[1]), (Est[2], GT[2])
+            # FP: (Est[0], None), (Est[3], None)
             # Given no diff_distance and 2 labels changed, 2 estimated_objects are tp.
-            (0.0, [1, 2], {'0': AutowareLabel.UNKNOWN, '3': AutowareLabel.ANIMAL}),
+            (
+                0.0,
+                np.array([(1, 1), (2, 2)]),
+                np.array([(0, None), (3, None)]),
+                {"0": AutowareLabel.UNKNOWN, "3": AutowareLabel.ANIMAL},
+            ),
+            # (3)
+            # TP: (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2]), (Est[3], GT[3])
+            # FP:
             # Given 1.5 diff_distance for one axis, all estimated_objects are tp.
-            (1.5, [0, 1, 2, 3], {}),
+            (
+                1.5,
+                np.array([(0, 0), (1, 1), (2, 2), (3, 3)]),
+                np.array([]),
+                {},
+            ),
+            # (4)
+            # TP: (Est[0], GT[0]), (Est[1], GT[1]), (Est[3], GT[3])
+            # FP: (Est[2], None)
             # Given 1.5 diff_distance for one axis and 1 labels changed, 3 estimated_objects are tp.
-            (1.5, [0, 1, 3], {'2': AutowareLabel.UNKNOWN}),
-            # TODO(Shin-kyoto): 以下のtestも通る必要あり．現在，ground truth一つに対しestimated objectが複数紐づくため通らなくなっている
+            (
+                1.5,
+                np.array([(0, 0), (1, 1), (3, 3)]),
+                np.array([(2, None)]),
+                {"2": AutowareLabel.UNKNOWN},
+            ),
+            # (5)
+            # TP: (Est[2], GT[0]), (Est[1], GT[1]), (Est[3], GT[3])
+            # FP: (Est[0], None)
             # Given 1.5 diff_distance for one axis and 1 labels changed, 3 estimated_objects are tp.
-            # (1.5, [0, 1, 3], {'2' : AutowareLabel.CAR}),
+            (
+                1.5,
+                np.array([(2, 0), (1, 1), (3, 3)]),
+                np.array([(0, None)]),
+                {"2": AutowareLabel.CAR},
+            ),
+            # (6)
+            # TP:
+            # FP: (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2]), (Est[3], GT[3])
             # Given 2.5 diff_distance for one axis, all estimated_objects are fp
             # since they are beyond matching_threshold.
-            (2.5, [], {}),
+            (
+                2.5,
+                np.array([]),
+                np.array([(0, 0), (1, 1), (2, 2), (3, 3)]),
+                {},
+            ),
         ]
 
-        for n, (diff_distance, ans_tp_idx, label_change_dict) in enumerate(patterns):
+        for n, (
+            diff_distance,
+            ans_tp_pair_idx,
+            ans_fp_pair_idx,
+            label_change_dict,
+        ) in enumerate(patterns):
             with self.subTest(f"Test divide_tp_fp_objects: {n + 1}"):
 
                 diff_distance_dummy_ground_truth_objects: List[
@@ -204,13 +295,43 @@ class TestObjectsFilter(unittest.TestCase):
                     self.matching_threshold_list,
                     self.confidence_threshold_list,
                 )
+                self.assertEqual(len(tp_results), len(ans_tp_pair_idx))
+                for i, tp_result_ in enumerate(tp_results):
+                    self.assertIn(
+                        tp_result_.estimated_object,
+                        diff_distance_dummy_ground_truth_objects,
+                        f"TP estimated objects[{i}]",
+                    )
+                    est_idx: int = diff_distance_dummy_ground_truth_objects.index(
+                        tp_result_.estimated_object,
+                    )
+                    gt_idx: int = ans_tp_pair_idx[ans_tp_pair_idx[:, 0] == est_idx][0, 1]
+                    self.assertEqual(
+                        tp_result_.ground_truth_object,
+                        self.dummy_ground_truth_objects[gt_idx],
+                    )
 
-                ans_tp_results = [x for idx, x in enumerate(object_results) if idx in ans_tp_idx]
-                ans_fp_results = [
-                    x for idx, x in enumerate(object_results) if idx not in ans_tp_idx
-                ]
-                self.assertEqual(tp_results, ans_tp_results)
-                self.assertEqual(fp_results, ans_fp_results)
+                self.assertEqual(len(fp_results), len(ans_fp_pair_idx))
+                for j, fp_result_ in enumerate(fp_results):
+                    self.assertIn(
+                        fp_result_.estimated_object,
+                        diff_distance_dummy_ground_truth_objects,
+                        f"FP estimated objects[{j}]",
+                    )
+                    est_idx: int = diff_distance_dummy_ground_truth_objects.index(
+                        fp_result_.estimated_object,
+                    )
+                    gt_idx: Optional[int] = ans_fp_pair_idx[ans_fp_pair_idx[:, 0] == est_idx][0, 1]
+                    if gt_idx is None:
+                        self.assertIsNone(
+                            fp_result_.ground_truth_object,
+                            "ground truth must be None",
+                        )
+                    else:
+                        self.assertEqual(
+                            fp_result_.ground_truth_object,
+                            self.dummy_ground_truth_objects[gt_idx],
+                        )
 
     def test_get_fn_objects(self):
         """[summary]
@@ -294,7 +415,7 @@ class TestObjectsFilter(unittest.TestCase):
             # Given difference (0.0, 0.0), there are no fn.
             (0.0, 0.0, [], {}),
             # Given no diff_distance and 2 labels changed, 2 estimated_objects are fp.
-            (0.0, 0.0, [0, 3], {'0': AutowareLabel.UNKNOWN, '3': AutowareLabel.ANIMAL}),
+            (0.0, 0.0, [0, 3], {"0": AutowareLabel.UNKNOWN, "3": AutowareLabel.ANIMAL}),
             # TODO(Shin-kyoto): 以下のtestも通る必要あり．現在，ground truth一つに対しestimated objectが複数紐づくため通らなくなっている
             # Given no diff_distance and 2 labels changed, 2 estimated_objects are fp.
             # (0.0, 0.0, [0, 3], {'0' : AutowareLabel.CAR, '3' : AutowareLabel.ANIMAL}),
@@ -305,7 +426,7 @@ class TestObjectsFilter(unittest.TestCase):
             # Given difference (1.5, 0.0), there are no fn.
             (1.5, 0.0, [], {}),
             # Given difference (1.5, 0.0) and 1 labels changed, 1 estimated_objects are fp.
-            (1.5, 0.0, [1], {'1': AutowareLabel.UNKNOWN}),
+            (1.5, 0.0, [1], {"1": AutowareLabel.UNKNOWN}),
             # Given difference (2.5, 0.0), all ground_truth_objects are fn
             (2.5, 0.0, [0, 1, 2, 3], {}),
             # Given difference (2.5, 2.5), all ground_truth_objects are fn

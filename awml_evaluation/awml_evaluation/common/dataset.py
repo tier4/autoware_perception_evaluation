@@ -284,14 +284,15 @@ def _sample_to_frame(
             continue
 
         object_: DynamicObject = _convert_nuscenes_box_to_dynamic_object(
-            nusc,
-            helper,
-            object_box,
-            unix_time_,
-            evaluation_task,
-            label_converter,
-            instance_token_,
-            sample_token,
+            nusc=nusc,
+            helper=helper,
+            frame_id=frame_id,
+            object_box=object_box,
+            unix_time=unix_time_,
+            evaluation_task=evaluation_task,
+            label_converter=label_converter,
+            instance_token=instance_token_,
+            sample_token=sample_token,
         )
         objects_.append(object_)
 
@@ -309,6 +310,7 @@ def _sample_to_frame(
 def _convert_nuscenes_box_to_dynamic_object(
     nusc: NuScenes,
     helper: PredictHelper,
+    frame_id: str,
     object_box: Box,
     unix_time: int,
     evaluation_task: EvaluationTask,
@@ -350,16 +352,24 @@ def _convert_nuscenes_box_to_dynamic_object(
     )
 
     if evaluation_task == EvaluationTask.TRACKING:
-        tracked_positions, tracked_orientations, tracked_sizes = _get_tracking_data(
-            helper,
-            instance_token,
-            sample_token,
-            seconds,
+        (
+            tracked_positions,
+            tracked_orientations,
+            tracked_sizes,
+            tracked_velocities,
+        ) = _get_tracking_data(
+            nusc=nusc,
+            helper=helper,
+            frame_id=frame_id,
+            instance_token=instance_token,
+            sample_token=sample_token,
+            seconds=seconds,
         )
     else:
         tracked_positions = None
         tracked_orientations = None
         tracked_sizes = None
+        tracked_velocities = None
 
     if evaluation_task == EvaluationTask.PREDICTION:
         pass
@@ -377,6 +387,7 @@ def _convert_nuscenes_box_to_dynamic_object(
         tracked_positions=tracked_positions,
         tracked_orientations=tracked_orientations,
         tracked_sizes=tracked_sizes,
+        tracked_twists=tracked_velocities,
     )
     return dynamic_object
 
@@ -435,7 +446,9 @@ def _get_sample_boxes(
 
 
 def _get_tracking_data(
+    nusc: NuScenes,
     helper: PredictHelper,
+    frame_id: str,
     instance_token: str,
     sample_token: str,
     seconds: float,
@@ -443,7 +456,9 @@ def _get_tracking_data(
     """Get tracking data with PredictHelper.get_past_for_agent()
 
     Args:
+        nusc (NuScenes): NuScenes instance.
         helper (PredictHelper): PredictHelper instance.
+        frame_id (str): The frame_id base_link or map.
         instance_token (str): The unique token to access to instance.
         sample_token (str): The unique Token to access to sample.
         seconds (float): Seconds to be referenced.[s]
@@ -451,28 +466,40 @@ def _get_tracking_data(
     Returns:
         past_positions (List[Tuple[float, float, float]])
         past_orientations (List[Quaternion])
-        past_sizes (List[Tuple[float, float]]])
+        past_sizes (List[Tuple[float, float, float]]])
+        past_velocities (List[Tuple[float, float]])
     """
+    if frame_id == "base_link":
+        in_agent_frame: bool = True
+    elif frame_id == "map":
+        in_agent_frame: bool = False
+    else:
+        raise ValueError(f"Unexpected frame_id: {frame_id}")
+
     past_records_: List[Dict[str, Any]] = helper.get_past_for_agent(
-        instance_token,
-        sample_token,
+        instance_token=instance_token,
+        sample_token=sample_token,
         seconds=seconds,
-        in_agent_frame=True,
+        in_agent_frame=in_agent_frame,
         just_xy=False,
     )
     past_positions: List[Tuple[float, float, float]] = []
     past_orientations: List[Quaternion] = []
     past_sizes: List[Tuple[float, float, float]] = []
+    past_velocities: List[Tuple[float, float, float]] = []
     for record_ in past_records_:
-        past_positions.append(record_["translation"])
+        past_positions.append(tuple(record_["translation"]))
         past_orientations.append(Quaternion(record_["rotation"]))
         past_sizes.append(record_["size"])
+        past_velocities.append(nusc.box_velocity(record_["token"]))
 
-    return past_positions, past_orientations, past_sizes
+    return past_positions, past_orientations, past_sizes, past_velocities
 
 
 def _get_prediction_data(
+    nusc: NuScenes,
     helper: PredictHelper,
+    frame_id: str,
     instance_token: str,
     sample_token: str,
     seconds: str,
@@ -480,15 +507,17 @@ def _get_prediction_data(
     """Get prediction data with PredictHelper.get_future_for_agent()
 
     Args:
+        nusc (NuScenes): NuScenes instance.
         helper (PredictHelper): PredictHelper instance.
         instance_token (str): The unique token to access to instance.
         sample_token (str): The unique token to access to sample.
         seconds (float): Seconds to be referenced.[s]
 
     Returns:
-        future_positions (Optional[List[Tuple[float, float, float]]])
-        future_orientations (Optional[List[Tuple[float, float, float]]])
-        future_sizes (Optional[List[Tuple[float, float, float]]])
+        future_positions (List[Tuple[float, float, float]])
+        future_orientations (List[Tuple[float, float, float]])
+        future_sizes (List[Tuple[float, float, float]])
+        future_velocities (List[Tuple[float, float, float]])
     """
     pass
 

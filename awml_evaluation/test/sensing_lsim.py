@@ -36,13 +36,11 @@ class SensingLSimMoc:
             frame_id="base_link",
             does_use_pointcloud=False,
             result_root_directory=result_roor_direcotry,
-            log_directory="",
-            visualization_directory="visualization/",
             evaluation_config_dict=evaluation_config_dict,
         )
 
         _ = configure_logger(
-            log_file_directory=evaluation_config.get_result_log_directory(),
+            log_file_directory=evaluation_config.log_directory,
             console_log_level=logging.INFO,
             file_log_level=logging.INFO,
         )

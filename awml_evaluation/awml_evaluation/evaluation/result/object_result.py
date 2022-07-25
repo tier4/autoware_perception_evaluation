@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import List
 from typing import Optional
-from typing import Tuple
 
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.common.object import distance_objects_bev
@@ -12,6 +11,7 @@ from awml_evaluation.evaluation.matching.object_matching import IOUBEVMatching
 from awml_evaluation.evaluation.matching.object_matching import MatchingMethod
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.matching.object_matching import PlaneDistanceMatching
+import numpy as np
 
 
 class DynamicObjectWithPerceptionResult:
@@ -38,23 +38,17 @@ class DynamicObjectWithPerceptionResult:
     def __init__(
         self,
         estimated_object: DynamicObject,
-        ground_truth_objects: List[DynamicObject],
+        ground_truth_object: Optional[DynamicObject],
     ) -> None:
         """[summary]
         Evaluation result for an object estimated object.
 
         Args:
             estimated_object (DynamicObject): The estimated object by inference like CenterPoint
-            ground_truth_objects (List[DynamicObject]): The list of Ground truth objects
+            ground_truth_objects (Optional[DynamicObject]): The list of Ground truth objects
         """
         self.estimated_object: DynamicObject = estimated_object
-        (
-            self.ground_truth_object,
-            self.ground_truth_object_index,
-        ) = self._get_correspond_ground_truth_object(
-            estimated_object,
-            ground_truth_objects,
-        )
+        self.ground_truth_object: Optional[DynamicObject] = ground_truth_object
         self.is_label_correct: bool = self._is_label_correct()
 
         # detection
@@ -151,45 +145,103 @@ class DynamicObjectWithPerceptionResult:
         else:
             return False
 
-    @staticmethod
-    def _get_correspond_ground_truth_object(
-        estimated_object: DynamicObject,
-        ground_truth_objects: List[DynamicObject],
-    ) -> Optional[Tuple[DynamicObject, int]]:
-        """[summary]
-        Search correspond ground truth by minimum center distance
 
-        Args:
-            estimated_object (DynamicObject): The estimated object by inference like CenterPoint
-            ground_truth_objects (List[DynamicObject]): The list of ground truth objects
+def get_object_results(
+    estimated_objects: List[DynamicObject],
+    ground_truth_objects: List[DynamicObject],
+    matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
+) -> List[DynamicObjectWithPerceptionResult]:
+    """[summary]
+    Returns list of DynamicObjectWithPerceptionResult.
 
-        Returns:
-            Optional[Tuple[DynamicObject, int]]: Correspond ground truth, index
-        """
-        if not ground_truth_objects:
-            return (None, None)
+    Args:
+        estimated_objects (List[DynamicObject]): The list of estimated object.
+        ground_truth_objects (List[DynamicObject]): The list of ground truth object.
+        matching_mode (MatchingMode): The MatchingMode instance.
 
-        correspond_ground_truth_object: Optional[DynamicObject] = None
-        correspond_ground_truth_object_index: Optional[int] = None
-        best_matching_distance: Optional[CenterDistanceMatching] = None
+    Returns:
+        object_results (List[DynamicObjectWithPerceptionResult]): The list of object result.
+    """
+    # There is no estimated object (= all FN)
+    if not estimated_objects:
+        return []
 
-        # object which is min distance from the center of object
-        for index, ground_truth_object in enumerate(ground_truth_objects):
-            matching_distance: MatchingMethod = CenterDistanceMatching(
-                estimated_object=estimated_object,
-                ground_truth_object=ground_truth_object,
+    # There is no GT (= all FP)
+    object_results: List[DynamicObjectWithPerceptionResult] = []
+    if not ground_truth_objects:
+        for estimated_object_ in estimated_objects:
+            object_results.append(
+                DynamicObjectWithPerceptionResult(
+                    estimated_object=estimated_object_,
+                    ground_truth_object=None,
+                )
             )
-            is_same_label: bool = (
-                estimated_object.semantic_label == ground_truth_object.semantic_label
+        return object_results
+
+    if matching_mode == MatchingMode.CENTERDISTANCE:
+        matching_method_module: CenterDistanceMatching = CenterDistanceMatching
+        maximize: bool = False
+    elif matching_mode == MatchingMode.PLANEDISTANCE:
+        matching_method_module: PlaneDistanceMatching = PlaneDistanceMatching
+        maximize: bool = False
+    elif matching_mode == MatchingMode.IOUBEV:
+        matching_method_module: IOUBEVMatching = IOUBEVMatching
+        maximize: bool = True
+    elif matching_mode == MatchingMode.IOU3D:
+        matching_method_module: IOU3dMatching = IOU3dMatching
+        maximize: bool = True
+    else:
+        raise ValueError(f"Unsupported matching mode: {matching_mode}")
+
+    # fill matching score table, in shape (NumEst, NumGT)
+    num_row: int = len(estimated_objects)
+    num_col: int = len(ground_truth_objects)
+    score_table: np.ndarray = np.full((num_row, num_col), np.nan)
+    for i, estimated_object_ in enumerate(estimated_objects):
+        for j, ground_truth_object_ in enumerate(ground_truth_objects):
+            if estimated_object_.semantic_label == ground_truth_object_.semantic_label:
+                matching_method: MatchingMethod = matching_method_module(
+                    estimated_object=estimated_object_,
+                    ground_truth_object=ground_truth_object_,
+                )
+                score_table[i, j] = matching_method.value
+
+    # assign correspond GT to estimated objects
+    estimated_objects_: List[DynamicObject] = estimated_objects.copy()
+    ground_truth_objects_: List[DynamicObject] = ground_truth_objects.copy()
+    for _ in range(num_row):
+        if np.isnan(score_table).all():
+            break
+
+        if maximize:
+            est_idx, gt_idx = np.unravel_index(
+                np.nanargmax(score_table),
+                score_table.shape,
             )
-            if best_matching_distance is None:
-                if is_same_label:
-                    correspond_ground_truth_object = ground_truth_object
-                    correspond_ground_truth_object_index = index
-                    best_matching_distance = matching_distance
-            elif best_matching_distance.value is not None:
-                if matching_distance.is_better_than(best_matching_distance.value) and is_same_label:
-                    best_matching_distance = matching_distance
-                    correspond_ground_truth_object = ground_truth_object
-                    correspond_ground_truth_object_index = index
-        return (correspond_ground_truth_object, correspond_ground_truth_object_index)
+        else:
+            est_idx, gt_idx = np.unravel_index(
+                np.nanargmin(score_table),
+                score_table.shape,
+            )
+
+        # remove corresponding estimated and GT objects
+        est_obj_: DynamicObject = estimated_objects_.pop(est_idx)
+        gt_obj_: DynamicObject = ground_truth_objects_.pop(gt_idx)
+        score_table = np.delete(score_table, obj=est_idx, axis=0)
+        score_table = np.delete(score_table, obj=gt_idx, axis=1)
+        object_result_: DynamicObjectWithPerceptionResult = DynamicObjectWithPerceptionResult(
+            estimated_object=est_obj_,
+            ground_truth_object=gt_obj_,
+        )
+        object_results.append(object_result_)
+
+    # when there are rest of estimated objects, they all are FP.
+    if len(estimated_objects_) > 0:
+        for est_obj_ in estimated_objects_:
+            object_result_: DynamicObjectWithPerceptionResult = DynamicObjectWithPerceptionResult(
+                estimated_object=est_obj_,
+                ground_truth_object=None,
+            )
+            object_results.append(object_result_)
+
+    return object_results

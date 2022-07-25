@@ -31,8 +31,6 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         frame_id: str,
         does_use_pointcloud: bool,
         result_root_directory: str,
-        log_directory: str,
-        visualization_directory: str,
         evaluation_config_dict: Dict[str, Dict[str, Any]],
     ):
         """
@@ -40,8 +38,6 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
             dataset_paths (List[str]): The list of dataset paths.
             does_use_pointcloud (bool): The boolean flag if load pointcloud data from dataset.
             result_root_directory (str): The directory path to save result.
-            log_directory (str): The directory path to save log.
-            visualization_directory (str): The directory path to save visualization result.
             evaluation_config_dict (Dict[str, Dict[str, Any]]): The dictionary of evaluation config for each task.
                                           This has a key of evaluation task name which support in EvaluationTask class(ex. ["sensing"])
         """
@@ -50,8 +46,6 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
             frame_id=frame_id,
             does_use_pointcloud=does_use_pointcloud,
             result_root_directory=result_root_directory,
-            log_directory=log_directory,
-            visualization_directory=visualization_directory,
             evaluation_config_dict=evaluation_config_dict,
         )
         self.evaluation_task: EvaluationTask = set_task(

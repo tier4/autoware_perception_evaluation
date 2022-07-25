@@ -8,7 +8,6 @@ from awml_evaluation.common.dataset import get_now_frame
 from awml_evaluation.config._evaluation_config_base import _EvaluationConfigBase
 from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
 from awml_evaluation.evaluation.sensing.sensing_frame_result import SensingFrameResult
-from awml_evaluation.visualization.visualization import VisualizationBEV
 
 
 class _EvaluationMangerBase(ABC):
@@ -16,7 +15,6 @@ class _EvaluationMangerBase(ABC):
 
     Attributes:
         self.ground_truth_frames (List[FrameGroundTruth]): The list of ground truths per frame.
-        self.visualization (VisualizationBEV): The BEV visualizer.
     """
 
     @abstractmethod
@@ -28,9 +26,6 @@ class _EvaluationMangerBase(ABC):
         super().__init__()
 
         self.ground_truth_frames: List[FrameGroundTruth] = []
-        self.visualization: VisualizationBEV = VisualizationBEV(
-            evaluation_config.visualization_directory
-        )
 
     @abstractmethod
     def add_frame_result(self) -> Union[PerceptionFrameResult, SensingFrameResult]:

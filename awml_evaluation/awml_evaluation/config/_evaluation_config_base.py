@@ -1,6 +1,7 @@
 from abc import ABC
 from abc import abstractmethod
 import datetime
+import os
 import os.path as osp
 from typing import Any
 from typing import Dict
@@ -37,8 +38,6 @@ class _EvaluationConfigBase(ABC):
         frame_id: str,
         does_use_pointcloud: bool,
         result_root_directory: str,
-        log_directory: str,
-        visualization_directory: str,
         evaluation_config_dict: Dict[str, Any],
     ) -> None:
         """[summary]
@@ -46,13 +45,11 @@ class _EvaluationConfigBase(ABC):
             dataset_paths (List[str]): The list of dataset path.
             does_use_pointcloud (bool): Whether use pointcloud of dataset.
             result_root_directory (str): The directory path to save result.
-            log_directory (str): The directory path to save log.
-            visualization_directory (str): The directory path to save visualization result.
             evaluation_config_dict (Dict[str, Any]): The config for each evaluation task. The key represents task name.
         """
         super().__init__()
         # Check tasks are supported
-        self._check_tasks(evaluation_config_dict)
+        self.evaluation_config_dict: Dict[str, Any] = self._check_tasks(evaluation_config_dict)
 
         # dataset
         self.dataset_paths: List[str] = dataset_paths
@@ -65,8 +62,10 @@ class _EvaluationConfigBase(ABC):
         # directory
         time = "{0:%Y%m%d_%H%M%S}".format(datetime.datetime.now())
         self.result_root_directory: str = result_root_directory.format(TIME=time)
-        self.log_directory: str = log_directory
-        self.visualization_directory: str = visualization_directory
+        self._log_directory: str = osp.join(self.result_root_directory, "log")
+        self._visualization_directory: str = osp.join(self.result_root_directory, "visualization")
+        os.makedirs(self._log_directory)
+        os.makedirs(self._visualization_directory)
 
         # Labels
         self.label_converter = LabelConverter()
@@ -75,12 +74,15 @@ class _EvaluationConfigBase(ABC):
     def support_tasks(cls) -> List[str]:
         return cls._support_tasks
 
-    def _check_tasks(self, evaluation_config_dict: Dict[str, Any]):
+    def _check_tasks(self, evaluation_config_dict: Dict[str, Any]) -> Dict[str, Any]:
         """[summary]
         Check if specified tasks are supported.
 
         Args:
             evaluation_config_dict (Dict[str, Any]): The keys of config must be in supported task names.
+
+        Returns:
+            evaluation_config_dict (Dict[str, Any]): The input config dict.
 
         Raises:
             ValueError: If the keys of input config are unsupported.
@@ -88,18 +90,12 @@ class _EvaluationConfigBase(ABC):
         task: str = evaluation_config_dict["evaluation_task"]
         if task not in self.support_tasks:
             raise ValueError(f"Unsupported task: {task}\nSupported tasks: {self.support_tasks}")
+        return evaluation_config_dict
 
-    def get_result_log_directory(self) -> str:
-        """[summary]
-        Get the full path to put logs
-        Returns:
-            str: The full path to put logs
-        """
-        return osp.join(self.result_root_directory, self.log_directory)
+    @property
+    def log_directory(self) -> str:
+        return self._log_directory
 
-    def get_result_visualization_directory(self) -> str:
-        """[summary]
-        Get the full path to put the visualization images
-        Returns:
-            str: The full path to put the visualization images"""
-        return osp.join(self.result_root_directory, self.visualization_directory)
+    @property
+    def visualization_directory(self) -> str:
+        return self._visualization_directory

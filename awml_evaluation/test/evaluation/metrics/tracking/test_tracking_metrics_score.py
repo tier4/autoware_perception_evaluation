@@ -36,35 +36,63 @@ class TestTrackingMetricsScore(unittest.TestCase):
 
     def test_sum_clear(self):
         """[summary]
-        Test summing up CLEAR scores.
+        Test summing up CLEAR scores. _sum_clear() returns total MOTA, MOTP and IDsw for same frames.
 
         test patterns:
             Check the summed up MOTA/MOTP and ID switch score with translated previous and current results.
+            NOTE:
+                - Estimated object is only matched with GT that has same label.
+                - The estimations & GTs are following (number represents the index)
+                    Estimation = 3
+                        (0): CAR, (1): BICYCLE, (2): CAR
+                    GT = 4
+                        (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
         """
         # patterns: (prev_diff_trans, cur_diff_trans, ans_mota, ans_motp, ans_id_switch)
         patterns: List[Tuple[DiffTranslation, DiffTranslation, float, float, int]] = [
+            # (1)
+            # -> previous   : TP=2.0((Est[0], GT[0]), (Est[1], GT[1])), FP=1.0(Est[2])
+            #       MOTA=(1.0-1.0)/2+1.0/1=1, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
+            # -> current    : TP=2.0((Est[0], GT[2]), (Est[0], GT[2])), FP=1.0(Est[2])
+            #       MOTA=(1.0-1.0)/2+1.0/1=1, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
+            # [TOTAL]
+            #       MOTA=(0.25*2+0.25*1)/3=0.25, MOTP=(0.0*1+0.0*1)/2, IDsw=0
             (
                 # prev: (trans est, trans gt)
-                DiffTranslation((1.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 # cur: (trans est, trans gt)
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 0.25,
                 0.0,
                 0,
             ),
+            # (2)
+            # -> previous   : TP=1.0(Est[1], GT[1]), FP=2.0(Est[0], Est[2])
+            #       MOTA=(1.0-2.0)/4->0.0, MOTP=(0.0/1.0)=0.0, IDsw=0
+            # -> current    : TP=2.0((Est[0], GT[2]), (Est[0], GT[2])), FP=1.0(Est[2])
+            #       MOTA=(2.0-1.0)/4=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
+            # [TOTAL]
+            #       MOTA=(0.0*2+0.25*1)/3=0.25, MOTP=(0.0*2+0.0*2)/4, IDsw=0
             (
-                DiffTranslation((1.0, 0.0, 0.0), (1.5, 2.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (0.5, 2.0, 0.0)),
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 0.25,
                 0.0,
-                1,
+                0,
             ),
+            # (3)
+            # -> previous   : TP=2.0((Est[0], GT[0]), (Est[1], Est[1])), FP=1.0(Est[2])
+            #       MOTA=(2.0-1.0)/4=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
+            # -> current    : TP=2.0((Est[0], Est[2]), (Est[0], Est[2])), FP=1.0(Est[2])
+            #       MOTA=(2.0-1.0)/4=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
+            # [TOTAL]
+            #       MOTA=(0.25*4+0.25*4)/8=0.25, MOTP=(0.0*2+0.0*2)/4=0.25, IDsw=0
             (
                 DiffTranslation((1.0, 0.0, 0.0), (0.2, 0, 0.0)),
                 DiffTranslation((0.25, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 0.25,
                 0.25,
-                1,
+                0,
             ),
         ]
         for n, (prev_diff_trans, cur_diff_trans, ans_mota, ans_motp, ans_id_switch) in enumerate(

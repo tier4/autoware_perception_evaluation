@@ -32,25 +32,27 @@ class SensitiveWordFilter(logging.Filter):
 
 def configure_logger(
     log_file_directory: str,
-    console_log_level=logging.INFO,
-    file_log_level=logging.INFO,
+    console_log_level: int = logging.INFO,
+    file_log_level: int = logging.INFO,
+    logger_name: str = "",
 ) -> logging.Logger:
     """[summary]
     The function to make logger
 
     Args:
         log_file_directory (str): The directory path to save log
-        console_log_level ([type], optional): Log level for console. Defaults to logging.INFO.
-        file_log_level ([type], optional): Log level for log file. Defaults to logging.INFO.
-        modname ([type], optional): Modname for logger. Defaults to __name__.
+        console_log_level (int): Log level for console. Defaults to logging.INFO.
+        file_log_level (int): Log level for log file. Defaults to logging.INFO.
+        logger_name (str): Modname for logger. Defaults to "".
     """
     # make directory
-    log_directory = os.path.dirname(log_file_directory)
-    os.makedirs(log_directory, exist_ok=True)
+    os.makedirs(log_file_directory, exist_ok=True)
 
     formatter = CustomTextFormatter()
 
-    logger = logging.getLogger("")
+    logger = logging.getLogger(logger_name)
+    logger.handlers.clear()
+
     logger.addFilter(SensitiveWordFilter())
     logger.setLevel(console_log_level)
 
@@ -61,8 +63,8 @@ def configure_logger(
     logger.addHandler(stream_handler)
 
     # handler for file
-    time = "{0:%Y%m%d_%H%M%S}.txt".format(datetime.datetime.now())
-    log_file_path = os.path.join(log_directory, time)
+    time = "{0:%Y%m%d_%H%M%S}.log".format(datetime.datetime.now())
+    log_file_path = os.path.join(log_file_directory, time)
     file_handler = logging.FileHandler(filename=log_file_path, encoding="utf-8")
     file_handler.setLevel(file_log_level)
     file_formatter = CustomTextFormatter()

@@ -18,7 +18,6 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         self.evaluator_config (SensingEvaluationConfig): Configuration for sensing evaluation.
         self.ground_truth_frames (List[FrameGroundTruth]): The list of ground truths per frame.
         self.frame_results (List[SensingFrameResult]): The list of sensing result per frame.
-        self.visualization (VisualizationBEV): The visualizer.
     """
 
     def __init__(

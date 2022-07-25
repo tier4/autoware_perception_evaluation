@@ -20,6 +20,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
+from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.common.threshold import LabelThreshold
