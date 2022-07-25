@@ -51,6 +51,8 @@ def configure_logger(
     formatter = CustomTextFormatter()
 
     logger = logging.getLogger("")
+    logger.handlers.clear()
+
     logger.addFilter(SensitiveWordFilter())
     logger.setLevel(console_log_level)
 
