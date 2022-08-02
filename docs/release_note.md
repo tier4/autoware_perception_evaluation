@@ -6,6 +6,13 @@
 
 ## Release for main branch
 
+### v1.5.4
+
+- <https://github.com/tier4/AWMLevaluation/pull/142>
+  - 【release】v1.5.4 release
+- <https://github.com/tier4/AWMLevaluation/pull/139>
+  - 【リファクタ】フレーム数とスキップされたフレーム番号の表示
+
 ### v1.5.3
 
 - <https://github.com/tier4/AWMLevaluation/pull/134>
