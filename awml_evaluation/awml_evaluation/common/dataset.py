@@ -9,13 +9,12 @@ from awml_evaluation.common.evaluation_task import EvaluationTask
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.label import LabelConverter
 from awml_evaluation.common.object import DynamicObject
-from awml_evaluation.util.file import divide_file_path
 import numpy as np
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
 from nuscenes.utils.data_classes import Box
 from pyquaternion.quaternion import Quaternion
-import tqdm
+from tqdm import tqdm
 
 logger = getLogger(__name__)
 
@@ -152,7 +151,7 @@ def _load_dataset(
     if target_uuids is None:
         target_uuids = []
 
-    for sample_token in tqdm.tqdm(sample_tokens):
+    for n, sample_token in enumerate(tqdm(sample_tokens)):
         frame = _sample_to_frame(
             nusc=nusc,
             helper=helper,
@@ -162,6 +161,7 @@ def _load_dataset(
             label_converter=label_converter,
             frame_id=frame_id,
             target_uuids=target_uuids,
+            frame_name=str(n),
         )
         dataset.append(frame)
     return dataset
@@ -227,6 +227,7 @@ def _sample_to_frame(
     label_converter: LabelConverter,
     frame_id: str,
     target_uuids: List[str],
+    frame_name: str,
 ) -> FrameGroundTruth:
     """[summary]
     Convert Nuscenes sample to FrameGroundTruth
@@ -241,6 +242,7 @@ def _sample_to_frame(
         target_uuids (Optional[List[str]]):
                 The list of specific objects' instance tokens.
                 It should be specified in case of selecting specific objects. Defaults to None
+        frame_name (str): Name of frame, number of frame is used.
 
     Raises:
         NotImplementedError:
@@ -270,9 +272,6 @@ def _sample_to_frame(
     else:
         pointcloud_ = None
 
-    # frame name
-    _, _, _, basename_without_ext, _ = divide_file_path(lidar_path)
-
     objects_: List[DynamicObject] = []
 
     for object_box in object_boxes:
@@ -298,7 +297,7 @@ def _sample_to_frame(
 
     frame = FrameGroundTruth(
         unix_time=unix_time_,
-        frame_name=basename_without_ext,
+        frame_name=frame_name,
         frame_id=frame_id,
         objects=objects_,
         pointcloud=pointcloud_,
