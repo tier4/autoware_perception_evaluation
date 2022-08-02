@@ -93,7 +93,6 @@ class CLEAR(_TrackingMetricsBase):
         self.objects_results_num: int = 0
 
         num_frame: int = len(object_results)
-        self.frame_num: int = num_frame - 1
         for i in range(1, num_frame):
             cur_object_results, prev_object_results = self._filter_and_sort(
                 frame_id=frame_ground_truths[i].frame_id,

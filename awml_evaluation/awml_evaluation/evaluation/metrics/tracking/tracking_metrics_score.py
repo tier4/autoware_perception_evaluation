@@ -45,7 +45,6 @@ class TrackingMetricsScore:
             == len(matching_threshold_list)
         )
         self.matching_mode: MatchingMode = matching_mode
-        self.frame_num: int = len(object_results) - 1
 
         # CLEAR results for each class
         self.clears: List[CLEAR] = []
@@ -99,7 +98,6 @@ class TrackingMetricsScore:
         """__str__ method"""
         str_: str = "\n"
         # === Total ===
-        str_ += f"Total Frames: {self.frame_num}\n"
         # CLEAR
         mota, motp, id_switch = self._sum_clear()
         str_ += f"[TOTAL] MOTA: {mota:.3f}, MOTP: {motp:.3f}, ID switch: {id_switch:d} "
