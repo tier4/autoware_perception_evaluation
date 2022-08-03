@@ -6,6 +6,13 @@
 
 ## Release for main branch
 
+### v1.5.5
+
+- <https://github.com/tier4/AWMLevaluation/pull/144>
+  - 【release】v1.5.5 release
+- <https://github.com/tier4/AWMLevaluation/pull/143>
+  - 【新機能】bbox 内点群の base_link からの最短距離にある点の算出機能の追加
+
 ### v1.5.4
 
 - <https://github.com/tier4/AWMLevaluation/pull/142>
