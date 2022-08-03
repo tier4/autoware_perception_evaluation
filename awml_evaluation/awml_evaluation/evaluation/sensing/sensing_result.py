@@ -1,3 +1,5 @@
+from typing import Optional
+
 from awml_evaluation.common.object import DynamicObject
 import numpy as np
 
@@ -11,6 +13,7 @@ class DynamicObjectWithSensingResult:
         self.inside_pointcloud (numpy.ndarray): The array of pointcloud in bounding box.
         self.inside_pointcloud_num (int): The number of pointcloud in bounding box.
         self.is_detected (bool): The boolean flag indicates whether pointcloud is in bounding box.
+        self.nearest_point (np.ndarray): The nearest point from base_link.
     """
 
     def __init__(
@@ -35,4 +38,20 @@ class DynamicObjectWithSensingResult:
             scale_factor,
         )
         self.inside_pointcloud_num: int = len(self.inside_pointcloud)
-        self.is_detected = self.inside_pointcloud_num >= min_points_threshold
+        self.is_detected: bool = self.inside_pointcloud_num >= min_points_threshold
+        self.nearest_point: Optional[np.ndarray] = self._get_nearest_point()
+
+    def _get_nearest_point(self) -> Optional[np.ndarray]:
+        """[summary]
+        Returns the nearest point from base_link. The pointcloud must be base_link coords.
+
+        Returns:
+            Optional[np.ndarray]: The nearest point included in the object's bbox, in shape (3,).
+                If there is no point in bbox, returns None.
+        """
+        if self.inside_pointcloud_num == 0:
+            return None
+
+        points: np.ndarray = self.inside_pointcloud[:, :3]
+        idx: int = np.argmin(np.linalg.norm(points, ord=2, axis=1)).item()
+        return points[idx]

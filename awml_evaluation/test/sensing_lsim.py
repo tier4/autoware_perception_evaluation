@@ -20,7 +20,7 @@ class SensingLSimMoc:
         result_root_directory (str): The directory path to save results.
     """
 
-    def __init__(self, dataset_paths: List[str], result_roor_direcotry: str):
+    def __init__(self, dataset_paths: List[str], result_root_directory: str):
         # sensing
         evaluation_config_dict = {
             "evaluation_task": "sensing",
@@ -35,7 +35,7 @@ class SensingLSimMoc:
             dataset_paths=dataset_paths,
             frame_id="base_link",
             does_use_pointcloud=False,
-            result_root_directory=result_roor_direcotry,
+            result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
         )
 
@@ -109,11 +109,13 @@ class SensingLSimMoc:
 
         for success_result in frame_result.detection_success_results:
             logging.info(
-                f"[SUCCESS] Inside points: {success_result.inside_pointcloud_num}, Is detected: {success_result.is_detected}"
+                f"[SUCCESS] Inside points: {success_result.inside_pointcloud_num}, "
+                f"Is detected: {success_result.is_detected}, "
+                f"Nearest point: {success_result.nearest_point}\n"
             )
 
         if len(frame_result.pointcloud_failed_non_detection) > 0:
-            logging.warn(
+            logging.warning(
                 f"The number of Failed non-detection pointcloud: {len(frame_result.pointcloud_failed_non_detection)}"
             )
 
@@ -174,7 +176,7 @@ if __name__ == "__main__":
     )
 
     logging.info(
-        "Failed to be Non-detected pointclouds example (frame_results[0]): "
+        "Failed to be Non-detected pointcloud example (frame_results[0]): "
         f"{len(sensing_lsim.evaluator.frame_results[0].pointcloud_failed_non_detection)}"
     )
 
