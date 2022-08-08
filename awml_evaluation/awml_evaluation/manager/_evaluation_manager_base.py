@@ -1,6 +1,7 @@
 from abc import ABC
 from abc import abstractmethod
 from typing import List
+from typing import Optional
 from typing import Union
 
 from awml_evaluation.common.dataset import FrameGroundTruth
@@ -38,7 +39,7 @@ class _EvaluationMangerBase(ABC):
         self,
         unix_time: int,
         threshold_min_time: int = 75000,
-    ) -> FrameGroundTruth:
+    ) -> Optional[FrameGroundTruth]:
         """[summary]
         Get now frame of ground truth
 
@@ -49,7 +50,8 @@ class _EvaluationMangerBase(ABC):
                     Default is 75000 sec = 75 ms.
 
         Returns:
-            FrameGroundTruth: Now frame of ground truth
+            Optional[FrameGroundTruth]: Now frame of ground truth.
+                If there is no corresponding ground truth, returns None.
         """
         ground_truth_now_frame: FrameGroundTruth = get_now_frame(
             ground_truth_frames=self.ground_truth_frames,
