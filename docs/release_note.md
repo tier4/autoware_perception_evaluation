@@ -99,7 +99,7 @@
 - <https://github.com/tier4/AWMLevaluation/pull/86>
   - 【release】v1.4.0 release
 - <https://github.com/tier4/AWMLevaluation/pull/85>
-  - 【改良】buid type の ament_cmake への変更
+  - 【改良】build type の ament_cmake への変更
 - <https://github.com/tier4/AWMLevaluation/pull/83>
   - 【機能追加】Sensing lsim の機能部分を実装
   - 【機能追加】検出・被検出エリア内の点群数の算出
@@ -120,7 +120,7 @@
 - <https://github.com/tier4/AWMLevaluation/pull/71>
   - 【release】v1.3.0 release
 - <https://github.com/tier4/AWMLevaluation/pull/68>
-  - 【改良】pointcluod の型を List[Tuple[float, float, float]] -> numpy.ndarray に変更
+  - 【改良】pointcloud の型を List[Tuple[float, float, float]] -> numpy.ndarray に変更
 - <https://github.com/tier4/AWMLevaluation/pull/70>
   - 【バグ修正】colcon を使って install すると，install 以下にサブモジュールが存在しない状態になるのを解消
   - 【バグ修正】pre-commit の mypy を disable

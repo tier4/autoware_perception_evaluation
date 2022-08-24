@@ -4,11 +4,12 @@ from typing import Dict
 from typing import List
 from typing import Union
 
+from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.label import LabelConverter
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.matching.objects_filter import divide_tp_fp_objects
-from awml_evaluation.evaluation.matching.objects_filter import filter_object_results_by_confidence
+from awml_evaluation.evaluation.matching.objects_filter import filter_object_results
 from awml_evaluation.evaluation.matching.objects_filter import get_fn_objects
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 import matplotlib as mpl
@@ -16,7 +17,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pandas_profiling as pdp
-import plotly
 from plotly import graph_objects as go
 from plotly.graph_objs import Figure
 from plotly.subplots import make_subplots
@@ -29,7 +29,7 @@ class EDAVisualizer:
     Visualization class for EDA
 
     Attributes:
-        self.visualize_df (pd.DataFrame): dataframe converted from objects.
+        self.visualize_df (pd.DataFrame): pd.DataFrame converted from objects.
         self.save_dir (str): save directory for each graph.
         self.is_gt (bool): Ground truth objects or not.
     """
@@ -65,29 +65,29 @@ class EDAVisualizer:
 
         Returns:
             df (pd.DataFrame):
-                    converted dataframe from objects
+                    converted pd.DataFrame from objects
         """
         if isinstance(objects[0], DynamicObject):
             self.is_gt = True
 
             names = np.stack([gt_object.semantic_label.value for gt_object in objects])
-            xyzs = np.stack([gt_object.state.position for gt_object in objects])
-            wlhs = np.stack([gt_object.state.size for gt_object in objects])
+            xyz = np.stack([gt_object.state.position for gt_object in objects])
+            wlh = np.stack([gt_object.state.size for gt_object in objects])
             pcd_nums = np.stack([gt_object.pointcloud_num for gt_object in objects])
 
             df: pd.DataFrame = pd.DataFrame(
                 dict(
                     name=names,
-                    w=wlhs[:, 0],
-                    l=wlhs[:, 1],
-                    h=wlhs[:, 2],
-                    x=xyzs[:, 0],
-                    y=xyzs[:, 1],
-                    z=xyzs[:, 2],
+                    w=wlh[:, 0],
+                    l=wlh[:, 1],
+                    h=wlh[:, 2],
+                    x=xyz[:, 0],
+                    y=xyz[:, 1],
+                    z=xyz[:, 2],
                     num_points=pcd_nums,
                 )
             )
-            df['distance_2d'] = np.sqrt((df['x']) ** 2 + (df['y']) ** 2)
+            df["distance_2d"] = np.sqrt((df["x"]) ** 2 + (df["y"]) ** 2)
 
         elif isinstance(objects[0], DynamicObjectWithPerceptionResult):
             self.is_gt = False
@@ -98,10 +98,10 @@ class EDAVisualizer:
                     for estimated_object in objects
                 ]
             )
-            xyzs = np.stack(
+            xyz = np.stack(
                 [estimated_object.estimated_object.state.position for estimated_object in objects]
             )
-            wlhs = np.stack(
+            wlh = np.stack(
                 [estimated_object.estimated_object.state.size for estimated_object in objects]
             )
             pcd_nums = np.stack(
@@ -117,18 +117,18 @@ class EDAVisualizer:
             df: pd.DataFrame = pd.DataFrame(
                 dict(
                     name=names,
-                    w=wlhs[:, 0],
-                    l=wlhs[:, 1],
-                    h=wlhs[:, 2],
-                    x=xyzs[:, 0],
-                    y=xyzs[:, 1],
-                    z=xyzs[:, 2],
+                    w=wlh[:, 0],
+                    l=wlh[:, 1],
+                    h=wlh[:, 2],
+                    x=xyz[:, 0],
+                    y=xyz[:, 1],
+                    z=xyz[:, 2],
                     num_points=pcd_nums,
                     center_distance=center_distances,
                     confidence=confidences,
                 )
             )
-            df['distance_2d'] = np.sqrt((df['x']) ** 2 + (df['y']) ** 2)
+            df["distance_2d"] = np.sqrt((df["x"]) ** 2 + (df["y"]) ** 2)
 
         return df
 
@@ -164,7 +164,7 @@ class EDAVisualizer:
         """
         subplot_titles: List[str] = []
         for i, range_xy in enumerate(ranges_xy):
-            subplot_titles.append(f'#objects: ~{range_xy}m')
+            subplot_titles.append(f"#objects: ~{range_xy}m")
 
         fig: Figure = make_subplots(rows=1, cols=len(ranges_xy), subplot_titles=subplot_titles)
 
@@ -173,14 +173,14 @@ class EDAVisualizer:
 
             fig.add_trace(
                 go.Histogram(
-                    x=_df['name'], name=f'#objects: ~{range_xy}m', marker=dict(color='blue')
+                    x=_df["name"], name=f"#objects: ~{range_xy}m", marker=dict(color="blue")
                 ),
                 row=1,
                 col=i + 1,
             )
 
         fig.update_yaxes(range=[0, len(self.visualize_df)])
-        fig.update_xaxes(categoryorder='array', categoryarray=class_names)
+        fig.update_xaxes(categoryorder="array", categoryarray=class_names)
         fig.show()
 
         fig.write_html(self.save_dir + "/hist_object_count_for_each_distance.html")
@@ -202,7 +202,7 @@ class EDAVisualizer:
         """
         subplot_titles: List[str] = []
         for class_name in class_names:
-            subplot_titles.append(f'{class_name}')
+            subplot_titles.append(f"{class_name}")
 
         fig: Figure = make_subplots(
             rows=1, cols=len(class_names), subplot_titles=subplot_titles, horizontal_spacing=0.1
@@ -218,12 +218,12 @@ class EDAVisualizer:
                 y_range = [0, len(dist2d) / 40]
 
             layout = go.Histogram(
-                x=dist2d, name=f'{class_name}: #objects={len(_df_cls):,}', nbinsx=400
+                x=dist2d, name=f"{class_name}: #objects={len(_df_cls):,}", nbinsx=400
             )
             fig.add_trace(layout, row=1, col=cls_i + 1)
 
-            fig.layout[f"xaxis{cls_i+1}"].title = 'distance(xy plane) [m]'
-            fig.layout[f"yaxis{cls_i+1}"].title = 'frequency'
+            fig.layout[f"xaxis{cls_i+1}"].title = "distance(xy plane) [m]"
+            fig.layout[f"yaxis{cls_i+1}"].title = "frequency"
 
         fig.update_xaxes(range=x_range)
         fig.update_yaxes(range=y_range)
@@ -258,13 +258,13 @@ class EDAVisualizer:
 
                 hist = axes[cls_i].hist2d(_df_cls.w, _df_cls.l, bins=50, norm=mpl.colors.LogNorm())
                 axes[cls_i].plot(
-                    w_mean, l_mean, marker='x', color='r', markersize=10, markeredgewidth=3
+                    w_mean, l_mean, marker="x", color="r", markersize=10, markeredgewidth=3
                 )
                 axes[cls_i].set_title(
-                    f'{class_name}: (w, l, h)=({w_mean:.2f}±{w_std:.2f}, {l_mean:.2f}±{l_std:.2f}, {h_mean:.2f}±{h_std:.2f})'
+                    f"{class_name}: (w, l, h)=({w_mean:.2f}±{w_std:.2f}, {l_mean:.2f}±{l_std:.2f}, {h_mean:.2f}±{h_std:.2f})"
                 )
-                axes[cls_i].set_xlabel('width')
-                axes[cls_i].set_ylabel('length')
+                axes[cls_i].set_xlabel("width")
+                axes[cls_i].set_ylabel("length")
                 if width_lim_dict:
                     axes[cls_i].set_xlim(
                         width_lim_dict[class_name][0], width_lim_dict[class_name][1]
@@ -306,13 +306,13 @@ class EDAVisualizer:
 
                 hist = axes[cls_i].hist2d(_df_cls.x, _df_cls.y, bins=50, norm=mpl.colors.LogNorm())
                 axes[cls_i].plot(
-                    x_mean, y_mean, marker='x', color='r', markersize=10, markeredgewidth=3
+                    x_mean, y_mean, marker="x", color="r", markersize=10, markeredgewidth=3
                 )
                 axes[cls_i].set_title(
-                    f'{class_name}: (x, y, z)=({x_mean:.2f}±{x_std:.2f}, {y_mean:.2f}±{y_std:.2f}, {z_mean:.2f}±{z_std:.2f})'
+                    f"{class_name}: (x, y, z)=({x_mean:.2f}±{x_std:.2f}, {y_mean:.2f}±{y_std:.2f}, {z_mean:.2f}±{z_std:.2f})"
                 )
-                axes[cls_i].set_xlabel('x [m] ')
-                axes[cls_i].set_ylabel('y [m] ')
+                axes[cls_i].set_xlabel("x [m] ")
+                axes[cls_i].set_ylabel("y [m] ")
                 if xlim_dict:
                     axes[cls_i].set_xlim(xlim_dict[class_name][0], xlim_dict[class_name][1])
                 if ylim_dict:
@@ -348,16 +348,16 @@ class EDAVisualizer:
 
                 dist2d = np.linalg.norm(np.stack((_df_cls.x, _df_cls.y), axis=1), axis=1)
                 hist = axes[cls_i].hist2d(dist2d, num_pts, bins=50, norm=mpl.colors.LogNorm())
-                axes[cls_i].set_title(f'{class_name}: ')
-                axes[cls_i].set_xlabel('dist')
-                axes[cls_i].set_ylabel('num_points')
+                axes[cls_i].set_title(f"{class_name}: ")
+                axes[cls_i].set_xlabel("dist")
+                axes[cls_i].set_ylabel("num_points")
                 plt.colorbar(hist[3], ax=axes[cls_i])
 
         plt.savefig(self.save_dir + "/hist2d_object_num_points_for_each_class.svg")
 
     def get_pandas_profiling(self, class_names: List[str], file_name: str) -> None:
         """[summary]
-        Get pandas profiling report for dataframe.
+        Get pandas profiling report for pd.DataFrame.
 
         Args:
             class_names (List[str]):
@@ -468,7 +468,7 @@ class EDAManager:
             confidence_threshold (float):
                     confidence threshold for visualization
         """
-        autoware_labels = []
+        autoware_labels: List[AutowareLabel] = []
         for name in self.class_names:
             autoware_labels.append(LabelConverter().convert_label(name))
         # visualize tp, fp in estimated objects
@@ -488,11 +488,17 @@ class EDAManager:
         else:
             self.visualize(fp_results, "fp_results", is_gt=False)
             # visualize fp with high confidence in estimated objects
-            fp_results_with_high_confidence = filter_object_results_by_confidence(
-                fp_results, confidence_threshold
+            confidence_threshold_list: List[float] = [confidence_threshold] * len(autoware_labels)
+            fp_results_with_high_confidence = filter_object_results(
+                frame_id="base_link",
+                object_results=tp_results,
+                target_labels=autoware_labels,
+                confidence_threshold_list=confidence_threshold_list,
             )
             self.visualize(
-                fp_results_with_high_confidence, "fp_results_with_high_confidence", is_gt=False
+                fp_results_with_high_confidence,
+                "fp_results_with_high_confidence",
+                is_gt=False,
             )
 
         # visualize fn in ground truth objects

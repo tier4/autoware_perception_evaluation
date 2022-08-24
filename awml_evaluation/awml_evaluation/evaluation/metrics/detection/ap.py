@@ -6,13 +6,9 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.label import AutowareLabel
-from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.common.threshold import get_label_threshold
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
-from awml_evaluation.evaluation.matching.objects_filter import filter_ground_truth_objects
-from awml_evaluation.evaluation.matching.objects_filter import filter_object_results
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
@@ -55,11 +51,8 @@ class Ap:
         self,
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
         object_results: List[List[DynamicObjectWithPerceptionResult]],
-        frame_ground_truths: List[FrameGroundTruth],
+        num_ground_truth: int,
         target_labels: List[AutowareLabel],
-        max_x_position_list: List[float],
-        max_y_position_list: List[float],
-        min_point_numbers: List[int],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
     ) -> None:
@@ -70,79 +63,37 @@ class Ap:
             object_results (List[List[DynamicObjectWithPerceptionResult]]) : The results to each estimated object
             frame_ground_truths (List[FrameGroundTruth]) : The List of ground truth for each frame
             target_labels (List[AutowareLabel]): Target labels to evaluate
-            max_x_position (List[float]):
-                    The threshold list of maximum x-axis position for each object.
-                    Return the object that
-                    - max_x_position < object x-axis position < max_x_position.
-                    This param use for range limitation of detection algorithm.
-            max_y_position (List[float]):
-                    The threshold list of maximum y-axis position for each object.
-                    Return the object that
-                    - max_y_position < object y-axis position < max_y_position.
-                    This param use for range limitation of detection algorithm.
-            min_point_numbers (List[int]):
-                    Min point numbers.
-                    For example, if target_labels is ["car", "bike", "pedestrian"],
-                    min_point_numbers [5, 0, 0] means
-                    Car bboxes including 4 points are filtered out.
-                    Car bboxes including 5 points are NOT filtered out.
-                    Bike and Pedestrian bboxes are not filtered out(All bboxes are used when calculating metrics.)
             matching_mode (MatchingMode):
                     Matching mode like distance between the center of the object, 3d IoU
             matching_threshold (List[float]): The threshold list for matching the estimated object
         """
-        assert len(object_results) == len(frame_ground_truths)
-
         self.tp_metrics: Union[TPMetricsAp, TPMetricsAph] = tp_metrics
+        self.num_ground_truth: int = num_ground_truth
+
         self.target_labels: List[AutowareLabel] = target_labels
         self.matching_mode: MatchingMode = matching_mode
         self.matching_threshold_list: List[float] = matching_threshold_list
 
-        self.objects_results_num: int = 0
-        self.ground_truth_objects_num: int = 0
-
-        filtered_object_results: List[DynamicObjectWithPerceptionResult] = []
         all_object_results: List[DynamicObjectWithPerceptionResult] = []
-        if frame_ground_truths[0] is None:
-            object_results = object_results[1:]
-            frame_ground_truths = frame_ground_truths[1:]
-        for obj_results_, frame_gt_ in zip(object_results, frame_ground_truths):
-            all_object_results += obj_results_
-            # filter estimated object and results by iou_threshold and target_labels
-            filtered_obj_results_: List[DynamicObjectWithPerceptionResult] = filter_object_results(
-                frame_id=frame_gt_.frame_id,
-                object_results=obj_results_,
-                target_labels=self.target_labels,
-                max_x_position_list=max_x_position_list,
-                max_y_position_list=max_y_position_list,
-                ego2map=frame_gt_.ego2map,
-            )
-            self.objects_results_num += len(filtered_obj_results_)
-            filtered_object_results += filtered_obj_results_
-
-            filtered_ground_truth_objects: List[DynamicObject] = filter_ground_truth_objects(
-                frame_id=frame_gt_.frame_id,
-                objects=frame_gt_.objects,
-                target_labels=self.target_labels,
-                max_x_position_list=max_x_position_list,
-                max_y_position_list=max_y_position_list,
-                min_point_numbers=min_point_numbers,
-                ego2map=frame_gt_.ego2map,
-            )
-            self.ground_truth_objects_num += len(filtered_ground_truth_objects)
+        if len(object_results) == 0 or not isinstance(object_results[0], list):
+            all_object_results = object_results
+        else:
+            for obj_results in object_results:
+                all_object_results += obj_results
+        self.objects_results_num: int = len(all_object_results)
 
         # sort by confidence
         lambda_func: Callable[
             [DynamicObjectWithPerceptionResult], float
         ] = lambda x: x.estimated_object.semantic_score
-        filtered_object_results.sort(key=lambda_func, reverse=True)
+        all_object_results.sort(key=lambda_func, reverse=True)
 
         # tp and fp from object results ordered by confidence
         self.tp_list: List[float] = []
         self.fp_list: List[float] = []
         self.tp_list, self.fp_list = self._calculate_tp_fp(
             tp_metrics=tp_metrics,
-            object_results=filtered_object_results,
+            object_results=all_object_results,
         )
 
         # calculate precision recall
@@ -229,8 +180,8 @@ class Ap:
 
         for i in range(len(precisions_list)):
             precisions_list[i] = float(self.tp_list[i]) / (i + 1)
-            if self.ground_truth_objects_num > 0:
-                recalls_list[i] = float(self.tp_list[i]) / self.ground_truth_objects_num
+            if self.num_ground_truth > 0:
+                recalls_list[i] = float(self.tp_list[i]) / self.num_ground_truth
             else:
                 recalls_list[i] = 0.0
 
@@ -289,15 +240,15 @@ class Ap:
 
         # When result num is 0
         if len(object_results) == 0:
-            if self.ground_truth_objects_num != 0:
+            if self.num_ground_truth != 0:
                 logger.debug("The size of object_results is 0")
                 return [], []
             else:
-                tp_list: List[float] = [0.0] * self.ground_truth_objects_num
+                tp_list: List[float] = [0.0] * self.num_ground_truth
                 fp_list: List[float] = np.arange(
                     1,
-                    self.ground_truth_objects_num + 1,
-                    dtype=np.float,
+                    self.num_ground_truth + 1,
+                    dtype=np.float32,
                 ).tolist()
                 return tp_list, fp_list
 
@@ -310,7 +261,7 @@ class Ap:
                 target_labels=self.target_labels,
                 threshold_list=self.matching_threshold_list,
             )
-            is_result_correct = object_results[i].is_result_correct(
+            is_result_correct = obj_result.is_result_correct(
                 matching_mode=self.matching_mode,
                 matching_threshold=matching_threshold_,
             )

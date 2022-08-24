@@ -2,21 +2,25 @@ from typing import List
 from typing import Tuple
 
 from awml_evaluation.common.dataset import FrameGroundTruth
-from awml_evaluation.common.dataset import load_all_datasets
 from awml_evaluation.common.point import crop_pointcloud
 from awml_evaluation.config.sensing_evaluation_config import SensingEvaluationConfig
+from awml_evaluation.evaluation.matching.objects_filter import filter_objects
 from awml_evaluation.evaluation.sensing.sensing_frame_result import SensingFrameResult
 import numpy as np
 
 from ._evaluation_manager_base import _EvaluationMangerBase
+from ..common.object import DynamicObject
 
 
 class SensingEvaluationManager(_EvaluationMangerBase):
     """The class to manage sensing evaluation.
 
     Attributes:
+        - By _EvaluationMangerBase
         self.evaluator_config (SensingEvaluationConfig): Configuration for sensing evaluation.
         self.ground_truth_frames (List[FrameGroundTruth]): The list of ground truths per frame.
+
+        - By SensingEvaluationManger
         self.frame_results (List[SensingFrameResult]): The list of sensing result per frame.
     """
 
@@ -29,15 +33,6 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             evaluation_config (SensingEvaluationConfig): The configuration for sensing evaluation.
         """
         super().__init__(evaluation_config)
-        self.evaluator_config = evaluation_config
-        self.ground_truth_frames: List[FrameGroundTruth] = load_all_datasets(
-            dataset_paths=self.evaluator_config.dataset_paths,
-            frame_id=self.evaluator_config.frame_id,
-            does_use_pointcloud=self.evaluator_config.does_use_pointcloud,
-            evaluation_task="sensing",
-            label_converter=self.evaluator_config.label_converter,
-            target_uuids=self.evaluator_config.target_uuids,
-        )
         self.frame_results: List[SensingFrameResult] = []
 
     def add_frame_result(
@@ -60,6 +55,8 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         Returns:
             result (SensingFrameResult)
         """
+        ground_truth_now_frame.objects = self._filter_objects(ground_truth_now_frame)
+
         result = SensingFrameResult(
             sensing_frame_config=self.evaluator_config.sensing_frame_config,
             unix_time=unix_time,
@@ -72,6 +69,15 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         )
         self.frame_results.append(result)
         return result
+
+    def _filter_objects(self, frame_ground_truth: FrameGroundTruth) -> List[DynamicObject]:
+        return filter_objects(
+            frame_id=self.evaluator_config.frame_id,
+            objects=frame_ground_truth.objects,
+            is_gt=True,
+            ego2map=frame_ground_truth.ego2map,
+            **self.evaluator_config.filtering_params,
+        )
 
     @staticmethod
     def crop_pointcloud(

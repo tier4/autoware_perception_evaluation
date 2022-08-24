@@ -16,7 +16,7 @@ from typing import Tuple
 from awml_evaluation.common.dataset import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.matching.objects_filter import divide_tp_fp_objects
-from awml_evaluation.evaluation.matching.objects_filter import filter_ground_truth_objects
+from awml_evaluation.evaluation.matching.objects_filter import filter_objects
 from awml_evaluation.evaluation.matching.objects_filter import get_fn_objects
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from awml_evaluation.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
@@ -83,13 +83,12 @@ class PassFailResult:
             ros_critical_ground_truth_objects (List[DynamicObject]):
                     Ground truth objects filtered by ROS node.
         """
-        self.critical_ground_truth_objects = filter_ground_truth_objects(
+        self.critical_ground_truth_objects = filter_objects(
             frame_id=self.frame_id,
             objects=ros_critical_ground_truth_objects,
-            target_labels=self.critical_object_filter_config.target_labels,
-            max_x_position_list=self.critical_object_filter_config.max_x_position_list,
-            max_y_position_list=self.critical_object_filter_config.max_y_position_list,
+            is_gt=True,
             ego2map=self.ego2map,
+            **self.critical_object_filter_config.filtering_params,
         )
         if self.critical_ground_truth_objects is not None:
             self.tp_objects, self.fp_objects_result = self.get_tp_fp_objects_result(
@@ -140,7 +139,7 @@ class PassFailResult:
             object_results=object_results,
             target_labels=self.frame_pass_fail_config.target_labels,
             matching_mode=MatchingMode.PLANEDISTANCE,
-            matching_threshold_list=self.frame_pass_fail_config.threshold_plane_distance_list,
+            matching_threshold_list=self.frame_pass_fail_config.plane_distance_threshold_list,
         )
 
         # filter by critical_ground_truth_objects

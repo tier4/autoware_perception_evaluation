@@ -1,8 +1,8 @@
 from ctypes import Union
+from typing import Dict
 from typing import List
 from typing import Tuple
 
-from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.metrics.tracking.clear import CLEAR
@@ -13,54 +13,43 @@ class TrackingMetricsScore:
     """Metrics score class for tracking.
 
     Attributes:
+        self.target_labels: (List[AutowareLabel]): The list of AutowareLabel.
         self.matching_mode (MatchingMode): The target matching mode.
         self.clears (List[CLEAR]): The list of CLEAR score.
     """
 
     def __init__(
         self,
-        object_results: List[List[DynamicObjectWithPerceptionResult]],
-        frame_ground_truths: List[FrameGroundTruth],
+        object_results_dict: Dict[AutowareLabel, List[List[DynamicObjectWithPerceptionResult]]],
+        num_ground_truth_dict: Dict[AutowareLabel, int],
         target_labels: List[AutowareLabel],
-        max_x_position_list: List[float],
-        max_y_position_list: List[float],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
     ) -> None:
         """[summary]
 
         Args:
-            object_results (List[List[DynamicObjectWithPerceptionResult]]): object results for multi frame.
-            frame_ground_truths (List[FrameGroundTruth]): ground truth objects for multi frame.
+            object_results_dict (Dict[AutowareLabel, List[List[DynamicObjectWithPerceptionResult]]):
+                object results divided by label for multi frame.
+            num_ground_truth (int): The number of ground truth.
             target_labels (List[AutowareLabel]): e.g. ["car", "pedestrian", "bus"]
-            max_x_position_list (List[float]): The list of max x position threshold for each category. (e.g. [10.0, 5.0, 10.0])
-            max_y_position_list (List[float]): The list of max y position threshold for each category. (e.g. [2.0, 1.0, 2.0])
             matching_mode (MatchingMode): The target matching mode.
             matching_threshold_list (List[float]): The list of matching threshold for each category. (e.g. [0.5, 0.3, 0.5])
         """
-        assert (
-            len(target_labels)
-            == len(max_x_position_list)
-            == len(max_y_position_list)
-            == len(matching_threshold_list)
-        )
+        assert len(target_labels) == len(matching_threshold_list)
+        self.target_labels: List[AutowareLabel] = target_labels
         self.matching_mode: MatchingMode = matching_mode
 
         # CLEAR results for each class
         self.clears: List[CLEAR] = []
         # Calculate score for each target labels
-        for target_label, max_x_position, max_y_position, matching_threshold in zip(
-            target_labels,
-            max_x_position_list,
-            max_y_position_list,
-            matching_threshold_list,
-        ):
+        for target_label, matching_threshold in zip(target_labels, matching_threshold_list):
+            object_results = object_results_dict[target_label]
+            num_ground_truth = num_ground_truth_dict[target_label]
             clear_: CLEAR = CLEAR(
                 object_results=object_results,
-                frame_ground_truths=frame_ground_truths,
+                num_ground_truth=num_ground_truth,
                 target_labels=[target_label],
-                max_x_position_list=[max_x_position],
-                max_y_position_list=[max_y_position],
                 matching_mode=matching_mode,
                 matching_threshold_list=[matching_threshold],
             )
@@ -81,10 +70,10 @@ class TrackingMetricsScore:
         num_id_switch: int = 0
         for clear in self.clears:
             if clear.mota != float("inf"):
-                mota += clear.mota * clear.ground_truth_objects_num
+                mota += clear.mota * clear.num_ground_truth
             if clear.motp != float("inf"):
                 motp += clear.motp * clear.tp
-            num_gt += clear.ground_truth_objects_num
+            num_gt += clear.num_ground_truth
             num_tp += int(clear.tp)
             num_id_switch += clear.id_switch
 

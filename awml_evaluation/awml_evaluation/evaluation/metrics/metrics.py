@@ -1,6 +1,7 @@
+from typing import Dict
 from typing import List
 
-from awml_evaluation.common.dataset import FrameGroundTruth
+from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.metrics.detection.map import Map
 from awml_evaluation.evaluation.metrics.metrics_score_config import MetricsScoreConfig
@@ -25,10 +26,12 @@ class MetricsScore:
     def __init__(
         self,
         config: MetricsScoreConfig,
+        used_frame: List[int],
     ) -> None:
         """[summary]
         Args:
             metrics_config (MetricsScoreConfig): A config for metrics
+            used_frame: List[int]: The list of chosen frame.
         """
         self.detection_config = config.detection_config
         self.tracking_config = config.tracking_config
@@ -40,8 +43,9 @@ class MetricsScore:
         # TODO: prediction metrics scores for each matching method
         self.prediction_scores: List = []
 
-        self.__num_frame: int = 0
-        self.__used_frame: List[int] = []
+        self.__num_frame: int = len(used_frame)
+        self.__num_gt: int = 0
+        self.__used_frame: List[int] = used_frame
 
     def __str__(self) -> str:
         """[summary]
@@ -56,10 +60,7 @@ class MetricsScore:
         str_ += "\n"
 
         # object num
-        object_num: int = 0
-        for ap_ in self.maps[0].aps:
-            object_num += ap_.ground_truth_objects_num
-        str_ += f"Ground Truth Num: {object_num}\n"
+        str_ += f"Ground Truth Num: {self.num_ground_truth}\n"
 
         # detection
         for map_ in self.maps:
@@ -86,66 +87,56 @@ class MetricsScore:
     def skipped_frame(self) -> List[int]:
         return [n for n in range(self.num_frame) if n not in self.used_frame]
 
+    @property
+    def num_ground_truth(self) -> int:
+        return self.__num_gt
+
     def evaluate_detection(
         self,
-        object_results: List[List[DynamicObjectWithPerceptionResult]],
-        frame_ground_truths: List[FrameGroundTruth],
+        object_results: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]],
+        num_ground_truth: Dict[AutowareLabel, int],
     ) -> None:
         """[summary]
         Calculate detection metrics
 
         Args:
             object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object result
-            frame_ground_truths (List[FrameGroundTruth]): The list ground truth for each frame.
         """
         if self.tracking_config is None:
-            self.__num_frame += len(object_results) - 1
-            self.__used_frame = [int(frame_gt.frame_name) for frame_gt in frame_ground_truths[1:]]
+            self.__num_gt += sum(num_ground_truth.values())
 
         for distance_threshold_ in self.detection_config.center_distance_thresholds:
             map_ = Map(
-                object_results=object_results,
-                frame_ground_truths=frame_ground_truths,
+                object_results_dict=object_results,
+                num_ground_truth_dict=num_ground_truth,
                 target_labels=self.detection_config.target_labels,
-                max_x_position_list=self.detection_config.max_x_position_list,
-                max_y_position_list=self.detection_config.max_y_position_list,
-                min_point_numbers=self.detection_config.min_point_numbers,
                 matching_mode=MatchingMode.CENTERDISTANCE,
                 matching_threshold_list=distance_threshold_,
             )
             self.maps.append(map_)
         for iou_threshold_bev_ in self.detection_config.iou_bev_thresholds:
             map_ = Map(
-                object_results=object_results,
-                frame_ground_truths=frame_ground_truths,
+                object_results_dict=object_results,
+                num_ground_truth_dict=num_ground_truth,
                 target_labels=self.detection_config.target_labels,
-                max_x_position_list=self.detection_config.max_x_position_list,
-                max_y_position_list=self.detection_config.max_y_position_list,
-                min_point_numbers=self.detection_config.min_point_numbers,
                 matching_mode=MatchingMode.IOUBEV,
                 matching_threshold_list=iou_threshold_bev_,
             )
             self.maps.append(map_)
         for iou_threshold_3d_ in self.detection_config.iou_3d_thresholds:
             map_ = Map(
-                object_results=object_results,
-                frame_ground_truths=frame_ground_truths,
+                object_results_dict=object_results,
+                num_ground_truth_dict=num_ground_truth,
                 target_labels=self.detection_config.target_labels,
-                max_x_position_list=self.detection_config.max_x_position_list,
-                max_y_position_list=self.detection_config.max_y_position_list,
-                min_point_numbers=self.detection_config.min_point_numbers,
                 matching_mode=MatchingMode.IOU3D,
                 matching_threshold_list=iou_threshold_3d_,
             )
             self.maps.append(map_)
         for plane_distance_threshold_ in self.detection_config.plane_distance_thresholds:
             map_ = Map(
-                object_results=object_results,
-                frame_ground_truths=frame_ground_truths,
+                object_results_dict=object_results,
+                num_ground_truth_dict=num_ground_truth,
                 target_labels=self.detection_config.target_labels,
-                max_x_position_list=self.detection_config.max_x_position_list,
-                max_y_position_list=self.detection_config.max_y_position_list,
-                min_point_numbers=self.detection_config.min_point_numbers,
                 matching_mode=MatchingMode.PLANEDISTANCE,
                 matching_threshold_list=plane_distance_threshold_,
             )
@@ -153,8 +144,8 @@ class MetricsScore:
 
     def evaluate_tracking(
         self,
-        object_results: List[List[DynamicObjectWithPerceptionResult]],
-        frame_ground_truths: List[FrameGroundTruth],
+        object_results: Dict[AutowareLabel, List[List[DynamicObjectWithPerceptionResult]]],
+        num_ground_truth: Dict[AutowareLabel, int],
     ) -> None:
         """[summary]
         Calculate tracking metrics.
@@ -166,51 +157,41 @@ class MetricsScore:
 
         Args:
             object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object result for each frame.
-            ground_truth_objects (List[List[DynamicObject]]): The list of ground truth object for each frame.
         """
-        self.__num_frame += len(object_results) - 1
-        self.__used_frame = [int(frame_gt.frame_name) for frame_gt in frame_ground_truths[1:]]
+        self.__num_gt += sum(num_ground_truth.values())
 
         for distance_threshold_ in self.tracking_config.center_distance_thresholds:
             tracking_score_ = TrackingMetricsScore(
-                object_results=object_results,
-                frame_ground_truths=frame_ground_truths,
+                object_results_dict=object_results,
+                num_ground_truth_dict=num_ground_truth,
                 target_labels=self.tracking_config.target_labels,
-                max_x_position_list=self.tracking_config.max_x_position_list,
-                max_y_position_list=self.tracking_config.max_y_position_list,
                 matching_mode=MatchingMode.CENTERDISTANCE,
                 matching_threshold_list=distance_threshold_,
             )
             self.tracking_scores.append(tracking_score_)
         for iou_threshold_bev_ in self.tracking_config.iou_bev_thresholds:
             tracking_score_ = TrackingMetricsScore(
-                object_results=object_results,
-                frame_ground_truths=frame_ground_truths,
+                object_results_dict=object_results,
+                num_ground_truth_dict=num_ground_truth,
                 target_labels=self.tracking_config.target_labels,
-                max_x_position_list=self.tracking_config.max_x_position_list,
-                max_y_position_list=self.tracking_config.max_y_position_list,
                 matching_mode=MatchingMode.IOUBEV,
                 matching_threshold_list=iou_threshold_bev_,
             )
             self.tracking_scores.append(tracking_score_)
         for iou_threshold_3d_ in self.tracking_config.iou_3d_thresholds:
             tracking_score_ = TrackingMetricsScore(
-                object_results=object_results,
-                frame_ground_truths=frame_ground_truths,
+                object_results_dict=object_results,
+                num_ground_truth_dict=num_ground_truth,
                 target_labels=self.tracking_config.target_labels,
-                max_x_position_list=self.tracking_config.max_x_position_list,
-                max_y_position_list=self.tracking_config.max_y_position_list,
                 matching_mode=MatchingMode.IOU3D,
                 matching_threshold_list=iou_threshold_3d_,
             )
             self.tracking_scores.append(tracking_score_)
         for plane_distance_threshold_ in self.tracking_config.plane_distance_thresholds:
             tracking_score_ = TrackingMetricsScore(
-                object_results=object_results,
-                frame_ground_truths=frame_ground_truths,
+                object_results_dict=object_results,
+                num_ground_truth_dict=num_ground_truth,
                 target_labels=self.tracking_config.target_labels,
-                max_x_position_list=self.tracking_config.max_x_position_list,
-                max_y_position_list=self.tracking_config.max_y_position_list,
                 matching_mode=MatchingMode.PLANEDISTANCE,
                 matching_threshold_list=plane_distance_threshold_,
             )
@@ -218,8 +199,8 @@ class MetricsScore:
 
     def evaluate_prediction(
         self,
-        object_results: List[List[DynamicObjectWithPerceptionResult]],
-        frame_ground_truths: List[FrameGroundTruth],
+        object_results: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]],
+        num_ground_truth: Dict[AutowareLabel, int],
     ) -> None:
         """[summary]
         Calculate prediction metrics
@@ -227,6 +208,4 @@ class MetricsScore:
         Args:
             object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
         """
-        self.__num_frame += len(object_results) - 1
-        self.__used_frame = [int(frame_gt.frame_name) for frame_gt in frame_ground_truths[1:]]
         pass

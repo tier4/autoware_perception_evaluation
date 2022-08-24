@@ -70,7 +70,6 @@ def load_all_datasets(
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
     frame_id: str,
-    target_uuids: Optional[List[str]] = None,
 ) -> List[FrameGroundTruth]:
     """
     Load tier4 datasets.
@@ -79,11 +78,6 @@ def load_all_datasets(
         does_use_pointcloud (bool): The flag of setting pointcloud
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
-        target_uuids: List[str]:
-                The list of object instance tokens for all data in all frames.
-                It should be specified in case of selecting specific objects.
-                The order of the list is same as dataset paths. Defaults to None.
-                NOTE: assuming dataset_paths is only one.
 
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
@@ -102,7 +96,6 @@ def load_all_datasets(
             evaluation_task=evaluation_task,
             label_converter=label_converter,
             frame_id=frame_id,
-            target_uuids=target_uuids,
         )
     logger.info("Finish loading dataset\n" + _get_str_objects_number_info(label_converter))
     return all_datasets
@@ -114,7 +107,6 @@ def _load_dataset(
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
     frame_id: str,
-    target_uuids: Optional[List[str]] = None,
 ) -> List[FrameGroundTruth]:
     """
     Load one tier4 dataset.
@@ -123,9 +115,6 @@ def _load_dataset(
         does_use_pointcloud (bool): The flag of setting pointcloud
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
-        target_uuids: (Optional[List[str]]):
-                The list of object instance tokens for the data will be loaded in all frames.
-                It should be specified in case of selecting specific objects. Defaults to None
 
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
@@ -146,11 +135,6 @@ def _load_dataset(
     sample_tokens = _get_sample_tokens(nusc.sample)
 
     dataset: List[FrameGroundTruth] = []
-
-    # If target_uuids is not specified, set it as empty list
-    if target_uuids is None:
-        target_uuids = []
-
     for n, sample_token in enumerate(tqdm(sample_tokens)):
         frame = _sample_to_frame(
             nusc=nusc,
@@ -160,7 +144,6 @@ def _load_dataset(
             evaluation_task=evaluation_task,
             label_converter=label_converter,
             frame_id=frame_id,
-            target_uuids=target_uuids,
             frame_name=str(n),
         )
         dataset.append(frame)
@@ -226,7 +209,6 @@ def _sample_to_frame(
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
     frame_id: str,
-    target_uuids: List[str],
     frame_name: str,
 ) -> FrameGroundTruth:
     """[summary]
@@ -239,9 +221,6 @@ def _sample_to_frame(
         does_use_pointcloud (bool): The flag of setting pointcloud
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
-        target_uuids (Optional[List[str]]):
-                The list of specific objects' instance tokens.
-                It should be specified in case of selecting specific objects. Defaults to None
         frame_name (str): Name of frame, number of frame is used.
 
     Raises:
@@ -277,10 +256,6 @@ def _sample_to_frame(
     for object_box in object_boxes:
         sample_annotation_: dict = nusc.get("sample_annotation", object_box.token)
         instance_token_: str = sample_annotation_["instance_token"]
-        # Skip if target_uuids is not specified(=empty list)
-        # or it is specified but object token is not in target_uuids
-        if len(target_uuids) != 0 and instance_token_ not in target_uuids:
-            continue
 
         object_: DynamicObject = _convert_nuscenes_box_to_dynamic_object(
             nusc=nusc,
