@@ -1,9 +1,8 @@
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Tuple
 
-from awml_evaluation.common.evaluation_task import EvaluationTask
-from awml_evaluation.common.evaluation_task import set_task
 from awml_evaluation.evaluation.sensing.sensing_frame_config import SensingFrameConfig
 
 from ._evaluation_config_base import _EvaluationConfigBase
@@ -13,14 +12,20 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
     """The class of config for sensing evaluation.
 
     Attributes:
+        - By _EvaluationConfigBase:
         self.dataset_paths (List[str]): The path(s) of dataset(s).
         self.frame_id (str): The frame_id, base_link or map.
         self.does_use_pointcloud (bool): The boolean flag if load pointcloud data from dataset.
         self.result_root_directory (str): The directory path to save result.
         self.log_directory (str): The directory path to save log.
         self.visualization_directory (str): The directory path to save visualization result.
-        self.target_uuids (List[str]): The list of objects' uuids should be detected.
         self.label_converter (LabelConverter): The instance to convert label names.
+        self.evaluation_task (EvaluationTask): The instance of EvaluationTask
+
+        - By SensingEvaluationConfig
+        self.filtering_params (Dict[str, Any]): Filtering parameters.
+        self.metrics_params (Dict[str, Any]): Metrics parameters.
+        self.sensing_frame_config (SensingFrameConfig)
     """
 
     _support_tasks: List[str] = ["sensing"]
@@ -48,11 +53,19 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
         )
-        self.evaluation_task: EvaluationTask = set_task(
-            evaluation_config_dict.pop("evaluation_task")
-        )
-        # target uuids
-        self.target_uuids: List[str] = evaluation_config_dict.pop("target_uuids")
+        self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)
+        self.sensing_frame_config: SensingFrameConfig = SensingFrameConfig(**self.metrics_params)
 
-        # config per frame
-        self.sensing_frame_config: SensingFrameConfig = SensingFrameConfig(**evaluation_config_dict)
+    def _extract_params(
+        self,
+        evaluation_config_dict: Dict[str, Any],
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """"""
+        e_cfg: Dict[str, Any] = evaluation_config_dict.copy()
+        f_params: Dict[str, Any] = {"target_uuids": e_cfg.get("target_uuids", None)}
+        m_params: Dict[str, Any] = {
+            "box_scale_0m": e_cfg.get("box_scale_0m", 1.0),
+            "box_scale_100m": e_cfg.get("box_scale_100m", 1.0),
+            "min_points_threshold": e_cfg.get("min_points_threshold", 1),
+        }
+        return f_params, m_params

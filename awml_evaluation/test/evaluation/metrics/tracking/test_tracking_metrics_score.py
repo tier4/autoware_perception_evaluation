@@ -2,19 +2,21 @@ from test.evaluation.metrics.tracking.test_clear import AnswerCLEAR
 from test.util.dummy_object import make_dummy_data
 from test.util.object_diff import DiffTranslation
 from test.util.object_diff import DiffYaw
+from typing import Dict
 from typing import List
 from typing import Tuple
 import unittest
 
-from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
+from awml_evaluation.evaluation.matching.objects_filter import divide_objects
+from awml_evaluation.evaluation.matching.objects_filter import divide_objects_to_num
+from awml_evaluation.evaluation.matching.objects_filter import filter_objects
 from awml_evaluation.evaluation.metrics.tracking.tracking_metrics_score import TrackingMetricsScore
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
+from awml_evaluation.evaluation.result.object_result import get_object_results
 from awml_evaluation.util.debug import get_objects_with_difference
-import numpy as np
 
 
 class TestTrackingMetricsScore(unittest.TestCase):
@@ -25,6 +27,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
         self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
+        self.frame_id: str = "base_link"
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
             AutowareLabel.BICYCLE,
@@ -52,11 +55,11 @@ class TestTrackingMetricsScore(unittest.TestCase):
         patterns: List[Tuple[DiffTranslation, DiffTranslation, float, float, int]] = [
             # (1)
             # -> previous   : TP=2.0((Est[0], GT[0]), (Est[1], GT[1])), FP=1.0(Est[2])
-            #       MOTA=(1.0-1.0)/2+1.0/1=1, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
+            #       MOTA=(1.0-1.0)/2+1.0/1+0.0/1+0.0/1=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
             # -> current    : TP=2.0((Est[0], GT[2]), (Est[0], GT[2])), FP=1.0(Est[2])
-            #       MOTA=(1.0-1.0)/2+1.0/1=1, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
+            #       MOTA=(1.0-1.0)/2+1.0/1+0.0/1+0.0/1=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
             # [TOTAL]
-            #       MOTA=(0.25*2+0.25*1)/3=0.25, MOTP=(0.0*1+0.0*1)/2, IDsw=0
+            #       MOTA=(0.25*4 + 0.25*4)/8=0.25, MOTP=(0.0*1+0.0*1)/2=0.0, IDsw=0
             (
                 # prev: (trans est, trans gt)
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
@@ -68,11 +71,11 @@ class TestTrackingMetricsScore(unittest.TestCase):
             ),
             # (2)
             # -> previous   : TP=1.0(Est[1], GT[1]), FP=2.0(Est[0], Est[2])
-            #       MOTA=(1.0-2.0)/4->0.0, MOTP=(0.0/1.0)=0.0, IDsw=0
+            #       MOTA=(1.0-2.0)/2->0.0, MOTP=(0.0/1.0)=0.0, IDsw=0
             # -> current    : TP=2.0((Est[0], GT[2]), (Est[0], GT[2])), FP=1.0(Est[2])
             #       MOTA=(2.0-1.0)/4=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
             # [TOTAL]
-            #       MOTA=(0.0*2+0.25*1)/3=0.25, MOTP=(0.0*2+0.0*2)/4, IDsw=0
+            #       MOTA=(0.25*4+0.25*4)/8=0.25, MOTP=(0.0*2+0.0*2)/4, IDsw=0
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.5, 2.0, 0.0)),
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
@@ -110,13 +113,29 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     diff_distance=prev_diff_trans.diff_ground_truth,
                     diff_yaw=0.0,
                 )
+                # Filter previous objects
+                prev_estimated_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=prev_estimated_objects,
+                    is_gt=False,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
+                prev_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=prev_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
                 # Previous object results
-                prev_object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
+                prev_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     estimated_objects=prev_estimated_objects,
                     ground_truth_objects=prev_ground_truth_objects,
                 )
+                prev_object_results_dict = divide_objects(prev_object_results, self.target_labels)
 
                 # Current estimated objects
                 cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
@@ -130,35 +149,45 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     diff_distance=cur_diff_trans.diff_ground_truth,
                     diff_yaw=0.0,
                 )
-                # Current object results
-                cur_object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=cur_estimated_objects,
-                    ground_truth_objects=cur_ground_truth_objects,
-                )
-
-                prev_frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
-                    objects=prev_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                cur_frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
-                    objects=prev_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-
-                tracking_score: TrackingMetricsScore = TrackingMetricsScore(
-                    object_results=[prev_object_results, cur_object_results],
-                    frame_ground_truths=[prev_frame_ground_truth, cur_frame_ground_truth],
+                # Filter current objects
+                cur_estimated_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=cur_estimated_objects,
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                cur_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=cur_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
+                # Current object results
+                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=cur_estimated_objects,
+                    ground_truth_objects=cur_ground_truth_objects,
+                )
+                cur_object_results_dict = divide_objects(cur_object_results, self.target_labels)
+
+                object_results_dict = {}
+                for label in self.target_labels:
+                    object_results_dict[label] = [
+                        prev_object_results_dict[label],
+                        cur_object_results_dict[label],
+                    ]
+
+                num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
+                    cur_ground_truth_objects, self.target_labels
+                )
+
+                tracking_score: TrackingMetricsScore = TrackingMetricsScore(
+                    object_results_dict=object_results_dict,
+                    num_ground_truth_dict=num_ground_truth_dict,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )
@@ -188,7 +217,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
             ),
         ]
         for n, (prev_diff_trans, cur_diff_trans, ans_clears) in enumerate(patterns):
-            with self.subTest(f"Test sum CLEAR: {n + 1}"):
+            with self.subTest(f"Test tracking score with center distance: {n + 1}"):
                 prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
                     diff_distance=prev_diff_trans.diff_estimated,
@@ -200,12 +229,31 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     diff_distance=prev_diff_trans.diff_ground_truth,
                     diff_yaw=0.0,
                 )
+                # Filter previous objects
+                prev_estimated_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=prev_estimated_objects,
+                    is_gt=False,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
+                prev_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=prev_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
                 # Previous object results
-                prev_object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
+                prev_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     estimated_objects=prev_estimated_objects,
                     ground_truth_objects=prev_ground_truth_objects,
+                )
+                prev_object_results_dict = divide_objects(
+                    prev_object_results,
+                    self.target_labels,
                 )
 
                 # Current estimated objects
@@ -220,35 +268,49 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     diff_distance=cur_diff_trans.diff_ground_truth,
                     diff_yaw=0.0,
                 )
-                # Current object results
-                cur_object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=cur_estimated_objects,
-                    ground_truth_objects=cur_ground_truth_objects,
-                )
-
-                prev_frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
-                    objects=prev_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                cur_frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
-                    objects=prev_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-
-                tracking_score: TrackingMetricsScore = TrackingMetricsScore(
-                    object_results=[prev_object_results, cur_object_results],
-                    frame_ground_truths=[prev_frame_ground_truth, cur_frame_ground_truth],
+                # Filter current objects
+                cur_estimated_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=cur_estimated_objects,
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                cur_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=cur_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
+                # Current object results
+                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=cur_estimated_objects,
+                    ground_truth_objects=cur_ground_truth_objects,
+                )
+                cur_object_results_dict = divide_objects(
+                    cur_object_results,
+                    self.target_labels,
+                )
+
+                object_results_dict = {}
+                for label in self.target_labels:
+                    object_results_dict[label] = [
+                        prev_object_results_dict[label],
+                        cur_object_results_dict[label],
+                    ]
+
+                num_ground_truth_dict = divide_objects_to_num(
+                    cur_ground_truth_objects,
+                    self.target_labels,
+                )
+
+                tracking_score: TrackingMetricsScore = TrackingMetricsScore(
+                    object_results_dict=object_results_dict,
+                    num_ground_truth_dict=num_ground_truth_dict,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )
@@ -281,7 +343,9 @@ class TestTrackingMetricsScore(unittest.TestCase):
             ),
         ]
         for n, (prev_diff_yaw, cur_diff_yaw, ans_clears) in enumerate(patterns):
-            with self.subTest(f"Test sum CLEAR: {n + 1}"):
+            with self.subTest(
+                f"Test tracking score with center distance matching translated by yaw: {n + 1}"
+            ):
                 prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
                     diff_distance=(0.0, 0.0, 0.0),
@@ -293,13 +357,29 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=prev_diff_yaw.diff_ground_truth,
                 )
+                # Filter previous objects
+                prev_estimated_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=prev_estimated_objects,
+                    is_gt=False,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
+                prev_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=prev_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
                 # Previous object results
-                prev_object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
+                prev_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     estimated_objects=prev_estimated_objects,
                     ground_truth_objects=prev_ground_truth_objects,
                 )
+                prev_object_results_dict = divide_objects(prev_object_results, self.target_labels)
 
                 # Current estimated objects
                 cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
@@ -313,35 +393,45 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=cur_diff_yaw.diff_ground_truth,
                 )
-                # Current object results
-                cur_object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=cur_estimated_objects,
-                    ground_truth_objects=cur_ground_truth_objects,
-                )
-
-                prev_frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
-                    objects=prev_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                cur_frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
-                    objects=prev_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-
-                tracking_score: TrackingMetricsScore = TrackingMetricsScore(
-                    object_results=[prev_object_results, cur_object_results],
-                    frame_ground_truths=[prev_frame_ground_truth, cur_frame_ground_truth],
+                # Filter current objects
+                cur_estimated_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=cur_estimated_objects,
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                cur_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=cur_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
+                # Current object results
+                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=cur_estimated_objects,
+                    ground_truth_objects=cur_ground_truth_objects,
+                )
+                cur_object_results_dict = divide_objects(cur_object_results, self.target_labels)
+
+                object_results_dict = {}
+                for label in self.target_labels:
+                    object_results_dict[label] = [
+                        prev_object_results_dict[label],
+                        cur_object_results_dict[label],
+                    ]
+
+                num_ground_truth_dict = divide_objects_to_num(
+                    cur_ground_truth_objects, self.target_labels
+                )
+
+                tracking_score: TrackingMetricsScore = TrackingMetricsScore(
+                    object_results_dict=object_results_dict,
+                    num_ground_truth_dict=num_ground_truth_dict,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )

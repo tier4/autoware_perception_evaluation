@@ -4,234 +4,207 @@
 
 - detection/tracking/prediction の各評価指標を実行する class
 
-- config (MetricsScoreConfig)
-  - detection_config (DetectionMetricsConfig)
-  - tracking_config (TrackingMetricsConfig)
-  - prediction_config (PredictionMetricsConfig)
+| Argument |         type         | Description               |
+| :------- | :------------------: | :------------------------ |
+| `config` | `MetricsScoreConfig` | `MetricsScore`用の config |
+
+- 入力された MetricsScoreConfig から，`detection/tracking/prediction_config`を生成
+
+  - `detection_config (DetectionMetricsConfig)`
+  - `tracking_config (TrackingMetricsConfig)`
+  - `prediction_config (PredictionMetricsConfig)`
+
+- 各 config をもとにそれぞれの Metrics が計算される．
+
+| EvaluationTask |   Metrics   |
+| :------------- | :---------: |
+| `Detection`    |     mAP     |
+| `Tracking`     | mAP / CLEAR |
+| `Prediction`   |    [TBD]    |
 
 ```yaml
-[2022-05-26 14:17:27,687] [INFO] [lsim.py:297 <module>] Metrics example (final_metric_score):
+[2022-08-09 18:56:45,237] [INFO] [perception_lsim.py:214 <module>] Detection Metrics example (final_metric_score):
 {'detection_config': {'center_distance_thresholds': [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]],
                       'iou_3d_thresholds': [[0.5, 0.5, 0.5, 0.5]],
                       'iou_bev_thresholds': [[0.5, 0.5, 0.5, 0.5]],
-                      'max_x_position_list': [102.4, 102.4, 102.4, 102.4],
-                      'max_y_position_list': [102.4, 102.4, 102.4, 102.4],
                       'plane_distance_thresholds': [[2.0, 2.0, 2.0, 2.0], [3.0, 3.0, 3.0, 3.0]],
                       'target_labels': ['AutowareLabel.CAR', 'AutowareLabel.BICYCLE', 'AutowareLabel.PEDESTRIAN',
                                         'AutowareLabel.MOTORBIKE']},
  'maps': ' --- length of element 6 ---,',
- 'prediction_config': {'center_distance_thresholds': [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]],
-                       'iou_3d_thresholds': [[0.5, 0.5, 0.5, 0.5]],
-                       'iou_bev_thresholds': [[0.5, 0.5, 0.5, 0.5]],
-                       'max_x_position_list': [102.4, 102.4, 102.4, 102.4],
-                       'max_y_position_list': [102.4, 102.4, 102.4, 102.4],
-                       'plane_distance_thresholds': [[2.0, 2.0, 2.0, 2.0], [3.0, 3.0, 3.0, 3.0]],
-                       'target_labels': ['AutowareLabel.CAR', 'AutowareLabel.BICYCLE', 'AutowareLabel.PEDESTRIAN',
-                                         'AutowareLabel.MOTORBIKE']},
+ 'num_ground_truth_dict': {<AutowareLabel.PEDESTRIAN: 'pedestrian'>: 7657,
+                           <AutowareLabel.MOTORBIKE: 'motorbike'>: 335,
+                           <AutowareLabel.BICYCLE: 'bicycle'>: 1319,
+                           <AutowareLabel.CAR: 'car'>: 3770},
+ 'prediction_config': None,
+ 'prediction_scores': [],
+ 'tracking_config': None,
+ 'tracking_scores': []}
+
+ [2022-08-09 18:57:53,888] [INFO] [perception_lsim.py:270 <module>] Tracking Metrics example (tracking_final_metric_score):
+{'detection_config': {'center_distance_thresholds': [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]],
+                      'iou_3d_thresholds': [[0.5, 0.5, 0.5, 0.5]],
+                      'iou_bev_thresholds': [[0.5, 0.5, 0.5, 0.5]],
+                      'plane_distance_thresholds': [[2.0, 2.0, 2.0, 2.0], [3.0, 3.0, 3.0, 3.0]],
+                      'target_labels': ['AutowareLabel.CAR', 'AutowareLabel.BICYCLE', 'AutowareLabel.PEDESTRIAN',
+                                        'AutowareLabel.MOTORBIKE']},
+ 'maps': ' --- length of element 6 ---,',
+ 'num_ground_truth_dict': {<AutowareLabel.PEDESTRIAN: 'pedestrian'>: 7657,
+                           <AutowareLabel.MOTORBIKE: 'motorbike'>: 335,
+                           <AutowareLabel.BICYCLE: 'bicycle'>: 1319,
+                           <AutowareLabel.CAR: 'car'>: 3770},
+ 'prediction_config': None,
+ 'prediction_scores': [],
  'tracking_config': {'center_distance_thresholds': [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]],
                      'iou_3d_thresholds': [[0.5, 0.5, 0.5, 0.5]],
                      'iou_bev_thresholds': [[0.5, 0.5, 0.5, 0.5]],
-                     'max_x_position_list': [102.4, 102.4, 102.4, 102.4],
-                     'max_y_position_list': [102.4, 102.4, 102.4, 102.4],
                      'plane_distance_thresholds': [[2.0, 2.0, 2.0, 2.0], [3.0, 3.0, 3.0, 3.0]],
                      'target_labels': ['AutowareLabel.CAR', 'AutowareLabel.BICYCLE', 'AutowareLabel.PEDESTRIAN',
                                        'AutowareLabel.MOTORBIKE']},
  'tracking_scores': ' --- length of element 6 ---,'}
-```
-
-### Detection
-
-- map (Map): mAP の score を計算した class
-  - aphs (List[Ap]): 各 label の Ap
-  - map (float): mAP の score
-
-```yaml
-
-[2022-01-06 17:38:57,087] [INFO] [func] [lsim.py:155 <module>] metrics example (final_metric_score.maps[0].aps[0]):
-{'aphs': [{'ap': 0.8771527141490844,
-'fp_list': ' --- length of element 3774 ---,',
-'ground_truth_objects_num': 3770,
-'matching_average': 0.3605163907481991,
-'matching_mode': 'MatchingMode.CENTERDISTANCE',
-'matching_standard_deviation': 0.0014330986556561386,
-'matching_threshold_list': [1.0],
-'objects_results_num': 3774,
-'target_labels': ['AutowareLabel.CAR'],
-'tp_list': ' --- length of element 3774 ---,',
-'tp_metrics': {'mode': 'TPMetricsAph'}},
-{'ap': 0.8727832485980411,
-'fp_list': ' --- length of element 1319 ---,',
-'ground_truth_objects_num': 1319,
-'matching_average': 0.3605163907481991,
-'matching_mode': 'MatchingMode.CENTERDISTANCE',
-'matching_standard_deviation': 0.0014330986556561386,
-'matching_threshold_list': [1.0],
-'objects_results_num': 1319,
-'target_labels': ['AutowareLabel.BICYCLE'],
-'tp_list': ' --- length of element 1319 ---,',
-'tp_metrics': {'mode': 'TPMetricsAph'}},
-{'ap': 0.8735186482000276,
-'fp_list': ' --- length of element 7658 ---,',
-'ground_truth_objects_num': 7657,
-'matching_average': 0.3605163907481991,
-'matching_mode': 'MatchingMode.CENTERDISTANCE',
-'matching_standard_deviation': 0.0014330986556561386,
-'matching_threshold_list': [1.0],
-'objects_results_num': 7658,
-'target_labels': ['AutowareLabel.PEDESTRIAN'],
-'tp_list': ' --- length of element 7658 ---,',
-'tp_metrics': {'mode': 'TPMetricsAph'}},
-{'ap': 0.8767288928721811,
-'fp_list': ' --- length of element 335 ---,',
-'ground_truth_objects_num': 335,
-'matching_average': 0.3605163907481991,
-'matching_mode': 'MatchingMode.CENTERDISTANCE',
-'matching_standard_deviation': 0.0014330986556561386,
-'matching_threshold_list': [1.0],
-'objects_results_num': 335,
-'target_labels': ['AutowareLabel.MOTORBIKE'],
-'tp_list': ' --- length of element 335 ---,',
-'tp_metrics': {'mode': 'TPMetricsAph'}}],
-'aps': [{'ap': 1.0010610079575597,
-'fp_list': ' --- length of element 3774 ---,',
-'ground_truth_objects_num': 3770,
-'matching_average': 0.3605163907481991,
-'matching_mode': 'MatchingMode.CENTERDISTANCE',
-'matching_standard_deviation': 0.0014330986556561386,
-'matching_threshold_list': [1.0],
-'objects_results_num': 3774,
-'target_labels': ['AutowareLabel.CAR'],
-'tp_list': ' --- length of element 3774 ---,',
-'tp_metrics': {'mode': 'TPMetricsAp'}},
-{'ap': 1.0,
-'fp_list': ' --- length of element 1319 ---,',
-'ground_truth_objects_num': 1319,
-'matching_average': 0.3605163907481991,
-'matching_mode': 'MatchingMode.CENTERDISTANCE',
-'matching_standard_deviation': 0.0014330986556561386,
-'matching_threshold_list': [1.0],
-'objects_results_num': 1319,
-'target_labels': ['AutowareLabel.BICYCLE'],
-'tp_list': ' --- length of element 1319 ---,',
-'tp_metrics': {'mode': 'TPMetricsAp'}},
-{'ap': 1.0001305994514822,
-'fp_list': ' --- length of element 7658 ---,',
-'ground_truth_objects_num': 7657,
-'matching_average': 0.3605163907481991,
-'matching_mode': 'MatchingMode.CENTERDISTANCE',
-'matching_standard_deviation': 0.0014330986556561386,
-'matching_threshold_list': [1.0],
-'objects_results_num': 7658,
-'target_labels': ['AutowareLabel.PEDESTRIAN'],
-'tp_list': ' --- length of element 7658 ---,',
-'tp_metrics': {'mode': 'TPMetricsAp'}},
-{'ap': 1.0,
-'fp_list': ' --- length of element 335 ---,',
-'ground_truth_objects_num': 335,
-'matching_average': 0.3605163907481991,
-'matching_mode': 'MatchingMode.CENTERDISTANCE',
-'matching_standard_deviation': 0.0014330986556561386,
-'matching_threshold_list': [1.0],
-'objects_results_num': 335,
-'target_labels': ['AutowareLabel.MOTORBIKE'],
-'tp_list': ' --- length of element 335 ---,',
-'tp_metrics': {'mode': 'TPMetricsAp'}}],
-'map': 1.0002979018522606,
-'map_config': {'matching_mode': 'MatchingMode.CENTERDISTANCE',
-'matching_threshold_list': [1.0, 1.0, 1.0, 1.0],
-'target_labels': ['AutowareLabel.CAR', 'AutowareLabel.BICYCLE', 'AutowareLabel.PEDESTRIAN',
-'AutowareLabel.MOTORBIKE']},
-'maph': 0.8750458759548335}
 
 ```
 
-### Tracking
+## Detection
 
-Tracking 評価では，以下に示す CLEAR metrics に加えて，上記の mAP も計算される．
+### `Map`
 
-- TrackingMetricsScore: tracking の score を計算した class
-  - clears (List[CLEAR]): 各 label の CLEAR
+- mAP のスコア計算を行う class．内部で AP / APH を計算し，それらのクラス平均を取る．
 
 ```yaml
-{
-  "clears":
-    [
-      {
-        "fp": 3768.0,
-        "frame_num": 200,
-        "ground_truth_objects_num": 3770,
-        "id_switch": 0,
-        "matching_mode_": "MatchingMode.CENTERDISTANCE",
-        "matching_threshold_list_": [1.0],
-        "max_x_position_list_": [102.4],
-        "max_y_position_list_": [102.4],
-        "metrics_filed_": ["MOTA", "MOTP"],
-        "mota": 0.0,
-        "motp": inf,
-        "objects_results_num": 3768,
-        "target_labels_": ["AutowareLabel.CAR"],
-        "tp": 0.0,
-        "tp_matching_score": 0.0,
-        "tp_metrics_": { "mode": "TPMetricsAp" },
-      },
-      {
-        "fp": 1186.0,
-        "frame_num": 200,
-        "ground_truth_objects_num": 1319,
-        "id_switch": 0,
-        "matching_mode_": "MatchingMode.CENTERDISTANCE",
-        "matching_threshold_list_": [1.0],
-        "max_x_position_list_": [102.4],
-        "max_y_position_list_": [102.4],
-        "metrics_filed_": ["MOTA", "MOTP"],
-        "mota": 0.0,
-        "motp": inf,
-        "objects_results_num": 1186,
-        "target_labels_": ["AutowareLabel.BICYCLE"],
-        "tp": 0.0,
-        "tp_matching_score": 0.0,
-        "tp_metrics_": { "mode": "TPMetricsAp" },
-      },
-      {
-        "fp": 6809.0,
-        "frame_num": 200,
-        "ground_truth_objects_num": 7657,
-        "id_switch": 6,
-        "matching_mode_": "MatchingMode.CENTERDISTANCE",
-        "matching_threshold_list_": [1.0],
-        "max_x_position_list_": [102.4],
-        "max_y_position_list_": [102.4],
-        "metrics_filed_": ["MOTA", "MOTP"],
-        "mota": 0.0,
-        "motp": 0.7065867725109557,
-        "objects_results_num": 7583,
-        "target_labels_": ["AutowareLabel.PEDESTRIAN"],
-        "tp": 774.0,
-        "tp_matching_score": 546.8981619234797,
-        "tp_metrics_": { "mode": "TPMetricsAp" },
-      },
-      {
-        "fp": 335.0,
-        "frame_num": 200,
-        "ground_truth_objects_num": 335,
-        "id_switch": 0,
-        "matching_mode_": "MatchingMode.CENTERDISTANCE",
-        "matching_threshold_list_": [1.0],
-        "max_x_position_list_": [102.4],
-        "max_y_position_list_": [102.4],
-        "metrics_filed_": ["MOTA", "MOTP"],
-        "mota": 0.0,
-        "motp": inf,
-        "objects_results_num": 335,
-        "target_labels_": ["AutowareLabel.MOTORBIKE"],
-        "tp": 0.0,
-        "tp_matching_score": 0.0,
-        "tp_metrics_": { "mode": "TPMetricsAp" },
-      },
-    ],
-  "frame_num": 200,
-  "matching_mode": "MatchingMode.CENTERDISTANCE",
-}
+[2022-08-09 18:56:45,238] [INFO] [perception_lsim.py:220 <module>] mAP result example (final_metric_score.maps[0].aps[0]):
+{'aphs': [{'ap': 0.0,
+           'fp_list': ' --- length of element 3768 ---,',
+           'matching_average': 2.3086792761230375,
+           'matching_mode': 'MatchingMode.CENTERDISTANCE',
+           'matching_standard_deviation': 1.7793252530202338e-15,
+           'matching_threshold_list': [1.0],
+           'num_ground_truth': 3770,
+           'objects_results_num': 3768,
+           'target_labels': ['AutowareLabel.CAR'],
+           'tp_list': ' --- length of element 3768 ---,',
+           'tp_metrics': {'mode': 'TPMetricsAph'}},
+          {'ap': 0.0,
+           'fp_list': ' --- length of element 1186 ---,',
+           'matching_average': 2.291362716605052,
+           'matching_mode': 'MatchingMode.CENTERDISTANCE',
+           'matching_standard_deviation': 0.828691650821576,
+           'matching_threshold_list': [1.0],
+           'num_ground_truth': 1319,
+           'objects_results_num': 1186,
+           'target_labels': ['AutowareLabel.BICYCLE'],
+           'tp_list': ' --- length of element 1186 ---,',
+           'tp_metrics': {'mode': 'TPMetricsAph'}},
+          {'ap': 0.010345232018551354,
+           'fp_list': ' --- length of element 7583 ---,',
+           'matching_average': 2.7900883035521864,
+           'matching_mode': 'MatchingMode.CENTERDISTANCE',
+           'matching_standard_deviation': 3.6498079706351123,
+           'matching_threshold_list': [1.0],
+           'num_ground_truth': 7657,
+           'objects_results_num': 7583,
+           'target_labels': ['AutowareLabel.PEDESTRIAN'],
+           'tp_list': ' --- length of element 7583 ---,',
+           'tp_metrics': {'mode': 'TPMetricsAph'}},
+          {'ap': 0.0,
+           'fp_list': ' --- length of element 335 ---,',
+           'matching_average': 2.308679276123039,
+           'matching_mode': 'MatchingMode.CENTERDISTANCE',
+           'matching_standard_deviation': 1.8215173398221747e-15,
+           'matching_threshold_list': [1.0],
+           'num_ground_truth': 335,
+           'objects_results_num': 335,
+           'target_labels': ['AutowareLabel.MOTORBIKE'],
+           'tp_list': ' --- length of element 335 ---,',
+           'tp_metrics': {'mode': 'TPMetricsAph'}}],
+ 'aps': [{'ap': 0.0,
+          'fp_list': ' --- length of element 3768 ---,',
+          'matching_average': 2.3086792761230375,
+          'matching_mode': 'MatchingMode.CENTERDISTANCE',
+          'matching_standard_deviation': 1.7793252530202338e-15,
+          'matching_threshold_list': [1.0],
+          'num_ground_truth': 3770,
+          'objects_results_num': 3768,
+          'target_labels': ['AutowareLabel.CAR'],
+          'tp_list': ' --- length of element 3768 ---,',
+          'tp_metrics': {'mode': 'TPMetricsAp'}},
+         {'ap': 0.0,
+          'fp_list': ' --- length of element 1186 ---,',
+          'matching_average': 2.291362716605052,
+          'matching_mode': 'MatchingMode.CENTERDISTANCE',
+          'matching_standard_deviation': 0.828691650821576,
+          'matching_threshold_list': [1.0],
+          'num_ground_truth': 1319,
+          'objects_results_num': 1186,
+          'target_labels': ['AutowareLabel.BICYCLE'],
+          'tp_list': ' --- length of element 1186 ---,',
+          'tp_metrics': {'mode': 'TPMetricsAp'}},
+         {'ap': 0.012201062955606672,
+          'fp_list': ' --- length of element 7583 ---,',
+          'matching_average': 2.7900883035521864,
+          'matching_mode': 'MatchingMode.CENTERDISTANCE',
+          'matching_standard_deviation': 3.6498079706351123,
+          'matching_threshold_list': [1.0],
+          'num_ground_truth': 7657,
+          'objects_results_num': 7583,
+          'target_labels': ['AutowareLabel.PEDESTRIAN'],
+          'tp_list': ' --- length of element 7583 ---,',
+          'tp_metrics': {'mode': 'TPMetricsAp'}},
+         {'ap': 0.0,
+          'fp_list': ' --- length of element 335 ---,',
+          'matching_average': 2.308679276123039,
+          'matching_mode': 'MatchingMode.CENTERDISTANCE',
+          'matching_standard_deviation': 1.8215173398221747e-15,
+          'matching_threshold_list': [1.0],
+          'num_ground_truth': 335,
+          'objects_results_num': 335,
+          'target_labels': ['AutowareLabel.MOTORBIKE'],
+          'tp_list': ' --- length of element 335 ---,',
+          'tp_metrics': {'mode': 'TPMetricsAp'}}],
+ 'map': 0.003050265738901668,
+ 'maph': 0.0025863080046378386,
+ 'matching_mode': 'MatchingMode.CENTERDISTANCE',
+ 'matching_threshold_list': [1.0, 1.0, 1.0, 1.0],
+ 'target_labels': ['AutowareLabel.CAR', 'AutowareLabel.BICYCLE', 'AutowareLabel.PEDESTRIAN', 'AutowareLabel.MOTORBIKE']}
+```
+
+## Tracking
+
+## `TrackingMetricsScore`
+
+- tracking の メトリクススコアを計算する class.内部で CLEAR を計算し，MOTA 　/　 MOTP 　/　 IDswitch 等を計算する．
+
+```yaml
+[2022-08-09 18:57:53,889] [INFO] [perception_lsim.py:282 <module>] CLEAR result example (tracking_final_metric_score.tracking_scores[0].clears[0]):
+{'clears': [{'fp': 3759.0,
+             'id_switch': 0,
+             'mota': 0.0,
+             'motp': 0.8297818944410861,
+             'objects_results_num': 3771,
+             'tp': 12.0,
+             'tp_matching_score': 9.957382733293032},
+            {'fp': 1189.0,
+             'id_switch': 0,
+             'mota': 0.0,
+             'motp': inf,
+             'objects_results_num': 1189,
+             'tp': 0.0,
+             'tp_matching_score': 0.0},
+            {'fp': 6834.0,
+             'id_switch': 11,
+             'mota': 0.0,
+             'motp': 0.6495895085858145,
+             'objects_results_num': 7526,
+             'tp': 692.0,
+             'tp_matching_score': 449.5159399413837},
+            {'fp': 335.0,
+             'id_switch': 0,
+             'mota': 0.0,
+             'motp': inf,
+             'objects_results_num': 335,
+             'tp': 0.0,
+             'tp_matching_score': 0.0}],
+ 'matching_mode': 'MatchingMode.CENTERDISTANCE',
+ 'target_labels': ['AutowareLabel.CAR', 'AutowareLabel.BICYCLE', 'AutowareLabel.PEDESTRIAN', 'AutowareLabel.MOTORBIKE']}
 ```
 
 ## Matching

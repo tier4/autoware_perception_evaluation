@@ -1,4 +1,3 @@
-from logging import INFO
 import os
 from secrets import token_hex
 import tempfile
@@ -11,10 +10,10 @@ from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
+from awml_evaluation.evaluation.result.object_result import get_object_results
 from awml_evaluation.util.debug import get_objects_with_difference
-from awml_evaluation.visualization.edatool import EDAManager
-from awml_evaluation.visualization.edatool import EDAVisualizer
+from awml_evaluation.visualization.eda_tool import EDAManager
+from awml_evaluation.visualization.eda_tool import EDAVisualizer
 from pyquaternion.quaternion import Quaternion
 import pytest
 
@@ -25,7 +24,7 @@ class TestEDAVisualizer:
 
     Attributes:
         self.dummy_estimated_objects (List[DynamicObject]): dummy estimated objects.
-        self.dummy_ground_truth_objects (List[DynamicObject]): dummy groundtruth objects.
+        self.dummy_ground_truth_objects (List[DynamicObject]): dummy ground truth objects.
         self.object_results (List[DynamicObjectWithPerceptionResult]): dummy object results.
         self.class_names (List[str]): names of class you want to visualize.
         self.ranges_xy (List[Union[int, float]]): distances in x-y plane.
@@ -49,9 +48,7 @@ class TestEDAVisualizer:
         ),
     )
 
-    object_results: List[
-        DynamicObjectWithPerceptionResult
-    ] = PerceptionFrameResult.get_object_results(
+    object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
         estimated_objects=dummy_estimated_objects,
         ground_truth_objects=dummy_ground_truth_objects,
     )
@@ -59,9 +56,9 @@ class TestEDAVisualizer:
     class_names: List[str] = ["car", "pedestrian", "bicycle"]
     ranges_xy: List[Union[int, float]] = [250, 100, 50, 25]
     xylim_dict: Dict[str, List[float]] = {
-        'car': [-100, 100],
-        'bicycle': [-100, 100],
-        'pedestrian': [-100, 100],
+        "car": [-100, 100],
+        "bicycle": [-100, 100],
+        "pedestrian": [-100, 100],
     }
 
     @pytest.fixture
@@ -180,7 +177,7 @@ class TestEDAVisualizer:
 
         assert str(e.value) == "You should use this method only for ground truth objects"
 
-    def test_objects_to_df_for_groundtruth_objects(self, save_dir: str):
+    def test_objects_to_df_for_gt_objects(self, save_dir: str):
         """[summary]
         Check if fields exist in DataFrame when input is List[DynamicObject]]
 
@@ -192,10 +189,10 @@ class TestEDAVisualizer:
         visualizer = EDAVisualizer(self.dummy_ground_truth_objects, save_dir)
         visualizer.objects_to_df(self.dummy_ground_truth_objects)
         assert hasattr(visualizer, "visualize_df")
-        assert visualizer.is_gt == True
+        assert visualizer.is_gt
         assert "num_points" in visualizer.visualize_df.columns
 
-    def test_hist_object_count_for_each_distance_for_groundtruth_objects(self, save_dir: str):
+    def test_hist_object_count_for_each_distance_for_gt_objects(self, save_dir: str):
         """[summary]
         Check if file of hist_object_count_for_each_distance is generated.
 
@@ -207,7 +204,7 @@ class TestEDAVisualizer:
         visualizer.hist_object_count_for_each_distance(self.class_names, ranges_xy=self.ranges_xy)
         assert os.path.exists(save_dir + "/hist_object_count_for_each_distance.html")
 
-    def test_hist_object_dist2d_for_each_class_for_groundtruth_objects(self, save_dir: str):
+    def test_hist_object_dist2d_for_each_class_for_gt_objects(self, save_dir: str):
         """[summary]
         Check if file of hist_object_dist2d_for_each_class is generated.
 
@@ -219,7 +216,7 @@ class TestEDAVisualizer:
         visualizer.hist_object_dist2d_for_each_class(self.class_names)
         assert os.path.exists(save_dir + "/hist_object_dist2d_for_each_class.html")
 
-    def test_hist2d_object_wl_for_each_class_for_groundtruth_objects(self, save_dir: str):
+    def test_hist2d_object_wl_for_each_class_for_gt_objects(self, save_dir: str):
         """[summary]
         Check if file of hist2d_object_wl_for_each_class is generated.
 
@@ -231,7 +228,7 @@ class TestEDAVisualizer:
         visualizer.hist2d_object_wl_for_each_class(self.class_names)
         assert os.path.exists(save_dir + "/hist2d_object_wl_for_each_class.svg")
 
-    def test_hist2d_object_center_xy_for_each_class_for_groundtruth_objects(self, save_dir: str):
+    def test_hist2d_object_center_xy_for_each_class_for_gt_objects(self, save_dir: str):
         """[summary]
         Check if file of hist2d_object_center_xy_for_each_class is generated.
 
@@ -245,7 +242,7 @@ class TestEDAVisualizer:
         visualizer.hist2d_object_center_xy_for_each_class(self.class_names, xlim_dict, ylim_dict)
         assert os.path.exists(save_dir + "/hist2d_object_center_xy_for_each_class.svg")
 
-    def test_hist2d_object_num_points_for_each_class_for_groundtruth_objects(self, save_dir: str):
+    def test_hist2d_object_num_points_for_each_class_for_gt_objects(self, save_dir: str):
         """[summary]
         Check if file of hist2d_object_num_points_for_each_class is generated.
 
@@ -257,7 +254,7 @@ class TestEDAVisualizer:
         visualizer.hist2d_object_num_points_for_each_class(self.class_names)
         assert os.path.exists(save_dir + "/hist2d_object_num_points_for_each_class.svg")
 
-    def test_get_pandas_profiling_for_groundtruth_objects(self, save_dir: str):
+    def test_get_pandas_profiling_for_gt_objects(self, save_dir: str):
         """[summary]
         Check if file of pandas_profiling is generated.
 
@@ -367,31 +364,29 @@ class TestEDAManager:
         ),
     ]
 
-    object_results: List[
-        DynamicObjectWithPerceptionResult
-    ] = PerceptionFrameResult.get_object_results(
+    object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
         estimated_objects=dummy_estimated_objects,
         ground_truth_objects=dummy_ground_truth_objects,
     )
 
     root_path: str = tempfile.TemporaryDirectory().name
 
-    class_names: List[str] = ['car', 'pedestrian', 'bicycle']
+    class_names: List[str] = ["car", "pedestrian", "bicycle"]
     ranges_xy: List[float] = [250, 100, 50, 25]
     xylim_dict: Dict[str, List[float]] = {
-        'car': [-100, 100],
-        'bicycle': [-100, 100],
-        'pedestrian': [-100, 100],
+        "car": [-100, 100],
+        "bicycle": [-100, 100],
+        "pedestrian": [-100, 100],
     }
     width_lim_dict: Dict[str, List[float]] = {
-        'car': [0, 4.0],
-        'bicycle': [0, 2.5],
-        'pedestrian': [0, 1.6],
+        "car": [0, 4.0],
+        "bicycle": [0, 2.5],
+        "pedestrian": [0, 1.6],
     }
     length_lim_dict: Dict[str, List[float]] = {
-        'car': [0, 18],
-        'bicycle': [0, 2.5],
-        'pedestrian': [0, 2.5],
+        "car": [0, 18],
+        "bicycle": [0, 2.5],
+        "pedestrian": [0, 2.5],
     }
     eda_manager = EDAManager(
         root_path, class_names, ranges_xy, xylim_dict, width_lim_dict, length_lim_dict

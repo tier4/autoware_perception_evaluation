@@ -6,7 +6,10 @@ import os.path as osp
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Tuple
 
+from awml_evaluation.common.evaluation_task import EvaluationTask
+from awml_evaluation.common.evaluation_task import set_task
 from awml_evaluation.common.label import LabelConverter
 
 
@@ -21,6 +24,7 @@ class _EvaluationConfigBase(ABC):
         self.log_directory (str): The directory path to save log.
         self.visualization_directory (str): The directory path to save visualization result.
         self.label_converter (LabelConverter): The converter to convert string label to autoware format.
+        self.evaluation_config_dict (Dict[str, Any]): The original config dict.
 
     properties:
         self.support_tasks (List[str]): The list of supported task of EvaluationManager.
@@ -49,7 +53,8 @@ class _EvaluationConfigBase(ABC):
         """
         super().__init__()
         # Check tasks are supported
-        self.evaluation_config_dict: Dict[str, Any] = self._check_tasks(evaluation_config_dict)
+        self.evaluation_task: EvaluationTask = self._check_tasks(evaluation_config_dict)
+        self.evaluation_config_dict: Dict[str, Any] = evaluation_config_dict
 
         # dataset
         self.dataset_paths: List[str] = dataset_paths
@@ -71,18 +76,18 @@ class _EvaluationConfigBase(ABC):
         self.label_converter = LabelConverter()
 
     @property
-    def support_tasks(cls) -> List[str]:
-        return cls._support_tasks
+    def support_tasks(self) -> List[str]:
+        return self._support_tasks
 
-    def _check_tasks(self, evaluation_config_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def _check_tasks(self, evaluation_config_dict: Dict[str, Any]) -> EvaluationTask:
         """[summary]
         Check if specified tasks are supported.
 
         Args:
-            evaluation_config_dict (Dict[str, Any]): The keys of config must be in supported task names.
+            evaluation_config_dict (Dict[str, Any]): The config has params as dict.
 
         Returns:
-            evaluation_config_dict (Dict[str, Any]): The input config dict.
+            evaluation_task (EvaluationTask): Evaluation task.
 
         Raises:
             ValueError: If the keys of input config are unsupported.
@@ -90,7 +95,27 @@ class _EvaluationConfigBase(ABC):
         task: str = evaluation_config_dict["evaluation_task"]
         if task not in self.support_tasks:
             raise ValueError(f"Unsupported task: {task}\nSupported tasks: {self.support_tasks}")
-        return evaluation_config_dict
+
+        # evaluation task
+        evaluation_task: EvaluationTask = set_task(task)
+        return evaluation_task
+
+    @abstractmethod
+    def _extract_params(
+        self,
+        evaluation_config_dict: Dict[str, Any],
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """[summary]
+        Extract filtering and metrics parameters from evaluation config.
+
+        Args:
+            evaluation_config_dict (Dict[str, Any])
+
+        Returns:
+            filter_params (Dict[str, Any]): filtering parameters.
+            metrics_params (Dict[str, Any]): metrics parameters.
+        """
+        pass
 
     @property
     def log_directory(self) -> str:

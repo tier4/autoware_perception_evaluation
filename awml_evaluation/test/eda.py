@@ -8,7 +8,7 @@ from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.dataset import load_all_datasets
 from awml_evaluation.common.label import LabelConverter
 from awml_evaluation.common.object import DynamicObject
-from awml_evaluation.visualization.edatool import EDAVisualizer
+from awml_evaluation.visualization.eda_tool import EDAVisualizer
 
 
 def visualize_ground_truth(dataset_paths: List[str], save_path: str) -> None:
@@ -28,19 +28,19 @@ def visualize_ground_truth(dataset_paths: List[str], save_path: str) -> None:
     class_names: List[str] = ["car", "pedestrian", "bicycle"]
     ranges_xy: List[Union[int, float]] = [250, 100, 50, 25]
     xylim_dict: Dict[str, List[float]] = {
-        'car': [-100, 100],
-        'bicycle': [-100, 100],
-        'pedestrian': [-100, 100],
+        "car": [-100, 100],
+        "bicycle": [-100, 100],
+        "pedestrian": [-100, 100],
     }
     width_lim_dict: Dict[str, List[float]] = {
-        'car': [0, 6.0],
-        'bicycle': [0, 2.5],
-        'pedestrian': [0, 1.5],
+        "car": [0, 6.0],
+        "bicycle": [0, 2.5],
+        "pedestrian": [0, 1.5],
     }
     length_lim_dict: Dict[str, List[float]] = {
-        'car': [0, 2.5],
-        'bicycle': [0, 2.5],
-        'pedestrian': [0, 1.5],
+        "car": [0, 2.5],
+        "bicycle": [0, 2.5],
+        "pedestrian": [0, 1.5],
     }
     objects_name: str = "all_ground_truths"
 
@@ -76,13 +76,13 @@ def visualize_ground_truth(dataset_paths: List[str], save_path: str) -> None:
 
 def get_all_ground_truths(dataset_paths: List[str]) -> List[DynamicObject]:
     """[summary]
-    Get all groud truth objects
+    Get all ground truth objects
 
     Args:
         dataset_paths (List[str]): path to dataset for visualization
 
     Returns:
-        all_ground_truths (List[DynamicObject]): all groud truth objects
+        all_ground_truths (List[DynamicObject]): all ground truth objects
 
     """
     frame_results: List[FrameGroundTruth] = load_all_datasets(
