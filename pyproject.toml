@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "awml_evaluation"
-version = "1.5.5"
+version = "1.5.6"
 description = ""
 authors = ["Satoshi Tanaka <satoshi.tanaka@tier4.jp>", "Kotaro Uetake <kotaro.uetake@tier4.jp>", "Shunsuke Miura <shunsuke.miura@tier4.jp>", "Shintaro Tomie <shinrato.tomie@tier4.jp>"]
 license = "Apache V2"

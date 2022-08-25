@@ -6,6 +6,19 @@
 
 ## Release for main branch
 
+### v1.5.6
+
+- <https://github.com/tier4/AWMLevaluation/pull/152>
+  - 【release】v1.5.6 release
+- <https://github.com/tier4/AWMLevaluation/pull/149>
+  - 【機能追加】アノテーションがない場合も non-detection area の評価のみ実行，オブジェクトの visibility="none"の場合は，detection_warning_results に結果を追加する機能の追加
+- <https://github.com/tier4/AWMLevaluation/pull/150>
+  - 【fix】detection エリアと non-detection エリアが重なった場合に両方で同一の点群が評価されるバグの修正
+- <https://github.com/tier4/AWMLevaluation/pull/132>
+  - 【refactor】EvaluationManager に追加された時点でオブジェクトをフィルタするように修正
+- <https://github.com/tier4/AWMLevaluation/pull/145>
+  - 【style】get_ground_truth_now_frame()メソッドの return の type hinting に Optional を追加
+
 ### v1.5.5
 
 - <https://github.com/tier4/AWMLevaluation/pull/144>
