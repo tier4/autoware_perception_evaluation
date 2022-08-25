@@ -281,10 +281,11 @@ class DynamicObject:
     def get_volume(self) -> float:
         return self.get_area_bev() * self.state.size[2]
 
-    def get_inside_pointcloud(
+    def crop_pointcloud(
         self,
         pointcloud: np.ndarray,
         bbox_scale: float,
+        inside: bool = True,
     ) -> np.ndarray:
         """[summary]
         Get pointcloud inside of bounding box.
@@ -309,11 +310,13 @@ class DynamicObject:
 
         # Calculate the indices of pointcloud in bounding box
         inside_idx: np.ndarray = (
-            (pointcloud_object_coords > -0.5 * scaled_bbox_size_object_coords)
-            * (pointcloud_object_coords < 0.5 * scaled_bbox_size_object_coords)
+            (pointcloud_object_coords >= -0.5 * scaled_bbox_size_object_coords)
+            * (pointcloud_object_coords <= 0.5 * scaled_bbox_size_object_coords)
         ).all(axis=1)
 
-        return pointcloud[inside_idx]
+        if inside:
+            return pointcloud[inside_idx]
+        return pointcloud[~inside_idx]
 
     def get_inside_pointcloud_num(
         self,
@@ -330,7 +333,7 @@ class DynamicObject:
         Returns:
             int: The number of points in bounding box.
         """
-        inside_pointcloud: np.ndarray = self.get_inside_pointcloud(pointcloud, bbox_scale)
+        inside_pointcloud: np.ndarray = self.crop_pointcloud(pointcloud, bbox_scale)
         return len(inside_pointcloud)
 
     def point_exist(self, pointcloud: np.ndarray, bbox_scale: float) -> bool:

@@ -25,7 +25,8 @@ class SensingLSimMoc:
         evaluation_config_dict = {
             "evaluation_task": "sensing",
             # object uuids to be detected
-            "target_uuids": ["1b40c0876c746f96ac679a534e1037a2"],
+            # "target_uuids": ["1b40c0876c746f96ac679a534e1037a2"],
+            "target_uuids": None,
             # The scale factor for boxes at 0 and 100[m]
             "box_scale_0m": 1.0,
             "box_scale_100m": 1.0,
@@ -154,7 +155,7 @@ if __name__ == "__main__":
         ],
     ]
     num_frames = len(sensing_lsim.evaluator.ground_truth_frames)
-    pointcloud_frames = np.random.rand(num_frames, 100, 3) * 10
+    pointcloud_frames = np.random.uniform(-100.0, 100.0, (num_frames, 1000, 3))
     for ground_truth_frame, pointcloud in zip(
         sensing_lsim.evaluator.ground_truth_frames,
         pointcloud_frames,

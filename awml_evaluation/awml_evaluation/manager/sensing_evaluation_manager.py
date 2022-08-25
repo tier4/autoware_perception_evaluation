@@ -6,6 +6,7 @@ from awml_evaluation.common.point import crop_pointcloud
 from awml_evaluation.config.sensing_evaluation_config import SensingEvaluationConfig
 from awml_evaluation.evaluation.matching.objects_filter import filter_objects
 from awml_evaluation.evaluation.sensing.sensing_frame_result import SensingFrameResult
+from awml_evaluation.util.math import get_bbox_scale
 import numpy as np
 
 from ._evaluation_manager_base import _EvaluationMangerBase
@@ -56,6 +57,24 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             result (SensingFrameResult)
         """
         ground_truth_now_frame.objects = self._filter_objects(ground_truth_now_frame)
+
+        # Crop pointcloud for non-detection outside of objects' bbox
+        box_scale_0m: float = self.evaluator_config.metrics_params["box_scale_0m"]
+        box_scale_100m: float = self.evaluator_config.metrics_params["box_scale_100m"]
+        for i, points in enumerate(pointcloud_for_non_detection):
+            outside_points: np.ndarray = points.copy()
+            for ground_truth in ground_truth_now_frame.objects:
+                bbox_scale: float = get_bbox_scale(
+                    distance=ground_truth.get_distance(),
+                    box_scale_0m=box_scale_0m,
+                    box_scale_100m=box_scale_100m,
+                )
+                outside_points: np.ndarray = ground_truth.crop_pointcloud(
+                    pointcloud=outside_points,
+                    bbox_scale=bbox_scale,
+                    inside=False,
+                )
+            pointcloud_for_non_detection[i] = outside_points
 
         result = SensingFrameResult(
             sensing_frame_config=self.evaluator_config.sensing_frame_config,

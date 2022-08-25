@@ -33,7 +33,7 @@ class DynamicObjectWithSensingResult:
         self.ground_truth_object: DynamicObject = ground_truth_object
 
         # Evaluate
-        self.inside_pointcloud: np.ndarray = self.ground_truth_object.get_inside_pointcloud(
+        self.inside_pointcloud: np.ndarray = self.ground_truth_object.crop_pointcloud(
             pointcloud,
             scale_factor,
         )
