@@ -10,12 +10,12 @@ from typing import Union
 
 from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.evaluation_task import EvaluationTask
-from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
+from awml_evaluation.config.perception_evaluation_config import PerceptionEvaluationConfig
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.matching.objects_filter import divide_tp_fp_objects
-from awml_evaluation.evaluation.matching.objects_filter import filter_ground_truth_objects
 from awml_evaluation.evaluation.matching.objects_filter import filter_object_results
+from awml_evaluation.evaluation.matching.objects_filter import filter_objects
 from awml_evaluation.evaluation.matching.objects_filter import get_fn_objects
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
@@ -63,38 +63,46 @@ class PerceptionVisualizer:
         self.__animation_frames: List[List[plt.Artist]] = []
 
     @classmethod
-    def from_args(
+    def from_eval_cfg(
         cls,
-        visualization_directory_path: str,
-        frame_id: str,
-        evaluation_task: Union[str, EvaluationTask],
+        eval_cfg: PerceptionEvaluationConfig,
         height: int = 480,
         width: int = 640,
-        target_labels: Optional[List[Union[str, AutowareLabel]]] = None,
-        max_x_position: Optional[float] = None,
-        max_y_position: Optional[float] = None,
     ) -> PerceptionVisualizer:
         """[summary]
 
         Args:
-            visualization_directory_path (str): The directory path to save visualized results.
-            frame_id (str): The frame id, base_link or map.
-            evaluation_task (EvaluationTask): The name of evaluation task.
+            eval_cfg (PerceptionEvaluationConfig): Evaluation config for perception.
             height (int): The image height. Defaults to 640.
             width (int): The image width. Defaults to 640.
-            target_labels (Optional[List[AutowareLabel]]): The list of target label. Defaults to None.
-            max_x_position (Optional[float]): The maximum x position. Defaults to None.
-            max_y_position (Optional[float]): The maximum y position. Defaults to None.
         """
+        config: PerceptionVisualizationConfig = PerceptionVisualizationConfig(
+            visualization_directory_path=eval_cfg.visualization_directory,
+            frame_id=eval_cfg.frame_id,
+            evaluation_task=eval_cfg.evaluation_task,
+            height=height,
+            width=width,
+            **eval_cfg.filtering_params,
+        )
+        return cls(config)
+
+    @classmethod
+    def from_args(
+        cls,
+        visualization_directory_path: str,
+        frame_id: str,
+        evaluation_task: EvaluationTask,
+        height: int = 480,
+        width: int = 640,
+        **kwargs,
+    ) -> PerceptionVisualizer:
         config: PerceptionVisualizationConfig = PerceptionVisualizationConfig(
             visualization_directory_path=visualization_directory_path,
             frame_id=frame_id,
             evaluation_task=evaluation_task,
             height=height,
             width=width,
-            target_labels=target_labels,
-            max_x_position=max_x_position,
-            max_y_position=max_y_position,
+            **kwargs,
         )
         return cls(config)
 
@@ -306,8 +314,8 @@ class PerceptionVisualizer:
         )
         artists.append(scatter_)
 
-        plt.xlim([-self.config.max_x_position + ego_xy[0], self.config.max_x_position + ego_xy[0]])
-        plt.ylim([-self.config.max_y_position + ego_xy[1], self.config.max_y_position + ego_xy[1]])
+        plt.xlim([-self.config.xlim + ego_xy[0], self.config.xlim + ego_xy[0]])
+        plt.ylim([-self.config.ylim + ego_xy[1], self.config.ylim + ego_xy[1]])
 
         box_bottom_left: np.ndarray = ego_xy - (np.array(size) / 2.0)
 
@@ -545,14 +553,23 @@ class PerceptionVisualizer:
             target_labels=self.config.target_labels,
             max_x_position_list=self.config.max_x_position_list,
             max_y_position_list=self.config.max_y_position_list,
+            max_distance_list=self.config.max_distance_list,
+            min_distance_list=self.config.min_distance_list,
+            min_point_numbers=self.config.min_point_numbers,
+            target_uuids=self.config.target_uuids,
             ego2map=frame_ground_truth.ego2map,
         )
-        filtered_ground_truth: List[DynamicObject] = filter_ground_truth_objects(
+        filtered_ground_truth: List[DynamicObject] = filter_objects(
             frame_id=self.config.frame_id,
             objects=frame_ground_truth.objects,
+            is_gt=True,
             target_labels=self.config.target_labels,
             max_x_position_list=self.config.max_x_position_list,
             max_y_position_list=self.config.max_y_position_list,
+            max_distance_list=self.config.max_distance_list,
+            min_distance_list=self.config.min_distance_list,
+            min_point_numbers=self.config.min_point_numbers,
+            target_uuids=self.config.target_uuids,
             ego2map=frame_ground_truth.ego2map,
         )
         # divide TP/FP objects

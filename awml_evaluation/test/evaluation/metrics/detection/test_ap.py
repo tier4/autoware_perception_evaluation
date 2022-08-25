@@ -9,15 +9,15 @@ from typing import List
 from typing import Tuple
 import unittest
 
-from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
+from awml_evaluation.evaluation.matching.objects_filter import filter_objects
 from awml_evaluation.evaluation.metrics.detection.ap import Ap
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
+from awml_evaluation.evaluation.result.object_result import get_object_results
 from awml_evaluation.util.debug import get_objects_with_difference
 import numpy as np
 
@@ -128,11 +128,13 @@ class TestAp(unittest.TestCase):
         self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
+        self.frame_id: str = "base_link"
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
         ]
         self.max_x_position_list: List[float] = [100.0]
         self.max_y_position_list: List[float] = [100.0]
+        self.min_point_numbers: List[int] = [0]
 
     def test_ap_center_distance_translation_difference(self):
         """[summary]
@@ -207,41 +209,49 @@ class TestAp(unittest.TestCase):
                     diff_distance=diff_trans.diff_ground_truth,
                     diff_yaw=0.0,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=diff_trans_estimated_objects,
-                    ground_truth_objects=diff_trans_ground_truth_objects,
-                )
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
-                    objects=diff_trans_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                ap: Ap = Ap(
-                    tp_metrics=TPMetricsAp(),
-                    object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+
+                # Filter objects
+                diff_trans_estimated_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=diff_trans_estimated_objects,
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                diff_trans_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=diff_trans_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    min_point_numbers=self.min_point_numbers,
+                )
+
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=diff_trans_estimated_objects,
+                    ground_truth_objects=diff_trans_ground_truth_objects,
+                )
+
+                num_ground_truth: int = len(diff_trans_ground_truth_objects)
+
+                ap: Ap = Ap(
+                    tp_metrics=TPMetricsAp(),
+                    object_results=[object_results],
+                    num_ground_truth=num_ground_truth,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.5],
-                    min_point_numbers=[0],
                 )
 
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
                     object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.5],
-                    min_point_numbers=[0],
                 )
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
@@ -476,40 +486,46 @@ class TestAp(unittest.TestCase):
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw.diff_ground_truth,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=diff_yaw_estimated_objects,
-                    ground_truth_objects=diff_yaw_ground_truth_objects,
-                )
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
-                    objects=diff_yaw_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                ap: Ap = Ap(
-                    tp_metrics=TPMetricsAp(),
-                    object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                # Filter objects
+                diff_yaw_estimated_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=diff_yaw_estimated_objects,
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                diff_yaw_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=diff_yaw_ground_truth_objects,
+                    is_gt=False,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    min_point_numbers=self.min_point_numbers,
+                )
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=diff_yaw_estimated_objects,
+                    ground_truth_objects=diff_yaw_ground_truth_objects,
+                )
+
+                num_ground_truth: int = len(diff_yaw_ground_truth_objects)
+
+                ap: Ap = Ap(
+                    tp_metrics=TPMetricsAp(),
+                    object_results=[object_results],
+                    num_ground_truth=num_ground_truth,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.1],
-                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
                     object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.1],
-                    min_point_numbers=[0],
                 )
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
@@ -536,40 +552,40 @@ class TestAp(unittest.TestCase):
         ans_ap: float = 0.0
         ans_aph: float = 0.0
 
-        object_results: List[
-            DynamicObjectWithPerceptionResult
-        ] = PerceptionFrameResult.get_object_results(
-            estimated_objects=self.dummy_estimated_objects,
-            ground_truth_objects=self.dummy_ground_truth_objects,
+        # Filter objects
+        dummy_estimated_objects = filter_objects(
+            frame_id=self.frame_id,
+            objects=self.dummy_estimated_objects,
+            is_gt=False,
+            target_labels=[AutowareLabel.MOTORBIKE],
         )
-        frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-            unix_time=0,
-            frame_name="0",
-            frame_id="base_link",
+        dummy_ground_truth_objects = filter_objects(
+            frame_id=self.frame_id,
             objects=self.dummy_ground_truth_objects,
-            ego2map=np.eye(4),
+            is_gt=True,
+            target_labels=[AutowareLabel.MOTORBIKE],
         )
+
+        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            estimated_objects=dummy_estimated_objects,
+            ground_truth_objects=dummy_ground_truth_objects,
+        )
+        num_ground_truth: int = len(dummy_ground_truth_objects)
         ap: Ap = Ap(
             tp_metrics=TPMetricsAp(),
             object_results=[object_results],
-            frame_ground_truths=[frame_ground_truth],
+            num_ground_truth=num_ground_truth,
             target_labels=[AutowareLabel.MOTORBIKE],
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.CENTERDISTANCE,
             matching_threshold_list=[0.1],
-            min_point_numbers=[0],
         )
         aph: Ap = Ap(
             tp_metrics=TPMetricsAph(),
             object_results=[object_results],
-            frame_ground_truths=[frame_ground_truth],
+            num_ground_truth=num_ground_truth,
             target_labels=[AutowareLabel.MOTORBIKE],
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.CENTERDISTANCE,
             matching_threshold_list=[0.1],
-            min_point_numbers=[0],
         )
 
         self.assertAlmostEqual(ap.ap, ans_ap)
@@ -649,42 +665,46 @@ class TestAp(unittest.TestCase):
                     diff_distance=diff_trans.diff_ground_truth,
                     diff_yaw=0.0,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
+                # Filter objects
+                diff_trans_estimated_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=diff_trans_estimated_objects,
+                    is_gt=False,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
+                diff_trans_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=diff_trans_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    min_point_numbers=self.min_point_numbers,
+                )
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     estimated_objects=diff_trans_estimated_objects,
                     ground_truth_objects=diff_trans_ground_truth_objects,
                 )
 
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
-                    objects=diff_trans_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
+                num_ground_truth: int = len(diff_trans_ground_truth_objects)
 
                 ap: Ap = Ap(
                     tp_metrics=TPMetricsAp(),
                     object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.7],
-                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
                     object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.7],
-                    min_point_numbers=[0],
                 )
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
@@ -765,40 +785,42 @@ class TestAp(unittest.TestCase):
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=self.dummy_ground_truth_objects,
-                    ground_truth_objects=diff_yaw_ground_truth_objects,
+
+                estimated_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=self.dummy_ground_truth_objects,
+                    is_gt=False,
+                    target_labels=self.target_labels,
                 )
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
+                ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
                     objects=diff_yaw_ground_truth_objects,
-                    ego2map=np.eye(4),
+                    is_gt=True,
+                    target_labels=self.target_labels,
                 )
+
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=estimated_objects,
+                    ground_truth_objects=ground_truth_objects,
+                )
+
+                num_ground_truth: int = len(ground_truth_objects)
+
                 ap: Ap = Ap(
                     tp_metrics=TPMetricsAp(),
                     object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.8],
-                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
                     object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.7],
-                    min_point_numbers=[0],
                 )
                 self.assertAlmostEqual(ap.ap, ans_ap)
                 self.assertAlmostEqual(aph.ap, ans_aph)
@@ -824,40 +846,44 @@ class TestAp(unittest.TestCase):
         # which is over the threshold (0.4)
         ans_ap: float = 1.0
         ans_aph: float = 1.0
-        object_results: List[
-            DynamicObjectWithPerceptionResult
-        ] = PerceptionFrameResult.get_object_results(
-            estimated_objects=self.dummy_estimated_objects,
-            ground_truth_objects=self.dummy_ground_truth_objects,
-        )
-        frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-            unix_time=0,
-            frame_name="0",
-            frame_id="base_link",
-            objects=self.dummy_ground_truth_objects,
-            ego2map=np.eye(4),
-        )
-        ap: Ap = Ap(
-            tp_metrics=TPMetricsAp(),
-            object_results=[object_results],
-            frame_ground_truths=[frame_ground_truth],
+        # Filter objects
+        dummy_estimated_objects = filter_objects(
+            frame_id=self.frame_id,
+            objects=self.dummy_estimated_objects,
+            is_gt=False,
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
+        )
+        dummy_ground_truth_objects = filter_objects(
+            frame_id=self.frame_id,
+            objects=self.dummy_ground_truth_objects,
+            is_gt=True,
+            target_labels=self.target_labels,
+            max_x_position_list=self.max_x_position_list,
+            max_y_position_list=self.max_y_position_list,
+            min_point_numbers=self.min_point_numbers,
+        )
+        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            estimated_objects=dummy_estimated_objects,
+            ground_truth_objects=dummy_ground_truth_objects,
+        )
+        num_ground_truth: int = len(dummy_ground_truth_objects)
+        ap: Ap = Ap(
+            tp_metrics=TPMetricsAp(),
+            object_results=[object_results],
+            num_ground_truth=num_ground_truth,
+            target_labels=self.target_labels,
             matching_mode=MatchingMode.IOUBEV,
             matching_threshold_list=[0.4],
-            min_point_numbers=[0],
         )
         aph: Ap = Ap(
             tp_metrics=TPMetricsAph(),
             object_results=[object_results],
-            frame_ground_truths=[frame_ground_truth],
+            num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.IOUBEV,
             matching_threshold_list=[0.4],
-            min_point_numbers=[0],
         )
 
         self.assertAlmostEqual(ap.ap, ans_ap)
@@ -891,41 +917,45 @@ class TestAp(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=diff_distance_dummy_ground_truth_objects,
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                )
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
+                # Filter objects
+                diff_distance_dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
                     objects=diff_distance_dummy_ground_truth_objects,
-                    ego2map=np.eye(4),
+                    is_gt=False,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
                 )
+                dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=self.dummy_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    min_point_numbers=self.min_point_numbers,
+                )
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
+                    ground_truth_objects=dummy_ground_truth_objects,
+                )
+                num_ground_truth: int = len(dummy_ground_truth_objects)
 
                 ap: Ap = Ap(
                     tp_metrics=TPMetricsAp(),
                     object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.6],
-                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
                     object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.6],
-                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -974,40 +1004,44 @@ class TestAp(unittest.TestCase):
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                )
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
+                # Filter objects
+                diff_yaw_dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
                     objects=diff_yaw_dummy_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                ap: Ap = Ap(
-                    tp_metrics=TPMetricsAp(),
-                    object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=self.dummy_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    min_point_numbers=self.min_point_numbers,
+                )
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
+                    ground_truth_objects=dummy_ground_truth_objects,
+                )
+                num_ground_truth: int = len(dummy_ground_truth_objects)
+                ap: Ap = Ap(
+                    tp_metrics=TPMetricsAp(),
+                    object_results=[object_results],
+                    num_ground_truth=num_ground_truth,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.8],
-                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
                     object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.8],
-                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -1030,40 +1064,47 @@ class TestAp(unittest.TestCase):
         ans_ap: float = 0.0
         ans_aph: float = 1.0
 
-        object_results: List[
-            DynamicObjectWithPerceptionResult
-        ] = PerceptionFrameResult.get_object_results(
-            estimated_objects=self.dummy_estimated_objects,
-            ground_truth_objects=self.dummy_ground_truth_objects,
-        )
-        frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-            unix_time=0,
-            frame_name="0",
-            frame_id="base_link",
-            objects=self.dummy_ground_truth_objects,
-            ego2map=np.eye(4),
-        )
-        ap: Ap = Ap(
-            tp_metrics=TPMetricsAp(),
-            object_results=[object_results],
-            frame_ground_truths=[frame_ground_truth],
+        # Filter objects
+        dummy_estimated_objects = filter_objects(
+            frame_id=self.frame_id,
+            objects=self.dummy_estimated_objects,
+            is_gt=False,
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
+        )
+        dummy_ground_truth_objects = filter_objects(
+            frame_id=self.frame_id,
+            objects=self.dummy_ground_truth_objects,
+            is_gt=True,
+            target_labels=self.target_labels,
+            max_x_position_list=self.max_x_position_list,
+            max_y_position_list=self.max_y_position_list,
+            min_point_numbers=self.min_point_numbers,
+        )
+
+        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            estimated_objects=dummy_estimated_objects,
+            ground_truth_objects=dummy_ground_truth_objects,
+        )
+
+        num_ground_truth: int = len(dummy_ground_truth_objects)
+
+        ap: Ap = Ap(
+            tp_metrics=TPMetricsAp(),
+            object_results=[object_results],
+            num_ground_truth=num_ground_truth,
+            target_labels=self.target_labels,
             matching_mode=MatchingMode.IOU3D,
             matching_threshold_list=[0.3],
-            min_point_numbers=[0],
         )
         aph: Ap = Ap(
             tp_metrics=TPMetricsAph(),
             object_results=[object_results],
-            frame_ground_truths=[frame_ground_truth],
+            num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.IOU3D,
             matching_threshold_list=[0.2],
-            min_point_numbers=[0],
         )
 
         self.assertAlmostEqual(ap.ap, ans_ap)
@@ -1099,40 +1140,44 @@ class TestAp(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=diff_distance_dummy_ground_truth_objects,
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                )
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
+                # Filter objects
+                diff_distance_dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
                     objects=diff_distance_dummy_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                ap: Ap = Ap(
-                    tp_metrics=TPMetricsAp(),
-                    object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=self.dummy_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    min_point_numbers=self.min_point_numbers,
+                )
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
+                    ground_truth_objects=dummy_ground_truth_objects,
+                )
+                num_ground_truth: int = len(dummy_ground_truth_objects)
+                ap: Ap = Ap(
+                    tp_metrics=TPMetricsAp(),
+                    object_results=[object_results],
+                    num_ground_truth=num_ground_truth,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[0.1],
-                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
                     object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[1.0],
-                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -1177,40 +1222,44 @@ class TestAp(unittest.TestCase):
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                )
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
+                # Filter objects
+                diff_yaw_dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
                     objects=diff_yaw_dummy_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                ap: Ap = Ap(
-                    tp_metrics=TPMetricsAp(),
-                    object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=self.dummy_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    min_point_numbers=self.min_point_numbers,
+                )
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
+                    ground_truth_objects=dummy_ground_truth_objects,
+                )
+                num_ground_truth: int = len(dummy_ground_truth_objects)
+                ap: Ap = Ap(
+                    tp_metrics=TPMetricsAp(),
+                    object_results=[object_results],
+                    num_ground_truth=num_ground_truth,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[1.0],
-                    min_point_numbers=[0],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
                     object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[1.0],
-                    min_point_numbers=[0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -1236,63 +1285,63 @@ class TestAp(unittest.TestCase):
         ans_aph_tp: float = 1.0
         ans_aph_tn: float = 0.0
 
-        object_results: List[
-            DynamicObjectWithPerceptionResult
-        ] = PerceptionFrameResult.get_object_results(
-            estimated_objects=self.dummy_estimated_objects,
-            ground_truth_objects=self.dummy_ground_truth_objects,
+        # Filter objects
+        dummy_estimated_objects = filter_objects(
+            frame_id=self.frame_id,
+            objects=self.dummy_estimated_objects,
+            is_gt=False,
+            target_labels=self.target_labels,
+            max_x_position_list=self.max_x_position_list,
+            max_y_position_list=self.max_y_position_list,
         )
-        frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-            unix_time=0,
-            frame_name="0",
-            frame_id="base_link",
+        dummy_ground_truth_objects = filter_objects(
+            frame_id=self.frame_id,
             objects=self.dummy_ground_truth_objects,
-            ego2map=np.eye(4),
+            is_gt=True,
+            target_labels=self.target_labels,
+            max_x_position_list=self.max_x_position_list,
+            max_y_position_list=self.max_y_position_list,
+            min_point_numbers=self.min_point_numbers,
         )
+
+        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            estimated_objects=dummy_estimated_objects,
+            ground_truth_objects=dummy_ground_truth_objects,
+        )
+
+        num_ground_truth: int = len(dummy_ground_truth_objects)
 
         ap_tp: Ap = Ap(
             tp_metrics=TPMetricsAp(),
             object_results=[object_results],
-            frame_ground_truths=[frame_ground_truth],
+            num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[1.0],
-            min_point_numbers=[0],
         )
         aph_tp: Ap = Ap(
             tp_metrics=TPMetricsAph(),
             object_results=[object_results],
-            frame_ground_truths=[frame_ground_truth],
+            num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[1.0],
-            min_point_numbers=[0],
         )
         ap_tn: Ap = Ap(
             tp_metrics=TPMetricsAp(),
             object_results=[object_results],
-            frame_ground_truths=[frame_ground_truth],
+            num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[0.2],
-            min_point_numbers=[0],
         )
         aph_tn: Ap = Ap(
             tp_metrics=TPMetricsAph(),
             object_results=[object_results],
-            frame_ground_truths=[frame_ground_truth],
+            num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[0.2],
-            min_point_numbers=[0],
         )
         self.assertAlmostEqual(ap_tp.ap, ans_ap_tp)
         self.assertAlmostEqual(aph_tp.ap, ans_aph_tp)

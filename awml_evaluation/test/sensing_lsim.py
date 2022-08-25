@@ -2,6 +2,7 @@ import argparse
 import logging
 import tempfile
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 from awml_evaluation.common.dataset import FrameGroundTruth
@@ -25,7 +26,8 @@ class SensingLSimMoc:
         evaluation_config_dict = {
             "evaluation_task": "sensing",
             # object uuids to be detected
-            "target_uuids": ["1b40c0876c746f96ac679a534e1037a2"],
+            # "target_uuids": ["1b40c0876c746f96ac679a534e1037a2"],
+            "target_uuids": None,
             # The scale factor for boxes at 0 and 100[m]
             "box_scale_0m": 1.0,
             "box_scale_100m": 1.0,
@@ -64,23 +66,19 @@ class SensingLSimMoc:
         Returns:
             frame_result (SensingFrameResult): Result per frame.
         """
-        ground_truth_now_frame: FrameGroundTruth = self.evaluator.get_ground_truth_now_frame(
-            unix_time=unix_time,
-        )
+        ground_truth_now_frame: Optional[
+            FrameGroundTruth
+        ] = self.evaluator.get_ground_truth_now_frame(unix_time=unix_time)
 
-        pointcloud_for_non_detection: List[np.ndarray] = self.evaluator.crop_pointcloud(
-            pointcloud=pointcloud,
-            non_detection_areas=non_detection_areas,
-        )
+        if ground_truth_now_frame is not None:
+            frame_result: SensingFrameResult = self.evaluator.add_frame_result(
+                unix_time=unix_time,
+                ground_truth_now_frame=ground_truth_now_frame,
+                pointcloud=pointcloud,
+                non_detection_areas=non_detection_areas,
+            )
 
-        frame_result: SensingFrameResult = self.evaluator.add_frame_result(
-            unix_time=unix_time,
-            ground_truth_now_frame=ground_truth_now_frame,
-            pointcloud_for_detection=pointcloud,
-            pointcloud_for_non_detection=pointcloud_for_non_detection,
-        )
-
-        self.visualize(frame_result)
+            self.visualize(frame_result)
 
         return frame_result
 
@@ -103,6 +101,14 @@ class SensingLSimMoc:
             for fail_result in frame_result.detection_fail_results:
                 logging.info(
                     f"[FAIL] Inside points: {fail_result.inside_pointcloud_num}, Is detected: {fail_result.is_detected}"
+                )
+        elif len(frame_result.detection_warning_results) > 0:
+            logging.warning(f"Warning {len(frame_result.detection_warning_results)} detection.")
+            for warning_result in frame_result.detection_warning_results:
+                logging.info(
+                    f"[WARNING] Inside points: {warning_result.inside_pointcloud_num}, "
+                    f"Is detected: {warning_result.is_detected}, "
+                    f"Is occluded: {warning_result.is_occluded}"
                 )
         else:
             logging.info("all detections were succeeded.")
@@ -154,7 +160,7 @@ if __name__ == "__main__":
         ],
     ]
     num_frames = len(sensing_lsim.evaluator.ground_truth_frames)
-    pointcloud_frames = np.random.rand(num_frames, 100, 3) * 10
+    pointcloud_frames = np.random.uniform(-100.0, 100.0, (num_frames, 1000, 3))
     for ground_truth_frame, pointcloud in zip(
         sensing_lsim.evaluator.ground_truth_frames,
         pointcloud_frames,

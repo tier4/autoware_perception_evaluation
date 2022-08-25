@@ -1,6 +1,7 @@
 from typing import Optional
 
 from awml_evaluation.common.object import DynamicObject
+from awml_evaluation.common.status import Visibility
 import numpy as np
 
 
@@ -14,6 +15,7 @@ class DynamicObjectWithSensingResult:
         self.inside_pointcloud_num (int): The number of pointcloud in bounding box.
         self.is_detected (bool): The boolean flag indicates whether pointcloud is in bounding box.
         self.nearest_point (np.ndarray): The nearest point from base_link.
+        self.is_occluded (bool): Whether the object is occluded.
     """
 
     def __init__(
@@ -33,13 +35,14 @@ class DynamicObjectWithSensingResult:
         self.ground_truth_object: DynamicObject = ground_truth_object
 
         # Evaluate
-        self.inside_pointcloud: np.ndarray = self.ground_truth_object.get_inside_pointcloud(
+        self.inside_pointcloud: np.ndarray = self.ground_truth_object.crop_pointcloud(
             pointcloud,
             scale_factor,
         )
         self.inside_pointcloud_num: int = len(self.inside_pointcloud)
         self.is_detected: bool = self.inside_pointcloud_num >= min_points_threshold
         self.nearest_point: Optional[np.ndarray] = self._get_nearest_point()
+        self.is_occluded: bool = ground_truth_object.visibility == Visibility.NONE
 
     def _get_nearest_point(self) -> Optional[np.ndarray]:
         """[summary]

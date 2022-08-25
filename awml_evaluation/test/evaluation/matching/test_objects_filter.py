@@ -8,13 +8,14 @@ import unittest
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
+from awml_evaluation.evaluation.matching.objects_filter import divide_objects
+from awml_evaluation.evaluation.matching.objects_filter import divide_objects_to_num
 from awml_evaluation.evaluation.matching.objects_filter import divide_tp_fp_objects
-from awml_evaluation.evaluation.matching.objects_filter import filter_ground_truth_objects
 from awml_evaluation.evaluation.matching.objects_filter import filter_object_results
-from awml_evaluation.evaluation.matching.objects_filter import filter_object_results_by_confidence
+from awml_evaluation.evaluation.matching.objects_filter import filter_objects
 from awml_evaluation.evaluation.matching.objects_filter import get_fn_objects
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
+from awml_evaluation.evaluation.result.object_result import get_object_results
 from awml_evaluation.util.debug import get_objects_with_difference
 import numpy as np
 
@@ -25,6 +26,7 @@ class TestObjectsFilter(unittest.TestCase):
         self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
+        self.frame_id: str = "base_link"
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
             AutowareLabel.BICYCLE,
@@ -74,7 +76,6 @@ class TestObjectsFilter(unittest.TestCase):
             # Given 2.5 diff_distance for one axis, all object_results beyond max_pos_distance.
             (2.5, []),
         ]
-        frame_id: str = "base_link"
         for n, (diff_distance, ans_pair_indices) in enumerate(patterns):
             with self.subTest(f"Test filtered_object_results: {n + 1}"):
                 diff_distance_dummy_ground_truth_objects: List[
@@ -84,20 +85,18 @@ class TestObjectsFilter(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 filtered_object_results = filter_object_results(
-                    frame_id,
-                    object_results,
-                    self.target_labels,
-                    self.max_x_position_list,
-                    self.max_y_position_list,
-                    self.max_pos_distance_list,
-                    self.min_pos_distance_list,
+                    frame_id=self.frame_id,
+                    object_results=object_results,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    max_distance_list=self.max_pos_distance_list,
+                    min_distance_list=self.min_pos_distance_list,
                 )
                 self.assertEqual(len(filtered_object_results), len(ans_pair_indices))
                 if len(ans_pair_indices) == 0:
@@ -118,7 +117,7 @@ class TestObjectsFilter(unittest.TestCase):
                         f"Unexpected estimated object at {i}",
                     )
 
-    def test_filter_ground_truth_objects(self):
+    def test_filter_objects(self):
         """[summary]
         Test filtering DynamicObject to filter ground truth objects.
 
@@ -144,9 +143,8 @@ class TestObjectsFilter(unittest.TestCase):
             # Given 2.5 diff_distance for one axis, all objects beyond max_pos_distance.
             (2.5, [], {}),
         ]
-        frame_id: str = "base_link"
         for n, (diff_distance, ans_idx, point_number_dict) in enumerate(patterns):
-            with self.subTest(f"Test filter_ground_truth_objects: {n + 1}"):
+            with self.subTest(f"Test filter_objects: {n + 1}"):
                 diff_distance_dummy_ground_truth_objects: List[
                     DynamicObject
                 ] = get_objects_with_difference(
@@ -161,15 +159,16 @@ class TestObjectsFilter(unittest.TestCase):
                         int(idx)
                     ].pointcloud_num = pointcloud_num
 
-                filtered_objects = filter_ground_truth_objects(
-                    frame_id,
-                    diff_distance_dummy_ground_truth_objects,
-                    self.target_labels,
-                    self.max_x_position_list,
-                    self.max_y_position_list,
-                    self.max_pos_distance_list,
-                    self.min_pos_distance_list,
-                    self.min_point_numbers,
+                filtered_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=diff_distance_dummy_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    max_distance_list=self.max_pos_distance_list,
+                    min_distance_list=self.min_pos_distance_list,
+                    min_point_numbers=self.min_point_numbers,
                 )
                 ans_objects = [
                     x
@@ -282,9 +281,7 @@ class TestObjectsFilter(unittest.TestCase):
                 for idx, label in label_change_dict.items():
                     diff_distance_dummy_ground_truth_objects[int(idx)].semantic_label = label
 
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
@@ -371,9 +368,7 @@ class TestObjectsFilter(unittest.TestCase):
                     diff_distance=(x_diff, y_diff, 0.0),
                     diff_yaw=0,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
@@ -447,9 +442,7 @@ class TestObjectsFilter(unittest.TestCase):
                 for idx, label in label_change_dict.items():
                     diff_distance_dummy_ground_truth_objects[int(idx)].semantic_label = label
 
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
@@ -482,24 +475,22 @@ class TestObjectsFilter(unittest.TestCase):
             Given diff_distance, check if filtered_object_results and ans_object_results
             are the same.
         """
-        # patterns: (confidence_thereshold, confidence_change_dict: Dict[str, float], List[ans_idx])
+        # patterns: (confidence_threshold, confidence_change_dict: Dict[str, float], List[ans_idx])
         patterns: List[Tuple[float, Dict[str, float], List[int]]] = [
-            # When confidence_thereshold is 0, no object_results are filtered out.
+            # When confidence_threshold is 0, no object_results are filtered out.
             (0.0, {}, [0, 1, 2, 3]),
-            # When confidence_thereshold is 0.3 and confidences of 1 objects change to 0.1, 1 object_results are filtered out.
-            (0.3, {'0': 0.1}, [1, 2, 3]),
-            # When confidence_thereshold is 0.3 and confidences of 2 objects change to 0.1, 0.3, 2 object_results are filtered out.
-            (0.3, {'0': 0.1, '1': 0.3}, [2, 3]),
-            # When confidence_thereshold is 0.3 and confidences of 2 objects change to 0.1, 0.31, 1 object_results are filtered out.
-            (0.3, {'0': 0.1, '1': 0.31}, [1, 2, 3]),
-            # When confidence_thereshold is 0.9, all object_results are filtered out.
+            # When confidence_threshold is 0.3 and confidences of 1 objects change to 0.1, 1 object_results are filtered out.
+            (0.3, {"0": 0.1}, [1, 2, 3]),
+            # When confidence_threshold is 0.3 and confidences of 2 objects change to 0.1, 0.3, 2 object_results are filtered out.
+            (0.3, {"0": 0.1, "1": 0.3}, [2, 3]),
+            # When confidence_threshold is 0.3 and confidences of 2 objects change to 0.1, 0.31, 1 object_results are filtered out.
+            (0.3, {"0": 0.1, "1": 0.31}, [1, 2, 3]),
+            # When confidence_threshold is 0.9, all object_results are filtered out.
             (0.9, {}, []),
         ]
-        for n, (confidence_thereshold, confidence_change_dict, ans_idx) in enumerate(patterns):
+        for n, (confidence_threshold, confidence_change_dict, ans_idx) in enumerate(patterns):
             with self.subTest(f"Test filtered_object_results by confidence: {n + 1}"):
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     estimated_objects=self.dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
@@ -508,12 +499,73 @@ class TestObjectsFilter(unittest.TestCase):
                 for idx, confidence in confidence_change_dict.items():
                     object_results[int(idx)].estimated_object.semantic_score = confidence
 
-                filtered_object_results = filter_object_results_by_confidence(
-                    object_results,
-                    confidence_thereshold,
+                confidence_threshold_list = [confidence_threshold] * len(self.target_labels)
+                filtered_object_results = filter_object_results(
+                    frame_id=self.frame_id,
+                    object_results=object_results,
+                    target_labels=self.target_labels,
+                    confidence_threshold_list=confidence_threshold_list,
                 )
                 ans_object_results = [x for idx, x in enumerate(object_results) if idx in ans_idx]
                 self.assertEqual(filtered_object_results, ans_object_results)
+
+    def test_divide_objects(self):
+        """[summary]
+        Test divide DynamicObject or DynamicObjectWithPerceptionResult by their labels as dict.
+
+        test objects:
+
+        test patterns:
+        """
+        objects_dict: Dict[AutowareLabel, List[DynamicObject]] = divide_objects(
+            self.dummy_ground_truth_objects
+        )
+        for label, objects in objects_dict.items():
+            assert all([obj.semantic_label == label for obj in objects])
+
+        objects_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            estimated_objects=self.dummy_ground_truth_objects,
+            ground_truth_objects=self.dummy_ground_truth_objects,
+        )
+        object_results_dict: Dict[
+            AutowareLabel, List[DynamicObjectWithPerceptionResult]
+        ] = divide_objects(objects_results)
+        for label, object_results in object_results_dict.items():
+            assert all(
+                [
+                    obj_result.estimated_object.semantic_label == label
+                    for obj_result in object_results
+                ]
+            )
+
+    def test_divide_objects_to_num(self):
+        """[summary]
+        Test divide the number of DynamicObject or DynamicObjectWithPerceptionResult by their labels as dict.
+
+        test objects:
+
+        test patterns:
+        """
+        ans: Dict[AutowareLabel, int] = {
+            AutowareLabel.CAR: 1,
+            AutowareLabel.BICYCLE: 1,
+            AutowareLabel.MOTORBIKE: 1,
+            AutowareLabel.PEDESTRIAN: 1,
+        }
+
+        objects_num_dict: Dict[AutowareLabel, List[DynamicObject]] = divide_objects_to_num(
+            self.dummy_ground_truth_objects
+        )
+        for label, num in objects_num_dict.items():
+            assert ans[label] == num, f"{ans[label]}, {num}"
+
+        objects_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            estimated_objects=self.dummy_ground_truth_objects,
+            ground_truth_objects=self.dummy_ground_truth_objects,
+        )
+        object_results_num_dict: Dict[AutowareLabel, int] = divide_objects_to_num(objects_results)
+        for label, num in object_results_num_dict.items():
+            assert ans[label] == num
 
 
 if __name__ == "__main__":

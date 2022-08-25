@@ -45,3 +45,21 @@ def _is_rotation_matrix(rotation_matrix: np.ndarray) -> bool:
     identity: np.ndarray = np.identity(3, dtype=rotation_matrix.dtype)
     norm: float = np.linalg.norm(identity - should_be_identity)
     return norm < 1e-6
+
+
+def get_bbox_scale(distance: float, box_scale_0m: float, box_scale_100m: float) -> float:
+    """Calculate scale factor linearly for bounding box at specified distance.
+
+    Note:
+        scale = ((box_scale_100m - box_scale_0m) / (100 - 0)) * (distance - 0) + box_scale_0m
+
+    Args:
+        distance (float): The distance from vehicle to target bounding box.
+        box_scale_0m (float): Scale factor for bbox at 0m.
+        box_scale_100m (float): Scale factor for bbox at 100m.
+
+    Returns:
+        float: Calculated scale factor.
+    """
+    slope: float = 0.01 * (box_scale_100m - box_scale_0m)
+    return slope * distance + box_scale_0m

@@ -1,18 +1,20 @@
 import math
 from test.util.dummy_object import make_dummy_data
+from typing import Dict
 from typing import List
 from typing import Tuple
 import unittest
 
-from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
+from awml_evaluation.evaluation.matching.objects_filter import divide_objects
+from awml_evaluation.evaluation.matching.objects_filter import divide_objects_to_num
+from awml_evaluation.evaluation.matching.objects_filter import filter_objects
 from awml_evaluation.evaluation.metrics.detection.map import Map
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
+from awml_evaluation.evaluation.result.object_result import get_object_results
 from awml_evaluation.util.debug import get_objects_with_difference
-import numpy as np
 
 
 class TestMap(unittest.TestCase):
@@ -21,6 +23,7 @@ class TestMap(unittest.TestCase):
         self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
+        self.frame_id: str = "base_link"
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
             AutowareLabel.BICYCLE,
@@ -29,6 +32,7 @@ class TestMap(unittest.TestCase):
         ]
         self.max_x_position_list: List[float] = [100.0, 100.0, 100.0, 100.0]
         self.max_y_position_list: List[float] = [100.0, 100.0, 100.0, 100.0]
+        self.min_point_numbers: List[int] = [0, 0, 0, 0]
 
     def test_map_center_distance_translation_difference(self):
         """[summary]
@@ -63,28 +67,47 @@ class TestMap(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=diff_distance_dummy_ground_truth_objects,
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                )
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
+                # Filter objects
+                diff_distance_dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
                     objects=diff_distance_dummy_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                map: Map = Map(
-                    object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=self.dummy_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    min_point_numbers=self.min_point_numbers,
+                )
+
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
+                    ground_truth_objects=dummy_ground_truth_objects,
+                )
+                object_results_dict: Dict[
+                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
+                ] = divide_objects(
+                    object_results,
+                    self.target_labels,
+                )
+
+                num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
+                    dummy_ground_truth_objects,
+                    self.target_labels,
+                )
+
+                map: Map = Map(
+                    object_results_dict=object_results_dict,
+                    num_ground_truth_dict=num_ground_truth_dict,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
-                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -130,28 +153,47 @@ class TestMap(unittest.TestCase):
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                )
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
+                # Filter objects
+                diff_yaw_dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
                     objects=diff_yaw_dummy_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                map: Map = Map(
-                    object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=self.dummy_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    min_point_numbers=self.min_point_numbers,
+                )
+
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
+                    ground_truth_objects=dummy_ground_truth_objects,
+                )
+                object_results_dict: Dict[
+                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
+                ] = divide_objects(
+                    object_results,
+                    self.target_labels,
+                )
+
+                num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
+                    dummy_ground_truth_objects,
+                    self.target_labels,
+                )
+
+                map: Map = Map(
+                    object_results_dict=object_results_dict,
+                    num_ground_truth_dict=num_ground_truth_dict,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
-                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -170,28 +212,47 @@ class TestMap(unittest.TestCase):
         ans_map: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
         ans_maph: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
 
-        object_results: List[
-            DynamicObjectWithPerceptionResult
-        ] = PerceptionFrameResult.get_object_results(
-            estimated_objects=self.dummy_estimated_objects,
-            ground_truth_objects=self.dummy_ground_truth_objects,
-        )
-        frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-            unix_time=0,
-            frame_name="0",
-            frame_id="base_link",
-            objects=self.dummy_ground_truth_objects,
-            ego2map=np.eye(4),
-        )
-        map: Map = Map(
-            object_results=[object_results],
-            frame_ground_truths=[frame_ground_truth],
+        # Filter objects
+        dummy_estimated_objects = filter_objects(
+            frame_id=self.frame_id,
+            objects=self.dummy_estimated_objects,
+            is_gt=False,
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
+        )
+        dummy_ground_truth_objects = filter_objects(
+            frame_id=self.frame_id,
+            objects=self.dummy_ground_truth_objects,
+            is_gt=True,
+            target_labels=self.target_labels,
+            max_x_position_list=self.max_x_position_list,
+            max_y_position_list=self.max_y_position_list,
+            min_point_numbers=self.min_point_numbers,
+        )
+
+        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            estimated_objects=dummy_estimated_objects,
+            ground_truth_objects=dummy_ground_truth_objects,
+        )
+        object_results_dict: Dict[
+            AutowareLabel, List[DynamicObjectWithPerceptionResult]
+        ] = divide_objects(
+            object_results,
+            self.target_labels,
+        )
+
+        num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
+            dummy_ground_truth_objects,
+            self.target_labels,
+        )
+
+        map: Map = Map(
+            object_results_dict=object_results_dict,
+            num_ground_truth_dict=num_ground_truth_dict,
+            target_labels=self.target_labels,
             matching_mode=MatchingMode.CENTERDISTANCE,
             matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
-            min_point_numbers=[0, 0, 0, 0],
         )
         self.assertAlmostEqual(map.map, ans_map)
         self.assertAlmostEqual(map.maph, ans_maph)
@@ -229,28 +290,48 @@ class TestMap(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=diff_distance_dummy_ground_truth_objects,
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                )
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
+                # Filter objects
+                diff_distance_dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
                     objects=diff_distance_dummy_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                map: Map = Map(
-                    object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=self.dummy_ground_truth_objects,
+                    is_gt=False,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    min_point_numbers=self.min_point_numbers,
+                )
+
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
+                    ground_truth_objects=dummy_ground_truth_objects,
+                )
+
+                object_results_dict: Dict[
+                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
+                ] = divide_objects(
+                    object_results,
+                    self.target_labels,
+                )
+
+                num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
+                    dummy_ground_truth_objects,
+                    self.target_labels,
+                )
+
+                map: Map = Map(
+                    object_results_dict=object_results_dict,
+                    num_ground_truth_dict=num_ground_truth_dict,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
-                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -294,28 +375,47 @@ class TestMap(unittest.TestCase):
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                )
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
+                # Filter objects
+                diff_yaw_dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
                     objects=diff_yaw_dummy_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                map: Map = Map(
-                    object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=self.dummy_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    min_point_numbers=self.min_point_numbers,
+                )
+
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
+                    ground_truth_objects=dummy_ground_truth_objects,
+                )
+                object_results_dict: Dict[
+                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
+                ] = divide_objects(
+                    object_results,
+                    self.target_labels,
+                )
+
+                num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
+                    dummy_ground_truth_objects,
+                    self.target_labels,
+                )
+
+                map: Map = Map(
+                    object_results_dict=object_results_dict,
+                    num_ground_truth_dict=num_ground_truth_dict,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOUBEV,
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
-                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -334,28 +434,46 @@ class TestMap(unittest.TestCase):
         ans_map: float = (1.0 + 0.0 + 0.0 + 0.0) / 4.0
         ans_maph: float = (1.0 + 0.0 + 0.0 + 0.0) / 4.0
 
-        object_results: List[
-            DynamicObjectWithPerceptionResult
-        ] = PerceptionFrameResult.get_object_results(
-            estimated_objects=self.dummy_estimated_objects,
-            ground_truth_objects=self.dummy_ground_truth_objects,
-        )
-        frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-            unix_time=0,
-            frame_name="0",
-            frame_id="base_link",
-            objects=self.dummy_ground_truth_objects,
-            ego2map=np.eye(4),
-        )
-        map: Map = Map(
-            object_results=[object_results],
-            frame_ground_truths=[frame_ground_truth],
+        # Filter objects
+        dummy_estimated_objects = filter_objects(
+            frame_id=self.frame_id,
+            objects=self.dummy_estimated_objects,
+            is_gt=False,
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
+        )
+        dummy_ground_truth_objects = filter_objects(
+            frame_id=self.frame_id,
+            objects=self.dummy_ground_truth_objects,
+            is_gt=True,
+            target_labels=self.target_labels,
+            max_x_position_list=self.max_x_position_list,
+            max_y_position_list=self.max_y_position_list,
+            min_point_numbers=self.min_point_numbers,
+        )
+        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            estimated_objects=dummy_estimated_objects,
+            ground_truth_objects=dummy_ground_truth_objects,
+        )
+        object_results_dict: Dict[
+            AutowareLabel, List[DynamicObjectWithPerceptionResult]
+        ] = divide_objects(
+            object_results,
+            self.target_labels,
+        )
+
+        num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
+            dummy_ground_truth_objects,
+            self.target_labels,
+        )
+
+        map: Map = Map(
+            object_results_dict=object_results_dict,
+            num_ground_truth_dict=num_ground_truth_dict,
+            target_labels=self.target_labels,
             matching_mode=MatchingMode.IOUBEV,
             matching_threshold_list=[0.2, 0.5, 0.5, 0.5],
-            min_point_numbers=[0, 0, 0, 0],
         )
         self.assertAlmostEqual(map.map, ans_map)
         self.assertAlmostEqual(map.maph, ans_maph)
@@ -391,28 +509,47 @@ class TestMap(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=diff_distance_dummy_ground_truth_objects,
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                )
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
+                # Filter objects
+                diff_distance_dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
                     objects=diff_distance_dummy_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                map: Map = Map(
-                    object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=self.dummy_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    min_point_numbers=self.min_point_numbers,
+                )
+
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
+                    ground_truth_objects=dummy_ground_truth_objects,
+                )
+                object_results_dict: Dict[
+                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
+                ] = divide_objects(
+                    object_results,
+                    self.target_labels,
+                )
+
+                num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
+                    dummy_ground_truth_objects,
+                    self.target_labels,
+                )
+
+                map: Map = Map(
+                    object_results_dict=object_results_dict,
+                    num_ground_truth_dict=num_ground_truth_dict,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
-                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -456,28 +593,47 @@ class TestMap(unittest.TestCase):
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                )
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
+                # Filter objects
+                diff_yaw_dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
                     objects=diff_yaw_dummy_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                map: Map = Map(
-                    object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=self.dummy_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    min_point_numbers=self.min_point_numbers,
+                )
+
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
+                    ground_truth_objects=dummy_ground_truth_objects,
+                )
+                object_results_dict: Dict[
+                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
+                ] = divide_objects(
+                    object_results,
+                    self.target_labels,
+                )
+
+                num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
+                    dummy_ground_truth_objects,
+                    self.target_labels,
+                )
+
+                map: Map = Map(
+                    object_results_dict=object_results_dict,
+                    num_ground_truth_dict=num_ground_truth_dict,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.IOU3D,
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
-                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -496,28 +652,48 @@ class TestMap(unittest.TestCase):
         ans_map: float = (1.0 + 0.0 + 0.0 + 0.0) / 4.0
         ans_maph: float = (1.0 + 0.0 + 0.0 + 0.0) / 4.0
 
-        object_results: List[
-            DynamicObjectWithPerceptionResult
-        ] = PerceptionFrameResult.get_object_results(
-            estimated_objects=self.dummy_estimated_objects,
-            ground_truth_objects=self.dummy_ground_truth_objects,
-        )
-        frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-            unix_time=0,
-            frame_name="0",
-            frame_id="base_link",
-            objects=self.dummy_ground_truth_objects,
-            ego2map=np.eye(4),
-        )
-        map: Map = Map(
-            object_results=[object_results],
-            frame_ground_truths=[frame_ground_truth],
+        # Filter objects
+        dummy_estimated_objects = filter_objects(
+            frame_id=self.frame_id,
+            objects=self.dummy_estimated_objects,
+            is_gt=False,
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
+        )
+        dummy_ground_truth_objects = filter_objects(
+            frame_id=self.frame_id,
+            objects=self.dummy_ground_truth_objects,
+            is_gt=True,
+            target_labels=self.target_labels,
+            max_x_position_list=self.max_x_position_list,
+            max_y_position_list=self.max_y_position_list,
+            min_point_numbers=self.min_point_numbers,
+        )
+
+        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            estimated_objects=dummy_estimated_objects,
+            ground_truth_objects=dummy_ground_truth_objects,
+        )
+
+        object_results_dict: Dict[
+            AutowareLabel, List[DynamicObjectWithPerceptionResult]
+        ] = divide_objects(
+            object_results,
+            self.target_labels,
+        )
+
+        num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
+            dummy_ground_truth_objects,
+            self.target_labels,
+        )
+
+        map: Map = Map(
+            object_results_dict=object_results_dict,
+            num_ground_truth_dict=num_ground_truth_dict,
+            target_labels=self.target_labels,
             matching_mode=MatchingMode.IOU3D,
             matching_threshold_list=[0.2, 0.5, 0.5, 0.5],
-            min_point_numbers=[0, 0, 0, 0],
         )
         self.assertAlmostEqual(map.map, ans_map)
         self.assertAlmostEqual(map.maph, ans_maph)
@@ -555,28 +731,48 @@ class TestMap(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=diff_distance_dummy_ground_truth_objects,
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                )
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
+                # Filter objects
+                diff_distance_dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
                     objects=diff_distance_dummy_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                map: Map = Map(
-                    object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=self.dummy_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    min_point_numbers=self.min_point_numbers,
+                )
+
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=diff_distance_dummy_ground_truth_objects,
+                    ground_truth_objects=dummy_ground_truth_objects,
+                )
+
+                object_results_dict: Dict[
+                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
+                ] = divide_objects(
+                    object_results,
+                    self.target_labels,
+                )
+
+                num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
+                    dummy_ground_truth_objects,
+                    self.target_labels,
+                )
+
+                map: Map = Map(
+                    object_results_dict=object_results_dict,
+                    num_ground_truth_dict=num_ground_truth_dict,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
-                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -620,28 +816,46 @@ class TestMap(unittest.TestCase):
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
                 )
-                object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
-                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                )
-                frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
+                # Filter objects
+                diff_yaw_dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
                     objects=diff_yaw_dummy_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
-                map: Map = Map(
-                    object_results=[object_results],
-                    frame_ground_truths=[frame_ground_truth],
+                    is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
+                )
+                dummy_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=self.dummy_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                    min_point_numbers=self.min_point_numbers,
+                )
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    estimated_objects=diff_yaw_dummy_ground_truth_objects,
+                    ground_truth_objects=dummy_ground_truth_objects,
+                )
+
+                object_results_dict: Dict[
+                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
+                ] = divide_objects(
+                    object_results,
+                    self.target_labels,
+                )
+                num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
+                    dummy_ground_truth_objects,
+                    self.target_labels,
+                )
+
+                map: Map = Map(
+                    object_results_dict=object_results_dict,
+                    num_ground_truth_dict=num_ground_truth_dict,
+                    target_labels=self.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
-                    min_point_numbers=[0, 0, 0, 0],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
@@ -683,28 +897,47 @@ class TestMap(unittest.TestCase):
         ans_map: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
         ans_maph: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
 
-        object_results: List[
-            DynamicObjectWithPerceptionResult
-        ] = PerceptionFrameResult.get_object_results(
-            estimated_objects=self.dummy_estimated_objects,
-            ground_truth_objects=self.dummy_ground_truth_objects,
-        )
-        frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-            unix_time=0,
-            frame_name="0",
-            frame_id="base_link",
-            objects=self.dummy_ground_truth_objects,
-            ego2map=np.eye(4),
-        )
-        map: Map = Map(
-            object_results=[object_results],
-            frame_ground_truths=[frame_ground_truth],
+        # Filter objects
+        dummy_estimated_objects = filter_objects(
+            frame_id=self.frame_id,
+            objects=self.dummy_estimated_objects,
+            is_gt=False,
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
+        )
+        dummy_ground_truth_objects = filter_objects(
+            frame_id=self.frame_id,
+            objects=self.dummy_ground_truth_objects,
+            is_gt=True,
+            target_labels=self.target_labels,
+            max_x_position_list=self.max_x_position_list,
+            max_y_position_list=self.max_y_position_list,
+            min_point_numbers=self.min_point_numbers,
+        )
+
+        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            estimated_objects=dummy_estimated_objects,
+            ground_truth_objects=dummy_ground_truth_objects,
+        )
+        object_results_dict: Dict[
+            AutowareLabel, List[DynamicObjectWithPerceptionResult]
+        ] = divide_objects(
+            object_results,
+            self.target_labels,
+        )
+
+        num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
+            dummy_ground_truth_objects,
+            self.target_labels,
+        )
+
+        map: Map = Map(
+            object_results_dict=object_results_dict,
+            num_ground_truth_dict=num_ground_truth_dict,
+            target_labels=self.target_labels,
             matching_mode=MatchingMode.PLANEDISTANCE,
             matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
-            min_point_numbers=[0, 0, 0, 0],
         )
 
         self.assertAlmostEqual(map.map, ans_map)

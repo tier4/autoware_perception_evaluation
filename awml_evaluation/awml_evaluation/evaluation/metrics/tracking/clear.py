@@ -4,7 +4,6 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.threshold import get_label_threshold
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
@@ -20,10 +19,7 @@ class CLEAR(_TrackingMetricsBase):
 
     Attributes:
         self.target_labels (List[AutowareLabel]): The list of target label.
-        self.max_x_position_list (List[float]): The list of max x position threshold.
-        self.max_y_position_list (List[float]): The list of max y position threshold.
         self.matching_mode (MatchingMode): The target matching mode.
-        self.tp_metrics (TPMetrics): The way of calculating TP value.
         self.metrics_field (Optional[List[str]]): The list of target metrics name. If not specified, set default supported metrics.
         self.ground_truth_objects_num (int): The number of ground truth.
         self.support_metrics (List[str]): The list of supported metrics name. (["MOTA", "MOTP"])
@@ -49,10 +45,8 @@ class CLEAR(_TrackingMetricsBase):
     def __init__(
         self,
         object_results: List[List[DynamicObjectWithPerceptionResult]],
-        frame_ground_truths: List[FrameGroundTruth],
+        num_ground_truth: int,
         target_labels: List[AutowareLabel],
-        max_x_position_list: List[float],
-        max_y_position_list: List[float],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
         tp_metrics: TPMetrics = TPMetricsAp(),
@@ -67,19 +61,15 @@ class CLEAR(_TrackingMetricsBase):
 
         Args:
             object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results for each frames.
-            frame_ground_truths (List[FrameGroundTruth]): The list of ground truth objects for each frames.
+            num_ground_truth (int): The number of ground truth.
             target_labels (List[AutowareLabel]): The list of target labels.
-            max_x_position_list (List[float]): The list of max x positions.
-            max_y_position_list (List[float]): The list of max y positions.
             matching_mode (MatchingMode): Matching mode class.
             tp_metrics (TPMetrics): The way of calculating TP value. Defaults to TPMetricsAP.
             metrics_field: List[str]: The list of target sub metrics. Defaults to None.
         """
         super().__init__(
-            frame_ground_truths=frame_ground_truths,
+            num_ground_truth=num_ground_truth,
             target_labels=target_labels,
-            max_x_position_list=max_x_position_list,
-            max_y_position_list=max_y_position_list,
             matching_mode=matching_mode,
             matching_threshold_list=matching_threshold_list,
             tp_metrics=tp_metrics,
@@ -92,14 +82,8 @@ class CLEAR(_TrackingMetricsBase):
         self.tp_matching_score: float = 0.0
         self.objects_results_num: int = 0
 
-        num_frame: int = len(object_results)
-        for i in range(1, num_frame):
-            cur_object_results, prev_object_results = self._filter_and_sort(
-                frame_id=frame_ground_truths[i].frame_id,
-                cur_object_results=object_results[i],
-                prev_object_results=object_results[i - 1],
-                ego2map=frame_ground_truths[i].ego2map,
-            )
+        for i, cur_object_results in enumerate(object_results[1:], 1):
+            prev_object_results: List[DynamicObjectWithPerceptionResult] = object_results[i - 1]
             self.objects_results_num += len(cur_object_results)
 
             # Calculate TP/FP/IDSwitch and total matching score in TP at frame t
@@ -139,10 +123,10 @@ class CLEAR(_TrackingMetricsBase):
             mota (float): MOTA score.
             motp (float): MOTP score.
         """
-        if self.ground_truth_objects_num == 0:
+        if self.num_ground_truth == 0:
             mota: float = float("inf")
         else:
-            mota: float = (self.tp - self.fp - self.id_switch) / self.ground_truth_objects_num
+            mota: float = (self.tp - self.fp - self.id_switch) / self.num_ground_truth
 
         if self.tp == 0.0:
             motp: float = float("inf")
@@ -234,7 +218,7 @@ class CLEAR(_TrackingMetricsBase):
         """Check whether current and previous object result have switched ID for TP pairs.
 
         NOTE:
-            There is a case the label is not same inspite of the same ID is given.
+            There is a case the label is not same in spite of the same ID is given.
             GT ID is unique between the different labels.
 
         Args:

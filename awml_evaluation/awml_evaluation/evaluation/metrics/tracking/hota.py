@@ -2,7 +2,6 @@ from typing import Any
 from typing import List
 from typing import Optional
 
-from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
 from awml_evaluation.evaluation.metrics.detection.tp_metrics import TPMetrics
@@ -17,8 +16,6 @@ class HOTA(_TrackingMetricsBase):
 
     Attributes:
         self.target_labels (List[AutowareLabel]): The list of target label.
-        self.max_x_position_list (List[float]): The list of max x position threshold.
-        self.max_y_position_list (List[float]): The list of max y position threshold.
         self.matching_mode (MatchingMode): The target matching mode.
         self.metrics_field (Optional[List[str]]): The list of target metrics name. If not specified, set default supported metrics.
         self.ground_truth_objects_num (int): The number of ground truth.
@@ -31,10 +28,8 @@ class HOTA(_TrackingMetricsBase):
     def __init__(
         self,
         object_results: List[List[DynamicObjectWithPerceptionResult]],
-        frame_ground_truths: List[FrameGroundTruth],
+        num_ground_truth: int,
         target_labels: List[AutowareLabel],
-        max_x_position_list: List[float],
-        max_y_position_list: List[float],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
         tp_metrics: TPMetrics = TPMetricsAp(),
@@ -49,19 +44,15 @@ class HOTA(_TrackingMetricsBase):
 
         Args:
             object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results for each frames.
-            ground_truth_objects (List[List[DynamicObject]]): The list of ground truth objects for each frames.
+            num_ground_truth (int): The number of ground truth.
             target_labels (List[AutowareLabel]): The list of target labels.
-            max_x_position_list (List[float]): The list of max x positions.
-            max_y_position_list (List[float]): The list of max y positions.
             matching_mode: (MatchingMode): Matching mode class.
             tp_metrics (TPMetrics): The way of calculating TP value. Defaults to TPMetricsAP.
             metrics_field: List[str]: The list of target sub metrics.
         """
         super().__init__(
-            frame_ground_truths=frame_ground_truths,
+            num_ground_truth=num_ground_truth,
             target_labels=target_labels,
-            max_x_position_list=max_x_position_list,
-            max_y_position_list=max_y_position_list,
             matching_mode=matching_mode,
             matching_threshold_list=matching_threshold_list,
             tp_metrics=tp_metrics,
@@ -76,15 +67,10 @@ class HOTA(_TrackingMetricsBase):
 
         num_frame: int = len(object_results)
         for i in range(1, num_frame):
-            cur_object_results, prev_object_results = self._filter_and_sort(
-                cur_object_results=object_results[i],
-                prev_object_results=object_results[i - 1],
-            )
-
             # Comparing matching pair
             tp_t, fp_t, tpa_t, fpa_t = self._calculate_tp_fp(
-                cur_object_results=cur_object_results,
-                prev_object_results=prev_object_results,
+                cur_object_results=object_results[i],
+                prev_object_results=object_results[i - 1],
             )
             self.tp += tp_t
             self.fp += fp_t

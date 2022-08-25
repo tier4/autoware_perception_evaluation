@@ -27,8 +27,6 @@ class TestMetricsScoreConfig(unittest.TestCase):
                 DetectionMetricsConfig,
                 {
                     "target_labels": ["car"],
-                    "max_x_position": 100.0,
-                    "max_y_position": 100.0,
                     "center_distance_thresholds": [[1.0]],
                     "plane_distance_thresholds": [[1.0]],
                     "iou_bev_thresholds": [[1.0]],
@@ -41,8 +39,6 @@ class TestMetricsScoreConfig(unittest.TestCase):
                 TrackingMetricsConfig,
                 {
                     "target_labels": ["car"],
-                    "max_x_position": 100.0,
-                    "max_y_position": 100.0,
                     "center_distance_thresholds": [[1.0]],
                     "plane_distance_thresholds": [[1.0]],
                     "iou_bev_thresholds": [[1.0]],

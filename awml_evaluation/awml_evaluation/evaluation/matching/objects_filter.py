@@ -16,11 +16,13 @@ function(
 
 
 from logging import getLogger
+import math
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
-from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.common.threshold import LabelThreshold
@@ -38,8 +40,11 @@ def filter_object_results(
     target_labels: Optional[List[AutowareLabel]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
-    max_pos_distance_list: Optional[List[float]] = None,
-    min_pos_distance_list: Optional[List[float]] = None,
+    max_distance_list: Optional[List[float]] = None,
+    min_distance_list: Optional[List[float]] = None,
+    min_point_numbers: Optional[List[int]] = None,
+    confidence_threshold_list: Optional[List[float]] = None,
+    target_uuids: Optional[str] = None,
     ego2map: Optional[np.ndarray] = None,
 ) -> List[DynamicObjectWithPerceptionResult]:
     """[summary]
@@ -57,10 +62,14 @@ def filter_object_results(
                 Return the object that
                 - max_y_position < object y-axis position < max_y_position.
                 This param use for range limitation of detection algorithm.
-        max_pos_distance_list (Optional[List[float]], optional):
+        max_distance_list (Optional[List[float]], optional):
                 Maximum distance threshold list for object. Defaults to None.
-        min_pos_distance_list (Optional[List[float]], optional):
+        min_distance_list (Optional[List[float]], optional):
                 Minimum distance threshold list for object. Defaults to None.
+        target_uuids (Optional[List[str]]): The list of ground truths' target uuid.
+                This is unused is_gt=True. Defaults to None.
+        ego2map (Optional[np.ndarray]): The array of matrix to transform from ego coords to map coords.
+                This is only needed when frame_id=map. Defaults to None.
     """
 
     filtered_object_results: List[DynamicObjectWithPerceptionResult] = []
@@ -71,45 +80,72 @@ def filter_object_results(
             target_labels=target_labels,
             max_x_position_list=max_x_position_list,
             max_y_position_list=max_y_position_list,
-            max_pos_distance_list=max_pos_distance_list,
-            min_pos_distance_list=min_pos_distance_list,
+            max_distance_list=max_distance_list,
+            min_distance_list=min_distance_list,
+            confidence_threshold_list=confidence_threshold_list,
             ego2map=ego2map,
         )
+        if is_target and object_result.ground_truth_object:
+            is_target = is_target and _is_target_object(
+                frame_id=frame_id,
+                dynamic_object=object_result.ground_truth_object,
+                target_labels=target_labels,
+                max_x_position_list=max_x_position_list,
+                max_y_position_list=max_y_position_list,
+                max_distance_list=max_distance_list,
+                min_distance_list=min_distance_list,
+                min_point_numbers=min_point_numbers,
+                target_uuids=target_uuids,
+                ego2map=ego2map,
+            )
+        elif target_uuids and object_result.ground_truth_object is None:
+            is_target = False
+
         if is_target:
             filtered_object_results.append(object_result)
+
     return filtered_object_results
 
 
-def filter_ground_truth_objects(
+def filter_objects(
     frame_id: str,
     objects: List[DynamicObject],
+    is_gt: bool,
     target_labels: Optional[List[AutowareLabel]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
-    max_pos_distance_list: Optional[List[float]] = None,
-    min_pos_distance_list: Optional[List[float]] = None,
-    min_point_numbers: List[int] = None,
+    max_distance_list: Optional[List[float]] = None,
+    min_distance_list: Optional[List[float]] = None,
+    min_point_numbers: Optional[List[int]] = None,
+    confidence_threshold_list: Optional[List[float]] = None,
+    target_uuids: Optional[List[str]] = None,
     ego2map: Optional[np.ndarray] = None,
 ) -> List[DynamicObject]:
     """[summary]
     Filter DynamicObject to filter ground truth objects.
 
     Args:
-        objects (List[DynamicObject]): The objects you want to filter
+        frame_id (str): Frame id.
+        objects (List[DynamicObject]): The objects you want to filter.
+        is_gt (bool)
         target_labels Optional[List[AutowareLabel]], optional):
                 The target label to evaluate. If object label is in this parameter,
                 this function appends to return objects. Defaults to None.
-        max_pos_distance_list (Optional[List[float]], optional):
+        max_distance_list (Optional[List[float]], optional):
                 Maximum distance threshold list for object. Defaults to None.
-        min_pos_distance_list (Optional[List[float]], optional):
+        min_distance_list (Optional[List[float]], optional):
                 Minimum distance threshold list for object. Defaults to None.
-        min_point_numbers (List[int]):
-                Min point numbers.
+        min_point_numbers (Optional[List[int]]):
+                Min point numbers. This is only used if is_gt=True.
                 For example, if target_labels is ["car", "bike", "pedestrian"],
                 min_point_numbers [5, 0, 0] means
                 Car bboxes including 4 points are filtered out.
                 Car bboxes including 5 points are NOT filtered out.
                 Bike and Pedestrian bboxes are not filtered out(All bboxes are used when calculating metrics.)
+        target_uuids (Optional[List[str]]): The list of ground truths' target uuid.
+                This is only used if is_gt=True. Defaults to None.
+        ego2map (Optional[np.ndarray]): The array of matrix to transform from ego coords to map coords.
+                This is only needed when frame_id=map. Defaults to None.
 
     Returns:
         List[DynamicObject]: Filtered object
@@ -117,17 +153,31 @@ def filter_ground_truth_objects(
 
     filtered_objects: List[DynamicObject] = []
     for object_ in objects:
-        is_target: bool = _is_target_object(
-            frame_id=frame_id,
-            dynamic_object=object_,
-            target_labels=target_labels,
-            max_x_position_list=max_x_position_list,
-            max_y_position_list=max_y_position_list,
-            max_pos_distance_list=max_pos_distance_list,
-            min_pos_distance_list=min_pos_distance_list,
-            min_point_numbers=min_point_numbers,
-            ego2map=ego2map,
-        )
+        if is_gt:
+            is_target: bool = _is_target_object(
+                frame_id=frame_id,
+                dynamic_object=object_,
+                target_labels=target_labels,
+                max_x_position_list=max_x_position_list,
+                max_y_position_list=max_y_position_list,
+                max_distance_list=max_distance_list,
+                min_distance_list=min_distance_list,
+                min_point_numbers=min_point_numbers,
+                target_uuids=target_uuids,
+                ego2map=ego2map,
+            )
+        else:
+            is_target: bool = _is_target_object(
+                frame_id=frame_id,
+                dynamic_object=object_,
+                target_labels=target_labels,
+                max_x_position_list=max_x_position_list,
+                max_y_position_list=max_y_position_list,
+                max_distance_list=max_distance_list,
+                min_distance_list=min_distance_list,
+                confidence_threshold_list=confidence_threshold_list,
+                ego2map=ego2map,
+            )
         if is_target:
             filtered_objects.append(object_)
     return filtered_objects
@@ -266,10 +316,11 @@ def _is_target_object(
     target_labels: Optional[List[AutowareLabel]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
-    max_pos_distance_list: Optional[List[float]] = None,
-    min_pos_distance_list: Optional[List[float]] = None,
+    max_distance_list: Optional[List[float]] = None,
+    min_distance_list: Optional[List[float]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
     min_point_numbers: Optional[List[int]] = None,
+    target_uuids: Optional[List[str]] = None,
     ego2map: Optional[np.ndarray] = None,
 ) -> bool:
     """[summary]
@@ -291,9 +342,9 @@ def _is_target_object(
                 Return the object that
                 - max_y_position < object y-axis position < max_y_position.
                 This param use for range limitation of detection algorithm.
-        max_pos_distance_list (Optional[List[float]], optional):
+        max_distance_list (Optional[List[float]], optional):
                 Maximum distance threshold list for object. Defaults to None.
-        min_pos_distance_list (Optional[List[float]], optional):
+        min_distance_list (Optional[List[float]], optional):
                 Minimum distance threshold list for object. Defaults to None.
         confidence_threshold_list (Optional[List[float]], optional):
                 The confidence threshold list. If estimated object's confidence is higher than
@@ -307,6 +358,7 @@ def _is_target_object(
                 Car bboxes including 4 points are filtered out.
                 Car bboxes including 5 points are NOT filtered out.
                 Bike and Pedestrian bboxes are not filtered out(All bboxes are used when calculating metrics.)
+        target_uuids (Optional[List[str]]): The list of target uuid. Defaults to None.
 
     Returns:
         bool: If the object is filter target, return True
@@ -324,15 +376,16 @@ def _is_target_object(
         confidence_threshold = label_threshold.get_label_threshold(confidence_threshold_list)
         is_target = is_target and dynamic_object.semantic_score > confidence_threshold
 
-    assert frame_id in (
-        "map",
-        "base_link",
-    ), f"frame_id must be in (map, base_link), but got {frame_id}"
+    assert frame_id in ("map", "base_link"), f"Unexpected frame id: {frame_id}"
     position_: Tuple[float, float, float] = dynamic_object.state.position
     if frame_id == "map":
         assert ego2map is not None, "When frame_id is map, ego2map must be specified"
         pos_arr: np.ndarray = np.append(position_, 1.0)
         position_ = tuple(np.linalg.inv(ego2map).dot(pos_arr)[:3].tolist())
+        # TODO: DynamicObject.get_distance_bev() doesn't support map coords
+        bev_distance_: float = math.hypot(position_[0], position_[1])
+    else:
+        bev_distance_: float = dynamic_object.get_distance_bev()
 
     if is_target and max_x_position_list is not None:
         max_x_position = label_threshold.get_label_threshold(max_x_position_list)
@@ -342,36 +395,95 @@ def _is_target_object(
         max_y_position = label_threshold.get_label_threshold(max_y_position_list)
         is_target = is_target and abs(position_[1]) < max_y_position
 
-    if is_target and max_pos_distance_list is not None:
-        max_pos_distance = label_threshold.get_label_threshold(max_pos_distance_list)
-        is_target = is_target and dynamic_object.get_distance_bev() < max_pos_distance
+    if is_target and max_distance_list is not None:
+        max_distance = label_threshold.get_label_threshold(max_distance_list)
+        is_target = is_target and bev_distance_ < max_distance
 
-    if is_target and min_pos_distance_list is not None:
-        min_pos_distance = label_threshold.get_label_threshold(min_pos_distance_list)
-        is_target = is_target and dynamic_object.get_distance_bev() > min_pos_distance
+    if is_target and min_distance_list is not None:
+        min_distance = label_threshold.get_label_threshold(min_distance_list)
+        is_target = is_target and bev_distance_ > min_distance
 
     if is_target and min_point_numbers is not None:
         min_point_number = label_threshold.get_label_threshold(min_point_numbers)
         is_target = is_target and dynamic_object.pointcloud_num >= min_point_number
 
+    if is_target and target_uuids is not None:
+        assert isinstance(target_uuids, list)
+        assert all([isinstance(uuid, str) for uuid in target_uuids])
+        is_target = is_target and dynamic_object.uuid in target_uuids
+
     return is_target
 
 
-def filter_object_results_by_confidence(
-    object_results: List[DynamicObjectWithPerceptionResult], confidence_thereshold: float
-) -> List[DynamicObjectWithPerceptionResult]:
+def divide_objects(
+    objects: List[Union[DynamicObject, DynamicObjectWithPerceptionResult]],
+    target_labels: Optional[List[AutowareLabel]] = None,
+) -> Dict[AutowareLabel, List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]]:
     """[summary]
-    Filter object_results by confidence
+    Divide DynamicObject or DynamicObjectWithPerceptionResult for each label as dict.
 
     Args:
-        object_results (List[DynamicObjectWithPerceptionResult]): The objects you want to filter
-        confidence_thereshold (float): Confidence used by filtering. Remove objects which does not have low confidence
+        objects (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]):
+            The list of DynamicObject or DynamicObjectWithPerceptionResult.
+        target_labels (Optional[List[AutowareLabel]]): If this is specified, create empty list even
+            if there is no object having specified label. Defaults to None.
 
     Returns:
-        object_results_with_high_confidence (List[DynamicObjectWithPerceptionResult]): The objects whose confidences are higher than confidence_thereshold
+        ret (Dict[AutowareLabel, List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]]):
+            key is label, item is list of DynamicObject or DynamicObjectWithPerceptionResult.
+            It depends on the input type of object.
     """
-    object_results_with_high_confidence: List[DynamicObjectWithPerceptionResult] = []
-    for object_result in object_results:
-        if object_result.estimated_object.semantic_score > confidence_thereshold:
-            object_results_with_high_confidence.append(object_result)
-    return object_results_with_high_confidence
+    if target_labels is not None:
+        ret = {label: [] for label in target_labels}
+    else:
+        ret: Dict[AutowareLabel, List[DynamicObject]] = {}
+
+    for obj in objects:
+        if isinstance(obj, DynamicObject):
+            label: AutowareLabel = obj.semantic_label
+        elif isinstance(obj, DynamicObjectWithPerceptionResult):
+            label: AutowareLabel = obj.estimated_object.semantic_label
+        else:
+            raise TypeError(f"Unexpected object type: {type(obj)}")
+
+        if label not in ret.keys():
+            ret[label] = [obj]
+        else:
+            ret[label].append(obj)
+    return ret
+
+
+def divide_objects_to_num(
+    objects: List[Union[DynamicObject, DynamicObjectWithPerceptionResult]],
+    target_labels: Optional[List[AutowareLabel]] = None,
+) -> Dict[AutowareLabel, int]:
+    """[summary]
+    Divide objects to the number of them for each label as dict.
+
+    Args:
+        objects (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]):
+            The list of DynamicObject or DynamicObjectWithPerceptionResult.
+        target_labels (Optional[List[AutowareLabel]]): If this is specified, create empty list even
+            if there is no object having specified label. Defaults to None.
+
+    Returns:
+        ret (Dict[AutowareLabel, int]): key is label, item is the number of objects.
+    """
+    if target_labels is not None:
+        ret = {label: 0 for label in target_labels}
+    else:
+        ret: Dict[AutowareLabel, int] = {}
+
+    for obj in objects:
+        if isinstance(obj, DynamicObject):
+            label: AutowareLabel = obj.semantic_label
+        elif isinstance(obj, DynamicObjectWithPerceptionResult):
+            label: AutowareLabel = obj.estimated_object.semantic_label
+        else:
+            raise TypeError(f"Unexpected object type: {type(obj)}")
+
+        if label not in ret.keys():
+            ret[label] = 1
+        else:
+            ret[label] += 1
+    return ret

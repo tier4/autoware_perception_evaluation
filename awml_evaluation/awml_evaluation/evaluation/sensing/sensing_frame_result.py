@@ -1,3 +1,4 @@
+import logging
 from typing import List
 from typing import Tuple
 
@@ -21,6 +22,8 @@ class SensingFrameResult:
             The container for succeeded results of detection.
         self.detection_fail_results (list[DynamicObjectWithSensingResult]):
             The container for failed results of detection.
+        self.detection_warning_results (List[DynamicObjectWithSensingResult]):
+            The container for warned
         self.pointcloud_failed_non_detection (np.ndarray): The array of pointcloud for non-detected.
     """
 
@@ -46,6 +49,7 @@ class SensingFrameResult:
         # Containers for results
         self.detection_success_results: List[DynamicObjectWithSensingResult] = []
         self.detection_fail_results: List[DynamicObjectWithSensingResult] = []
+        self.detection_warning_results: List[DynamicObjectWithSensingResult] = []
         self.pointcloud_failed_non_detection: List[np.ndarray] = []
 
     def evaluate_frame(
@@ -80,11 +84,16 @@ class SensingFrameResult:
     ) -> None:
         """[summary]
         Evaluate if pointcloud are detected.
+        If the object is occluded, the result is appended to warning.
 
         Args:
             ground_truth_objects (list[DynamicObject]): The list of ground truth objects.
             pointcloud_for_detection (numpy.ndarray): The array of pointcloud for detection.
         """
+        if len(ground_truth_objects) == 0:
+            logging.warn("There is no annotated objects")
+            return
+
         for ground_truth_object in ground_truth_objects:
             scale_factor_: float = self.sensing_frame_config.get_scale_factor(
                 ground_truth_object.get_distance()
@@ -95,7 +104,10 @@ class SensingFrameResult:
                 scale_factor=scale_factor_,
                 min_points_threshold=self.sensing_frame_config.min_points_threshold,
             )
-            if sensing_result.is_detected:
+
+            if sensing_result.is_occluded:
+                self.detection_warning_results.append(sensing_result)
+            elif sensing_result.is_detected:
                 self.detection_success_results.append(sensing_result)
             else:
                 self.detection_fail_results.append(sensing_result)

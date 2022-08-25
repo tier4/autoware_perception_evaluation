@@ -13,7 +13,7 @@ def make_dummy_data(use_unique_id: bool = True) -> Tuple[List[DynamicObject], Li
 
     Args:
         use_unique_id (bool): Whether use unique ID between different labels for estimated objects. Defaults to True.
-            If False, it may have same ID inspite of different labels.
+            If False, it may have same ID in spite of different labels.
             For example,
                 labels = [car, car, pedestrian]
                 IDs = [0, 1, 0]

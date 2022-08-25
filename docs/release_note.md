@@ -6,6 +6,19 @@
 
 ## Release for main branch
 
+### v1.5.6
+
+- <https://github.com/tier4/AWMLevaluation/pull/152>
+  - 【release】v1.5.6 release
+- <https://github.com/tier4/AWMLevaluation/pull/149>
+  - 【機能追加】アノテーションがない場合も non-detection area の評価のみ実行，オブジェクトの visibility="none"の場合は，detection_warning_results に結果を追加する機能の追加
+- <https://github.com/tier4/AWMLevaluation/pull/150>
+  - 【fix】detection エリアと non-detection エリアが重なった場合に両方で同一の点群が評価されるバグの修正
+- <https://github.com/tier4/AWMLevaluation/pull/132>
+  - 【refactor】EvaluationManager に追加された時点でオブジェクトをフィルタするように修正
+- <https://github.com/tier4/AWMLevaluation/pull/145>
+  - 【style】get_ground_truth_now_frame()メソッドの return の type hinting に Optional を追加
+
 ### v1.5.5
 
 - <https://github.com/tier4/AWMLevaluation/pull/144>
@@ -99,7 +112,7 @@
 - <https://github.com/tier4/AWMLevaluation/pull/86>
   - 【release】v1.4.0 release
 - <https://github.com/tier4/AWMLevaluation/pull/85>
-  - 【改良】buid type の ament_cmake への変更
+  - 【改良】build type の ament_cmake への変更
 - <https://github.com/tier4/AWMLevaluation/pull/83>
   - 【機能追加】Sensing lsim の機能部分を実装
   - 【機能追加】検出・被検出エリア内の点群数の算出
@@ -120,7 +133,7 @@
 - <https://github.com/tier4/AWMLevaluation/pull/71>
   - 【release】v1.3.0 release
 - <https://github.com/tier4/AWMLevaluation/pull/68>
-  - 【改良】pointcluod の型を List[Tuple[float, float, float]] -> numpy.ndarray に変更
+  - 【改良】pointcloud の型を List[Tuple[float, float, float]] -> numpy.ndarray に変更
 - <https://github.com/tier4/AWMLevaluation/pull/70>
   - 【バグ修正】colcon を使って install すると，install 以下にサブモジュールが存在しない状態になるのを解消
   - 【バグ修正】pre-commit の mypy を disable

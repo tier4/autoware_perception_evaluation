@@ -25,8 +25,17 @@ class PerceptionLSimMoc:
         evaluation_config_dict = {
             # ラベル，max x/y，マッチング閾値 (detection/tracking/predictionで共通)
             "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+            # max x/y position or max/min distanceの指定が必要
+            # # max x/y position
             "max_x_position": 102.4,
             "max_y_position": 102.4,
+            # max/min distance
+            # "max_distance": 102.4,
+            # "min_distance": 10.0,
+            # # confidenceによるフィルタ (Optional)
+            # "confidence_threshold": 0.5,
+            # # GTのuuidによるフィルタ (Optional)
+            # "target_uuids": ["foo", "bar"],
             # objectごとにparamを設定
             "center_distance_thresholds": [
                 [1.0, 1.0, 1.0, 1.0],
@@ -95,7 +104,7 @@ class PerceptionLSimMoc:
         frame_pass_fail_config: PerceptionPassFailConfig = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            threshold_plane_distance_list=[2.0, 2.0, 2.0, 2.0],
+            plane_distance_threshold_list=[2.0, 2.0, 2.0, 2.0],
         )
 
         frame_result = self.evaluator.add_frame_result(
@@ -132,11 +141,14 @@ class PerceptionLSimMoc:
             logging.warning(
                 f"{len(frame_result.pass_fail_result.tp_objects)} TP objects, "
                 f"{len(frame_result.pass_fail_result.fp_objects_result)} FP objects, "
-                f"{len(frame_result.pass_fail_result.fn_objects)} FN objects,",
+                f"{len(frame_result.pass_fail_result.fn_objects)} FN objects",
             )
             # logging.debug(f"frame result {format_class_for_log(frame_result.pass_fail_result)}")
         else:
-            logging.info("No TP/FP/FN objects")
+            logging.warning(
+                f"{len(frame_result.pass_fail_result.tp_objects)} TP objects, "
+                "0 FP objects, 0 FN objects",
+            )
 
         if frame_result.metrics_score.maps[0].map < 0.7:
             logging.debug("mAP is low")
@@ -189,7 +201,7 @@ if __name__ == "__main__":
     if len(detection_lsim.evaluator.frame_results) > 0:
         logging.info(
             "Frame result example (frame_results[0]): "
-            f"{format_class_for_log(detection_lsim.evaluator.frame_results[0], 5)}",
+            f"{format_class_for_log(detection_lsim.evaluator.frame_results[0], 1)}",
         )
 
         if len(detection_lsim.evaluator.frame_results[0].object_results) > 0:
@@ -228,7 +240,7 @@ if __name__ == "__main__":
             ground_truth_objects=ground_truth_frame.objects,
             diff_distance=(2.3, 0.0, 0.2),
             diff_yaw=0.2,
-            is_confidence_with_distance=True,
+            is_confidence_with_distance=False,
         )
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
@@ -245,7 +257,7 @@ if __name__ == "__main__":
     if len(tracking_lsim.evaluator.frame_results) > 0:
         logging.info(
             "Frame result example (frame_results[0]): "
-            f"{format_class_for_log(tracking_lsim.evaluator.frame_results[0], 5)}",
+            f"{format_class_for_log(tracking_lsim.evaluator.frame_results[0], 1)}",
         )
 
         if len(tracking_lsim.evaluator.frame_results[0].object_results) > 0:

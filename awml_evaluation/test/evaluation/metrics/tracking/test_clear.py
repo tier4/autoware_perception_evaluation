@@ -8,22 +8,21 @@ from typing import Optional
 from typing import Tuple
 import unittest
 
-from awml_evaluation.common.dataset import FrameGroundTruth
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.object import DynamicObject
 from awml_evaluation.evaluation.matching.object_matching import MatchingMode
+from awml_evaluation.evaluation.matching.objects_filter import filter_objects
 from awml_evaluation.evaluation.metrics.tracking.clear import CLEAR
 from awml_evaluation.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from awml_evaluation.evaluation.result.perception_frame_result import PerceptionFrameResult
+from awml_evaluation.evaluation.result.object_result import get_object_results
 from awml_evaluation.util.debug import get_objects_with_difference
-import numpy as np
 
 
 class AnswerCLEAR:
     """Answer class for CLEAR to compare result.
 
     Attributes:
-        self.ground_truth_objects_num (int)
+        self.num_ground_truth (int)
         self.tp (float)
         self.fp (float)
         self.id_switch (int)
@@ -34,7 +33,7 @@ class AnswerCLEAR:
 
     def __init__(
         self,
-        ground_truth_objects_num: int,
+        num_ground_truth: int,
         tp: float,
         fp: float,
         id_switch: int,
@@ -44,7 +43,7 @@ class AnswerCLEAR:
     ):
         """[summary]
         Args:
-            ground_truth_objects_num (int)
+            num_ground_truth (int)
             tp (float)
             fp (float)
             id_switch (float)
@@ -52,7 +51,7 @@ class AnswerCLEAR:
             mota (float)
             motp (float)
         """
-        self.ground_truth_objects_num: int = ground_truth_objects_num
+        self.num_ground_truth: int = num_ground_truth
         self.tp: float = tp
         self.fp: float = fp
         self.id_switch: int = id_switch
@@ -71,7 +70,7 @@ class AnswerCLEAR:
             AnswerCLEAR
         """
         return AnswerCLEAR(
-            clear.ground_truth_objects_num,
+            clear.num_ground_truth,
             clear.tp,
             clear.fp,
             clear.id_switch,
@@ -82,7 +81,7 @@ class AnswerCLEAR:
 
     def __eq__(self, other: AnswerCLEAR) -> bool:
         return (
-            self.ground_truth_objects_num == other.ground_truth_objects_num
+            self.num_ground_truth == other.num_ground_truth
             and isclose(self.tp, other.tp)
             and isclose(self.fp, other.fp)
             and self.id_switch == other.id_switch
@@ -93,7 +92,7 @@ class AnswerCLEAR:
 
     def __str__(self) -> str:
         str_: str = "\n("
-        str_ += f"ground_truth_objects_num: {self.ground_truth_objects_num}, "
+        str_ += f"num_ground_truth: {self.num_ground_truth}, "
         str_ += f"tp: {self.tp}, "
         str_ += f"fp: {self.fp}, "
         str_ += f"id switch: {self.id_switch}, "
@@ -113,8 +112,15 @@ class TestCLEAR(unittest.TestCase):
         )
         self.dummy_estimated_objects, _ = make_dummy_data(use_unique_id=False)
 
-        self.max_x_position_list: List[float] = [100.0]
-        self.max_y_position_list: List[float] = [100.0]
+        self.frame_id: str = "base_link"
+        self.target_labels: List[AutowareLabel] = [
+            AutowareLabel.CAR,
+            AutowareLabel.BICYCLE,
+            AutowareLabel.PEDESTRIAN,
+            AutowareLabel.MOTORBIKE,
+        ]
+        self.max_x_position_list: List[float] = [100.0, 100.0, 100.0, 100.0]
+        self.max_y_position_list: List[float] = [100.0, 100.0, 100.0, 100.0]
 
     def test_calculate_tp_fp(self):
         """[summary]
@@ -204,7 +210,7 @@ class TestCLEAR(unittest.TestCase):
                 DiffTranslation((0.0, 0.0, 0.0), (101.0, 0.0, 0.0)),
                 AutowareLabel.CAR,
                 True,
-                AnswerCLEAR(0, 1.0, 1.0, 0, 0.0, float("inf"), 0.0),
+                AnswerCLEAR(0, 0.0, 2.0, 0, 0.0, float("inf"), float("inf")),
             ),
             # (6). Est: 2, GT: 1
             # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
@@ -317,7 +323,7 @@ class TestCLEAR(unittest.TestCase):
                 DiffTranslation((0.0, 0.0, 0.0), (101.0, 0.0, 0.0)),
                 AutowareLabel.CAR,
                 True,
-                AnswerCLEAR(0, 1.0, 1.0, 0, 0.0, float("inf"), 0.0),
+                AnswerCLEAR(0, 0.0, 2.0, 0, 0.0, float("inf"), float("inf")),
             ),
             # (15). Est: 2, GT: 1   = Case(6)
             # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
@@ -378,6 +384,7 @@ class TestCLEAR(unittest.TestCase):
                 prev_object_results: Optional[List[DynamicObjectWithPerceptionResult]] = []
 
                 if prev_diff_trans is not None:
+                    # Translate previous estimated objects
                     prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                         ground_truth_objects=self.dummy_unique_estimated_objects
                         if use_unique_id
@@ -385,29 +392,39 @@ class TestCLEAR(unittest.TestCase):
                         diff_distance=prev_diff_trans.diff_estimated,
                         diff_yaw=0.0,
                     )
-                    # Previous ground truth objects
                     prev_ground_truth_objects = get_objects_with_difference(
                         ground_truth_objects=self.dummy_ground_truth_objects,
                         diff_distance=prev_diff_trans.diff_ground_truth,
                         diff_yaw=0.0,
                     )
-                    # Previous object results
-                    prev_object_results = PerceptionFrameResult.get_object_results(
+
+                    # Filter previous objects
+                    prev_estimated_objects = filter_objects(
+                        frame_id=self.frame_id,
+                        objects=prev_estimated_objects,
+                        is_gt=False,
+                        target_labels=[target_label],
+                        max_x_position_list=self.max_x_position_list,
+                        max_y_position_list=self.max_y_position_list,
+                    )
+                    prev_ground_truth_objects = filter_objects(
+                        frame_id=self.frame_id,
+                        objects=prev_ground_truth_objects,
+                        is_gt=True,
+                        target_labels=[target_label],
+                        max_x_position_list=self.max_x_position_list,
+                        max_y_position_list=self.max_y_position_list,
+                    )
+
+                    # Get previous object results
+                    prev_object_results = get_object_results(
                         estimated_objects=prev_estimated_objects,
                         ground_truth_objects=prev_ground_truth_objects,
                     )
-                    prev_frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                        unix_time=0,
-                        frame_name="0",
-                        frame_id="base_link",
-                        objects=prev_ground_truth_objects,
-                        ego2map=np.eye(4),
-                    )
                 else:
                     prev_object_results = []
-                    prev_frame_ground_truth = []
 
-                # Current estimated objects
+                # Translate current objects
                 cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_unique_estimated_objects
                     if use_unique_id
@@ -415,34 +432,42 @@ class TestCLEAR(unittest.TestCase):
                     diff_distance=cur_diff_trans.diff_estimated,
                     diff_yaw=0.0,
                 )
-                # Current ground truth objects
                 cur_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=cur_diff_trans.diff_ground_truth,
                     diff_yaw=0.0,
                 )
+
+                # Filter current objects
+                cur_estimated_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=cur_estimated_objects,
+                    is_gt=False,
+                    target_labels=[target_label],
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
+                cur_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=cur_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=[target_label],
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
+
                 # Current object results
-                cur_object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
+                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
 
-                cur_frame_ground_truth: FrameGroundTruth = FrameGroundTruth(
-                    unix_time=0,
-                    frame_name="0",
-                    frame_id="base_link",
-                    objects=cur_ground_truth_objects,
-                    ego2map=np.eye(4),
-                )
+                num_ground_truth: int = len(cur_ground_truth_objects)
 
                 clear_: CLEAR = CLEAR(
                     object_results=[prev_object_results, cur_object_results],
-                    frame_ground_truths=[prev_frame_ground_truth, cur_frame_ground_truth],
+                    num_ground_truth=num_ground_truth,
                     target_labels=[target_label],
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.5],
                 )
@@ -542,7 +567,7 @@ class TestCLEAR(unittest.TestCase):
         for n, (prev_diff_trans, cur_diff_trans, use_unique_id, ans_flags) in enumerate(patterns):
             with self.subTest(f"Test is ID switched: {n + 1}"):
                 if prev_diff_trans is not None:
-                    # Previous estimated objects
+                    # Translate previous objects
                     prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                         ground_truth_objects=self.dummy_unique_estimated_objects
                         if use_unique_id
@@ -550,21 +575,39 @@ class TestCLEAR(unittest.TestCase):
                         diff_distance=prev_diff_trans.diff_estimated,
                         diff_yaw=0.0,
                     )
-                    # Previous ground truth objects
                     prev_ground_truth_objects = get_objects_with_difference(
                         ground_truth_objects=self.dummy_ground_truth_objects,
                         diff_distance=prev_diff_trans.diff_ground_truth,
                         diff_yaw=0.0,
                     )
+
+                    # Filter previous objects
+                    prev_estimated_objects = filter_objects(
+                        frame_id=self.frame_id,
+                        objects=prev_estimated_objects,
+                        is_gt=False,
+                        target_labels=self.target_labels,
+                        max_x_position_list=self.max_x_position_list,
+                        max_y_position_list=self.max_y_position_list,
+                    )
+                    prev_ground_truth_objects = filter_objects(
+                        frame_id=self.frame_id,
+                        objects=prev_ground_truth_objects,
+                        is_gt=True,
+                        target_labels=self.target_labels,
+                        max_x_position_list=self.max_x_position_list,
+                        max_y_position_list=self.max_y_position_list,
+                    )
+
                     # Previous object results
-                    prev_object_results = PerceptionFrameResult.get_object_results(
+                    prev_object_results = get_object_results(
                         estimated_objects=prev_estimated_objects,
                         ground_truth_objects=prev_ground_truth_objects,
                     )
                 else:
                     prev_object_results = []
 
-                # Current estimated objects
+                # Translate current objects
                 cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_unique_estimated_objects
                     if use_unique_id
@@ -572,16 +615,32 @@ class TestCLEAR(unittest.TestCase):
                     diff_distance=cur_diff_trans.diff_estimated,
                     diff_yaw=0.0,
                 )
-                # Current ground truth objects
                 cur_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=cur_diff_trans.diff_ground_truth,
                     diff_yaw=0.0,
                 )
+
+                # Filter current objects
+                cur_estimated_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=cur_estimated_objects,
+                    is_gt=False,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
+                cur_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=cur_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
+
                 # Current object results
-                cur_object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
+                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
@@ -694,7 +753,7 @@ class TestCLEAR(unittest.TestCase):
         for n, (prev_diff_trans, cur_diff_trans, use_unique_id, ans_flags) in enumerate(patterns):
             with self.subTest(f"Test is same result: {n + 1}"):
                 if prev_diff_trans is not None:
-                    # Previous estimated objects
+                    # Translate previous objects
                     prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                         ground_truth_objects=self.dummy_unique_estimated_objects
                         if use_unique_id
@@ -702,21 +761,39 @@ class TestCLEAR(unittest.TestCase):
                         diff_distance=prev_diff_trans.diff_estimated,
                         diff_yaw=0.0,
                     )
-                    # Previous ground truth objects
                     prev_ground_truth_objects = get_objects_with_difference(
                         ground_truth_objects=self.dummy_ground_truth_objects,
                         diff_distance=prev_diff_trans.diff_ground_truth,
                         diff_yaw=0.0,
                     )
+
+                    # Filter previous objects
+                    prev_estimated_objects = filter_objects(
+                        frame_id=self.frame_id,
+                        objects=prev_estimated_objects,
+                        is_gt=False,
+                        target_labels=self.target_labels,
+                        max_x_position_list=self.max_x_position_list,
+                        max_y_position_list=self.max_y_position_list,
+                    )
+                    prev_ground_truth_objects = filter_objects(
+                        frame_id=self.frame_id,
+                        objects=prev_ground_truth_objects,
+                        is_gt=True,
+                        target_labels=self.target_labels,
+                        max_x_position_list=self.max_x_position_list,
+                        max_y_position_list=self.max_y_position_list,
+                    )
+
                     # Previous object results
-                    prev_object_results = PerceptionFrameResult.get_object_results(
+                    prev_object_results = get_object_results(
                         estimated_objects=prev_estimated_objects,
                         ground_truth_objects=prev_ground_truth_objects,
                     )
                 else:
                     prev_object_results = []
 
-                # Current estimated objects
+                # Translate current objects
                 cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_unique_estimated_objects
                     if use_unique_id
@@ -724,16 +801,32 @@ class TestCLEAR(unittest.TestCase):
                     diff_distance=cur_diff_trans.diff_estimated,
                     diff_yaw=0.0,
                 )
-                # Current ground truth objects
                 cur_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=cur_diff_trans.diff_ground_truth,
                     diff_yaw=0.0,
                 )
+
+                # Filter current objects
+                cur_estimated_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=cur_estimated_objects,
+                    is_gt=False,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
+                cur_ground_truth_objects = filter_objects(
+                    frame_id=self.frame_id,
+                    objects=cur_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
+
                 # Current object results
-                cur_object_results: List[
-                    DynamicObjectWithPerceptionResult
-                ] = PerceptionFrameResult.get_object_results(
+                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )

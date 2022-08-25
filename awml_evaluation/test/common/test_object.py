@@ -173,7 +173,7 @@ class TestObject(unittest.TestCase):
             dummy_ground_truth_object with diff_distance (List[DynamicObject])
 
         test patterns:
-            Test if distace is almost equal to ans_distance.
+            Test if distance is almost equal to ans_distance.
         """
         # patterns: (diff_distance, ans_distance)
         patterns: List[Tuple[float, float]] = [
@@ -205,7 +205,7 @@ class TestObject(unittest.TestCase):
             dummy_ground_truth_object with diff_distance (List[DynamicObject])
 
         test patterns:
-            Test if 2d distace is almost equal to ans_distance_bev.
+            Test if 2d distance is almost equal to ans_distance_bev.
         """
         # patterns: (diff_distance, ans_distance_bev)
         patterns: List[Tuple[float, float]] = [
@@ -228,7 +228,7 @@ class TestObject(unittest.TestCase):
                     distance_bev = distance_objects_bev(dummy_object, diff_dummy_object)
                     self.assertAlmostEqual(distance_bev, ans_distance_bev)
 
-    def test_inside_pointcloud(self):
+    def test_crop_pointcloud(self):
         """[summary]"""
         pointcloud: np.ndarray = np.array(
             [
@@ -239,26 +239,50 @@ class TestObject(unittest.TestCase):
             ]
         )
         bbox_scale: float = 1.1
-        # patterns: (ans_inside_pointcloud)
-        patterns: List[np.ndarray] = [
+        # patterns: (inside, ans_inside_pointcloud)
+        inside_patterns: List[np.ndarray] = [
             np.array([(1.0, 1.0, 1.0)]),
             np.array([(1.0, -1.0, 1.0)]),
             np.array([(-1.0, 1.0, 1.0)]),
             np.array([(-1.0, -1.0, 1.0)]),
         ]
-        with self.subTest("Test get_inside_pointcloud_num"):
+        with self.subTest("Test crop_pointcloud for inside"):
             for dummy_object, ans_inside_pointcloud in zip(
-                self.dummy_ground_truth_objects, patterns
+                self.dummy_ground_truth_objects,
+                inside_patterns,
             ):
-                inside_pointcloud: np.ndarray = dummy_object.get_inside_pointcloud(
-                    pointcloud, bbox_scale
+                inside_pointcloud: np.ndarray = dummy_object.crop_pointcloud(
+                    pointcloud,
+                    bbox_scale,
+                    inside=True,
                 )
                 self.assertEqual(
                     inside_pointcloud.tolist(),
                     ans_inside_pointcloud.tolist(),
                 )
 
-    def test_get_inside_poincloud_num(self):
+        outside_patterns: List[np.ndarray] = [
+            np.array([(1.0, -1.0, 1.0), (-1.0, 1.0, 1.0), (-1.0, -1.0, 1.0)]),
+            np.array([(1.0, 1.0, 1.0), (-1.0, 1.0, 1.0), (-1.0, -1.0, 1.0)]),
+            np.array([(1.0, 1.0, 1.0), (1.0, -1.0, 1.0), (-1.0, -1.0, 1.0)]),
+            np.array([(1.0, 1.0, 1.0), (1.0, -1.0, 1.0), (-1.0, 1.0, 1.0)]),
+        ]
+        with self.subTest("Test crop_pointcloud for outside"):
+            for dummy_object, ans_outside_pointcloud in zip(
+                self.dummy_ground_truth_objects,
+                outside_patterns,
+            ):
+                outside_pointcloud: np.ndarray = dummy_object.crop_pointcloud(
+                    pointcloud,
+                    bbox_scale,
+                    inside=False,
+                )
+                self.assertEqual(
+                    outside_pointcloud.tolist(),
+                    ans_outside_pointcloud.tolist(),
+                )
+
+    def test_get_inside_pointcloud_num(self):
         """[summary]
         Test calculating the number of pointcloud inside of bounding box.
 
