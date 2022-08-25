@@ -9,6 +9,7 @@ from typing import Tuple
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.point import distance_points
 from awml_evaluation.common.point import distance_points_bev
+from awml_evaluation.common.status import Visibility
 import numpy as np
 from pyquaternion import Quaternion
 from shapely.geometry import Polygon
@@ -65,6 +66,8 @@ class DynamicObject:
         # Prediction
         self.predicted_confidence (Optional[float]): Prediction score
         self.predicted_path (Optional[List[ObjectState]]): List of the future states
+
+        self.visibility (Optional[Visibility]): Visibility status. Defaults to None.
     """
 
     def __init__(
@@ -87,6 +90,7 @@ class DynamicObject:
         predicted_sizes: Optional[List[Tuple[float, float, float]]] = None,
         predicted_twists: Optional[List[Tuple[float, float, float]]] = None,
         predicted_confidence: Optional[float] = None,
+        visibility: Optional[Visibility] = None,
     ) -> None:
         """[summary]
 
@@ -118,6 +122,7 @@ class DynamicObject:
             predicted_twists (Optional[List[Tuple[float, float, float]]], optional):
                     The list of twist for predicted object. Defaults to None.
             predicted_confidence (Optional[float], optional): Prediction score. Defaults to None.
+            visibility (Optional[Visibility]): Visibility status. Defaults to None.
         """
 
         # detection
@@ -152,6 +157,8 @@ class DynamicObject:
             sizes=predicted_sizes,
             twists=predicted_twists,
         )
+
+        self.visibility: Optional[Visibility] = visibility
 
     def __eq__(self, other: Optional[DynamicObject]) -> bool:
         """[summary]
