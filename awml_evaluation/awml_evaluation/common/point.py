@@ -62,6 +62,7 @@ def to_bev(point_1: np.ndarray) -> np.ndarray:
 def crop_pointcloud(
     pointcloud: np.ndarray,
     area: List[Tuple[float, float, float]],
+    inside: bool = True,
 ) -> np.ndarray:
     """Crop pointcloud from (N, 3) to (M, 3) with Crossing Number Algorithm.
 
@@ -71,6 +72,7 @@ def crop_pointcloud(
     Args:
         pointcloud (numpy.ndarray): The array of pointcloud, in shape (N, 3)
         area (List[Tuple[float, float, float]]): The 3D-polygon area to be cropped
+        inside (bool): Whether output inside pointcloud. Defaults to True.
 
     Returns:
         numpy.ndarray: The  of cropped pointcloud, in shape (M, 3)
@@ -103,9 +105,13 @@ def crop_pointcloud(
         flags_ *= pointcloud[:, 0] < (area[i][0] + (vt * (area[i + 1][0] - area[i][0])))
         cnt_arr_[flags_] += 1
 
-    xy_cropped: np.ndarray = pointcloud[cnt_arr_ % 2 != 0]
-
-    return xy_cropped[(z_min <= xy_cropped[:, 2]) * (z_max >= xy_cropped[:, 2])]
+    if inside:
+        xy_idx: np.ndarray = cnt_arr_ % 2 != 0
+        z_idx: np.ndarray = (z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2])
+    else:
+        xy_idx: np.ndarray = cnt_arr_ % 2 == 0
+        z_idx: np.ndarray = ~((z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2]))
+    return pointcloud[xy_idx * z_idx]
 
 
 def polygon_to_list(polygon: Polygon):
