@@ -1,3 +1,4 @@
+import logging
 from logging import getLogger
 from typing import Any
 from typing import Dict
@@ -9,6 +10,7 @@ from awml_evaluation.common.evaluation_task import EvaluationTask
 from awml_evaluation.common.label import AutowareLabel
 from awml_evaluation.common.label import LabelConverter
 from awml_evaluation.common.object import DynamicObject
+from awml_evaluation.common.status import Visibility
 import numpy as np
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
@@ -122,6 +124,9 @@ def _load_dataset(
 
     nusc: NuScenes = NuScenes(version="annotation", dataroot=dataset_path, verbose=False)
     helper: PredictHelper = PredictHelper(nusc)
+
+    if len(nusc.visibility) == 0:
+        logging.warn("visibility is not annotated")
 
     # Load category list
     category_list = []
@@ -257,6 +262,13 @@ def _sample_to_frame(
         sample_annotation_: dict = nusc.get("sample_annotation", object_box.token)
         instance_token_: str = sample_annotation_["instance_token"]
 
+        if len(nusc.visibility) == 0:
+            visibility = None
+        else:
+            visibility_token: str = sample_annotation_["visibility_token"]
+            visibility_info: Dict[str, Any] = nusc.get("visibility", visibility_token)
+            visibility: Visibility = Visibility.from_value(visibility_info["token"])
+
         object_: DynamicObject = _convert_nuscenes_box_to_dynamic_object(
             nusc=nusc,
             helper=helper,
@@ -267,6 +279,7 @@ def _sample_to_frame(
             label_converter=label_converter,
             instance_token=instance_token_,
             sample_token=sample_token,
+            visibility=visibility,
         )
         objects_.append(object_)
 
@@ -291,6 +304,7 @@ def _convert_nuscenes_box_to_dynamic_object(
     label_converter: LabelConverter,
     instance_token: str,
     sample_token: str,
+    visibility: Optional[Visibility] = None,
     seconds: float = 3.0,
 ) -> DynamicObject:
     """[summary]
@@ -305,6 +319,7 @@ def _convert_nuscenes_box_to_dynamic_object(
         label_converter (LabelConverter): LabelConverter
         instance_token (str): Instance token
         sample_token (str): Sample token, used to get past/future record
+        visibility (Optional[Visibility]): Visibility status. Defaults to None.
         seconds (float): Seconds to be referenced past/future record
 
     Returns:
@@ -362,6 +377,7 @@ def _convert_nuscenes_box_to_dynamic_object(
         tracked_orientations=tracked_orientations,
         tracked_sizes=tracked_sizes,
         tracked_twists=tracked_velocities,
+        visibility=visibility,
     )
     return dynamic_object
 

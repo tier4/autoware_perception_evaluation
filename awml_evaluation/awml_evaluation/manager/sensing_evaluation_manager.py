@@ -40,8 +40,8 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         self,
         unix_time: int,
         ground_truth_now_frame: FrameGroundTruth,
-        pointcloud_for_detection: np.ndarray,
-        pointcloud_for_non_detection: List[np.ndarray],
+        pointcloud: np.ndarray,
+        non_detection_areas: List[List[Tuple[float, float, float]]],
     ) -> SensingFrameResult:
         """[summary]
         Get sensing result at current frame.
@@ -49,44 +49,37 @@ class SensingEvaluationManager(_EvaluationMangerBase):
 
         Args:
             unix_time (int)
-            ground_truth_now_frame (FrameGroundTruth)
-            pointcloud_for_detection (numpy.ndarray)
-            pointcloud_for_non_detection (List[numpy.ndarray])
+            ground_truth_now_frame (FrameGroundTruth): If there is no corresponding annotation, allow None.
+            pointcloud (np.ndarray): Observed pointcloud.
+            non_detection_area (List[List[Tuple[float, float, float]]]):
+                List of non-detection areas.
 
         Returns:
             result (SensingFrameResult)
         """
-        ground_truth_now_frame.objects = self._filter_objects(ground_truth_now_frame)
+        ground_truth_objects: List[DynamicObject] = self._filter_objects(ground_truth_now_frame)
+        frame_name: str = ground_truth_now_frame.frame_name
 
-        # Crop pointcloud for non-detection outside of objects' bbox
-        box_scale_0m: float = self.evaluator_config.metrics_params["box_scale_0m"]
-        box_scale_100m: float = self.evaluator_config.metrics_params["box_scale_100m"]
-        for i, points in enumerate(pointcloud_for_non_detection):
-            outside_points: np.ndarray = points.copy()
-            for ground_truth in ground_truth_now_frame.objects:
-                bbox_scale: float = get_bbox_scale(
-                    distance=ground_truth.get_distance(),
-                    box_scale_0m=box_scale_0m,
-                    box_scale_100m=box_scale_100m,
-                )
-                outside_points: np.ndarray = ground_truth.crop_pointcloud(
-                    pointcloud=outside_points,
-                    bbox_scale=bbox_scale,
-                    inside=False,
-                )
-            pointcloud_for_non_detection[i] = outside_points
+        # Crop pointcloud for non-detection area
+        pointcloud_for_non_detection: np.ndarray = self.crop_pointcloud(
+            ground_truth_objects=ground_truth_objects,
+            pointcloud=pointcloud,
+            non_detection_areas=non_detection_areas,
+        )
 
         result = SensingFrameResult(
             sensing_frame_config=self.evaluator_config.sensing_frame_config,
             unix_time=unix_time,
-            frame_name=ground_truth_now_frame.frame_name,
+            frame_name=frame_name,
         )
+
         result.evaluate_frame(
-            ground_truth_objects=ground_truth_now_frame.objects,
-            pointcloud_for_detection=pointcloud_for_detection,
+            ground_truth_objects=ground_truth_objects,
+            pointcloud_for_detection=pointcloud,
             pointcloud_for_non_detection=pointcloud_for_non_detection,
         )
         self.frame_results.append(result)
+
         return result
 
     def _filter_objects(self, frame_ground_truth: FrameGroundTruth) -> List[DynamicObject]:
@@ -98,8 +91,9 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             **self.evaluator_config.filtering_params,
         )
 
-    @staticmethod
     def crop_pointcloud(
+        self,
+        ground_truth_objects: List[DynamicObject],
         pointcloud: np.ndarray,
         non_detection_areas: List[List[Tuple[float, float, float]]],
     ) -> List[np.ndarray]:
@@ -107,6 +101,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         specified in SensingEvaluationConfig.
 
         Args:
+            ground_truth_objects: List[DynamicObject]
             pointcloud (numpy.ndarray): The array of pointcloud, in shape (N, 3).
             non_detection_areas (List[List[Tuple[float, float, float]]]):
                 The list of 3D-polygon areas for non-detection.
@@ -114,7 +109,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         Returns:
             cropped_pointcloud (List[numpy.ndarray]): The list of cropped pointcloud.
         """
-        cropped_pointcloud = []
+        cropped_pointcloud: List[np.ndarray] = []
         for non_detection_area in non_detection_areas:
             cropped_pointcloud.append(
                 crop_pointcloud(
@@ -122,4 +117,22 @@ class SensingEvaluationManager(_EvaluationMangerBase):
                     area=non_detection_area,
                 )
             )
+
+        # Crop pointcloud for non-detection outside of objects' bbox
+        box_scale_0m: float = self.evaluator_config.metrics_params["box_scale_0m"]
+        box_scale_100m: float = self.evaluator_config.metrics_params["box_scale_100m"]
+        for i, points in enumerate(cropped_pointcloud):
+            outside_points: np.ndarray = points.copy()
+            for ground_truth in ground_truth_objects:
+                bbox_scale: float = get_bbox_scale(
+                    distance=ground_truth.get_distance(),
+                    box_scale_0m=box_scale_0m,
+                    box_scale_100m=box_scale_100m,
+                )
+                outside_points: np.ndarray = ground_truth.crop_pointcloud(
+                    pointcloud=outside_points,
+                    bbox_scale=bbox_scale,
+                    inside=False,
+                )
+            cropped_pointcloud[i] = outside_points
         return cropped_pointcloud
