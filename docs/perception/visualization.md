@@ -25,7 +25,7 @@
 ```python
 from awml_evaluation.visualization.perception_visualizer import PerceptionVisualizer
 from awml_evaluation.visualization.perception_visualization_config import PerceptionVisualizationConfig
-from awml_evaluation.config import PerceptionEvaluationConfig
+from awml_evaluation.config.perception_evaluation_config import PerceptionEvaluationConfig
 
 # Case.1 : Load from PerceptionVisualizationConfig
 config = PerceptionVisualizationConfig(...)
