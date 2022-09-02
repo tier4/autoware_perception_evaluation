@@ -14,13 +14,13 @@ class Visibility(Enum):
 
     @staticmethod
     def from_alias(name: str) -> Dict[str, Visibility]:
-        if name == "1":
+        if name == "v0-40":
             return Visibility.NONE
-        elif name == "2":
+        elif name == "v40-60":
             return Visibility.PARTIAL
-        elif name == "3":
+        elif name == "v60-80":
             return Visibility.MOST
-        elif name == "4":
+        elif name == "v80-100":
             return Visibility.FULL
         else:
             raise ValueError(f"{Visibility.__class__.__name__}has not {name}")

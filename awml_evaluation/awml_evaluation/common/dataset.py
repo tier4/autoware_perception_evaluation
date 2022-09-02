@@ -267,7 +267,7 @@ def _sample_to_frame(
         else:
             visibility_token: str = sample_annotation_["visibility_token"]
             visibility_info: Dict[str, Any] = nusc.get("visibility", visibility_token)
-            visibility: Visibility = Visibility.from_value(visibility_info["token"])
+            visibility: Visibility = Visibility.from_value(visibility_info["level"])
 
         object_: DynamicObject = _convert_nuscenes_box_to_dynamic_object(
             nusc=nusc,
