@@ -6,6 +6,17 @@
 
 ## Release for main branch
 
+### v1.5.7
+
+- <https://github.com/tier4/AWMLevaluation/pull/157>
+  - 【release】v1.5.7 release
+- <https://github.com/tier4/AWMLevaluation/pull/156>
+  - 【fix】visibility のロード部分のバグ修正
+- <https://github.com/tier4/AWMLevaluation/pull/155>
+  - 【ci】cancel previous workflows の追加
+- <https://github.com/tier4/AWMLevaluation/pull/154>
+  - 【docs】document 更新
+
 ### v1.5.6
 
 - <https://github.com/tier4/AWMLevaluation/pull/152>
