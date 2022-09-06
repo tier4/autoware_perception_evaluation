@@ -56,6 +56,7 @@ class MetricsScore:
         str_ += "Frame:\n"
         str_ += f" Total Num: {self.num_frame}\n"
         str_ += f" Skipped Frames: {self.skipped_frame}\n"
+        str_ += f" Skipped Frames Count: {len(self.skipped_frame)}\n"
 
         str_ += "\n"
 

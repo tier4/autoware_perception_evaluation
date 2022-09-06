@@ -98,10 +98,7 @@ class TrackingMetricsScore:
         str_ += "|      Label |"
         # CLEAR
         for clear in self.clears:
-            for target_label in clear.target_labels:
-                target_str: str = ""
-                target_str += target_label.value
-            str_ += f" {target_str}({clear.matching_threshold_list}) | "
+            str_ += f" {clear.target_labels[0]}({clear.matching_threshold_list[0]}) | "
         str_ += "\n"
         str_ += "| :--------: |"
         for _ in self.clears:

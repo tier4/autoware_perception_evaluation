@@ -58,6 +58,7 @@
         "pyquaternion",
         "rosbag",
         "savefig",
+	"tmpdir",
         "trafficcone",
         "tqdm",
         "waymo",

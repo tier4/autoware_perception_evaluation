@@ -137,18 +137,11 @@ class PerceptionLSimMoc:
         """
         Frameごとの可視化
         """
-        if frame_result.pass_fail_result.get_fail_object_num() > 0:
-            logging.warning(
-                f"{len(frame_result.pass_fail_result.tp_objects)} TP objects, "
-                f"{len(frame_result.pass_fail_result.fp_objects_result)} FP objects, "
-                f"{len(frame_result.pass_fail_result.fn_objects)} FN objects",
-            )
-            # logging.debug(f"frame result {format_class_for_log(frame_result.pass_fail_result)}")
-        else:
-            logging.warning(
-                f"{len(frame_result.pass_fail_result.tp_objects)} TP objects, "
-                "0 FP objects, 0 FN objects",
-            )
+        logging.info(
+            f"{len(frame_result.pass_fail_result.tp_objects)} TP objects, "
+            f"{len(frame_result.pass_fail_result.fp_objects_result)} FP objects, "
+            f"{len(frame_result.pass_fail_result.fn_objects)} FN objects",
+        )
 
         if frame_result.metrics_score.maps[0].map < 0.7:
             logging.debug("mAP is low")
