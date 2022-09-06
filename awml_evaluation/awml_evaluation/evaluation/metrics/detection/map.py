@@ -91,10 +91,8 @@ class Map:
         str_ += "|      Label |"
         target_str: str
         for ap_ in self.aps:
-            target_str = ""
-            for target in ap_.target_labels:
-                target_str += target.value
-            str_ += f" {target_str}({ap_.matching_threshold_list}) | "
+            # len labels and threshold_list is always 1
+            str_ += f" {ap_.target_labels[0].value}({ap_.matching_threshold_list[0]}) | "
         str_ += "\n"
         str_ += "| :--------: |"
         for ap_ in self.aps:
