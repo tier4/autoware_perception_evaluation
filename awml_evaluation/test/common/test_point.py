@@ -90,7 +90,7 @@ class TestPoint(unittest.TestCase):
 
     def test_crop_pointcloud(self):
         """[summary]
-        Test crop pointclout (N, 3) -> (M, 3)
+        Test crop pointcloud (N, 3) -> (M, 3)
 
         test parameter
             Test if 3d in_point is same as cropped ans_point

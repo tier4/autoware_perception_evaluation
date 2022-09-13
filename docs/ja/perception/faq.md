@@ -63,7 +63,7 @@ sudo ifconfig lo multicast
 
 ### Q. Plane distance とは何か
 
-- メトリクスにおける TP/FP の判定において，Usecase 評価で Ground truth object と Predicted object の**自車近傍の 2 点の距離の RMS**を以って判定する．具体的には，
+- メトリクスにおける TP/FP の判定において，UseCase 評価で Ground truth object と Predicted object の**自車近傍の 2 点の距離の RMS**を以って判定する．具体的には，
 
 1. GT と Det それぞれにおいて，footprint の端点のうち Ego から近い面(=2 点)を選択する．
 2. その面同士における 2 通りの端点のペアから，合計距離が短いペアを選択し，これを自車近傍の 2 点する．
@@ -86,7 +86,7 @@ sudo ifconfig lo multicast
   - Autoware だと uuid <https://github.com/tier4/autoware_iv_msgs/blob/main/autoware_perception_msgs/msg/object_recognition/DynamicObject.msg#L1>の表現を行う
   - nuscenes の表現だと instance_token という名称
 - 全 Frame の大量の ObjectResult (object ごとの結果）の結果に対して、「object "79151c9c4ebc7380555f25aecc031422" の結果は？」と投げると、その object の
-  - ground truth との誤差（center disntace, 面距離等々）
+  - ground truth との誤差（center distance, 面距離等々）
   - pointcloud が何点当たっているか
   - などの時間推移が表示できるようになる
 

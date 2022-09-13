@@ -210,7 +210,7 @@
 ## Matching
 
 - 予測 object と Ground Truth のマッチング方式の class
-  - 詳細は，[awml_evaluation/evaluation/matching/object_matching.py](../../awml_evaluation/awml_evaluation/evaluation/matching/object_matching.py)を参照
+  - 詳細は，[awml_evaluation/evaluation/matching/object_matching.py](../../../awml_evaluation/awml_evaluation/evaluation/matching/object_matching.py)を参照
 
 | Matching Method    | Value                                             |
 | ------------------ | ------------------------------------------------- |
@@ -241,7 +241,7 @@
 ## TP Metrics
 
 - True Positive 時の値を返す class
-  - 詳細は，[awml_evaluation/evaluation/metrics/detection/tp_metrics.py](../../awml_evaluation/awml_evaluation/evaluation/metrics/detection/tp_metrics.py)を参照
+  - 詳細は，[awml_evaluation/evaluation/metrics/detection/tp_metrics.py](../../../awml_evaluation/awml_evaluation/evaluation/metrics/detection/tp_metrics.py)を参照
 
 | TP Metrics          | Value                         |
 | ------------------- | ----------------------------- |

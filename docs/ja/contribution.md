@@ -1,6 +1,6 @@
 ## coding rule
 
-- See [detail](../docs/contribution.md)
+- See [detail](../ja/contribution.md)
 
 ### Static code analysis using pre-commit
 

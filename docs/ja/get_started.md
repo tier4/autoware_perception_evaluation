@@ -78,8 +78,8 @@ repositories:
 ## 実装
 
 - ライブラリ or ROS パッケージとして使う場合
-  - Perception: [awml_evaluation/test/perception_lsim.py](../awml_evaluation/test/perception_lsim.py)
-  - Sensing: [awml_evaluation/test/sensing_lsim.py](../awml_evaluation/test/sensing_lsim.py)
+  - Perception: [awml_evaluation/test/perception_lsim.py](../../awml_evaluation/test/perception_lsim.py)
+  - Sensing: [awml_evaluation/test/sensing_lsim.py](../../awml_evaluation/test/sensing_lsim.py)
 
 ## その他の case
 

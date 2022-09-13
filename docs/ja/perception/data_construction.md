@@ -35,13 +35,44 @@
 
 ### PerceptionFrameResult
 
-- 入力データ: 1 pointcloud + List[ground truth objects]
-- object_results (List[DynamicObjectWithPerceptionResult]): Object ごとの評価
+詳細は[awml_evaluation/evaluation/result/perception_frame_result.py](../../../awml_evaluation/awml_evaluation/evaluation/result/perception_frame_result.py)を参照
+
+- Initialization
+
+  | Arguments                       |                   type                    | Description                                     |
+  | :------------------------------ | :---------------------------------------: | :---------------------------------------------- |
+  | `object_results`                | `List[DynamicObjectWithPerceptionResult]` | 推定オブジェクトと GT オブジェクトのペア        |
+  | `frame_ground_truth`            |            `FrameGroundTruth`             | 1 フレーム分の GT オブジェクト                  |
+  | `metrics_config`                |           `MetricsScoreConfig`            | メトリクス評価用の config                       |
+  | `critical_object_filter_config` |       `CriticalObjectFilterConfig`        | 必ず検出できてほしいオブジェクトに対する config |
+  | `frame_pass_fail_config`        |        `PerceptionPassFailConfig`         | Pass/Fail を決める config                       |
+  | `unix_time`                     |                   `int`                   | フレームの UNIX Time                            |
+  | `target_labels`                 |           `List[AutowareLabel]`           | 評価対象ラベル                                  |
+
+- Attributes
+
+  | Attributes           |                   type                    | Description                              |
+  | :------------------- | :---------------------------------------: | :--------------------------------------- |
+  | `frame_name`         |                   `str`                   | フレーム名                               |
+  | `unix_time`          |                   `int`                   | フレームの UNIX Time                     |
+  | `frame_id`           |                   `str`                   | オブジェクト座標系 frame ID              |
+  | `target_labels`      |           `List[AutowareLabel]`           | 評価対象ラベル                           |
+  | `object_results`     | `List[DynamicObjectWithPerceptionResult]` | 推定オブジェクトと GT オブジェクトのペア |
+  | `frame_ground_truth` |            `FrameGroundTruth`             | 1 フレーム分の GT オブジェクト           |
+  | `metrics_score`      |              `MetricsScore`               | メトリクス評価結果                       |
+  | `pass_fail_result`   |             `PassFailResult`              | Pass/Fail 結果                           |
+
+- Methods
+
+  | Methods            | Returns | Description                                          |
+  | :----------------- | :-----: | :--------------------------------------------------- |
+  | `evaluate_frame()` | `None`  | 1 フレーム分のメトリクス・Pass/Fail の評価を実行する |
+
 - metrics_score (MetricsScore): Metrics 評価
 - pass_fail_result (PassFailResult): Use case 評価の結果
+  - tp_objects (List[DynamicObjectWithPerceptionResult]): Use case 評価で TP (True Positive) の ObjectResult
   - fp_objects (List[DynamicObjectWithPerceptionResult]): Use case 評価で FP (False Positive) の ObjectResult
   - fn_objects (List[DynamicObject]): Use case 評価で FN (False Negative) の DynamicObject
-- 詳細は[awml_evaluation/evaluation/result/perception_frame_result.py](../../awml_evaluation/awml_evaluation/evaluation/result/perception_frame_result.py)を参照
 
 ```yaml
 [2022-08-10 10:38:11,341] [INFO] [perception_lsim.py:258 <module>] Frame result example (frame_results[0]):
@@ -104,23 +135,46 @@
 
 ### DynamicObjectWithPerceptionResult
 
-- ground_truth_object: Ground truth
-- predicted_object: (Autoware の) 認識の推論結果
-- metrics_score: 評価数値
-- List[DynamicObjectWithPerceptionResult]
-  - predicted_object (DynamicObject): 推論結果の Object
-  - ground_truth_object (Optional[DynamicObject]): Ground truth
-  - center_distance (CenterDistanceMatching): 中心間距離
-  - plane_distance (PlaneDistanceMatching): 面距離
-    - NN の 2 点座標も入っている
-  - iou_bev (IOUBEVMatching): BEV の IoU
-  - iou_3d (IOU3dMatching): 3d の IoU
-- 関数を叩く必要があるもの (DynamicObjectWithPerceptionResult method)
-  - 結果: <https://github.com/tier4/AWMLevaluation/blob/develop/awml_evaluation/awml_evaluation/evaluation/result/object_result.py#L77>
-- 関数を叩く必要があるもの (DynamicObject method)
-  - 推論結果なら object_result.predicted_object.get_footprint() などになる
-  - 4 隅座標 <https://github.com/tier4/AWMLevaluation/blob/develop/awml_evaluation/awml_evaluation/common/object.py#L198>
-  - yaw 角 <https://github.com/tier4/AWMLevaluation/blob/develop/awml_evaluation/awml_evaluation/common/object.py#L185>
+推定オブジェクトの集合`List[DynamicObject]`と GT オブジェクトの集合`List[DynamicObject]`からマッチングペアの集合`List[DynamicObjectWithPerceptionResult]`を得るには，`get_object_results()`関数を使う．
+
+詳細は，[awml_evaluation/evaluation/result/object_result.py](../../../awml_evaluation/awml_evaluation/evaluation/result/object_result.py)を参照．
+
+```python
+from awml_evaluation.evaluation.result.object_results import get_object_results
+
+# REQUIRED:
+#   estimated_objects: List[DynamicObject]
+#   ground_truth_objects: List[DynamicObject]
+
+object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(estimated_objects, ground_truth_objects)
+```
+
+- Initialization
+
+  | Arguments             |           type            | Description      |
+  | :-------------------- | :-----------------------: | :--------------- |
+  | `estimated_object`    |      `DynamicObject`      | 推定オブジェクト |
+  | `ground_truth_object` | `Optional[DynamicObject]` | GT オブジェクト  |
+
+- Attributes
+
+  | Attributes            |           type            | Description                                                      |
+  | :-------------------- | :-----------------------: | :--------------------------------------------------------------- |
+  | `estimated_object`    |      `DynamicObject`      | 推定オブジェクト                                                 |
+  | `ground_truth_object` | `Optional[DynamicObject]` | GT オブジェクト                                                  |
+  | `is_label_correct`    |          `bool`           | 推定オブジェクトと GT オブジェクトのラベルが同一かどうかのフラグ |
+  | `center_distance`     | `CenterDistanceMatching`  | 中心間距離                                                       |
+  | `plane_distance`      |  `PlaneDistanceMatching`  | 面距離                                                           |
+  | `iou_bev`             |     `IOUBEVMatching`      | BEV の IOU                                                       |
+  | `iou_3d`              |      `IOU3dMatching`      | 3D の IOU                                                        |
+
+- Methods
+
+  | Methods                    |     Returns      | Description                     |
+  | :------------------------- | :--------------: | :------------------------------ |
+  | `get_matching()`           | `MatchingMethod` | 対応するマッチング結果を返す    |
+  | `get_distance_error_bev()` |     `float`      | 中心間距離の BEV での結果を返す |
+  | `is_result_correct()`      |      `bool`      | TP/FP の判定結果を返す          |
 
 ```yaml
 [2022-08-09 18:56:45,237] [INFO] [perception_lsim.py:208 <module>] Object result example (frame_results[0].object_results[0]):
