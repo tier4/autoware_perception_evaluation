@@ -44,6 +44,9 @@ class MatchingMode(Enum):
     IOU3D = "IoU 3D"
     PLANEDISTANCE = "Plane Distance [m]"
 
+    def __str__(self) -> str:
+        return self.value
+
 
 class MatchingMethod(ABC):
     """[summary]

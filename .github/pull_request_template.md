@@ -58,4 +58,4 @@
 
 ## Notes for reviewer
 
-<!-- Write additional information if neccessary. It should be written if there are related PRs that should be merged at the same time. -->
+<!-- Write additional information if necessary. It should be written if there are related PRs that should be merged at the same time. -->

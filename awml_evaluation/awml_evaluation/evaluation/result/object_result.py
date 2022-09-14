@@ -16,8 +16,10 @@ from __future__ import annotations
 
 from typing import List
 from typing import Optional
+from typing import Tuple
 
 from awml_evaluation.common.object import DynamicObject
+from awml_evaluation.common.object import distance_objects
 from awml_evaluation.common.object import distance_objects_bev
 from awml_evaluation.evaluation.matching.object_matching import CenterDistanceMatching
 from awml_evaluation.evaluation.matching.object_matching import IOU3dMatching
@@ -63,7 +65,6 @@ class DynamicObjectWithPerceptionResult:
         """
         self.estimated_object: DynamicObject = estimated_object
         self.ground_truth_object: Optional[DynamicObject] = ground_truth_object
-        self.is_label_correct: bool = self._is_label_correct()
 
         # detection
         self.center_distance: CenterDistanceMatching = CenterDistanceMatching(
@@ -138,16 +139,72 @@ class DynamicObjectWithPerceptionResult:
         else:
             raise NotImplementedError
 
-    def get_distance_error_bev(self) -> float:
+    @property
+    def distance_error_bev(self) -> Optional[float]:
+        """[summary]
+        Get error center distance between ground truth and estimated object in BEV space.
+
+        Returns:
+            Optional[float]: error center distance between ground truth and estimated object.
+        """
+        if self.ground_truth_object is None:
+            return None
+        return distance_objects_bev(self.estimated_object, self.ground_truth_object)
+
+    @property
+    def distance_error(self) -> Optional[float]:
         """[summary]
         Get error center distance between ground truth and estimated object.
 
         Returns:
-            float: error center distance between ground truth and estimated object.
+            Optional[float]: error center distance between ground truth and estimated object.
         """
-        return distance_objects_bev(self.estimated_object, self.ground_truth_object)
+        if self.ground_truth_object is None:
+            return None
+        return distance_objects(self.estimated_object, self.ground_truth_object)
 
-    def _is_label_correct(self) -> bool:
+    @property
+    def position_error(self) -> Optional[Tuple[float, float, float]]:
+        """[summary]
+        Get the position error vector from estimated to ground truth object.
+        If ground truth object is None, returns None.
+
+        Returns:
+            err_x (float): Error of x[m].
+            err_y (float): Error of y[m].
+            err_z (float): Error of z[m].
+        """
+        return self.estimated_object.get_position_error(self.ground_truth_object)
+
+    @property
+    def heading_error(self) -> Optional[Tuple[float, float, float]]:
+        """[summary]
+        Get the heading error vector from estimated to ground truth object.
+        If ground truth object is None, returns None.
+
+        Returns:
+            err_x (float): Error of rotation angle around x-axis, in the range [-pi, pi].
+            err_y (float): Error of rotation angle around y-axis, in the range [-pi, pi].
+            err_z (float): Error of rotation angle around z-axis, in the range [-pi, pi].
+        """
+        return self.estimated_object.get_heading_error(self.ground_truth_object)
+
+    @property
+    def velocity_error(self) -> Optional[Tuple[float, float, float]]:
+        """[summary]
+        Get the velocity error vector from estimated to ground truth object.
+        If ground truth object is None, returns None.
+        Also, velocity of estimated or ground truth object is None, returns None too.
+
+        Returns:
+            err_vx (float): Error of vx[m].
+            err_vy (float): Error of vy[m].
+            err_vz (float): Error of vz[m].
+        """
+        return self.estimated_object.get_velocity_error(self.ground_truth_object)
+
+    @property
+    def is_label_correct(self) -> bool:
         """[summary]
         Get whether label is correct.
 

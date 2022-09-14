@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
 from logging import getLogger
@@ -36,6 +38,9 @@ class AutowareLabel(Enum):
     MOTORBIKE = "motorbike"
     PEDESTRIAN = "pedestrian"
     ANIMAL = "animal"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 @dataclass

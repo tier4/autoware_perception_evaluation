@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from enum import Enum
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Union
 
 
 class EvaluationTask(Enum):
@@ -27,6 +30,14 @@ class EvaluationTask(Enum):
     TRACKING = "tracking"
     PREDICTION = "prediction"
     SENSING = "sensing"
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __eq__(self, other: Union[EvaluationTask, str]) -> bool:
+        if isinstance(other, str):
+            return self.value == other
+        return super().__eq__(other)
 
 
 def set_task_lists(evaluation_tasks_str: List[str]) -> List[EvaluationTask]:

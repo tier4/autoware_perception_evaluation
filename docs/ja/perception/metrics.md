@@ -169,7 +169,7 @@
 
 ## Tracking
 
-## `TrackingMetricsScore`
+### `TrackingMetricsScore`
 
 - tracking の メトリクススコアを計算する class.内部で CLEAR を計算し，MOTA 　/　 MOTP 　/　 IDswitch 等を計算する．
 
@@ -207,6 +207,10 @@
  'target_labels': ['AutowareLabel.CAR', 'AutowareLabel.BICYCLE', 'AutowareLabel.PEDESTRIAN', 'AutowareLabel.MOTORBIKE']}
 ```
 
+### ID switch
+
+<img src="./figure/ID_switch_design.svg">
+
 ## Matching
 
 - 予測 object と Ground Truth のマッチング方式の class
@@ -218,6 +222,21 @@
 | IoU BEV            | 2 つの object のの IoU BEV の値                   |
 | IoU 3D             | 2 つの object の 3D IoU の値                      |
 | Plane Distance     | 2 つの object の近傍 2 点の距離の RMS(詳細は後述) |
+
+- オブジェクト同士のマッチングの条件は以下．デフォルトで Center Distance 3D がマッチング方式として使用される．
+
+1. 同一クラス
+2. 最短距離の GT と予測オブジェクトが優先的にマッチング
+
+<img src="./figure/object_matching1.svg">
+
+- UUID を指定した場合には，以下のプロセスでオブジェクトのペアが生成される．
+
+1. 指定した UUID を持つ GT 以外をフィルタ
+2. マッチング
+3. GT とペアになっていない予測オブジェクトをフィルタ
+
+<img src="./figure/object_matching2.svg">
 
 ### Plane distance
 

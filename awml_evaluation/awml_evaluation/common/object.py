@@ -290,6 +290,81 @@ class DynamicObject:
         )
         return footprint
 
+    def get_position_error(
+        self,
+        other: Optional[DynamicObject],
+    ) -> Optional[Tuple[float, float, float]]:
+        """[summary]
+        Get the position error between myself and other. If other is None, returns None.
+
+        Returns:
+            err_x (float): Error of x[m].
+            err_y (float): Error of y[m].
+            err_z (float): Error of z[m].
+        """
+        if other is None:
+            return None
+        err_x: float = abs(other.state.position[0] - self.state.position[0])
+        err_y: float = abs(other.state.position[1] - self.state.position[1])
+        err_z: float = abs(other.state.position[2] - self.state.position[2])
+        return (err_x, err_y, err_z)
+
+    def get_heading_error(
+        self,
+        other: Optional[DynamicObject],
+    ) -> Optional[Tuple[float, float, float]]:
+        """[summary]
+        Get the heading error between myself and other. If other is None, returns None.
+
+        Returns:
+            err_x (float): Error of rotation angle around x-axis, in the range [-pi, pi].
+            err_y (float): Error of rotation angle around y-axis, in the range [-pi, pi].
+            err_z (float): Error of rotation angle around z-axis, in the range [-pi, pi].
+        """
+        if other is None:
+            return None
+
+        def _clip(err: float) -> float:
+            """Clip [-2pi, 2pi] to [0, pi]"""
+            if err < 0:
+                err += -np.pi * (err // np.pi)
+            elif err > np.pi:
+                err -= 2 * np.pi
+            return err
+
+        yaw1, pitch1, roll1 = self.state.orientation.yaw_pitch_roll
+        yaw2, pitch2, roll2 = other.state.orientation.yaw_pitch_roll
+        err_x: float = _clip(roll2 - roll1)
+        err_y: float = _clip(pitch2 - pitch1)
+        err_z: float = _clip(yaw2 - yaw1)
+
+        return (err_x, err_y, err_z)
+
+    def get_velocity_error(
+        self,
+        other: Optional[DynamicObject],
+    ) -> Optional[Tuple[float, float, float]]:
+        """[summary]
+        Get the velocity error between myself and other.
+        If other is None, returns None. Also, velocity of myself or other is None, returns None too.
+
+        Returns:
+            err_vx (float): Error of vx[m].
+            err_vy (float): Error of vy[m].
+            err_vz (float): Error of vz[m].
+        """
+        if other is None:
+            return None
+
+        if self.state.velocity is None or other.state.velocity is None:
+            return None
+
+        err_vx: float = abs(other.state.velocity[0] - self.state.velocity[0])
+        err_vy: float = abs(other.state.velocity[1] - self.state.velocity[1])
+        err_vz: float = abs(other.state.velocity[2] - self.state.velocity[2])
+
+        return err_vx, err_vy, err_vz
+
     def get_area_bev(self) -> float:
         """[summary]
         Get area of object BEV.
