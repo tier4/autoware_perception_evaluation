@@ -28,7 +28,7 @@
 - [ ] Update document
 - [ ] Chore
 
-## Test perrformed
+## Test performed
 
 <!-- Describe how you have tested this PR. -->
 

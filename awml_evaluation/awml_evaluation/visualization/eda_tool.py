@@ -401,6 +401,7 @@ class EDAManager:
         self.xylim_dict (Dict[str, List[float]]): xlim, ylim for each class used in hist2d_object_center_xy_for_each_class
         self.width_lim_dict (Dict[str, List[float]]): width_lim for each class used in hist2d_object_wl_for_each_class
         self.length_lim_dict (Dict[str, List[float]]): length_lim for each class used in hist2d_object_wl_for_each_class
+        self.label_converter (LabelConverter): label converter
     """
 
     def __init__(
@@ -411,6 +412,7 @@ class EDAManager:
         xylim_dict: Dict[str, List[float]],
         width_lim_dict: Dict[str, List[float]],
         length_lim_dict: Dict[str, List[float]],
+        merge_similar_labels: bool = False,
     ) -> None:
         """[summary]
 
@@ -421,6 +423,10 @@ class EDAManager:
             xylim_dict (Dict[str, List[float]]): xlim, ylim for each class for hist2d_object_center_xy_for_each_class
             width_lim_dict (Dict[str, List[float]]): width_lim for each class used in hist2d_object_wl_for_each_class
             length_lim_dict (Dict[str, List[float]]): length_lim for each class used in hist2d_object_wl_for_each_class
+            merge_similar_labels (bool): Whether merge similar labels.
+                If True,
+                    - BUS, TRUCK, TRAILER -> CAR
+                    - MOTORBIKE, CYCLIST -> BICYCLE
         """
         self.root_path = root_path
         self.class_names = class_names
@@ -428,6 +434,7 @@ class EDAManager:
         self.xylim_dict = xylim_dict
         self.width_lim_dict = width_lim_dict
         self.length_lim_dict = length_lim_dict
+        self.label_converter = LabelConverter(merge_similar_labels=merge_similar_labels)
 
     def visualize_ground_truth_objects(
         self, ground_truth_object_dict: Dict[str, List[DynamicObject]]
@@ -484,7 +491,7 @@ class EDAManager:
         """
         autoware_labels: List[AutowareLabel] = []
         for name in self.class_names:
-            autoware_labels.append(LabelConverter().convert_label(name))
+            autoware_labels.append(self.label_converter.convert_label(name))
         # visualize tp, fp in estimated objects
         tp_results, fp_results = divide_tp_fp_objects(
             object_results,

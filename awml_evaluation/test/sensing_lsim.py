@@ -50,6 +50,7 @@ class SensingLSimMoc:
         evaluation_config: SensingEvaluationConfig = SensingEvaluationConfig(
             dataset_paths=dataset_paths,
             frame_id="base_link",
+            merge_similar_labels=False,
             does_use_pointcloud=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,

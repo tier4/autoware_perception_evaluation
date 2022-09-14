@@ -33,6 +33,7 @@ class _EvaluationConfigBase(ABC):
     Attributes:
         self.dataset_paths (List[str]): The list of dataset path.
         self.frame_id (str): The frame_id, base_link or map.
+        self.merge_similar_labels (bool): Whether merge similar labels.
         self.does_use_pointcloud (bool): Whether use pointcloud of dataset.
         self.result_root_directory (str): The directory path to save result.
         self.log_directory (str): The directory path to save log.
@@ -54,6 +55,7 @@ class _EvaluationConfigBase(ABC):
         self,
         dataset_paths: List[str],
         frame_id: str,
+        merge_similar_labels: bool,
         does_use_pointcloud: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
@@ -61,6 +63,11 @@ class _EvaluationConfigBase(ABC):
         """[summary]
         Args:
             dataset_paths (List[str]): The list of dataset path.
+            frame_id (str): Frame ID, base_link or map.
+            merge_similar_labels (bool): Whether merge similar labels.
+                If True,
+                    - BUS, TRUCK, TRAILER -> CAR
+                    - MOTORBIKE, CYCLIST -> BICYCLE
             does_use_pointcloud (bool): Whether use pointcloud of dataset.
             result_root_directory (str): The directory path to save result.
             evaluation_config_dict (Dict[str, Any]): The config for each evaluation task. The key represents task name.
@@ -76,6 +83,7 @@ class _EvaluationConfigBase(ABC):
         if frame_id not in ("base_link", "map"):
             raise ValueError(f"Unexpected frame_id: {frame_id}")
         self.frame_id: str = frame_id
+        self.merge_similar_labels: bool = merge_similar_labels
         self.does_use_pointcloud: bool = does_use_pointcloud
 
         # directory
@@ -87,7 +95,7 @@ class _EvaluationConfigBase(ABC):
         os.makedirs(self._visualization_directory)
 
         # Labels
-        self.label_converter = LabelConverter()
+        self.label_converter = LabelConverter(merge_similar_labels)
 
     @property
     def support_tasks(self) -> List[str]:

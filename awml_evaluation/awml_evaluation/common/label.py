@@ -66,12 +66,20 @@ class LabelConverter:
 
     Attributes:
         self.labels (List[Label]): The list of label to convert
-
     """
 
-    def __init__(self) -> None:
+    def __init__(self, merge_similar_labels: bool) -> None:
+        """
+        Args:
+            merge_similar_labels (bool): Whether merge similar labels.
+                If True,
+                    - BUS, TRUCK, TRAILER -> CAR
+                    - MOTORBIKE, CYCLIST -> BICYCLE
+        """
         self.labels: List[Label] = []
-        pair_list: List[Tuple[AutowareLabel, str]] = LabelConverter._set_pair_list()
+        pair_list: List[Tuple[AutowareLabel, str]] = LabelConverter._set_pair_list(
+            merge_similar_labels
+        )
         for autoware_label, label in pair_list:
             self.labels.append(Label(autoware_label, label))
         logger.debug(f"label {self.labels}")
@@ -105,23 +113,28 @@ class LabelConverter:
         return return_label
 
     @staticmethod
-    def _set_pair_list() -> List[Tuple[AutowareLabel, str]]:
+    def _set_pair_list(merge_similar_labels: bool) -> List[Tuple[AutowareLabel, str]]:
+        """[summary]
+        Set pairs of AutowareLabel and str as list.
+
+        Args:
+            merge_similar_labels (bool): Whether merge similar labels.
+                If True,
+                    - BUS, TRUCK, TRAILER -> CAR
+                    - MOTORBIKE, CYCLIST -> BICYCLE
+
+        Returns:
+            List[Tuple[AutowareLabel, str]]: The list of pair.
+        """
         pair_list: List[Tuple[AutowareLabel, str]] = [
             (AutowareLabel.BICYCLE, "bicycle"),
             (AutowareLabel.BICYCLE, "BICYCLE"),
             (AutowareLabel.BICYCLE, "vehicle.bicycle"),
-            (AutowareLabel.BUS, "bus"),
-            (AutowareLabel.BUS, "BUS"),
-            (AutowareLabel.BUS, "vehicle.bus (bendy & rigid)"),
-            (AutowareLabel.BUS, "vehicle.bus"),
             (AutowareLabel.CAR, "car"),
             (AutowareLabel.CAR, "CAR"),
             (AutowareLabel.CAR, "vehicle.car"),
             (AutowareLabel.CAR, "vehicle.construction"),
             (AutowareLabel.CAR, "vehicle.emergency (ambulance & police)"),
-            (AutowareLabel.MOTORBIKE, "motorbike"),
-            (AutowareLabel.MOTORBIKE, "MOTORBIKE"),
-            (AutowareLabel.MOTORBIKE, "vehicle.motorcycle"),
             (AutowareLabel.PEDESTRIAN, "pedestrian"),
             (AutowareLabel.PEDESTRIAN, "PEDESTRIAN"),
             (AutowareLabel.PEDESTRIAN, "pedestrian.adult"),
@@ -131,10 +144,6 @@ class LabelConverter:
             (AutowareLabel.PEDESTRIAN, "pedestrian.police_officer"),
             (AutowareLabel.PEDESTRIAN, "pedestrian.stroller"),
             (AutowareLabel.PEDESTRIAN, "pedestrian.wheelchair"),
-            (AutowareLabel.TRUCK, "truck"),
-            (AutowareLabel.TRUCK, "TRUCK"),
-            (AutowareLabel.TRUCK, "vehicle.truck"),
-            (AutowareLabel.TRUCK, "vehicle.trailer"),
             (AutowareLabel.UNKNOWN, "animal"),
             (AutowareLabel.UNKNOWN, "ANIMAL"),
             (AutowareLabel.UNKNOWN, "unknown"),
@@ -146,6 +155,34 @@ class LabelConverter:
             (AutowareLabel.UNKNOWN, "movable_object.traffic_cone"),
             (AutowareLabel.UNKNOWN, "static_object.bicycle rack"),
         ]
+        if merge_similar_labels:
+            pair_list += [
+                (AutowareLabel.CAR, "bus"),
+                (AutowareLabel.CAR, "BUS"),
+                (AutowareLabel.CAR, "vehicle.bus (bendy & rigid)"),
+                (AutowareLabel.CAR, "vehicle.bus"),
+                (AutowareLabel.CAR, "truck"),
+                (AutowareLabel.CAR, "TRUCK"),
+                (AutowareLabel.CAR, "vehicle.truck"),
+                (AutowareLabel.CAR, "vehicle.trailer"),
+                (AutowareLabel.BICYCLE, "motorbike"),
+                (AutowareLabel.BICYCLE, "MOTORBIKE"),
+                (AutowareLabel.BICYCLE, "vehicle.motorcycle"),
+            ]
+        else:
+            pair_list += [
+                (AutowareLabel.BUS, "bus"),
+                (AutowareLabel.BUS, "BUS"),
+                (AutowareLabel.BUS, "vehicle.bus (bendy & rigid)"),
+                (AutowareLabel.BUS, "vehicle.bus"),
+                (AutowareLabel.TRUCK, "truck"),
+                (AutowareLabel.TRUCK, "TRUCK"),
+                (AutowareLabel.TRUCK, "vehicle.truck"),
+                (AutowareLabel.TRUCK, "vehicle.trailer"),
+                (AutowareLabel.MOTORBIKE, "motorbike"),
+                (AutowareLabel.MOTORBIKE, "MOTORBIKE"),
+                (AutowareLabel.MOTORBIKE, "vehicle.motorcycle"),
+            ]
         return pair_list
 
 

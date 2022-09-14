@@ -55,6 +55,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         self,
         dataset_paths: List[str],
         frame_id: str,
+        merge_similar_labels: bool,
         does_use_pointcloud: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
@@ -63,7 +64,11 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
 
         Args:
             dataset_paths (List[str]): The paths of dataset
-            frame_id (str): The frame_id base_link or map
+            frame_id (str): Frame ID, base_link or map
+            merge_similar_labels (bool): Whether merge similar labels.
+                If True,
+                    - BUS, TRUCK, TRAILER -> CAR
+                    - MOTORBIKE, CYCLIST -> BICYCLE
             does_use_pointcloud (bool): The flag for loading pointcloud data from dataset
             result_root_directory (str): The path to result directory
             evaluation_config_dict (Dict[str, Dict[str, Any]]): The dictionary of evaluation config for each task.
@@ -71,6 +76,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         super().__init__(
             dataset_paths=dataset_paths,
             frame_id=frame_id,
+            merge_similar_labels=merge_similar_labels,
             does_use_pointcloud=does_use_pointcloud,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,

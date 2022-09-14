@@ -161,9 +161,10 @@ class PerceptionPerformanceAnalyzer:
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id=frame_id,
+            merge_similar_labels=p_cfg.get("merge_similar_labels", False),
             does_use_pointcloud=False,
             result_root_directory=result_root_directory,
-            evaluation_config_dict=p_cfg["evaluation_config_dict"],
+            evaluation_config_dict=eval_cfg_dict,
         )
 
         return cls(evaluation_config, num_area_division)

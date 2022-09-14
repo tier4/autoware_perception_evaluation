@@ -32,7 +32,6 @@ def visualize_ground_truth(dataset_paths: List[str], save_path: str) -> None:
     Args:
         dataset_paths (List[str]): path to dataset for visualization
         save_path (str): save directory for each graph. If there is no directory in save_dir, make directory.
-
     """
 
     """
@@ -103,7 +102,7 @@ def get_all_ground_truths(dataset_paths: List[str]) -> List[DynamicObject]:
         dataset_paths,
         does_use_pointcloud=False,
         evaluation_task="detection",
-        label_converter=LabelConverter(),
+        label_converter=LabelConverter(merge_similar_labels=False),
         frame_id="base_link",
     )
     all_ground_truths: List[DynamicObject] = []

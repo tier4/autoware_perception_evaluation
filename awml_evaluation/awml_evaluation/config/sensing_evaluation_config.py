@@ -48,6 +48,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         self,
         dataset_paths: List[str],
         frame_id: str,
+        merge_similar_labels: bool,
         does_use_pointcloud: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Dict[str, Any]],
@@ -55,6 +56,11 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         """
         Args:
             dataset_paths (List[str]): The list of dataset paths.
+            frame_id (str): Frame ID, base_link or map.
+            merge_similar_labels (bool): Whether merge similar labels.
+                If True,
+                    - BUS, TRUCK, TRAILER -> CAR
+                    - MOTORBIKE, CYCLIST -> BICYCLE
             does_use_pointcloud (bool): The boolean flag if load pointcloud data from dataset.
             result_root_directory (str): The directory path to save result.
             evaluation_config_dict (Dict[str, Dict[str, Any]]): The dictionary of evaluation config for each task.
@@ -63,6 +69,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         super().__init__(
             dataset_paths=dataset_paths,
             frame_id=frame_id,
+            merge_similar_labels=merge_similar_labels,
             does_use_pointcloud=does_use_pointcloud,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,

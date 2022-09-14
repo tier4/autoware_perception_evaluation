@@ -78,6 +78,7 @@ class PerceptionLSimMoc:
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=dataset_paths,
             frame_id=frame_id,
+            merge_similar_labels=False,
             does_use_pointcloud=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,

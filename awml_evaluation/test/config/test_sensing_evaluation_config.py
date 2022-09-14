@@ -43,8 +43,9 @@ class TestSensingEvaluationConfig(unittest.TestCase):
                     evaluation_config_dict.update(evaluation_task)
                     _ = SensingEvaluationConfig(
                         dataset_paths="/tmp/path",
-                        does_use_pointcloud=False,
                         frame_id=frame_id,
+                        merge_similar_labels=False,
+                        does_use_pointcloud=False,
                         result_root_directory="/tmp/path",
                         evaluation_config_dict=evaluation_config_dict,
                     )
