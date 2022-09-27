@@ -86,6 +86,7 @@
     "pyplot",
     "pyproject",
     "pyquaternion",
+    "replayer",
     "rmem",
     "rosbag",
     "savefig",

@@ -2,291 +2,243 @@
 
 - 上ほど新しい
 
-## Now development for develop branch -> v1.5.x
+## Now development for develop branch -> v1.0.x
 
 ## Release for main branch
 
-### v1.5.8
-
-- <https://github.com/tier4/AWMLevaluation/pull/159>
-  - 【release】v1.5.8 release
-- <https://github.com/tier4/AWMLevaluation/pull/158>
+- <https://github.com/tier4/autoware_perception_evaluation/commit/836d1089bc5b6815486ab1033959499405e28926>
+  - 【release】release
+- <https://github.com/tier4/autoware_perception_evaluation/commit/6cff0094f8dc960daf241b2aff24bccf11785230>
   - 【fix】skipped フレーム数の表示
-
-### v1.5.7
-
-- <https://github.com/tier4/AWMLevaluation/pull/157>
-  - 【release】v1.5.7 release
-- <https://github.com/tier4/AWMLevaluation/pull/156>
-  - 【fix】visibility のロード部分のバグ修正
-- <https://github.com/tier4/AWMLevaluation/pull/155>
+- <https://github.com/tier4/autoware_perception_evaluation/commit/bfd118c6ac47052b4ec514533c46d8cd2c7a6833>
+  - 【release】release
+- <https://github.com/tier4/autoware_perception_evaluation/commit/c860da917a8689c9fa7908f21c3b2b30bc191da7>
+  - 【fix】visibility のロード部分のバグの修正
+- <https://github.com/tier4/autoware_perception_evaluation/commit/514f49977190919914c249416ecbdec92c14aaf5>
   - 【ci】cancel previous workflows の追加
-- <https://github.com/tier4/AWMLevaluation/pull/154>
+- <https://github.com/tier4/autoware_perception_evaluation/commit/f412ae17453035ddad3a99ea7148d555ee52bf76>
   - 【docs】document 更新
-
-### v1.5.6
-
-- <https://github.com/tier4/AWMLevaluation/pull/152>
-  - 【release】v1.5.6 release
-- <https://github.com/tier4/AWMLevaluation/pull/149>
-  - 【機能追加】アノテーションがない場合も non-detection area の評価のみ実行，オブジェクトの visibility="none"の場合は，detection_warning_results に結果を追加する機能の追加
-- <https://github.com/tier4/AWMLevaluation/pull/150>
+- <https://github.com/tier4/autoware_perception_evaluation/commit/03fcc28fe982b373b41cabd4262181ddc9906eb2>
+  - 【release】release
+- <https://github.com/tier4/autoware_perception_evaluation/commit/bf52cfd396950c08829ecc45950ef1c4ed3ccbe5>
+  - 【feat】アノテーションがない場合も non-detection area の評価のみ実行，オブジェクトの visibility="none"の場合は，detection_warning_results に結果を追加する機能の追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/4cecef214707ecf0dfe0349c0bcad4235c83d234>
   - 【fix】detection エリアと non-detection エリアが重なった場合に両方で同一の点群が評価されるバグの修正
-- <https://github.com/tier4/AWMLevaluation/pull/132>
+- <https://github.com/tier4/autoware_perception_evaluation/commit/47a5faae8ef7104f87dd56bd076c7d2bec0a1ab9>
   - 【refactor】EvaluationManager に追加された時点でオブジェクトをフィルタするように修正
-- <https://github.com/tier4/AWMLevaluation/pull/145>
+- <https://github.com/tier4/autoware_perception_evaluation/commit/7d311cc5e580a32511de0677c807e1446f9d606d>
   - 【style】get_ground_truth_now_frame()メソッドの return の type hinting に Optional を追加
-
-### v1.5.5
-
-- <https://github.com/tier4/AWMLevaluation/pull/144>
-  - 【release】v1.5.5 release
-- <https://github.com/tier4/AWMLevaluation/pull/143>
-  - 【新機能】bbox 内点群の base_link からの最短距離にある点の算出機能の追加
-
-### v1.5.4
-
-- <https://github.com/tier4/AWMLevaluation/pull/142>
-  - 【release】v1.5.4 release
-- <https://github.com/tier4/AWMLevaluation/pull/139>
-  - 【リファクタ】フレーム数とスキップされたフレーム番号の表示
-
-### v1.5.3
-
-- <https://github.com/tier4/AWMLevaluation/pull/134>
-  - 【release】v1.5.3 release
-- <https://github.com/tier4/AWMLevaluation/pull/121>
-  - 【機能追加】Perception 結果を BEV 空間で可視化する機能の追加
-- <https://github.com/tier4/AWMLevaluation/pull/128>
-  - 【バグ修正】configure_logger()を複数回呼んだ際に log が重複しないように修正
-- <https://github.com/tier4/AWMLevaluation/pull/134>
-  - 【CI】スペルチェックの追加
-- <https://github.com/tier4/AWMLevaluation/pull/120>
-  - 【バグ修正】マッチング時に 1GT に対して最大 1 予測がペアになるように修正
-
-### v1.5.2
-
-- <https://github.com/tier4/AWMLevaluation/pull/129>
-  - 【release】v1.5.2 release
-- <https://github.com/tier4/AWMLevaluation/pull/123>
-  - 【機能追加】EDA のための可視化機能の追加
-- <https://github.com/tier4/AWMLevaluation/pull/128>
-  - 【CI】github actions で lsim mock を実行する機能の追加
-- <https://github.com/tier4/AWMLevaluation/pull/126>
-  - 【バグ修正】Python3.7.11 で math.dist()がないため修正
-- <https://github.com/tier4/AWMLevaluation/pull/125>
-  - 【CI】github actions で unittest を実行する機能の追加
-
-### v1.5.1
-
-- <https://github.com/tier4/AWMLevaluation/pull/117>
-  - 【release】v1.5.1 release
-- <https://github.com/tier4/AWMLevaluation/pull/111>
-  - 【機能追加】Detection 評価時，Ground truth の点群数に応じたフィルタ機能の追加
-- <https://github.com/tier4/AWMLevaluation/pull/115>
-  - 【バグ修正】TP オブジェクトかどうかの比較を FN オブジェクト判定の追加によって，FN オブジェクトと判定されないバグを修正
-- <https://github.com/tier4/AWMLevaluation/pull/113>
-  - 【test 修正】<https://github.com/tier4/AWMLevaluation/pull/101>によって Fail になっていた test の修正
-- <https://github.com/tier4/AWMLevaluation/pull/112>
-  - 【機能追加】DynamicObject の==比較演算時に None との比較を可能にし，かつ unix time を参照する機能の追加
-- <https://github.com/tier4/AWMLevaluation/pull/99>
+- <https://github.com/tier4/autoware_perception_evaluation/commit/cf068afc34f8d979194479d65f1e9b0b5ee19802>
+  - 【release】release
+- <https://github.com/tier4/autoware_perception_evaluation/commit/edab321a803c06fc93e48e927521f9be99bb645b>
+  - 【feat】bbox 内点群の base_link からの最短距離にある点の算出機能の追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/20e287f26c22f33c139410538e92ece1f5c0739b>
+  - 【release】release
+- <https://github.com/tier4/autoware_perception_evaluation/commit/7e391b53bd0a8312ec323deb45bd65731b1b231c>
+  - 【refactor】フレーム数とスキップされたフレーム番号の表示
+- <https://github.com/tier4/autoware_perception_evaluation/commit/90c32b1b3c868e49ae72b7593541ce2e2c5ccbf0>
+  - 【release】release
+- <https://github.com/tier4/autoware_perception_evaluation/commit/82877402d4addb30529df9d981b39b12f19b880d>
+  - 【feat】Perception 結果を BEV 空間で可視化する機能の追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/d481e26b316d6b8b7cd9a1a9c2a59b2a74c672d1>
+  - 【fix】configure_logger()を複数回呼んだ際に log が重複しないように修正
+- <https://github.com/tier4/autoware_perception_evaluation/commit/91b216ace5f13929c7b6f33968cb6dd0ea96511a>
+  - 【ci】スペルチェックの追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/5ea18ca32ce74145b738846bd70013f4616e5fe2>
+  - 【fix】マッチング時に 1GT に対して最大 1 予測がペアになるように修正
+- <https://github.com/tier4/autoware_perception_evaluation/commit/c13344dfa5d70f1b6cd1e19b4dbd7cbf323c8bf5>
+  - 【release】release
+- <https://github.com/tier4/autoware_perception_evaluation/commit/2c95f0ce91e90573745cd3187e3589e75e454e0a>
+  - 【feat】EDA のための可視化機能の追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/7473843534dae05a8c396c2ec34888cdbdbc7ea4>
+  - 【ci】github actions で lsim mock を実行する機能の追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/1605509a245523f60e2846b56881a8da297fcd67>
+  - 【fix】Python3.7.11 で math.dist()がないため修正
+- <https://github.com/tier4/autoware_perception_evaluation/commit/d4bc71f21be5063c28d826898993d17ab7f8ab2a>
+  - 【ci】github actions で unittest を実行する機能の追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/38d70bc20644ef9ae630be6e4d3de0f093380ca4>
+  - 【release】release
+- <https://github.com/tier4/autoware_perception_evaluation/commit/c6320332f72e421e92d8e8d5c514f7e481b9ed22>
+  - 【feat】Detection 評価時，Ground truth の点群数に応じたフィルタ機能の追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/d1c2abc422043f04301fdbcb7234588323aaaa46>
+  - 【fix】TP オブジェクトかどうかの比較を FN オブジェクト判定の追加によって，FN オブジェクトと判定されないバグを修正
+- <https://github.com/tier4/autoware_perception_evaluation/commit/edae53c855a881f9b5afd5a203a2a4ef18cedd38>
+  - 【test】Fail になっていた test の修正
+- <https://github.com/tier4/autoware_perception_evaluation/commit/027a6b29a2934bf3d12b8081662fcbf4b94ac2fe>
+  - 【feat】DynamicObject の==比較演算時に None との比較を可能にし，かつ unix time を参照する機能の追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/e9ddec6096a0e14100bef03e61eba8f6ef940940>
   - 【chore】tag が追加された際に，Release Note の draft を自動生成させるように変更
-- <https://github.com/tier4/AWMLevaluation/pull/108>
-  - 【機能追加】DynamicObjectWithPerceptionResult の対応ペア生成時に，同一ラベルのみとペアを組むように修正
-- <https://github.com/tier4/AWMLevaluation/pull/112>
-  - 【document 修正】v.1.5.0 までの変更内容を document に追加
-
-### v1.5.0
-
-- <https://github.com/tier4/AWMLevaluation/pull/105>
-  - 【release】v1.5.0 release
-- <https://github.com/tier4/AWMLevaluation/pull/101>
-  - 【機能追加】Tracking 評価メトリクス(CLEAR)の追加
-  - 【改良】基底クラス作成
-  - 【改良】ディレクトリ構造の変更
-  - 【改良】PerceptionEvaluationConfig の引数の変更
-- <https://github.com/tier4/AWMLevaluation/pull/96>
-  - 【機能追加】Plane distance マッチングの際に近傍点の選定方法の変更
-  - 【機能追加】PassFailResult 内で TP オブジェクトの算出機能を追加
-  - 【test 追加】Unit test の追加
-- <https://github.com/tier4/AWMLevaluation/pull/97>
+- <https://github.com/tier4/autoware_perception_evaluation/commit/9cdeaa6bac1e785d531463dd2eeda394b7e77c44>
+  - 【feat】DynamicObjectWithPerceptionResult の対応ペア生成時に，同一ラベルのみとペアを組むように修正
+- <https://github.com/tier4/autoware_perception_evaluation/commit/ab275960323fdc603e1ce932ebe439aa37c5a896>
+  - 【docs】これまでの変更内容を document に追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/0be8e57d8a57c312869c3a6ad2eef270812e7810>
+  - 【release】release
+- <https://github.com/tier4/autoware_perception_evaluation/commit/fda89460d9eecb777c453bf8ed13f4ab5113228d>
+  - 【feat】Tracking 評価メトリクス(CLEAR)の追加
+  - 【refactor】基底クラス作成
+  - 【refactor】ディレクトリ構造の変更
+  - 【feat】PerceptionEvaluationConfig の引数の変更
+- <https://github.com/tier4/autoware_perception_evaluation/commit/0c82d94ed5a1d18a29c61deae00859ef1d83ff8d>
+  - 【feat】Plane distance マッチングの際に近傍点の選定方法の変更
+  - 【feat】PassFailResult 内で TP オブジェクトの算出機能を追加
+  - 【test】Unit test の追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/cc45786205377800cca392fa3f26c4e90c264539>
   - 【chore】python パッケージとして install される際の version 情報を追加
-- <https://github.com/tier4/AWMLevaluation/pull/95>
-  - 【バグ修正】awml_evaluation を python パッケージとして install できるように修正
-- <https://github.com/tier4/AWMLevaluation/pull/94>
+- <https://github.com/tier4/autoware_perception_evaluation/commit/540c1ab91f7a4a897b593565c964070f322acd8a>
+  - 【fix】awml_evaluation を python パッケージとして install できるように修正
+- <https://github.com/tier4/autoware_perception_evaluation/commit/15b9bb0cab9e8bb13bd89b60dfaf084bc1598f7a>
   - 【chore】test 実行のための依存パッケージが poetry install されるように変更
-- <https://github.com/tier4/AWMLevaluation/pull/90>
+- <https://github.com/tier4/autoware_perception_evaluation/commit/9fe5a6e487f7b2239477744e767035b12496f8ff>
   - 【chore】Issue テンプレートの追加
-- <https://github.com/tier4/AWMLevaluation/pull/87>
-  - 【改良】lsim.py 実行時にコマンドライン引数として dataset path を指定するよう変更
-- <https://github.com/tier4/AWMLevaluation/pull/89>
-  - 【バグ修正】get_footprint 関数のバグ修正
-  - 【改良】"LIDAR_CONCAT"だけでなく"LIDAR_TOP"の両方を許容するよう変更
-- <https://github.com/tier4/AWMLevaluation/pull/88>
+- <https://github.com/tier4/autoware_perception_evaluation/commit/eff27041a79e2af4e2916a9872d7f48bf3b2a28f>
+  - 【feat】lsim.py 実行時にコマンドライン引数として dataset path を指定するよう変更
+- <https://github.com/tier4/autoware_perception_evaluation/commit/73a597237cdf389fad906c958ab132bde424ecf6>
+  - 【fix】get_footprint 関数のバグ修正
+  - 【feat】"LIDAR_CONCAT"だけでなく"LIDAR_TOP"の両方を許容するよう変更
+- <https://github.com/tier4/autoware_perception_evaluation/commit/01361543157f0cf10ca4652daf42cd704583d9c7>
   - 【chore】PR テンプレートの追加
-
-### v1.4.0
-
-- <https://github.com/tier4/AWMLevaluation/pull/86>
-  - 【release】v1.4.0 release
-- <https://github.com/tier4/AWMLevaluation/pull/85>
-  - 【改良】build type の ament_cmake への変更
-- <https://github.com/tier4/AWMLevaluation/pull/83>
-  - 【機能追加】Sensing lsim の機能部分を実装
-  - 【機能追加】検出・被検出エリア内の点群数の算出
-  - 【test 追加】test/lsim.py に Sensing lsim 用 mock を追加
-- <https://github.com/tier4/AWMLevaluation/pull/82>
-  - 【document 追加】document 追加
-
-### v1.3.1
-
-- <https://github.com/tier4/AWMLevaluation/pull/80>
-  - 【release】v1.3.1 release
-- <https://github.com/tier4/AWMLevaluation/pull/78>
-  - 【改良】autoware の linter, formatter 設定を適用
-  - 【改良】Tool の version の更新
-
-### v1.3.0
-
-- <https://github.com/tier4/AWMLevaluation/pull/71>
+- <https://github.com/tier4/autoware_perception_evaluation/commit/3609380ab5c3183b5ec1f19fad16a87dc79debdf>
+  - 【release】release
+- <https://github.com/tier4/autoware_perception_evaluation/commit/186ca0805f1b36f3830a2752e1cad7e1a7644d4a>
+  - 【feat】Sensing lsim の機能部分を実装
+  - 【feat】検出・被検出エリア内の点群数の算出
+  - 【test】test/lsim.py に Sensing lsim 用 mock を追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/24cf3efb97b7681bcbb75116367037139874fc71>
+  - 【feat】build type の ament_cmake への変更
+- <https://github.com/tier4/autoware_perception_evaluation/commit/8a47589141f56f2a6c2147d4359b2796e206c5e0>
+  - 【docs】document 追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/b0bc400eebd81b63d87fcd3d5b009813cc9b3318>
+  - 【release】release
+- <https://github.com/tier4/autoware_perception_evaluation/commit/8e606f8cdb1d079ae0a0d22d28d9e93445bda82f>
+  - 【feat】autoware の linter, formatter 設定を適用
+  - 【feat】Tool の version の更新
+- <https://github.com/tier4/autoware_perception_evaluation/commit/f8244ff9138857830171c65f02363e5c18ed3343>
   - 【release】v1.3.0 release
-- <https://github.com/tier4/AWMLevaluation/pull/68>
-  - 【改良】pointcloud の型を List[Tuple[float, float, float]] -> numpy.ndarray に変更
-- <https://github.com/tier4/AWMLevaluation/pull/70>
-  - 【バグ修正】colcon を使って install すると，install 以下にサブモジュールが存在しない状態になるのを解消
-  - 【バグ修正】pre-commit の mypy を disable
-- <https://github.com/tier4/AWMLevaluation/pull/61>
-  - 【改良】pre-commit の追加
-- <https://github.com/tier4/AWMLevaluation/pull/26>
-  - 【test 追加】test/metrics/test_ap.py で AP と APH のテスト
-  - 【test 追加】test/metrics/test_map.py で mAP と mAPH のテスト
-- <https://github.com/tier4/AWMLevaluation/pull/64/files>
-  - 【機能追加】Dataset の load において DynamicObject の point cloud, uuid, velocity を追加
-- <https://github.com/tier4/AWMLevaluation/pull/66>
-  - 【改良】Sensing lsim の result.json に残す情報を変更
-  - 【document 追加】Sensing lsim の document を追加
-- <https://github.com/tier4/AWMLevaluation/pull/65>
-  - 【追加】Sensing logsim のための枠組みを実装
-- <https://github.com/tier4/AWMLevaluation/pull/62>
-  - 【改良】poetry update
-- <https://github.com/tier4/AWMLevaluation/pull/59>
-  - 【改良】poetry update
-
-### v1.2.1
-
-- <https://github.com/tier4/AWMLevaluation/pull/57>
-  - 【改良】get_scenario_result() -> get_scene_result() の rename
-  - 【document 追加】分散評価に関する document 追加
-  - 【release】v1.2.1 release
-
-### v1.2
-
-- <https://github.com/tier4/AWMLevaluation/pull/56>
-  - 【release】v1.2 release
-- <https://github.com/tier4/AWMLevaluation/pull/55>
-  - 【バグ修正】 matching class の is_better_than()関数で None のハンドリングを追加
-  - 【バグ修正】get_fn_objects()関数における FN 判定で、一つでも Result があれば良い形に変更
-  - 【バグ修正】get_fn_objects()に FP object が含まれていたのを削除
-  - 【バグ修正】UseCase Fail object を FN object と TN object に分離
-  - 【機能追加】ground truth を用いて ObjectResult を filter する機能を追加
-  - 【改良】全体的に refactoring
-- <https://github.com/tier4/AWMLevaluation/pull/53>
-  - 【document 追加】Design document を追加
-- <https://github.com/tier4/AWMLevaluation/pull/52>
-  - 【改良】unit test の階層を整理
-- <https://github.com/tier4/AWMLevaluation/pull/51>
-  - 【機能追加】AP class に、matching 指標（中心間距離、面距離など）の平均・分散を追加
-  - 【機能追加】debug 用 class 一覧 print する関数に、長い list の省略機能を追加
-  - 【機能追加】TP metrics に mode を追加
-- <https://github.com/tier4/AWMLevaluation/pull/50>
-  - 【document 追加】figure を整理
-- <https://github.com/tier4/AWMLevaluation/pull/40>
-  - 【test 追加】matching/object_matching.py の test の追加
-  - 【document 追加】Plane distance の説明を追加
-  - 【バグ修正】Plane distance の計算におけるバグ修正
-- <https://github.com/tier4/AWMLevaluation/pull/49>
-  - 【機能追加】PlaneDistanceData class に Pass fail 判断根拠に使う最近傍平面の座標点を追加
-- <https://github.com/tier4/AWMLevaluation/pull/48>
-  - 【機能追加】Sensing logsim 用の関数の箱を用意
-- <https://github.com/tier4/AWMLevaluation/pull/44>
-  - 【改良】object の matching する計算の meta class を object_matching.py に追加
-- <https://github.com/tier4/AWMLevaluation/pull/47>
+- <https://github.com/tier4/autoware_perception_evaluation/commit/f5d1854ad433d0ed8468bda6bcbaad12e0b3112e>
+  - 【feat】pointcloud の型を List[Tuple[float, float, float]] -> numpy.ndarray に変更
+- <https://github.com/tier4/autoware_perception_evaluation/commit/3cf92e480be103e4bb43e692bb71aa1ff3e83c9e>
+  - 【fix】colcon を使って install すると，install 以下にサブモジュールが存在しない状態になるのを解消
+  - 【fix】pre-commit の mypy を disable
+- <https://github.com/tier4/autoware_perception_evaluation/commit/34a087554c9eb90e419c9fbdde5ee61e65d1e4d4>
+  - 【feat】pre-commit の追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/525b7dd0fcc85d675e5e3fa837782c716e90da8d>
+  - 【test】test/metrics/test_ap.py で AP と APH のテスト
+  - 【test】test/metrics/test_map.py で mAP と mAPH のテスト
+- <https://github.com/tier4/autoware_perception_evaluation/commit/2c7adc01458579a90056514edf0d79d08131c24f>
+  - 【feat】Dataset の load において DynamicObject の point cloud, uuid, velocity を追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/c8fe5010e8f6a75908f09d265d72376766bc06b7>
+  - 【feat】Sensing lsim の result.json に残す情報を変更
+  - 【docs】Sensing lsim の document を追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/8ab80bab48a197994169def7150c606d795950fd>
+  - 【feat】Sensing logsim のための枠組みを実装
+- <https://github.com/tier4/autoware_perception_evaluation/commit/a0089d17ed4ac10af7fd16753c6e2080d5d149c7>
+  - 【feat】poetry update
+- <https://github.com/tier4/autoware_perception_evaluation/commit/e05e882f7428375f3315fd424d32310c631cd0f0>
+  - 【feat】poetry update
+- <https://github.com/tier4/autoware_perception_evaluation/commit/e432d8c95fb104ae53c937ad1f09093001ebe7c9>
+  - 【feat】get_scenario_result() -> get_scene_result() の rename
+  - 【docs】分散評価に関する document 追加
+  - 【release】release
+- <https://github.com/tier4/autoware_perception_evaluation/commit/40f762065c6b997ae42cee84359398eb92e6d16c>
+  - 【release】release
+- <https://github.com/tier4/autoware_perception_evaluation/commit/39b489e927a56b093d7ac2747783414796d84ef3>
+  - 【fix】 matching class の is_better_than()関数で None のハンドリングを追加
+  - 【fix】get_fn_objects()関数における FN 判定で、一つでも Result があれば良い形に変更
+  - 【fix】get_fn_objects()に FP object が含まれていたのを削除
+  - 【fix】UseCase Fail object を FN object と TN object に分離
+  - 【feat】ground truth を用いて ObjectResult を filter する機能を追加
+  - 【refactor】全体的に refactoring
+- <https://github.com/tier4/autoware_perception_evaluation/commit/383e9f6535d5b15300bbf3cd7e1d7b9f1dc128f7>
+  - 【docs】Design document を追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/2c5a7debaa48a6b5de7b85cb6ba980907e5e86bb>
+  - 【refactor】unit test の階層を整理
+- <https://github.com/tier4/autoware_perception_evaluation/commit/b06c211af7e6ba7fc8420f32f2f22ff3430f741f>
+  - 【feat】AP class に、matching 指標（中心間距離、面距離など）の平均・分散を追加
+  - 【feat】debug 用 class 一覧 print する関数に、長い list の省略機能を追加
+  - 【feat】TP metrics に mode を追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/c5cb57bb3c1a8e383badea8e57aca28ce24dca34>
+  - 【docs】figure を整理
+- <https://github.com/tier4/autoware_perception_evaluation/commit/a2de8d05b082a3890a188c27aee9cb39cd12fec2>
+  - 【test】matching/object_matching.py の test の追加
+  - 【docs】Plane distance の説明を追加
+  - 【fix】Plane distance の計算におけるバグ修正
+- <https://github.com/tier4/autoware_perception_evaluation/commit/0d8a7956a8ce3baede155b49d789211ab8147e52>
+  - 【feat】PlaneDistanceData class に Pass fail 判断根拠に使う最近傍平面の座標点を追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/a57ba76d68d2f53de23cdd188fba1085ffb86964>
+  - 【feat】Sensing logsim 用の関数の箱を用意
+- <https://github.com/tier4/autoware_perception_evaluation/commit/77419117f971d4b9fdd2c4a0f186815b06d1c5c6>
+  - 【refactor】object の matching する計算の meta class を object_matching.py に追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/fdfd016758aeec64df90b71e905bc9b4e5aa261a>
   - 【document 追加】README 修正
-- <https://github.com/tier4/AWMLevaluation/pull/39>
-  - 【test 追加】matching/objects_filter.py の test の追加
-- <https://github.com/tier4/AWMLevaluation/pull/37/>
-  - 【test 追加】common/object.py の test の追加
-- <https://github.com/tier4/AWMLevaluation/pull/36>
-  - 【test 追加】common/point.py の test の追加
-  - 【改良】 common/point.py の引数におけるエラーハンドリングを追加
-- <https://github.com/tier4/AWMLevaluation/pull/34>
-  - 【機能追加】複数 scene 入力対応
-- <https://github.com/tier4/AWMLevaluation/pull/42>
-  - 【改良】logger_configure の util 化
-- <https://github.com/tier4/AWMLevaluation/pull/43>
-  - 【追加機能】dataset 読み込み時に Object の uuid も読み込むように変更
-
-### v1.1
-
-- <https://github.com/tier4/AWMLevaluation/pull/35>
-  - 【release】v1.1 release
-- <https://github.com/tier4/AWMLevaluation/pull/33>
-  - 【改良】dataset にある object を label ごとに個数を表示
-  - 【バグ修正】test/lsim.py において EvaluateManager が logger の反映されていなかったのを修正
-- <https://github.com/tier4/AWMLevaluation/pull/32>
-  - 【document 追加】release する時の test 方法について追記
-- <https://github.com/tier4/AWMLevaluation/pull/31>
-  - 【改良】metrics の表示で predicted object の総数も表示するようにする
-  - 【改良】metrics の表示を markdown table に変更
-- <https://github.com/tier4/AWMLevaluation/pull/30>
-  - 【改良】polygon と foot print を merge
-- <https://github.com/tier4/AWMLevaluation/pull/29>
-  - 【改良】package.xml に nuscenes devkit dependency を追加
-- <https://github.com/tier4/AWMLevaluation/pull/28>
-  - 【改良】get_fn_objects の中の関数を分割
-- <https://github.com/tier4/AWMLevaluation/pull/27>
-  - 【改良】property method を削除
-- <https://github.com/tier4/AWMLevaluation/pull/24>
-  - 【機能追加】Object Matching に iou 3d を追加
-- <https://github.com/tier4/AWMLevaluation/pull/25>
-  - 【機能追加】Object Matching に iou bev を追加
-- <https://github.com/tier4/AWMLevaluation/pull/23>
-  - 【追加機能】 dummy objects を用いた，mAP, mAPH のテスト
-- <https://github.com/tier4/AWMLevaluation/pull/22>
+- <https://github.com/tier4/autoware_perception_evaluation/commit/afb810d5a7c540083089517b623330079f2877d4>
+  - 【test】matching/objects_filter.py の test の追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/be1358fbc4ffbd4ff140c4e0cb3ac29012e3cba7>
+  - 【test】common/object.py の test の追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/c7938f2a2cbcc6e60c1d39d397a9a7148229bf85>
+  - 【test】common/point.py の test の追加
+  - 【refactor】 common/point.py の引数におけるエラーハンドリングを追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/953c64640777c55867fa1c5c73c966ba4954d853>
+  - 【feat】dataset 読み込み時に Object の uuid も読み込むように変更
+- <https://github.com/tier4/autoware_perception_evaluation/commit/45666c88e7853e8a48817dfd761362fd45a49d50>
+  - 【refactor】logger_configure の util 化
+- <https://github.com/tier4/autoware_perception_evaluation/commit/9ff69364a857368e4ffd49ebed2176386e5ddf22>
+  - 【feat】複数 scene 入力対応
+- <https://github.com/tier4/autoware_perception_evaluation/commit/3b8ebddbd29a5525e41f520c51879190eecd3937>
+  - 【release】release
+- <https://github.com/tier4/autoware_perception_evaluation/commit/a8b40edecddca74aa3561ed073164e1c70c291a1>
+  - 【refactor】dataset にある object を label ごとに個数を表示
+  - 【fix】test/lsim.py において EvaluateManager が logger の反映されていなかったのを修正
+- <https://github.com/tier4/autoware_perception_evaluation/commit/6e026b04f6a9a4439eac419515a445d5a269bf52>
+  - 【docs】release する時の test 方法について追記
+- <https://github.com/tier4/autoware_perception_evaluation/commit/d61ade7b31739e2bdfcf1fc7b5b23c403611b976>
+  - 【refactor】metrics の表示で predicted object の総数も表示するようにする
+  - 【refactor】metrics の表示を markdown table に変更
+- <https://github.com/tier4/autoware_perception_evaluation/commit/71ea3f8da9af0e062601dfb9f39c09b2f079c396>
+  - 【refactor】package.xml に nuscenes devkit dependency を追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/8e7f6a08e8cdbc9c826f87d416cdbd6628265beb>
+  - 【refactor】polygon と foot print を merge
+- <https://github.com/tier4/autoware_perception_evaluation/commit/72b3c800debf555611507791056ed8f9f74a073b>
+  - 【refactor】get_fn_objects の中の関数を分割
+- <https://github.com/tier4/autoware_perception_evaluation/commit/b258f04e98c859bb8fa156e8945860c5a46acece>
+  - 【refactor】property method を削除
+- <https://github.com/tier4/autoware_perception_evaluation/commit/8098caf61ed32fe09888efa441392ae9db6409c8>
+  - 【feat】Object Matching に iou 3d を追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/c1a1d21ec0d43d35b002d8a5518703eb5bd21858>
+  - 【feat】Object Matching に iou bev を追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/46a19263078a8553a6e409cf0f7d315ed137feb4>
+  - 【feat】 dummy objects を用いた，mAP, mAPH のテスト
+- <https://github.com/tier4/autoware_perception_evaluation/commit/97dd8c7bec61f3e7e565e80d7a0f13c1255dcf06>
   - 【document 追加】develop branch を用いた開発プロセスを Document 化
-- <https://github.com/tier4/AWMLevaluation/pull/20>
-  - 【バグ修正】mAP の計算で、評価する object の filter で FN object が抜けて落ちているバグの修正
-  - 【バグ修正】mAP の計算で、confidence 順の sort が抜けていたので追加
-  - 【機能追加】threshold_list からラベルごとの threshold を取り出すインターフェイスを追加
-
-### v1.0
-
-- <https://github.com/tier4/AWMLevaluation/pull/8>
-  - 【改良】mAP 計算の関数共通化
-  - 【追加機能】Metrics に mAPH を追加
-- <https://github.com/tier4/AWMLevaluation/pull/15>
-  - 【document 追加】Perception の再現性が低い・mAP が想定より低い問題に対しての解決法を document 化
-- <https://github.com/tier4/AWMLevaluation/pull/9>
-  - 【追加機能】PassFail 評価用のインターフェイス実装
-  - 【追加機能】object filter において x 方向閾値 y 方向閾値を追加
-  - 【追加機能】デバッグ・テスト用の object を平行移動回転移動する関数の追加
-  - 【改良】パラメータの渡し型の省略形に対応
-  - 【改良】mAP 計算において各 label ごとに threshold の設定をできるように
+- <https://github.com/tier4/autoware_perception_evaluation/commit/20f6cad3078d6adc4758960bfc3b854a25c62a03>
+  - 【fix】mAP の計算で、評価する object の filter で FN object が抜けて落ちているバグの修正
+  - 【fix】mAP の計算で、confidence 順の sort が抜けていたので追加
+  - 【feat】threshold_list からラベルごとの threshold を取り出すインターフェイスを追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/6684cf334bee0a3c6ca066c8801abeff1238057f>
+  - 【refactor】mAP 計算の関数共通化
+  - 【feat】Metrics に mAPH を追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/3af17c2ef36396d508ff4144ff7d986d85bfcd13>
+  - 【docs】Perception の再現性が低い・mAP が想定より低い問題に対しての解決法を document 化
+- <https://github.com/tier4/autoware_perception_evaluation/commit/9617c214378c741facc6119d297312dd27fd5e29>
+  - 【feat】`__init__.py` の追加
+- <https://github.com/tier4/autoware_perception_evaluation/commit/555e2492d9149ac82efbd9901470cf3f09bfe1b5>
+  - 【feat】PassFail 評価用のインターフェイス実装
+  - 【feat】object filter において x 方向閾値 y 方向閾値を追加
+  - 【feat】デバッグ・テスト用の object を平行移動回転移動する関数の追加
+  - 【refactor】パラメータの渡し型の省略形に対応
+  - 【refactor】mAP 計算において各 label ごとに threshold の設定をできるように
     - object filter の対応
     - print した時の mAP などの表示も改良
-- <https://github.com/tier4/AWMLevaluation/pull/7>
-  - 【機能追加】Detection UseCase 評価用指標 (= Plane distance)の実装
-    - <https://docs.google.com/presentation/d/1D89DUolg7Vsg_kP41kXH-mDQaoUTuoVp2FxoR8xZH6A/edit#slide=id.gf5d53bc139_32_11> 評価設計書
-  - 【追加機能】mAP の matching param に Plane distance を実装
-  - 【追加機能】距離計算に必要な関数群を実装
-- <https://github.com/tier4/AWMLevaluation/pull/5>
-  - 【追加機能】Detection DataBase 評価（mAP）
-  - 【追加機能】Object 情報・評価結果の class 設計・実装
-  - 【追加機能】First prototype として中心間距離 mAP の実装
-  - 【追加機能】データセット読み込みの実装
-  - 【追加機能】外部 Tool としての API 設計・実装
-  - 【追加機能】logger・debug 用の関数の実装
-- <https://github.com/tier4/AWMLevaluation/pull/4>
-  - 【追加機能】 ROS2 package 化
-- <https://github.com/tier4/AWMLevaluation/pull/2>
-  - 【追加機能】poetry project の構築
+- <https://github.com/tier4/autoware_perception_evaluation/commit/2a6fa68be840aeb42ba6a2dff2f72ec34ec1e142>
+  - 【feat】Detection UseCase 評価用指標 (= Plane distance)の実装
+  - 【feat】mAP の matching param に Plane distance を実装
+  - 【feat】距離計算に必要な関数群を実装
+  - 【feat】Detection DataBase 評価（mAP）
+  - 【feat】Object 情報・評価結果の class 設計・実装
+  - 【feat】First prototype として中心間距離 mAP の実装
+  - 【feat】データセット読み込みの実装
+  - 【feat】外部 Tool としての API 設計・実装
+  - 【feat】logger・debug 用の関数の実装
+- <https://github.com/tier4/autoware_perception_evaluation/commit/e8c6061221bb7566000ec8d4fce500e5dfc9b0c7>
+  - 【feat】poetry project の構築
+  - 【feat】 ROS2 package 化

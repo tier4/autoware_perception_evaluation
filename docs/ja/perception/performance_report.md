@@ -36,14 +36,14 @@ Perception の評価結果をもとに解析を行う．
 
 ## How to use
 
-logsim を使用する際にはシナリオ(`.yaml`)から config が生成され，評価結果(`List[PerceptionFrameResult]`)が`.pkl`で保存される．
+driving_log_replayer を使用する際にはシナリオ(`.yaml`)から config が生成され，評価結果(`List[PerceptionFrameResult]`)が`.pkl`で保存される．
 
 ### 1. Initialization
 
 初期化方法には，1. `PerceptionEvaluationConfig`から，2. シナリオファイル(`.yaml`)からの 2 パターンがある．
 
 ```python
-from awml_evaluation.tool.perception_performance_analyzer import PerceptionPerformanceAnalyzer
+from perception_eval.tool.perception_performance_analyzer import PerceptionPerformanceAnalyzer
 
 
 # 1. with PerceptionEvaluationConfig

@@ -1,6 +1,6 @@
-# awml_evaluation
+# autoware_perception_evaluation
 
-awml_evaluation is a tool to evaluate perception/sensing tasks.
+**perception_eval** is a tool to evaluate perception tasks.
 
 ## Documents
 

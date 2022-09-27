@@ -4,7 +4,7 @@
 
 ## How to Use
 
-- See `AWMLevaluation/awml_evaluation/test/eda.py`
+- See [perception_eval/test/eda.py](../../../perception_eval/test/eda.py)
 
   ```python
       visualizer = EDAVisualizer(all_ground_truths, save_path + "/" + objects_name)

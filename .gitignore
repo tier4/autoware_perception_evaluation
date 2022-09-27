@@ -1,5 +1,5 @@
 # tmp data
-awml_evaluation/data/result
+perception_eval/data/result
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

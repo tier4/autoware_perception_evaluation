@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "awml_evaluation"
-version = "1.5.8"
+name = "perception_eval"
+version = "0.0.1"
 description = ""
 authors = ["Satoshi Tanaka <satoshi.tanaka@tier4.jp>", "Kotaro Uetake <kotaro.uetake@tier4.jp>", "Shunsuke Miura <shunsuke.miura@tier4.jp>", "Shintaro Tomie <shinrato.tomie@tier4.jp>"]
 license = "Apache V2"
 packages = [
-	 { include = "awml_evaluation", from = "awml_evaluation"},
+	 { include = "perception_eval", from = "perception_eval"},
 ]
 
 [tool.poetry.dependencies]
