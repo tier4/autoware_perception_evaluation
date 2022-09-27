@@ -11,7 +11,7 @@
 3. ~Bounding box の中の点群の有無 (bool)~
    - pros: result.json は見やすい、計算量少
    - cons: 点群の様子を見たいときに可視化が必要になる
-   - awml_evaluation では 2 を採用、理由としては
+   - perception_eval では 2 を採用、理由としては
      - 1.に関しては、細かい点群の位置は、viewer や rosbag で確認できれば良い
      - 現状のの Sensing lsim v1 で 2 が採用されている
 
@@ -50,7 +50,7 @@
 
 ### SensingFrameResult
 
-1 frame に対しての検出・非検出対象エリアに対する点群のセンシング結果[(参照)](../../../awml_evaluation/awml_evaluation/evaluation/sensing/sensing_frame_result.py)
+1 frame に対しての検出・非検出対象エリアに対する点群のセンシング結果[(参照)](../../../perception_eval/perception_eval/evaluation/sensing/sensing_frame_result.py)
 
 | Argument               |         type         | Description    |
 | :--------------------- | :------------------: | :------------- |
@@ -76,7 +76,7 @@
 
 ### DynamicObjectWithSensingResult
 
-1 つの GT オブジェクト（アノテーションされた bounding box）に対しての結果[(参照)](../../../awml_evaluation/awml_evaluation/evaluation/sensing/sensing_result.py)
+1 つの GT オブジェクト（アノテーションされた bounding box）に対しての結果[(参照)](../../../perception_eval/perception_eval/evaluation/sensing/sensing_result.py)
 
 | Argument                       |         type          | Description                    |
 | :----------------------------- | :-------------------: | :----------------------------- |

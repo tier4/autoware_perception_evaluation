@@ -19,7 +19,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        python-version: ['3.7.11', '3.8', '3.9']
+        python-version: ["3.7.11", "3.8", "3.9"]
         lsim-task: [test.perception_lsim, test.sensing_lsim]
         visualization-task: [test.eda]
 
@@ -41,6 +41,6 @@ jobs:
 
       - name: Test perception lsim
         run: |
-          cd awml_evaluation
+          cd perception_eval
           poetry run python -m ${{ matrix.lsim-task }} test/sample_data/ --use_tmpdir
           poetry run python -m ${{ matrix.visualization-task }} test/sample_data/

@@ -1,6 +1,6 @@
 ## Get started
 
-- [Get started for basic usage of AWMLevaluation in both perception and sensing]
+- [Get started for basic usage of perception_eval in both perception and sensing]
 
 ## Perception evaluation
 

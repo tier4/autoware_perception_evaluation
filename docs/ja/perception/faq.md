@@ -83,7 +83,7 @@ sudo ifconfig lo multicast
 ### Q. uuid で具体的にできることはなにか？
 
 - uuid = object を一意に定めるための id
-  - Autoware だと uuid <https://github.com/tier4/autoware_iv_msgs/blob/main/autoware_perception_msgs/msg/object_recognition/DynamicObject.msg#L1>の表現を行う
+  - Autoware だと uuid <https://github.com/tier4/autoware_auto_msgs/blob/tier4/main/autoware_auto_perception_msgs/msg/TrackedObject.idl#L9>の表現を行う
   - nuscenes の表現だと instance_token という名称
 - 全 Frame の大量の ObjectResult (object ごとの結果）の結果に対して、「object "79151c9c4ebc7380555f25aecc031422" の結果は？」と投げると、その object の
   - ground truth との誤差（center distance, 面距離等々）

@@ -16,8 +16,8 @@ pip3 install poetry
 - ソースコードを使用
 
   ```bash
-  git clone https://github.com/tier4/AWMLevaluation.git
-  cd AWMLevaluation
+  git clone https://github.com/tier4/autoware_perception_evaluation.git
+  cd autoware_perception_evaluation
   poetry install
   ```
 
@@ -31,7 +31,7 @@ pip3 install poetry
   - 実行
 
   ```bash
-  cd awml_evaluation
+  cd perception_eval
   poetry run python3 -m test.sensing_lsim <DATASET_PATH1> <DATASET_PATH2> ...
   poetry run python3 -m test.perception_lsim <DATASET_PATH1> <DATASET_PATH2> ...
   ```
@@ -39,9 +39,9 @@ pip3 install poetry
 - ライブラリとして使用
 
   ```bash
-  git clone https://github.com/tier4/AWMLevaluation.git
+  git clone https://github.com/tier4/autoware_perception_evaluation.git
   cd <YOUR_PROJECT>
-  poetry add <RELATIVE_PATH_TO_AWMLevaluation> # または pip install -e <RELATIVE_PATH_TO_AWMLevaluation>
+  poetry add <RELATIVE_PATH_TO_autoware_perception_evaluation> # または pip install -e <RELATIVE_PATH_TO_autoware_perception_evaluation>
   ```
 
   -　使用例
@@ -51,9 +51,9 @@ pip3 install poetry
   Python 3.8.10 (default, Mar 15 2022, 12:22:08)
   [GCC 9.4.0] on linux
   Type "help", "copyright", "credits" or "license" for more information.
-  >>> from awml_evaluation.common.dataset import load_all_datasets
-  >>> from awml_evaluation.perception_evaluation_manager import PerceptionEvaluationManager
-  >>> from awml_evaluation.sensing_evaluation_manager import SensingEvaluationManager
+  >>> from perception_eval.common.dataset import load_all_datasets
+  >>> from perception_eval.perception_evaluation_manager import PerceptionEvaluationManager
+  >>> from perception_eval.sensing_evaluation_manager import SensingEvaluationManager
   ```
 
 ## Case 2. Lsim 側に組み込む
@@ -69,19 +69,14 @@ pip3 install poetry
 ```yaml
 repositories:
   # autoware
-  simulator/AWMLevaluation:
+  simulator/autoware_perception_evaluation:
     type: git
-    url: git@github.com/tier4/AWMLevaluation.git
+    url: git@github.com:tier4/autoware_perception_evaluation.git
     version: main
 ```
 
 ## 実装
 
 - ライブラリ or ROS パッケージとして使う場合
-  - Perception: [awml_evaluation/test/perception_lsim.py](../../awml_evaluation/test/perception_lsim.py)
-  - Sensing: [awml_evaluation/test/sensing_lsim.py](../../awml_evaluation/test/sensing_lsim.py)
-
-## その他の case
-
-- Perception: [Perception Other Case](./perception/perception_other_cases.md)を参照
-- Sensing: [Sensing Other Case](./sensing/sensing_other_cases.md)を参照
+  - Perception: [perception_eval/test/perception_lsim.py](../../perception_eval/test/perception_lsim.py)
+  - Sensing: [perception_eval/test/sensing_lsim.py](../../perception_eval/test/sensing_lsim.py)

@@ -35,7 +35,7 @@
 
 ### PerceptionFrameResult
 
-詳細は[awml_evaluation/evaluation/result/perception_frame_result.py](../../../awml_evaluation/awml_evaluation/evaluation/result/perception_frame_result.py)を参照
+詳細は[perception_eval/evaluation/result/perception_frame_result.py](../../../perception_eval/perception_eval/evaluation/result/perception_frame_result.py)を参照
 
 - Initialization
 
@@ -137,10 +137,10 @@
 
 推定オブジェクトの集合`List[DynamicObject]`と GT オブジェクトの集合`List[DynamicObject]`からマッチングペアの集合`List[DynamicObjectWithPerceptionResult]`を得るには，`get_object_results()`関数を使う．
 
-詳細は，[awml_evaluation/evaluation/result/object_result.py](../../../awml_evaluation/awml_evaluation/evaluation/result/object_result.py)を参照．
+詳細は，[perception_eval/evaluation/result/object_result.py](../../../perception_eval/perception_eval/evaluation/result/object_result.py)を参照．
 
 ```python
-from awml_evaluation.evaluation.result.object_results import get_object_results
+from perception_eval.evaluation.result.object_results import get_object_results
 
 # REQUIRED:
 #   estimated_objects: List[DynamicObject]

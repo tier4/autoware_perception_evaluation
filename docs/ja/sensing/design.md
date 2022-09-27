@@ -11,13 +11,13 @@
 3. ~Bounding box の中の点群の有無 (bool)~
    - pros: result.json は見やすい、計算量少
    - cons: 点群の様子を見たいときに可視化が必要になる
-   - awml_evaluation では 2 を採用、理由としては
+   - perception_eval では 2 を採用、理由としては
      - 1.に関しては、細かい点群の位置は、viewer や rosbag で確認できれば良い
      - 現状のの Sensing lsim v1 で 2 が採用されている
 
 ### 評価単位でのデータ構造
 
-- SensingEvaluationConfig: 評価全体に関する config, シナリオファイルを読み込むことで設定する[(参照)](../../../awml_evaluation/awml_evaluation/config/sensing_evaluation_config.py)
+- SensingEvaluationConfig: 評価全体に関する config, シナリオファイルを読み込むことで設定する[(参照)](../../../perception_eval/perception_eval/config/sensing_evaluation_config.py)
 
   ```txt
     Arguments:
@@ -32,11 +32,11 @@
       min_points_threshold (int): bounding box内で検出されるべき最低限の点群数の閾値
   ```
 
-- SensingEvaluationManager: 評価全体のための manager[(参照)](../../../awml_evaluation/awml_evaluation/manager/perception_evaluation_manager.py)
+- SensingEvaluationManager: 評価全体のための manager[(参照)](../../../perception_eval/perception_eval/manager/perception_evaluation_manager.py)
 
 ### Frame 単位でのデータ構造
 
-- SensingFrameResult: 1 frame に対しての検出・非検出対象エリアに対する点群のセンシング結果[(参照)](../../../awml_evaluation/awml_evaluation/evaluation/sensing/sensing_frame_result.py)
+- SensingFrameResult: 1 frame に対しての検出・非検出対象エリアに対する点群のセンシング結果[(参照)](../../../perception_eval/perception_eval/evaluation/sensing/sensing_frame_result.py)
 
   ```txt
     Arguments:
@@ -65,7 +65,7 @@
 
   メソッドを呼ぶことで評価が実行される．
 
-- SensingFrameConfig: Frame 単位での評価用の config[(参照)](../../../awml_evaluation/awml_evaluation/evaluation/sensing/sensing_frame_config.py)
+- SensingFrameConfig: Frame 単位での評価用の config[(参照)](../../../perception_eval/perception_eval/evaluation/sensing/sensing_frame_config.py)
 
   ```txt
     Arguments:
@@ -82,7 +82,7 @@
 
 ### Object 単位でのデータ構造
 
-- DynamicObjectWithSensingResult: 1 ground truth object（アノテーションされた bounding box）に対しての結果[(参照)](../../../awml_evaluation/awml_evaluation/evaluation/sensing/sensing_result.py)
+- DynamicObjectWithSensingResult: 1 ground truth object（アノテーションされた bounding box）に対しての結果[(参照)](../../../perception_eval/perception_eval/evaluation/sensing/sensing_result.py)
 
   ```txt
     Arguments:

@@ -9,9 +9,9 @@
 `PerceptionVisualizer`の初期化方法には，1.`PerceptionVisualizationConfig`を使用，2.`PerceptionEvaluationConfig`を使用，3. 直接引数を指定の 3 パターンある．
 
 ```python
-from awml_evaluation.visualization.perception_visualizer import PerceptionVisualizer
-from awml_evaluation.visualization.perception_visualization_config import PerceptionVisualizationConfig
-from awml_evaluation.config.perception_evaluation_config import PerceptionEvaluationConfig
+from perception_eval.visualization.perception_visualizer import PerceptionVisualizer
+from perception_eval.visualization.perception_visualization_config import PerceptionVisualizationConfig
+from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
 
 # Pattern.1 : Load from PerceptionVisualizationConfig
 config = PerceptionVisualizationConfig(...)

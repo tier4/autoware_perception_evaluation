@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>perception_eval</name>
+  <version>0.0.1</version>
+  <description>Autoware Perception Evaluator</description>
+  <maintainer email="satoshi.tanaka@tier4.jp">Satoshi Tanaka</maintainer>
+  <maintainer email="kotaro.uetake@tier4.jp">Kotaro Uetake</maintainer>
+  <maintainer email="shunsuke.miura@tier4.jp">Shunsuke Miura</maintainer>
+  <maintainer email="shitaro.tomie@tier4.jp">Shintaro Tomie</maintainer>
+  <license>Apache V2</license>
+
+  <author email="satoshi.tanaka@tier4.jp">Satoshi Tanaka</author>
+  <author email="kotaro.uetake@tier4.jp">Kotaro Uetake</author>
+
+  <exec_depend>python3-nuscenes-devkit-pip</exec_depend>
+  <exec_depend>python3-tqdm</exec_depend>
+  <exec_depend>python3-pandas</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

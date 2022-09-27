@@ -1,8 +1,8 @@
-# AWMLEvaluation
+# ドキュメント
 
 ## Get started
 
-- [Get started for basic usage of AWMLevaluation in both perception and sensing](./get_started.md)
+- [Get started for basic usage of perception_eval in both perception and sensing](./get_started.md)
 
 ## Perception evaluation
 
