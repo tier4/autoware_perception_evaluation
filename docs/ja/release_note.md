@@ -6,6 +6,10 @@
 
 ## Release for main branch
 
+- <https://github.com/tier4/autoware_perception_evaluation/pull/3>
+  - 【release】release v1.0.0
+- <https://github.com/tier4/autoware_perception_evaluation/pull/2>
+  - 【chore】package 名を awml_evaluation から perception_eval に変更
 - <https://github.com/tier4/autoware_perception_evaluation/commit/836d1089bc5b6815486ab1033959499405e28926>
   - 【release】release
 - <https://github.com/tier4/autoware_perception_evaluation/commit/6cff0094f8dc960daf241b2aff24bccf11785230>
