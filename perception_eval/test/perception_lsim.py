@@ -67,7 +67,7 @@ class PerceptionLSimMoc:
             # evaluation_task指定 + 今後各taskで異なるパラメータが入るかも
             evaluation_config_dict.update({"evaluation_task": evaluation_task})
             evaluation_config_dict.update({"min_point_numbers": [0, 0, 0, 0]})
-        elif evaluation_task == "tracking":
+        elif evaluation_task in ("tracking", "prediction"):
             # tracking
             frame_id: str = "map"
             evaluation_config_dict.update({"evaluation_task": evaluation_task})
@@ -158,10 +158,6 @@ class PerceptionLSimMoc:
             f"{len(frame_result.pass_fail_result.fp_objects_result)} FP objects, "
             f"{len(frame_result.pass_fail_result.fn_objects)} FN objects",
         )
-
-        if frame_result.metrics_score.maps[0].map < 0.7:
-            logging.debug("mAP is low")
-            # logging.debug(f"frame result {format_class_for_log(frame_result.metrics_score)}")
 
         # Visualize the latest frame result
         # self.evaluator.visualize_frame()
