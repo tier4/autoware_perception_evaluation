@@ -18,6 +18,7 @@ import math
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 import numpy as np
 from perception_eval.common.label import LabelType
@@ -53,6 +54,45 @@ class ObjectState:
         self.orientation: Quaternion = orientation
         self.size: Tuple[float, float, float] = size
         self.velocity: Optional[Tuple[float, float, float]] = velocity
+
+
+class ObjectPath:
+    """[summary]"""
+
+    def __init__(self, states: List[ObjectState], confidence: float) -> None:
+        self.states: List[ObjectState] = states
+        self.confidence: float = confidence
+
+    def __getitem__(self, idx: int) -> Union[ObjectState, List[ObjectState]]:
+        """[summary]
+        Returns Nth state.
+
+        Args:
+            idx (int)
+
+        Returns:
+            Union[ObjectState, List[ObjectState]]
+        """
+        return self.states[idx]
+
+    def __iter__(self) -> ObjectPath:
+        self.__n = 0
+        return self
+
+    def __next__(self):
+        if self.__n < len(self):
+            self.__n += 1
+            return self[self.__n - 1]
+        raise StopIteration
+
+    def __len__(self) -> int:
+        """[summary]
+        Returns length of states.
+
+        Returns:
+            int: length of states.
+        """
+        return len(self.states)
 
 
 class DynamicObject:
@@ -123,15 +163,14 @@ class DynamicObject:
         tracked_positions: Optional[List[Tuple[float, float, float]]] = None,
         tracked_orientations: Optional[List[Quaternion]] = None,
         tracked_sizes: Optional[List[Tuple[float, float, float]]] = None,
-        tracked_twists: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_positions: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_orientations: Optional[List[Quaternion]] = None,
-        predicted_sizes: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_twists: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_confidence: Optional[float] = None,
+        tracked_velocities: Optional[List[Tuple[float, float, float]]] = None,
+        predicted_positions: Optional[List[List[Tuple[float, float, float]]]] = None,
+        predicted_orientations: Optional[List[List[Quaternion]]] = None,
+        predicted_sizes: Optional[List[List[Tuple[float, float, float]]]] = None,
+        predicted_velocities: Optional[List[List[Tuple[float, float, float]]]] = None,
+        predicted_confidences: Optional[List[float]] = None,
         visibility: Optional[Visibility] = None,
     ) -> None:
-
         # detection
         self.unix_time: int = unix_time
         self.state: ObjectState = ObjectState(
@@ -149,20 +188,20 @@ class DynamicObject:
 
         # tracking
         self.uuid: Optional[str] = uuid
-        self.tracked_path: Optional[List[ObjectState]] = DynamicObject._set_states(
+        self.tracked_path: Optional[List[ObjectState]] = set_object_states(
             positions=tracked_positions,
             orientations=tracked_orientations,
             sizes=tracked_sizes,
-            twists=tracked_twists,
+            velocities=tracked_velocities,
         )
 
         # prediction
-        self.predicted_confidence: Optional[float] = predicted_confidence
-        self.predicted_path: Optional[List[ObjectState]] = DynamicObject._set_states(
+        self.predicted_paths: Optional[List[ObjectPath]] = set_object_paths(
             positions=predicted_positions,
             orientations=predicted_orientations,
             sizes=predicted_sizes,
-            twists=predicted_twists,
+            velocities=predicted_velocities,
+            confidences=predicted_confidences,
         )
 
         self.visibility: Optional[Visibility] = visibility
@@ -476,3 +515,82 @@ class DynamicObject:
             return states
         else:
             return None
+
+
+def set_object_states(
+    positions: Optional[List[Tuple[float, float, float]]] = None,
+    orientations: Optional[List[Quaternion]] = None,
+    sizes: Optional[List[Tuple[float, float, float]]] = None,
+    velocities: Optional[List[Tuple[float, float, float]]] = None,
+) -> Optional[ObjectPath]:
+    """[summary]
+    Set list of object states.
+    """
+    if positions is None or orientations is None:
+        return None
+
+    assert len(positions) == len(orientations), (
+        "length of positions and orientations must be same, "
+        f"but got {len(positions)} and {len(orientations)}"
+    )
+    states: List[ObjectState] = []
+    for i, (pos, orient) in enumerate(zip(positions, orientations)):
+        states.append(
+            ObjectState(
+                position=pos,
+                orientation=orient,
+                size=sizes[i] if sizes else None,
+                velocity=velocities[i] if velocities else None,
+            )
+        )
+    return states
+
+
+def set_object_path(
+    positions: Optional[List[Tuple[float, float, float]]] = None,
+    orientations: Optional[List[Quaternion]] = None,
+    sizes: Optional[List[Tuple[float, float, float]]] = None,
+    velocities: Optional[List[Tuple[float, float, float]]] = None,
+    confidence: Optional[float] = None,
+) -> Optional[ObjectPath]:
+    """[summary]
+    Set single path.
+    """
+    states: Optional[List[ObjectState]] = set_object_states(
+        positions=positions,
+        orientations=orientations,
+        velocities=velocities,
+        sizes=sizes,
+    )
+    return ObjectPath(states, confidence) if states else None
+
+
+def set_object_paths(
+    positions: Optional[List[List[Tuple[float, float, float]]]] = None,
+    orientations: Optional[List[List[Quaternion]]] = None,
+    sizes: Optional[List[List[Tuple[float, float, float]]]] = None,
+    velocities: Optional[List[List[Tuple[float, float, float]]]] = None,
+    confidences: Optional[List[float]] = None,
+) -> Optional[List[ObjectPath]]:
+    """[summary]
+    Set multiple paths.
+    """
+    if positions is None or orientations is None:
+        return None
+
+    assert len(positions) == len(orientations), (
+        "length of positions and orientations must be same, "
+        f"but got {len(positions)} and {len(orientations)}"
+    )
+    paths: List[ObjectPath] = []
+    for i, (poses, orients) in enumerate(zip(positions, orientations)):
+        paths.append(
+            set_object_path(
+                positions=poses,
+                orientations=orients,
+                velocities=velocities[i] if velocities else None,
+                sizes=sizes[i] if sizes else None,
+                confidence=confidences[i] if confidences else None,
+            )
+        )
+    return paths
