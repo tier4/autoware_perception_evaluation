@@ -1,4 +1,4 @@
-# Perception performance analyzer
+# [`<class> PerceptionPerformanceAnalyzer(...)`](../../../perception_eval/perception_eval/tool/perception_performance_analyzer.py)
 
 Perception の評価結果をもとに解析を行う．
 
@@ -10,7 +10,7 @@ Perception の評価結果をもとに解析を行う．
 
   - 認識性能の精度部分を評価，安全性能の担保をメインの目的とした評価
 
-- DataBase = 実環境で収集したデータに対して，視野内の物体に対してメトリクスの評価を行う
+- DataBase 評価 = 実環境で収集したデータに対して，視野内の物体に対してメトリクスの評価を行う
 
   - Perception アルゴリズム性能の相対評価に利用，安全担保の基準には基本的にはならない
 

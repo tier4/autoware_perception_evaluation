@@ -1,6 +1,6 @@
 # Perception Evaluation Metrics
 
-## MetricsScore
+## [`<class> MetricsScore(...)`](../../../perception_eval/perception_eval/evaluation/metrics/metrics.py)
 
 - detection/tracking/prediction の各評価指標を実行する class
 
@@ -10,17 +10,17 @@
 
 - 入力された MetricsScoreConfig から，`detection/tracking/prediction_config`を生成
 
-  - `detection_config (DetectionMetricsConfig)`
-  - `tracking_config (TrackingMetricsConfig)`
-  - `prediction_config (PredictionMetricsConfig)`
+  - [`detection_config (DetectionMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/detection_metrics_config.py)
+  - [`tracking_config (TrackingMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/tracking_metrics_config.py)
+  - [`prediction_config (PredictionMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/prediction_metrics_config.py)
 
 - 各 config をもとにそれぞれの Metrics が計算される．
 
-| EvaluationTask |   Metrics   |
-| :------------- | :---------: |
-| `Detection`    |     mAP     |
-| `Tracking`     | mAP / CLEAR |
-| `Prediction`   |    [TBD]    |
+| Evaluation Task |      Metrics       |
+| :-------------- | :----------------: |
+| `Detection`     |     mAP / mAPH     |
+| `Tracking`      | mAP / mAPH / CLEAR |
+| `Prediction`    |       [TBD]        |
 
 ```yaml
 [2022-08-09 18:56:45,237] [INFO] [perception_lsim.py:214 <module>] Detection Metrics example (final_metric_score):
@@ -66,9 +66,28 @@
 
 ## Detection
 
-### `Map`
+### [`<class> Map(...)`](../../../perception_eval/perception_eval/evaluation/metrics/detection/map.py)
 
-- mAP のスコア計算を行う class．内部で AP / APH を計算し，それらのクラス平均を取る．
+- mAP (mean Average Precision) のスコア計算を行う class．
+
+  - 内部で AP (Average Precision) / APH (Average Precision Weighted by Heading) を計算．
+  - それらのクラス平均を取ることで mAP, mAPH を算出．
+
+#### AP の計算方法
+
+- 各オブジェクトのマッチングに対する TP/FP/FN 判定を元に Precision / Recall は以下のように定式化される．
+
+  <img src="./figure/precision.png">
+
+  <img src="./figure/recall.png">
+
+- 上式から以下のような PR 曲線(Precision-Recall 曲線)が得られたとすると，その下部面積が AP(APH)である．
+
+  <img src="./figure/pr-curve.png" width=480>
+
+- 実際には，上記のような PR 曲線を補完してから下部面積を算出する．
+
+  <img src="./figure/pr-curve_interpolate.jpeg" width=480 >
 
 ```yaml
 [2022-08-09 18:56:45,238] [INFO] [perception_lsim.py:220 <module>] mAP result example (final_metric_score.maps[0].aps[0]):
@@ -169,9 +188,15 @@
 
 ## Tracking
 
-### `TrackingMetricsScore`
+### `<class> TrackingMetricsScore(...)`
 
-- tracking の メトリクススコアを計算する class.内部で CLEAR を計算し，MOTA 　/　 MOTP 　/　 IDswitch 等を計算する．
+- tracking の メトリクススコアを計算する class．内部で CLEAR を計算し，MOTA (Multi-Object Tracking Accuracy) 　/　 MOTP (Multi-Object Tracking Precision) 　/　 IDswitch 等を計算する．
+
+- MOTA，MOTP は以下のように定式かされる．
+
+  <img src="./figure/mota.png">
+
+  <img src="./figure/motp.png" width=240>
 
 ```yaml
 [2022-08-09 18:57:53,889] [INFO] [perception_lsim.py:282 <module>] CLEAR result example (tracking_final_metric_score.tracking_scores[0].clears[0]):

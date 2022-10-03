@@ -33,9 +33,7 @@
 
 ## Frame 単位でのデータ構造
 
-### PerceptionFrameResult
-
-詳細は[perception_eval/evaluation/result/perception_frame_result.py](../../../perception_eval/perception_eval/evaluation/result/perception_frame_result.py)を参照
+### [`<class> PerceptionFrameResult(...)`](../../../perception_eval/perception_eval/evaluation/result/perception_frame_result.py)
 
 - Initialization
 
@@ -133,11 +131,9 @@
 
 ## Object 単位でのデータ構造
 
-### DynamicObjectWithPerceptionResult
+### [`<class> DynamicObjectWithPerceptionResult(...)`](../../../perception_eval/perception_eval/evaluation/result/object_result.py)
 
 推定オブジェクトの集合`List[DynamicObject]`と GT オブジェクトの集合`List[DynamicObject]`からマッチングペアの集合`List[DynamicObjectWithPerceptionResult]`を得るには，`get_object_results()`関数を使う．
-
-詳細は，[perception_eval/evaluation/result/object_result.py](../../../perception_eval/perception_eval/evaluation/result/object_result.py)を参照．
 
 ```python
 from perception_eval.evaluation.result.object_results import get_object_results

@@ -13,7 +13,7 @@
 ### Driving log Replayer 側で出力するべき情報
 
 - driving_log_replayer 側で出力するべき情報
-  - [参考](../../../perception_eval/test/perception_lsim.py)
+  - [perception_eval/test/perception_lsim.py](../../../perception_eval/test/perception_lsim.py)を参考
 - frame_results: 評価を再計算するのに必要な情報
   - rosbag, annotation -> 評価に必要な情報 -> Metrics 計算 という流れで、rosbag, annotation からもう一度評価することなく Metrics を再計算するのに必要な情報、という意味
   - Use Case としては scenario 評価がある
@@ -40,14 +40,12 @@ json_result = json.dump(dict_result)
 | objects (-> prediction/objects ?) | map 座標系       | prediction 用(TBD)         |
 | pointcloud                        | base link 座標系 | detection 用 + uuid 利用   |
 
-### PerceptionEvaluationManager
+### [`<class> PerceptionEvaluationManager(...)`](../../../perception_eval/perception_eval/manager/perception_evaluation_manager.py)
 
 - Perception 評価を実行する class
 - PerceptionEvaluationConfig に従い，detection/tracking/prediction の評価を行う
 
-#### PerceptionEvaluationConfig
-
-- [perception_eval/config/perception_evaluation_config.py](../../../perception_eval/perception_eval/config/perception_evaluation_config.py)を参考
+#### [`<class> PerceptionEvaluationConfig(...)`](../../../perception_eval/perception_eval/config/perception_evaluation_config.py)
 
 - `PerceptionEvaluationConfig`の引数は以下
 
@@ -218,11 +216,10 @@ json_result = json.dump(dict_result)
         Usage: {'plane_distance_thresholds', 'iou_3d_thresholds', 'center_distance_thresholds', 'target_labels', 'iou_bev_thresholds'}
     ```
 
-### CriticalObjectFilterConfig
+### [`<class> CriticalObjectFilterConfig(...)`](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py)
 
 - 注目物体を動的決定するためのインターフェイス．
 - `PerceptionEvaluationManger`の初期化時ではなく，各フレーム毎(=callback)に指定する．
-- [perception_eval/evaluation/result/perception_frame_config](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py)を参考
 
 | Arguments                   |             type             |    Mandatory    | Description                                                                                                      |
 | :-------------------------- | :--------------------------: | :-------------: | :--------------------------------------------------------------------------------------------------------------- |
@@ -238,11 +235,10 @@ json_result = json.dump(dict_result)
 
 \* **max_x/y_position**，**max/min_distance**についてはどちらか片方のみ指定する必要がある．
 
-### PerceptionPassFailConfig
+### [`<class> PerceptionPassFailConfig(...)`](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py)
 
 - Pass / Fail を決めるためのパラメータ. Pass/Fail の判定については，**Plane distance**によって TP/FP の判定を行う．
 - `PerceptionEvaluationManger`の初期化時ではなく，各フレーム毎(=callback)に指定する．
-- [perception_eval/evaluation/result/perception_frame_config](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py)を参考
 
 | Arguments                       |             type             | Mandatory | Description                                      |
 | :------------------------------ | :--------------------------: | :-------: | :----------------------------------------------- |
