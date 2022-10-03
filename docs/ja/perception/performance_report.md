@@ -165,21 +165,21 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ### Basic methods
 
-| name                   |                                          input                                          |       return       | Description                                                                                   |
-| :--------------------- | :-------------------------------------------------------------------------------------: | :----------------: | :-------------------------------------------------------------------------------------------- |
-| `get`                  |                                   `*args`, `**kwargs`                                   | `pandas.DataFrame` | `args`で指定したカラムまたは，`kwargs`で指定した条件の DataFrame                              |
-| `sortby`               | `Union[str, List[str]]`, `df<Optional[pandas.DataFrame]>=None`, `ascending<bool>=False` | `pandas.DataFrame` | `Union[str, List[str]]`で指定したカラムに対してソートした DataFrame．`ascending=True`で昇順． |
-| `head`                 |                                          `int`                                          | `pandas.DataFrame` | 先頭から`int(Defaults=5)`で指定した行数分の DataFrame                                         |
-| `tail`                 |                                          `int`                                          | `pandas.DataFrame` | 末尾から`int(Defaults=5)`で指定した行数分の DataFrame                                         |
-| `shape`                |                            `Optional[Union[str, List[str]]]`                            |    `Tuple[int]`    | 先頭から`int(Defaults=5)`で指定した行数の DataFrame                                           |
-| `keys`                 |                                                                                         |     `pd.Index`     | `self.df`のカラム名                                                                           |
-| `get_ground_truth`     |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      | `pandas.DataFrame` | Ground Truth の DataFrame                                                                     |
-| `get_estimation`       |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      | `pandas.DataFrame` | Estimation の DataFrame                                                                       |
-| `get_num_ground_truth` |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Ground Truth 数                                                                               |
-| `get_num_estimation`   |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Estimation 数                                                                                 |
-| `get_num_tp`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | TP 数                                                                                         |
-| `get_num_fp`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | FP 数                                                                                         |
-| `get_num_fn`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | FN 数                                                                                         |
+| name                     |                                          input                                          |       return       | Description                                                                                   |
+| :----------------------- | :-------------------------------------------------------------------------------------: | :----------------: | :-------------------------------------------------------------------------------------------- |
+| `get()`                  |                                   `*args`, `**kwargs`                                   | `pandas.DataFrame` | `args`で指定したカラムまたは，`kwargs`で指定した条件の DataFrame                              |
+| `sortby()`               | `Union[str, List[str]]`, `df<Optional[pandas.DataFrame]>=None`, `ascending<bool>=False` | `pandas.DataFrame` | `Union[str, List[str]]`で指定したカラムに対してソートした DataFrame．`ascending=True`で昇順． |
+| `head()`                 |                                          `int`                                          | `pandas.DataFrame` | 先頭から`int(Defaults=5)`で指定した行数分の DataFrame                                         |
+| `tail()`                 |                                          `int`                                          | `pandas.DataFrame` | 末尾から`int(Defaults=5)`で指定した行数分の DataFrame                                         |
+| `shape()`                |                            `Optional[Union[str, List[str]]]`                            |    `Tuple[int]`    | 先頭から`int(Defaults=5)`で指定した行数の DataFrame                                           |
+| `keys()`                 |                                                                                         |     `pd.Index`     | `self.df`のカラム名                                                                           |
+| `get_ground_truth()`     |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      | `pandas.DataFrame` | Ground Truth の DataFrame                                                                     |
+| `get_estimation()`       |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      | `pandas.DataFrame` | Estimation の DataFrame                                                                       |
+| `get_num_ground_truth()` |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Ground Truth 数                                                                               |
+| `get_num_estimation()`   |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Estimation 数                                                                                 |
+| `get_num_tp()`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | TP 数                                                                                         |
+| `get_num_fp()`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | FP 数                                                                                         |
+| `get_num_fn()`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | FN 数                                                                                         |
 
 - `get()`では`*args`を指定することで指定した列を，`**kwargs`を指定することで指定した等号条件を満たす DataFrame を返す
 
@@ -247,7 +247,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ### 解析
 
-- `<func> summarize_ratio(...) -> pandas.DataFrame`
+- `summarize_ratio()`
   - 各クラスに対する TP 率，FN 率，FP 率の算出
 
 | label |  "TP"   |  "FN"   |  "FP"   |
@@ -264,7 +264,7 @@ motorbike   1.000000  0.0  0.000000
 bicycle     0.958561  0.0  0.041439
 ```
 
-- `<func> summarize_score(...) -> pandas.DataFrame`
+- `summarize_score()`
 
 | label |  "AP"   |  "APH"  | "MOTA"  | "MOTP"  | "IDswitch" |
 | :---- | :-----: | :-----: | :-----: | :-----: | :--------: |
@@ -281,7 +281,7 @@ bicycle                       1.000000                     1.000000     1.000000
 
 ```
 
-- `<func> summarize_error(...) -> pandas.DataFrame`
+- `summarize_error()`
   - 各クラスに対する average，RMS，std，max，min の算出
 
 | label | element | "average" |  "rms"  |  "std"  |  "max"  |  "min"  |
@@ -316,42 +316,58 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
            nn_plane  0.688891  0.893696  5.693175e-01  2.190708  0.020005
 ```
 
-### プロット関数
+### プロットメソッド関数
 
-- `<func> plot_by_time(...) -> None`
+- `plot_by_time()`
 
-  - 指定した GT オブジェクトに対し位置または速度と誤差を時系列で描画
+  - 指定した GT オブジェクトに対し時系列または距離ごとで位置，向き，速度の状態を描画
 
-    | Arguments |  type  | Mandatory |                       Description                        |
-    | :-------- | :----: | :-------: | :------------------------------------------------------: |
-    | `uuid`    | `str`  |    Yes    |              対象 GT オブジェクトの uuid．               |
-    | `column`  | `str`  |    Yes    |    位置または速度を指定．(Options=[`xy`, `velocity`])    |
-    | `scene`   | `int`  |    No     | 対象シーン．未指定の場合，最後に追加されたシーンが使用． |
-    | `show`    | `bool` |    No     |    描画結果を表示するかのフラッグ(Defaults=`False`)．    |
+    | Arguments |                  type                  | Mandatory |                         Description                         |
+    | :-------- | :------------------------------------: | :-------: | :---------------------------------------------------------: |
+    | `uuid`    |                 `str`                  |    Yes    |                対象 GT オブジェクトの uuid．                |
+    | `columns` |        `Union[str, List[str]]`         |    Yes    | 位置または速度を指定(Options=[`x`, `y`, `yaw`, `vx`, `vy`]) |
+    | `mode`    |         `Union[str, PlotMode]`         |    No     |       時系列または距離ごと(Defaults=`PlotMode.TIME`)        |
+    | `status`  | `Optional[Union[str, MatchingStatus]]` |    No     |     対象オブジェクトのマッチング状態．(Defaults=`None`)     |
+    | `show`    |                 `bool`                 |    No     |      描画結果を表示するかのフラッグ(Defaults=`False`)       |
 
     ```python
-    # 例: uuid: "4bae7e75c7de70be980ce20ce8cbb642"のオブジェクトのxyについてプロット
+    # 例: uuid: "4bae7e75c7de70be980ce20ce8cbb642"のオブジェクトのxyについて時系列でTP/FP/FNに関わらずプロット
 
-    >> analyzer.plot_by_time("4bae7e75c7de70be980ce20ce8cbb642", ["x", "y"])
+    >> analyzer.plot_state("4bae7e75c7de70be980ce20ce8cbb642", ["x", "y"])
     ```
 
     <img src="../../fig/perception/sample_plot_by_time.png" width=800 height=400>
 
-- `<func> plot_num_objects(...) -> None`
+- `plot_num_objects()`
 
-  - `base_link`からの距離ごとのオブジェクト数をヒストグラムでプロット
+  - GT/Estimation のオブジェクト数を距離ごとまたは時系列でヒストグラムでプロット
 
-  | Arguments  |             type             | Mandatory |                           Description                            |
-  | :--------- | :--------------------------: | :-------: | :--------------------------------------------------------------: |
-  | `area_idx` |            `int`             |    No     |  対象分割領域の番号．未指定の場合，全領域のオブジェクトを描画．  |
-  | `label`    | `Union[str, AutowareLabel]`  |    No     |    対象ラベル名．未指定の場合，全ラベルのオブジェクトを描画．    |
-  | `status`   | `Union[str, MatchingStatus]` |    No     | 対象マッチングステータス名．未指定の場合，全オブジェクトを描画． |
-  | `dist_bin` |           `float`            |    No     |                   距離の間隔(Defaults=`0.5`)．                   |
-  | `show`     |            `bool`            |    No     |        描画結果を表示するかのフラッグ(Defaults=`False`)．        |
+  | Arguments  |          type          | Mandatory |                                    Description                                     |
+  | :--------- | :--------------------: | :-------: | :--------------------------------------------------------------------------------: |
+  | `mode`     | `Union[str, PlotMode]` |    No     |                 距離ごとまたは時系列(Defaults=`PlotMode.DISTANCE`)                 |
+  | `bin`      |   `Optional[float]`    |    No     | 描画間隔．デフォルトで距離ごとなら`0.5`[m]，時系列なら`100`[ms]．(Defaults=`None`) |
+  | `show`     |         `bool`         |    No     |                  描画結果を表示するかのフラッグ(Defaults=`False`)                  |
+  | `**kwargs` |         `Any`          |    No     |        特定のラベル，エリアなどについてのみ描画する際に指定．(e.g.`area=0`)        |
 
   ```python
-  # 全オブジェクトの数をプロット
+  # 全オブジェクトの数を距離ごとにプロット
   >> analyzer.plot_num_objects()
   ```
 
   <img src="../../fig/perception/sample_plot_num_objects.png" width=800 height=400>
+
+- `<func> box_plot(...)`
+
+  - 指定した状態に対する誤差の箱ひげ図をプロット
+
+  | Arguments |          type          | Mandatory |                   Description                    |
+  | :-------- | :--------------------: | :-------: | :----------------------------------------------: |
+  | `columns` | `Union[str, List[str]` |    Yes    |      描画対象となる誤差(x, y, yaw, vx, vy)       |
+  | `show`    |         `bool`         |    No     | 描画結果を表示するかのフラッグ(Defaults=`False`) |
+
+  ```python
+  # x, yの誤差について箱ひげ図をプロット
+  >> analyzer.box_plot(["x", "y"])
+  ```
+
+  <img src="./figure/box_plot_xy.png" width=800>

@@ -242,8 +242,10 @@ if __name__ == "__main__":
     logging.info(score_df.to_string())
     logging.info(error_df.to_string())
 
-    # detection_analyzer.plot_by_time("4bae7e75c7de70be980ce20ce8cbb642", ["x", "y"])
-    # detection_analyzer.plot_num_objects()
+    # detection_analyzer.plot_state("4bae7e75c7de70be980ce20ce8cbb642", ["x", "y"])
+    # detection_analyzer.plot_error(["x", "y"])
+    # detection_analyzer.plot_num_object()
+    # detection_analyzer.box_plot()
 
     # ========================================= Tracking =========================================
     print("=" * 50 + "Start Tracking" + "=" * 50)

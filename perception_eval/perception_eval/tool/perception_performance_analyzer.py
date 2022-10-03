@@ -61,6 +61,19 @@ class MatchingStatus(Enum):
         return super().__eq__(other)
 
 
+class PlotMode(Enum):
+    TIME = "time"
+    DISTANCE = "distance"
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __eq__(self, other: Union[PlotMode, str]) -> bool:
+        if isinstance(other, str):
+            return self.value == other
+        return super().__eq__(other)
+
+
 class PerceptionPerformanceAnalyzer:
     """[summary]
     An class to analyze perception results.
@@ -909,19 +922,26 @@ class PerceptionPerformanceAnalyzer:
                 data[id_switch_mode].append(clear.results["id_switch"])
         return pd.DataFrame(data, index=self.__all_labels)
 
-    def plot_num_objects(
+    def get_error_heatmap(self) -> Optional[np.ndarray]:
+        pass
+
+    def plot_num_object(
         self,
-        dist_bin: float = 0.5,
+        mode: Union[str, PlotMode] = PlotMode.DISTANCE,
+        bin: Optional[float] = None,
         show: bool = False,
         **kwargs,
     ) -> None:
         """[summary]
-        Plot the number of objects for each distance range with histogram.
+        Plot the number of objects for each time/distance range with histogram.
 
         Args:
-            dist_bin (float): The interval of distance. Defaults to 0.5.
+            mode (Union[str, PlotMode]): Mode of plot used as x-axis, time or distance. Defaults to PlotMode.DISTANCE.
+            bin (float): The interval of time/distance. If not specified, 100[ms] for time and 0.5[m] for distance will be use.
+                Defaults to None.
             show (bool): Whether show the plotted figure. Defaults to False.
-            **kwargs
+            **kwargs: Specify if you want to plot for the specific conditions.
+                For example, label, area, frame or scene.
         """
         if len(kwargs) == 0:
             title = "ALL"
@@ -930,7 +950,7 @@ class PerceptionPerformanceAnalyzer:
             title: str = ""
             filename: str = ""
             for key, item in kwargs.items():
-                title += f"@{key.upper}:{item} "
+                title += f"@{key.upper()}:{item} "
                 filename += f"{item}_"
             title = title.rstrip(" ")
             filename = filename.rstrip("_")
@@ -938,14 +958,43 @@ class PerceptionPerformanceAnalyzer:
         gt_df_ = self.get_ground_truth(**kwargs)
         est_df_ = self.get_estimation(**kwargs)
 
-        gt_dists = np.linalg.norm(gt_df_[["x", "y"]], axis=1)
-        est_dists = np.linalg.norm(est_df_[["x", "y"]], axis=1)
+        if mode == PlotMode.TIME:
+            gt_times = np.array(gt_df_["timestamp"], dtype=np.uint64) // 1e-6
+            est_times = np.array(est_df_["timestamp"], dtype=np.uint64) // 1e-6
+            time_origin: float = gt_times.min().item()
+            gt_times = gt_times - time_origin
+            est_times = gt_times - time_origin
+            max_time = max(gt_times.max(), est_times.max())
+            time_bin = bin if bin else 100
+            bins = np.arange(0, max_time, time_bin)
+            xlabel: str = str(mode) + " [ms]"
+        elif mode == PlotMode.DISTANCE:
+            gt_dists = np.linalg.norm(gt_df_[["x", "y"]], axis=1)
+            est_dists = np.linalg.norm(est_df_[["x", "y"]], axis=1)
+            dist_bin = bin if bin else 0.5
+            bins = np.arange(0, self.__max_dist, dist_bin)
+            xlabel: str = str(mode) + " [m]"
+        else:
+            raise ValueError(f"Unexpected mode: {mode}")
 
         fig: Figure = plt.figure(figsize=(16, 8))
-        ax1: Axes = fig.add_subplot(1, 2, 1, xlabel="dist [m]", ylabel="num", title="GT")
-        ax2: Axes = fig.add_subplot(1, 2, 2, xlabel="dist [m]", ylabel="num", title="Estimation")
+        ax1: Axes = fig.add_subplot(
+            1,
+            2,
+            1,
+            xlabel=xlabel,
+            ylabel="num",
+            title="GT",
+        )
+        ax2: Axes = fig.add_subplot(
+            1,
+            2,
+            2,
+            xlabel=xlabel,
+            ylabel="num",
+            title="Estimation",
+        )
 
-        bins = np.arange(0, self.__max_dist, dist_bin)
         ax1.hist(gt_dists, bins=bins)
         ax2.hist(est_dists, bins=bins)
 
@@ -955,21 +1004,23 @@ class PerceptionPerformanceAnalyzer:
             plt.show()
         plt.close()
 
-    def plot_by_time(
+    def plot_state(
         self,
         uuid: str,
         columns: Union[str, List[str]],
+        mode: Union[str, PlotMode] = PlotMode.TIME,
         status: Optional[MatchingStatus] = None,
         show: bool = False,
     ) -> None:
         """[summary]
-        Plot values and errors, graph for each estimated and GT object in TP at each time step.
+        Plot states for each time/distance estimated and GT object in TP.
 
         Args:
             uuid (str): Target object's uuid.
-            column (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "vx", "vy"].
+            columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "vx", "vy"].
                 If you want plot multiple column for one image, use List[str].
-            status (Optional[int]): Target status. If not specified, plot all status. Defaults to None.
+            mode (Union[str, PlotMode]): Mode of plot used as x-axis, time or distance. Defaults to PlotMode.TIME.
+            status (Optional[int]): Target status TP/FP/FN. If not specified, plot all status. Defaults to None.
             show (bool): Whether show the plotted figure. Defaults to False.
         """
         if isinstance(columns, str):
@@ -989,66 +1040,159 @@ class PerceptionPerformanceAnalyzer:
         est_df = self.get_estimation(df=self.df.loc[index])
         est_df["timestamp"] = est_df["timestamp"].astype(np.uint64)
 
-        gt_df = self.sortby("timestamp", gt_df)
-        est_df = self.sortby("timestamp", est_df)
-
-        gt_times = np.array(gt_df["timestamp"], dtype=np.uint64) / 1e-6
-        est_times = np.array(est_df["timestamp"], dtype=np.uint64) / 1e-6
-        time_origin: float = gt_times.min().item()
-        gt_times = gt_times - time_origin
-        est_times = est_times - time_origin
-
-        tp_gt_df = self.get_ground_truth(uuid=uuid, status="TP")
-        tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
-
-        if len(index) == 0:
-            warn(f"There is no object ID: {uuid}")
-            return
-
-        tp_df = self.df.loc[tp_index]
-
-        tp_times = np.array(tp_gt_df["timestamp"], dtype=np.uint64) / 1e-6
-        tp_times = np.sort(tp_times)
-        tp_time_origin: float = tp_times.min().item()
-        err_times = tp_times - tp_time_origin
+        if mode == PlotMode.TIME:
+            gt_times = np.array(gt_df["timestamp"], dtype=np.uint64) / 1e-6
+            est_times = np.array(est_df["timestamp"], dtype=np.uint64) / 1e-6
+            time_origin: float = gt_times.min().item()
+            gt_xaxes = gt_times - time_origin
+            est_xaxes = est_times - time_origin
+            xlabel: str = str(mode) + " [ms]"
+        elif mode == PlotMode.DISTANCE:
+            gt_xaxes = np.linalg.norm(gt_df[["x", "y"]], axis=1)
+            est_xaxes = np.linalg.norm(est_df[["x", "y"]], axis=1)
+            xlabel: str = str(mode) + " [m]"
+        else:
+            raise ValueError(f"Unexpected mode: {mode}")
 
         # Plot GT and estimation
-        num_rows = len(columns)
-        fig: Figure = plt.figure(figsize=(16, 4 * num_rows))
+        num_cols = len(columns)
+        fig: Figure = plt.figure(figsize=(8 * num_cols, 4))
         for n, col in enumerate(columns):
-            gt_cols = np.array(gt_df[col].tolist())
-            est_cols = np.array(est_df[col].tolist())
-
-            ax1: Axes = fig.add_subplot(
-                num_rows,
-                2,
-                2 * n + 1,
-                xlabel="Time [s]",
-                ylabel=f"{col} [m]",
-                title=f"{col}",
+            ylabel: str = f"{col}"
+            ax: Axes = fig.add_subplot(
+                1,
+                num_cols,
+                n + 1,
+                xlabel=xlabel,
+                ylabel=ylabel,
+                title=f"{ylabel} / {xlabel}",
             )
-            ax1.grid(lw=0.5)
-
-            ax1.scatter(gt_times, gt_cols, c="red", s=100)
-            ax1.scatter(est_times, est_cols)
-
-            ax2: Axes = fig.add_subplot(
-                num_rows,
-                2,
-                2 * (n + 1),
-                xlabel="Time [s]",
-                ylabel=f"err_{col}",
-                title=f"err_{col}",
-            )
-            ax2.grid(lw=0.5)
-
-            err = self.calculate_error(col, df=tp_df)
-            ax2.scatter(err_times, err)
+            ax.grid(lw=0.5)
+            gt_states = np.array(gt_df[col].tolist())
+            est_states = np.array(est_df[col].tolist())
+            ax.scatter(gt_xaxes, gt_states, c="red", s=100)
+            ax.scatter(est_xaxes, est_states)
 
         plt.suptitle(f"{columns} @uuid:{uuid}")
         plt.tight_layout()
         columns_str: str = "".join(columns)
-        plt.savefig(os.path.join(self.plot_directory, f"{columns_str}_{uuid}.png"))
+        plt.savefig(
+            os.path.join(
+                self.plot_directory,
+                f"state_{columns_str}_{uuid}_{str(mode)}.png",
+            )
+        )
+        if show:
+            plt.show()
+        plt.close()
+
+    def plot_error(
+        self,
+        columns: Union[str, List[str]],
+        mode: Union[str, PlotMode] = PlotMode.TIME,
+        heatmap: bool = False,
+        gridsize: int = 30,
+        show: bool = False,
+        **kwargs,
+    ) -> None:
+        """[summary]
+        Plot states for each time/distance estimated and GT object in TP.
+
+        Args:
+            columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "vx", "vy"].
+                If you want plot multiple column for one image, use List[str].
+            mode (Union[str, PlotMode]): Mode of plot used as x-axis, time or distance. Defaults to PlotMode.TIME.
+            heatmap (bool): Whether overlay heatmap. Defaults to False.
+            gridsize (int): Grid size to plot heatmap. Defaults to 30.
+            show (bool): Whether show the plotted figure. Defaults to False.
+            **kwargs: Specify if you want to plot for the specific conditions.
+                For example, label, area, frame or scene.
+        """
+        if isinstance(columns, str):
+            columns: List[str] = [columns]
+
+        if set(columns) > set(["x", "y", "yaw", "vx", "vy"]):
+            raise ValueError(f"{columns} is unsupported for plot")
+
+        tp_gt_df = self.get_ground_truth(status="TP", **kwargs)
+        tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
+
+        if len(tp_index) == 0:
+            warn("There is no TP object")
+            return
+
+        tp_df = self.df.loc[tp_index]
+
+        if mode == PlotMode.TIME:
+            tp_times = np.array(tp_gt_df["timestamp"], dtype=np.uint64) / 1e-6
+            xaxes: np.ndarray = tp_times - tp_times.min().item()
+            xlabel: str = str(mode) + " [ms]"
+        elif mode == PlotMode.DISTANCE:
+            xaxes: np.ndarray = np.linalg.norm(tp_gt_df[["x", "y"]], axis=1)
+            xlabel = str(mode) + " [m]"
+        else:
+            raise ValueError(f"Unexpected mode: {mode}")
+
+        # Plot GT and estimation
+        num_cols = len(columns)
+        fig: Figure = plt.figure(figsize=(8 * num_cols, 8))
+        for n, col in enumerate(columns):
+            ylabel: str = f"err_{col}"
+            ax: Axes = fig.add_subplot(
+                1,
+                num_cols,
+                n + 1,
+                xlabel=xlabel,
+                ylabel=ylabel,
+                title=f"{ylabel} / {xlabel}",
+            )
+            ax.grid(lw=0.5)
+            err: np.ndarray = self.calculate_error(col, df=tp_df)
+            if heatmap:
+                ax.hexbin(xaxes, err, gridsize=gridsize, cmap="jet")
+            else:
+                ax.scatter(xaxes, err)
+
+        plt.suptitle(f"{columns}")
+        plt.tight_layout()
+        columns_str: str = "".join(columns)
+        columns_str += "_heatmap" if heatmap else ""
+        plt.savefig(os.path.join(self.plot_directory, f"error_{columns_str}_{str(mode)}.png"))
+        if show:
+            plt.show()
+        plt.close()
+
+    def box_plot(
+        self,
+        columns: Union[str, List[str]],
+        show: bool = False,
+    ) -> None:
+        """[summary]
+        Plot box-plot of errors.
+
+        Args:
+            column (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "vx", "vy"].
+                If you want plot multiple column for one image, use List[str].
+            show (bool): Whether show the plotted figure. Defaults to False.
+        """
+        if isinstance(columns, str):
+            columns: List[str] = [columns]
+
+        if set(columns) > set(["x", "y", "yaw", "vx", "vy"]):
+            raise ValueError(f"{columns} is unsupported for plot")
+
+        errs: List[np.ndarray] = []
+        for col in columns:
+            errs.append(self.calculate_error(col))
+        _, ax = plt.subplots()
+        ax.boxplot(errs)
+        ax.set_xticklabels(columns)
+
+        plt.title("Box-Plot of Errors")
+        plt.grid()
+        plt.tight_layout()
+        columns_str: str = "".join(columns)
+        plt.savefig(os.path.join(self.plot_directory, f"box_plot_{columns_str}.png"))
         if show:
             plt.show()
         plt.close()
