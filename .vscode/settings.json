@@ -53,6 +53,7 @@
     "figwidth",
     "figheight",
     "gridsize",
+    "hexbin",
     "HOTA",
     "IOUBEV",
     "kwargs",
