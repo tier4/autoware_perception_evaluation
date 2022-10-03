@@ -1091,7 +1091,7 @@ class PerceptionPerformanceAnalyzer:
         columns: Union[str, List[str]],
         mode: Union[str, PlotMode] = PlotMode.TIME,
         heatmap: bool = False,
-        gridsize: int = 30,
+        bin: int = 50,
         show: bool = False,
         **kwargs,
     ) -> None:
@@ -1103,7 +1103,7 @@ class PerceptionPerformanceAnalyzer:
                 If you want plot multiple column for one image, use List[str].
             mode (Union[str, PlotMode]): Mode of plot used as x-axis, time or distance. Defaults to PlotMode.TIME.
             heatmap (bool): Whether overlay heatmap. Defaults to False.
-            gridsize (int): Grid size to plot heatmap. Defaults to 30.
+            bin (int): Bin size to plot heatmap. Defaults to 50.
             show (bool): Whether show the plotted figure. Defaults to False.
             **kwargs: Specify if you want to plot for the specific conditions.
                 For example, label, area, frame or scene.
@@ -1149,7 +1149,7 @@ class PerceptionPerformanceAnalyzer:
             ax.grid(lw=0.5)
             err: np.ndarray = self.calculate_error(col, df=tp_df)
             if heatmap:
-                ax.hexbin(xaxes, err, gridsize=gridsize, cmap="jet")
+                ax.hist2d(xaxes, err, bins=(bin, bin), cmap="jet")
             else:
                 ax.scatter(xaxes, err)
 
