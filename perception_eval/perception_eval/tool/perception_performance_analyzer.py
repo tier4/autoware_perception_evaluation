@@ -937,7 +937,7 @@ class PerceptionPerformanceAnalyzer:
 
         Args:
             mode (Union[str, PlotMode]): Mode of plot used as x-axis, time or distance. Defaults to PlotMode.DISTANCE.
-            bin (float): The interval of time/distance. If not specified, 100[ms] for time and 0.5[m] for distance will be use.
+            bin (float): The interval of time/distance. If not specified, 0.1[s] for time and 0.5[m] for distance will be use.
                 Defaults to None.
             show (bool): Whether show the plotted figure. Defaults to False.
             **kwargs: Specify if you want to plot for the specific conditions.
@@ -955,22 +955,22 @@ class PerceptionPerformanceAnalyzer:
             title = title.rstrip(" ")
             filename = filename.rstrip("_")
 
-        gt_df_ = self.get_ground_truth(**kwargs)
-        est_df_ = self.get_estimation(**kwargs)
+        gt_df = self.get_ground_truth(**kwargs)
+        est_df = self.get_estimation(**kwargs)
 
         if mode == PlotMode.TIME:
-            gt_times = np.array(gt_df_["timestamp"], dtype=np.uint64) // 1e-6
-            est_times = np.array(est_df_["timestamp"], dtype=np.uint64) // 1e-6
+            gt_times = np.array(gt_df["timestamp"], dtype=np.uint64) / 1e6
+            est_times = np.array(est_df["timestamp"], dtype=np.uint64) / 1e6
             time_origin: float = gt_times.min().item()
-            gt_times = gt_times - time_origin
-            est_times = gt_times - time_origin
-            max_time = max(gt_times.max(), est_times.max())
-            time_bin = bin if bin else 100
+            gt_values = gt_times - time_origin
+            est_values = est_times - time_origin
+            max_time = max(gt_values.max(), est_values.max())
+            time_bin = bin if bin else 0.1
             bins = np.arange(0, max_time, time_bin)
-            xlabel: str = str(mode) + " [ms]"
+            xlabel: str = str(mode) + " [s]"
         elif mode == PlotMode.DISTANCE:
-            gt_dists = np.linalg.norm(gt_df_[["x", "y"]], axis=1)
-            est_dists = np.linalg.norm(est_df_[["x", "y"]], axis=1)
+            gt_values = np.linalg.norm(gt_df[["x", "y"]], axis=1)
+            est_values = np.linalg.norm(est_df[["x", "y"]], axis=1)
             dist_bin = bin if bin else 0.5
             bins = np.arange(0, self.__max_dist, dist_bin)
             xlabel: str = str(mode) + " [m]"
@@ -995,8 +995,8 @@ class PerceptionPerformanceAnalyzer:
             title="Estimation",
         )
 
-        ax1.hist(gt_dists, bins=bins)
-        ax2.hist(est_dists, bins=bins)
+        ax1.hist(gt_values, bins=bins)
+        ax2.hist(est_values, bins=bins)
 
         plt.suptitle(f"{title}")
         plt.savefig(os.path.join(self.plot_directory, f"num_object_{filename}.png"))
@@ -1041,12 +1041,12 @@ class PerceptionPerformanceAnalyzer:
         est_df["timestamp"] = est_df["timestamp"].astype(np.uint64)
 
         if mode == PlotMode.TIME:
-            gt_times = np.array(gt_df["timestamp"], dtype=np.uint64) / 1e-6
-            est_times = np.array(est_df["timestamp"], dtype=np.uint64) / 1e-6
+            gt_times = np.array(gt_df["timestamp"], dtype=np.uint64) / 1e6
+            est_times = np.array(est_df["timestamp"], dtype=np.uint64) / 1e6
             time_origin: float = gt_times.min().item()
             gt_xaxes = gt_times - time_origin
             est_xaxes = est_times - time_origin
-            xlabel: str = str(mode) + " [ms]"
+            xlabel: str = str(mode) + " [s]"
         elif mode == PlotMode.DISTANCE:
             gt_xaxes = np.linalg.norm(gt_df[["x", "y"]], axis=1)
             est_xaxes = np.linalg.norm(est_df[["x", "y"]], axis=1)
@@ -1124,9 +1124,9 @@ class PerceptionPerformanceAnalyzer:
         tp_df = self.df.loc[tp_index]
 
         if mode == PlotMode.TIME:
-            tp_times = np.array(tp_gt_df["timestamp"], dtype=np.uint64) / 1e-6
+            tp_times = np.array(tp_gt_df["timestamp"], dtype=np.uint64) / 1e6
             xaxes: np.ndarray = tp_times - tp_times.min().item()
-            xlabel: str = str(mode) + " [ms]"
+            xlabel: str = str(mode) + " [s]"
         elif mode == PlotMode.DISTANCE:
             xaxes: np.ndarray = np.linalg.norm(tp_gt_df[["x", "y"]], axis=1)
             xlabel = str(mode) + " [m]"
