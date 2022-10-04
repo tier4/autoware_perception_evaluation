@@ -31,6 +31,9 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
+import yaml
+
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
 from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
@@ -43,8 +46,6 @@ from perception_eval.tool.utils import extract_area_results
 from perception_eval.tool.utils import generate_area_points
 from perception_eval.tool.utils import get_area_idx
 from perception_eval.util.math import rotation_matrix_to_euler
-from tqdm import tqdm
-import yaml
 
 
 class MatchingStatus(Enum):
@@ -772,14 +773,13 @@ class PerceptionPerformanceAnalyzer:
         gt_vals = df_arr[::2]
         est_vals = df_arr[1::2]
         err: np.ndarray = gt_vals - est_vals
-        err = err[~np.isnan(err)]
+        # err = err[~np.isnan(err)]
+        err[np.isnan(err)] = 0.0
 
         if column == "yaw":
-            # Clip err from [-2pi, pi] to [0, pi]
-            err[err > np.pi] = 2 * np.pi - err[err > np.pi]
-            err[err < 0] = -((-err[err < 0] // np.pi) * np.pi + err[err < 0])
-        else:
-            err = np.abs(err)
+            # Clip err from [-2pi, 2pi] to [-pi, pi]
+            err[err > np.pi] = -2 * np.pi + err[err > np.pi]
+            err[err < -np.pi] = 2 * np.pi + err[err < -np.pi]
 
         return err
 
@@ -801,11 +801,11 @@ class PerceptionPerformanceAnalyzer:
             err: np.ndarray = self.calculate_error(_column, _df)
             if len(err) == 0:
                 return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan)
-            err_avg = np.average(err, axis=0)
-            err_rms = np.sqrt(np.square(err).mean(axis=0))
-            err_std = np.std(err, axis=0)
-            err_max = np.max(err, axis=0)
-            err_min = np.min(err, axis=0)
+            err_avg = np.average(err)
+            err_rms = np.sqrt(np.square(err).mean())
+            err_std = np.std(err)
+            err_max = np.max(err)
+            err_min = np.min(err)
             return dict(average=err_avg, rms=err_rms, std=err_std, max=err_max, min=err_min)
 
         if df is None:
