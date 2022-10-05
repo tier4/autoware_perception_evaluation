@@ -89,11 +89,13 @@ def crop_pointcloud(
     Returns:
         numpy.ndarray: The  of cropped pointcloud, in shape (M, C)
     """
+    # NOTE: upper and lower plane has same shape.
+    num_vertices: int = len(area) // 2
     if pointcloud.ndim != 2 or pointcloud.shape[1] < 2:
         raise RuntimeError(
             f"The shape of pointcloud is {pointcloud.shape}, it needs (N, k>=2) and k is (x,y,z,i) order."
         )
-    if len(area) < 6 or len(area) % 2 != 0:
+    if num_vertices < 3 or len(area) % 2 != 0:
         raise RuntimeError(
             f"The area must be a 3D-polygon, it needs the edges more than 6, but got {len(area)}."
         )
@@ -139,7 +141,7 @@ def crop_pointcloud(
     return pointcloud[idx]
 
 
-def polygon_to_list(polygon: Polygon):
+def polygon_to_list(polygon: Polygon) -> List[Tuple[float, float, float]]:
     """Convert polygon to list.
 
     Polygon: [(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x0, y0, z0)]
@@ -147,11 +149,10 @@ def polygon_to_list(polygon: Polygon):
 
     Args:
         polygon (Polygon): Polygon
-
     Returns:
-        [type]: List of coordinates
+        List[Tuple[float, float, float]]: List of coordinates
     """
-    return list(polygon.exterior.coords)[:4]
+    return list(polygon.exterior.coords)[:-1]
 
 
 def get_point_left_right(
