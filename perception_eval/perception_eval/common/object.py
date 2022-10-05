@@ -22,8 +22,13 @@ from typing import Tuple
 
 import numpy as np
 from perception_eval.common.label import AutowareLabel
+from perception_eval.common.point import crop_pointcloud
 from perception_eval.common.point import distance_points
 from perception_eval.common.point import distance_points_bev
+from perception_eval.common.point import polygon_to_list
+from perception_eval.common.shape import Shape
+from perception_eval.common.shape import ShapeType
+from perception_eval.common.shape import set_footprint
 from perception_eval.common.status import Visibility
 from pyquaternion import Quaternion
 from shapely.geometry import Polygon
@@ -40,7 +45,7 @@ class ObjectState:
         self,
         position: Tuple[float, float, float],
         orientation: Quaternion,
-        size: Tuple[float, float, float],
+        shape: Shape,
         velocity: Tuple[float, float, float],
     ) -> None:
         """
@@ -48,14 +53,30 @@ class ObjectState:
             position (Tuple[float, float, float]) : center_x, center_y, center_z [m]
             orientation (Quaternion) : Quaternion class.
                                        See reference http://kieranwynn.github.io/pyquaternion/
-            size (Tuple[float, float, float]): bounding box size of (wx, wy, wz) [m]
+            shape (Shape): Object shape instance.
             velocity (Tuple[float, float, float]): velocity of (vx, vy, vz) [m/s]
         """
 
         self.position: Tuple[float, float, float] = position
         self.orientation: Quaternion = orientation
-        self.size: Tuple[float, float, float] = size
+        self.shape: Shape = (
+            shape
+            if shape.footprint
+            else set_footprint(position=position, orientation=orientation, shape=shape)
+        )
         self.velocity: Tuple[float, float, float] = velocity
+
+    @property
+    def shape_type(self) -> ShapeType:
+        return self.shape.type
+
+    @property
+    def size(self) -> Tuple[float, float, float]:
+        return self.shape.size
+
+    @property
+    def footprint(self) -> Polygon:
+        return self.shape.footprint
 
 
 class DynamicObject:
@@ -89,7 +110,7 @@ class DynamicObject:
         unix_time: int,
         position: Tuple[float, float, float],
         orientation: Quaternion,
-        size: Tuple[float, float, float],
+        shape: Shape,
         velocity: Tuple[float, float, float],
         semantic_score: float,
         semantic_label: AutowareLabel,
@@ -97,11 +118,11 @@ class DynamicObject:
         uuid: Optional[str] = None,
         tracked_positions: Optional[List[Tuple[float, float, float]]] = None,
         tracked_orientations: Optional[List[Quaternion]] = None,
-        tracked_sizes: Optional[List[Tuple[float, float, float]]] = None,
+        tracked_shapes: Optional[List[Shape]] = None,
         tracked_twists: Optional[List[Tuple[float, float, float]]] = None,
         predicted_positions: Optional[List[Tuple[float, float, float]]] = None,
         predicted_orientations: Optional[List[Quaternion]] = None,
-        predicted_sizes: Optional[List[Tuple[float, float, float]]] = None,
+        predicted_shapes: Optional[List[Shape]] = None,
         predicted_twists: Optional[List[Tuple[float, float, float]]] = None,
         predicted_confidence: Optional[float] = None,
         visibility: Optional[Visibility] = None,
@@ -112,7 +133,7 @@ class DynamicObject:
             unix_time (int): Unix time [us]
             position (Tuple[float, float, float]): The position
             orientation (Quaternion): [description]
-            size (Tuple[float, float, float]): [description]
+            shape (Shape): [description]
             velocity (Tuple[float, float, float]): [description]
             semantic_score (float): [description]
             semantic_label (AutowareLabel): [description]
@@ -123,16 +144,16 @@ class DynamicObject:
                     The list of position for tracked object. Defaults to None.
             tracked_orientations (Optional[List[Quaternion]], optional):
                     The list of quaternion for tracked object. Defaults to None.
-            tracked_sizes (Optional[List[Tuple[float, float, float]]], optional):
-                    The list of bounding box size for tracked object. Defaults to None.
+            tracked_shapes (Optional[List[Shape]]):
+                    The list of objects' shape for tracked object. Defaults to None.
             tracked_twists (Optional[List[Tuple[float, float, float]]], optional):
                     The list of twist for tracked object. Defaults to None.
             predicted_positions (Optional[List[Tuple[float, float, float]]], optional):
                     The list of position for predicted object. Defaults to None.
             predicted_orientations (Optional[List[Quaternion]], optional):
                     The list of quaternion for predicted object. Defaults to None.
-            predicted_sizes (Optional[List[Tuple[float, float, float]]], optional):
-                    The list of bounding box size for predicted object. Defaults to None.
+            predicted_shapes (Optional[List[Shape]]):
+                    The list of objects' shape for predicted object. Defaults to None.
             predicted_twists (Optional[List[Tuple[float, float, float]]], optional):
                     The list of twist for predicted object. Defaults to None.
             predicted_confidence (Optional[float], optional): Prediction score. Defaults to None.
@@ -144,7 +165,7 @@ class DynamicObject:
         self.state: ObjectState = ObjectState(
             position=position,
             orientation=orientation,
-            size=size,
+            shape=shape,
             velocity=velocity,
         )
         self.semantic_score: float = semantic_score
@@ -156,19 +177,19 @@ class DynamicObject:
 
         # tracking
         self.uuid: Optional[str] = uuid
-        self.tracked_path: Optional[List[ObjectState]] = DynamicObject._set_states(
+        self.tracked_path: Optional[List[ObjectState]] = self._set_states(
             positions=tracked_positions,
             orientations=tracked_orientations,
-            sizes=tracked_sizes,
+            shapes=tracked_shapes,
             twists=tracked_twists,
         )
 
         # prediction
         self.predicted_confidence: Optional[float] = predicted_confidence
-        self.predicted_path: Optional[List[ObjectState]] = DynamicObject._set_states(
+        self.predicted_path: Optional[List[ObjectState]] = self._set_states(
             positions=predicted_positions,
             orientations=predicted_orientations,
-            sizes=predicted_sizes,
+            shapes=predicted_shapes,
             twists=predicted_twists,
         )
 
@@ -224,39 +245,34 @@ class DynamicObject:
         trans_rots = float(np.where(trans_rots < -math.pi, trans_rots + 2 * math.pi, trans_rots))
         return trans_rots
 
-    def get_corners(self, bbox_scale: float) -> np.ndarray:
+    def get_corners(self, scale: float = 1.0) -> np.ndarray:
         """[summary]
         Get the bounding box corners.
 
         Args:
-            bbox_scale (float): The factor to scale the box. Defaults to 1.0.
+            scale (float): Scale factor to scale the corners. Defaults to 1.0.
 
         Returns:
             corners (numpy.ndarray)
         """
-        width = self.state.size[0] * bbox_scale
-        length = self.state.size[1] * bbox_scale
-        height = self.state.size[2] * bbox_scale
+        footprint: np.ndarray = np.array(polygon_to_list(self.get_footprint(scale=scale)))
 
         # 3D bounding box corners.
         # (Convention: x points forward, y to the left, z up.)
         # upper plane -> lower plane
-        x_corners = length / 2 * np.array([1, 1, -1, -1, 1, 1, -1, -1])
-        y_corners = width / 2 * np.array([1, -1, -1, 1, 1, -1, -1, 1])
-        z_corners = height / 2 * np.array([1, 1, 1, 1, -1, -1, -1, -1])
-        corners = np.stack((x_corners, y_corners, z_corners), axis=-1)
-
-        # Rotate to the object heading
-        corners = np.dot(corners, self.state.orientation.rotation_matrix)
-
-        # Translate by object position
-        corners = corners + self.state.position
-
+        upper: np.ndarray = footprint.copy()
+        lower: np.ndarray = footprint.copy()
+        upper[:, 2] = self.state.position[2] + (self.state.size[2] / 2)
+        lower[:, 2] = self.state.position[2] - (self.state.size[2] / 2)
+        corners = np.vstack((upper, lower))
         return corners
 
-    def get_footprint(self) -> Polygon:
+    def get_footprint(self, scale: float = 1.0) -> Polygon:
         """[summary]
         Get footprint polygon from an object
+
+        Args:
+            scale (float): Scale factor for footprint. Defaults to 1.0.
 
         Returns:
             Polygon: The footprint polygon of object. It consists of 4 corner 2d position of
@@ -266,29 +282,17 @@ class DynamicObject:
             center_position: (xc, yc)
             vector_center_to_corners[0]: (x0 - xc, y0 - yc)
         """
-        corner_points: List[Tuple[float, float]] = []
-        vector_center_to_corners: List[np.ndarray] = [
-            np.array([self.state.size[1], self.state.size[0], 0.0]) / 2.0,
-            np.array([-self.state.size[1], self.state.size[0], 0.0]) / 2.0,
-            np.array([-self.state.size[1], -self.state.size[0], 0.0]) / 2.0,
-            np.array([self.state.size[1], -self.state.size[0], 0.0]) / 2.0,
-        ]
-        # rotate vector_center_to_corners
-        for vector_center_to_corner in vector_center_to_corners:
-            rotated_vector: np.ndarray = self.state.orientation.rotate(vector_center_to_corner)
-            corner_point: np.ndarray = self.state.position + rotated_vector
-            corner_points.append(corner_point.tolist())
-        # corner point to footprint
-        footprint: Polygon = Polygon(
-            [
-                corner_points[0],
-                corner_points[1],
-                corner_points[2],
-                corner_points[3],
-                corner_points[0],
-            ]
-        )
-        return footprint
+        if scale == 1.0:
+            return self.state.footprint
+        footprint: np.ndarray = np.array(polygon_to_list(self.state.footprint))
+        # Translate to (0, 0, 0) and scale
+        footprint[:, :2] = footprint[:, :2] - self.state.position[:2]
+        footprint = footprint * scale
+        # Translate to original position
+        footprint[:, :2] = footprint[:, :2] + self.state.position[:2]
+        poly: List[List[float]] = [f.tolist() for f in footprint]
+        poly.append(footprint[0].tolist())
+        return Polygon(poly)
 
     def get_position_error(
         self,
@@ -372,7 +376,7 @@ class DynamicObject:
         Returns:
             float: The 2d area from object.
         """
-        return self.state.size[0] * self.state.size[1]
+        return self.state.footprint.area
 
     def get_volume(self) -> float:
         return self.get_area_bev() * self.state.size[2]
@@ -380,7 +384,7 @@ class DynamicObject:
     def crop_pointcloud(
         self,
         pointcloud: np.ndarray,
-        bbox_scale: float,
+        bbox_scale: float = 1.0,
         inside: bool = True,
     ) -> np.ndarray:
         """[summary]
@@ -388,43 +392,26 @@ class DynamicObject:
 
         Args:
             pointcloud (np.ndarray): The Array of pointcloud, in shape (N, 3).
-            bbox_scale (float): Scale factor for bounding box.
+            bbox_scale (float): Scale factor for bounding box. Defaults to 1.0.
+            inside (bool): Whether crop inside pointcloud or outside. Defaults to True.
 
         Returns:
             numpy.ndarray: The array of pointcloud in bounding box.
         """
-        scaled_bbox_size_object_coords: np.ndarray = np.array(
-            [
-                bbox_scale * self.state.size[1],
-                bbox_scale * self.state.size[0],
-                bbox_scale * self.state.size[2],
-            ]
-        )
-
-        # Convert pointcloud coordinates from ego pose to relative to object
-        pointcloud_object_coords: np.ndarray = pointcloud[:, :3] - self.state.position
-
-        # Calculate the indices of pointcloud in bounding box
-        inside_idx: np.ndarray = (
-            (pointcloud_object_coords >= -0.5 * scaled_bbox_size_object_coords)
-            * (pointcloud_object_coords <= 0.5 * scaled_bbox_size_object_coords)
-        ).all(axis=1)
-
-        if inside:
-            return pointcloud[inside_idx]
-        return pointcloud[~inside_idx]
+        corners: np.ndarray = self.get_corners(scale=bbox_scale)
+        return crop_pointcloud(pointcloud, corners.tolist(), inside=inside)
 
     def get_inside_pointcloud_num(
         self,
         pointcloud: np.ndarray,
-        bbox_scale: float,
+        bbox_scale: float = 1.0,
     ) -> int:
         """[summary]
         Calculate the number of pointcloud inside of bounding box.
 
         Args:
             pointcloud (np.ndarray): The Array of pointcloud, in shape (N, 3).
-            bbox_scale (float): Scale factor for bounding box.
+            bbox_scale (float): Scale factor for bounding box. Defaults to 1.0.
 
         Returns:
             int: The number of points in bounding box.
@@ -432,12 +419,12 @@ class DynamicObject:
         inside_pointcloud: np.ndarray = self.crop_pointcloud(pointcloud, bbox_scale)
         return len(inside_pointcloud)
 
-    def point_exist(self, pointcloud: np.ndarray, bbox_scale: float) -> bool:
+    def point_exist(self, pointcloud: np.ndarray, bbox_scale: float = 1.0) -> bool:
         """Evaluate whether any input points are inside of bounding box.
 
         Args:
             pointcloud (numpy.ndarray): The array of pointcloud.
-            bbox_scale (float): Scale factor for bounding box.
+            bbox_scale (float): Scale factor for bounding box. Defaults to 1.0.
 
         Returns:
             bool: Return True if exists.
@@ -449,7 +436,7 @@ class DynamicObject:
     def _set_states(
         positions: Optional[List[Tuple[float, float, float]]] = None,
         orientations: Optional[List[Quaternion]] = None,
-        sizes: Optional[List[Tuple[float, float, float]]] = None,
+        shapes: List[Shape] = None,
         twists: Optional[List[Tuple[float, float, float]]] = None,
     ) -> Optional[List[ObjectState]]:
         """[summary]
@@ -468,23 +455,28 @@ class DynamicObject:
         Returns:
             Optional[List[ObjectState]]: The list of ObjectState
         """
-
-        if (
-            positions is not None
-            and orientations is not None
-            and sizes is not None
-            and twists is not None
-        ):
-            states: List[ObjectState] = []
-            for position, orientation, size, twist in zip(positions, orientations, sizes, twists):
-                states.append(
-                    ObjectState(
-                        position=position, orientation=orientation, size=size, velocity=twist
-                    )
-                )
-            return states
-        else:
+        if positions is None or orientations is None:
             return None
+
+        if len(positions) != len(orientations):
+            raise RuntimeError(
+                "Length of positions and orientations must be same, "
+                f"but got {len(positions)} and {len(orientations)}"
+            )
+
+        states: List[ObjectState] = []
+        for i, (position, orientation) in enumerate(zip(positions, orientations)):
+            shape = shapes[i] if shapes else None
+            velocity = twists[i] if twists else None
+            states.append(
+                ObjectState(
+                    position=position,
+                    orientation=orientation,
+                    shape=shape,
+                    velocity=velocity,
+                )
+            )
+        return states
 
 
 def distance_objects(object_1: DynamicObject, object_2: DynamicObject) -> float:
