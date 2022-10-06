@@ -12,6 +12,8 @@
 | `AutowareLabel.TRUCK`      |   "truck"    | truck                                  |
 |                            |              | TRUCK                                  |
 |                            |              | vehicle.truck                          |
+|                            |              | trailer                                |
+|                            |              | TRAILER                                |
 |                            |              | vehicle.trailer                        |
 | `AutowareLabel.BUS`        |    "bus"     | bus                                    |
 |                            |              | BUS                                    |
@@ -61,6 +63,8 @@
 |                            |              | truck                                  |
 |                            |              | TRUCK                                  |
 |                            |              | vehicle.truck                          |
+|                            |              | trailer                                |
+|                            |              | TRAILER                                |
 |                            |              | vehicle.trailer                        |
 |                            |              | bus                                    |
 |                            |              | BUS                                    |
