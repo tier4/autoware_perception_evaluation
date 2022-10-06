@@ -256,7 +256,7 @@ json_result = json.dump(dict_result)
 
 ## データ構造
 
-- 詳細については，[data_construction.md](./data_construction.md)を参照
+- 詳細については，[data_structure.md](./data_structure.md)を参照
 
 ## Metrics
 

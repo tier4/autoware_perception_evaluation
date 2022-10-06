@@ -2,19 +2,19 @@
 
 ## [`<class> MetricsScore(...)`](../../../perception_eval/perception_eval/evaluation/metrics/metrics.py)
 
-- detection/tracking/prediction の各評価指標を実行する class
+- A class to evaluate each of detection/tracking/prediction task
 
-| Argument |         type         | Description               |
-| :------- | :------------------: | :------------------------ |
-| `config` | `MetricsScoreConfig` | `MetricsScore`用の config |
+| Argument |         type         | Description                               |
+| :------- | :------------------: | :---------------------------------------- |
+| `config` | `MetricsScoreConfig` | Configuration settings for `MetricsScore` |
 
-- 入力された MetricsScoreConfig から，`detection/tracking/prediction_config`を生成
+- Initialize `detection/tracking/prediction_config` from input MetricsConfig
 
   - [`detection_config (DetectionMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/detection_metrics_config.py)
   - [`tracking_config (TrackingMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/tracking_metrics_config.py)
   - [`prediction_config (PredictionMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/prediction_metrics_config.py)
 
-- 各 config をもとにそれぞれの Metrics が計算される．
+- Calculate each metrics based on each config
 
 | Evaluation Task |      Metrics       |
 | :-------------- | :----------------: |
@@ -68,24 +68,24 @@
 
 ### [`<class> Map(...)`](../../../perception_eval/perception_eval/evaluation/metrics/detection/map.py)
 
-- mAP (mean Average Precision) のスコア計算を行う class．
+- A class to calculate mAP (mean Average Prevision)
 
-  - 内部で AP (Average Precision) / APH (Average Precision Weighted by Heading) を計算．
-  - それらのクラス平均を取ることで mAP, mAPH を算出．
+  - As internal process, calculating AP (Average Precision) and APH (Average Precision Weighted by Heading)
+  - Compute mAP, mAPH by meaning above results for each label
 
-#### AP の計算方法
+#### AP calculation
 
-- 各オブジェクトのマッチングに対する TP/FP/FN 判定を元に Precision / Recall は以下のように定式化される．
+- Precision and Recall are formulated based on the decision of TP/FP/FN as below
 
   <img src="../../fig/perception/precision.png">
 
   <img src="../../fig/perception/recall.png">
 
-- 上式から以下のような PR 曲線(Precision-Recall 曲線)が得られたとすると，その下部面積が AP(APH)である．
+- The area of under curve is AP(APH). The curve is called PR-curve(Precision Recall-curve).
 
   <img src="../../fig/perception/pr-curve.png" width=480>
 
-- 実際には，上記のような PR 曲線を補完してから下部面積を算出する．
+- In actual AP(APH) calculation, the curve is interpolated as below.
 
   <img src="../../fig/perception/pr-curve_interpolate.jpeg" width=480 >
 
@@ -190,9 +190,11 @@
 
 ### `<class> TrackingMetricsScore(...)`
 
-- tracking の メトリクススコアを計算する class．内部で CLEAR を計算し，MOTA (Multi-Object Tracking Accuracy) 　/　 MOTP (Multi-Object Tracking Precision) 　/　 IDswitch 等を計算する．
+- A class to compute metrics score for tracking.
 
-- MOTA，MOTP は以下のように定式かされる．
+  - As internal process, calculate CLEAR which includes MOTA (Multi-Object Tracking Accuracy) / MOTP (Multi-Object Tracking Precision) / IDswitch.
+
+- MOTA and MOTP is formulated as below.
 
   <img src="../../fig/perception/mota.png">
 
@@ -238,57 +240,55 @@
 
 ## Matching
 
-- 予測 object と Ground Truth のマッチング方式の class
-  - 詳細は，[perception_eval/evaluation/matching/object_matching.py](../../../perception_eval/perception_eval/evaluation/matching/object_matching.py)を参照
+- A class of the way of matching estimation and GT
+  - For the details, see [perception_eval/evaluation/matching/object_matching.py](../../../perception_eval/perception_eval/evaluation/matching/object_matching.py)
 
-| Matching Method    | Value                                             |
-| ------------------ | ------------------------------------------------- |
-| Center Distance 3D | 2 つの object の 3D 中心間距離                    |
-| IoU BEV            | 2 つの object のの IoU BEV の値                   |
-| IoU 3D             | 2 つの object の 3D IoU の値                      |
-| Plane Distance     | 2 つの object の近傍 2 点の距離の RMS(詳細は後述) |
+| Matching Method    | Value                                                                 |
+| ------------------ | --------------------------------------------------------------------- |
+| Center Distance 3D | Center distance between two objects                                   |
+| IoU BEV            | IoU BEV score between two objects                                     |
+| IoU 3D             | IoU 3D score between two objects                                      |
+| Plane Distance     | Nearest plane distance between two objects(explain the details below) |
 
-- オブジェクト同士のマッチングの条件は以下．デフォルトで Center Distance 3D がマッチング方式として使用される．
+- A Condition of matching is following. Center Distance 3D is used as default.
 
-1. 同一クラス
-2. 最短距離の GT と予測オブジェクトが優先的にマッチング
+1. Same label
+2. Matching the nearest estimation and GT primary.
 
 <img src="../../fig/perception/object_matching1.svg">
 
-- UUID を指定した場合には，以下のプロセスでオブジェクトのペアが生成される．
+- In case of specifying uuid, the pair will be generated as following process.
 
-1. 指定した UUID を持つ GT 以外をフィルタ
-2. マッチング
-3. GT とペアになっていない予測オブジェクトをフィルタ
+1. Filter GTs which do not have specified uuid.
+2. Matching objects.
+3. Filter estimations which do not have matching pair.
 
 <img src="../../fig/perception/object_matching2.svg">
 
 ### Plane distance
 
-- メトリクスにおける TP/FP の判定において，Usecase 評価で Ground truth object と Predicted object の**自車近傍の 2 点の距離の RMS**を以って判定する．具体的には，
+- In usecase evaluation, determine TP/FP depends on **RMS of two points being the nearest from ego** between GT and estimation.
 
-  1. GT と Det それぞれにおいて，footprint の端点のうち Ego から近い面(=2 点)を選択する．
-  2. その面同士における 2 通りの端点のペアから，合計距離が短いペアを選択し，これを自車近傍の 2 点する．
-  3. 各ペアの距離の 2 乗平均平方根をとり，これを\*自車近傍の 2 点の距離の RMS\*\*と呼ぶ．
+  1. Choose two points being the nearest from ego.
+  2. From the two pairs of end points between the faces, the pair with the shortest total distance is selected and set as two points near the vehicle.
+  3. Take the root mean square of the distance of each pair and call it \*RMS of the distance between two points near the vehicle\*\*.
 
-- 例
-  1. GT において，Ego から近い面として面 g3g4 を選択する．Det においては，面 d3d4 を選択する．
-  2. 端点のペアは，(g3d3, g4d4)と(g3d4, g4d3)の 2 通りある．合計距離が短いペアを選択する．図例では，(g3d3, g4d4)を選択する．
-  3. 自車近傍の 2 点の距離の RMS = sqrt ( ( g3d3^2 + g4d4^2 ) / 2 )
-  - 詳しくは，`get_uc_plane_distance`関数を参照
-  - 1 の背景：検出された物体の奥行きが不明瞭なので，確度の高い自車近傍の点を選択している．
+- Example
+  1. For GT, choose plane g3g4 near from ego. For estimation, choose plane d3d4.
+  2. In this case, there are two types of end points pair, (g3d3, g4d4) and (g3d4, g4d3). Choose the pair with the shorted total distance, (g3d3, g4d4), in this case.
+  3. Then RMS = sqrt ( ( g3d3^2 + g4d4^2 ) / 2 )
+  - For more information, see `<func> get_uc_plane_distance()`.
+  - Background of 1: Because it can not identify object's depth, the most confident near point from ego is selected.
 
 ![pipeline](../../fig/perception/uc_plane_distance.svg)
 
-- なぜか各 rosbag ごとに（crop_box_filter を変更させて record して）点群の最大距離が異なる -> 検出能力が変わっているので PerceptionEvaluationConfig を変えて評価
-
 ## TP Metrics
 
-- True Positive 時の値を返す class
-  - 詳細は，[perception_eval/evaluation/metrics/detection/tp_metrics.py](../../../perception_eval/perception_eval/evaluation/metrics/detection/tp_metrics.py)を参照
+- A class to return TP value
+  - For the details，see [perception_eval/evaluation/metrics/detection/tp_metrics.py](../../../perception_eval/perception_eval/evaluation/metrics/detection/tp_metrics.py)
 
-| TP Metrics          | Value                         |
-| ------------------- | ----------------------------- |
-| TPMetricsAp         | 1.0                           |
-| TPMetricsAph        | 2 つの object の heading 残差 |
-| TPMetricsConfidence | 予測 object の confidence     |
+| TP Metrics          | Value                                      |
+| ------------------- | ------------------------------------------ |
+| TPMetricsAp         | 1.0                                        |
+| TPMetricsAph        | Heading error between two objects[-pi, pi] |
+| TPMetricsConfidence | Confidence of estimation                   |

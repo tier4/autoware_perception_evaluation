@@ -4,4 +4,4 @@
 
 ## Documents
 
-English | [Japanese](docs/ja/README.md)
+[English](docs/en/README.md) | [Japanese](docs/ja/README.md)

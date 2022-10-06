@@ -1,46 +1,43 @@
 # [`<class> PerceptionPerformanceAnalyzer(...)`](../../../perception_eval/perception_eval/tool/perception_performance_analyzer.py)
 
-Perception の評価結果をもとに解析を行う．
+Analyze based on perception results.
 
-## Perception 評価種別
+## Type of perception evaluation
 
-評価・解析方法として，UseCase/DataBase の 2 種類がある．
+There are two types named UseCase and DataBase.
 
-- UseCase 評価 = 設計されたテストケースにおいて，対象物体に着目してメトリクスの評価・PASS/FAIL の判定を行う
+- UseCase = Evaluate metrics and decide PASS/FAIL with defined test scene.
 
-  - 認識性能の精度部分を評価，安全性能の担保をメインの目的とした評価
+  - Evaluate perception accuracy to guarantee safety as main task.
 
-- DataBase 評価 = 実環境で収集したデータに対して，視野内の物体に対してメトリクスの評価を行う
+- DataBase = Evaluate metrics
+  - Used for evaluating algorithm ability relatively. It does not guarantee safety.
 
-  - Perception アルゴリズム性能の相対評価に利用，安全担保の基準には基本的にはならない
+## Contents of analysis
 
-## 解析内容
-
-1. TP 率
-2. FN 率
-3. FP 率
-4. TP 時の位置精度
-   - 自車座標系の縦方向/横方向にそれぞれ分けて誤差の RMS, 分散, 最大/最小値を算出
-5. TP 時の Heading 精度(4.と同じ)
-6. TP 時の速度精度(4.と同じ, tracking のみ)
-7. 各クラスの性能(AP, MOTA 等)
+1. TP rate
+2. FN rate
+3. FP rate
+4. Position accuracy in TP
+   - Calculate average, RMS, variance and max/min error
+5. Heading accuracy in TP
+6. Velocity accuracy in TP (Tracking only)
+7. Metrics score (AP, MOTA... e.t.c)
 
 - UseCase
 
-  - 一つの物体を対象として解析を行うことを前提としているため，評価時にはシナリオや PerceptionEvaluationConfig にオブジェクトを絞るような設定をする．
-  - 上記の解析内容に加えて，対象物体の GT との位置誤差を時系列ごとにプロットする
+  - Set to filter one object to scenario or PerceptionEvaluationConfig,
 
 - DataBase
-  - 複数のデータセットに対する評価結果をまとめて解析することが可能
-  - 上記の解析内容に加えて，評価対象領域を 1, 3, 9 のいずれかで分割し，それぞれの領域内での解析・GT/予測物体の数をプロットする．
+  - It is possible to analyze results over dataset.
 
 ## How to use
 
-driving_log_replayer を使用する際にはシナリオ(`.yaml`)から config が生成され，評価結果(`List[PerceptionFrameResult]`)が`.pkl`で保存される．
+After running driving_log_replayer, evaluation results (`List[PerceptionFrameResult]`) will be saved as a pickle file (`.pkl`).
 
 ### 1. Initialization
 
-初期化方法には，1. `PerceptionEvaluationConfig`から，2. シナリオファイル(`.yaml`)からの 2 パターンがある．
+There are two ways of initialization, 1. with `PerceptionEvaluationConfig`, or 2. with scenario file (`.yaml`).
 
 ```python
 from perception_eval.tool.perception_performance_analyzer import PerceptionPerformanceAnalyzer
@@ -64,7 +61,7 @@ analyzer = PerceptionPerformanceAnalyzer.from_scenario(
 
 ### 2. Add frame results
 
-`PerceptionFrameResult`の追加方法には，1. `PerceptionFrameResult`を直接入力，2. `pickle`ファイルのパスを入力する 2 パターンがある．
+There are two ways of adding `PerceptionFrameResult`, 1. Input `List[PerceptionFrameResult]`, or 2. Input the path of pickle file (`.pkl`).
 
 ```python
 # 1. with PerceptionFrameResult
@@ -89,7 +86,7 @@ analyzer.add_from_pkl(pickle_path)
 
 ### 3. Analyze
 
-`PerceptionPerformanceAnalyzer.analyze()`によって各領域に対する解析結果が算出される．N 番目に追加した scene についてのみの解析結果を求めるには，`analyzer.analyze(scene=N)`とすることで解析結果が得られる．
+The methods `analyzer.analyze()` calculate the analysis score． To analyze only the Nth scene, specify `analyzer.analyze(scene=N)`.
 
 ```python
 >>> score_df, error_df = analyzer.analyze()
@@ -129,13 +126,13 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ## PerceptionPerformanceAnalyzer
 
-| Arguments           |             type             | Mandatory |                    Description                    |
-| :------------------ | :--------------------------: | :-------: | :-----------------------------------------------: |
-| `evaluation_config` | `PerceptionEvaluationConfig` |    Yes    |                      config                       |
-| `num_area_division` |            `int`             |    No     | 領域分割数(Options=[`1`, `3`, `9`]; Defaults=`1`) |
+| Arguments           |             type             | Mandatory | Description                                                    |
+| :------------------ | :--------------------------: | :-------: | :------------------------------------------------------------- |
+| `evaluation_config` | `PerceptionEvaluationConfig` |    Yes    | Configuration of `PerceptionEvaluationManager`                 |
+| `num_area_division` |            `int`             |    No     | Number of area division(Options=[`1`, `3`, `9`]; Defaults=`1`) |
 
-- `num_area_division`を指定することによって，自車周辺の領域を以下のように分割して，解析を行う．
-  - `evaluation_config`内で`max_x_position`および`max_y_position`が指定されていない場合は，`100.0[m]`が適用される．
+- By specifying `num_area_division`, analyze dividing area around ego as below.
+  - `max_x/y_position` or `max/min_distance` specified in `evaluation_config` will be used. Defaults to `100.0[m]`.
 
 ```python
         1:                            3:                  9:
@@ -149,44 +146,44 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ### Attributes
 
-| name                |             type             | Description                    |
-| :------------------ | :--------------------------: | :----------------------------- |
-| `config`            | `PerceptionEvaluationConfig` | config                         |
-| `df`                |      `pandas.DataFrame`      | 全 DataFrame                   |
-| `plot_directory`    |            `str`             | プロット結果の保存ディレクトリ |
-| `num_frame`         |            `int`             | 総フレーム数                   |
-| `num_scene`         |            `int`             | 総シーン数                     |
-| `num_area_division` |            `int`             | 領域の分割数                   |
-| `num_ground_truth`  |            `int`             | Ground Truth 数                |
-| `num_estimation`    |            `int`             | Estimation 数                  |
-| `num_tp`            |            `int`             | TP 数                          |
-| `num_fp`            |            `int`             | FP 数                          |
-| `num_fn`            |            `int`             | FN 数                          |
+| name                |             type             | Description                                    |
+| :------------------ | :--------------------------: | :--------------------------------------------- |
+| `config`            | `PerceptionEvaluationConfig` | Configuration of `PerceptionEvaluationManager` |
+| `df`                |      `pandas.DataFrame`      | All DataFrame                                  |
+| `plot_directory`    |            `str`             | Directory path to save plot                    |
+| `num_frame`         |            `int`             | Number of total frames                         |
+| `num_scene`         |            `int`             | Number of total scenes                         |
+| `num_area_division` |            `int`             | Number of area divisions                       |
+| `num_ground_truth`  |            `int`             | Number of GT                                   |
+| `num_estimation`    |            `int`             | Number of estimations                          |
+| `num_tp`            |            `int`             | Number of TP                                   |
+| `num_fp`            |            `int`             | Number of FP                                   |
+| `num_fn`            |            `int`             | Number of FN                                   |
 
 ### Basic methods
 
-| name                   |                                          input                                          |       return       | Description                                                                                   |
-| :--------------------- | :-------------------------------------------------------------------------------------: | :----------------: | :-------------------------------------------------------------------------------------------- |
-| `get`                  |                                   `*args`, `**kwargs`                                   | `pandas.DataFrame` | `args`で指定したカラムまたは，`kwargs`で指定した条件の DataFrame                              |
-| `sortby`               | `Union[str, List[str]]`, `df<Optional[pandas.DataFrame]>=None`, `ascending<bool>=False` | `pandas.DataFrame` | `Union[str, List[str]]`で指定したカラムに対してソートした DataFrame．`ascending=True`で昇順． |
-| `head`                 |                                          `int`                                          | `pandas.DataFrame` | 先頭から`int(Defaults=5)`で指定した行数分の DataFrame                                         |
-| `tail`                 |                                          `int`                                          | `pandas.DataFrame` | 末尾から`int(Defaults=5)`で指定した行数分の DataFrame                                         |
-| `shape`                |                            `Optional[Union[str, List[str]]]`                            |    `Tuple[int]`    | 先頭から`int(Defaults=5)`で指定した行数の DataFrame                                           |
-| `keys`                 |                                                                                         |     `pd.Index`     | `self.df`のカラム名                                                                           |
-| `get_ground_truth`     |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      | `pandas.DataFrame` | Ground Truth の DataFrame                                                                     |
-| `get_estimation`       |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      | `pandas.DataFrame` | Estimation の DataFrame                                                                       |
-| `get_num_ground_truth` |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Ground Truth 数                                                                               |
-| `get_num_estimation`   |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Estimation 数                                                                                 |
-| `get_num_tp`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | TP 数                                                                                         |
-| `get_num_fp`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | FP 数                                                                                         |
-| `get_num_fn`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | FN 数                                                                                         |
+| name                   |                                          input                                          |       return       | Description                                                                                                  |
+| :--------------------- | :-------------------------------------------------------------------------------------: | :----------------: | :----------------------------------------------------------------------------------------------------------- |
+| `get`                  |                                   `*args`, `**kwargs`                                   | `pandas.DataFrame` | DataFrame of columns specified in `args` or `kwargs`                                                         |
+| `sortby`               | `Union[str, List[str]]`, `df<Optional[pandas.DataFrame]>=None`, `ascending<bool>=False` | `pandas.DataFrame` | DataFrame sorted by columns specified in `Union[str, List[str]]`. `ascending=True` makes it ascending order. |
+| `head`                 |                                          `int`                                          | `pandas.DataFrame` | DataFrame the length of number of raws specified in `int(Defaults=5)` from top.                              |
+| `tail`                 |                                          `int`                                          | `pandas.DataFrame` | DataFrame the length of number of raws specified in `int(Defaults=5)` from bottom.                           |
+| `shape`                |                            `Optional[Union[str, List[str]]]`                            |    `Tuple[int]`    | Shape of DataFrame (row, column) specified in `int(Defaults=5)` from top.                                    |
+| `keys`                 |                                                                                         |     `pd.Index`     | Name of column of `self.df`                                                                                  |
+| `get_ground_truth`     |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      | `pandas.DataFrame` | DataFrame of GT.                                                                                             |
+| `get_estimation`       |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      | `pandas.DataFrame` | DataFrame of estimation.                                                                                     |
+| `get_num_ground_truth` |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Number of GT.                                                                                                |
+| `get_num_estimation`   |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Number of estimation.                                                                                        |
+| `get_num_tp`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Number of TP.                                                                                                |
+| `get_num_fp`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Number of FP.                                                                                                |
+| `get_num_fn`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Number of FN.                                                                                                |
 
-- `get()`では`*args`を指定することで指定した列を，`**kwargs`を指定することで指定した等号条件を満たす DataFrame を返す
+- `get()` returns columns of DataFrame specified in `*args` and meet requirements specified in `**kwargs`.
 
 ```python
 >>> analyzer = PerceptionPerformanceAnalyzer(...)
 
-# 例) ラベル名がtruckのxy, uuidの列を参照したい場合
+# Example: Returns xy and uuid columns labeled as truck
 >>> analyzer.get("x", "y", "uuid", label="truck")
                          x          y                              uuid
 0  ground_truth  85.536254   2.151734  a0e19d9fc8e528fb471d0d29bdf32927
@@ -201,24 +198,24 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 ...
 ```
 
-- `get_**()`では`**kwargs`で`COLUMN_NAME=value`指定することで特定のデータに対する結果を返す
+- `get_**()` returns DataFrame meets requirements specified in `**kwargs` like `COLUMN_NAME=value`.
 
 ```python
-# 例) ラベル名がcarのground truth数を参照したい場合
+# Example: Returns number of GT labeled as car
 >>> analyzer.get_num_ground_truth(label="car")
 5223
 ```
 
-### DataFrame 構造
+### DataFrame structure
 
-- `add()`によって，各`PerceptionFrameResult`は以下のような形式で累積される．`scene`は`add()`もしくは`add_from_pkl()`をした際に追加された順番で 1~N が割り当てられる．
+- By `add()` method, each `PerceptionFrameResult` will be accumulated as following format. The number of order (1,...,N) will be assigned to `scene`.
 
 | index | type             | "timestamp" |   "x"   |   "y"   |   "w"   |   "l"   |   "h"   |  "yaw"  |  "vx"   |  "vy"   |  "nn_point1"   |  "nn_point2"   | "label" | "uuid" | "status" | "area" | "frame" | "scene" |
 | ----: | :--------------- | :---------: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :------------: | :------------: | :-----: | :----: | :------: | :----: | :-----: | :-----: |
 |     0 | **ground_truth** |   `float`   | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `tuple[float]` | `tuple[float]` |  `str`  | `str`  |  `str`   | `int`  |  `int`  |  `int`  |
 |       | **estimation**   |             |         |         |         |         |         |         |         |         |                |                |         |        |          |        |         |         |
 
-- `PerceptionPerformanceAnalyzer.df`で参照できる．
+- `PerceptionPerformanceAnalyzer.df` allow to show the DataFrame
 
 ```python
 >>> analyzer.df
@@ -227,7 +224,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
    estimation    1.603763e+15  83.445015   2.306474  2.821630   6.807208  2.983142  0.030410  4.937477e-09  0.000000  truck                              None     TP   0.0   48.0    1.0
 ```
 
-- Ground Truth のみ，Estimation のみも参照可能．
+- Available to reference elements only for GT or estimation.
 
 ```python
 >>> analyzer.get_ground_truth()
@@ -245,10 +242,10 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 ...
 ```
 
-### 解析
+### Analyze
 
 - `summarize_ratio()`
-  - 各クラスに対する TP 率，FN 率，FP 率の算出
+  - Calculate TP rate, FN rate, FP rate for each label.
 
 | label |  "TP"   |  "FN"   |  "FP"   |
 | :---- | :-----: | :-----: | :-----: |
@@ -278,11 +275,10 @@ car                           1.000000                     1.000000     1.000000
 pedestrian                    0.900682                     0.900682     0.900682      0.900682    0.900682  ...           1.0                 0                  0.900682                       0.0                             0
 motorbike                     0.990989                     0.952135     0.990989      0.952135    0.990989  ...           1.0                 0                  0.990989                       0.0                             0
 bicycle                       1.000000                     1.000000     1.000000      1.000000    1.000000  ...           1.0                 0                  1.000000                       0.0                             0
-
 ```
 
 - `summarize_error()`
-  - 各クラスに対する average，RMS，std，max，min の算出
+  - Calculate average, RMS, std, max and min error for each label.
 
 | label | element | "average" |  "rms"  |  "std"  |  "max"  |  "min"  |
 | :---- | :------ | :-------: | :-----: | :-----: | :-----: | :-----: |
@@ -316,21 +312,21 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
            nn_plane  0.688891  0.893696  5.693175e-01  2.190708  0.020005
 ```
 
-### プロット関数
+### Plot functions
 
 - `plot_by_time()`
 
-  - 指定した GT オブジェクトに対し位置または速度と誤差を時系列で描画
+  - Plot the state change over time for specified GT with uuid.
 
-    | Arguments |  type  | Mandatory |                       Description                        |
-    | :-------- | :----: | :-------: | :------------------------------------------------------: |
-    | `uuid`    | `str`  |    Yes    |              対象 GT オブジェクトの uuid．               |
-    | `column`  | `str`  |    Yes    |    位置または速度を指定．(Options=[`xy`, `velocity`])    |
-    | `scene`   | `int`  |    No     | 対象シーン．未指定の場合，最後に追加されたシーンが使用． |
-    | `show`    | `bool` |    No     |    描画結果を表示するかのフラッグ(Defaults=`False`)．    |
+    | Arguments |  type  | Mandatory | Description                                          |
+    | :-------- | :----: | :-------: | :--------------------------------------------------- |
+    | `uuid`    | `str`  |    Yes    | GT object's uuid.                                    |
+    | `column`  | `str`  |    Yes    | Column name．(Options=[`x`, `y`, `yaw`, `vx`, `vy`]) |
+    | `scene`   | `int`  |    No     | Target scene. The last scene visualized by default.  |
+    | `show`    | `bool` |    No     | Whether show plot result.(Defaults=`False`)          |
 
     ```python
-    # 例: uuid: "4bae7e75c7de70be980ce20ce8cbb642"のオブジェクトのxyについてプロット
+    # Example: Plot an object's xy with uuid: "4bae7e75c7de70be980ce20ce8cbb642"
 
     >> analyzer.plot_by_time("4bae7e75c7de70be980ce20ce8cbb642", ["x", "y"])
     ```
@@ -339,18 +335,15 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 - `plot_num_objects()`
 
-  - `base_link`からの距離ごとのオブジェクト数をヒストグラムでプロット
+  - Plot number of objects by distance from `base_link` in histogram
 
-  | Arguments  |             type             | Mandatory |                           Description                            |
-  | :--------- | :--------------------------: | :-------: | :--------------------------------------------------------------: |
-  | `area_idx` |            `int`             |    No     |  対象分割領域の番号．未指定の場合，全領域のオブジェクトを描画．  |
-  | `label`    | `Union[str, AutowareLabel]`  |    No     |    対象ラベル名．未指定の場合，全ラベルのオブジェクトを描画．    |
-  | `status`   | `Union[str, MatchingStatus]` |    No     | 対象マッチングステータス名．未指定の場合，全オブジェクトを描画． |
-  | `dist_bin` |           `float`            |    No     |                   距離の間隔(Defaults=`0.5`)．                   |
-  | `show`     |            `bool`            |    No     |        描画結果を表示するかのフラッグ(Defaults=`False`)．        |
+  | Arguments  |  type   | Mandatory | Description                                |
+  | :--------- | :-----: | :-------: | :----------------------------------------- |
+  | `dist_bin` | `float` |    No     | Bin of distance. (Defaults=`0.5`)          |
+  | `show`     | `bool`  |    No     | Whether sho plot result.(Defaults=`False`) |
 
   ```python
-  # 全オブジェクトの数をプロット
+  # Plot the number of all objects
   >> analyzer.plot_num_objects()
   ```
 
