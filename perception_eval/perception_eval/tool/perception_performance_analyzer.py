@@ -31,9 +31,6 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-import yaml
-
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
 from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
@@ -46,6 +43,8 @@ from perception_eval.tool.utils import extract_area_results
 from perception_eval.tool.utils import generate_area_points
 from perception_eval.tool.utils import get_area_idx
 from perception_eval.util.math import rotation_matrix_to_euler
+from tqdm import tqdm
+import yaml
 
 
 class MatchingStatus(Enum):

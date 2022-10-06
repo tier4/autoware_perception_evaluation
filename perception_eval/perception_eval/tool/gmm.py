@@ -334,7 +334,7 @@ class Gmm:
 
 def _safe_probability_density(norm_factors, exponents):
     """Compute numerically safe probability densities of a GMM.
-    The probability density of individual Gaussians in a GMM can be computed
+    The probability density of individual Gaussian in a GMM can be computed
     from a formula of the form
     q_k(X=x) = p_k(X=x) / sum_l p_l(X=x)
     where p_k(X=x) = c_k * exp(exponent_k) so that
@@ -348,7 +348,7 @@ def _safe_probability_density(norm_factors, exponents):
     Parameters
     ----------
     norm_factors : array, shape (n_components,)
-        Normalization factors of individual Gaussians
+        Normalization factors of individual Gaussian
     exponents : array, shape (n_samples, n_components)
         Exponents of each combination of Gaussian and sample
     Returns
