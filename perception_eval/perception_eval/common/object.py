@@ -23,7 +23,6 @@ import numpy as np
 from perception_eval.common.label import Label
 from perception_eval.common.point import crop_pointcloud
 from perception_eval.common.point import polygon_to_list
-from perception_eval.common.shape import set_footprint
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
 from perception_eval.common.status import FrameID
@@ -58,11 +57,7 @@ class ObjectState:
     ) -> None:
         self.position: Tuple[float, float, float] = position
         self.orientation: Quaternion = orientation
-        self.shape: Shape = (
-            shape
-            if shape.footprint
-            else set_footprint(position=position, orientation=orientation, shape=shape)
-        )
+        self.shape: Shape = shape
         self.velocity: Tuple[float, float, float] = velocity
 
     @property
@@ -101,7 +96,7 @@ class DynamicObject:
         predicted_confidence (Optional[float]): Prediction score.
         predicted_path (Optional[List[ObjectState]]): List of the future states.
 
-        visibility (Optional[Visibility]): Visibility status. Defalts to None.
+        visibility (Optional[Visibility]): Visibility status. Defaults to None.
 
     Args:
         unix_time (int): Unix time [us].
@@ -293,6 +288,7 @@ class DynamicObject:
         Returns:
             corners (numpy.ndarray): Objects corners array.
         """
+        # NOTE: This is with respect to base_link or map coordinate system.
         footprint: np.ndarray = np.array(polygon_to_list(self.get_footprint(scale=scale)))
 
         # 3D bounding box corners.
@@ -307,29 +303,30 @@ class DynamicObject:
 
     def get_footprint(self, scale: float = 1.0) -> Polygon:
         """[summary]
-        Get footprint polygon from an object
+        Get footprint polygon from an object with respect ot base_link or map coordinate system.
 
         Args:
             scale (float): Scale factor for footprint. Defaults to 1.0.
 
         Returns:
-            Polygon: The footprint polygon of object. It consists of 4 corner 2d position of
-                     the object and  start and end points are same point.
-                     ((x0, y0, 0), (x1, y1, 0), (x2, y2, 0), (x3, y3, 0), (x0, y0, 0))
+            Polygon: The footprint polygon of object with respect to base_link or map coordinate system.
+                It consists of 4 corner 2d position of the object and  start and end points are same point.
+                ((x0, y0, 0), (x1, y1, 0), (x2, y2, 0), (x3, y3, 0), (x0, y0, 0))
         Notes:
             center_position: (xc, yc)
             vector_center_to_corners[0]: (x0 - xc, y0 - yc)
         """
-        if scale == 1.0:
-            return self.state.footprint
+        # NOTE: This is with respect to each object's coordinate system.
         footprint: np.ndarray = np.array(polygon_to_list(self.state.footprint))
         # Translate to (0, 0, 0) and scale
-        footprint[:, :2] = footprint[:, :2] - self.state.position[:2]
         footprint = footprint * scale
-        # Translate to original position
-        footprint[:, :2] = footprint[:, :2] + self.state.position[:2]
-        poly: List[List[float]] = [f.tolist() for f in footprint]
-        poly.append(footprint[0].tolist())
+        rotated_footprint: List[Tuple[float, float, float]] = []
+        for point in footprint:
+            rotate_point: np.ndarray = self.state.orientation.rotate(point)
+            rotate_point[:2] = rotate_point[:2] + self.state.position[:2]
+            rotated_footprint.append(rotate_point.tolist())
+        poly: List[List[float]] = [f for f in rotated_footprint]
+        poly.append(rotated_footprint[0])
         return Polygon(poly)
 
     def get_position_error(

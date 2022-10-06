@@ -18,7 +18,6 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
-from pyquaternion import Quaternion
 from shapely.geometry import Polygon
 
 
@@ -51,6 +50,7 @@ class Shape:
             - POLYGON:
                 (0.0, 0.0, height)
         self.footprint (Optional[Polygon]): When shape is BOUNDING_BOX, it is allowed to be None.
+            Footprint should be with respect to each object's coordinate system.
     """
 
     def __init__(
@@ -71,51 +71,40 @@ class Shape:
                     (0.0, 0.0, height)
             footprint (Optional[Polygon]): When shape type is BOUNDING_BOX or CYLINDER, this needs not to be set.
                 However, when POLYGON, this must be set. Defaults to None.
+                Footprint should be with respect to each object's coordinate system.
         """
         if type == ShapeType.POLYGON and footprint is None:
-            raise RuntimeError("For POLYGON, footprint must be set")
+            raise RuntimeError("For POLYGON shape objects, footprint must be set")
 
         self.type: ShapeType = type
         self.size = (size[0], size[0], size[2]) if type == ShapeType.CYLINDER else size
-        self.footprint: Optional[Polygon] = footprint
+        self.footprint: Optional[Polygon] = footprint if footprint else self.get_footprint()
 
+    def get_footprint(self) -> Polygon:
+        """[summary]
+        Calculate footprint for type of BOUNDING_BOX or CYLINDER with respect to each object's coordinate system.
 
-def set_footprint(
-    position: Tuple[float, float, float],
-    orientation: Quaternion,
-    shape: Shape,
-) -> Shape:
-    """[summary]
-    Calculate footprint for type of BOUNDING_BOX or CYLINDER.
-    If footprint has been already set, do nothing.
-    Returns:
-        shape (Shape)
-    """
-    if shape.type == ShapeType.POLYGON:
-        raise RuntimeError("Expected BOUNDING_BOX or CYLINDER")
+        Returns:
+            footprint (Polygon): Object's footprint.
+        """
+        if self.type == ShapeType.POLYGON:
+            raise RuntimeError("Expected BOUNDING_BOX or CYLINDER")
 
-    corners: List[np.ndarray] = [
-        np.array([shape.size[1], shape.size[0], 0.0]) / 2.0,
-        np.array([-shape.size[1], shape.size[0], 0.0]) / 2.0,
-        np.array([-shape.size[1], -shape.size[0], 0.0]) / 2.0,
-        np.array([shape.size[1], -shape.size[0], 0.0]) / 2.0,
-    ]
-
-    # rotate vector_center_to_corners
-    rotated_corners: List[Tuple[float, float, float]] = []
-    for vertex in corners:
-        rotated_vertex: np.ndarray = orientation.rotate(vertex)
-        rotated_vertex[:2]: np.ndarray = rotated_vertex[:2] + position[:2]
-        rotated_corners.append(rotated_vertex.tolist())
-    # corner point to footprint
-    shape.footprint: Polygon = Polygon(
-        [
-            rotated_corners[0],
-            rotated_corners[1],
-            rotated_corners[2],
-            rotated_corners[3],
-            rotated_corners[0],
+        corners: List[np.ndarray] = [
+            np.array([self.size[1], self.size[0], 0.0]) / 2.0,
+            np.array([-self.size[1], self.size[0], 0.0]) / 2.0,
+            np.array([-self.size[1], -self.size[0], 0.0]) / 2.0,
+            np.array([self.size[1], -self.size[0], 0.0]) / 2.0,
         ]
-    )
 
-    return shape
+        footprint: Polygon = Polygon(
+            [
+                corners[0],
+                corners[1],
+                corners[2],
+                corners[3],
+                corners[0],
+            ]
+        )
+
+        return footprint
