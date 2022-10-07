@@ -30,7 +30,7 @@
 
 #### `<class> PerceptionEvaluationConfig(...)`
 
-- [perception_eval/config/perception_evaluation_config.py](../../../perception_eval/perception_eval/config/perception_evaluation_config.py)を参考
+- Fot the details, see [perception_eval/config/perception_evaluation_config.py](../../../perception_eval/perception_eval/config/perception_evaluation_config.py).
 
 - Parameters of `PerceptionEvaluationConfig` are following.
 
@@ -38,7 +38,7 @@
   | :----------------------- | :--------------: | :----------------------------------------------------------------------- |
   | `dataset_path`           |   `List[str]`    | Dataset path(TBD supporting multiple dataset paths)                      |
   | `frame_id`               |      `str`       | Name of coordinate system which objects respect to，`map` or `base_link` |
-  | `merge_similar_labels`   |      `bool`      | Whether merge similar labels[Reference](label.md)                        |
+  | `merge_similar_labels`   |      `bool`      | Whether merge similar labels([Reference])(label.md)                      |
   | `does_use_pointcloud`    |      `bool`      | Whether load pointcloud data from dataset                                |
   | `result_root_directory`  |      `str`       | Directory path to save result of log and visualization                   |
   | `evaluation_config_dict` | `Dict[str, Any]` | Parameters of evaluation                                                 |
@@ -221,9 +221,9 @@
 
 ### `<class> PerceptionPassFailConfig(...)`
 
-- Pass / Fail を決めるためのパラメータ. Pass/Fail の判定については，**Plane distance**によって TP/FP の判定を行う．
-- `PerceptionEvaluationManger`の初期化時ではなく，各フレーム毎(=callback)に指定する．
-- [perception_eval/evaluation/result/perception_frame_config](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py)を参考
+- A class to decide Pass / Fail. For Pass/Fail decision, determine TP/FP by **Plane distance**.
+- Specify in every frame, not in initializing `PerceptionEvaluationManager`.
+- For the details, see [perception_eval/evaluation/result/perception_frame_config](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py).
 
 | Arguments                       |             type             | Mandatory | Description                                                    |
 | :------------------------------ | :--------------------------: | :-------: | :------------------------------------------------------------- |
