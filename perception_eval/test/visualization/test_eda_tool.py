@@ -22,6 +22,7 @@ from typing import Union
 
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.status import FrameID
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.object_result import get_object_results
@@ -52,6 +53,7 @@ class TestEDAVisualizer:
     dummy_estimated_objects.append(
         DynamicObject(
             unix_time=100,
+            frame_id=FrameID.BASE_LINK,
             position=(-1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 1.0, 1.0),
@@ -294,6 +296,7 @@ class TestEDAManager:
     dummy_estimated_objects.append(
         DynamicObject(
             unix_time=100,
+            frame_id=FrameID.BASE_LINK,
             position=(-1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 1.0, 1.0),
@@ -314,6 +317,7 @@ class TestEDAManager:
     dummy_ground_truth_objects += [
         DynamicObject(
             unix_time=100,
+            frame_id=FrameID.BASE_LINK,
             position=(-1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(2.0, 4.0, 2.0),
@@ -325,6 +329,7 @@ class TestEDAManager:
         ),
         DynamicObject(
             unix_time=100,
+            frame_id=FrameID.BASE_LINK,
             position=(1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(2.0, 4.0, 2.0),
@@ -336,6 +341,7 @@ class TestEDAManager:
         ),
         DynamicObject(
             unix_time=100,
+            frame_id=FrameID.BASE_LINK,
             position=(1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 2.0, 1.0),
@@ -347,6 +353,7 @@ class TestEDAManager:
         ),
         DynamicObject(
             unix_time=100,
+            frame_id=FrameID.BASE_LINK,
             position=(-1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 2.0, 1.0),
@@ -358,6 +365,7 @@ class TestEDAManager:
         ),
         DynamicObject(
             unix_time=100,
+            frame_id=FrameID.BASE_LINK,
             position=(-1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 1.0, 1.0),
@@ -369,6 +377,7 @@ class TestEDAManager:
         ),
         DynamicObject(
             unix_time=100,
+            frame_id=FrameID.BASE_LINK,
             position=(1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 1.0, 1.0),

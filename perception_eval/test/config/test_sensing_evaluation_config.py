@@ -18,6 +18,7 @@ from typing import List
 from typing import Tuple
 import unittest
 
+from perception_eval.common.status import FrameID
 from perception_eval.config.sensing_evaluation_config import SensingEvaluationConfig
 
 
@@ -33,9 +34,8 @@ class TestSensingEvaluationConfig(unittest.TestCase):
         }
         # patterns: (frame_id, evaluation_task)
         patterns: List[Tuple(str, Dict[str, Any])] = [
-            ("map", {"evaluation_task": "foo"}),
-            ("base_link", {"evaluation_task": "foo"}),
-            ("foo", {"evaluation_task": "sensing"}),
+            (FrameID.MAP, {"evaluation_task": "foo"}),
+            (FrameID.BASE_LINK, {"evaluation_task": "foo"}),
         ]
         for n, (frame_id, evaluation_task) in enumerate(patterns):
             with self.subTest(f"Test if it can detect the exception of task keys: {n + 1}"):

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 import numpy as np
@@ -79,6 +80,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             ground_truth_objects=ground_truth_objects,
             pointcloud=pointcloud,
             non_detection_areas=non_detection_areas,
+            ego2map=ground_truth_now_frame.ego2map,
         )
 
         result = SensingFrameResult(
@@ -98,7 +100,6 @@ class SensingEvaluationManager(_EvaluationMangerBase):
 
     def _filter_objects(self, frame_ground_truth: FrameGroundTruth) -> List[DynamicObject]:
         return filter_objects(
-            frame_id=self.evaluator_config.frame_id,
             objects=frame_ground_truth.objects,
             is_gt=True,
             ego2map=frame_ground_truth.ego2map,
@@ -110,6 +111,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         ground_truth_objects: List[DynamicObject],
         pointcloud: np.ndarray,
         non_detection_areas: List[List[Tuple[float, float, float]]],
+        ego2map: Optional[np.ndarray] = None,
     ) -> List[np.ndarray]:
         """Crop pointcloud from (N, 3) to (M, 3) with the non-detection area
         specified in SensingEvaluationConfig.
@@ -119,6 +121,8 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             pointcloud (numpy.ndarray): The array of pointcloud, in shape (N, 3).
             non_detection_areas (List[List[Tuple[float, float, float]]]):
                 The list of 3D-polygon areas for non-detection.
+            ego2map (Optional[numpy.ndarray]):4x4 Transform matrix
+                from base_link coordinate system to map coordinate system.
 
         Returns:
             cropped_pointcloud (List[numpy.ndarray]): The list of cropped pointcloud.
@@ -139,7 +143,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             outside_points: np.ndarray = points.copy()
             for ground_truth in ground_truth_objects:
                 bbox_scale: float = get_bbox_scale(
-                    distance=ground_truth.get_distance(),
+                    distance=ground_truth.get_distance(ego2map=ego2map),
                     box_scale_0m=box_scale_0m,
                     box_scale_100m=box_scale_100m,
                 )

@@ -25,6 +25,7 @@ from typing import Tuple
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.evaluation_task import set_task
 from perception_eval.common.label import LabelConverter
+from perception_eval.common.status import FrameID
 
 
 class _EvaluationConfigBase(ABC):
@@ -32,7 +33,7 @@ class _EvaluationConfigBase(ABC):
 
     Attributes:
         self.dataset_paths (List[str]): The list of dataset path.
-        self.frame_id (str): The frame_id, base_link or map.
+        self.frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
         self.merge_similar_labels (bool): Whether merge similar labels.
         self.does_use_pointcloud (bool): Whether use pointcloud of dataset.
         self.result_root_directory (str): The directory path to save result.
@@ -54,7 +55,7 @@ class _EvaluationConfigBase(ABC):
     def __init__(
         self,
         dataset_paths: List[str],
-        frame_id: str,
+        frame_id: FrameID,
         merge_similar_labels: bool,
         does_use_pointcloud: bool,
         result_root_directory: str,
@@ -63,7 +64,7 @@ class _EvaluationConfigBase(ABC):
         """[summary]
         Args:
             dataset_paths (List[str]): The list of dataset path.
-            frame_id (str): Frame ID, base_link or map.
+            frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
             merge_similar_labels (bool): Whether merge similar labels.
                 If True,
                     - BUS, TRUCK, TRAILER -> CAR
@@ -80,9 +81,9 @@ class _EvaluationConfigBase(ABC):
         # dataset
         self.dataset_paths: List[str] = dataset_paths
 
-        if frame_id not in ("base_link", "map"):
+        if frame_id not in FrameID:
             raise ValueError(f"Unexpected frame_id: {frame_id}")
-        self.frame_id: str = frame_id
+        self.frame_id: FrameID = frame_id
         self.merge_similar_labels: bool = merge_similar_labels
         self.does_use_pointcloud: bool = does_use_pointcloud
 

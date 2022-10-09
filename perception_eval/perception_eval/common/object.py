@@ -24,7 +24,9 @@ import numpy as np
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.point import distance_points
 from perception_eval.common.point import distance_points_bev
+from perception_eval.common.status import FrameID
 from perception_eval.common.status import Visibility
+from perception_eval.util.math import rotation_matrix_to_euler
 from pyquaternion import Quaternion
 from shapely.geometry import Polygon
 
@@ -87,6 +89,7 @@ class DynamicObject:
     def __init__(
         self,
         unix_time: int,
+        frame_id: FrameID,
         position: Tuple[float, float, float],
         orientation: Quaternion,
         size: Tuple[float, float, float],
@@ -110,6 +113,7 @@ class DynamicObject:
 
         Args:
             unix_time (int): Unix time [us]
+            frame_id (FrameId): FrameId instance, base_link or map.
             position (Tuple[float, float, float]): The position
             orientation (Quaternion): [description]
             size (Tuple[float, float, float]): [description]
@@ -141,6 +145,7 @@ class DynamicObject:
 
         # detection
         self.unix_time: int = unix_time
+        self.frame_id: FrameID = frame_id
         self.state: ObjectState = ObjectState(
             position=position,
             orientation=orientation,
@@ -193,32 +198,73 @@ class DynamicObject:
             eq = eq and self.state.orientation == other.state.orientation  # type: ignore
             return eq
 
-    def get_distance(self) -> float:
+    def get_distance(self, ego2map: Optional[np.ndarray] = None) -> float:
         """[summary]
         Get the 3d distance to the object from ego vehicle in bird eye view
+
+        Args:
+            ego2map (Optional[numpy.ndarray]):4x4 Transform matrix
+                from base_link coordinate system to map coordinate system.
 
         Returns:
             float: The 3d distance to the object from ego vehicle in bird eye view
         """
-        return np.linalg.norm(self.state.position)
+        if self.frame_id == FrameID.BASE_LINK:
+            return np.linalg.norm(self.state.position)
 
-    def get_distance_bev(self) -> float:
+        if ego2map is None:
+            raise RuntimeError(
+                "For objects with respect to map coordinate system, ego2map must be specified."
+            )
+
+        pos_arr: np.ndarray = np.append(self.state.position, 1.0)
+        return np.linalg.norm(np.linalg.inv(ego2map).dot(pos_arr)[:3])
+
+    def get_distance_bev(self, ego2map: Optional[np.ndarray] = None) -> float:
         """[summary]
         Get the 2d distance to the object from ego vehicle in bird eye view
+
+        Args:
+            ego2map (Optional[numpy.ndarray]):4x4 Transform matrix
+                from base_link coordinate system to map coordinate system.
 
         Returns:
             float: The 2d distance to the object from ego vehicle in bird eye view
         """
-        return math.hypot(self.state.position[0], self.state.position[1])
+        if self.frame_id == FrameID.BASE_LINK:
+            return math.hypot(self.state.position[0], self.state.position[1])
 
-    def get_heading_bev(self) -> float:
+        if ego2map is None:
+            raise RuntimeError(
+                "For objects with respect to map coordinate system, ego2map must be specified."
+            )
+
+        pos_arr: np.ndarray = np.append(self.state.position, 1.0)
+        return np.linalg.norm(np.linalg.inv(ego2map).dot(pos_arr)[:2])
+
+    def get_heading_bev(self, ego2map: Optional[np.ndarray] = None) -> float:
         """[summary]
         Get the object heading from ego vehicle in bird eye view
+
+        Args:
+            ego2map (Optional[numpy.ndarray]):4x4 Transform matrix
+                from base_link coordinate system to map coordinate system.
 
         Returns:
             float: The heading (radian)
         """
-        rots: float = self.state.orientation.radians
+        if self.frame_id == FrameID.MAP:
+            if ego2map is None:
+                raise RuntimeError(
+                    "For objects with respect to map coordinate system, ego2map must be specified."
+                )
+            src: np.ndarray = np.eye(4, 4)
+            src[:3, :3] = self.state.orientation.rotation_matrix
+            src[:3, 3] = self.state.position
+            dst: np.ndarray = np.linalg.inv(ego2map).dot(src)
+            rots: float = rotation_matrix_to_euler(dst[:3, :3])[-1].item()
+        else:
+            rots: float = self.state.orientation.radians
         trans_rots: float = -rots - math.pi / 2
         trans_rots = float(np.where(trans_rots > math.pi, trans_rots - 2 * math.pi, trans_rots))
         trans_rots = float(np.where(trans_rots < -math.pi, trans_rots + 2 * math.pi, trans_rots))

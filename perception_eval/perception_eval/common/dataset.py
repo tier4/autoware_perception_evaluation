@@ -28,6 +28,7 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.status import FrameID
 from perception_eval.common.status import Visibility
 from pyquaternion.quaternion import Quaternion
 from tqdm import tqdm
@@ -42,6 +43,7 @@ class FrameGroundTruth:
     Attributes:
         self.unix_time (float): The unix time for the frame [us].
         self.frame_name (str): The file name for the frame.
+        frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
         self.objects (List[DynamicObject]): Objects data.
         self.pointcloud (Optional[numpy.ndarray], optional):
                 Pointcloud data. Defaults to None, but if you want to visualize dataset,
@@ -53,7 +55,7 @@ class FrameGroundTruth:
         self,
         unix_time: int,
         frame_name: str,
-        frame_id: str,
+        frame_id: FrameID,
         objects: List[DynamicObject],
         ego2map: Optional[np.ndarray] = None,
         pointcloud: Optional[np.ndarray] = None,
@@ -63,7 +65,7 @@ class FrameGroundTruth:
         Args:
             unix_time (int): The unix time for the frame [us]
             frame_name (str): The file name for the frame
-            frame_id (str): The coord system which objects with respected to, base_link or map.
+            frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
             objects (List[DynamicObject]): Objects data
             pointcloud (Optional[numpy.ndarray]):
                     Pointcloud data in (x, y, z, i).
@@ -85,7 +87,7 @@ def load_all_datasets(
     does_use_pointcloud: bool,
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
-    frame_id: str,
+    frame_id: FrameID,
 ) -> List[FrameGroundTruth]:
     """
     Load tier4 datasets.
@@ -94,6 +96,7 @@ def load_all_datasets(
         does_use_pointcloud (bool): The flag of setting pointcloud
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
+        frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
 
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
@@ -122,7 +125,7 @@ def _load_dataset(
     does_use_pointcloud: bool,
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
-    frame_id: str,
+    frame_id: FrameID,
 ) -> List[FrameGroundTruth]:
     """
     Load one tier4 dataset.
@@ -131,6 +134,7 @@ def _load_dataset(
         does_use_pointcloud (bool): The flag of setting pointcloud
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
+        frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
 
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
@@ -227,7 +231,7 @@ def _sample_to_frame(
     does_use_pointcloud: bool,
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
-    frame_id: str,
+    frame_id: FrameID,
     frame_name: str,
 ) -> FrameGroundTruth:
     """[summary]
@@ -240,6 +244,7 @@ def _sample_to_frame(
         does_use_pointcloud (bool): The flag of setting pointcloud
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
+        frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
         frame_name (str): Name of frame, number of frame is used.
 
     Raises:
@@ -311,7 +316,7 @@ def _sample_to_frame(
 def _convert_nuscenes_box_to_dynamic_object(
     nusc: NuScenes,
     helper: PredictHelper,
-    frame_id: str,
+    frame_id: FrameID,
     object_box: Box,
     unix_time: int,
     evaluation_task: EvaluationTask,
@@ -327,6 +332,7 @@ def _convert_nuscenes_box_to_dynamic_object(
     Args:
         nusc (NuScenes): NuScenes instance
         helper (PredictHelper): PredictHelper instance
+        frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
         object_box (Box): Annotation data from nuscenes dataset defined by Box
         unix_time (int): The unix time [us]
         evaluation_task (EvaluationTask): Evaluation task
@@ -379,6 +385,7 @@ def _convert_nuscenes_box_to_dynamic_object(
 
     dynamic_object = DynamicObject(
         unix_time=unix_time,
+        frame_id=frame_id,
         position=position_,
         orientation=orientation_,
         size=size_,
@@ -399,7 +406,7 @@ def _convert_nuscenes_box_to_dynamic_object(
 def _get_sample_boxes(
     nusc: NuScenes,
     frame_data: Dict[str, Any],
-    frame_id: str,
+    frame_id: FrameID,
     use_sensor_frame: bool = True,
 ) -> Tuple[str, List[Box], np.ndarray]:
     """[summary]
@@ -408,7 +415,7 @@ def _get_sample_boxes(
     Args:
         nusc (NuScenes): NuScenes object.
         frame_data (Dict[str, Any]):
-        frame_id (str): base_link or map.
+        frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
 
     Returns:
         lidar_path (str)
@@ -421,10 +428,10 @@ def _get_sample_boxes(
     """
     lidar_path: str
     object_boxes: List[Box]
-    if frame_id == "base_link":
+    if frame_id == FrameID.BASE_LINK:
         # Get boxes moved to ego vehicle coord system.
         lidar_path, object_boxes, _ = nusc.get_sample_data(frame_data["token"])
-    elif frame_id == "map":
+    elif frame_id == FrameID.MAP:
         # Get boxes map based coord system.
         lidar_path = nusc.get_sample_data_path(frame_data["token"])
         object_boxes = nusc.get_boxes(frame_data["token"])
@@ -452,7 +459,7 @@ def _get_sample_boxes(
 def _get_tracking_data(
     nusc: NuScenes,
     helper: PredictHelper,
-    frame_id: str,
+    frame_id: FrameID,
     instance_token: str,
     sample_token: str,
     seconds: float,
@@ -462,7 +469,7 @@ def _get_tracking_data(
     Args:
         nusc (NuScenes): NuScenes instance.
         helper (PredictHelper): PredictHelper instance.
-        frame_id (str): The frame_id base_link or map.
+        frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
         instance_token (str): The unique token to access to instance.
         sample_token (str): The unique Token to access to sample.
         seconds (float): Seconds to be referenced.[s]
@@ -473,9 +480,9 @@ def _get_tracking_data(
         past_sizes (List[Tuple[float, float, float]]])
         past_velocities (List[Tuple[float, float]])
     """
-    if frame_id == "base_link":
+    if frame_id == FrameID.BASE_LINK:
         in_agent_frame: bool = True
-    elif frame_id == "map":
+    elif frame_id == FrameID.MAP:
         in_agent_frame: bool = False
     else:
         raise ValueError(f"Unexpected frame_id: {frame_id}")

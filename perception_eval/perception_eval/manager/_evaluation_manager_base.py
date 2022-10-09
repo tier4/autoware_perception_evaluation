@@ -51,10 +51,10 @@ class _EvaluationMangerBase(ABC):
         self.evaluator_config = evaluation_config
         self.ground_truth_frames: List[FrameGroundTruth] = load_all_datasets(
             dataset_paths=self.evaluator_config.dataset_paths,
-            frame_id=self.evaluator_config.frame_id,
             does_use_pointcloud=self.evaluator_config.does_use_pointcloud,
             evaluation_task=self.evaluator_config.evaluation_task,
             label_converter=self.evaluator_config.label_converter,
+            frame_id=self.evaluator_config.frame_id,
         )
 
     @abstractmethod

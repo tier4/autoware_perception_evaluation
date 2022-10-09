@@ -51,7 +51,6 @@ class PassFailResult:
         self,
         critical_object_filter_config: CriticalObjectFilterConfig,
         frame_pass_fail_config: PerceptionPassFailConfig,
-        frame_id: str,
         ego2map: Optional[np.ndarray] = None,
     ) -> None:
         """[summary]
@@ -66,7 +65,6 @@ class PassFailResult:
             critical_object_filter_config
         )
         self.frame_pass_fail_config: PerceptionPassFailConfig = frame_pass_fail_config
-        self.frame_id: str = frame_id
         self.ego2map: Optional[np.ndarray] = ego2map
 
         self.critical_ground_truth_objects: Optional[List[DynamicObject]] = None
@@ -88,7 +86,6 @@ class PassFailResult:
                     Ground truth objects filtered by ROS node.
         """
         self.critical_ground_truth_objects = filter_objects(
-            frame_id=self.frame_id,
             objects=ros_critical_ground_truth_objects,
             is_gt=True,
             ego2map=self.ego2map,

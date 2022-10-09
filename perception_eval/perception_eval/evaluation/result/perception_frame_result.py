@@ -40,7 +40,6 @@ class PerceptionFrameResult:
         self.frame_ground_truth (FrameGroundTruth): Filtered ground truth of frame.
         self.frame_name (str): The file name of frame in the datasets.
         self.unix_time (int): The unix time for frame [us].
-        self.frame_id (str): base_link or map.
         self.target_labels (List[AutowareLabel]): The list of target label.
         self.metrics_score (MetricsScore): Metrics score results.
         self.pass_fail_result (PassFailResult): Pass fail results.
@@ -70,7 +69,6 @@ class PerceptionFrameResult:
         # frame information
         self.frame_name: str = frame_ground_truth.frame_name
         self.unix_time: int = unix_time
-        self.frame_id: str = frame_ground_truth.frame_id
         self.target_labels: List[AutowareLabel] = target_labels
 
         self.object_results: List[DynamicObjectWithPerceptionResult] = object_results
@@ -84,7 +82,6 @@ class PerceptionFrameResult:
         self.pass_fail_result: PassFailResult = PassFailResult(
             critical_object_filter_config=critical_object_filter_config,
             frame_pass_fail_config=frame_pass_fail_config,
-            frame_id=frame_ground_truth.frame_id,
             ego2map=frame_ground_truth.ego2map,
         )
 
