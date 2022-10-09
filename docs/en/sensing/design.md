@@ -17,7 +17,7 @@ About coordinate system, see [docs/perception/design.md](../perception/design.md
   | :----------------------- | :--------------: | :------------------------------------------------------------------------- |
   | `dataset_path`           |   `List[str]`    | Dataset path(TBD supporting multiple dataset paths) .                      |
   | `frame_id`               |      `str`       | Name of coordinate system which objects respect to，`map` or `base_link` . |
-  | `merge_similar_labels`   |      `bool`      | Whether merge similar labels[Reference](label.md) .                        |
+  | `merge_similar_labels`   |      `bool`      | Whether merge similar labels[Reference](../perception/label.md) .          |
   | `does_use_pointcloud`    |      `bool`      | Whether load pointcloud data from dataset .                                |
   | `result_root_directory`  |      `str`       | Directory path to save result of log and visualization .                   |
   | `evaluation_config_dict` | `Dict[str, Any]` | Parameters of evaluation .                                                 |

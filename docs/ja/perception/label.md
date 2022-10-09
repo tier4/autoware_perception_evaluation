@@ -1,6 +1,6 @@
 # Autoware Label
 
-- 詳細は[perception_eval.common.label.py](../../perception_eval/perception_eval/common/label.py)を参照
+- 詳細は[perception_eval.common.label.py](../../../perception_eval/perception_eval/common/label.py)を参照
 
 | type                       |    value     | support labels                         |
 | :------------------------- | :----------: | :------------------------------------- |
