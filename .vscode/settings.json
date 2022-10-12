@@ -24,6 +24,8 @@
     "allclose",
     "APHs",
     "arange",
+    "argmax",
+    "argmin",
     "argsort",
     "astype",
     "AUTOWARE",

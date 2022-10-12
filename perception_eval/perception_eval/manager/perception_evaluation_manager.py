@@ -189,7 +189,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         if self.evaluator_config.metrics_config.tracking_config is not None:
             scene_metrics_score.evaluate_tracking(all_frame_results, all_num_gt)
         if self.evaluator_config.metrics_config.prediction_config is not None:
-            pass
+            scene_metrics_score.evaluate_prediction(all_frame_results, all_num_gt)
 
         return scene_metrics_score
 
