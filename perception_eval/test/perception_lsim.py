@@ -73,7 +73,6 @@ class PerceptionLSimMoc:
             evaluation_config_dict.update({"evaluation_task": evaluation_task})
         else:
             raise ValueError(f"Unexpected evaluation task: {evaluation_task}")
-        # TODO prediction
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=dataset_paths,
@@ -315,6 +314,67 @@ if __name__ == "__main__":
         logging.info(score_df.to_string())
     if error_df is not None:
         logging.info(error_df.to_string())
+
+    # ========================================= Prediction =========================================
+    print("=" * 50 + "Start Prediction" + "=" * 50)
+    if args.use_tmpdir:
+        tmpdir = tempfile.TemporaryDirectory()
+        result_root_directory: str = tmpdir.name
+    else:
+        result_root_directory: str = "data/result/{TIME}/"
+    prediction_lsim = PerceptionLSimMoc(dataset_paths, "prediction", result_root_directory)
+
+    for ground_truth_frame in prediction_lsim.evaluator.ground_truth_frames:
+        objects_with_difference = get_objects_with_difference(
+            ground_truth_objects=ground_truth_frame.objects,
+            diff_distance=(2.3, 0.0, 0.2),
+            diff_yaw=0.2,
+            is_confidence_with_distance=False,
+        )
+        # To avoid case of there is no object
+        if len(objects_with_difference) > 0:
+            objects_with_difference.pop(0)
+        prediction_lsim.callback(
+            ground_truth_frame.unix_time,
+            objects_with_difference,
+        )
+
+    # final result
+    prediction_final_metric_score = prediction_lsim.get_final_result()
+
+    # Debug
+    if len(prediction_lsim.evaluator.frame_results) > 0:
+        logging.info(
+            "Frame result example (frame_results[0]): "
+            f"{format_class_for_log(prediction_lsim.evaluator.frame_results[0], 1)}",
+        )
+
+        if len(prediction_lsim.evaluator.frame_results[0].object_results) > 0:
+            logging.info(
+                "Object result example (frame_results[0].object_results[0]): "
+                f"{format_class_for_log(prediction_lsim.evaluator.frame_results[0].object_results[0])}",
+            )
+
+    # Metrics config
+    logging.info(
+        "Prediction Metrics example (prediction_final_metric_score): "
+        f"{format_class_for_log(prediction_final_metric_score, len(prediction_final_metric_score.prediction_config.target_labels))}",
+    )
+
+    # Prediction metrics score
+    logging.info(
+        "Prediction result example (prediction_final_metric_score.tracking_scores[0].clears[0]): "
+        f"{format_class_for_log(prediction_final_metric_score.prediction_scores[0], 100)}"
+    )
+
+    # # Visualize all frame results
+    # logging.info("Start visualizing prediction results")
+    # prediction_lsim.evaluator.visualize_all()
+
+    # # Prediction performance report
+    # prediction_analyzer = PerceptionPerformanceAnalyzer(prediction_lsim.evaluator.evaluator_config)
+    # prediction_analyzer.add(prediction_lsim.evaluator.frame_results)
+    # score_df, error_df = prediction_analyzer.analyze()
 
     # Clean up tmpdir
     if args.use_tmpdir:
