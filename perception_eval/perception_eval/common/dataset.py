@@ -19,7 +19,9 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
+from nuimages import NuImages
 import numpy as np
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
@@ -28,6 +30,7 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.object import RoiObject
 from perception_eval.common.status import Visibility
 from pyquaternion.quaternion import Quaternion
 from tqdm import tqdm
@@ -54,7 +57,7 @@ class FrameGroundTruth:
         unix_time: int,
         frame_name: str,
         frame_id: str,
-        objects: List[DynamicObject],
+        objects: List[Union[DynamicObject, RoiObject]],
         ego2map: Optional[np.ndarray] = None,
         pointcloud: Optional[np.ndarray] = None,
     ) -> None:
@@ -75,7 +78,7 @@ class FrameGroundTruth:
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
         self.frame_id: str = frame_id
-        self.objects: List[DynamicObject] = objects
+        self.objects: List[Union[DynamicObject, RoiObject]] = objects
         self.pointcloud: Optional[np.ndarray] = pointcloud
         self.ego2map: Optional[np.ndarray] = ego2map
 
@@ -135,8 +138,14 @@ def _load_dataset(
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
     """
+    is_detection_2d: bool = evaluation_task == EvaluationTask.DETECTION2D
 
     nusc: NuScenes = NuScenes(version="annotation", dataroot=dataset_path, verbose=False)
+    nuim: Optional[NuImages] = (
+        NuImages(version="annotation", dataroot=dataset_path, verbose=False)
+        if is_detection_2d
+        else None
+    )
     helper: PredictHelper = PredictHelper(nusc)
 
     if len(nusc.visibility) == 0:
@@ -155,16 +164,26 @@ def _load_dataset(
 
     dataset: List[FrameGroundTruth] = []
     for n, sample_token in enumerate(tqdm(sample_tokens)):
-        frame = _sample_to_frame(
-            nusc=nusc,
-            helper=helper,
-            sample_token=sample_token,
-            does_use_pointcloud=does_use_pointcloud,
-            evaluation_task=evaluation_task,
-            label_converter=label_converter,
-            frame_id=frame_id,
-            frame_name=str(n),
-        )
+        if is_detection_2d:
+            frame = _sample_to_frame_2d(
+                nusc=nusc,
+                nuim=nuim,
+                sample_token=sample_token,
+                label_converter=label_converter,
+                frame_id=frame_id,
+                frame_name=str(n),
+            )
+        else:
+            frame = _sample_to_frame(
+                nusc=nusc,
+                helper=helper,
+                sample_token=sample_token,
+                does_use_pointcloud=does_use_pointcloud,
+                evaluation_task=evaluation_task,
+                label_converter=label_converter,
+                frame_id=frame_id,
+                frame_name=str(n),
+            )
         dataset.append(frame)
     return dataset
 
@@ -305,6 +324,64 @@ def _sample_to_frame(
         pointcloud=pointcloud_,
         ego2map=ego2map,
     )
+    return frame
+
+
+def _sample_to_frame_2d(
+    nusc: NuScenes,
+    nuim: NuImages,
+    sample_token: str,
+    label_converter: LabelConverter,
+    frame_id: str,
+    frame_name: str,
+) -> FrameGroundTruth:
+    nusc_sample: Dict[str, Any] = nusc.get("sample", sample_token)
+    sample: Dict[str, Any] = nuim.get("sample", sample_token)
+
+    unix_time: int = sample["timestamp"]
+    camera_tokens: List[str] = [
+        nusc_sample["data"][name] for name in nusc_sample["data"].keys() if "CAM" in name
+    ]
+
+    frame_sample_data: List[Dict[str, Any]] = [
+        nuim.get("sample_data", token) for token in camera_tokens
+    ]
+
+    sample_data_tokens: List[str] = [sample_data["token"] for sample_data in frame_sample_data]
+    object_annotations: List[Dict[str, Any]] = [
+        ann for ann in nuim.object_ann if ann["sample_data_token"] in sample_data_tokens
+    ]
+
+    objects_: List[RoiObject] = []
+    for ann in object_annotations:
+        bbox: List[float] = ann["bbox"]
+        offset: Tuple[int, int] = (int(bbox[0]), int(bbox[1]))
+        size: Tuple[int, int] = (int(bbox[3]) - offset[1], int(bbox[2]) - offset[0])
+
+        category_info: Dict[str, Any] = nuim.get("category", ann["category_token"])
+        autoware_label: AutowareLabel = label_converter.convert_label(
+            label=category_info["name"],
+        )
+
+        uuid: str = ann.get("instance_token", "")
+
+        object_: RoiObject = RoiObject(
+            unix_time=unix_time,
+            offset=offset,
+            size=size,
+            semantic_score=1.0,
+            semantic_label=autoware_label,
+            uuid=uuid,
+        )
+        objects_.append(object_)
+
+    frame = FrameGroundTruth(
+        unix_time=unix_time,
+        frame_name=frame_name,
+        frame_id=frame_id,
+        objects=objects_,
+    )
+
     return frame
 
 

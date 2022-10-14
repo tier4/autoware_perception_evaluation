@@ -271,9 +271,9 @@ class TestMap(unittest.TestCase):
         self.assertAlmostEqual(map.map, ans_map)
         self.assertAlmostEqual(map.maph, ans_maph)
 
-    def test_map_iou_bev_translation_difference(self):
+    def test_map_iou_2d_translation_difference(self):
         """[summary]
-        Test mAP and mAPH with iou bev matching for translation difference.
+        Test mAP and mAPH with iou 2d (bev) matching for translation difference.
 
         test objects:
             dummy_ground_truth_objects (List[DynamicObject])
@@ -344,15 +344,15 @@ class TestMap(unittest.TestCase):
                     object_results_dict=object_results_dict,
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
-                    matching_mode=MatchingMode.IOUBEV,
+                    matching_mode=MatchingMode.IOU2D,
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
 
-    def test_map_iou_bev_yaw_difference(self):
+    def test_map_iou_2d_yaw_difference(self):
         """[summary]
-        Test mAP and mAPH with iou bev matching for yaw difference.
+        Test mAP and mAPH with iou 2d (bev) matching for yaw difference.
 
         test objects:
             dummy_ground_truth_objects (List[DynamicObject])
@@ -428,15 +428,15 @@ class TestMap(unittest.TestCase):
                     object_results_dict=object_results_dict,
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
-                    matching_mode=MatchingMode.IOUBEV,
+                    matching_mode=MatchingMode.IOU2D,
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )
                 self.assertAlmostEqual(map.map, ans_map)
                 self.assertAlmostEqual(map.maph, ans_maph)
 
-    def test_map_iou_bev_random_objects(self):
+    def test_map_iou_2d_random_objects(self):
         """[summary]
-        Test mAP and mAPH with iou bev matching for random objects.
+        Test mAP and mAPH with iou 2d (bev) matching for random objects.
 
         test objects:
             dummy_ground_truth_objects (List[DynamicObject])
@@ -486,7 +486,7 @@ class TestMap(unittest.TestCase):
             object_results_dict=object_results_dict,
             num_ground_truth_dict=num_ground_truth_dict,
             target_labels=self.target_labels,
-            matching_mode=MatchingMode.IOUBEV,
+            matching_mode=MatchingMode.IOU2D,
             matching_threshold_list=[0.2, 0.5, 0.5, 0.5],
         )
         self.assertAlmostEqual(map.map, ans_map)

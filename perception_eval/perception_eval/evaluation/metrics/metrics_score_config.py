@@ -53,7 +53,7 @@ class MetricsScoreConfig:
 
         self.evaluation_task: EvaluationTask = evaluation_task
         self.target_labels: List[AutowareLabel] = cfg["target_labels"]
-        if self.evaluation_task == EvaluationTask.DETECTION:
+        if self.evaluation_task in (EvaluationTask.DETECTION2D, EvaluationTask.DETECTION):
             self._check_parameters(DetectionMetricsConfig, cfg)
             self.detection_config = DetectionMetricsConfig(**cfg)
         elif self.evaluation_task == EvaluationTask.TRACKING:

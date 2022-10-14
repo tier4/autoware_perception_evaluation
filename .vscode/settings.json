@@ -74,6 +74,8 @@
     "nbinsx",
     "ndarray",
     "ndim",
+    "nuim",
+    "nuimages",
     "numpy",
     "nusc",
     "NuScenes",

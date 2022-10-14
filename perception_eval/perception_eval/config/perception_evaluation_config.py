@@ -49,7 +49,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         self.metrics_config (MetricsScoreConfig): The config for metrics
     """
 
-    _support_tasks: List[str] = ["detection", "tracking", "prediction"]
+    _support_tasks: List[str] = ["detection2d", "detection", "tracking", "prediction"]
 
     def __init__(
         self,
@@ -145,6 +145,11 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             )
             max_x_position_list = None
             max_y_position_list = None
+        elif self.evaluation_task == EvaluationTask.DETECTION2D:
+            max_x_position_list = None
+            max_y_position_list = None
+            max_distance_list = None
+            min_distance_list = None
         else:
             raise RuntimeError("Either max x/y position or max/min distance should be specified")
 
@@ -181,10 +186,10 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
 
         m_params: Dict[str, Any] = {
             "target_labels": target_labels,
-            "center_distance_thresholds": e_cfg["center_distance_thresholds"],
-            "plane_distance_thresholds": e_cfg["plane_distance_thresholds"],
-            "iou_bev_thresholds": e_cfg["iou_bev_thresholds"],
-            "iou_3d_thresholds": e_cfg["iou_3d_thresholds"],
+            "center_distance_thresholds": e_cfg.get("center_distance_thresholds"),
+            "plane_distance_thresholds": e_cfg.get("plane_distance_thresholds"),
+            "iou_2d_thresholds": e_cfg.get("iou_2d_thresholds"),
+            "iou_3d_thresholds": e_cfg.get("iou_3d_thresholds"),
         }
 
         return f_params, m_params

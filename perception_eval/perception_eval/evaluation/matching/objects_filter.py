@@ -23,6 +23,7 @@ from typing import Union
 import numpy as np
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.object import RoiObject
 from perception_eval.common.threshold import LabelThreshold
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.evaluation.matching.object_matching import MatchingMode
@@ -106,7 +107,7 @@ def filter_object_results(
 
 def filter_objects(
     frame_id: str,
-    objects: List[DynamicObject],
+    objects: List[Union[DynamicObject, RoiObject]],
     is_gt: bool,
     target_labels: Optional[List[AutowareLabel]] = None,
     max_x_position_list: Optional[List[float]] = None,
@@ -117,7 +118,7 @@ def filter_objects(
     confidence_threshold_list: Optional[List[float]] = None,
     target_uuids: Optional[List[str]] = None,
     ego2map: Optional[np.ndarray] = None,
-) -> List[DynamicObject]:
+) -> List[Union[DynamicObject, RoiObject]]:
     """[summary]
     Filter DynamicObject to filter ground truth objects.
 
@@ -252,10 +253,10 @@ def divide_tp_fp_objects(
 
 
 def get_fn_objects(
-    ground_truth_objects: List[DynamicObject],
+    ground_truth_objects: List[Union[DynamicObject, RoiObject]],
     object_results: Optional[List[DynamicObjectWithPerceptionResult]],
     tp_objects: Optional[List[DynamicObjectWithPerceptionResult]],
-) -> List[DynamicObject]:
+) -> List[Union[DynamicObject, RoiObject]]:
     """[summary]
     Get FN (False Negative) objects from ground truth objects by using object result
 
@@ -271,7 +272,7 @@ def get_fn_objects(
     if object_results is None:
         return ground_truth_objects
 
-    fn_objects: List[DynamicObject] = []
+    fn_objects: List[Union[DynamicObject, RoiObject]] = []
     for ground_truth_object in ground_truth_objects:
         is_fn_object: bool = _is_fn_object(
             ground_truth_object=ground_truth_object,
@@ -284,7 +285,7 @@ def get_fn_objects(
 
 
 def _is_fn_object(
-    ground_truth_object: DynamicObject,
+    ground_truth_object: Union[DynamicObject, RoiObject],
     object_results: List[DynamicObjectWithPerceptionResult],
     tp_objects: List[DynamicObjectWithPerceptionResult],
 ) -> bool:
@@ -309,7 +310,7 @@ def _is_fn_object(
 
 def _is_target_object(
     frame_id: str,
-    dynamic_object: DynamicObject,
+    dynamic_object: Union[DynamicObject, RoiObject],
     target_labels: Optional[List[AutowareLabel]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
@@ -373,16 +374,17 @@ def _is_target_object(
         confidence_threshold = label_threshold.get_label_threshold(confidence_threshold_list)
         is_target = is_target and dynamic_object.semantic_score > confidence_threshold
 
-    assert frame_id in ("map", "base_link"), f"Unexpected frame id: {frame_id}"
-    position_: Tuple[float, float, float] = dynamic_object.state.position
-    if frame_id == "map":
-        assert ego2map is not None, "When frame_id is map, ego2map must be specified"
-        pos_arr: np.ndarray = np.append(position_, 1.0)
-        position_ = tuple(np.linalg.inv(ego2map).dot(pos_arr)[:3].tolist())
-        # TODO: DynamicObject.get_distance_bev() doesn't support map coords
-        bev_distance_: float = math.hypot(position_[0], position_[1])
-    else:
-        bev_distance_: float = dynamic_object.get_distance_bev()
+    if isinstance(dynamic_object, DynamicObject):
+        assert frame_id in ("map", "base_link"), f"Unexpected frame id: {frame_id}"
+        position_: Tuple[float, float, float] = dynamic_object.state.position
+        if frame_id == "map":
+            assert ego2map is not None, "When frame_id is map, ego2map must be specified"
+            pos_arr: np.ndarray = np.append(position_, 1.0)
+            position_ = tuple(np.linalg.inv(ego2map).dot(pos_arr)[:3].tolist())
+            # TODO: DynamicObject.get_distance_bev() doesn't support map coords
+            bev_distance_: float = math.hypot(position_[0], position_[1])
+        else:
+            bev_distance_: float = dynamic_object.get_distance_bev()
 
     if is_target and max_x_position_list is not None:
         max_x_position = label_threshold.get_label_threshold(max_x_position_list)
@@ -413,9 +415,9 @@ def _is_target_object(
 
 
 def divide_objects(
-    objects: List[Union[DynamicObject, DynamicObjectWithPerceptionResult]],
+    objects: List[Union[DynamicObject, RoiObject, DynamicObjectWithPerceptionResult]],
     target_labels: Optional[List[AutowareLabel]] = None,
-) -> Dict[AutowareLabel, List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]]:
+) -> Dict[AutowareLabel, List[Union[DynamicObject, RoiObject, DynamicObjectWithPerceptionResult]]]:
     """[summary]
     Divide DynamicObject or DynamicObjectWithPerceptionResult for each label as dict.
 
@@ -433,10 +435,10 @@ def divide_objects(
     if target_labels is not None:
         ret = {label: [] for label in target_labels}
     else:
-        ret: Dict[AutowareLabel, List[DynamicObject]] = {}
+        ret: Dict[AutowareLabel, List[Union[DynamicObject, RoiObject]]] = {}
 
     for obj in objects:
-        if isinstance(obj, DynamicObject):
+        if isinstance(obj, (DynamicObject, RoiObject)):
             label: AutowareLabel = obj.semantic_label
         elif isinstance(obj, DynamicObjectWithPerceptionResult):
             label: AutowareLabel = obj.estimated_object.semantic_label
@@ -451,7 +453,7 @@ def divide_objects(
 
 
 def divide_objects_to_num(
-    objects: List[Union[DynamicObject, DynamicObjectWithPerceptionResult]],
+    objects: List[Union[DynamicObject, RoiObject, DynamicObjectWithPerceptionResult]],
     target_labels: Optional[List[AutowareLabel]] = None,
 ) -> Dict[AutowareLabel, int]:
     """[summary]
@@ -472,7 +474,7 @@ def divide_objects_to_num(
         ret: Dict[AutowareLabel, int] = {}
 
     for obj in objects:
-        if isinstance(obj, DynamicObject):
+        if isinstance(obj, (DynamicObject, RoiObject)):
             label: AutowareLabel = obj.semantic_label
         elif isinstance(obj, DynamicObjectWithPerceptionResult):
             label: AutowareLabel = obj.estimated_object.semantic_label

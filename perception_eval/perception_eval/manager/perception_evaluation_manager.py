@@ -16,6 +16,7 @@ from typing import List
 from typing import Tuple
 
 from perception_eval.common.dataset import FrameGroundTruth
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
 from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
@@ -61,7 +62,11 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         """
         self.target_labels: List[AutowareLabel] = evaluation_config.target_labels
         self.frame_results: List[PerceptionFrameResult] = []
-        self.visualizer = PerceptionVisualizer.from_eval_cfg(self.evaluator_config)
+        self.visualizer = (
+            None
+            if self.evaluator_config.evaluation_task == EvaluationTask.DETECTION2D
+            else PerceptionVisualizer.from_eval_cfg(self.evaluator_config)
+        )
 
     def add_frame_result(
         self,

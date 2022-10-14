@@ -19,6 +19,7 @@ import math
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 import numpy as np
 from perception_eval.common.label import AutowareLabel
@@ -487,15 +488,123 @@ class DynamicObject:
             return None
 
 
-def distance_objects(object_1: DynamicObject, object_2: DynamicObject) -> float:
+class Roi:
+    """Region of Interest; ROI class."""
+
+    def __init__(
+        self,
+        offset: Tuple[int, int],
+        size: Tuple[int, int],
+    ) -> None:
+        self.offset: Tuple[int, int] = offset
+        self.size: Tuple[int, int] = size
+
+    @property
+    def center(self) -> Tuple[int, int]:
+        return (self.offset[0] + self.width // 2, self.offset[1] + self.height // 2)
+
+    @property
+    def height(self) -> int:
+        return self.size[0]
+
+    @property
+    def width(self) -> int:
+        return self.size[1]
+
+    @property
+    def area(self) -> int:
+        return self.size[0] * self.size[1]
+
+
+class RoiObject:
+    """ROI object class."""
+
+    def __init__(
+        self,
+        unix_time: int,
+        offset: Tuple[int, int],
+        size: Tuple[int, int],
+        semantic_score: float,
+        semantic_label: AutowareLabel,
+        uuid: Optional[str] = None,
+        visibility: Optional[Visibility] = None,
+    ) -> None:
+        """[summary]
+        Args:
+            unix_time (int)
+            offset (Tuple[int, int]): (x, y) order.
+            size (Tuple[int, int]): (height, width) order.
+            semantic_score (float)
+            semantic_label (AutowareLabel)
+        """
+        self.unix_time: int = unix_time
+        self.roi: Roi = Roi(offset, size)
+        self.semantic_score: float = semantic_score
+        self.semantic_label: AutowareLabel = semantic_label
+        self.visibility: Optional[Visibility] = visibility
+
+    def get_corners(self) -> np.ndarray:
+        """[summary]
+        Returns the corners of bounding box in pixel.
+
+        Returns:
+            numpy.ndarray: (top_left, top_right, bottom_right, bottom_left), in shape (4, 2).
+        """
+        top_left: Tuple[int, int] = self.roi.offset
+        top_right: Tuple[int, int] = (
+            self.roi.offset[0] + self.roi.width,
+            self.roi.offset[1],
+        )
+        bottom_right: Tuple[int, int] = (
+            self.roi.offset[0] + self.roi.width,
+            self.roi.offset[1] + self.roi.height,
+        )
+        bottom_left: Tuple[int, int] = (
+            self.roi.offset[0],
+            self.roi.offset[1] + self.roi.height,
+        )
+        return np.array([top_left, top_right, bottom_right, bottom_left])
+
+    def get_area(self) -> int:
+        """[summary]
+        Returns the area of bounding box in pixel.
+
+        Returns:
+            int: Area of bounding box[px].
+        """
+        return self.roi.area
+
+    def get_polygon(self) -> Polygon:
+        """[summary]
+        Returns the corners as polygon.
+
+        Returns:
+            Polygon
+        """
+        corners: List[List[float]] = self.get_corners().tolist()
+        corners.append(corners[0])
+        return Polygon(corners)
+
+
+def distance_objects(
+    object_1: Union[DynamicObject, RoiObject],
+    object_2: Union[DynamicObject, RoiObject],
+) -> float:
     """[summary]
     Calculate the 3d center distance between two objects.
     Args:
-         object_1 (DynamicObject): An object
-         object_2 (DynamicObject): An object
+         object_1 (Union[DynamicObject, RoiObject]): An object
+         object_2 (Union[DynamicObject, RoiObject]): An object
     Returns: float: The center distance from object_1 (DynamicObject) to object_2.
     """
-    return distance_points(object_1.state.position, object_2.state.position)
+    if type(object_1) != type(object_2):
+        raise TypeError(
+            f"objects' type must be same, but got {type(object_1) and {type(object_2)}}"
+        )
+
+    if isinstance(object_1, DynamicObject):
+        return distance_points(object_1.state.position, object_2.state.position)
+    return np.linalg.norm(np.array(object_1.roi.center) - np.array(object_2.roi.center))
 
 
 def distance_objects_bev(object_1: DynamicObject, object_2: DynamicObject) -> float:
@@ -506,4 +615,5 @@ def distance_objects_bev(object_1: DynamicObject, object_2: DynamicObject) -> fl
          object_2 (DynamicObject): An object
     Returns: float: The 2d center distance from object_1 to object_2.
     """
+    assert isinstance(object_1, DynamicObject) and isinstance(object_2, DynamicObject)
     return distance_points_bev(object_1.state.position, object_2.state.position)

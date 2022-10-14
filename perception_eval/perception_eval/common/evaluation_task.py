@@ -29,6 +29,7 @@ class EvaluationTask(Enum):
     DETECTION = "detection"
     TRACKING = "tracking"
     PREDICTION = "prediction"
+    DETECTION2D = "detection2d"
     SENSING = "sensing"
 
     def __str__(self) -> str:
