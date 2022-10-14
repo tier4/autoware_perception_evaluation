@@ -17,14 +17,16 @@ from __future__ import annotations
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 import numpy as np
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.object import RoiObject
 from perception_eval.common.object import distance_objects
 from perception_eval.common.object import distance_objects_bev
 from perception_eval.evaluation.matching.object_matching import CenterDistanceMatching
+from perception_eval.evaluation.matching.object_matching import IOU2dMatching
 from perception_eval.evaluation.matching.object_matching import IOU3dMatching
-from perception_eval.evaluation.matching.object_matching import IOUBEVMatching
 from perception_eval.evaluation.matching.object_matching import MatchingMethod
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.object_matching import PlaneDistanceMatching
@@ -35,9 +37,9 @@ class DynamicObjectWithPerceptionResult:
     Evaluation result for a estimated object
 
     Attributes:
-        self.estimated_object (DynamicObject):
+        self.estimated_object (Union[DynamicObject, RoiObject]):
                 The estimated object by inference like CenterPoint.
-        self.ground_truth_object (Optional[DynamicObject]):
+        self.ground_truth_object (Optional[Union[DynamicObject, RoiObject]]):
                 Ground truth object corresponding to estimated object.
         self.is_label_correct (bool):
                 Whether the label of estimated_object is same as the label of ground truth object
@@ -53,8 +55,8 @@ class DynamicObjectWithPerceptionResult:
 
     def __init__(
         self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
+        estimated_object: Union[DynamicObject, RoiObject],
+        ground_truth_object: Optional[Union[DynamicObject, RoiObject]],
     ) -> None:
         """[summary]
         Evaluation result for an object estimated object.
@@ -63,26 +65,32 @@ class DynamicObjectWithPerceptionResult:
             estimated_object (DynamicObject): The estimated object by inference like CenterPoint
             ground_truth_objects (Optional[DynamicObject]): The list of Ground truth objects
         """
-        self.estimated_object: DynamicObject = estimated_object
-        self.ground_truth_object: Optional[DynamicObject] = ground_truth_object
+        if ground_truth_object is not None:
+            assert type(estimated_object) == type(ground_truth_object)
+        self.estimated_object: Union[DynamicObject, RoiObject] = estimated_object
+        self.ground_truth_object: Optional[Union[DynamicObject, RoiObject]] = ground_truth_object
 
         # detection
         self.center_distance: CenterDistanceMatching = CenterDistanceMatching(
             self.estimated_object,
             self.ground_truth_object,
         )
-        self.iou_bev: IOUBEVMatching = IOUBEVMatching(
+        self.iou_2d: IOU2dMatching = IOU2dMatching(
             self.estimated_object,
             self.ground_truth_object,
         )
-        self.iou_3d: IOU3dMatching = IOU3dMatching(
-            self.estimated_object,
-            self.ground_truth_object,
-        )
-        self.plane_distance: PlaneDistanceMatching = PlaneDistanceMatching(
-            self.estimated_object,
-            self.ground_truth_object,
-        )
+        if isinstance(estimated_object, DynamicObject):
+            self.iou_3d: IOU3dMatching = IOU3dMatching(
+                self.estimated_object,
+                self.ground_truth_object,
+            )
+            self.plane_distance: PlaneDistanceMatching = PlaneDistanceMatching(
+                self.estimated_object,
+                self.ground_truth_object,
+            )
+        else:
+            self.iou_3d = None
+            self.plane_distance = None
 
     def is_result_correct(
         self,
@@ -132,8 +140,8 @@ class DynamicObjectWithPerceptionResult:
             return self.center_distance
         elif matching_mode == MatchingMode.PLANEDISTANCE:
             return self.plane_distance
-        elif matching_mode == MatchingMode.IOUBEV:
-            return self.iou_bev
+        elif matching_mode == MatchingMode.IOU2D:
+            return self.iou_2d
         elif matching_mode == MatchingMode.IOU3D:
             return self.iou_3d
         else:
@@ -218,16 +226,16 @@ class DynamicObjectWithPerceptionResult:
 
 
 def get_object_results(
-    estimated_objects: List[DynamicObject],
-    ground_truth_objects: List[DynamicObject],
+    estimated_objects: List[Union[DynamicObject, RoiObject]],
+    ground_truth_objects: List[Union[DynamicObject, RoiObject]],
     matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
 ) -> List[DynamicObjectWithPerceptionResult]:
     """[summary]
     Returns list of DynamicObjectWithPerceptionResult.
 
     Args:
-        estimated_objects (List[DynamicObject]): The list of estimated object.
-        ground_truth_objects (List[DynamicObject]): The list of ground truth object.
+        estimated_objects (List[Union[DynamicObject, RoiObject]]): The list of estimated object.
+        ground_truth_objects (List[Union[DynamicObject, RoiObject]]): The list of ground truth object.
         matching_mode (MatchingMode): The MatchingMode instance.
 
     Returns:
@@ -255,8 +263,8 @@ def get_object_results(
     elif matching_mode == MatchingMode.PLANEDISTANCE:
         matching_method_module: PlaneDistanceMatching = PlaneDistanceMatching
         maximize: bool = False
-    elif matching_mode == MatchingMode.IOUBEV:
-        matching_method_module: IOUBEVMatching = IOUBEVMatching
+    elif matching_mode == MatchingMode.IOU2D:
+        matching_method_module: IOU2dMatching = IOU2dMatching
         maximize: bool = True
     elif matching_mode == MatchingMode.IOU3D:
         matching_method_module: IOU3dMatching = IOU3dMatching

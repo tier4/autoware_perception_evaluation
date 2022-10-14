@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from typing import List
+from typing import Optional
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
@@ -33,15 +34,15 @@ class DetectionMetricsConfig(_MetricsConfigBase):
         self.iou_3d_thresholds (List[float]): The threshold list of 3d iou for matching
     """
 
-    evaluation_task = EvaluationTask.DETECTION
+    evaluation_task: EvaluationTask = [EvaluationTask.DETECTION, EvaluationTask.DETECTION2D]
 
     def __init__(
         self,
         target_labels: List[AutowareLabel],
-        center_distance_thresholds: List[List[float]],
-        plane_distance_thresholds: List[List[float]],
-        iou_bev_thresholds: List[List[float]],
-        iou_3d_thresholds: List[List[float]],
+        center_distance_thresholds: Optional[List[float]] = None,
+        plane_distance_thresholds: Optional[List[float]] = None,
+        iou_2d_thresholds: Optional[List[float]] = None,
+        iou_3d_thresholds: Optional[List[float]] = None,
     ) -> None:
         """[summary]
         Args:
@@ -72,6 +73,6 @@ class DetectionMetricsConfig(_MetricsConfigBase):
             target_labels=target_labels,
             center_distance_thresholds=center_distance_thresholds,
             plane_distance_thresholds=plane_distance_thresholds,
-            iou_bev_thresholds=iou_bev_thresholds,
+            iou_2d_thresholds=iou_2d_thresholds,
             iou_3d_thresholds=iou_3d_thresholds,
         )

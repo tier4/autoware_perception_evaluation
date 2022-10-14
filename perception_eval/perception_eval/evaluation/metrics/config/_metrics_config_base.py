@@ -15,6 +15,7 @@
 from abc import ABC
 from abc import abstractmethod
 from typing import List
+from typing import Optional
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
@@ -30,10 +31,10 @@ class _MetricsConfigBase(ABC):
     def __init__(
         self,
         target_labels: List[AutowareLabel],
-        center_distance_thresholds,
-        plane_distance_thresholds,
-        iou_bev_thresholds,
-        iou_3d_thresholds,
+        center_distance_thresholds: Optional[List[float]] = None,
+        plane_distance_thresholds: Optional[List[float]] = None,
+        iou_2d_thresholds: Optional[List[float]] = None,
+        iou_3d_thresholds: Optional[List[float]] = None,
     ) -> None:
         """[summary]
         Args:
@@ -56,43 +57,57 @@ class _MetricsConfigBase(ABC):
 
         self.target_labels: List[AutowareLabel] = target_labels
 
-        center_distance_thresholds_ = set_thresholds(
-            center_distance_thresholds,
-            len(target_labels),
-        )
-        plane_distance_thresholds_ = set_thresholds(
-            plane_distance_thresholds,
-            len(target_labels),
-        )
-        iou_bev_thresholds_ = set_thresholds(
-            iou_bev_thresholds,
-            len(target_labels),
-        )
-        iou_3d_thresholds_ = set_thresholds(
-            iou_3d_thresholds,
-            len(target_labels),
-        )
+        if center_distance_thresholds:
+            center_distance_thresholds_ = set_thresholds(
+                center_distance_thresholds,
+                len(target_labels),
+            )
+            self.center_distance_thresholds: List[List[float]] = check_thresholds_list(
+                center_distance_thresholds_,
+                self.target_labels,
+                MetricThresholdsError,
+            )
+        else:
+            self.center_distance_thresholds = []
 
-        self.center_distance_thresholds: List[List[float]] = check_thresholds_list(
-            center_distance_thresholds_,
-            self.target_labels,
-            MetricThresholdsError,
-        )
-        self.plane_distance_thresholds: List[List[float]] = check_thresholds_list(
-            plane_distance_thresholds_,
-            self.target_labels,
-            MetricThresholdsError,
-        )
-        self.iou_bev_thresholds: List[List[float]] = check_thresholds_list(
-            iou_bev_thresholds_,
-            self.target_labels,
-            MetricThresholdsError,
-        )
-        self.iou_3d_thresholds: List[List[float]] = check_thresholds_list(
-            iou_3d_thresholds_,
-            self.target_labels,
-            MetricThresholdsError,
-        )
+        if plane_distance_thresholds:
+            plane_distance_thresholds_ = set_thresholds(
+                plane_distance_thresholds,
+                len(target_labels),
+            )
+            self.plane_distance_thresholds: List[List[float]] = check_thresholds_list(
+                plane_distance_thresholds_,
+                self.target_labels,
+                MetricThresholdsError,
+            )
+        else:
+            self.plane_distance_thresholds = []
+
+        if iou_2d_thresholds:
+            iou_2d_thresholds_ = set_thresholds(
+                iou_2d_thresholds,
+                len(target_labels),
+            )
+            self.iou_2d_thresholds: List[List[float]] = check_thresholds_list(
+                iou_2d_thresholds_,
+                self.target_labels,
+                MetricThresholdsError,
+            )
+        else:
+            self.iou_2d_thresholds = []
+
+        if iou_3d_thresholds:
+            iou_3d_thresholds_ = set_thresholds(
+                iou_3d_thresholds,
+                len(target_labels),
+            )
+            self.iou_3d_thresholds: List[List[float]] = check_thresholds_list(
+                iou_3d_thresholds_,
+                self.target_labels,
+                MetricThresholdsError,
+            )
+        else:
+            self.iou_3d_thresholds = []
 
 
 class MetricThresholdsError(Exception):

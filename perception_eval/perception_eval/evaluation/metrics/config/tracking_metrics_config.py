@@ -40,7 +40,7 @@ class TrackingMetricsConfig(_MetricsConfigBase):
         target_labels: List[AutowareLabel],
         center_distance_thresholds: List[List[float]],
         plane_distance_thresholds: List[List[float]],
-        iou_bev_thresholds: List[List[float]],
+        iou_2d_thresholds: List[List[float]],
         iou_3d_thresholds: List[List[float]],
     ) -> None:
         """[summary]
@@ -55,7 +55,7 @@ class TrackingMetricsConfig(_MetricsConfigBase):
                     center distance threshold for a pedestrian is 0.5.
             plane_distance_thresholds (List[List[float]]):
                     The mAP threshold of plane distance as map_thresholds_center_distance.
-            iou_bev_thresholds (List[List[float])]:
+            iou_2d_thresholds (List[List[float])]:
                     The threshold List of BEV iou for matching as map_thresholds_center_distance.
             iou_3d_thresholds (List[List[float])]:
                     The threshold list of 3D iou for matching as map_thresholds_center_distance.
@@ -64,6 +64,6 @@ class TrackingMetricsConfig(_MetricsConfigBase):
             target_labels=target_labels,
             center_distance_thresholds=center_distance_thresholds,
             plane_distance_thresholds=plane_distance_thresholds,
-            iou_bev_thresholds=iou_bev_thresholds,
+            iou_2d_thresholds=iou_2d_thresholds,
             iou_3d_thresholds=iou_3d_thresholds,
         )

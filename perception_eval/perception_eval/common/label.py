@@ -150,6 +150,7 @@ class LabelConverter:
             (AutowareLabel.UNKNOWN, "movable_object.trafficcone"),
             (AutowareLabel.UNKNOWN, "movable_object.traffic_cone"),
             (AutowareLabel.UNKNOWN, "static_object.bicycle rack"),
+            (AutowareLabel.UNKNOWN, "static_object.bollard"),
         ]
         if merge_similar_labels:
             pair_list += [
