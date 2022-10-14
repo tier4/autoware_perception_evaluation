@@ -48,7 +48,7 @@ visualizer.visualize_all(frame_results)
 
 `PerceptionVisualizationConfig`に指定した，`visualization_directory_path`に各フレームの可視化画像が保存される．
 
-### PerceptionVisualizationConfig
+### `<class> PerceptionVisualizationConfig(...)`
 
 | Arguments                      |         type          | Mandatory | Description                             |
 | :----------------------------- | :-------------------: | :-------: | :-------------------------------------- |

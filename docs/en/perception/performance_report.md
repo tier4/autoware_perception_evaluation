@@ -124,7 +124,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
            nn_plane  0.688891  0.893696  5.693175e-01  2.190708  0.020005
 ```
 
-## PerceptionPerformanceAnalyzer
+## `<class> PerceptionPerformanceAnalyzer(...)`
 
 | Arguments           |             type             | Mandatory | Description                                                    |
 | :------------------ | :--------------------------: | :-------: | :------------------------------------------------------------- |
@@ -244,7 +244,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ### Analyze
 
-- `summarize_ratio()`
+- `<func> summarize_ratio() -> pandas.DataFrame`
   - Calculate TP rate, FN rate, FP rate for each label.
 
 | label |  "TP"   |  "FN"   |  "FP"   |
@@ -261,7 +261,7 @@ motorbike   1.000000  0.0  0.000000
 bicycle     0.958561  0.0  0.041439
 ```
 
-- `summarize_score()`
+- `<func> summarize_score() -> pandas.DataFrame`
 
 | label |  "AP"   |  "APH"  | "MOTA"  | "MOTP"  | "IDswitch" |
 | :---- | :-----: | :-----: | :-----: | :-----: | :--------: |
@@ -277,7 +277,7 @@ motorbike                     0.990989                     0.952135     0.990989
 bicycle                       1.000000                     1.000000     1.000000      1.000000    1.000000  ...           1.0                 0                  1.000000                       0.0                             0
 ```
 
-- `summarize_error()`
+- `<func> summarize_error() -> pandas.DataFrame`
   - Calculate average, RMS, std, max and min error for each label.
 
 | label | element | "average" |  "rms"  |  "std"  |  "max"  |  "min"  |
@@ -314,7 +314,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ### Plot functions
 
-- `plot_by_time()`
+- `<func> plot_by_time() -> None`
 
   - Plot the state change over time for specified GT with uuid.
 
@@ -333,7 +333,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
     <img src="../../fig/perception/sample_plot_by_time.png" width=800 height=400>
 
-- `plot_num_objects()`
+- `<func> plot_num_objects() -> None`
 
   - Plot number of objects by distance from `base_link` in histogram
 

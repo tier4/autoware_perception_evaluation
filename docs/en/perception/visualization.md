@@ -48,7 +48,7 @@ visualizer.visualize_all(frame_results)
 
 Each visualized image will be saved in `visualization_directory_path` specified in `PerceptionVisualizationConfig`
 
-### PerceptionVisualizationConfig
+### `<class> PerceptionVisualizationConfig(...)`
 
 | Arguments                      |         type          | Mandatory | Description                                                  |
 | :----------------------------- | :-------------------: | :-------: | :----------------------------------------------------------- |

@@ -127,7 +127,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
            nn_plane  0.688891  0.893696  5.693175e-01  2.190708  0.020005
 ```
 
-## PerceptionPerformanceAnalyzer
+## `<class> PerceptionPerformanceAnalyzer(...)`
 
 | Arguments           |             type             | Mandatory |                    Description                    |
 | :------------------ | :--------------------------: | :-------: | :-----------------------------------------------: |
@@ -247,7 +247,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ### 解析
 
-- `summarize_ratio()`
+- `<func> summarize_ratio(...) -> pandas.DataFrame`
   - 各クラスに対する TP 率，FN 率，FP 率の算出
 
 | label |  "TP"   |  "FN"   |  "FP"   |
@@ -264,7 +264,7 @@ motorbike   1.000000  0.0  0.000000
 bicycle     0.958561  0.0  0.041439
 ```
 
-- `summarize_score()`
+- `<func> summarize_score(...) -> pandas.DataFrame`
 
 | label |  "AP"   |  "APH"  | "MOTA"  | "MOTP"  | "IDswitch" |
 | :---- | :-----: | :-----: | :-----: | :-----: | :--------: |
@@ -281,7 +281,7 @@ bicycle                       1.000000                     1.000000     1.000000
 
 ```
 
-- `summarize_error()`
+- `<func> summarize_error(...) -> pandas.DataFrame`
   - 各クラスに対する average，RMS，std，max，min の算出
 
 | label | element | "average" |  "rms"  |  "std"  |  "max"  |  "min"  |
@@ -318,7 +318,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ### プロット関数
 
-- `plot_by_time()`
+- `<func> plot_by_time(...) -> None`
 
   - 指定した GT オブジェクトに対し位置または速度と誤差を時系列で描画
 
@@ -337,7 +337,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
     <img src="../../fig/perception/sample_plot_by_time.png" width=800 height=400>
 
-- `plot_num_objects()`
+- `<func> plot_num_objects(...) -> None`
 
   - `base_link`からの距離ごとのオブジェクト数をヒストグラムでプロット
 
