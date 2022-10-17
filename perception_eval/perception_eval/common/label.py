@@ -101,12 +101,13 @@ class LabelConverter:
         """
         return_label: Optional[AutowareLabel] = None
         for label_class in self.labels:
-            if label == label_class.label:
+            if label.lower() == label_class.label:
                 if count_label_number:
                     label_class.num += 1
                     if return_label is not None:
                         logger.error(f"Label {label} is already converted to {return_label}")
                 return_label = label_class.autoware_label
+                break
         if return_label is None:
             logger.warning(f"Label {label} is not registered")
             return_label = AutowareLabel.UNKNOWN
@@ -128,15 +129,12 @@ class LabelConverter:
         """
         pair_list: List[Tuple[AutowareLabel, str]] = [
             (AutowareLabel.BICYCLE, "bicycle"),
-            (AutowareLabel.BICYCLE, "BICYCLE"),
             (AutowareLabel.BICYCLE, "vehicle.bicycle"),
             (AutowareLabel.CAR, "car"),
-            (AutowareLabel.CAR, "CAR"),
             (AutowareLabel.CAR, "vehicle.car"),
             (AutowareLabel.CAR, "vehicle.construction"),
             (AutowareLabel.CAR, "vehicle.emergency (ambulance & police)"),
             (AutowareLabel.PEDESTRIAN, "pedestrian"),
-            (AutowareLabel.PEDESTRIAN, "PEDESTRIAN"),
             (AutowareLabel.PEDESTRIAN, "pedestrian.adult"),
             (AutowareLabel.PEDESTRIAN, "pedestrian.child"),
             (AutowareLabel.PEDESTRIAN, "pedestrian.construction_worker"),
@@ -145,9 +143,7 @@ class LabelConverter:
             (AutowareLabel.PEDESTRIAN, "pedestrian.stroller"),
             (AutowareLabel.PEDESTRIAN, "pedestrian.wheelchair"),
             (AutowareLabel.UNKNOWN, "animal"),
-            (AutowareLabel.UNKNOWN, "ANIMAL"),
             (AutowareLabel.UNKNOWN, "unknown"),
-            (AutowareLabel.UNKNOWN, "UNKNOWN"),
             (AutowareLabel.UNKNOWN, "movable_object.barrier"),
             (AutowareLabel.UNKNOWN, "movable_object.debris"),
             (AutowareLabel.UNKNOWN, "movable_object.pushable_pullable"),
@@ -158,33 +154,25 @@ class LabelConverter:
         if merge_similar_labels:
             pair_list += [
                 (AutowareLabel.CAR, "bus"),
-                (AutowareLabel.CAR, "BUS"),
                 (AutowareLabel.CAR, "vehicle.bus (bendy & rigid)"),
                 (AutowareLabel.CAR, "vehicle.bus"),
                 (AutowareLabel.CAR, "truck"),
-                (AutowareLabel.CAR, "TRUCK"),
                 (AutowareLabel.CAR, "vehicle.truck"),
                 (AutowareLabel.CAR, "trailer"),
-                (AutowareLabel.CAR, "TRAILER"),
                 (AutowareLabel.CAR, "vehicle.trailer"),
                 (AutowareLabel.BICYCLE, "motorbike"),
-                (AutowareLabel.BICYCLE, "MOTORBIKE"),
                 (AutowareLabel.BICYCLE, "vehicle.motorcycle"),
             ]
         else:
             pair_list += [
                 (AutowareLabel.BUS, "bus"),
-                (AutowareLabel.BUS, "BUS"),
                 (AutowareLabel.BUS, "vehicle.bus (bendy & rigid)"),
                 (AutowareLabel.BUS, "vehicle.bus"),
                 (AutowareLabel.TRUCK, "truck"),
-                (AutowareLabel.TRUCK, "TRUCK"),
                 (AutowareLabel.TRUCK, "vehicle.truck"),
                 (AutowareLabel.TRUCK, "trailer"),
-                (AutowareLabel.TRUCK, "TRAILER"),
                 (AutowareLabel.TRUCK, "vehicle.trailer"),
                 (AutowareLabel.MOTORBIKE, "motorbike"),
-                (AutowareLabel.MOTORBIKE, "MOTORBIKE"),
                 (AutowareLabel.MOTORBIKE, "vehicle.motorcycle"),
             ]
         return pair_list
