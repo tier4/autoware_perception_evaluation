@@ -4,23 +4,37 @@ import pytest
 
 non_merged_pairs = [
     (AutowareLabel.BICYCLE, "bicycle"),
+    (AutowareLabel.BICYCLE, "BICYCLE"),
     (AutowareLabel.MOTORBIKE, "motorbike"),
+    (AutowareLabel.MOTORBIKE, "MOTORBIKE"),
     (AutowareLabel.CAR, "car"),
+    (AutowareLabel.CAR, "CAR"),
     (AutowareLabel.BUS, "bus"),
+    (AutowareLabel.BUS, "BUS"),
     (AutowareLabel.TRUCK, "truck"),
+    (AutowareLabel.TRUCK, "TRUCK"),
+    (AutowareLabel.TRUCK, "trailer"),
+    (AutowareLabel.TRUCK, "TRAILER"),
     (AutowareLabel.PEDESTRIAN, "pedestrian"),
-    (AutowareLabel.TRUCK, "truck"),
+    (AutowareLabel.PEDESTRIAN, "PEDESTRIAN"),
     (AutowareLabel.UNKNOWN, "unknown"),
 ]
 
 merged_pairs = [
     (AutowareLabel.BICYCLE, "bicycle"),
+    (AutowareLabel.BICYCLE, "BICYCLE"),
     (AutowareLabel.BICYCLE, "motorbike"),
+    (AutowareLabel.BICYCLE, "MOTORBIKE"),
     (AutowareLabel.CAR, "car"),
+    (AutowareLabel.CAR, "CAR"),
     (AutowareLabel.CAR, "bus"),
+    (AutowareLabel.CAR, "BUS"),
     (AutowareLabel.CAR, "truck"),
+    (AutowareLabel.CAR, "TRUCK"),
+    (AutowareLabel.CAR, "trailer"),
+    (AutowareLabel.CAR, "TRAILER"),
     (AutowareLabel.PEDESTRIAN, "pedestrian"),
-    (AutowareLabel.CAR, "truck"),
+    (AutowareLabel.PEDESTRIAN, "PEDESTRIAN"),
     (AutowareLabel.UNKNOWN, "unknown"),
 ]
 
