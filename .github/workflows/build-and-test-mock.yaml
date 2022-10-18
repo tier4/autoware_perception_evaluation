@@ -20,7 +20,8 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.7.11", "3.8", "3.9"]
-        lsim-task: [test.perception_lsim, test.sensing_lsim]
+        lsim-task:
+          [test.perception_lsim, test.sensing_lsim, test.perception_lsim2d]
         visualization-task: [test.eda]
 
     steps:
