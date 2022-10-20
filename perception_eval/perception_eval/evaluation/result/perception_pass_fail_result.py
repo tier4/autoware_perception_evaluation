@@ -19,6 +19,7 @@ from typing import Tuple
 
 import numpy as np
 from perception_eval.common.dataset import DynamicObject
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_tp_fp_objects
 from perception_eval.evaluation.matching.objects_filter import filter_objects
@@ -142,8 +143,10 @@ class PassFailResult:
         tp_object_results, fp_object_results = divide_tp_fp_objects(
             object_results=object_results,
             target_labels=self.frame_pass_fail_config.target_labels,
-            matching_mode=MatchingMode.PLANEDISTANCE,
-            matching_threshold_list=self.frame_pass_fail_config.plane_distance_threshold_list,
+            matching_mode=MatchingMode.IOU2D
+            if self.frame_pass_fail_config.evaluation_task == EvaluationTask.DETECTION2D
+            else MatchingMode.PLANEDISTANCE,
+            matching_threshold_list=self.frame_pass_fail_config.matching_threshold_list,
         )
 
         # filter by critical_ground_truth_objects

@@ -20,7 +20,6 @@ from typing import Optional
 from typing import Union
 
 from perception_eval.common.dataset import FrameGroundTruth
-from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.object import RoiObject
@@ -84,15 +83,12 @@ class PerceptionFrameResult:
             metrics_config,
             used_frame=[int(self.frame_name)],
         )
-        if metrics_config.evaluation_task != EvaluationTask.DETECTION2D:
-            self.pass_fail_result: PassFailResult = PassFailResult(
-                critical_object_filter_config=critical_object_filter_config,
-                frame_pass_fail_config=frame_pass_fail_config,
-                frame_id=frame_ground_truth.frame_id,
-                ego2map=frame_ground_truth.ego2map,
-            )
-        else:
-            self.pass_fail_result = None
+        self.pass_fail_result: PassFailResult = PassFailResult(
+            critical_object_filter_config=critical_object_filter_config,
+            frame_pass_fail_config=frame_pass_fail_config,
+            frame_id=frame_ground_truth.frame_id,
+            ego2map=frame_ground_truth.ego2map,
+        )
 
     def evaluate_frame(
         self,
@@ -131,8 +127,7 @@ class PerceptionFrameResult:
         if self.metrics_score.prediction_config is not None:
             pass
 
-        if self.pass_fail_result:
-            self.pass_fail_result.evaluate(
-                object_results=self.object_results,
-                ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
-            )
+        self.pass_fail_result.evaluate(
+            object_results=self.object_results,
+            ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
+        )
