@@ -89,14 +89,12 @@ class PerceptionLSimMoc:
         critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            max_x_position_list=[30.0, 30.0, 30.0, 30.0],
-            max_y_position_list=[30.0, 30.0, 30.0, 30.0],
         )
         # Pass fail を決めるパラメータ
         frame_pass_fail_config: PerceptionPassFailConfig = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            plane_distance_threshold_list=[2.0, 2.0, 2.0, 2.0],
+            matching_threshold_list=[0.8, 0.8, 0.8, 0.8],
         )
 
         frame_result = self.evaluator.add_frame_result(
@@ -123,6 +121,12 @@ class PerceptionLSimMoc:
         """
         Frameごとの可視化
         """
+        logging.info(
+            f"{len(frame_result.pass_fail_result.tp_objects)} TP objects, "
+            f"{len(frame_result.pass_fail_result.fp_objects_result)} FP objects, "
+            f"{len(frame_result.pass_fail_result.fn_objects)} FN objects",
+        )
+
         if frame_result.metrics_score.maps[0].map < 0.7:
             logging.debug("mAP is low")
 

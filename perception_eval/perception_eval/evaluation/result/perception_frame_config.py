@@ -17,6 +17,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.threshold import check_thresholds
@@ -102,6 +103,11 @@ class CriticalObjectFilterConfig:
             )
             self.max_x_position_list = None
             self.max_y_position_list = None
+        elif evaluator_config.evaluation_task == EvaluationTask.DETECTION2D:
+            self.max_x_position_list = None
+            self.max_y_position_list = None
+            self.max_distance_list = None
+            self.min_distance_list = None
         else:
             raise RuntimeError("Either max x/y position or max/min distance should be specified")
 
@@ -140,8 +146,10 @@ class PerceptionPassFailConfig:
     Config filter for pass fail to frame result
 
     Attributes:
+        self.evaluation_task (EvaluationTask): Evaluation task.
         self.target_labels (List[str]): The list of target label.
-        self.threshold_plane_distance_list (List[float]): The threshold list for plane distance.
+        self.matching_distance_list (List[float]): The threshold list for Pass/Fail.
+            For 2D evaluation, IOU2D, for 3D evaluation, PLANEDISTANCE will be used.
         self.confidence_threshold_list (Optional[List[float]]): The list of confidence threshold.
     """
 
@@ -149,23 +157,25 @@ class PerceptionPassFailConfig:
         self,
         evaluator_config: PerceptionEvaluationConfig,
         target_labels: List[str],
-        plane_distance_threshold_list: List[float],
+        matching_threshold_list: List[float],
         confidence_threshold_list: Optional[List[float]] = None,
     ) -> None:
         """[summary]
         Args:
             evaluator_config (PerceptionEvaluationConfig): Evaluation config
             target_labels (List[str]): Target list
-            plane_distance_threshold_list (List[float]): The threshold list for plane distance
+            matching_threshold_list (List[float]): The threshold list for Pass/Fail.
+                For 2D evaluation, IOU2D, for 3D evaluation, PLANEDISTANCE will be used.
             confidence_threshold_list (Optional[List[float]]): The list of confidence threshold.
                 Defaults to None.
         """
+        self.evaluation_task: EvaluationTask = evaluator_config.evaluation_task
         self.target_labels: List[AutowareLabel] = set_target_lists(
             target_labels,
             evaluator_config.label_converter,
         )
-        self.plane_distance_threshold_list: List[float] = check_thresholds(
-            plane_distance_threshold_list,
+        self.matching_threshold_list: List[float] = check_thresholds(
+            matching_threshold_list,
             self.target_labels,
         )
         if confidence_threshold_list is None:
