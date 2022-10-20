@@ -1,6 +1,6 @@
 # Autoware Label
 
-- 詳細は[perception_eval.common.label.py](../../../perception_eval/perception_eval/common/label.py)を参照
+- For the details, see [perception_eval.common.label.py](../../../perception_eval/perception_eval/common/label.py)
 
 | type                       |    value     | support labels                         |
 | :------------------------- | :----------: | :------------------------------------- |
@@ -37,9 +37,9 @@
 |                            |              | movable_object.traffic_cone            |
 |                            |              | static_object.bicycle rack             |
 
-## 類似ラベルのマージ
+## Merge similar labels option
 
-- `PerceptionEvaluationConfig`の引数`merge_similar_labels=True`とすると，以下のように類似ラベルがマージされた状態で評価される．
+- Specify `merge_similar_labels=True` in `PerceptionEvaluationConfig`，then evaluation will be executed with merged labels like below.
 
   - `AutowareLabel.TRUCK` / `AutowareLabel.BUS` -> `AutowareLabel.CAR`
   - `AutowareLabel.MOTORBIKE` -> `AutowareLabel.BICYCLE`
