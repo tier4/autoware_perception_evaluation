@@ -6,6 +6,19 @@
 
 ## Release for main branch
 
+### v1.0.1
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/9>
+  - 【docs】英語ドキュメントの追加
+- <https://github.com/tier4/autoware_perception_evaluation/pull/16>
+  - 【feat】Visibility クラスへの UNAVAILABLE の追加
+- <https://github.com/tier4/autoware_perception_evaluation/pull/14>
+  - 【refactor】ラベル名の大文字・小文字にかかわらず判定できるように修正
+- <https://github.com/tier4/autoware_perception_evaluation/pull/8>
+  - 【feat】Trailer ラベルのサポート
+
+### v1.0.0
+
 - <https://github.com/tier4/autoware_perception_evaluation/pull/3>
   - 【release】release v1.0.0
 - <https://github.com/tier4/autoware_perception_evaluation/pull/2>
