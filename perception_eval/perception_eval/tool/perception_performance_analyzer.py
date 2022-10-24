@@ -782,6 +782,8 @@ class PerceptionPerformanceAnalyzer:
             # Clip err from [-2pi, 2pi] to [-pi, pi]
             err[err > np.pi] = -2 * np.pi + err[err > np.pi]
             err[err < -np.pi] = 2 * np.pi + err[err < -np.pi]
+        elif column in ("w", "l", "h"):
+            err = np.abs(err)
 
         return err
 
@@ -827,6 +829,10 @@ class PerceptionPerformanceAnalyzer:
             # velocity
             data["vx"] = _summarize("vx", df_)
             data["vy"] = _summarize("vy", df_)
+
+            # size
+            data["length"] = _summarize("l", df_)
+            data["width"] = _summarize("w", df_)
 
             # nn_plane
             data["nn_plane"] = _summarize(["nn_point1", "nn_point2"], df_)
@@ -1028,7 +1034,7 @@ class PerceptionPerformanceAnalyzer:
         if isinstance(columns, str):
             columns: List[str] = [columns]
 
-        if set(columns) > set(["x", "y", "yaw", "vx", "vy"]):
+        if set(columns) > set(["x", "y", "yaw", "w", "l", "vx", "vy"]):
             raise ValueError(f"{columns} is unsupported for plot")
 
         gt_df = self.get_ground_truth(uuid=uuid, status=status)
@@ -1101,7 +1107,7 @@ class PerceptionPerformanceAnalyzer:
         Plot states for each time/distance estimated and GT object in TP.
 
         Args:
-            columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "vx", "vy"].
+            columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
                 If you want plot multiple column for one image, use List[str].
             mode (Union[str, PlotMode]): Mode of plot used as x-axis, time or distance. Defaults to PlotMode.TIME.
             heatmap (bool): Whether overlay heatmap. Defaults to False.
@@ -1173,14 +1179,15 @@ class PerceptionPerformanceAnalyzer:
         Plot box-plot of errors.
 
         Args:
-            column (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "vx", "vy"].
+            column (Union[str, List[str]]): Target column name.
+                Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
                 If you want plot multiple column for one image, use List[str].
             show (bool): Whether show the plotted figure. Defaults to False.
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
 
-        if set(columns) > set(["x", "y", "yaw", "vx", "vy"]):
+        if set(columns) > set(["x", "y", "yaw", "w", "l", "vx", "vy"]):
             raise ValueError(f"{columns} is unsupported for plot")
 
         errs: List[np.ndarray] = []
