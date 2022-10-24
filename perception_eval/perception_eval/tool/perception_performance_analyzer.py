@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from enum import Enum
+import logging
 import os
 import pickle
 from typing import Any
@@ -374,9 +375,9 @@ class PerceptionPerformanceAnalyzer:
         scene: Optional[int] = None,
         area: Optional[int] = None,
         uuid: Optional[str] = None,
-    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    ) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
         """[summary]
-        Analyze TP/FP/FN ratio, metrics score, error.
+        Analyze TP/FP/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
 
         Args:
             scene (Optional[int]): Specify if you want to analyze specific scene. Defaults to None.
@@ -384,22 +385,19 @@ class PerceptionPerformanceAnalyzer:
             uuid (Optional[str]): Specify if you want to analyze specific uuid. Defaults to None.
 
         Returns:
-            score_df (pandas.DataFrame)
-            error_df (pandas.DataFrame)
+            score_df (Optional[pandas.DataFrame])
+            error_df (Optional[pandas.DataFrame])
         """
         df: pd.DataFrame = self.get(area=area, scene=scene, uuid=uuid)
         if len(df) > 0:
             ratio_df = self.summarize_ratio(df=df)
             error_df = self.summarize_error(df=df)
             metrics_df = self.summarize_score(area=area, scene=scene)
-
-        try:
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
-        except Exception as e:
-            warn(str(e))
-            return pd.DataFrame(), pd.DataFrame()
+            return score_df, error_df
 
-        return score_df, error_df
+        logging.warning("There is no DataFrame to be able to analyze.")
+        return None, None
 
     def add(self, frame_results: List[PerceptionFrameResult]) -> pd.DataFrame:
         """[summary]
