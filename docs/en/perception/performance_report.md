@@ -314,7 +314,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ### Plot functions
 
-- `<func> plot_by_time() -> None`
+- `<func> plot_by_time(...) -> None`
 
   - Plot the state change over time for specified GT with uuid.
 
@@ -333,7 +333,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
     <img src="../../fig/perception/sample_plot_by_time.png" width=800 height=400>
 
-- `<func> plot_num_objects() -> None`
+- `<func> plot_num_object(...) -> None`
 
   - Plot number of objects by distance from `base_link` in histogram
 
@@ -344,7 +344,23 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
   ```python
   # Plot the number of all objects
-  >> analyzer.plot_num_objects()
+  >> analyzer.plot_num_object()
   ```
 
   <img src="../../fig/perception/sample_plot_num_objects.png" width=800 height=400>
+
+- `<func> box_plot(...) -> None`
+
+  - Plot specified state's error with box-plot.
+
+  | Arguments |          type          | Mandatory |              Description               |
+  | :-------- | :--------------------: | :-------: | :------------------------------------: |
+  | `columns` | `Union[str, List[str]` |    Yes    | Target error (x, y, yaw, w, l, vx, vy) |
+  | `show`    |         `bool`         |    No     |  Whether show plot.(Defaults=`False`)  |
+
+  ```python
+  # Plot xy error with box-plot.
+  >> analyzer.box_plot(["x", "y"])
+  ```
+
+  <img src="../../fig/perception/box_plot_xy.png" width=800>

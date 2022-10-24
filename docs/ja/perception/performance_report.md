@@ -318,17 +318,17 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ### プロットメソッド関数
 
-- `plot_by_time()`
+- `<func> plot_by_time(...) -> None`
 
   - 指定した GT オブジェクトに対し時系列または距離ごとで位置，向き，速度の状態を描画
 
-    | Arguments |                  type                  | Mandatory |                         Description                         |
-    | :-------- | :------------------------------------: | :-------: | :---------------------------------------------------------: |
-    | `uuid`    |                 `str`                  |    Yes    |                対象 GT オブジェクトの uuid．                |
-    | `columns` |        `Union[str, List[str]]`         |    Yes    | 位置または速度を指定(Options=[`x`, `y`, `yaw`, `vx`, `vy`]) |
-    | `mode`    |         `Union[str, PlotMode]`         |    No     |       時系列または距離ごと(Defaults=`PlotMode.TIME`)        |
-    | `status`  | `Optional[Union[str, MatchingStatus]]` |    No     |     対象オブジェクトのマッチング状態．(Defaults=`None`)     |
-    | `show`    |                 `bool`                 |    No     |      描画結果を表示するかのフラッグ(Defaults=`False`)       |
+    | Arguments |                  type                  | Mandatory |                              Description                              |
+    | :-------- | :------------------------------------: | :-------: | :-------------------------------------------------------------------: |
+    | `uuid`    |                 `str`                  |    Yes    |                     対象 GT オブジェクトの uuid．                     |
+    | `columns` |        `Union[str, List[str]]`         |    Yes    | 位置または速度を指定(Options=[`x`, `y`, `yaw`, `w`, `l`, `vx`, `vy`]) |
+    | `mode`    |         `Union[str, PlotMode]`         |    No     |            時系列または距離ごと(Defaults=`PlotMode.TIME`)             |
+    | `status`  | `Optional[Union[str, MatchingStatus]]` |    No     |          対象オブジェクトのマッチング状態．(Defaults=`None`)          |
+    | `show`    |                 `bool`                 |    No     |           描画結果を表示するかのフラッグ(Defaults=`False`)            |
 
     ```python
     # 例: uuid: "4bae7e75c7de70be980ce20ce8cbb642"のオブジェクトのxyについて時系列でTP/FP/FNに関わらずプロット
@@ -338,7 +338,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
     <img src="../../fig/perception/sample_plot_by_time.png" width=800 height=400>
 
-- `plot_num_objects()`
+- `<func> plot_num_object(...) -> None`
 
   - GT/Estimation のオブジェクト数を距離ごとまたは時系列でヒストグラムでプロット
 
@@ -351,18 +351,18 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
   ```python
   # 全オブジェクトの数を距離ごとにプロット
-  >> analyzer.plot_num_objects()
+  >> analyzer.plot_num_object()
   ```
 
   <img src="../../fig/perception/sample_plot_num_objects.png" width=800 height=400>
 
-- `<func> box_plot(...)`
+- `<func> box_plot(...) -> None`
 
   - 指定した状態に対する誤差の箱ひげ図をプロット
 
   | Arguments |          type          | Mandatory |                   Description                    |
   | :-------- | :--------------------: | :-------: | :----------------------------------------------: |
-  | `columns` | `Union[str, List[str]` |    Yes    |      描画対象となる誤差(x, y, yaw, vx, vy)       |
+  | `columns` | `Union[str, List[str]` |    Yes    |   描画対象となる誤差(x, y, yaw, w, l, vx, vy)    |
   | `show`    |         `bool`         |    No     | 描画結果を表示するかのフラッグ(Defaults=`False`) |
 
   ```python
@@ -370,4 +370,4 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
   >> analyzer.box_plot(["x", "y"])
   ```
 
-  <img src="./figure/box_plot_xy.png" width=800>
+  <img src="../../fig/perception/box_plot_xy.png" width=800>
