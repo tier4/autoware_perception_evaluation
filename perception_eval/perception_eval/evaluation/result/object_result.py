@@ -62,11 +62,14 @@ class DynamicObjectWithPerceptionResult:
         Evaluation result for an object estimated object.
 
         Args:
-            estimated_object (DynamicObject): The estimated object by inference like CenterPoint
-            ground_truth_objects (Optional[DynamicObject]): The list of Ground truth objects
+            estimated_object (Union[DynamicObject, RoiObject]): The estimated object by inference like CenterPoint
+            ground_truth_objects (Optional[Union[DynamicObject, RoiObject]]): The list of Ground truth objects
         """
         if ground_truth_object is not None:
-            assert type(estimated_object) == type(ground_truth_object)
+            assert type(estimated_object) == type(
+                ground_truth_object
+            ), f"Input objects type must be same, but got {type(estimated_object)} and {type(ground_truth_object)}"
+
         self.estimated_object: Union[DynamicObject, RoiObject] = estimated_object
         self.ground_truth_object: Optional[Union[DynamicObject, RoiObject]] = ground_truth_object
 
@@ -79,6 +82,7 @@ class DynamicObjectWithPerceptionResult:
             self.estimated_object,
             self.ground_truth_object,
         )
+
         if isinstance(estimated_object, DynamicObject):
             self.iou_3d: IOU3dMatching = IOU3dMatching(
                 self.estimated_object,

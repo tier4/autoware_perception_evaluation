@@ -57,7 +57,7 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
 - pass_fail_result (PassFailResult): Result of usecase evaluation
   - tp_objects (List[DynamicObjectWithPerceptionResult]): TP results in usecase evaluation
   - fp_objects (List[DynamicObjectWithPerceptionResult]): TP results in usecase evaluation
-  - fn_objects (List[DynamicObject]): FN objects in usecase evaluation
+  - fn_objects (List[Union[DynamicObject, RoiObject]]): FN objects in usecase evaluation
 
 ```yaml
 [2022-08-10 10:38:11,341] [INFO] [perception_lsim.py:258 <module>] Frame result example (frame_results[0]):
@@ -120,7 +120,7 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
 
 ### `<class> DynamicObjectWithPerceptionResult(...)`
 
-Call `<func> get_object_results(...)` function to generate a set of matching pairs `List[DynamicObjectWithPerceptionResult]` from a set of Estimated objects `List[DynamicObject]`and a set of GT objects `List[DynamicObject]`.
+Call `<func> get_object_results(...)` function to generate a set of matching pairs `List[DynamicObjectWithPerceptionResult]` from a set of Estimated objects `List[Union[DynamicObject, RoiObject]]`and a set of GT objects `List[Union[DynamicObject, RoiObject]]`.
 
 For the details，see [perception_eval/evaluation/result/object_result.py](../../../perception_eval/perception_eval/evaluation/result/object_result.py)
 
@@ -128,30 +128,30 @@ For the details，see [perception_eval/evaluation/result/object_result.py](../..
 from perception_eval.evaluation.result.object_results import get_object_results
 
 # REQUIRED:
-#   estimated_objects: List[DynamicObject]
-#   ground_truth_objects: List[DynamicObject]
+#   estimated_objects: List[Union[DynamicObject, RoiObject]]
+#   ground_truth_objects: List[Union[DynamicObject, RoiObject]]
 
 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(estimated_objects, ground_truth_objects)
 ```
 
 - Initialization
 
-  | Arguments             |           type            | Description |
-  | :-------------------- | :-----------------------: | :---------- |
-  | `estimated_object`    |      `DynamicObject`      | Estimation  |
-  | `ground_truth_object` | `Optional[DynamicObject]` | GT object   |
+  | Arguments             |                    type                     | Description |
+  | :-------------------- | :-----------------------------------------: | :---------- |
+  | `estimated_object`    |      `Union[DynamicObject, RoiObject]`      | Estimation  |
+  | `ground_truth_object` | `Optional[Union[DynamicObject, RoiObject]]` | GT object   |
 
 - Attributes
 
-  | Attributes            |           type            | Description                                                    |
-  | :-------------------- | :-----------------------: | :------------------------------------------------------------- |
-  | `estimated_object`    |      `DynamicObject`      | Estimation                                                     |
-  | `ground_truth_object` | `Optional[DynamicObject]` | GT object                                                      |
-  | `is_label_correct`    |          `bool`           | Whether the labels which estimation and GT object has are same |
-  | `center_distance`     | `CenterDistanceMatching`  | Distance of center between two objects                         |
-  | `plane_distance`      |  `PlaneDistanceMatching`  | Distance of the nearest plane between two objects              |
-  | `iou_bev`             |     `IOUBEVMatching`      | IOU score in BEV                                               |
-  | `iou_3d`              |      `IOU3dMatching`      | IOU score in 3-dimensions                                      |
+  | Attributes            |                    type                     | Description                                                    |
+  | :-------------------- | :-----------------------------------------: | :------------------------------------------------------------- |
+  | `estimated_object`    |      `Union[DynamicObject, RoiObject]`      | Estimation                                                     |
+  | `ground_truth_object` | `Optional[Union[DynamicObject, RoiObject]]` | GT object                                                      |
+  | `is_label_correct`    |                   `bool`                    | Whether the labels which estimation and GT object has are same |
+  | `center_distance`     |          `CenterDistanceMatching`           | Distance of center between two objects                         |
+  | `plane_distance`      |           `PlaneDistanceMatching`           | Distance of the nearest plane between two objects              |
+  | `iou_bev`             |              `IOUBEVMatching`               | IOU score in BEV                                               |
+  | `iou_3d`              |               `IOU3dMatching`               | IOU score in 3-dimensions                                      |
 
 - Methods
 

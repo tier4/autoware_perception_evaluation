@@ -45,7 +45,7 @@ class FrameGroundTruth:
     Attributes:
         self.unix_time (float): The unix time for the frame [us].
         self.frame_name (str): The file name for the frame.
-        self.objects (List[DynamicObject]): Objects data.
+        self.objects (List[Union[DynamicObject, RoiObject]]): Objects data.
         self.pointcloud (Optional[numpy.ndarray], optional):
                 Pointcloud data. Defaults to None, but if you want to visualize dataset,
                 you should load pointcloud data.
@@ -67,7 +67,7 @@ class FrameGroundTruth:
             unix_time (int): The unix time for the frame [us]
             frame_name (str): The file name for the frame
             frame_id (str): The coord system which objects with respected to, base_link or map.
-            objects (List[DynamicObject]): Objects data
+            objects (List[Union[DynamicObject, RoiObject]]): Objects data
             pointcloud (Optional[numpy.ndarray]):
                     Pointcloud data in (x, y, z, i).
                     Defaults to None, but if you want to visualize dataset,
@@ -335,6 +335,20 @@ def _sample_to_frame_2d(
     frame_id: str,
     frame_name: str,
 ) -> FrameGroundTruth:
+    """[summary]
+    Returns FrameGroundTruth constructed with RoiObject.
+
+    Args:
+        nusc (NuScenes): NuScenes instance.
+        nuim (NuImages): NuImages instance.
+        sample_token (str): Sample token.
+        label_converter (LabelConverter): LabelConverter instance.
+        frame_id (str): Frame ID, base_link or map.
+        frame_name (str): Name of frame.
+
+    Returns:
+        frame (FrameGroundTruth): GT objects in one frame.
+    """
     nusc_sample: Dict[str, Any] = nusc.get("sample", sample_token)
     sample: Dict[str, Any] = nuim.get("sample", sample_token)
 

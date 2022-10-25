@@ -348,3 +348,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
   ```
 
   <img src="../../fig/perception/sample_plot_num_objects.png" width=800 height=400>
+
+## Known issues / Limitations
+
+- `PerceptionPerformanceAnalyzer()` only supports 3D evaluation.
