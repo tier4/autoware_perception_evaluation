@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-from enum import Enum
 import logging
 import os
 import pickle
@@ -25,11 +24,12 @@ from typing import Optional
 from typing import Set
 from typing import Tuple
 from typing import Union
-from warnings import warn
 
+from matplotlib import cm
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  # noqa
 import numpy as np
 import pandas as pd
 from perception_eval.common.label import AutowareLabel
@@ -40,39 +40,19 @@ from perception_eval.evaluation.matching.objects_filter import divide_objects_to
 from perception_eval.evaluation.metrics.metrics import MetricsScore
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
-from perception_eval.tool.utils import extract_area_results
-from perception_eval.tool.utils import generate_area_points
-from perception_eval.tool.utils import get_area_idx
 from perception_eval.util.math import rotation_matrix_to_euler
 from tqdm import tqdm
 import yaml
 
+from .utils import MatchingStatus
+from .utils import PlotAxes
+from .utils import extract_area_results
+from .utils import generate_area_points
+from .utils import get_area_idx
+from .utils import get_metrics_info
+from .utils import setup_axis
 
-class MatchingStatus(Enum):
-    TP = "TP"
-    FP = "FP"
-    FN = "FN"
-
-    def __str__(self) -> str:
-        return self.value
-
-    def __eq__(self, other: Union[MatchingStatus, str]) -> bool:
-        if isinstance(other, str):
-            return self.value == other
-        return super().__eq__(other)
-
-
-class PlotMode(Enum):
-    TIME = "time"
-    DISTANCE = "distance"
-
-    def __str__(self) -> str:
-        return self.value
-
-    def __eq__(self, other: Union[PlotMode, str]) -> bool:
-        if isinstance(other, str):
-            return self.value == other
-        return super().__eq__(other)
+# TODO: Refactor plot methods
 
 
 class PerceptionPerformanceAnalyzer:
@@ -94,7 +74,8 @@ class PerceptionPerformanceAnalyzer:
         self.__num_area_division: int = num_area_division
 
         self.__plot_dir: str = os.path.join(self.__config.result_root_directory, "plot")
-        os.makedirs(self.__plot_dir, exist_ok=True)
+        if not os.path.exists(self.__plot_dir):
+            os.makedirs(self.__plot_dir)
 
         self.__frame_results: Dict[int, List[PerceptionFrameResult]] = {}
 
@@ -104,10 +85,9 @@ class PerceptionPerformanceAnalyzer:
 
         max_x: float = self.config.evaluation_config_dict.get("max_x_position", 100.0)
         max_y: float = self.config.evaluation_config_dict.get("max_y_position", 100.0)
-        self.upper_rights, self.bottom_lefts = generate_area_points(
+        self.__upper_rights, self.__bottom_lefts = generate_area_points(
             self.num_area_division, max_x=max_x, max_y=max_y
         )
-        self.__max_dist: float = max(max_x, max_y)
         self.__initialize()
 
     def __initialize(self) -> None:
@@ -191,6 +171,14 @@ class PerceptionPerformanceAnalyzer:
     @property
     def num_area_division(self) -> int:
         return self.__num_area_division
+
+    @property
+    def upper_rights(self) -> np.ndarray:
+        return self.__upper_rights
+
+    @property
+    def bottom_lefts(self) -> np.ndarray:
+        return self.__bottom_lefts
 
     @property
     def df(self) -> pd.DataFrame:
@@ -548,8 +536,7 @@ class PerceptionPerformanceAnalyzer:
             gt_point1, gt_point2 = None, None
             est_point1, est_point2 = None, None
         elif object_result is None:
-            gt = None
-            estimation = None
+            gt, estimation = None, None
             gt_point1, gt_point2 = None, None
             est_point1, est_point2 = None, None
         else:
@@ -729,6 +716,7 @@ class PerceptionPerformanceAnalyzer:
         self,
         column: Union[str, List[str]],
         df: Optional[pd.DataFrame] = None,
+        remove_nan: bool = False,
     ) -> np.ndarray:
         """[summary]
         Calculate specified column's error for TP.
@@ -736,6 +724,7 @@ class PerceptionPerformanceAnalyzer:
         Args:
             column (Union[str, List[str]]): name of column
             df (pandas.DataFrame): Specify if you want use filtered DataFrame. Defaults to None.
+            remove_nan (bool): Whether remove nan value. Defaults to False.
 
         Returns:
             np.ndarray: Array of error, in shape (N, M).
@@ -773,15 +762,13 @@ class PerceptionPerformanceAnalyzer:
         gt_vals = df_arr[::2]
         est_vals = df_arr[1::2]
         err: np.ndarray = gt_vals - est_vals
-        # err = err[~np.isnan(err)]
-        err[np.isnan(err)] = 0.0
+        if remove_nan:
+            err = err[~np.isnan(err)]
 
         if column == "yaw":
             # Clip err from [-2pi, 2pi] to [-pi, pi]
             err[err > np.pi] = -2 * np.pi + err[err > np.pi]
             err[err < -np.pi] = 2 * np.pi + err[err < -np.pi]
-        elif column in ("w", "l", "h"):
-            err = np.abs(err)
 
         return err
 
@@ -800,8 +787,9 @@ class PerceptionPerformanceAnalyzer:
             _column: Union[str, List[str]],
             _df: Optional[pd.DataFrame] = None,
         ) -> Dict[str, float]:
-            err: np.ndarray = self.calculate_error(_column, _df)
+            err: np.ndarray = self.calculate_error(_column, _df, remove_nan=True)
             if len(err) == 0:
+                logging.warning(f"The array of errors is empty for column: {_column}")
                 return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan)
             err_avg = np.average(err)
             err_rms = np.sqrt(np.square(err).mean())
@@ -817,22 +805,14 @@ class PerceptionPerformanceAnalyzer:
         for label in self.__all_labels:
             data = {}
             df_ = df if label == "ALL" else df[df["label"] == label]
-            # xy
+
             data["x"] = _summarize("x", df_)
             data["y"] = _summarize("y", df_)
-
-            # yaw
             data["yaw"] = _summarize("yaw", df_)
-
-            # velocity
-            data["vx"] = _summarize("vx", df_)
-            data["vy"] = _summarize("vy", df_)
-
-            # size
             data["length"] = _summarize("l", df_)
             data["width"] = _summarize("w", df_)
-
-            # nn_plane
+            data["vx"] = _summarize("vx", df_)
+            data["vy"] = _summarize("vy", df_)
             data["nn_plane"] = _summarize(["nn_point1", "nn_point2"], df_)
             all_data[str(label)] = data
 
@@ -863,14 +843,10 @@ class PerceptionPerformanceAnalyzer:
             if label == "ALL":
                 label = None
             num_ground_truth: int = self.get_num_ground_truth(label=label)
-            num_tp: int = self.get_num_tp(label=label)
-            num_fn: int = self.get_num_fn(label=label)
-            num_fp: int = self.get_num_fp(label=label)
             if num_ground_truth > 0:
-                data["TP"][i] = num_tp / num_ground_truth
-                data["FN"][i] = num_fn / num_ground_truth
-                data["FP"][i] = num_fp / num_ground_truth
-
+                data["TP"][i] = self.get_num_tp(label=label) / num_ground_truth
+                data["FN"][i] = self.get_num_fn(label=label) / num_ground_truth
+                data["FP"][i] = self.get_num_fp(label=label) / num_ground_truth
         return pd.DataFrame(data, index=self.__all_labels)
 
     def summarize_score(
@@ -882,7 +858,11 @@ class PerceptionPerformanceAnalyzer:
         Summarize MetricsScore.
 
         Args:
-            df (Optional[pandas.DataFrame]): Specify, if you want to use any filtered DataFrame. Defaults to None.
+            area (Optional[int]): Number of area. If it is not specified, calculate metrics score for all areas.
+                Defaults to None.
+            scene (Optional[int]): Number of scene. If it is not specified, calculate metrics score for all scenes.
+                Defaults to None.
+
         Returns:
             pandas.DataFrame
         """
@@ -901,59 +881,40 @@ class PerceptionPerformanceAnalyzer:
             )
 
         metrics_score = self.get_metrics_score(frame_results)
-        data: Dict[str, List[float]] = {}
-        # detection
-        for map in metrics_score.maps:
-            mode: str = str(map.matching_mode)
-            ap_mode: str = f"AP({mode})"
-            aph_mode: str = f"APH({mode})"
-            data[ap_mode] = [map.map]
-            data[aph_mode] = [map.maph]
-            for ap, aph in zip(map.aps, map.aphs):
-                data[ap_mode].append(ap.ap)
-                data[aph_mode].append(aph.ap)
+        data: Dict[str, Any] = get_metrics_info(metrics_score)
 
-        for tracking_score in metrics_score.tracking_scores:
-            mode: str = str(tracking_score.matching_mode)
-            mota_mode: str = f"MOTA({mode})"
-            motp_mode: str = f"MOTP({mode})"
-            id_switch_mode: str = f"IDswitch({mode})"
-            mota, motp, id_switch = tracking_score._sum_clear()
-            data[mota_mode] = [mota]
-            data[motp_mode] = [motp]
-            data[id_switch_mode] = [id_switch]
-            for clear in tracking_score.clears:
-                data[mota_mode].append(clear.results["MOTA"])
-                data[motp_mode].append(clear.results["MOTP"])
-                data[id_switch_mode].append(clear.results["id_switch"])
         return pd.DataFrame(data, index=self.__all_labels)
-
-    def get_error_heatmap(self) -> Optional[np.ndarray]:
-        pass
 
     def plot_num_object(
         self,
-        mode: Union[str, PlotMode] = PlotMode.DISTANCE,
-        bin: Optional[float] = None,
+        mode: Union[str, PlotAxes] = PlotAxes.DISTANCE,
         show: bool = False,
+        bin: Optional[float] = None,
         **kwargs,
     ) -> None:
         """[summary]
         Plot the number of objects for each time/distance range with histogram.
 
         Args:
-            mode (Union[str, PlotMode]): Mode of plot used as x-axis, time or distance. Defaults to PlotMode.DISTANCE.
+            mode (Union[str, PlotAxes]): Mode of plot axis. Defaults to PlotAxes.DISTANCE (1-dimensional).
+            show (bool): Whether show the plotted figure. Defaults to False.
             bin (float): The interval of time/distance. If not specified, 0.1[s] for time and 0.5[m] for distance will be use.
                 Defaults to None.
-            show (bool): Whether show the plotted figure. Defaults to False.
             **kwargs: Specify if you want to plot for the specific conditions.
                 For example, label, area, frame or scene.
         """
+
+        def _get_min_value(value1: np.ndarray, value2: np.ndarray) -> float:
+            return min(value1[~np.isnan(value1)].min(), value2[~np.isnan(value2)].min())
+
+        def _get_max_value(value1: np.ndarray, value2: np.ndarray) -> float:
+            return max(value1[~np.isnan(value1)].max(), value2[~np.isnan(value2)].max())
+
         if len(kwargs) == 0:
-            title = "ALL"
-            filename = "ALL"
+            title = "Num Object @all"
+            filename = "all"
         else:
-            title: str = ""
+            title: str = "Num Object "
             filename: str = ""
             for key, item in kwargs.items():
                 title += f"@{key.upper()}:{item} "
@@ -961,27 +922,14 @@ class PerceptionPerformanceAnalyzer:
             title = title.rstrip(" ")
             filename = filename.rstrip("_")
 
-        gt_df = self.get_ground_truth(**kwargs)
-        est_df = self.get_estimation(**kwargs)
+        gt_values = mode.get_axes(self.get_ground_truth(**kwargs))
+        est_values = mode.get_axes(self.get_estimation(**kwargs))
 
-        if mode == PlotMode.TIME:
-            gt_times = np.array(gt_df["timestamp"], dtype=np.uint64) / 1e6
-            est_times = np.array(est_df["timestamp"], dtype=np.uint64) / 1e6
-            time_origin: float = gt_times.min().item()
-            gt_values = gt_times - time_origin
-            est_values = est_times - time_origin
-            max_time = max(gt_values.max(), est_values.max())
-            time_bin = bin if bin else 0.1
-            bins = np.arange(0, max_time, time_bin)
-            xlabel: str = str(mode) + " [s]"
-        elif mode == PlotMode.DISTANCE:
-            gt_values = np.linalg.norm(gt_df[["x", "y"]], axis=1)
-            est_values = np.linalg.norm(est_df[["x", "y"]], axis=1)
-            dist_bin = bin if bin else 0.5
-            bins = np.arange(0, self.__max_dist, dist_bin)
-            xlabel: str = str(mode) + " [m]"
+        if mode.is_2d():
+            xlabel: str = mode.xlabel
+            ylabel: str = "num"
         else:
-            raise ValueError(f"Unexpected mode: {mode}")
+            xlabel, ylabel = mode.get_label()
 
         fig: Figure = plt.figure(figsize=(16, 8))
         ax1: Axes = fig.add_subplot(
@@ -989,23 +937,50 @@ class PerceptionPerformanceAnalyzer:
             2,
             1,
             xlabel=xlabel,
-            ylabel="num",
+            ylabel=ylabel,
             title="GT",
+            projection=mode.projection,
         )
         ax2: Axes = fig.add_subplot(
             1,
             2,
             2,
             xlabel=xlabel,
-            ylabel="num",
+            ylabel=ylabel,
             title="Estimation",
+            projection=mode.projection,
         )
 
-        ax1.hist(gt_values, bins=bins)
-        ax2.hist(est_values, bins=bins)
+        setup_axis(ax1, **kwargs)
+        setup_axis(ax2, **kwargs)
+
+        if mode.is_2d():
+            min_value = _get_min_value(gt_values, est_values)
+            max_value = _get_max_value(gt_values, est_values)
+            step = bin if bin else mode.get_bin()
+            bins = np.arange(min_value, max_value, step=step)
+            ax1.hist(gt_values, bins=bins)
+            ax2.hist(est_values, bins=bins)
+        else:
+            ax1.set_zlabel("num")
+            ax2.set_zlabel("num")
+            gt_xaxes, gt_yaxes = gt_values
+            est_xaxes, est_yaxes = est_values
+            gt_hist, gt_x_edges, gt_y_edges = np.histogram2d(gt_xaxes, gt_yaxes)
+            est_hist, est_x_edges, est_y_edges = np.histogram2d(est_xaxes, est_yaxes)
+            gt_x, gt_y = np.meshgrid(gt_x_edges[:-1], gt_y_edges[:-1])
+            est_x, est_y = np.meshgrid(est_x_edges[:-1], est_y_edges[:-1])
+            if bin is None:
+                dx, dy = mode.get_bin()
+            else:
+                if not isinstance(bin, (list, tuple)) or len(bin) != 2:
+                    raise RuntimeError(f"bin for 3D plot must be 2-length, but got {bin}")
+                dx, dy = bin
+            ax1.bar3d(gt_x.ravel(), gt_y.ravel(), 0, dx, dy, gt_hist.ravel())
+            ax2.bar3d(est_x.ravel(), est_y.ravel(), 0, dx, dy, est_hist.ravel())
 
         plt.suptitle(f"{title}")
-        plt.savefig(os.path.join(self.plot_directory, f"num_object_{filename}.png"))
+        plt.savefig(os.path.join(self.plot_directory, f"num_object_{str(mode)}_{filename}.png"))
         if show:
             plt.show()
         plt.close()
@@ -1014,9 +989,10 @@ class PerceptionPerformanceAnalyzer:
         self,
         uuid: str,
         columns: Union[str, List[str]],
-        mode: Union[str, PlotMode] = PlotMode.TIME,
+        mode: Union[str, PlotAxes] = PlotAxes.TIME,
         status: Optional[MatchingStatus] = None,
         show: bool = False,
+        **kwargs,
     ) -> None:
         """[summary]
         Plot states for each time/distance estimated and GT object in TP.
@@ -1025,7 +1001,7 @@ class PerceptionPerformanceAnalyzer:
             uuid (str): Target object's uuid.
             columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "vx", "vy"].
                 If you want plot multiple column for one image, use List[str].
-            mode (Union[str, PlotMode]): Mode of plot used as x-axis, time or distance. Defaults to PlotMode.TIME.
+            mode (Union[str, PlotAxes]): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             status (Optional[int]): Target status TP/FP/FN. If not specified, plot all status. Defaults to None.
             show (bool): Whether show the plotted figure. Defaults to False.
         """
@@ -1036,50 +1012,52 @@ class PerceptionPerformanceAnalyzer:
             raise ValueError(f"{columns} is unsupported for plot")
 
         gt_df = self.get_ground_truth(uuid=uuid, status=status)
-        gt_df["timestamp"] = gt_df["timestamp"].astype(np.uint64)
         index = pd.unique(gt_df.index.get_level_values(level=0))
 
         if len(index) == 0:
-            warn(f"There is no object ID: {uuid}")
+            logging.warning(f"There is no object ID: {uuid}")
             return
 
         est_df = self.get_estimation(df=self.df.loc[index])
-        est_df["timestamp"] = est_df["timestamp"].astype(np.uint64)
 
-        if mode == PlotMode.TIME:
-            gt_times = np.array(gt_df["timestamp"], dtype=np.uint64) / 1e6
-            est_times = np.array(est_df["timestamp"], dtype=np.uint64) / 1e6
-            time_origin: float = gt_times.min().item()
-            gt_xaxes = gt_times - time_origin
-            est_xaxes = est_times - time_origin
-            xlabel: str = str(mode) + " [s]"
-        elif mode == PlotMode.DISTANCE:
-            gt_xaxes = np.linalg.norm(gt_df[["x", "y"]], axis=1)
-            est_xaxes = np.linalg.norm(est_df[["x", "y"]], axis=1)
-            xlabel: str = str(mode) + " [m]"
-        else:
-            raise ValueError(f"Unexpected mode: {mode}")
+        gt_axes = mode.get_axes(gt_df)
+        est_axes = mode.get_axes(est_df)
 
         # Plot GT and estimation
         num_cols = len(columns)
         fig: Figure = plt.figure(figsize=(8 * num_cols, 4))
         for n, col in enumerate(columns):
-            ylabel: str = f"{col}"
+            if mode.is_2d():
+                xlabel: str = mode.xlabel
+                ylabel: str = f"{col}"
+                title: str = f"State {ylabel} = F({xlabel})"
+            else:
+                xlabel, ylabel = mode.get_label()
+                title: str = f"State {col} = F({xlabel}, {ylabel})"
             ax: Axes = fig.add_subplot(
                 1,
                 num_cols,
                 n + 1,
                 xlabel=xlabel,
                 ylabel=ylabel,
-                title=f"{ylabel} / {xlabel}",
+                title=title,
+                projection=mode.projection,
             )
-            ax.grid(lw=0.5)
+            setup_axis(ax, **kwargs)
             gt_states = np.array(gt_df[col].tolist())
             est_states = np.array(est_df[col].tolist())
-            ax.scatter(gt_xaxes, gt_states, c="red", s=100)
-            ax.scatter(est_xaxes, est_states)
+            if mode.is_2d():
+                ax.scatter(gt_axes, gt_states, label="GT", c="red", s=100)
+                ax.scatter(est_axes, est_states, label="Estimation")
+            else:
+                ax.set_zlabel(f"{col}")
+                gt_xaxes, gt_yaxes = gt_axes
+                est_xaxes, est_yaxes = est_axes
+                ax.scatter(gt_xaxes, gt_yaxes, gt_states, label="GT", c="red", s=100)
+                ax.scatter(est_xaxes, est_yaxes, est_states, label="Estimation")
+            ax.legend(loc="upper right", framealpha=0.4)
 
-        plt.suptitle(f"{columns} @uuid:{uuid}")
+        plt.suptitle(f"State of {columns} @uuid:{uuid}")
         plt.tight_layout()
         columns_str: str = "".join(columns)
         plt.savefig(
@@ -1095,10 +1073,11 @@ class PerceptionPerformanceAnalyzer:
     def plot_error(
         self,
         columns: Union[str, List[str]],
-        mode: Union[str, PlotMode] = PlotMode.TIME,
+        mode: Union[str, PlotAxes] = PlotAxes.TIME,
         heatmap: bool = False,
-        bin: int = 50,
         show: bool = False,
+        bin: int = 50,
+        gather: bool = False,
         **kwargs,
     ) -> None:
         """[summary]
@@ -1107,59 +1086,79 @@ class PerceptionPerformanceAnalyzer:
         Args:
             columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
                 If you want plot multiple column for one image, use List[str].
-            mode (Union[str, PlotMode]): Mode of plot used as x-axis, time or distance. Defaults to PlotMode.TIME.
+            mode (Union[str, PlotAxes]): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             heatmap (bool): Whether overlay heatmap. Defaults to False.
-            bin (int): Bin size to plot heatmap. Defaults to 50.
             show (bool): Whether show the plotted figure. Defaults to False.
+            bin (int): Bin size to plot heatmap. Defaults to 50.
+            gather (bool): Whether gather plots to single figure. Defaults to False.
             **kwargs: Specify if you want to plot for the specific conditions.
                 For example, label, area, frame or scene.
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
 
-        if set(columns) > set(["x", "y", "yaw", "vx", "vy"]):
+        if set(columns) > set(["x", "y", "yaw", "w", "l", "vx", "vy"]):
             raise ValueError(f"{columns} is unsupported for plot")
 
         tp_gt_df = self.get_ground_truth(status="TP", **kwargs)
         tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
 
         if len(tp_index) == 0:
-            warn("There is no TP object")
+            logging.warning("There is no TP object")
             return
 
         tp_df = self.df.loc[tp_index]
 
-        if mode == PlotMode.TIME:
-            tp_times = np.array(tp_gt_df["timestamp"], dtype=np.uint64) / 1e6
-            xaxes: np.ndarray = tp_times - tp_times.min().item()
-            xlabel: str = str(mode) + " [s]"
-        elif mode == PlotMode.DISTANCE:
-            xaxes: np.ndarray = np.linalg.norm(tp_gt_df[["x", "y"]], axis=1)
-            xlabel = str(mode) + " [m]"
-        else:
-            raise ValueError(f"Unexpected mode: {mode}")
-
-        # Plot GT and estimation
         num_cols = len(columns)
         fig: Figure = plt.figure(figsize=(8 * num_cols, 8))
         for n, col in enumerate(columns):
-            ylabel: str = f"err_{col}"
-            ax: Axes = fig.add_subplot(
+            if mode.is_2d():
+                xlabel: str = mode.xlabel
+                ylabel: str = f"err_{col}"
+                title: str = f"Error {ylabel} = F({xlabel})"
+            else:
+                xlabel, ylabel = mode.get_label()
+                title: str = f"Error {col} = F({xlabel}, {ylabel})"
+            ax: Union[Axes, Axes3D] = fig.add_subplot(
                 1,
                 num_cols,
                 n + 1,
                 xlabel=xlabel,
                 ylabel=ylabel,
-                title=f"{ylabel} / {xlabel}",
+                title=title,
+                projection=mode.projection,
             )
-            ax.grid(lw=0.5)
-            err: np.ndarray = self.calculate_error(col, df=tp_df)
-            if heatmap:
-                ax.hist2d(xaxes, err, bins=(bin, bin), cmap="jet")
-            else:
-                ax.scatter(xaxes, err)
 
-        plt.suptitle(f"{columns}")
+            setup_axis(ax, **kwargs)
+            err: np.ndarray = self.calculate_error(col, df=tp_df)
+            axes: np.ndarray = mode.get_axes(tp_gt_df)
+            if mode.is_2d():
+                non_nan = ~np.isnan(err) * ~np.isnan(axes)
+                axes = axes[non_nan]
+                err = err[non_nan]
+                if heatmap:
+                    ax.hist2d(axes, err, bins=(bin, bin), cmap=cm.jet)
+                else:
+                    ax.scatter(axes, err)
+            else:
+                ax.set_zlabel(f"err_{col}")
+                non_nan = ~np.isnan(err) * ~np.isnan(axes).any(0)
+                xaxes, yaxes = axes[:, non_nan]
+                err = err[non_nan]
+                if heatmap:
+                    xx, yy = np.meshgrid(np.sort(xaxes), np.sort(yaxes))
+                    zz = np.zeros_like(xx)
+                    for i, (x, y) in enumerate(zip(xaxes, yaxes)):
+                        zz[(xx == x) * (yy == y)] = err[i]
+                    ax.plot_surface(xx, yy, zz, cmap=cm.summer, alpha=0.5)
+                else:
+                    ax.scatter(xaxes, yaxes, err, c=err, cmap=cm.jet)
+                    color_map = cm.ScalarMappable(cmap=cm.Reds_r)
+                    clr = [xaxes + yaxes + err]
+                    color_map.set_array(clr)
+                    plt.colorbar(color_map)
+
+        plt.suptitle(f"Error of {columns}")
         plt.tight_layout()
         columns_str: str = "".join(columns)
         columns_str += "_heatmap" if heatmap else ""
@@ -1172,6 +1171,7 @@ class PerceptionPerformanceAnalyzer:
         self,
         columns: Union[str, List[str]],
         show: bool = False,
+        **kwargs,
     ) -> None:
         """[summary]
         Plot box-plot of errors.
@@ -1192,11 +1192,11 @@ class PerceptionPerformanceAnalyzer:
         for col in columns:
             errs.append(self.calculate_error(col))
         _, ax = plt.subplots()
+        setup_axis(ax, **kwargs)
         ax.boxplot(errs)
         ax.set_xticklabels(columns)
 
-        plt.title("Box-Plot of Errors")
-        plt.grid()
+        plt.suptitle("Box-Plot of Errors")
         plt.tight_layout()
         columns_str: str = "".join(columns)
         plt.savefig(os.path.join(self.plot_directory, f"box_plot_{columns_str}.png"))

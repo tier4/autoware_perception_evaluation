@@ -1,6 +1,6 @@
 from .gmm import Gmm
-from .perception_performance_analyzer import MatchingStatus
 from .perception_performance_analyzer import PerceptionPerformanceAnalyzer
-from .perception_performance_analyzer import PlotMode
+from .utils import MatchingStatus
+from .utils import PlotAxes
 
-__all__ = ["PerceptionPerformanceAnalyzer", "PlotMode", "MatchingStatus", "Gmm"]
+__all__ = ["PerceptionPerformanceAnalyzer", "PlotAxes", "MatchingStatus", "Gmm"]

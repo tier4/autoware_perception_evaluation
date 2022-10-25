@@ -91,8 +91,10 @@ class _EvaluationConfigBase(ABC):
         self.result_root_directory: str = result_root_directory.format(TIME=time)
         self._log_directory: str = osp.join(self.result_root_directory, "log")
         self._visualization_directory: str = osp.join(self.result_root_directory, "visualization")
-        os.makedirs(self._log_directory)
-        os.makedirs(self._visualization_directory)
+        if not os.path.exists(self.log_directory):
+            os.makedirs(self._log_directory)
+        if not os.path.exists(self._visualization_directory):
+            os.makedirs(self._visualization_directory)
 
         # Labels
         self.label_converter = LabelConverter(merge_similar_labels)
