@@ -70,7 +70,7 @@
 - pass_fail_result (PassFailResult): Use case 評価の結果
   - tp_objects (List[DynamicObjectWithPerceptionResult]): Use case 評価で TP (True Positive) の ObjectResult
   - fp_objects (List[DynamicObjectWithPerceptionResult]): Use case 評価で FP (False Positive) の ObjectResult
-  - fn_objects (List[DynamicObject]): Use case 評価で FN (False Negative) の DynamicObject
+  - fn_objects (List[Union[DynamicObject, RoiObject]]): Use case 評価で FN (False Negative) の DynamicObject
 
 ```yaml
 [2022-08-10 10:38:11,341] [INFO] [perception_lsim.py:258 <module>] Frame result example (frame_results[0]):
@@ -133,36 +133,36 @@
 
 ### [`<class> DynamicObjectWithPerceptionResult(...)`](../../../perception_eval/perception_eval/evaluation/result/object_result.py)
 
-推定オブジェクトの集合`List[DynamicObject]`と GT オブジェクトの集合`List[DynamicObject]`からマッチングペアの集合`List[DynamicObjectWithPerceptionResult]`を得るには，`get_object_results()`関数を使う．
+推定オブジェクトの集合`List[Union[DynamicObject, RoiObject]]`と GT オブジェクトの集合`List[Union[DynamicObject, RoiObject]]`からマッチングペアの集合`List[DynamicObjectWithPerceptionResult]`を得るには，`get_object_results()`関数を使う．
 
 ```python
 from perception_eval.evaluation.result.object_results import get_object_results
 
 # REQUIRED:
-#   estimated_objects: List[DynamicObject]
-#   ground_truth_objects: List[DynamicObject]
+#   estimated_objects: List[Union[DynamicObject, RoiObject]]
+#   ground_truth_objects: List[Union[DynamicObject, RoiObject]]
 
 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(estimated_objects, ground_truth_objects)
 ```
 
 - Initialization
 
-  | Arguments             |           type            | Description      |
-  | :-------------------- | :-----------------------: | :--------------- |
-  | `estimated_object`    |      `DynamicObject`      | 推定オブジェクト |
-  | `ground_truth_object` | `Optional[DynamicObject]` | GT オブジェクト  |
+  | Arguments             |                    type                     | Description      |
+  | :-------------------- | :-----------------------------------------: | :--------------- |
+  | `estimated_object`    |      `Union[DynamicObject, RoiObject]`      | 推定オブジェクト |
+  | `ground_truth_object` | `Optional[Union[DynamicObject, RoiObject]]` | GT オブジェクト  |
 
 - Attributes
 
-  | Attributes            |           type            | Description                                                      |
-  | :-------------------- | :-----------------------: | :--------------------------------------------------------------- |
-  | `estimated_object`    |      `DynamicObject`      | 推定オブジェクト                                                 |
-  | `ground_truth_object` | `Optional[DynamicObject]` | GT オブジェクト                                                  |
-  | `is_label_correct`    |          `bool`           | 推定オブジェクトと GT オブジェクトのラベルが同一かどうかのフラグ |
-  | `center_distance`     | `CenterDistanceMatching`  | 中心間距離                                                       |
-  | `plane_distance`      |  `PlaneDistanceMatching`  | 面距離                                                           |
-  | `iou_bev`             |     `IOUBEVMatching`      | BEV の IOU                                                       |
-  | `iou_3d`              |      `IOU3dMatching`      | 3D の IOU                                                        |
+  | Attributes            |                    type                     | Description                                                      |
+  | :-------------------- | :-----------------------------------------: | :--------------------------------------------------------------- |
+  | `estimated_object`    |      `Union[DynamicObject, RoiObject]`      | 推定オブジェクト                                                 |
+  | `ground_truth_object` | `Optional[Union[DynamicObject, RoiObject]]` | GT オブジェクト                                                  |
+  | `is_label_correct`    |                   `bool`                    | 推定オブジェクトと GT オブジェクトのラベルが同一かどうかのフラグ |
+  | `center_distance`     |          `CenterDistanceMatching`           | 中心間距離                                                       |
+  | `plane_distance`      |           `PlaneDistanceMatching`           | 面距離                                                           |
+  | `iou_2d`              |               `IOU2dMatching`               | 2D の IOU (3D オブジェクトの場合は BEV)                          |
+  | `iou_3d`              |               `IOU3dMatching`               | 3D の IOU                                                        |
 
 - Methods
 

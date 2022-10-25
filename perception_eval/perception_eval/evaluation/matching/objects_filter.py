@@ -124,8 +124,8 @@ def filter_objects(
 
     Args:
         frame_id (str): Frame id.
-        objects (List[DynamicObject]): The objects you want to filter.
-        is_gt (bool)
+        objects (List[Union[DynamicObject, RoiObject]]): The objects you want to filter.
+        is_gt (bool): Flag whether object is GT.
         target_labels Optional[List[AutowareLabel]], optional):
                 The target label to evaluate. If object label is in this parameter,
                 this function appends to return objects. Defaults to None.
@@ -261,12 +261,12 @@ def get_fn_objects(
     Get FN (False Negative) objects from ground truth objects by using object result
 
     Args:
-        ground_truth_objects (List[DynamicObject]): The ground truth objects
+        ground_truth_objects (List[Union[DynamicObject, RoiObject]]): The ground truth objects
         object_results (Optional[List[DynamicObjectWithPerceptionResult]]): The object results
         tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results in object results
 
     Returns:
-        List[DynamicObject]: FN (False Negative) objects
+        List[Union[DynamicObject, RoiObject]]: FN (False Negative) objects
     """
 
     if object_results is None:
@@ -294,7 +294,7 @@ def _is_fn_object(
     If there are TP TN object
 
     Args:
-        ground_truth_object (DynamicObject): A ground truth object
+        ground_truth_object (Union[DynamicObject, RoiObject]): A ground truth object
         object_results (List[DynamicObjectWithPerceptionResult]): object result
         tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results in object results
 
@@ -326,7 +326,7 @@ def _is_target_object(
     This function used to filtering for both of ground truths and object results.
 
     Args:
-        dynamic_object (DynamicObject): The dynamic object
+        dynamic_object (Union[DynamicObject, RoiObject]): The dynamic object
         target_labels Optional[List[AutowareLabel]], optional):
                 The target label to evaluate. If object label is in this parameter,
                 this function appends to return objects. Defaults to None.
@@ -386,25 +386,25 @@ def _is_target_object(
         else:
             bev_distance_: float = dynamic_object.get_distance_bev()
 
-    if is_target and max_x_position_list is not None:
-        max_x_position = label_threshold.get_label_threshold(max_x_position_list)
-        is_target = is_target and abs(position_[0]) < max_x_position
+        if is_target and max_x_position_list is not None:
+            max_x_position = label_threshold.get_label_threshold(max_x_position_list)
+            is_target = is_target and abs(position_[0]) < max_x_position
 
-    if is_target and max_y_position_list is not None:
-        max_y_position = label_threshold.get_label_threshold(max_y_position_list)
-        is_target = is_target and abs(position_[1]) < max_y_position
+        if is_target and max_y_position_list is not None:
+            max_y_position = label_threshold.get_label_threshold(max_y_position_list)
+            is_target = is_target and abs(position_[1]) < max_y_position
 
-    if is_target and max_distance_list is not None:
-        max_distance = label_threshold.get_label_threshold(max_distance_list)
-        is_target = is_target and bev_distance_ < max_distance
+        if is_target and max_distance_list is not None:
+            max_distance = label_threshold.get_label_threshold(max_distance_list)
+            is_target = is_target and bev_distance_ < max_distance
 
-    if is_target and min_distance_list is not None:
-        min_distance = label_threshold.get_label_threshold(min_distance_list)
-        is_target = is_target and bev_distance_ > min_distance
+        if is_target and min_distance_list is not None:
+            min_distance = label_threshold.get_label_threshold(min_distance_list)
+            is_target = is_target and bev_distance_ > min_distance
 
-    if is_target and min_point_numbers is not None:
-        min_point_number = label_threshold.get_label_threshold(min_point_numbers)
-        is_target = is_target and dynamic_object.pointcloud_num >= min_point_number
+        if is_target and min_point_numbers is not None:
+            min_point_number = label_threshold.get_label_threshold(min_point_numbers)
+            is_target = is_target and dynamic_object.pointcloud_num >= min_point_number
 
     if is_target and target_uuids is not None:
         assert isinstance(target_uuids, list)
@@ -422,14 +422,14 @@ def divide_objects(
     Divide DynamicObject or DynamicObjectWithPerceptionResult for each label as dict.
 
     Args:
-        objects (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]):
-            The list of DynamicObject or DynamicObjectWithPerceptionResult.
+        objects (List[Union[DynamicObject, RoiObject, DynamicObjectWithPerceptionResult]]):
+            The list of DynamicObject, RoiObject or DynamicObjectWithPerceptionResult.
         target_labels (Optional[List[AutowareLabel]]): If this is specified, create empty list even
             if there is no object having specified label. Defaults to None.
 
     Returns:
-        ret (Dict[AutowareLabel, List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]]):
-            key is label, item is list of DynamicObject or DynamicObjectWithPerceptionResult.
+        ret (Dict[AutowareLabel, List[Union[DynamicObject, RoiObject, DynamicObjectWithPerceptionResult]]]):
+            key is label, item is list of DynamicObject, RoiObject or DynamicObjectWithPerceptionResult.
             It depends on the input type of object.
     """
     if target_labels is not None:
@@ -460,8 +460,8 @@ def divide_objects_to_num(
     Divide objects to the number of them for each label as dict.
 
     Args:
-        objects (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]):
-            The list of DynamicObject or DynamicObjectWithPerceptionResult.
+        objects (List[Union[DynamicObject, RoiObject, DynamicObjectWithPerceptionResult]]):
+            The list of DynamicObject, RoiObject or DynamicObjectWithPerceptionResult.
         target_labels (Optional[List[AutowareLabel]]): If this is specified, create empty list even
             if there is no object having specified label. Defaults to None.
 

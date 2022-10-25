@@ -36,7 +36,7 @@ class MatchingMode(Enum):
     The mode enum for matching algorithm.
 
     CENTERDISTANCE: center distance in 3d
-    IOUBEV : IoU (Intersection over Union) in BEV (Bird Eye View)
+    IOU2D : IoU (Intersection over Union) in BEV (Bird Eye View) for 3D objects, pixel for 2D objects.
     IOU3D : IoU (Intersection over Union) in 3D
     PLANEDISTANCE: The plane distance
     """
@@ -271,7 +271,7 @@ class PlaneDistanceMatching(MatchingMethod):
 
 class IOU2dMatching(MatchingMethod):
     """[summary]
-    Matching by IoU 2d
+    Matching by IoU 2d in BEV for 3D objects, pixel for 2D objects.
 
     Attributes:
         self.mode (MatchingMode): Matching mode
@@ -309,6 +309,10 @@ class IOU2dMatching(MatchingMethod):
         Returns:
             bool: If value is better than threshold, return True.
         """
+        assert (
+            0.0 <= threshold_value <= 1.0
+        ), f"threshold must be [0.0, 1.0], but got {threshold_value}"
+
         if self.value is None:
             return False
         else:
@@ -388,6 +392,10 @@ class IOU3dMatching(MatchingMethod):
         Returns:
             bool: If value is better than threshold, return True.
         """
+        assert (
+            0.0 <= threshold_value <= 1.0
+        ), f"threshold must be [0.0, 1.0], but got {threshold_value}"
+
         if self.value is None:
             return False
         else:
@@ -475,8 +483,8 @@ def _get_area_intersection(
     Get the area at intersection
 
     Args:
-        estimated_object (DynamicObject): The estimated object
-        ground_truth_object (DynamicObject): The corresponded ground truth object
+        estimated_object (Union[DynamicObject, RoiObject]): The estimated object
+        ground_truth_object (Union[DynamicObject, RoiObject]): The corresponded ground truth object
 
     Returns:
         float: The area at intersection

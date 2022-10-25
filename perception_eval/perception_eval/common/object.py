@@ -489,35 +489,62 @@ class DynamicObject:
 
 
 class Roi:
-    """Region of Interest; ROI class."""
+    """Region of Interest; ROI class.
+
+    Attributes:
+        self.offset (Tuple[int, int]): (x, y) offset from (0, 0).
+        self.size (Tuple[int, int]): (height, width) of bounding box.
+    """
 
     def __init__(
         self,
         offset: Tuple[int, int],
         size: Tuple[int, int],
     ) -> None:
+        """
+        Args:
+            offset (Tuple[int, int]): (x, y) offset from (0, 0).
+            size (Tuple[int, int]): (height, width) of bounding box.
+        """
         self.offset: Tuple[int, int] = offset
         self.size: Tuple[int, int] = size
 
+        self.__center: Tuple[int, int] = (
+            self.offset[0] + self.size[1] // 2,
+            self.offset[1] + self.size[0] // 2,
+        )
+        self.__height: int = self.size[0]
+        self.__width: int = self.size[1]
+        self.__area: int = self.size[0] * self.size[1]
+
     @property
     def center(self) -> Tuple[int, int]:
-        return (self.offset[0] + self.width // 2, self.offset[1] + self.height // 2)
+        return self.__center
 
     @property
     def height(self) -> int:
-        return self.size[0]
+        return self.__height
 
     @property
     def width(self) -> int:
-        return self.size[1]
+        return self.__width
 
     @property
     def area(self) -> int:
-        return self.size[0] * self.size[1]
+        return self.__area
 
 
 class RoiObject:
-    """ROI object class."""
+    """ROI object class.
+
+    Attributes:
+        self.unix_time (int): Unix time.
+        self.roi (Roi): Roi instance.
+        self.semantic_score (float): Semantic score.
+        self.semantic_label (AutowareLabel): Label name.
+        self.uuid (Optional[str]): Unique object ID.
+        self.visibility (Optional[Visibility]): Object's visibility.
+    """
 
     def __init__(
         self,
@@ -531,16 +558,19 @@ class RoiObject:
     ) -> None:
         """[summary]
         Args:
-            unix_time (int)
+            unix_time (int): Unix time.
             offset (Tuple[int, int]): (x, y) order.
             size (Tuple[int, int]): (height, width) order.
-            semantic_score (float)
-            semantic_label (AutowareLabel)
+            semantic_score (float): Semantic score.
+            semantic_label (AutowareLabel): Label name.
+            uuid (Optional[str]): Unique object ID. Defaults to None.
+            visibility (Optional[Visibility]): Object's visibility. Defaults None.
         """
         self.unix_time: int = unix_time
         self.roi: Roi = Roi(offset, size)
         self.semantic_score: float = semantic_score
         self.semantic_label: AutowareLabel = semantic_label
+        self.uuid: Optional[str] = uuid
         self.visibility: Optional[Visibility] = visibility
 
     def get_corners(self) -> np.ndarray:
@@ -579,7 +609,7 @@ class RoiObject:
         Returns the corners as polygon.
 
         Returns:
-            Polygon
+            Polygon: Corners as Polygon. ((x0, y0), ..., (x0, y0))
         """
         corners: List[List[float]] = self.get_corners().tolist()
         corners.append(corners[0])
@@ -595,7 +625,7 @@ def distance_objects(
     Args:
          object_1 (Union[DynamicObject, RoiObject]): An object
          object_2 (Union[DynamicObject, RoiObject]): An object
-    Returns: float: The center distance from object_1 (DynamicObject) to object_2.
+    Returns: float: The center distance between object_1 and object_2.
     """
     if type(object_1) != type(object_2):
         raise TypeError(
