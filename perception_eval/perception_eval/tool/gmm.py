@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import logging
+import pickle
 from typing import List
 from typing import Optional
 
@@ -51,6 +54,20 @@ class Gmm:
         self.n_init: int = n_init
         self.random_state: int = random_state
         self.model: Optional[GaussianMixture] = None
+
+    @classmethod
+    def load(cls, filename: str) -> Gmm:
+        """[summary]
+        Load from saved model.
+        Args:
+            filename (str): File path.
+
+        Returns:
+            Gmm: Loaded GMM.
+        """
+        with open(filename, "rb") as f:
+            gmm = pickle.load(f)
+        return gmm
 
     @property
     def num_k(self) -> int:
@@ -104,10 +121,22 @@ class Gmm:
         min_bic_idx: int = np.argmin(self.bic_list)
         if min_aic_idx != min_bic_idx:
             logging.warning(
-                "min AIC and BIC is not same,",
-                f"got K={min_aic_idx} and {min_bic_idx}",
+                f"min AIC and BIC is not same, got K={min_aic_idx + 1} and {min_bic_idx + 1}"
             )
         self.model = models[min_bic_idx]
+
+    def save(self, filename: str) -> None:
+        """[summary]
+        Save estimated model's parameters.
+
+        Args:
+            filename (str): Path to save model.
+        """
+        if self.model is None:
+            raise RuntimeError("Model has not been estimated")
+
+        with open(filename, "wb") as f:
+            pickle.dump(self, f)
 
     def predict(
         self,

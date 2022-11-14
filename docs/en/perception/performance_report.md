@@ -314,40 +314,74 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ### Plot functions
 
-- `<func> plot_by_time(...) -> None`
+- `<enum> PlotAxes`
+
+  - A class to specify plot axes.
+
+    | Member     | Description                            |
+    | :--------- | :------------------------------------- |
+    | `TIME`     | Time[s].                               |
+    | `DISTANCE` | Distance[m] from ego vehicle.          |
+    | `X`        | x position[m] from ego vehicle.        |
+    | `Y`        | y position[m] from ego vehicle.        |
+    | `VX`       | longitudinal velocity[m/s].            |
+    | `VY`       | lateral velocity[m/s].                 |
+    | `POSITION` | xy position[m] from ego vehicle.       |
+    | `VELOCITY` | xy velocity[m/s].                      |
+    | `POLAR`    | polar coordinates, (theta[rad], r[m]). |
+
+- `<func> plot_state(...) -> None`
 
   - Plot the state change over time for specified GT with uuid.
 
-    | Arguments |  type  | Mandatory | Description                                          |
-    | :-------- | :----: | :-------: | :--------------------------------------------------- |
-    | `uuid`    | `str`  |    Yes    | GT object's uuid.                                    |
-    | `column`  | `str`  |    Yes    | Column name．(Options=[`x`, `y`, `yaw`, `vx`, `vy`]) |
-    | `scene`   | `int`  |    No     | Target scene. The last scene visualized by default.  |
-    | `show`    | `bool` |    No     | Whether show plot result.(Defaults=`False`)          |
+    | Arguments |                  type                  | Mandatory | Description                                          |
+    | :-------- | :------------------------------------: | :-------: | :--------------------------------------------------- |
+    | `uuid`    |                 `str`                  |    Yes    | GT object's uuid.                                    |
+    | `column`  |                 `str`                  |    Yes    | Column name．(Options=[`x`, `y`, `yaw`, `vx`, `vy`]) |
+    | `mode`    |               `PlotAxes`               |    No     | Target plot axes. (Defaults=`PlotAxes.TIME`)         |
+    | `status`  | `Optional[Union[str, MatchingStatus]]` |    No     | Matching status TP/FP/FN. (Defaults=`None`)          |
+    | `show`    |                 `bool`                 |    No     | Whether show plot result. (Defaults=`False`)         |
 
     ```python
     # Example: Plot an object's xy with uuid: "4bae7e75c7de70be980ce20ce8cbb642"
-
     >> analyzer.plot_by_time("4bae7e75c7de70be980ce20ce8cbb642", ["x", "y"])
     ```
 
-    <img src="../../fig/perception/sample_plot_by_time.png" width=800 height=400>
+  <img src="../../fig/perception/plot_state_by_time.png" width=800>
+
+- `<func> plot_error(...) -> None`
+
+  - Plot error of specified states between GT and estimation.
+
+  | Arguments |          type           | Mandatory | Description                                                    |
+  | :-------- | :---------------------: | :-------: | :------------------------------------------------------------- |
+  | `columns` | `Union[str, List[str]]` |    Yes    | Column name. (Options=[`x`, `y`, `yaw`, `w`, `l`, `vx`, `vy`]) |
+  | `mode`    |       `PlotAxes`        |    No     | Target plot axes. (Defaults=`PlotAxes.TIME`)                   |
+  | `show`    |         `bool`          |    No     | Whether show plot result. (Defaults=`False`)                   |
+
+  ```python
+  # Example: Plot xy error with time axis
+  >> analyzer.plot_error(["x", "y"])
+  ```
+
+  <img src="../../fig/perception/plot_error_by_time.png" width=800>
 
 - `<func> plot_num_object(...) -> None`
 
   - Plot number of objects by distance from `base_link` in histogram
 
-  | Arguments  |  type   | Mandatory | Description                                |
-  | :--------- | :-----: | :-------: | :----------------------------------------- |
-  | `dist_bin` | `float` |    No     | Bin of distance. (Defaults=`0.5`)          |
-  | `show`     | `bool`  |    No     | Whether sho plot result.(Defaults=`False`) |
+  | Arguments |    type    | Mandatory | Description                                      |
+  | :-------- | :--------: | :-------: | :----------------------------------------------- |
+  | `mode`    | `PlotAxes` |    No     | Target plot axes. (Defaults=`PlotAxes.DISTANCE`) |
+  | `bin`     |  `float`   |    No     | Bin of distance. (Defaults=`0.5`)                |
+  | `show`    |   `bool`   |    No     | Whether sho plot result.(Defaults=`False`)       |
 
   ```python
   # Plot the number of all objects
   >> analyzer.plot_num_object()
   ```
 
-  <img src="../../fig/perception/sample_plot_num_objects.png" width=800 height=400>
+  <img src="../../fig/perception/plot_num_object_by_distance.png" width=800>
 
 - `<func> box_plot(...) -> None`
 
@@ -363,4 +397,4 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
   >> analyzer.box_plot(["x", "y"])
   ```
 
-  <img src="../../fig/perception/box_plot_xy.png" width=800>
+  <img src="../../fig/perception/box_plot_xy.png" width=400>

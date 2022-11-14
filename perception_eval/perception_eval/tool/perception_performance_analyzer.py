@@ -887,7 +887,7 @@ class PerceptionPerformanceAnalyzer:
 
     def plot_num_object(
         self,
-        mode: Union[str, PlotAxes] = PlotAxes.DISTANCE,
+        mode: PlotAxes = PlotAxes.DISTANCE,
         show: bool = False,
         bin: Optional[float] = None,
         **kwargs,
@@ -896,7 +896,7 @@ class PerceptionPerformanceAnalyzer:
         Plot the number of objects for each time/distance range with histogram.
 
         Args:
-            mode (Union[str, PlotAxes]): Mode of plot axis. Defaults to PlotAxes.DISTANCE (1-dimensional).
+            mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.DISTANCE (1-dimensional).
             show (bool): Whether show the plotted figure. Defaults to False.
             bin (float): The interval of time/distance. If not specified, 0.1[s] for time and 0.5[m] for distance will be use.
                 Defaults to None.
@@ -922,8 +922,8 @@ class PerceptionPerformanceAnalyzer:
             title = title.rstrip(" ")
             filename = filename.rstrip("_")
 
-        gt_values = mode.get_axes(self.get_ground_truth(**kwargs))
-        est_values = mode.get_axes(self.get_estimation(**kwargs))
+        gt_values = mode.get_axes(self.get_ground_truth(**kwargs), align2origin=True)
+        est_values = mode.get_axes(self.get_estimation(**kwargs), alight2origin=True)
 
         if mode.is_2d():
             xlabel: str = mode.xlabel
@@ -989,7 +989,7 @@ class PerceptionPerformanceAnalyzer:
         self,
         uuid: str,
         columns: Union[str, List[str]],
-        mode: Union[str, PlotAxes] = PlotAxes.TIME,
+        mode: PlotAxes = PlotAxes.TIME,
         status: Optional[MatchingStatus] = None,
         show: bool = False,
         **kwargs,
@@ -1001,7 +1001,7 @@ class PerceptionPerformanceAnalyzer:
             uuid (str): Target object's uuid.
             columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "vx", "vy"].
                 If you want plot multiple column for one image, use List[str].
-            mode (Union[str, PlotAxes]): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
+            mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             status (Optional[int]): Target status TP/FP/FN. If not specified, plot all status. Defaults to None.
             show (bool): Whether show the plotted figure. Defaults to False.
         """
@@ -1022,6 +1022,10 @@ class PerceptionPerformanceAnalyzer:
 
         gt_axes = mode.get_axes(gt_df)
         est_axes = mode.get_axes(est_df)
+        if mode == PlotAxes.TIME:
+            origin = min(gt_axes.min(), est_axes.min())
+            gt_axes = gt_axes - origin
+            est_axes = est_axes - origin
 
         # Plot GT and estimation
         num_cols = len(columns)
@@ -1073,7 +1077,7 @@ class PerceptionPerformanceAnalyzer:
     def plot_error(
         self,
         columns: Union[str, List[str]],
-        mode: Union[str, PlotAxes] = PlotAxes.TIME,
+        mode: PlotAxes = PlotAxes.TIME,
         heatmap: bool = False,
         show: bool = False,
         bin: int = 50,
@@ -1086,7 +1090,7 @@ class PerceptionPerformanceAnalyzer:
         Args:
             columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
                 If you want plot multiple column for one image, use List[str].
-            mode (Union[str, PlotAxes]): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
+            mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             heatmap (bool): Whether overlay heatmap. Defaults to False.
             show (bool): Whether show the plotted figure. Defaults to False.
             bin (int): Bin size to plot heatmap. Defaults to 50.
@@ -1131,7 +1135,7 @@ class PerceptionPerformanceAnalyzer:
 
             setup_axis(ax, **kwargs)
             err: np.ndarray = self.calculate_error(col, df=tp_df)
-            axes: np.ndarray = mode.get_axes(tp_gt_df)
+            axes: np.ndarray = mode.get_axes(tp_gt_df, align2origin=True)
             if mode.is_2d():
                 non_nan = ~np.isnan(err) * ~np.isnan(axes)
                 axes = axes[non_nan]

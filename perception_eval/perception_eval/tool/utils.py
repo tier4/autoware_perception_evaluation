@@ -51,15 +51,16 @@ class PlotAxes(Enum):
     """[summary]
 
     2D plot:
-        TIME: X-axis is time.
-        DISTANCE: X-axis is 2D euclidean distance.
-        X: X-axis is x.
-        Y: X-axis is y.
-        VX: X-axis is vx.
-        VY: X-axis is vy.
+        TIME: X-axis is time[s].
+        DISTANCE: X-axis is 2D euclidean distance[m].
+        X: X-axis is x[m].
+        Y: X-axis is y[m].
+        VX: X-axis is vx[m/s].
+        VY: X-axis is vy[m/s].
     3D plot:
-        POSITION: X-axis is x, y-axis is y.
-        VELOCITY: X-axis is vx, y-axis is vy.
+        POSITION: X-axis is x[m], y-axis is y[m].
+        VELOCITY: X-axis is vx[m/s], y-axis is vy[m/s].
+        POLAR: X-axis is theta[rad], y-axis is r[m]
     """
 
     TIME = "time"
@@ -87,7 +88,7 @@ class PlotAxes(Enum):
     def is_2d(self) -> bool:
         return not self.is_3d()
 
-    def get_axes(self, df: pd.DataFrame) -> np.ndarray:
+    def get_axes(self, df: pd.DataFrame, **kwargs) -> np.ndarray:
         """[summary]
         Returns axes values for plot.
 
@@ -99,8 +100,9 @@ class PlotAxes(Enum):
         """
 
         if self == PlotAxes.TIME:
-            times = np.array(df["timestamp"], dtype=np.uint64) / 1e6
-            axes: np.ndarray = times - times.min()
+            axes = np.array(df["timestamp"], dtype=np.uint64) / 1e6
+            if kwargs.get("align2origin", False):
+                axes: np.ndarray = axes - axes.min()
         elif self == PlotAxes.DISTANCE:
             axes: np.ndarray = np.linalg.norm(df[["x", "y"]], axis=1)
         elif self == PlotAxes.X:

@@ -318,51 +318,83 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ### プロットメソッド関数
 
-- `<func> plot_by_time(...) -> None`
+- `<enum> PlotAxes`
 
-  - 指定した GT オブジェクトに対し時系列または距離ごとで位置，向き，速度の状態を描画
+  - プロットの変数軸を指定するためのクラス
 
-    | Arguments |                  type                  | Mandatory |                              Description                              |
-    | :-------- | :------------------------------------: | :-------: | :-------------------------------------------------------------------: |
-    | `uuid`    |                 `str`                  |    Yes    |                     対象 GT オブジェクトの uuid．                     |
+    | Member     | Description                |
+    | :--------- | :------------------------- |
+    | `TIME`     | 時間[s]                    |
+    | `DISTANCE` | 距離[m]                    |
+    | `X`        | x 座標[m]                  |
+    | `Y`        | y 座標[m]                  |
+    | `VX`       | x 方向速度[m/s]            |
+    | `VY`       | y 方向速度[m/s]            |
+    | `POSITION` | (x,y)座標[m]               |
+    | `VELOCITY` | (vx, vy)速度[m/s]          |
+    | `POLAR`    | 極座標系(theta[rad], r[m]) |
+
+- `<func> plot_state(...) -> None`
+
+  - 指定した GT オブジェクトに対し位置，向き，速度の状態を描画
+
+    | Arguments |                  type                  | Mandatory | Description                                                           |
+    | :-------- | :------------------------------------: | :-------: | :-------------------------------------------------------------------- |
+    | `uuid`    |                 `str`                  |    Yes    | 対象 GT オブジェクトの uuid．                                         |
     | `columns` |        `Union[str, List[str]]`         |    Yes    | 位置または速度を指定(Options=[`x`, `y`, `yaw`, `w`, `l`, `vx`, `vy`]) |
-    | `mode`    |         `Union[str, PlotMode]`         |    No     |            時系列または距離ごと(Defaults=`PlotMode.TIME`)             |
-    | `status`  | `Optional[Union[str, MatchingStatus]]` |    No     |          対象オブジェクトのマッチング状態．(Defaults=`None`)          |
-    | `show`    |                 `bool`                 |    No     |           描画結果を表示するかのフラッグ(Defaults=`False`)            |
+    | `mode`    |               `PlotAxes`               |    No     | プロット変数の軸(Defaults=`PlotAxes.TIME`)                            |
+    | `status`  | `Optional[Union[str, MatchingStatus]]` |    No     | 対象オブジェクトのマッチング状態．(Defaults=`None`)                   |
+    | `show`    |                 `bool`                 |    No     | 描画結果を表示するかのフラッグ(Defaults=`False`)                      |
 
     ```python
     # 例: uuid: "4bae7e75c7de70be980ce20ce8cbb642"のオブジェクトのxyについて時系列でTP/FP/FNに関わらずプロット
-
     >> analyzer.plot_state("4bae7e75c7de70be980ce20ce8cbb642", ["x", "y"])
     ```
 
-    <img src="../../fig/perception/sample_plot_by_time.png" width=800 height=400>
+    <img src="../../fig/perception/plot_state_by_time.png" width=800>
+
+- `<func> plot_error(...) -> None`
+
+  - 指定した状態量に対する GT と推定値の誤差をプロット
+
+    | Arguments |          type           | Mandatory | Description                                                           |
+    | :-------- | :---------------------: | :-------: | :-------------------------------------------------------------------- |
+    | `columns` | `Union[str, List[str]]` |    Yes    | 位置または速度を指定(Options=[`x`, `y`, `yaw`, `w`, `l`, `vx`, `vy`]) |
+    | `mode`    |       `PlotAxes`        |    No     | 時系列または距離ごと(Defaults=`PlotAxes.TIME`)                        |
+    | `show`    |         `bool`          |    No     | 描画結果を表示するかのフラッグ(Defaults=`False`)                      |
+
+    ```python
+    # 例: xyの誤差について時系列でプロット
+    >> analyzer.plot_error(["x", "y"])
+    ```
+
+    <img src="../../fig/perception/plot_error_by_time.png" width=800>
 
 - `<func> plot_num_object(...) -> None`
 
-  - GT/Estimation のオブジェクト数を距離ごとまたは時系列でヒストグラムでプロット
+  - GT/Estimation のオブジェクト数をヒストグラムでプロット
 
-  | Arguments  |          type          | Mandatory |                                    Description                                     |
-  | :--------- | :--------------------: | :-------: | :--------------------------------------------------------------------------------: |
-  | `mode`     | `Union[str, PlotMode]` |    No     |                 距離ごとまたは時系列(Defaults=`PlotMode.DISTANCE`)                 |
-  | `bin`      |   `Optional[float]`    |    No     | 描画間隔．デフォルトで距離ごとなら`0.5`[m]，時系列なら`100`[ms]．(Defaults=`None`) |
-  | `show`     |         `bool`         |    No     |                  描画結果を表示するかのフラッグ(Defaults=`False`)                  |
-  | `**kwargs` |         `Any`          |    No     |        特定のラベル，エリアなどについてのみ描画する際に指定．(e.g.`area=0`)        |
+  | Arguments  |       type        | Mandatory | Description                                                                        |
+  | :--------- | :---------------: | :-------: | :--------------------------------------------------------------------------------- |
+  | `mode`     |    `PlotAxes`     |    No     | 距離ごとまたは時系列(Defaults=`PlotAxes.DISTANCE`)                                 |
+  | `bin`      | `Optional[float]` |    No     | 描画間隔．デフォルトで距離ごとなら`0.5`[m]，時系列なら`100`[ms]．(Defaults=`None`) |
+  | `show`     |      `bool`       |    No     | 描画結果を表示するかのフラッグ(Defaults=`False`)                                   |
+  | `**kwargs` |       `Any`       |    No     | 特定のラベル，エリアなどについてのみ描画する際に指定．(e.g.`area=0`)               |
 
   ```python
   # 全オブジェクトの数を距離ごとにプロット
   >> analyzer.plot_num_object()
   ```
 
-  <img src="../../fig/perception/sample_plot_num_objects.png" width=800 height=400>
+  <img src="../../fig/perception/plot_num_object_by_distance.png" width=800>
 
 - `<func> box_plot(...) -> None`
 
   - 指定した状態に対する誤差の箱ひげ図をプロット
 
-  | Arguments |          type          | Mandatory |                   Description                    |
-  | :-------- | :--------------------: | :-------: | :----------------------------------------------: |
-  | `columns` | `Union[str, List[str]` |    Yes    |   描画対象となる誤差(x, y, yaw, w, l, vx, vy)    |
+  | Arguments |          type          | Mandatory | Description                                      |
+  | :-------- | :--------------------: | :-------: | :----------------------------------------------- |
+  | `columns` | `Union[str, List[str]` |    Yes    | 描画対象となる誤差(x, y, yaw, w, l, vx, vy)      |
   | `show`    |         `bool`         |    No     | 描画結果を表示するかのフラッグ(Defaults=`False`) |
 
   ```python
@@ -370,4 +402,4 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
   >> analyzer.box_plot(["x", "y"])
   ```
 
-  <img src="../../fig/perception/box_plot_xy.png" width=800>
+  <img src="../../fig/perception/box_plot_xy.png" width=400>
