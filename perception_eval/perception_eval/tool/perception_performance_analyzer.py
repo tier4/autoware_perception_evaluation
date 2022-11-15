@@ -400,7 +400,7 @@ class PerceptionPerformanceAnalyzer:
         self.__num_scene += 1
         # columns: ["timestamp", "xyz", "wlh", "yaw", "velocity", "nn_points", "label", "state", "area"]
         start = len(self.df) // 2
-        for i, frame in enumerate(tqdm(frame_results, "Updating DataFrame")):
+        for frame in tqdm(frame_results, "Updating DataFrame"):
             concat: List[pd.DataFrame] = []
             if len(self) > 0:
                 concat.append(self.df)
@@ -409,7 +409,7 @@ class PerceptionPerformanceAnalyzer:
                 frame.pass_fail_result.tp_objects,
                 status=MatchingStatus.TP,
                 start=start,
-                frame_num=i,
+                frame_num=int(frame.frame_name),
                 ego2map=frame.frame_ground_truth.ego2map,
             )
             if len(tp_df) > 0:
@@ -420,7 +420,7 @@ class PerceptionPerformanceAnalyzer:
                 frame.pass_fail_result.fp_objects_result,
                 status=MatchingStatus.FP,
                 start=start,
-                frame_num=i,
+                frame_num=int(frame.frame_name),
                 ego2map=frame.frame_ground_truth.ego2map,
             )
             if len(fp_df) > 0:
@@ -431,7 +431,7 @@ class PerceptionPerformanceAnalyzer:
                 frame.pass_fail_result.fn_objects,
                 status=MatchingStatus.FN,
                 start=start,
-                frame_num=i,
+                frame_num=int(frame.frame_name),
                 ego2map=frame.frame_ground_truth.ego2map,
             )
             if len(fn_df) > 0:
