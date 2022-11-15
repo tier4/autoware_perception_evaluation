@@ -87,12 +87,12 @@ class PerceptionVisualizationConfig:
         self.confidence_threshold_list: Optional[List[float]] = confidence_threshold_list
         self.target_uuids: Optional[List[str]] = target_uuids
 
-        if max_x_position_list is None:
-            self.xlim: float = max(max_distance_list)
-            self.ylim: float = max(max_distance_list)
-        elif max_distance_list is None:
+        if max_x_position_list is not None:
             self.xlim: float = max(max_x_position_list)
             self.ylim: float = max(max_y_position_list)
+        elif max_distance_list is not None:
+            self.xlim: float = max(max_distance_list)
+            self.ylim: float = max(max_distance_list)
         else:
             self.xlim: float = 100.0
             self.ylim: float = 100.0

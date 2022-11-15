@@ -367,14 +367,9 @@ if __name__ == "__main__":
         f"{format_class_for_log(prediction_final_metric_score.prediction_scores[0], 100)}"
     )
 
-    # # Visualize all frame results
-    # logging.info("Start visualizing prediction results")
-    # prediction_lsim.evaluator.visualize_all()
-
-    # # Prediction performance report
-    # prediction_analyzer = PerceptionPerformanceAnalyzer(prediction_lsim.evaluator.evaluator_config)
-    # prediction_analyzer.add(prediction_lsim.evaluator.frame_results)
-    # score_df, error_df = prediction_analyzer.analyze()
+    # Visualize all frame results
+    logging.info("Start visualizing prediction results")
+    prediction_lsim.evaluator.visualize_all()
 
     # Clean up tmpdir
     if args.use_tmpdir:

@@ -445,13 +445,20 @@ class PerceptionVisualizer:
             # tracked path
             if self.config.evaluation_task == EvaluationTask.TRACKING:
                 axes, tracking_artists = self._plot_tracked_path(
-                    object_, is_ground_truth, axes=axes
+                    object_,
+                    is_ground_truth,
+                    axes=axes,
                 )
                 artists += tracking_artists
 
             # predicted path
             if self.config.evaluation_task == EvaluationTask.PREDICTION:
-                pass
+                axes, prediction_artists = self._plot_predicted_path(
+                    object_,
+                    is_ground_truth,
+                    axes=axes,
+                )
+                artists += prediction_artists
 
             box_center_x.append(box_center[0])
             box_center_y.append(box_center[1])
@@ -500,7 +507,7 @@ class PerceptionVisualizer:
 
     def _plot_predicted_path(
         self,
-        dynamic_objects: List[DynamicObject],
+        dynamic_object: DynamicObject,
         is_ground_truth: bool,
         axes: Optional[Axes] = None,
     ) -> Axes:
@@ -508,14 +515,28 @@ class PerceptionVisualizer:
         Plot predicted paths for one object.
 
         Args:
-            dynamic_objects (List[DynamicObject]): The list of object being visualized.
+            dynamic_object (DynamicObject): The list of object being visualized.
             is_ground_truth (bool): Whether ground truth object is.
             axes (Axes): The Axes instance.
 
         Returns:
             axes (Axes): The Axes instance.
+            artists (List[plt.Artist]): The list of Artist instance.
         """
-        pass
+        if axes is None:
+            axes: Axes = plt.subplot()
+
+        artists: List[plt.Artist] = []
+
+        for i, paths in enumerate(dynamic_object.predicted_paths):
+            path_arr: np.ndarray = np.array([p.position for p in paths])
+            color_: np.ndarray = (
+                self.__cmap.get_simple("red") if is_ground_truth else self.__cmap[i] / 255.0
+            )
+            plot_ = axes.plot(path_arr[:, 0], path_arr[:, 1], "o--", color=color_, markersize=1)
+            artists.append(plot_)
+
+        return axes, artists
 
     def _save_animation(self, file_name: Optional[str] = None):
         """[summary]
