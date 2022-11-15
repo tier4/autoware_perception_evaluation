@@ -103,7 +103,7 @@ class CriticalObjectFilterConfig:
             )
             self.max_x_position_list = None
             self.max_y_position_list = None
-        elif evaluator_config.evaluation_task == EvaluationTask.DETECTION2D:
+        elif evaluator_config.evaluation_task.is_2d():
             self.max_x_position_list = None
             self.max_y_position_list = None
             self.max_distance_list = None

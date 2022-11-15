@@ -20,7 +20,6 @@ from typing import Union
 
 import numpy as np
 from perception_eval.common.dataset import DynamicObject
-from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import RoiObject
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_tp_fp_objects
@@ -146,7 +145,7 @@ class PassFailResult:
             object_results=object_results,
             target_labels=self.frame_pass_fail_config.target_labels,
             matching_mode=MatchingMode.IOU2D
-            if self.frame_pass_fail_config.evaluation_task == EvaluationTask.DETECTION2D
+            if self.frame_pass_fail_config.evaluation_task.is_2d()
             else MatchingMode.PLANEDISTANCE,
             matching_threshold_list=self.frame_pass_fail_config.matching_threshold_list,
         )

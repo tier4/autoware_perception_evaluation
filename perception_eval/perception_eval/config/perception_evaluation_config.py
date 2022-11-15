@@ -49,7 +49,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         self.metrics_config (MetricsScoreConfig): The config for metrics
     """
 
-    _support_tasks: List[str] = ["detection2d", "detection", "tracking", "prediction"]
+    _support_tasks: List[str] = ["detection2d", "tracking2d", "detection", "tracking", "prediction"]
 
     def __init__(
         self,
@@ -145,7 +145,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             )
             max_x_position_list = None
             max_y_position_list = None
-        elif self.evaluation_task == EvaluationTask.DETECTION2D:
+        elif self.evaluation_task.is_2d():
             max_x_position_list = None
             max_y_position_list = None
             max_distance_list = None
