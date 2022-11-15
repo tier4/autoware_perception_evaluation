@@ -18,6 +18,7 @@ import tempfile
 from typing import List
 
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.status import FrameID
 from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
 from perception_eval.evaluation.metrics.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
@@ -38,6 +39,7 @@ class PerceptionLSimMoc:
         result_root_directory: str,
     ):
         evaluation_config_dict = {
+            "evaluation_task": evaluation_task,
             # ラベル，max x/y，マッチング閾値 (detection/tracking/predictionで共通)
             "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
             # max x/y position or max/min distanceの指定が必要
@@ -60,24 +62,12 @@ class PerceptionLSimMoc:
             "plane_distance_thresholds": [2.0, 3.0],
             "iou_bev_thresholds": [0.5],
             "iou_3d_thresholds": [0.5],
+            "min_point_numbers": [0, 0, 0, 0],
         }
-        if evaluation_task == "detection":
-            # detection
-            frame_id: str = "base_link"  # objectのframe_id: base_link or map
-            # evaluation_task指定 + 今後各taskで異なるパラメータが入るかも
-            evaluation_config_dict.update({"evaluation_task": evaluation_task})
-            evaluation_config_dict.update({"min_point_numbers": [0, 0, 0, 0]})
-        elif evaluation_task == "tracking":
-            # tracking
-            frame_id: str = "map"
-            evaluation_config_dict.update({"evaluation_task": evaluation_task})
-        else:
-            raise ValueError(f"Unexpected evaluation task: {evaluation_task}")
-        # TODO prediction
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=dataset_paths,
-            frame_id=frame_id,
+            frame_id=FrameID.from_task(evaluation_task),
             merge_similar_labels=False,
             does_use_pointcloud=False,
             result_root_directory=result_root_directory,
@@ -194,6 +184,7 @@ if __name__ == "__main__":
             diff_distance=(2.3, 0.0, 0.2),
             diff_yaw=0.2,
             is_confidence_with_distance=True,
+            ego2map=ground_truth_frame.ego2map,
         )
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
@@ -259,7 +250,8 @@ if __name__ == "__main__":
             ground_truth_objects=ground_truth_frame.objects,
             diff_distance=(2.3, 0.0, 0.2),
             diff_yaw=0.2,
-            is_confidence_with_distance=False,
+            is_confidence_with_distance=True,
+            ego2map=ground_truth_frame.ego2map,
         )
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:

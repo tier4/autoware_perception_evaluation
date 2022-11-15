@@ -18,6 +18,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
+import numpy as np
 from perception_eval.common.object import DynamicObject
 from pyquaternion.quaternion import Quaternion
 
@@ -119,6 +120,7 @@ def get_objects_with_difference(
     diff_distance: Tuple[float, float, float] = (0.0, 0.0, 0.0),
     diff_yaw: float = 0.0,
     is_confidence_with_distance: Optional[bool] = None,
+    ego2map: Optional[np.ndarray] = None,
 ) -> List[DynamicObject]:
     """[summary]
     Get objects with distance and yaw difference for test.
@@ -140,6 +142,8 @@ def get_objects_with_difference(
                 Near object is lower coefficient like 0.2 and far object is
                 higher like 0.8.
                 Defaults is None.
+        ego2map (Optional[numpy.ndarray]):4x4 Transform matrix
+                from base_link coordinate system to map coordinate system.
 
     Returns:
         List[DynamicObject]: objects with distance and yaw difference.
@@ -157,7 +161,7 @@ def get_objects_with_difference(
         if is_confidence_with_distance is None:
             semantic_score = object_.semantic_score
         else:
-            distance_coefficient: float = object_.get_distance_bev() / 100.0
+            distance_coefficient: float = object_.get_distance_bev(ego2map=ego2map) / 100.0
             distance_coefficient = max(min(distance_coefficient, 0.8), 0.2)
             if is_confidence_with_distance:
                 semantic_score = object_.semantic_score * (1 - distance_coefficient)
@@ -171,6 +175,7 @@ def get_objects_with_difference(
 
         test_object_: DynamicObject = DynamicObject(
             unix_time=object_.unix_time,
+            frame_id=object_.frame_id,
             position=position,
             orientation=orientation,
             size=object_.state.size,

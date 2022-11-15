@@ -21,6 +21,7 @@ from typing import Tuple
 
 import numpy as np
 from perception_eval.common.dataset import FrameGroundTruth
+from perception_eval.common.status import FrameID
 from perception_eval.config.sensing_evaluation_config import SensingEvaluationConfig
 from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
 from perception_eval.manager.sensing_evaluation_manager import SensingEvaluationManager
@@ -49,7 +50,7 @@ class SensingLSimMoc:
         }
         evaluation_config: SensingEvaluationConfig = SensingEvaluationConfig(
             dataset_paths=dataset_paths,
-            frame_id="base_link",
+            frame_id=FrameID.from_task("sensing"),
             merge_similar_labels=False,
             does_use_pointcloud=False,
             result_root_directory=result_root_directory,

@@ -17,6 +17,7 @@ from typing import Dict
 from typing import List
 from typing import Tuple
 
+from perception_eval.common.status import FrameID
 from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
 
 from ._evaluation_config_base import _EvaluationConfigBase
@@ -28,7 +29,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
     Attributes:
         - By _EvaluationConfigBase:
         self.dataset_paths (List[str]): The path(s) of dataset(s).
-        self.frame_id (str): The frame_id, base_link or map.
+        self.frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
         self.does_use_pointcloud (bool): The boolean flag if load pointcloud data from dataset.
         self.result_root_directory (str): The directory path to save result.
         self.log_directory (str): The directory path to save log.
@@ -47,7 +48,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
     def __init__(
         self,
         dataset_paths: List[str],
-        frame_id: str,
+        frame_id: FrameID,
         merge_similar_labels: bool,
         does_use_pointcloud: bool,
         result_root_directory: str,
@@ -56,7 +57,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         """
         Args:
             dataset_paths (List[str]): The list of dataset paths.
-            frame_id (str): Frame ID, base_link or map.
+            frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
             merge_similar_labels (bool): Whether merge similar labels.
                 If True,
                     - BUS, TRUCK, TRAILER -> CAR

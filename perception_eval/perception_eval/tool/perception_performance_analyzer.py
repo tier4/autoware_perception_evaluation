@@ -33,6 +33,7 @@ import numpy as np
 import pandas as pd
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.status import FrameID
 from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
@@ -150,11 +151,9 @@ class PerceptionPerformanceAnalyzer:
         eval_cfg_dict: Dict[str, Any] = p_cfg["evaluation_config_dict"]
         eval_task_: str = eval_cfg_dict["evaluation_task"]
         if eval_task_ == "detection":
-            frame_id = "base_link"
-        elif eval_task_ == "tracking":
-            frame_id = "map"
-        elif eval_task_ == "prediction":
-            frame_id = "map"
+            frame_id = FrameID.BASE_LINK
+        elif eval_task_ in ("tracking", "prediction"):
+            frame_id = FrameID.MAP
         else:
             raise ValueError(f"Unexpected evaluation task: {eval_task_}")
 
@@ -544,7 +543,6 @@ class PerceptionPerformanceAnalyzer:
             raise TypeError(f"Unexpected object type: {type(object_result)}")
 
         area: int = get_area_idx(
-            self.config.frame_id,
             object_result,
             self.upper_rights,
             self.bottom_lefts,
@@ -552,7 +550,7 @@ class PerceptionPerformanceAnalyzer:
         )
 
         if gt:
-            if self.config.frame_id == "map":
+            if gt.frame_id == FrameID.MAP:
                 src: np.ndarray = np.eye(4, 4)
                 src[:3, :3] = gt.state.orientation.rotation_matrix
                 src[:3, 3] = gt.state.position
@@ -593,7 +591,7 @@ class PerceptionPerformanceAnalyzer:
             gt_ret = {k: None for k in self.keys()}
 
         if estimation:
-            if self.config.frame_id == "map":
+            if estimation.frame_id == FrameID.MAP:
                 src: np.ndarray = np.eye(4, 4)
                 src[:3, :3] = estimation.state.orientation.rotation_matrix
                 src[:3, 3] = estimation.state.position

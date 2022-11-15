@@ -18,10 +18,14 @@ from typing import Tuple
 
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.status import FrameID
 from pyquaternion.quaternion import Quaternion
 
 
-def make_dummy_data(use_unique_id: bool = True) -> Tuple[List[DynamicObject], List[DynamicObject]]:
+def make_dummy_data(
+    frame_id: FrameID = FrameID.BASE_LINK,
+    use_unique_id: bool = True,
+) -> Tuple[List[DynamicObject], List[DynamicObject]]:
     """[summary]
     Make dummy predicted objects and ground truth objects.
 
@@ -39,6 +43,7 @@ def make_dummy_data(use_unique_id: bool = True) -> Tuple[List[DynamicObject], Li
     dummy_estimated_objects: List[DynamicObject] = [
         DynamicObject(
             unix_time=100,
+            frame_id=frame_id,
             position=(1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.5, 1.5, 1.5),
@@ -49,6 +54,7 @@ def make_dummy_data(use_unique_id: bool = True) -> Tuple[List[DynamicObject], Li
         ),
         DynamicObject(
             unix_time=100,
+            frame_id=frame_id,
             position=(1.0, -1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(0.5, 0.5, 0.5),
@@ -59,6 +65,7 @@ def make_dummy_data(use_unique_id: bool = True) -> Tuple[List[DynamicObject], Li
         ),
         DynamicObject(
             unix_time=100,
+            frame_id=frame_id,
             position=(-1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 1.0, 1.0),
@@ -71,6 +78,7 @@ def make_dummy_data(use_unique_id: bool = True) -> Tuple[List[DynamicObject], Li
     dummy_ground_truth_objects: List[DynamicObject] = [
         DynamicObject(
             unix_time=100,
+            frame_id=frame_id,
             position=(1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 1.0, 1.0),
@@ -82,6 +90,7 @@ def make_dummy_data(use_unique_id: bool = True) -> Tuple[List[DynamicObject], Li
         ),
         DynamicObject(
             unix_time=100,
+            frame_id=frame_id,
             position=(1.0, -1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 1.0, 1.0),
@@ -93,6 +102,7 @@ def make_dummy_data(use_unique_id: bool = True) -> Tuple[List[DynamicObject], Li
         ),
         DynamicObject(
             unix_time=100,
+            frame_id=frame_id,
             position=(-1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 1.0, 1.0),
@@ -104,6 +114,7 @@ def make_dummy_data(use_unique_id: bool = True) -> Tuple[List[DynamicObject], Li
         ),
         DynamicObject(
             unix_time=100,
+            frame_id=frame_id,
             position=(-1.0, -1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 1.0, 1.0),

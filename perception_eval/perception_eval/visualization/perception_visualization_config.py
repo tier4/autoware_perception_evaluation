@@ -17,6 +17,7 @@ from typing import Optional
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
+from perception_eval.common.status import FrameID
 
 
 class PerceptionVisualizationConfig:
@@ -24,7 +25,8 @@ class PerceptionVisualizationConfig:
 
     Attributes:
         self.visualization_directory_path (str): The directory path to save visualized results.
-        evaluation_task (EvaluationTask)
+        self.frame_id (FrameID): BASE_LINK or MAP.
+        self.evaluation_task (EvaluationTask): Evaluation task.
         self.height (int): The height of image.
         self.width (int): The width of image.
         self.target_labels (Optional[List[AutowareLabel]]): target_labels
@@ -43,7 +45,7 @@ class PerceptionVisualizationConfig:
     def __init__(
         self,
         visualization_directory_path: str,
-        frame_id: str,
+        frame_id: FrameID,
         evaluation_task: EvaluationTask,
         height: int = 640,
         width: int = 640,
@@ -59,7 +61,7 @@ class PerceptionVisualizationConfig:
         """[summary]
         Args:
             visualization_directory_path (str): Path to save visualized result.
-            frame_id (str): base_link  or map.
+            frame_id (FrameID): BASE_LINK or MAP.
             evaluation_task (EvaluationTask): Name of evaluation.
             height (int): Image height. Defaults to 640.
             width (int): Image width. Defaults to 640.

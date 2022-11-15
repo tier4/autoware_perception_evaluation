@@ -132,7 +132,6 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             frame_ground_truth (FrameGroundTruth)
         """
         estimated_objects = filter_objects(
-            frame_id=self.evaluator_config.frame_id,
             objects=estimated_objects,
             is_gt=False,
             ego2map=frame_ground_truth.ego2map,
@@ -140,7 +139,6 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         )
 
         frame_ground_truth.objects = filter_objects(
-            frame_id=self.evaluator_config.frame_id,
             objects=frame_ground_truth.objects,
             is_gt=True,
             ego2map=frame_ground_truth.ego2map,
@@ -152,7 +150,6 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         )
         if self.evaluator_config.filtering_params.get("target_uuids"):
             object_results = filter_object_results(
-                frame_id=self.evaluator_config.frame_id,
                 object_results=object_results,
                 ego2map=frame_ground_truth.ego2map,
                 target_uuids=self.evaluator_config.filtering_params["target_uuids"],

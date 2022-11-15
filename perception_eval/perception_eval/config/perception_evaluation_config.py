@@ -20,6 +20,7 @@ from typing import Optional
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import set_target_lists
+from perception_eval.common.status import FrameID
 from perception_eval.common.threshold import ThresholdsError
 from perception_eval.common.threshold import check_thresholds
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
@@ -34,7 +35,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
     Attributes:
         - By _EvaluationConfigBase
         self.dataset_paths (List[str]): The list of dataset path.
-        self.frame_id (str): The frame_id, base_link or map.
+        self.frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
         self.does_use_pointcloud (bool): The boolean flag if load pointcloud data from dataset.
         self.result_root_directory (str): The path to result directory
         self.log_directory (str): The path to sub directory for log
@@ -54,7 +55,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
     def __init__(
         self,
         dataset_paths: List[str],
-        frame_id: str,
+        frame_id: FrameID,
         merge_similar_labels: bool,
         does_use_pointcloud: bool,
         result_root_directory: str,
@@ -64,7 +65,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
 
         Args:
             dataset_paths (List[str]): The paths of dataset
-            frame_id (str): Frame ID, base_link or map
+            frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
             merge_similar_labels (bool): Whether merge similar labels.
                 If True,
                     - BUS, TRUCK, TRAILER -> CAR

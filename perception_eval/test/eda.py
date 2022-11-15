@@ -20,8 +20,10 @@ from typing import Union
 
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.dataset import load_all_datasets
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.status import FrameID
 from perception_eval.visualization.eda_tool import EDAVisualizer
 
 
@@ -102,9 +104,9 @@ def get_all_ground_truths(dataset_paths: List[str]) -> List[DynamicObject]:
     frame_results: List[FrameGroundTruth] = load_all_datasets(
         dataset_paths,
         does_use_pointcloud=False,
-        evaluation_task="detection",
+        evaluation_task=EvaluationTask.DETECTION,
         label_converter=LabelConverter(merge_similar_labels=False),
-        frame_id="base_link",
+        frame_id=FrameID.BASE_LINK,
     )
     all_ground_truths: List[DynamicObject] = []
     for frame_result in frame_results:

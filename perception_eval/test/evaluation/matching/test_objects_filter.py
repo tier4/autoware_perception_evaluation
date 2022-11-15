@@ -40,7 +40,6 @@ class TestObjectsFilter(unittest.TestCase):
         self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
-        self.frame_id: str = "base_link"
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
             AutowareLabel.BICYCLE,
@@ -104,7 +103,6 @@ class TestObjectsFilter(unittest.TestCase):
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 filtered_object_results = filter_object_results(
-                    frame_id=self.frame_id,
                     object_results=object_results,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
@@ -174,7 +172,6 @@ class TestObjectsFilter(unittest.TestCase):
                     ].pointcloud_num = pointcloud_num
 
                 filtered_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=diff_distance_dummy_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
@@ -515,7 +512,6 @@ class TestObjectsFilter(unittest.TestCase):
 
                 confidence_threshold_list = [confidence_threshold] * len(self.target_labels)
                 filtered_object_results = filter_object_results(
-                    frame_id=self.frame_id,
                     object_results=object_results,
                     target_labels=self.target_labels,
                     confidence_threshold_list=confidence_threshold_list,

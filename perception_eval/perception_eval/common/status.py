@@ -17,6 +17,46 @@ from __future__ import annotations
 from enum import Enum
 import logging
 from typing import Dict
+from typing import Union
+
+from perception_eval.common.evaluation_task import EvaluationTask
+
+
+class FrameID(Enum):
+    BASE_LINK = "base_link"
+    MAP = "map"
+
+    def __eq__(self, __o: object) -> bool:
+        if isinstance(__o, str):
+            return self.value == __o
+        return super().__eq__(__o)
+
+    def __str__(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_value(cls, name: str) -> FrameID:
+        for k, v in cls.__members__.items():
+            if v == name:
+                return k
+
+    @classmethod
+    def from_task(cls, task: Union[str, EvaluationTask]) -> FrameID:
+        """[summary]
+        Return FrameID from EvaluationTask.
+
+        Args:
+            task (Union[str, EvaluationTask]): Task name.
+
+        Returns:
+            FrameID: For DETECTION or SENSING, Returns BASE_LINK. For TRACKING or PREDICTION, returns MAP.
+        """
+        if task in (EvaluationTask.DETECTION, EvaluationTask.SENSING):
+            return FrameID.BASE_LINK
+        elif task in (EvaluationTask.TRACKING, EvaluationTask.PREDICTION):
+            return FrameID.MAP
+        else:
+            raise ValueError(f"Unexpected task: {task}")
 
 
 class Visibility(Enum):
