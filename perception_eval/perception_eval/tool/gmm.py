@@ -22,6 +22,7 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import multivariate_normal
+from scipy.stats import probplot
 from sklearn.mixture import GaussianMixture
 
 
@@ -103,8 +104,8 @@ class Gmm:
 
         Args:
             x (numpy.ndarray): Input data, in shape of (N, D).
-            max_iter (int): Maximum number of updates.
-            threshold (float): Threshold of convergence condition. Defaults to 1e-3.
+            x_test (Optional[numpy.ndarray]): Test data to determine number of components, in shape (N, D).
+                If None, input data will be used. Defaults to None.
         """
         models = [
             GaussianMixture(n, n_init=self.n_init, random_state=self.random_state).fit(x)
@@ -138,6 +139,39 @@ class Gmm:
         with open(filename, "wb") as f:
             pickle.dump(self, f)
 
+    def get_gamma(self, x: np.ndarray) -> np.ndarray:
+        """[summary]
+        Returns gamma that describes the weight
+
+        Args:
+            x (numpy.ndarray): Input data, in shape (N, D)
+
+        Returns:
+            gamma (numpy.ndarray): Weight, in shape (K,)
+        """
+        if x.ndim == 1:
+            x = x.reshape(1, -1)
+        elif x.ndim > 2:
+            raise RuntimeError(f"Invalid input shape: {x.shape}, expected (N, D)")
+        x_dim: int = x.shape[-1]
+
+        pdf = np.array(
+            [
+                self.pi[i]
+                * multivariate_normal.pdf(
+                    x,
+                    self.means[i, :x_dim],
+                    self.covariances[i, :x_dim, :x_dim],
+                )
+                for i in range(self.num_k)
+            ]
+        ).T
+        with np.errstate(invalid="ignore", divide="ignore"):
+            gamma = np.exp(np.log(pdf) - np.log(np.sum(pdf, axis=-1, keepdims=True)))
+        gamma[np.isnan(gamma)] = 1.0 / self.num_k
+
+        return gamma
+
     def predict(
         self,
         x: np.ndarray,
@@ -156,9 +190,10 @@ class Gmm:
         if self.model is None:
             raise RuntimeError("Model has not been estimated.")
 
-        if x.ndim != 1:
-            # TODO: add support of data in shape (N, D)
-            raise RuntimeError("Expected data in shape (D,)")
+        if x.ndim == 1:
+            x = x.reshape(1, -1)
+        elif x.ndim > 2:
+            raise RuntimeError(f"Invalid input shape: {x.shape}, expected (N, D)")
         x_dim: int = x.shape[-1]
 
         mean_x: np.ndarray = self.means[:, :x_dim]
@@ -166,36 +201,20 @@ class Gmm:
         cov_xx: np.ndarray = self.covariances[:, :x_dim, :x_dim]
         cov_xy: np.ndarray = self.covariances[:, :x_dim, x_dim:]
 
-        pdf = np.array(
-            [
-                self.pi[i] * multivariate_normal.pdf(x, mean_x[i], cov_xx[i])
-                for i in range(self.num_k)
-            ]
-        )
-        gamma = np.exp(
-            np.log(pdf) - (np.log(np.sum(pdf, axis=x.ndim - 1, keepdims=True) + self.eps))
-        )
-        gamma[np.isnan(gamma)] = 1.0 / self.num_k
+        gamma = self.get_gamma(x)
 
         if kernel == "mean":
-            values: List[np.ndarray] = [
-                gamma[i]
-                * (
-                    mean_y[i]
-                    + np.matmul(
-                        (x - mean_x[i]),
-                        np.matmul(
-                            np.linalg.inv(cov_xx[i]),
-                            cov_xy[i],
-                        ),
-                    )
-                )
-                for i in range(self.num_k)
-            ]
-            return np.mean(values, axis=0)
+            return np.mean(
+                gamma[:, :, None]
+                * np.matmul(
+                    (x[:, None, :] - mean_x)[:, :, None, ...],
+                    np.matmul(np.linalg.inv(cov_xx), cov_xy)[None, ...],
+                )[:, :, 0],
+                axis=1,
+            )
         elif kernel == "mode":
-            i = np.argmax(gamma)
-            return gamma[i] * (
+            i: int = np.argmax(gamma)
+            return gamma[:, i][:, None] * (
                 mean_y[i]
                 + np.matmul(
                     (x - mean_x[i]),
@@ -222,9 +241,9 @@ class Gmm:
             raise RuntimeError("Model has not been estimated.")
         return self.model.predict(x)
 
-    def plot(self) -> None:
+    def plot_ic(self, filename: Optional[str] = None, show: bool = False) -> None:
         """[summary]
-        Plot AIC and BIC.
+        Plot Information Criterion scores, which are AIC and BIC, for each number of components.
         """
         if self.aic_list is None or self.bic_list is None:
             raise RuntimeError("Model has not been estimated.")
@@ -236,5 +255,9 @@ class Gmm:
         ax.legend(loc="best")
         ax.set_xlabel("num_k")
 
-        plt.show()
+        if filename is not None:
+            plt.savefig(filename)
+
+        if show:
+            plt.show()
         plt.close()
