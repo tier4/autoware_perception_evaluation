@@ -138,12 +138,11 @@ def _load_dataset(
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
     """
-    is_detection_2d: bool = evaluation_task == EvaluationTask.DETECTION2D
 
     nusc: NuScenes = NuScenes(version="annotation", dataroot=dataset_path, verbose=False)
     nuim: Optional[NuImages] = (
         NuImages(version="annotation", dataroot=dataset_path, verbose=False)
-        if is_detection_2d
+        if evaluation_task.is_2d()
         else None
     )
     helper: PredictHelper = PredictHelper(nusc)
@@ -164,7 +163,7 @@ def _load_dataset(
 
     dataset: List[FrameGroundTruth] = []
     for n, sample_token in enumerate(tqdm(sample_tokens)):
-        if is_detection_2d:
+        if evaluation_task.is_2d():
             frame = _sample_to_frame_2d(
                 nusc=nusc,
                 nuim=nuim,
@@ -377,7 +376,7 @@ def _sample_to_frame_2d(
             label=category_info["name"],
         )
 
-        uuid: str = ann.get("instance_token", "")
+        uuid: str = ann.get("instance_token")
 
         object_: RoiObject = RoiObject(
             unix_time=unix_time,

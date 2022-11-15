@@ -44,8 +44,7 @@ class PerceptionLSimMoc:
             ],
             "iou_2d_thresholds": [0.5],
         }
-        if evaluation_task == "detection2d":
-            # detection
+        if evaluation_task in ("detection2d", "tracking2d"):
             frame_id: str = "base_link"  # objectのframe_id: base_link or map
             evaluation_config_dict.update({"evaluation_task": evaluation_task})
         else:
@@ -148,19 +147,36 @@ if __name__ == "__main__":
     else:
         result_root_directory: str = "data/result/{TIME}/"
 
-    # ========================================= Detection =========================================
-    print("=" * 50 + "Start Detection" + "=" * 50)
-    detection_lsim = PerceptionLSimMoc(dataset_paths, "detection2d", result_root_directory)
+    # # ========================================= Detection =========================================
+    # print("=" * 50 + "Start Detection 2D" + "=" * 50)
+    # detection_lsim = PerceptionLSimMoc(dataset_paths, "detection2d", result_root_directory)
 
-    for ground_truth_frame in detection_lsim.evaluator.ground_truth_frames:
+    # for ground_truth_frame in detection_lsim.evaluator.ground_truth_frames:
+    #     objects_with_difference = ground_truth_frame.objects
+    #     # To avoid case of there is no object
+    #     if len(objects_with_difference) > 0:
+    #         objects_with_difference.pop(0)
+    #     detection_lsim.callback(
+    #         ground_truth_frame.unix_time,
+    #         objects_with_difference,
+    #     )
+
+    # # final result
+    # detection_final_metric_score = detection_lsim.get_final_result()
+
+    # ========================================= Tracking =========================================
+    print("=" * 50 + "Start Tracking 2D" + "=" * 50)
+    tracking_lsim = PerceptionLSimMoc(dataset_paths, "tracking2d", result_root_directory)
+
+    for ground_truth_frame in tracking_lsim.evaluator.ground_truth_frames:
         objects_with_difference = ground_truth_frame.objects
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
             objects_with_difference.pop(0)
-        detection_lsim.callback(
+        tracking_lsim.callback(
             ground_truth_frame.unix_time,
             objects_with_difference,
         )
 
     # final result
-    detection_final_metric_score = detection_lsim.get_final_result()
+    tracking_final_metric_score = tracking_lsim.get_final_result()

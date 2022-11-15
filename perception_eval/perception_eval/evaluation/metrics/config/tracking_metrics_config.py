@@ -33,7 +33,7 @@ class TrackingMetricsConfig(_MetricsConfigBase):
         self.iou_3d_thresholds (List[float]): The threshold list of 3d iou for matching
     """
 
-    evaluation_task = EvaluationTask.TRACKING
+    evaluation_task = [EvaluationTask.TRACKING, EvaluationTask.TRACKING2D]
 
     def __init__(
         self,

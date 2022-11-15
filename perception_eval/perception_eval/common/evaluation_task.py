@@ -30,6 +30,7 @@ class EvaluationTask(Enum):
     TRACKING = "tracking"
     PREDICTION = "prediction"
     DETECTION2D = "detection2d"
+    TRACKING2D = "tracking2d"
     SENSING = "sensing"
 
     def __str__(self) -> str:
@@ -39,6 +40,17 @@ class EvaluationTask(Enum):
         if isinstance(other, str):
             return self.value == other
         return super().__eq__(other)
+
+    def is_3d(self) -> bool:
+        return self in (
+            EvaluationTask.DETECTION,
+            EvaluationTask.TRACKING,
+            EvaluationTask.PREDICTION,
+            EvaluationTask.SENSING,
+        )
+
+    def is_2d(self) -> bool:
+        return not self.is_3d()
 
 
 def set_task_lists(evaluation_tasks_str: List[str]) -> List[EvaluationTask]:

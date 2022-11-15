@@ -18,7 +18,6 @@ from typing import Tuple
 from typing import Union
 
 from perception_eval.common.dataset import FrameGroundTruth
-from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.object import RoiObject
@@ -52,7 +51,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         self.target_labels (List[AutowareLabel]): List of target labels.
         self.frame_results (List[PerceptionFrameResult]): Evaluation result
         self.visualizer (Optional[PerceptionVisualizer]): Visualization class for perception result.
-            When evaluation task is EvaluationTask.DETECTION2D, None.
+            If EvaluationTask.is_2d() is True, None.
     """
 
     def __init__(
@@ -69,7 +68,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         self.frame_results: List[PerceptionFrameResult] = []
         self.visualizer = (
             None
-            if self.evaluator_config.evaluation_task == EvaluationTask.DETECTION2D
+            if self.evaluator_config.evaluation_task.is_2d()
             else PerceptionVisualizer.from_eval_cfg(self.evaluator_config)
         )
 
