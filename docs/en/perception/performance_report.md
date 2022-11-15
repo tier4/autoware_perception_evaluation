@@ -320,6 +320,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
     | Member     | Description                            |
     | :--------- | :------------------------------------- |
+    | `FRAME`    | The number of frame.                   |
     | `TIME`     | Time[s].                               |
     | `DISTANCE` | Distance[m] from ego vehicle.          |
     | `X`        | x position[m] from ego vehicle.        |

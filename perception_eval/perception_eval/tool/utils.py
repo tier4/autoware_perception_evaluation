@@ -27,6 +27,7 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 from perception_eval.common.object import DynamicObject
 from perception_eval.evaluation.metrics.metrics import MetricsScore
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
@@ -51,6 +52,7 @@ class PlotAxes(Enum):
     """[summary]
 
     2D plot:
+        FRAME: X-axis is the number of frame.
         TIME: X-axis is time[s].
         DISTANCE: X-axis is 2D euclidean distance[m].
         X: X-axis is x[m].
@@ -63,6 +65,7 @@ class PlotAxes(Enum):
         POLAR: X-axis is theta[rad], y-axis is r[m]
     """
 
+    FRAME = "frame"
     TIME = "time"
     DISTANCE = "distance"
     X = "x"
@@ -98,8 +101,9 @@ class PlotAxes(Enum):
         Returns:
             numpy.ndarray: Array of axes values. For 2D plot, returns in shape (N,). For 3D plot, returns in shape (2, N)
         """
-
-        if self == PlotAxes.TIME:
+        if self == PlotAxes.FRAME:
+            axes = np.array(df["frame"], dtype=np.uint32)
+        elif self == PlotAxes.TIME:
             axes = np.array(df["timestamp"], dtype=np.uint64) / 1e6
             if kwargs.get("align2origin", False):
                 axes: np.ndarray = axes - axes.min()
@@ -136,7 +140,9 @@ class PlotAxes(Enum):
         Returns:
             str: Name of label.
         """
-        if self == PlotAxes.TIME:
+        if self == PlotAxes.FRAME:
+            return str(self)
+        elif self == PlotAxes.TIME:
             return str(self) + " [s]"
         elif self in (PlotAxes.DISTANCE, PlotAxes.X, PlotAxes.Y):
             return str(self) + " [m]"
@@ -152,7 +158,9 @@ class PlotAxes(Enum):
             return "theta [rad]", "r [m]"
 
     def get_bin(self) -> Union[float, Tuple]:
-        if self == PlotAxes.TIME:
+        if self == PlotAxes.FRAME:
+            return 1.0
+        elif self == PlotAxes.TIME:
             return 5.0
         elif self in (PlotAxes.DISTANCE, PlotAxes.X, PlotAxes.Y):
             return 0.5
