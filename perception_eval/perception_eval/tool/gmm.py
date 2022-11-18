@@ -22,7 +22,6 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import multivariate_normal
-from scipy.stats import probplot
 from sklearn.mixture import GaussianMixture
 
 

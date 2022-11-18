@@ -47,6 +47,7 @@ import yaml
 from .utils import MatchingStatus
 from .utils import PlotAxes
 from .utils import extract_area_results
+from .utils import filter_df
 from .utils import generate_area_points
 from .utils import get_area_idx
 from .utils import get_metrics_info
@@ -110,6 +111,7 @@ class PerceptionPerformanceAnalyzer:
                 "nn_point1",
                 "nn_point2",
                 "label",
+                "confidence",
                 "uuid",
                 "num_points",
                 "status",
@@ -244,6 +246,32 @@ class PerceptionPerformanceAnalyzer:
         df_ = self.get_estimation(df=df, **kwargs)
         return len(df_)
 
+    def get_status_num(
+        self,
+        status: Union[str, MatchingStatus],
+        df: Optional[pd.DataFrame] = None,
+        **kwargs,
+    ) -> int:
+        """[summary]
+        Returns number of matching status TP/FP/FN.
+
+        Args:
+            status (Union[str, MatchingStatus]): Status.
+            df (Optional[pandas.DataFrame]): Target DataFrame. Defaults to None.
+            **kwargs
+
+        Returns:
+            int: Number of matching status.
+        """
+        if status == MatchingStatus.TP:
+            return self.get_num_tp(df, **kwargs)
+        elif status == MatchingStatus.FP:
+            return self.get_num_fp(df, **kwargs)
+        elif status == MatchingStatus.FN:
+            return self.get_num_fn(df, **kwargs)
+        else:
+            raise ValueError(f"Expected status is TP/FP/FN, but got {status}")
+
     def get_num_tp(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
         """[summary]
         Returns the number of TP.
@@ -319,6 +347,20 @@ class PerceptionPerformanceAnalyzer:
 
         return df
 
+    def get_scenes(self, df: Optional[pd.DataFrame] = None, **kwargs) -> np.ndarray:
+        """[summary]
+        Returns numpy array of unique scenes.
+        Args:
+            df (optional[pd.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
+        Returns:
+            numpy.ndarray
+        """
+        if df is None:
+            df = self.get(**kwargs)
+
+        scenes: np.ndarray = pd.unique(df["scene"])
+        return scenes[~np.isnan(scenes)]
+
     def __len__(self) -> int:
         return len(self.df)
 
@@ -358,29 +400,22 @@ class PerceptionPerformanceAnalyzer:
 
         return metrics_score
 
-    def analyze(
-        self,
-        scene: Optional[int] = None,
-        area: Optional[int] = None,
-        uuid: Optional[str] = None,
-    ) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
+    def analyze(self, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
         """[summary]
         Analyze TP/FP/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
 
         Args:
-            scene (Optional[int]): Specify if you want to analyze specific scene. Defaults to None.
-            area (Optional[int]): Specify if you want to analyze specific area. Defaults to None.
-            uuid (Optional[str]): Specify if you want to analyze specific uuid. Defaults to None.
+            **kwargs: Specify scene, frame, area or uuid.
 
         Returns:
-            score_df (Optional[pandas.DataFrame])
-            error_df (Optional[pandas.DataFrame])
+            score_df (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
+            error_df (Optional[pandas.DataFrame]): DataFrame of errors.
         """
-        df: pd.DataFrame = self.get(area=area, scene=scene, uuid=uuid)
+        df: pd.DataFrame = self.get(**kwargs)
         if len(df) > 0:
             ratio_df = self.summarize_ratio(df=df)
             error_df = self.summarize_error(df=df)
-            metrics_df = self.summarize_score(area=area, scene=scene)
+            metrics_df = self.summarize_score(scene=kwargs.get("scene"), area=kwargs.get("area"))
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
             return score_df, error_df
 
@@ -398,7 +433,6 @@ class PerceptionPerformanceAnalyzer:
             pandas.DataFrame
         """
         self.__num_scene += 1
-        # columns: ["timestamp", "xyz", "wlh", "yaw", "velocity", "nn_points", "label", "state", "area"]
         start = len(self.df) // 2
         for frame in tqdm(frame_results, "Updating DataFrame"):
             concat: List[pd.DataFrame] = []
@@ -582,6 +616,7 @@ class PerceptionPerformanceAnalyzer:
                 nn_point1=gt_point1,
                 nn_point2=gt_point2,
                 label=str(gt.semantic_label),
+                confidence=gt.semantic_score,
                 uuid=gt.uuid,
                 num_points=gt.pointcloud_num,
                 status=status,
@@ -624,6 +659,7 @@ class PerceptionPerformanceAnalyzer:
                 nn_point1=est_point1,
                 nn_point2=est_point2,
                 label=str(estimation.semantic_label),
+                confidence=estimation.semantic_score,
                 uuid=estimation.uuid,
                 num_points=None,
                 status=status,
@@ -643,19 +679,7 @@ class PerceptionPerformanceAnalyzer:
             pandas.DataFrame: Selected DataFrame.
         """
         df = self.df
-
-        for key, item in kwargs.items():
-            if item is None:
-                continue
-            if isinstance(item, (list, tuple)):
-                df = df[df[key] in item]
-            else:
-                df = df[df[key] == item]
-
-        if args:
-            df = df[list(args)]
-
-        return df
+        return filter_df(df, *args, **kwargs)
 
     def sortby(
         self,
@@ -851,8 +875,8 @@ class PerceptionPerformanceAnalyzer:
 
     def summarize_score(
         self,
-        area: Optional[int] = None,
         scene: Optional[Union[int, List[int]]] = None,
+        area: Optional[int] = None,
     ) -> pd.DataFrame:
         """[summary]
         Summarize MetricsScore.
@@ -922,8 +946,8 @@ class PerceptionPerformanceAnalyzer:
             title = title.rstrip(" ")
             filename = filename.rstrip("_")
 
-        gt_values = mode.get_axes(self.get_ground_truth(**kwargs), align2origin=True)
-        est_values = mode.get_axes(self.get_estimation(**kwargs), alight2origin=True)
+        gt_axes = mode.get_axes(self.get_ground_truth(**kwargs))
+        est_axes = mode.get_axes(self.get_estimation(**kwargs))
 
         if mode.is_2d():
             xlabel: str = mode.xlabel
@@ -931,6 +955,7 @@ class PerceptionPerformanceAnalyzer:
         else:
             xlabel, ylabel = mode.get_label()
 
+        # TODO: Arrange to single figure
         fig: Figure = plt.figure(figsize=(16, 8))
         ax1: Axes = fig.add_subplot(
             1,
@@ -955,17 +980,17 @@ class PerceptionPerformanceAnalyzer:
         setup_axis(ax2, **kwargs)
 
         if mode.is_2d():
-            min_value = _get_min_value(gt_values, est_values)
-            max_value = _get_max_value(gt_values, est_values)
+            min_value = _get_min_value(gt_axes, est_axes)
+            max_value = _get_max_value(gt_axes, est_axes)
             step = bin if bin else mode.get_bin()
             bins = np.arange(min_value, max_value, step=step)
-            ax1.hist(gt_values, bins=bins)
-            ax2.hist(est_values, bins=bins)
+            ax1.hist(gt_axes, bins=bins)
+            ax2.hist(est_axes, bins=bins)
         else:
             ax1.set_zlabel("num")
             ax2.set_zlabel("num")
-            gt_xaxes, gt_yaxes = gt_values
-            est_xaxes, est_yaxes = est_values
+            gt_xaxes, gt_yaxes = gt_axes[:, ~np.isnan(gt_axes).any(0)]
+            est_xaxes, est_yaxes = est_axes[:, ~np.isnan(est_axes).any(0)]
             gt_hist, gt_x_edges, gt_y_edges = np.histogram2d(gt_xaxes, gt_yaxes)
             est_hist, est_x_edges, est_y_edges = np.histogram2d(est_xaxes, est_yaxes)
             gt_x, gt_y = np.meshgrid(gt_x_edges[:-1], gt_y_edges[:-1])
@@ -973,6 +998,8 @@ class PerceptionPerformanceAnalyzer:
             if bin is None:
                 dx, dy = mode.get_bin()
             else:
+                if isinstance(bin, float):
+                    bin = (bin, bin)
                 if not isinstance(bin, (list, tuple)) or len(bin) != 2:
                     raise RuntimeError(f"bin for 3D plot must be 2-length, but got {bin}")
                 dx, dy = bin
@@ -1004,6 +1031,7 @@ class PerceptionPerformanceAnalyzer:
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             status (Optional[int]): Target status TP/FP/FN. If not specified, plot all status. Defaults to None.
             show (bool): Whether show the plotted figure. Defaults to False.
+            **kwargs
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
@@ -1022,10 +1050,6 @@ class PerceptionPerformanceAnalyzer:
 
         gt_axes = mode.get_axes(gt_df)
         est_axes = mode.get_axes(est_df)
-        if mode == PlotAxes.TIME:
-            origin = min(gt_axes.min(), est_axes.min())
-            gt_axes = gt_axes - origin
-            est_axes = est_axes - origin
 
         # Plot GT and estimation
         num_cols = len(columns)
@@ -1081,7 +1105,6 @@ class PerceptionPerformanceAnalyzer:
         heatmap: bool = False,
         show: bool = False,
         bin: int = 50,
-        gather: bool = False,
         **kwargs,
     ) -> None:
         """[summary]
@@ -1094,7 +1117,6 @@ class PerceptionPerformanceAnalyzer:
             heatmap (bool): Whether overlay heatmap. Defaults to False.
             show (bool): Whether show the plotted figure. Defaults to False.
             bin (int): Bin size to plot heatmap. Defaults to 50.
-            gather (bool): Whether gather plots to single figure. Defaults to False.
             **kwargs: Specify if you want to plot for the specific conditions.
                 For example, label, area, frame or scene.
         """
@@ -1135,7 +1157,7 @@ class PerceptionPerformanceAnalyzer:
 
             setup_axis(ax, **kwargs)
             err: np.ndarray = self.calculate_error(col, df=tp_df)
-            axes: np.ndarray = mode.get_axes(tp_gt_df, align2origin=True)
+            axes: np.ndarray = mode.get_axes(tp_gt_df)
             if mode.is_2d():
                 non_nan = ~np.isnan(err) * ~np.isnan(axes)
                 axes = axes[non_nan]
@@ -1150,17 +1172,12 @@ class PerceptionPerformanceAnalyzer:
                 xaxes, yaxes = axes[:, non_nan]
                 err = err[non_nan]
                 if heatmap:
-                    xx, yy = np.meshgrid(np.sort(xaxes), np.sort(yaxes))
-                    zz = np.zeros_like(xx)
-                    for i, (x, y) in enumerate(zip(xaxes, yaxes)):
-                        zz[(xx == x) * (yy == y)] = err[i]
-                    ax.plot_surface(xx, yy, zz, cmap=cm.summer, alpha=0.5)
-                else:
                     ax.scatter(xaxes, yaxes, err, c=err, cmap=cm.jet)
-                    color_map = cm.ScalarMappable(cmap=cm.Reds_r)
-                    clr = [xaxes + yaxes + err]
-                    color_map.set_array(clr)
+                    color_map = cm.ScalarMappable(cmap=cm.jet)
+                    color_map.set_array([err])
                     plt.colorbar(color_map)
+                else:
+                    ax.scatter(xaxes, yaxes, err)
 
         plt.suptitle(f"Error of {columns}")
         plt.tight_layout()
@@ -1192,11 +1209,13 @@ class PerceptionPerformanceAnalyzer:
         if set(columns) > set(["x", "y", "yaw", "w", "l", "vx", "vy"]):
             raise ValueError(f"{columns} is unsupported for plot")
 
-        errs: List[np.ndarray] = []
-        for col in columns:
-            errs.append(self.calculate_error(col))
         _, ax = plt.subplots()
         setup_axis(ax, **kwargs)
+
+        df = self.get(**kwargs)
+        errs: List[np.ndarray] = []
+        for col in columns:
+            errs.append(self.calculate_error(col, df))
         ax.boxplot(errs)
         ax.set_xticklabels(columns)
 

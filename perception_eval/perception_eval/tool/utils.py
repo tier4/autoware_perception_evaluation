@@ -27,7 +27,6 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
 from perception_eval.common.object import DynamicObject
 from perception_eval.evaluation.metrics.metrics import MetricsScore
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
@@ -104,9 +103,10 @@ class PlotAxes(Enum):
         if self == PlotAxes.FRAME:
             axes = np.array(df["frame"], dtype=np.uint32)
         elif self == PlotAxes.TIME:
-            axes = np.array(df["timestamp"], dtype=np.uint64) / 1e6
-            if kwargs.get("align2origin", False):
-                axes: np.ndarray = axes - axes.min()
+            if kwargs.get("align2origin", True):
+                axes = get_aligned_timestamp(df)
+            else:
+                axes = np.array(df["timestamp"], dtype=np.uint64) / 1e6
         elif self == PlotAxes.DISTANCE:
             axes: np.ndarray = np.linalg.norm(df[["x", "y"]], axis=1)
         elif self == PlotAxes.X:
@@ -157,7 +157,13 @@ class PlotAxes(Enum):
         elif self == PlotAxes.POLAR:
             return "theta [rad]", "r [m]"
 
-    def get_bin(self) -> Union[float, Tuple]:
+    def get_bin(self) -> Union[float, Tuple[float, float]]:
+        """[summary]
+        Returns default bins.
+
+        Returns:
+            Union[float, Tuple[float, float]]
+        """
         if self == PlotAxes.FRAME:
             return 1.0
         elif self == PlotAxes.TIME:
@@ -327,7 +333,7 @@ def extract_area_results(
             )
             if object_result_area in area:
                 out_object_results.append(object_result)
-        for ground_truth in frame_result.frame_ground_truth:
+        for ground_truth in frame_result.frame_ground_truth.objects:
             ground_truth_area: int = get_area_idx(
                 frame_id,
                 ground_truth,
@@ -356,20 +362,20 @@ def setup_axis(ax: plt.Axes, **kwargs) -> None:
             grid_interval (float): Interval of grid. Defaults to None.
     """
     if kwargs.get("xlim"):
-        xlim: Union[float, Sequence] = kwargs.get("xlim")
+        xlim: Union[float, Sequence] = kwargs.pop("xlim")
         if isinstance(xlim, float):
             ax.set_xlim(-xlim, xlim)
         elif isinstance(xlim, (list, tuple)):
             ax.set_xlim(xlim[0], xlim[1])
     if kwargs.get("ylim"):
-        ylim: Union[float, Sequence] = kwargs.get("ylim")
+        ylim: Union[float, Sequence] = kwargs.pop("ylim")
         if isinstance(ylim, float):
             ax.set_ylim(-ylim, ylim)
         elif isinstance(ylim, (list, tuple)):
             ax.set_ylim(ylim[0], ylim[1])
 
     if kwargs.get("grid_interval"):
-        ax.grid(lw=kwargs["grid_interval"])
+        ax.grid(lw=kwargs.pop("grid_interval"))
 
 
 def get_metrics_info(metrics_score: MetricsScore) -> Dict[str, Any]:
@@ -409,3 +415,51 @@ def get_metrics_info(metrics_score: MetricsScore) -> Dict[str, Any]:
             data[id_switch_mode].append(clear.results["id_switch"])
 
     return data
+
+
+def get_aligned_timestamp(df: pd.DataFrame) -> np.ndarray:
+    """[summary]
+    Returns timestamp aligned to minimum timestamp for each scene.
+
+    Args:
+        df (pandas.DataFrame): Input DataFrame.
+
+    Returns:
+        numpy.ndarray: in shape (N,)
+    """
+    scenes: np.ndarray = pd.unique(df["scene"])
+    scenes = scenes[~np.isnan(scenes)]
+    scene_axes: List[np.ndarray] = []
+    for scene in scenes:
+        df_ = df[df["scene"] == scene]
+        axes_ = np.array(df_["timestamp"], dtype=np.uint64) / 1e6
+        scene_axes += (axes_ - axes_.min()).tolist()
+    return np.array(scene_axes)
+
+
+def filter_df(df: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
+    """[summary]
+    Filter DataFrame with args and kwargs.
+
+    Args:
+        df (pandas.DataFrame): Source DataFrame.
+        *args
+        **kwargs
+
+    Returns:
+        df_ (pandas.DataFrame): Filtered DataFrame.
+    """
+    df_ = df
+
+    for key, item in kwargs.items():
+        if item is None:
+            continue
+        if isinstance(item, (list, tuple)):
+            df_ = df_[df_[key].isin(item)]
+        else:
+            df_ = df_[df_[key] == item]
+
+    if args:
+        df_ = df_[list(args)]
+
+    return df_
