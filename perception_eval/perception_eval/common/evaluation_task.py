@@ -26,12 +26,16 @@ class EvaluationTask(Enum):
     Evaluation tasks enum class
     """
 
+    # 3D
     DETECTION = "detection"
     TRACKING = "tracking"
     PREDICTION = "prediction"
+    SENSING = "sensing"
+
+    # 2D
     DETECTION2D = "detection2d"
     TRACKING2D = "tracking2d"
-    SENSING = "sensing"
+    CLASSIFICATION = "classification"
 
     def __str__(self) -> str:
         return self.value

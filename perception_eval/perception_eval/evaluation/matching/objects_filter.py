@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from logging import getLogger
 import math
 from typing import Dict
 from typing import List
@@ -23,13 +22,11 @@ from typing import Union
 import numpy as np
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.object import RoiObject
+from perception_eval.common.object_base import Object2DBase
 from perception_eval.common.threshold import LabelThreshold
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-
-logger = getLogger(__name__)
 
 
 def filter_object_results(
@@ -68,6 +65,9 @@ def filter_object_results(
                 This is unused is_gt=True. Defaults to None.
         ego2map (Optional[np.ndarray]): The array of matrix to transform from ego coords to map coords.
                 This is only needed when frame_id=map. Defaults to None.
+
+    Returns:
+        filtered_object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results.
     """
 
     filtered_object_results: List[DynamicObjectWithPerceptionResult] = []
@@ -107,7 +107,7 @@ def filter_object_results(
 
 def filter_objects(
     frame_id: str,
-    objects: List[Union[DynamicObject, RoiObject]],
+    objects: List[Union[DynamicObject, Object2DBase]],
     is_gt: bool,
     target_labels: Optional[List[AutowareLabel]] = None,
     max_x_position_list: Optional[List[float]] = None,
@@ -118,13 +118,13 @@ def filter_objects(
     confidence_threshold_list: Optional[List[float]] = None,
     target_uuids: Optional[List[str]] = None,
     ego2map: Optional[np.ndarray] = None,
-) -> List[Union[DynamicObject, RoiObject]]:
+) -> List[Union[DynamicObject, Object2DBase]]:
     """[summary]
     Filter DynamicObject to filter ground truth objects.
 
     Args:
         frame_id (str): Frame id.
-        objects (List[Union[DynamicObject, RoiObject]]): The objects you want to filter.
+        objects (List[Union[DynamicObject, Object2DBase]]): The objects you want to filter.
         is_gt (bool): Flag whether object is GT.
         target_labels Optional[List[AutowareLabel]], optional):
                 The target label to evaluate. If object label is in this parameter,
@@ -146,7 +146,7 @@ def filter_objects(
                 This is only needed when frame_id=map. Defaults to None.
 
     Returns:
-        List[DynamicObject]: Filtered object
+        List[Union[DynamicObject, Object2DBase]]: Filtered objects.
     """
 
     filtered_objects: List[DynamicObject] = []
@@ -253,26 +253,26 @@ def divide_tp_fp_objects(
 
 
 def get_fn_objects(
-    ground_truth_objects: List[Union[DynamicObject, RoiObject]],
+    ground_truth_objects: List[Union[DynamicObject, Object2DBase]],
     object_results: Optional[List[DynamicObjectWithPerceptionResult]],
     tp_objects: Optional[List[DynamicObjectWithPerceptionResult]],
-) -> List[Union[DynamicObject, RoiObject]]:
+) -> List[Union[DynamicObject, Object2DBase]]:
     """[summary]
     Get FN (False Negative) objects from ground truth objects by using object result
 
     Args:
-        ground_truth_objects (List[Union[DynamicObject, RoiObject]]): The ground truth objects
+        ground_truth_objects (List[Union[DynamicObject, Object2DBase]]): The ground truth objects
         object_results (Optional[List[DynamicObjectWithPerceptionResult]]): The object results
         tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results in object results
 
     Returns:
-        List[Union[DynamicObject, RoiObject]]: FN (False Negative) objects
+        List[Union[DynamicObject, Object2DBase]]: FN (False Negative) objects
     """
 
     if object_results is None:
         return ground_truth_objects
 
-    fn_objects: List[Union[DynamicObject, RoiObject]] = []
+    fn_objects: List[Union[DynamicObject, Object2DBase]] = []
     for ground_truth_object in ground_truth_objects:
         is_fn_object: bool = _is_fn_object(
             ground_truth_object=ground_truth_object,
@@ -285,7 +285,7 @@ def get_fn_objects(
 
 
 def _is_fn_object(
-    ground_truth_object: Union[DynamicObject, RoiObject],
+    ground_truth_object: Union[DynamicObject, Object2DBase],
     object_results: List[DynamicObjectWithPerceptionResult],
     tp_objects: List[DynamicObjectWithPerceptionResult],
 ) -> bool:
@@ -294,7 +294,7 @@ def _is_fn_object(
     If there are TP TN object
 
     Args:
-        ground_truth_object (Union[DynamicObject, RoiObject]): A ground truth object
+        ground_truth_object (Union[DynamicObject, Object2DBase]): A ground truth object
         object_results (List[DynamicObjectWithPerceptionResult]): object result
         tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results in object results
 
@@ -310,7 +310,7 @@ def _is_fn_object(
 
 def _is_target_object(
     frame_id: str,
-    dynamic_object: Union[DynamicObject, RoiObject],
+    dynamic_object: Union[DynamicObject, Object2DBase],
     target_labels: Optional[List[AutowareLabel]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
@@ -326,7 +326,7 @@ def _is_target_object(
     This function used to filtering for both of ground truths and object results.
 
     Args:
-        dynamic_object (Union[DynamicObject, RoiObject]): The dynamic object
+        dynamic_object (Union[DynamicObject, Object2DBase]): The dynamic object
         target_labels Optional[List[AutowareLabel]], optional):
                 The target label to evaluate. If object label is in this parameter,
                 this function appends to return objects. Defaults to None.
@@ -415,30 +415,32 @@ def _is_target_object(
 
 
 def divide_objects(
-    objects: List[Union[DynamicObject, RoiObject, DynamicObjectWithPerceptionResult]],
+    objects: List[Union[DynamicObject, Object2DBase, DynamicObjectWithPerceptionResult]],
     target_labels: Optional[List[AutowareLabel]] = None,
-) -> Dict[AutowareLabel, List[Union[DynamicObject, RoiObject, DynamicObjectWithPerceptionResult]]]:
+) -> Dict[
+    AutowareLabel, List[Union[DynamicObject, Object2DBase, DynamicObjectWithPerceptionResult]]
+]:
     """[summary]
     Divide DynamicObject or DynamicObjectWithPerceptionResult for each label as dict.
 
     Args:
-        objects (List[Union[DynamicObject, RoiObject, DynamicObjectWithPerceptionResult]]):
-            The list of DynamicObject, RoiObject or DynamicObjectWithPerceptionResult.
+        objects (List[Union[DynamicObject, Object2DBase, DynamicObjectWithPerceptionResult]]):
+            The list of DynamicObject, Object2DBase or DynamicObjectWithPerceptionResult.
         target_labels (Optional[List[AutowareLabel]]): If this is specified, create empty list even
             if there is no object having specified label. Defaults to None.
 
     Returns:
-        ret (Dict[AutowareLabel, List[Union[DynamicObject, RoiObject, DynamicObjectWithPerceptionResult]]]):
-            key is label, item is list of DynamicObject, RoiObject or DynamicObjectWithPerceptionResult.
+        ret (Dict[AutowareLabel, List[Union[DynamicObject, Object2DBase, DynamicObjectWithPerceptionResult]]]):
+            key is label, item is list of DynamicObject, Object2DBase or DynamicObjectWithPerceptionResult.
             It depends on the input type of object.
     """
     if target_labels is not None:
         ret = {label: [] for label in target_labels}
     else:
-        ret: Dict[AutowareLabel, List[Union[DynamicObject, RoiObject]]] = {}
+        ret: Dict[AutowareLabel, List[Union[DynamicObject, Object2DBase]]] = {}
 
     for obj in objects:
-        if isinstance(obj, (DynamicObject, RoiObject)):
+        if isinstance(obj, (DynamicObject, Object2DBase)):
             label: AutowareLabel = obj.semantic_label
         elif isinstance(obj, DynamicObjectWithPerceptionResult):
             label: AutowareLabel = obj.estimated_object.semantic_label
@@ -453,15 +455,15 @@ def divide_objects(
 
 
 def divide_objects_to_num(
-    objects: List[Union[DynamicObject, RoiObject, DynamicObjectWithPerceptionResult]],
+    objects: List[Union[DynamicObject, Object2DBase, DynamicObjectWithPerceptionResult]],
     target_labels: Optional[List[AutowareLabel]] = None,
 ) -> Dict[AutowareLabel, int]:
     """[summary]
     Divide objects to the number of them for each label as dict.
 
     Args:
-        objects (List[Union[DynamicObject, RoiObject, DynamicObjectWithPerceptionResult]]):
-            The list of DynamicObject, RoiObject or DynamicObjectWithPerceptionResult.
+        objects (List[Union[DynamicObject, Object2DBase, DynamicObjectWithPerceptionResult]]):
+            The list of DynamicObject, Object2DBase or DynamicObjectWithPerceptionResult.
         target_labels (Optional[List[AutowareLabel]]): If this is specified, create empty list even
             if there is no object having specified label. Defaults to None.
 
@@ -474,7 +476,7 @@ def divide_objects_to_num(
         ret: Dict[AutowareLabel, int] = {}
 
     for obj in objects:
-        if isinstance(obj, (DynamicObject, RoiObject)):
+        if isinstance(obj, (DynamicObject, Object2DBase)):
             label: AutowareLabel = obj.semantic_label
         elif isinstance(obj, DynamicObjectWithPerceptionResult):
             label: AutowareLabel = obj.estimated_object.semantic_label
