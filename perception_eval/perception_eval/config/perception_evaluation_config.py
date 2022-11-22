@@ -49,7 +49,14 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         self.metrics_config (MetricsScoreConfig): The config for metrics
     """
 
-    _support_tasks: List[str] = ["detection2d", "tracking2d", "detection", "tracking", "prediction"]
+    _support_tasks: List[str] = [
+        "detection2d",
+        "tracking2d",
+        "classification",
+        "detection",
+        "tracking",
+        "prediction",
+    ]
 
     def __init__(
         self,

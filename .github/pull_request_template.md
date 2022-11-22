@@ -7,6 +7,7 @@
   - [ ] Detection
   - [ ] Tracking
   - [ ] Prediction
+  - [ ] Classification
 - [ ] Sensing
 - [ ] Other
 
