@@ -78,9 +78,11 @@ analyzer.add_from_pkl(pickle_path)
 
 ```python
 >>> analyzer.df
-                    timestamp          x          y         w          l         h       yaw            vx        vy                      nn_point1                      nn_point2 label                              uuid status  area  frame  scene
-0  ground_truth  1.603763e+15  85.536254   2.151734  3.237000  12.112000  3.816000  0.017880  1.302359e-02  0.044080  (-7.172930, -49.5320, -0.2938) (-7.172930, -49.5320, -0.2938) truck  a0e19d9fc8e528fb471d0d29bdf32927     TP   0.0   48.0    1.0
-   estimation    1.603763e+15  83.445015   2.306474  2.821630   6.807208  2.983142  0.030410  4.937477e-09  0.000000  truck                              None     TP   0.0   48.0    1.0
+                      timestamp          x         y         w          l  ...
+0    ground_truth  1.603763e+15  45.108863  4.415448  3.237000  12.112000
+     estimation    1.603763e+15  42.187082  4.216309  2.818074   6.961135
+1    ground_truth  1.603763e+15  41.231904  4.528642  3.237000  12.112000
+     estimation    1.603763e+15  37.909447  4.304737  2.694330   6.547065
 ...
 ```
 
@@ -210,35 +212,40 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 - By `add()` method, each `PerceptionFrameResult` will be accumulated as following format. The number of order (1,...,N) will be assigned to `scene`.
 
-| index | type             | "timestamp" |   "x"   |   "y"   |   "w"   |   "l"   |   "h"   |  "yaw"  |  "vx"   |  "vy"   |  "nn_point1"   |  "nn_point2"   | "label" | "uuid" | "status" | "area" | "frame" | "scene" |
-| ----: | :--------------- | :---------: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :------------: | :------------: | :-----: | :----: | :------: | :----: | :-----: | :-----: |
-|     0 | **ground_truth** |   `float`   | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `tuple[float]` | `tuple[float]` |  `str`  | `str`  |  `str`   | `int`  |  `int`  |  `int`  |
-|       | **estimation**   |             |         |         |         |         |         |         |         |         |                |                |         |        |          |        |         |         |
+| index | type             | "timestamp" |   "x"   |   "y"   |   "w"   |   "l"   |   "h"   |  "yaw"  |  "vx"   |  "vy"   |  "nn_point1"   |  "nn_point2"   | "label" | "confidence" | "uuid" | "num_points" | "status" | "area" | "frame" | "scene" |
+| ----: | :--------------- | :---------: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :------------: | :------------: | :-----: | :----------: | :----: | :----------: | :------: | :----: | :-----: | :-----: |
+|     0 | **ground_truth** |   `float`   | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `tuple[float]` | `tuple[float]` |  `str`  |   `float`    | `str`  |    `int`     |  `str`   | `int`  |  `int`  |  `int`  |
+|       | **estimation**   |
 
 - `PerceptionPerformanceAnalyzer.df` allow to show the DataFrame
 
 ```python
 >>> analyzer.df
-                    timestamp          x          y         w          l         h       yaw            vx        vy  label                              uuid status  area  frame  scene
-0  ground_truth  1.603763e+15  85.536254   2.151734  3.237000  12.112000  3.816000  0.017880  1.302359e-02  0.044080  truck  a0e19d9fc8e528fb471d0d29bdf32927     TP   0.0   48.0    1.0
-   estimation    1.603763e+15  83.445015   2.306474  2.821630   6.807208  2.983142  0.030410  4.937477e-09  0.000000  truck                              None     TP   0.0   48.0    1.0
+                      timestamp          x         y         w          l  ...
+0    ground_truth  1.603763e+15  45.108863  4.415448  3.237000  12.112000
+     estimation    1.603763e+15  42.187082  4.216309  2.818074   6.961135
+1    ground_truth  1.603763e+15  41.231904  4.528642  3.237000  12.112000
+     estimation    1.603763e+15  37.909447  4.304737  2.694330   6.547065
+...
 ```
 
 - Available to reference elements only for GT or estimation.
 
 ```python
 >>> analyzer.get_ground_truth()
-       timestamp          x         y      w       l      h       yaw        vx        vy                      nn_point1                       nn_point2 label                              uuid status  area  frame  scene
-0   1.603763e+15  85.536254  2.151734  3.237  12.112  3.816  0.017880  0.013024  0.044080  (-7.172930, -49.5320, -0.2938), (-7.172930, -49.5320, -0.2938) truck  a0e19d9fc8e528fb471d0d29bdf32927     TP   0.0   48.0    1.0
-1   1.603763e+15  82.125830  2.415408  3.237  12.112  3.816  0.020902 -0.001111  0.035555  (-7.172930, -49.5320, -0.2938), (-7.172930, -49.5320, -0.2938) truck  a0e19d9fc8e528fb471d0d29bdf32927     TP   0.0   49.0    1.0
+         timestamp          x         y         w       l         h       yaw ...
+0     1.603763e+15  45.108863  4.415448  3.237000  12.112  3.816000  0.056254
+1     1.603763e+15  41.231904  4.528642  3.237000  12.112  3.816000  0.059814
+2     1.603763e+15  38.064378  4.594842  3.237000  12.112  3.816000  0.062258
 ...
 ```
 
 ```python
 >>> analyzer.get_estimation()
-      timestamp          x          y         w         l         h       yaw            vx   vy                      nn_point1                       nn_point2 label  uuid status  area  frame  scene
-0  1.603763e+15  83.445015   2.306474  2.821630  6.807208  2.983142  0.030410  4.937477e-09  0.0  (-7.172930, -49.5320, -0.2938), (-7.172930, -49.5320, -0.2938) truck  None     TP   0.0   48.0    1.0
-1  1.603763e+15  77.737808   2.873984  2.822067  6.618567  3.053950 -0.001258  4.937477e-09  0.0  (-7.172930, -49.5320, -0.2938), (-7.172930, -49.5320, -0.2938) truck  None     TP   0.0   49.0    1.0
+         timestamp          x         y         w       l         h       yaw ...
+0     1.603763e+15  45.108863  4.415448  3.237000  12.112  3.816000  0.056254
+1     1.603763e+15  41.231904  4.528642  3.237000  12.112  3.816000  0.059814
+2     1.603763e+15  38.064378  4.594842  3.237000  12.112  3.816000  0.062258
 ...
 ```
 
@@ -318,18 +325,19 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
   - A class to specify plot axes.
 
-    | Member     | Description                            |
-    | :--------- | :------------------------------------- |
-    | `FRAME`    | The number of frame.                   |
-    | `TIME`     | Time[s].                               |
-    | `DISTANCE` | Distance[m] from ego vehicle.          |
-    | `X`        | x position[m] from ego vehicle.        |
-    | `Y`        | y position[m] from ego vehicle.        |
-    | `VX`       | longitudinal velocity[m/s].            |
-    | `VY`       | lateral velocity[m/s].                 |
-    | `POSITION` | xy position[m] from ego vehicle.       |
-    | `VELOCITY` | xy velocity[m/s].                      |
-    | `POLAR`    | polar coordinates, (theta[rad], r[m]). |
+    | Member       | Description                             |
+    | :----------- | :-------------------------------------- |
+    | `FRAME`      | The number of frame.                    |
+    | `TIME`       | Time[s].                                |
+    | `DISTANCE`   | Distance[m] from ego vehicle.           |
+    | `X`          | x position[m] from ego vehicle.         |
+    | `Y`          | y position[m] from ego vehicle.         |
+    | `VX`         | longitudinal velocity[m/s].             |
+    | `VY`         | lateral velocity[m/s].                  |
+    | `CONFIDENCE` | Confidence of estimation[GT=1.0](0, 1). |
+    | `POSITION`   | xy position[m] from ego vehicle.        |
+    | `VELOCITY`   | xy velocity[m/s].                       |
+    | `POLAR`      | polar coordinates, (theta[rad], r[m]).  |
 
 - `<func> plot_state(...) -> None`
 
