@@ -114,6 +114,8 @@
     "tmpdir",
     "toolkits",
     "trafficcone",
+    "tril",
+    "triu",
     "tqdm",
     "usecase",
     "waymo",

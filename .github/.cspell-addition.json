@@ -95,6 +95,8 @@
 	    "tmpdir",
         "toolkits",
         "trafficcone",
+        "tril",
+        "triu",
         "tqdm",
         "waymo",
         "xaxes",

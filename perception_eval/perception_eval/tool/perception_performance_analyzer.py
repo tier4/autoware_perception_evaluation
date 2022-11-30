@@ -32,6 +32,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
+import yaml
+
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
 from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
@@ -40,9 +43,8 @@ from perception_eval.evaluation.matching.objects_filter import divide_objects_to
 from perception_eval.evaluation.metrics.metrics import MetricsScore
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
+from perception_eval.util.math import get_pose_transform_matrix
 from perception_eval.util.math import rotation_matrix_to_euler
-from tqdm import tqdm
-import yaml
 
 from .utils import MatchingStatus
 from .utils import PlotAxes
@@ -586,9 +588,10 @@ class PerceptionPerformanceAnalyzer:
 
         if gt:
             if self.config.frame_id == "map":
-                src: np.ndarray = np.eye(4, 4)
-                src[:3, :3] = gt.state.orientation.rotation_matrix
-                src[:3, 3] = gt.state.position
+                src: np.ndarray = get_pose_transform_matrix(
+                    position=gt.state.position,
+                    rotation=gt.state.orientation.rotation_matrix,
+                )
                 dst: np.ndarray = np.linalg.inv(ego2map).dot(src)
                 gt_x, gt_y = dst[:2, 3]
                 gt_yaw = rotation_matrix_to_euler(dst[:3, :3])[-1].item()
@@ -629,9 +632,10 @@ class PerceptionPerformanceAnalyzer:
 
         if estimation:
             if self.config.frame_id == "map":
-                src: np.ndarray = np.eye(4, 4)
-                src[:3, :3] = estimation.state.orientation.rotation_matrix
-                src[:3, 3] = estimation.state.position
+                src: np.ndarray = get_pose_transform_matrix(
+                    position=estimation.state.position,
+                    rotation=estimation.state.orientation.rotation_matrix,
+                )
                 dst: np.ndarray = np.linalg.inv(ego2map).dot(src)
                 est_x, est_y = dst[:2, 3]
                 est_yaw = rotation_matrix_to_euler(dst[:3, :3])[-1].item()
