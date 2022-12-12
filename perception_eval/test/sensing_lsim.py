@@ -22,6 +22,7 @@ from typing import Tuple
 import numpy as np
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.config.sensing_evaluation_config import SensingEvaluationConfig
+from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
 from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
 from perception_eval.manager.sensing_evaluation_manager import SensingEvaluationManager
 from perception_eval.util.logger_config import configure_logger
@@ -85,12 +86,22 @@ class SensingLSimMoc:
             FrameGroundTruth
         ] = self.evaluator.get_ground_truth_now_frame(unix_time=unix_time)
 
+        # Evaluation config for one frame.
+        # If not specified, params of SensingEvaluationConfig will be used.
+        sensing_frame_config = SensingFrameConfig(
+            target_uuids=None,
+            box_scale_0m=1.0,
+            box_scale_100m=1.0,
+            min_points_threshold=1,
+        )
+
         if ground_truth_now_frame is not None:
             frame_result: SensingFrameResult = self.evaluator.add_frame_result(
                 unix_time=unix_time,
                 ground_truth_now_frame=ground_truth_now_frame,
                 pointcloud=pointcloud,
                 non_detection_areas=non_detection_areas,
+                sensing_frame_config=sensing_frame_config,
             )
 
             self.visualize(frame_result)

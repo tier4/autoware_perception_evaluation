@@ -17,8 +17,6 @@ from typing import Dict
 from typing import List
 from typing import Tuple
 
-from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
-
 from ._evaluation_config_base import _EvaluationConfigBase
 
 
@@ -75,13 +73,18 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
             evaluation_config_dict=evaluation_config_dict,
         )
         self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)
-        self.sensing_frame_config: SensingFrameConfig = SensingFrameConfig(**self.metrics_params)
 
     def _extract_params(
         self,
         evaluation_config_dict: Dict[str, Any],
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-        """"""
+        """Extract parameters.
+        Args:
+            evaluation_config_dict (Dict[str, Any]): Configuration as dict.
+        Returns:
+            f_params (Dict[str, Any]): Parameters for filtering.
+            m_params (Dict[str, Any]): Parameters for metrics.
+        """
         e_cfg: Dict[str, Any] = evaluation_config_dict.copy()
         f_params: Dict[str, Any] = {"target_uuids": e_cfg.get("target_uuids", None)}
         m_params: Dict[str, Any] = {
