@@ -32,9 +32,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-import yaml
-
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
 from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
@@ -45,6 +42,8 @@ from perception_eval.evaluation.result.object_result import DynamicObjectWithPer
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
 from perception_eval.util.math import get_pose_transform_matrix
 from perception_eval.util.math import rotation_matrix_to_euler
+from tqdm import tqdm
+import yaml
 
 from .utils import MatchingStatus
 from .utils import PlotAxes
@@ -92,6 +91,8 @@ class PerceptionPerformanceAnalyzer:
             self.num_area_division, max_x=max_x, max_y=max_y
         )
         self.__initialize()
+
+        self.__ego2maps: Dict[str, Dict[str, np.ndarray]] = {}
 
     def __initialize(self) -> None:
         """[summary]
@@ -363,6 +364,17 @@ class PerceptionPerformanceAnalyzer:
         scenes: np.ndarray = pd.unique(df["scene"])
         return scenes[~np.isnan(scenes)]
 
+    def get_ego2map(self, scene: int, frame: int) -> np.ndarray:
+        """[summary]
+        Returns 4x4 ego2map transform matrix.
+        Args:
+            scene (int): Number of scene.
+            frame (int): Number of frame.
+        Returns:
+            numpy.ndarray: In shape (4, 4).
+        """
+        return self.__ego2maps[str(scene)][str(frame)]
+
     def __len__(self) -> int:
         return len(self.df)
 
@@ -436,10 +448,15 @@ class PerceptionPerformanceAnalyzer:
         """
         self.__num_scene += 1
         start = len(self.df) // 2
+        self.__ego2maps[str(self.num_scene)] = {}
         for frame in tqdm(frame_results, "Updating DataFrame"):
             concat: List[pd.DataFrame] = []
             if len(self) > 0:
                 concat.append(self.df)
+
+            self.__ego2maps[str(self.num_scene)][
+                str(frame.frame_name)
+            ] = frame.frame_ground_truth.ego2map
 
             tp_df = self.format2df(
                 frame.pass_fail_result.tp_objects,
