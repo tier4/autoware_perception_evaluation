@@ -6,6 +6,13 @@
 
 ## Release for main branch
 
+### v1.0.2
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/22>
+  - 【feat】Sensing 評価時にフレーム毎で評価条件を変更できる機能の追加
+- <https://github.com/tier4/autoware_perception_evaluation/pull/19>
+  - 【fix】PerceptionPerformanceAnalyzer の DataFrame に正しいフレーム番号が適用されるように修正
+
 ### v1.0.1
 
 - <https://github.com/tier4/autoware_perception_evaluation/pull/9>
