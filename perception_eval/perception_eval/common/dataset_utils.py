@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
 
 from typing import Any
 from typing import Dict
@@ -24,7 +25,6 @@ import numpy as np
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
 from nuscenes.utils.data_classes import Box
-from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import LabelConverter
@@ -33,6 +33,8 @@ from perception_eval.common.object_base import Roi
 from perception_eval.common.roi import RoiObject
 from perception_eval.common.status import Visibility
 from pyquaternion.quaternion import Quaternion
+
+from . import dataset
 
 #################################
 #           Dataset 3D          #
@@ -48,7 +50,7 @@ def _sample_to_frame(
     label_converter: LabelConverter,
     frame_id: str,
     frame_name: str,
-) -> FrameGroundTruth:
+) -> dataset.FrameGroundTruth:
     """[summary]
     Convert Nuscenes sample to FrameGroundTruth
 
@@ -116,7 +118,7 @@ def _sample_to_frame(
         )
         objects_.append(object_)
 
-    frame = FrameGroundTruth(
+    frame = dataset.FrameGroundTruth(
         unix_time=unix_time_,
         frame_name=frame_name,
         frame_id=frame_id,
@@ -358,7 +360,7 @@ def _sample_to_frame_2d(
     label_converter: LabelConverter,
     frame_id: str,
     frame_name: str,
-) -> FrameGroundTruth:
+) -> dataset.FrameGroundTruth:
     """[summary]
     Returns FrameGroundTruth constructed with RoiObject.
 
@@ -404,6 +406,7 @@ def _sample_to_frame_2d(
             category_info: Dict[str, Any] = nuim.get("category", ann["category_token"])
             autoware_label: AutowareLabel = label_converter.convert_label(
                 label=category_info["name"],
+                count_label_number=True,
             )
 
             uuid: str = ann.get("instance_token")
@@ -417,7 +420,7 @@ def _sample_to_frame_2d(
             )
             objects_.append(object_)
 
-    frame = FrameGroundTruth(
+    frame = dataset.FrameGroundTruth(
         unix_time=unix_time,
         frame_name=frame_name,
         frame_id=frame_id,

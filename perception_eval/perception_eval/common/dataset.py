@@ -53,6 +53,7 @@ class FrameGroundTruth:
         objects: List[Union[DynamicObject, Object2DBase]],
         ego2map: Optional[np.ndarray] = None,
         pointcloud: Optional[np.ndarray] = None,
+        img: Optional[np.ndarray] = None,
     ) -> None:
         """[summary]
 
@@ -72,8 +73,9 @@ class FrameGroundTruth:
         self.frame_name: str = frame_name
         self.frame_id: str = frame_id
         self.objects: List[Union[DynamicObject, Object2DBase]] = objects
-        self.pointcloud: Optional[np.ndarray] = pointcloud
         self.ego2map: Optional[np.ndarray] = ego2map
+        self.pointcloud: Optional[np.ndarray] = pointcloud
+        self.img: Optional[np.ndarray] = img
 
 
 def load_all_datasets(
@@ -194,7 +196,7 @@ def _get_str_objects_number_info(
     """
     str_: str = ""
     for label in label_converter.labels:
-        str_ += f"{label.label} (-> {label.autoware_label}): {label.num} \n"
+        str_ += f"{label.label} (-> {label.label}): {label.num} \n"
     return str_
 
 

@@ -36,7 +36,8 @@ class PerceptionLSimMoc:
     ):
         evaluation_config_dict = {
             # ラベル，max x/y，マッチング閾値 (detection/tracking/predictionで共通)
-            "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+            # "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+            "target_labels": ["green", "red", "yellow", "unknown"],
             # objectごとにparamを設定
             "center_distance_thresholds": [
                 [1.0, 1.0, 1.0, 1.0],

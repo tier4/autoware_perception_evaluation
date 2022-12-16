@@ -20,7 +20,7 @@ from typing import Union
 
 import numpy as np
 from perception_eval.common.dataset import DynamicObject
-from perception_eval.common.object import RoiObject
+from perception_eval.common.roi import RoiObject
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_tp_fp_objects
 from perception_eval.evaluation.matching.objects_filter import filter_objects

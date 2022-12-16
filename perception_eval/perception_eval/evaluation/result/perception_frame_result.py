@@ -22,7 +22,7 @@ from typing import Union
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.object import RoiObject
+from perception_eval.common.roi import RoiObject
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.metrics import MetricsScore
