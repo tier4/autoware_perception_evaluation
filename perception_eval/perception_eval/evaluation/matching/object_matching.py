@@ -20,12 +20,11 @@ from typing import Callable
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Union
 
+from perception_eval.common import ObjectType
+from perception_eval.common import distance_objects
+from perception_eval.common import distance_points_bev
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.object import distance_objects
-from perception_eval.common.object import distance_points_bev
-from perception_eval.common.object_base import Object2DBase
 from perception_eval.common.point import get_point_left_right
 from perception_eval.common.point import polygon_to_list
 from shapely.geometry import Polygon
@@ -58,8 +57,8 @@ class MatchingMethod(ABC):
     @abstractmethod
     def __init__(
         self,
-        estimated_object: Union[DynamicObject, Object2DBase],
-        ground_truth_object: Optional[Union[DynamicObject, Object2DBase]],
+        estimated_object: ObjectType,
+        ground_truth_object: Optional[ObjectType],
     ) -> None:
         """[summary]
         Args:
@@ -98,13 +97,13 @@ class CenterDistanceMatching(MatchingMethod):
 
     def __init__(
         self,
-        estimated_object: Union[DynamicObject, Object2DBase],
-        ground_truth_object: Optional[Union[DynamicObject, Object2DBase]],
+        estimated_object: ObjectType,
+        ground_truth_object: Optional[ObjectType],
     ) -> None:
         """[summary]
         Args:
-            estimated_object (DynamicObject): The estimated object
-            ground_truth_object (Optional[DynamicObject]): The ground truth object
+            estimated_object (ObjectType): The estimated object
+            ground_truth_object (Optional[ObjectType]): The ground truth object
         """
         if ground_truth_object:
             assert type(estimated_object) == type(ground_truth_object)
@@ -134,8 +133,8 @@ class CenterDistanceMatching(MatchingMethod):
 
     def _get_center_distance(
         self,
-        estimated_object: Union[DynamicObject, Object2DBase],
-        ground_truth_object: Optional[Union[DynamicObject, Object2DBase]],
+        estimated_object: ObjectType,
+        ground_truth_object: Optional[ObjectType],
     ) -> Optional[float]:
         """[summary]
         Get center distance
@@ -280,13 +279,13 @@ class IOU2dMatching(MatchingMethod):
 
     def __init__(
         self,
-        estimated_object: Union[DynamicObject, Object2DBase],
-        ground_truth_object: Optional[Union[DynamicObject, Object2DBase]],
+        estimated_object: ObjectType,
+        ground_truth_object: Optional[ObjectType],
     ) -> None:
         """[summary]
         Args:
-            estimated_object (Union[DynamicObject, RoiObject]): The estimated object
-            ground_truth_object (Optional[Union[DynamicObject, RoiObject]]): The ground truth object
+            estimated_object (ObjectType): The estimated object
+            ground_truth_object (Optional[ObjectType]): The ground truth object
         """
         if ground_truth_object:
             assert type(estimated_object) == type(ground_truth_object)
@@ -320,15 +319,15 @@ class IOU2dMatching(MatchingMethod):
 
     def _get_iou_2d(
         self,
-        estimated_object: Union[DynamicObject, Object2DBase],
-        ground_truth_object: Optional[Union[DynamicObject, Object2DBase]],
+        estimated_object: ObjectType,
+        ground_truth_object: Optional[ObjectType],
     ) -> float:
         """[summary]
         Calculate IoU 2d.
 
         Args:
-            estimated_object (Union[DynamicObject, RoiObject]): The estimated object
-            ground_truth_object (Union[DynamicObject, RoiObject]): The corresponded ground truth object
+            estimated_object (ObjectType): The estimated object
+            ground_truth_object (Optional[ObjectType]): The corresponded ground truth object
 
         Returns:
             Optional[float]: The value of IoU 2d.
@@ -475,16 +474,13 @@ def _get_height_intersection(
     return max(0, max_z - min_z)
 
 
-def _get_area_intersection(
-    estimated_object: Union[DynamicObject, Object2DBase],
-    ground_truth_object: Union[DynamicObject, Object2DBase],
-) -> float:
+def _get_area_intersection(estimated_object: ObjectType, ground_truth_object: ObjectType) -> float:
     """[summary]
     Get the area at intersection
 
     Args:
-        estimated_object (Union[DynamicObject, Object2DBase]): The estimated object.
-        ground_truth_object (Union[DynamicObject, Object2DBase]): The corresponded ground truth object.
+        estimated_object (ObjectType): The estimated object.
+        ground_truth_object (ObjectType): The corresponded ground truth object.
 
     Returns:
         float: The area at intersection.

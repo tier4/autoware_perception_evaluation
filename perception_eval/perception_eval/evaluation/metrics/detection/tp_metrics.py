@@ -16,7 +16,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 from math import pi
 
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 
 
 class TPMetrics(metaclass=ABCMeta):

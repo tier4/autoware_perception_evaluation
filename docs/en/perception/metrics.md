@@ -13,6 +13,7 @@
   - [`detection_config (DetectionMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/detection_metrics_config.py)
   - [`tracking_config (TrackingMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/tracking_metrics_config.py)
   - [`prediction_config (PredictionMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/prediction_metrics_config.py)
+  - [`classification_config (ClassificationMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/classification_metrics_config.py)
 
 - Calculate each metrics based on each config
 

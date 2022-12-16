@@ -45,7 +45,7 @@
   | `critical_object_filter_config` |       `CriticalObjectFilterConfig`        | 必ず検出できてほしいオブジェクトに対する config |
   | `frame_pass_fail_config`        |        `PerceptionPassFailConfig`         | Pass/Fail を決める config                       |
   | `unix_time`                     |                   `int`                   | フレームの UNIX Time                            |
-  | `target_labels`                 |           `List[AutowareLabel]`           | 評価対象ラベル                                  |
+  | `target_labels`                 |             `List[LabelType]`             | 評価対象ラベル                                  |
 
 - Attributes
 
@@ -54,7 +54,7 @@
   | `frame_name`         |                   `str`                   | フレーム名                               |
   | `unix_time`          |                   `int`                   | フレームの UNIX Time                     |
   | `frame_id`           |                   `str`                   | オブジェクト座標系 frame ID              |
-  | `target_labels`      |           `List[AutowareLabel]`           | 評価対象ラベル                           |
+  | `target_labels`      |             `List[LabelType]`             | 評価対象ラベル                           |
   | `object_results`     | `List[DynamicObjectWithPerceptionResult]` | 推定オブジェクトと GT オブジェクトのペア |
   | `frame_ground_truth` |            `FrameGroundTruth`             | 1 フレーム分の GT オブジェクト           |
   | `metrics_score`      |              `MetricsScore`               | メトリクス評価結果                       |
@@ -133,36 +133,36 @@
 
 ### [`<class> DynamicObjectWithPerceptionResult(...)`](../../../perception_eval/perception_eval/evaluation/result/object_result.py)
 
-推定オブジェクトの集合`List[Union[DynamicObject, RoiObject]]`と GT オブジェクトの集合`List[Union[DynamicObject, RoiObject]]`からマッチングペアの集合`List[DynamicObjectWithPerceptionResult]`を得るには，`get_object_results()`関数を使う．
+推定オブジェクトの集合`List[ObjectType]`と GT オブジェクトの集合`List[ObjectType]`からマッチングペアの集合`List[DynamicObjectWithPerceptionResult]`を得るには，`get_object_results()`関数を使う．
 
 ```python
 from perception_eval.evaluation.result.object_results import get_object_results
 
 # REQUIRED:
-#   estimated_objects: List[Union[DynamicObject, RoiObject]]
-#   ground_truth_objects: List[Union[DynamicObject, RoiObject]]
+#   estimated_objects: List[ObjectType]
+#   ground_truth_objects: List[ObjectType]
 
 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(estimated_objects, ground_truth_objects)
 ```
 
 - Initialization
 
-  | Arguments             |                    type                     | Description      |
-  | :-------------------- | :-----------------------------------------: | :--------------- |
-  | `estimated_object`    |      `Union[DynamicObject, RoiObject]`      | 推定オブジェクト |
-  | `ground_truth_object` | `Optional[Union[DynamicObject, RoiObject]]` | GT オブジェクト  |
+  | Arguments             |          type          | Description      |
+  | :-------------------- | :--------------------: | :--------------- |
+  | `estimated_object`    |      `ObjectType`      | 推定オブジェクト |
+  | `ground_truth_object` | `Optional[ObjectType]` | GT オブジェクト  |
 
 - Attributes
 
-  | Attributes            |                    type                     | Description                                                      |
-  | :-------------------- | :-----------------------------------------: | :--------------------------------------------------------------- |
-  | `estimated_object`    |      `Union[DynamicObject, RoiObject]`      | 推定オブジェクト                                                 |
-  | `ground_truth_object` | `Optional[Union[DynamicObject, RoiObject]]` | GT オブジェクト                                                  |
-  | `is_label_correct`    |                   `bool`                    | 推定オブジェクトと GT オブジェクトのラベルが同一かどうかのフラグ |
-  | `center_distance`     |          `CenterDistanceMatching`           | 中心間距離                                                       |
-  | `plane_distance`      |           `PlaneDistanceMatching`           | 面距離                                                           |
-  | `iou_2d`              |               `IOU2dMatching`               | 2D の IOU (3D オブジェクトの場合は BEV)                          |
-  | `iou_3d`              |               `IOU3dMatching`               | 3D の IOU                                                        |
+  | Attributes            |           type           | Description                                                      |
+  | :-------------------- | :----------------------: | :--------------------------------------------------------------- |
+  | `estimated_object`    |       `ObjectType`       | 推定オブジェクト                                                 |
+  | `ground_truth_object` |  `Optional[ObjectType]`  | GT オブジェクト                                                  |
+  | `is_label_correct`    |          `bool`          | 推定オブジェクトと GT オブジェクトのラベルが同一かどうかのフラグ |
+  | `center_distance`     | `CenterDistanceMatching` | 中心間距離                                                       |
+  | `plane_distance`      | `PlaneDistanceMatching`  | 面距離                                                           |
+  | `iou_2d`              |     `IOU2dMatching`      | 2D の IOU (3D オブジェクトの場合は BEV)                          |
+  | `iou_3d`              |     `IOU3dMatching`      | 3D の IOU                                                        |
 
 - Methods
 

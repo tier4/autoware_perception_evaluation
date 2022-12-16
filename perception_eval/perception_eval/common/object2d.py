@@ -14,14 +14,12 @@
 
 from __future__ import annotations
 
-from abc import ABC
-from abc import abstractmethod
-from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
 
 import numpy as np
+from perception_eval.common.label import LabelType
 from perception_eval.common.status import Visibility
 from shapely.geometry import Polygon
 
@@ -71,12 +69,12 @@ class Roi:
         return self.__area
 
 
-class Object2DBase(ABC):
-    @abstractmethod
+class DynamicObject2D:
     def __init__(
         self,
         unix_time: int,
         semantic_score: float,
+        semantic_label: LabelType,
         roi: Optional[Roi] = None,
         uuid: Optional[str] = None,
         visibility: Optional[Visibility] = None,
@@ -84,14 +82,10 @@ class Object2DBase(ABC):
         super().__init__()
         self.unix_time: int = unix_time
         self.semantic_score: float = semantic_score
+        self.semantic_label: LabelType = semantic_label
         self.roi: Optional[Roi] = roi
-        self.uuid: Optional[Roi] = uuid
+        self.uuid: Optional[str] = uuid
         self.visibility: Optional[Visibility] = visibility
-
-    @property
-    @abstractmethod
-    def semantic_label(self) -> Any:
-        ...
 
     def get_corners(self) -> np.ndarray:
         """[summary]

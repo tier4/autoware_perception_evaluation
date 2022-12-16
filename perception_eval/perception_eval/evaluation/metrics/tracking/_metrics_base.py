@@ -20,17 +20,17 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-from perception_eval.common.label import AutowareLabel
-from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.common.label import LabelType
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetrics
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
 class _TrackingMetricsBase(ABC):
     """Abstract base class for tracking metrics
 
     Attributes:
-        self.target_labels (List[AutowareLabel]): The list of target label.
+        self.target_labels (List[LabelType]): The list of target label.
         self.matching_mode (MatchingMode): The target matching mode.
         self.metrics_field (Optional[List[str]]): The list of target metrics name. If not specified, set default supported metrics.
         self.num_ground_truth (int): The number of ground truth.
@@ -43,7 +43,7 @@ class _TrackingMetricsBase(ABC):
     def __init__(
         self,
         num_ground_truth: int,
-        target_labels: List[AutowareLabel],
+        target_labels: List[LabelType],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
         tp_metrics: TPMetrics,
@@ -58,12 +58,12 @@ class _TrackingMetricsBase(ABC):
 
         Args:
             frame_ground_truths (List[List[DynamicObject]]): The list of ground truth objects for each frames.
-            target_labels (List[AutowareLabel]): The list of target labels.
+            target_labels (List[LabelType]): The list of target labels.
             matching_mode (MatchingMode): Matching mode class.
             metrics_field (Optional[List[str]]: The list of target sub metrics.
         """
         self._num_ground_truth: int = num_ground_truth
-        self._target_labels: List[AutowareLabel] = target_labels
+        self._target_labels: List[LabelType] = target_labels
         self._matching_mode: MatchingMode = matching_mode
         self._matching_threshold_list = matching_threshold_list
         self._tp_metrics: TPMetrics = tp_metrics
@@ -116,7 +116,7 @@ class _TrackingMetricsBase(ABC):
         return self._num_ground_truth
 
     @property
-    def target_labels(self) -> List[AutowareLabel]:
+    def target_labels(self) -> List[LabelType]:
         return self._target_labels
 
     @property

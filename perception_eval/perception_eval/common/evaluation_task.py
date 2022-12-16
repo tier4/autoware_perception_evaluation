@@ -35,7 +35,7 @@ class EvaluationTask(Enum):
     # 2D
     DETECTION2D = "detection2d"
     TRACKING2D = "tracking2d"
-    CLASSIFICATION = "classification"
+    CLASSIFICATION2D = "classification2d"
 
     def __str__(self) -> str:
         return self.value

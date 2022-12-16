@@ -1,6 +1,8 @@
-# Autoware Label
+# Object Labels
 
 - For the details, see [perception_eval.common.label.py](../../../perception_eval/perception_eval/common/label.py)
+
+## `AutowareLabel`
 
 | type                       |    value     | support labels                         |
 | :------------------------- | :----------: | :------------------------------------- |
@@ -37,7 +39,7 @@
 |                            |              | movable_object.traffic_cone            |
 |                            |              | static_object.bicycle rack             |
 
-## Merge similar labels option
+### Merge similar labels option
 
 - Specify `merge_similar_labels=True` in `PerceptionEvaluationConfig`，then evaluation will be executed with merged labels like below.
 
@@ -78,3 +80,27 @@
 |                            |              | movable_object.trafficcone             |
 |                            |              | movable_object.traffic_cone            |
 |                            |              | static_object.bicycle rack             |
+
+## `TrafficLightLabel`
+
+| type                                   |        value         | support labels     |
+| :------------------------------------- | :------------------: | :----------------- |
+| `TrafficLightLabel.GREEN`              |       "green"        | green              |
+| `TrafficLightLabel.RED`                |        "red"         | red                |
+| `TrafficLightLabel.YELLOW`             |       "yellow"       | yellow             |
+| `TrafficLightLabel.RED_STRAIGHT`       |    "red_straight"    | red_straight       |
+| `TrafficLightLabel.RED_LEFT`           |      "red_left"      | red_left           |
+| `TrafficLightLabel.RED_left_straight`  | "red_left_straight"  | red_left_straight  |
+| `TrafficLightLabel.RED_RIGHT`          |     "red_right"      | red_right          |
+| `TrafficLightLabel.RED_RIGHT_STRAIGHT` | "red_right_straight" | red_right_straight |
+| `TrafficLightLabel.RED_RIGHT_DIAGONAL` | "red_right_diagonal" | red_right_diagonal |
+| `TrafficLightLabel.YELLOW_RIGHT`       |  "red_yellow_right"  | red_yellow_right   |
+| `TrafficLightLabel.UNKNOWN`            |      "unknown"       | unknown            |
+
+## [TBD]`BlinkerLabel`
+
+TBD
+
+## [TBD]`BrakeLampLabel`
+
+TBD

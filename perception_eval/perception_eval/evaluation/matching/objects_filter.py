@@ -20,19 +20,19 @@ from typing import Tuple
 from typing import Union
 
 import numpy as np
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common import ObjectType
+from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.object_base import Object2DBase
 from perception_eval.common.threshold import LabelThreshold
 from perception_eval.common.threshold import get_label_threshold
-from perception_eval.evaluation.matching.object_matching import MatchingMode
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.matching import MatchingMode
 
 
 def filter_object_results(
     frame_id: str,
     object_results: List[DynamicObjectWithPerceptionResult],
-    target_labels: Optional[List[AutowareLabel]] = None,
+    target_labels: Optional[List[LabelType]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
     max_distance_list: Optional[List[float]] = None,
@@ -107,9 +107,9 @@ def filter_object_results(
 
 def filter_objects(
     frame_id: str,
-    objects: List[Union[DynamicObject, Object2DBase]],
+    objects: List[ObjectType],
     is_gt: bool,
-    target_labels: Optional[List[AutowareLabel]] = None,
+    target_labels: Optional[List[LabelType]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
     max_distance_list: Optional[List[float]] = None,
@@ -118,7 +118,7 @@ def filter_objects(
     confidence_threshold_list: Optional[List[float]] = None,
     target_uuids: Optional[List[str]] = None,
     ego2map: Optional[np.ndarray] = None,
-) -> List[Union[DynamicObject, Object2DBase]]:
+) -> List[ObjectType]:
     """[summary]
     Filter DynamicObject to filter ground truth objects.
 
@@ -183,7 +183,7 @@ def filter_objects(
 
 def divide_tp_fp_objects(
     object_results: List[DynamicObjectWithPerceptionResult],
-    target_labels: Optional[List[AutowareLabel]],
+    target_labels: Optional[List[LabelType]],
     matching_mode: Optional[MatchingMode] = None,
     matching_threshold_list: Optional[List[float]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
@@ -253,10 +253,10 @@ def divide_tp_fp_objects(
 
 
 def get_fn_objects(
-    ground_truth_objects: List[Union[DynamicObject, Object2DBase]],
+    ground_truth_objects: List[ObjectType],
     object_results: Optional[List[DynamicObjectWithPerceptionResult]],
     tp_objects: Optional[List[DynamicObjectWithPerceptionResult]],
-) -> List[Union[DynamicObject, Object2DBase]]:
+) -> List[ObjectType]:
     """[summary]
     Get FN (False Negative) objects from ground truth objects by using object result
 
@@ -272,7 +272,7 @@ def get_fn_objects(
     if object_results is None:
         return ground_truth_objects
 
-    fn_objects: List[Union[DynamicObject, Object2DBase]] = []
+    fn_objects: List[ObjectType] = []
     for ground_truth_object in ground_truth_objects:
         is_fn_object: bool = _is_fn_object(
             ground_truth_object=ground_truth_object,
@@ -285,7 +285,7 @@ def get_fn_objects(
 
 
 def _is_fn_object(
-    ground_truth_object: Union[DynamicObject, Object2DBase],
+    ground_truth_object: ObjectType,
     object_results: List[DynamicObjectWithPerceptionResult],
     tp_objects: List[DynamicObjectWithPerceptionResult],
 ) -> bool:
@@ -310,8 +310,8 @@ def _is_fn_object(
 
 def _is_target_object(
     frame_id: str,
-    dynamic_object: Union[DynamicObject, Object2DBase],
-    target_labels: Optional[List[AutowareLabel]] = None,
+    dynamic_object: ObjectType,
+    target_labels: Optional[List[LabelType]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
     max_distance_list: Optional[List[float]] = None,
@@ -415,11 +415,9 @@ def _is_target_object(
 
 
 def divide_objects(
-    objects: List[Union[DynamicObject, Object2DBase, DynamicObjectWithPerceptionResult]],
-    target_labels: Optional[List[AutowareLabel]] = None,
-) -> Dict[
-    AutowareLabel, List[Union[DynamicObject, Object2DBase, DynamicObjectWithPerceptionResult]]
-]:
+    objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
+    target_labels: Optional[List[LabelType]] = None,
+) -> Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]:
     """[summary]
     Divide DynamicObject or DynamicObjectWithPerceptionResult for each label as dict.
 
@@ -437,15 +435,13 @@ def divide_objects(
     if target_labels is not None:
         ret = {label: [] for label in target_labels}
     else:
-        ret: Dict[AutowareLabel, List[Union[DynamicObject, Object2DBase]]] = {}
+        ret: Dict[LabelType, List[ObjectType]] = {}
 
     for obj in objects:
-        if isinstance(obj, (DynamicObject, Object2DBase)):
-            label: AutowareLabel = obj.semantic_label
-        elif isinstance(obj, DynamicObjectWithPerceptionResult):
-            label: AutowareLabel = obj.estimated_object.semantic_label
+        if isinstance(obj, DynamicObjectWithPerceptionResult):
+            label: LabelType = obj.estimated_object.semantic_label
         else:
-            raise TypeError(f"Unexpected object type: {type(obj)}")
+            label: LabelType = obj.semantic_label
 
         if label not in ret.keys():
             ret[label] = [obj]
@@ -455,9 +451,9 @@ def divide_objects(
 
 
 def divide_objects_to_num(
-    objects: List[Union[DynamicObject, Object2DBase, DynamicObjectWithPerceptionResult]],
-    target_labels: Optional[List[AutowareLabel]] = None,
-) -> Dict[AutowareLabel, int]:
+    objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
+    target_labels: Optional[List[LabelType]] = None,
+) -> Dict[LabelType, int]:
     """[summary]
     Divide objects to the number of them for each label as dict.
 
@@ -468,20 +464,18 @@ def divide_objects_to_num(
             if there is no object having specified label. Defaults to None.
 
     Returns:
-        ret (Dict[AutowareLabel, int]): key is label, item is the number of objects.
+        ret (Dict[LabelType, int]): key is label, item is the number of objects.
     """
     if target_labels is not None:
         ret = {label: 0 for label in target_labels}
     else:
-        ret: Dict[AutowareLabel, int] = {}
+        ret: Dict[LabelType, int] = {}
 
     for obj in objects:
-        if isinstance(obj, (DynamicObject, Object2DBase)):
-            label: AutowareLabel = obj.semantic_label
-        elif isinstance(obj, DynamicObjectWithPerceptionResult):
-            label: AutowareLabel = obj.estimated_object.semantic_label
+        if isinstance(obj, DynamicObjectWithPerceptionResult):
+            label: LabelType = obj.estimated_object.semantic_label
         else:
-            raise TypeError(f"Unexpected object type: {type(obj)}")
+            label: LabelType = obj.semantic_label
 
         if label not in ret.keys():
             ret[label] = 1

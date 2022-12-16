@@ -15,12 +15,14 @@
 from typing import Dict
 from typing import List
 
-from perception_eval.common.label import AutowareLabel
-from perception_eval.evaluation.matching.object_matching import MatchingMode
-from perception_eval.evaluation.metrics.detection.map import Map
-from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
-from perception_eval.evaluation.metrics.tracking.tracking_metrics_score import TrackingMetricsScore
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+from perception_eval.common.label import LabelType
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.matching import MatchingMode
+
+from .classification import ClassificationMetricsScore
+from .detection import Map
+from .metrics_score_config import MetricsScoreConfig
+from .tracking import TrackingMetricsScore
 
 
 class MetricsScore:
@@ -50,12 +52,14 @@ class MetricsScore:
         self.detection_config = config.detection_config
         self.tracking_config = config.tracking_config
         self.prediction_config = config.prediction_config
+        self.classification_config = config.classification_config
         # detection metrics scores for each matching method
         self.maps: List[Map] = []
         # tracking metrics scores for each matching method
         self.tracking_scores: List[TrackingMetricsScore] = []
         # TODO: prediction metrics scores for each matching method
         self.prediction_scores: List = []
+        self.classification_scores: List[ClassificationMetricsScore] = []
         self.evaluation_task = config.evaluation_task
 
         self.__num_frame: int = len(used_frame)
@@ -89,6 +93,9 @@ class MetricsScore:
 
         # TODO: prediction
 
+        for classify_score in self.classification_scores:
+            str_ += str(classify_score)
+
         return str_
 
     @property
@@ -109,14 +116,14 @@ class MetricsScore:
 
     def evaluate_detection(
         self,
-        object_results: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]],
-        num_ground_truth: Dict[AutowareLabel, int],
+        object_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]],
+        num_ground_truth: Dict[LabelType, int],
     ) -> None:
         """[summary]
         Calculate detection metrics
 
         Args:
-            object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object result
+            object_results (Dict[LabelType, List[DynamicObjectWithPerceptionResult]]): The dict of object result
         """
         if self.tracking_config is None:
             self.__num_gt += sum(num_ground_truth.values())
@@ -165,8 +172,8 @@ class MetricsScore:
 
     def evaluate_tracking(
         self,
-        object_results: Dict[AutowareLabel, List[List[DynamicObjectWithPerceptionResult]]],
-        num_ground_truth: Dict[AutowareLabel, int],
+        object_results: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
+        num_ground_truth: Dict[LabelType, int],
     ) -> None:
         """[summary]
         Calculate tracking metrics.
@@ -222,8 +229,8 @@ class MetricsScore:
 
     def evaluate_prediction(
         self,
-        object_results: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]],
-        num_ground_truth: Dict[AutowareLabel, int],
+        object_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]],
+        num_ground_truth: Dict[LabelType, int],
     ) -> None:
         """[summary]
         Calculate prediction metrics
@@ -232,3 +239,16 @@ class MetricsScore:
             object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
         """
         pass
+
+    def evaluate_classification(
+        self,
+        object_results: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
+        num_ground_truth: Dict[LabelType, int],
+    ) -> None:
+        self.__num_gt += sum(num_ground_truth.values())
+        classification_score_ = ClassificationMetricsScore(
+            object_results_dict=object_results,
+            num_ground_truth_dict=num_ground_truth,
+            target_labels=self.classification_config.target_labels,
+        )
+        self.classification_scores.append(classification_score_)

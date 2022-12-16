@@ -18,13 +18,9 @@ import math
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Union
 
 import numpy as np
-from perception_eval.common.label import AutowareLabel
-from perception_eval.common.object_base import Object2DBase
-from perception_eval.common.point import distance_points
-from perception_eval.common.point import distance_points_bev
+from perception_eval.common.label import LabelType
 from perception_eval.common.status import Visibility
 from pyquaternion import Quaternion
 from shapely.geometry import Polygon
@@ -67,7 +63,7 @@ class DynamicObject:
         # Detection
         self.state (ObjectState): The state of object
         self.semantic_score (float): Detection score (0.0-1.0)
-        self.semantic_label (AutowareLabel): The object label
+        self.semantic_label (LabelType): The object label
 
         # Use case object evaluation for detection
         self.pointcloud_num (Optional[int]): Pointcloud number inside bounding box
@@ -91,7 +87,7 @@ class DynamicObject:
         size: Tuple[float, float, float],
         velocity: Tuple[float, float, float],
         semantic_score: float,
-        semantic_label: AutowareLabel,
+        semantic_label: LabelType,
         pointcloud_num: Optional[int] = None,
         uuid: Optional[str] = None,
         tracked_positions: Optional[List[Tuple[float, float, float]]] = None,
@@ -114,7 +110,7 @@ class DynamicObject:
             size (Tuple[float, float, float]): [description]
             velocity (Tuple[float, float, float]): [description]
             semantic_score (float): [description]
-            semantic_label (AutowareLabel): [description]
+            semantic_label (LabelType): [description]
             pointcloud_num (Optional[int], optional):
                     Pointcloud number inside bounding box. Defaults to None.
             uuid (Optional[str], optional): The uuid for tracking. Defaults to None.
@@ -147,7 +143,7 @@ class DynamicObject:
             velocity=velocity,
         )
         self.semantic_score: float = semantic_score
-        self.semantic_label: AutowareLabel = semantic_label
+        self.semantic_label: LabelType = semantic_label
 
         # for detection label for case evaluation
         # pointcloud number inside bounding box
@@ -484,36 +480,3 @@ class DynamicObject:
             return states
         else:
             return None
-
-
-def distance_objects(
-    object_1: Union[DynamicObject, Object2DBase],
-    object_2: Union[DynamicObject, Object2DBase],
-) -> float:
-    """[summary]
-    Calculate the 3d center distance between two objects.
-    Args:
-         object_1 (Union[DynamicObject, BaseObject2D]): An object
-         object_2 (Union[DynamicObject, BaseObject2D]): An object
-    Returns: float: The center distance between object_1 and object_2.
-    """
-    if type(object_1) != type(object_2):
-        raise TypeError(
-            f"objects' type must be same, but got {type(object_1) and {type(object_2)}}"
-        )
-
-    if isinstance(object_1, DynamicObject):
-        return distance_points(object_1.state.position, object_2.state.position)
-    return np.linalg.norm(np.array(object_1.roi.center) - np.array(object_2.roi.center))
-
-
-def distance_objects_bev(object_1: DynamicObject, object_2: DynamicObject) -> float:
-    """[summary]
-    Calculate the BEV 2d center distance between two objects.
-    Args:
-         object_1 (DynamicObject): An object
-         object_2 (DynamicObject): An object
-    Returns: float: The 2d center distance from object_1 to object_2.
-    """
-    assert isinstance(object_1, DynamicObject) and isinstance(object_2, DynamicObject)
-    return distance_points_bev(object_1.state.position, object_2.state.position)

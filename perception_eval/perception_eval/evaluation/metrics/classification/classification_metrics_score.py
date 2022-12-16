@@ -17,8 +17,8 @@ from __future__ import annotations
 from typing import Dict
 from typing import List
 
-from perception_eval.common.traffic_light import TLColor
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+from perception_eval.common.label import LabelType
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 
 from .accuracy import ClassificationAccuracy
 
@@ -26,19 +26,19 @@ from .accuracy import ClassificationAccuracy
 class ClassificationMetricsScore:
     def __init__(
         self,
-        object_results_dict: Dict[TLColor, List[List[DynamicObjectWithPerceptionResult]]],
-        num_ground_truth_dict: Dict[TLColor, int],
-        target_labels: List[TLColor],
+        object_results_dict: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
+        num_ground_truth_dict: Dict[LabelType, int],
+        target_labels: List[LabelType],
     ) -> None:
         self.accuracies: List[ClassificationAccuracy] = []
-        for color in target_labels:
-            object_results = object_results_dict[color]
-            num_ground_truth = num_ground_truth_dict[color]
+        for target_label in target_labels:
+            object_results = object_results_dict[target_label]
+            num_ground_truth = num_ground_truth_dict[target_label]
 
             acc_: ClassificationAccuracy = ClassificationAccuracy(
                 object_results=object_results,
                 num_ground_truth=num_ground_truth,
-                target_labels=[color],
+                target_labels=[target_label],
             )
             self.accuracies.append(acc_)
 
@@ -79,10 +79,12 @@ class ClassificationMetricsScore:
         for _ in self.accuracies:
             str_ += " :---: |"
         str_ += "\n"
+        str_ += "|    ACC |"
         for acc_ in self.accuracies:
             score: float = acc_.accuracy
             str_ += f" {score:.3f} |"
         str_ += "\n"
+        str_ += "|   TSCA |"
         for acc_ in self.accuracies:
             score: float = acc_.tsca
             str_ += f" {score:.3f} |"

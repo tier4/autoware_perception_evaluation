@@ -22,12 +22,12 @@ from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
 from perception_eval.common.threshold import get_label_threshold
-from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 logger = getLogger(__name__)
 
@@ -49,7 +49,7 @@ class Ap:
         self.matching_standard_deviation (Optional[float]):
                 The standard deviation for matching score (ex. IoU, center distance)
                 If there are no object results, this variable is None.
-        self.target_labels (List[AutowareLabel]):
+        self.target_labels (List[LabelType]):
                 Target labels to evaluate
         self.tp_metrics (TPMetrics):
                 The mode of TP (True positive) metrics. See TPMetrics class in detail.
@@ -66,7 +66,7 @@ class Ap:
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
         object_results: List[List[DynamicObjectWithPerceptionResult]],
         num_ground_truth: int,
-        target_labels: List[AutowareLabel],
+        target_labels: List[LabelType],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
     ) -> None:
@@ -76,7 +76,7 @@ class Ap:
             tp_metrics (TPMetrics): The mode of TP (True positive) metrics
             object_results (List[List[DynamicObjectWithPerceptionResult]]) : The results to each estimated object
             frame_ground_truths (List[FrameGroundTruth]) : The List of ground truth for each frame
-            target_labels (List[AutowareLabel]): Target labels to evaluate
+            target_labels (List[LabelType]): Target labels to evaluate
             matching_mode (MatchingMode):
                     Matching mode like distance between the center of the object, 3d IoU
             matching_threshold (List[float]): The threshold list for matching the estimated object
@@ -84,7 +84,7 @@ class Ap:
         self.tp_metrics: Union[TPMetricsAp, TPMetricsAph] = tp_metrics
         self.num_ground_truth: int = num_ground_truth
 
-        self.target_labels: List[AutowareLabel] = target_labels
+        self.target_labels: List[LabelType] = target_labels
         self.matching_mode: MatchingMode = matching_mode
         self.matching_threshold_list: List[float] = matching_threshold_list
 

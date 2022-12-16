@@ -15,22 +15,20 @@
 import logging
 from typing import List
 from typing import Tuple
-from typing import Union
 
+from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
-from perception_eval.common.label import AutowareLabel
-from perception_eval.common.object import DynamicObject
-from perception_eval.common.object import RoiObject
-from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
+from perception_eval.common.label import LabelType
+from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
-from perception_eval.evaluation.metrics.metrics import MetricsScore
-from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
-from perception_eval.evaluation.result.perception_pass_fail_result import CriticalObjectFilterConfig
-from perception_eval.evaluation.result.perception_pass_fail_result import PerceptionPassFailConfig
-from perception_eval.visualization.perception_visualizer import PerceptionVisualizer
+from perception_eval.evaluation.metrics import MetricsScore
+from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
+from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from perception_eval.visualization import PerceptionVisualizer
 
 from ._evaluation_manager_base import _EvaluationMangerBase
 from ..evaluation.result.object_result import DynamicObjectWithPerceptionResult
@@ -46,9 +44,9 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         - By _EvaluationMangerBase
         self.evaluator_config (PerceptionEvaluatorConfig): Configuration for perception evaluation.
         self.ground_truth_frames (List[FrameGroundTruth]): Ground truth frames from datasets
+        self.target_labels (List[LabelType]): List of target labels.
 
         - By PerceptionEvaluationManger
-        self.target_labels (List[AutowareLabel]): List of target labels.
         self.frame_results (List[PerceptionFrameResult]): Evaluation result
         self.visualizer (Optional[PerceptionVisualizer]): Visualization class for perception result.
             If EvaluationTask.is_2d() is True, None.
@@ -64,20 +62,27 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         Args:
             evaluator_config (PerceptionEvaluatorConfig): Configuration for perception evaluation.
         """
-        self.target_labels: List[AutowareLabel] = evaluation_config.target_labels
         self.frame_results: List[PerceptionFrameResult] = []
         self.visualizer = (
             None
-            if self.evaluator_config.evaluation_task.is_2d()
+            if self.evaluation_task.is_2d()
             else PerceptionVisualizer.from_eval_cfg(self.evaluator_config)
         )
+
+    @property
+    def target_labels(self) -> List[LabelType]:
+        return self.evaluator_config.target_labels
+
+    @property
+    def metrics_config(self):
+        return self.evaluator_config.metrics_config
 
     def add_frame_result(
         self,
         unix_time: int,
         ground_truth_now_frame: FrameGroundTruth,
-        estimated_objects: List[Union[DynamicObject, RoiObject]],
-        ros_critical_ground_truth_objects: List[Union[DynamicObject, RoiObject]],
+        estimated_objects: List[ObjectType],
+        ros_critical_ground_truth_objects: List[ObjectType],
         critical_object_filter_config: CriticalObjectFilterConfig,
         frame_pass_fail_config: PerceptionPassFailConfig,
     ) -> PerceptionFrameResult:
@@ -87,8 +92,8 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         Args:
             unix_time (int): Unix time of frame to evaluate [us]
             ground_truth_now_frame (FrameGroundTruth): Now frame ground truth
-            estimated_objects (List[Union[DynamicObject, RoiObject]]): estimated object which you want to evaluate
-            ros_critical_ground_truth_objects (List[Union[DynamicObject, RoiObject]]):
+            estimated_objects (List[ObjectType]): estimated object which you want to evaluate
+            ros_critical_ground_truth_objects (List[ObjectType]):
                     Critical ground truth objects filtered by ROS node to evaluate pass fail result
             critical_object_filter_config (CriticalObjectFilterConfig):
                     The parameter config to choose critical ground truth objects
@@ -106,7 +111,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         result = PerceptionFrameResult(
             object_results=object_results,
             frame_ground_truth=ground_truth_now_frame,
-            metrics_config=self.evaluator_config.metrics_config,
+            metrics_config=self.metrics_config,
             critical_object_filter_config=critical_object_filter_config,
             frame_pass_fail_config=frame_pass_fail_config,
             unix_time=unix_time,
@@ -128,32 +133,32 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
 
     def _filter_objects(
         self,
-        estimated_objects: List[Union[DynamicObject, RoiObject]],
+        estimated_objects: List[ObjectType],
         frame_ground_truth: FrameGroundTruth,
     ) -> Tuple[List[DynamicObjectWithPerceptionResult], FrameGroundTruth]:
         """[summary]
         Filtering estimated and ground truth objects.
         Args:
-            estimated_objects (List[Union[DynamicObject, RoiObject]])
+            estimated_objects (List[ObjectType])
             frame_ground_truth (FrameGroundTruth)
         Returns:
-            estimated_objects (List[Union[DynamicObject, RoiObject]])
+            object_results (List[DynamicObjectWithPerceptionResult])
             frame_ground_truth (FrameGroundTruth)
         """
         estimated_objects = filter_objects(
-            frame_id=self.evaluator_config.frame_id,
+            frame_id=self.frame_id,
             objects=estimated_objects,
             is_gt=False,
             ego2map=frame_ground_truth.ego2map,
-            **self.evaluator_config.filtering_params,
+            **self.filtering_params,
         )
 
         frame_ground_truth.objects = filter_objects(
-            frame_id=self.evaluator_config.frame_id,
+            frame_id=self.frame_id,
             objects=frame_ground_truth.objects,
             is_gt=True,
             ego2map=frame_ground_truth.ego2map,
-            **self.evaluator_config.filtering_params,
+            **self.filtering_params,
         )
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
             estimated_objects=estimated_objects,
@@ -161,10 +166,10 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         )
         if self.evaluator_config.filtering_params.get("target_uuids"):
             object_results = filter_object_results(
-                frame_id=self.evaluator_config.frame_id,
+                frame_id=self.frame_id,
                 object_results=object_results,
                 ego2map=frame_ground_truth.ego2map,
-                target_uuids=self.evaluator_config.filtering_params["target_uuids"],
+                target_uuids=self.filtering_params["target_uuids"],
             )
         return object_results, frame_ground_truth
 
@@ -176,7 +181,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             MetricsScore: Metrics score
         """
         # Gather objects from frame results
-        target_labels: List[AutowareLabel] = self.evaluator_config.target_labels
+        target_labels: List[LabelType] = self.target_labels
         all_frame_results = {label: [[]] for label in target_labels}
         all_num_gt = {label: 0 for label in target_labels}
         used_frame: List[int] = []
@@ -190,7 +195,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
 
         # Calculate score
         scene_metrics_score: MetricsScore = MetricsScore(
-            config=self.evaluator_config.metrics_config,
+            config=self.metrics_config,
             used_frame=used_frame,
         )
         if self.evaluator_config.metrics_config.detection_config is not None:
@@ -199,6 +204,8 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             scene_metrics_score.evaluate_tracking(all_frame_results, all_num_gt)
         if self.evaluator_config.metrics_config.prediction_config is not None:
             pass
+        if self.evaluator_config.metrics_config.classification_config is not None:
+            scene_metrics_score.evaluate_classification(all_frame_results, all_num_gt)
 
         return scene_metrics_score
 

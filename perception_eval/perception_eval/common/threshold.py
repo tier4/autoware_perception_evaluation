@@ -16,7 +16,7 @@ from typing import List
 from typing import Optional
 from typing import Union
 
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
 
 
 class LabelThreshold:
@@ -26,16 +26,16 @@ class LabelThreshold:
 
     def __init__(
         self,
-        semantic_label: AutowareLabel,
-        target_labels: Optional[List[AutowareLabel]],
+        semantic_label: LabelType,
+        target_labels: Optional[List[LabelType]],
     ) -> None:
         """[summary]
         Args:
-            semantic_label (AutowareLabel): Target label
-            target_labels: (Optional[List[AutowareLabel]]): Label list
+            semantic_label (LabelType): Target label
+            target_labels: (Optional[List[LabelType]]): Label list
         """
-        self.semantic_label: AutowareLabel = semantic_label
-        self.target_labels: Optional[List[AutowareLabel]] = target_labels
+        self.semantic_label: LabelType = semantic_label
+        self.target_labels: Optional[List[LabelType]] = target_labels
 
     def get_label_threshold(
         self,
@@ -59,8 +59,8 @@ class LabelThreshold:
 
 
 def get_label_threshold(
-    semantic_label: AutowareLabel,
-    target_labels: Optional[List[AutowareLabel]],
+    semantic_label: LabelType,
+    target_labels: Optional[List[LabelType]],
     threshold_list: Optional[List[float]],
 ) -> Optional[float]:
     """[summary]
@@ -69,7 +69,7 @@ def get_label_threshold(
 
     Args:
         semantic_label (AutowareLabel): Target label
-        target_labels: (Optional[List[AutowareLabel]]): Label list
+        target_labels: (Optional[List[LabelType]]): Label list
         threshold_list (Optional[List[float]]): Thresholds list
 
     Returns:
@@ -132,7 +132,7 @@ class ThresholdsError(Exception):
 
 def check_thresholds(
     thresholds: List[float],
-    target_labels: List[AutowareLabel],
+    target_labels: List[LabelType],
     exception: Exception = ThresholdsError,
 ) -> List[float]:
     """[summary]
@@ -140,7 +140,7 @@ def check_thresholds(
 
     Args:
         thresholds (Optional[List[float]]): Thresholds
-        target_labels (List[AutowareLabel]): Target labels
+        target_labels (List[LabelType]): Target labels
         exception (Exception): The exception class. Defaults ThresholdError.
 
     Raises:
@@ -159,7 +159,7 @@ def check_thresholds(
 
 def check_thresholds_list(
     thresholds_list: List[List[float]],
-    target_labels: List[AutowareLabel],
+    target_labels: List[LabelType],
     exception: Exception = ThresholdsError,
 ) -> List[List[float]]:
     """[summary]
@@ -167,7 +167,7 @@ def check_thresholds_list(
 
     Args:
         thresholds_list (List[List[float]]): A thresholds list.
-        target_labels (List[AutowareLabel]): Target labels.
+        target_labels (List[LabelType]): Target labels.
         exception (Exception): The exception class. Defaults ThresholdError.
 
     Raises:

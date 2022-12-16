@@ -15,12 +15,12 @@
 from typing import Dict
 from typing import List
 
-from perception_eval.common.label import AutowareLabel
-from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.common.label import LabelType
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.ap import Ap
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
 class Map:
@@ -35,9 +35,9 @@ class Map:
 
     def __init__(
         self,
-        object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]],
-        num_ground_truth_dict: Dict[AutowareLabel, int],
-        target_labels: List[AutowareLabel],
+        object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]],
+        num_ground_truth_dict: Dict[LabelType, int],
+        target_labels: List[LabelType],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
         is_detection_2d: bool = False,
@@ -46,7 +46,7 @@ class Map:
 
         Args:
             object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results
-            target_labels (List[AutowareLabel]): Target labels to evaluate mAP
+            target_labels (List[LabelType]): Target labels to evaluate mAP
             matching_mode (MatchingMode): Matching mode like distance between the center of
                                            the object, 3d IoU.
             matching_threshold_list (List[float]):
@@ -55,7 +55,7 @@ class Map:
                     and IoU of the object is higher than "matching_threshold",
                     this function appends to return objects.
         """
-        self.target_labels: List[AutowareLabel] = target_labels
+        self.target_labels: List[LabelType] = target_labels
         self.matching_mode: MatchingMode = matching_mode
         self.matching_threshold_list: List[float] = matching_threshold_list
         self.is_detection_2d: bool = is_detection_2d

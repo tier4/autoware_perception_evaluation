@@ -8,22 +8,21 @@
 
 ## Overview
 
-### Evaluate Detection/Tracking/Prediction results
+### Evaluate Perception(=Detection/Tracking/Prediction/Classification) & Sensing task
 
-- We support 3D Detection/Tracking/Prediction and 2D Detection evaluation.
+- 3D task
 
-  - 3D task
+| Task       |     Metrics      | Sub-metrics                         |
+| :--------- | :--------------: | :---------------------------------- |
+| Detection  |       mAP        | AP, APH                             |
+| Tracking   |      CLEAR       | MOTA, MOTP, IDswitch                |
+| Prediction |       WIP        | WIP                                 |
+| Sensing    | Check Pointcloud | Detection Area & Non-detection Area |
 
-  | Task       | Metrics | Sub-metrics          |
-  | :--------- | :-----: | :------------------- |
-  | Detection  |   mAP   | AP, APH              |
-  | Tracking   |  CLEAR  | MOTA, MOTP, IDswitch |
-  | Prediction |   WIP   | WIP                  |
+- 2D task
 
-  - 2D task
-
-  | Task      | Metrics | Sub-metrics |
-  | :-------- | :-----: | :---------- |
-  | Detection |   mAP   | AP          |
-
-- Also, we can evaluate sensing results.
+| Task             | Metrics  | Sub-metrics          |
+| :--------------- | :------: | :------------------- |
+| Detection2D      |   mAP    | AP                   |
+| Tracking2D       |  CLEAR   | MOTA, MOTP, IDswitch |
+| Classification2D | Accuracy | Accuracy             |

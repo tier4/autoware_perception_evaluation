@@ -18,11 +18,11 @@ from typing import List
 from typing import Optional
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.threshold import ThresholdsError
 from perception_eval.common.threshold import check_thresholds
-from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
+from perception_eval.evaluation.metrics import MetricsScoreConfig
 
 from ._evaluation_config_base import _EvaluationConfigBase
 
@@ -52,7 +52,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
     _support_tasks: List[str] = [
         "detection2d",
         "tracking2d",
-        "classification",
+        "classification2d",
         "detection",
         "tracking",
         "prediction",
@@ -63,9 +63,10 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         dataset_paths: List[str],
         frame_id: str,
         merge_similar_labels: bool,
-        does_use_pointcloud: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
+        label_prefix: str = "autoware",
+        load_raw_data: bool = False,
     ) -> None:
         """[summary]
 
@@ -79,14 +80,17 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             does_use_pointcloud (bool): The flag for loading pointcloud data from dataset
             result_root_directory (str): The path to result directory
             evaluation_config_dict (Dict[str, Dict[str, Any]]): The dictionary of evaluation config for each task.
+            label_prefix (str): Defaults to autoware.
+            load_raw_data (bool): Defaults to False.
         """
         super().__init__(
             dataset_paths=dataset_paths,
             frame_id=frame_id,
             merge_similar_labels=merge_similar_labels,
-            does_use_pointcloud=does_use_pointcloud,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
+            label_prefix=label_prefix,
+            load_raw_data=load_raw_data,
         )
         self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)
 
@@ -109,11 +113,11 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         e_cfg = evaluation_config_dict.copy()
 
         # Covert labels to autoware labels for Metrics
-        target_labels: List[AutowareLabel] = set_target_lists(
+        target_labels: List[LabelType] = set_target_lists(
             e_cfg["target_labels"],
             self.label_converter,
         )
-        self.target_labels: List[AutowareLabel] = target_labels
+        self.target_labels: List[LabelType] = target_labels
 
         max_x_position: Optional[float] = e_cfg.get("max_x_position")
         max_y_position: Optional[float] = e_cfg.get("max_y_position")

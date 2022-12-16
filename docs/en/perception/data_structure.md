@@ -41,7 +41,7 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
   | `frame_name`         |                   `str`                   | Name of frame                                      |
   | `unix_time`          |                   `int`                   | Unix time of frame                                 |
   | `frame_id`           |                   `str`                   | Frame ID of coords system which objects respect to |
-  | `target_labels`      |           `List[AutowareLabel]`           | List of name of target labels                      |
+  | `target_labels`      |             `List[LabelType]`             | List of name of target labels                      |
   | `object_results`     | `List[DynamicObjectWithPerceptionResult]` | List of pair of Estimation and ground truth(GT)    |
   | `frame_ground_truth` |            `FrameGroundTruth`             | GT objects for one frame                           |
   | `metrics_score`      |              `MetricsScore`               | Score of metrics result                            |
@@ -120,7 +120,7 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
 
 ### `<class> DynamicObjectWithPerceptionResult(...)`
 
-Call `<func> get_object_results(...)` function to generate a set of matching pairs `List[DynamicObjectWithPerceptionResult]` from a set of Estimated objects `List[Union[DynamicObject, RoiObject]]`and a set of GT objects `List[Union[DynamicObject, RoiObject]]`.
+Call `<func> get_object_results(...)` function to generate a set of matching pairs `List[DynamicObjectWithPerceptionResult]` from a set of Estimated objects `List[ObjectType]`and a set of GT objects `List[ObjectType]`.
 
 For the details，see [perception_eval/evaluation/result/object_result.py](../../../perception_eval/perception_eval/evaluation/result/object_result.py)
 
@@ -128,30 +128,30 @@ For the details，see [perception_eval/evaluation/result/object_result.py](../..
 from perception_eval.evaluation.result.object_results import get_object_results
 
 # REQUIRED:
-#   estimated_objects: List[Union[DynamicObject, RoiObject]]
-#   ground_truth_objects: List[Union[DynamicObject, RoiObject]]
+#   estimated_objects: List[ObjectType]
+#   ground_truth_objects: List[ObjectType]
 
 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(estimated_objects, ground_truth_objects)
 ```
 
 - Initialization
 
-  | Arguments             |                    type                     | Description |
-  | :-------------------- | :-----------------------------------------: | :---------- |
-  | `estimated_object`    |      `Union[DynamicObject, RoiObject]`      | Estimation  |
-  | `ground_truth_object` | `Optional[Union[DynamicObject, RoiObject]]` | GT object   |
+  | Arguments             |          type          | Description |
+  | :-------------------- | :--------------------: | :---------- |
+  | `estimated_object`    |      `ObjectType`      | Estimation  |
+  | `ground_truth_object` | `Optional[ObjectType]` | GT object   |
 
 - Attributes
 
-  | Attributes            |                    type                     | Description                                                    |
-  | :-------------------- | :-----------------------------------------: | :------------------------------------------------------------- |
-  | `estimated_object`    |      `Union[DynamicObject, RoiObject]`      | Estimation                                                     |
-  | `ground_truth_object` | `Optional[Union[DynamicObject, RoiObject]]` | GT object                                                      |
-  | `is_label_correct`    |                   `bool`                    | Whether the labels which estimation and GT object has are same |
-  | `center_distance`     |          `CenterDistanceMatching`           | Distance of center between two objects                         |
-  | `plane_distance`      |           `PlaneDistanceMatching`           | Distance of the nearest plane between two objects              |
-  | `iou_bev`             |              `IOUBEVMatching`               | IOU score in BEV                                               |
-  | `iou_3d`              |               `IOU3dMatching`               | IOU score in 3-dimensions                                      |
+  | Attributes            |           type           | Description                                                    |
+  | :-------------------- | :----------------------: | :------------------------------------------------------------- |
+  | `estimated_object`    |       `ObjectType`       | Estimation                                                     |
+  | `ground_truth_object` |  `Optional[ObjectType]`  | GT object                                                      |
+  | `is_label_correct`    |          `bool`          | Whether the labels which estimation and GT object has are same |
+  | `center_distance`     | `CenterDistanceMatching` | Distance of center between two objects                         |
+  | `plane_distance`      | `PlaneDistanceMatching`  | Distance of the nearest plane between two objects              |
+  | `iou_bev`             |     `IOUBEVMatching`     | IOU score in BEV                                               |
+  | `iou_3d`              |     `IOU3dMatching`      | IOU score in 3-dimensions                                      |
 
 - Methods
 

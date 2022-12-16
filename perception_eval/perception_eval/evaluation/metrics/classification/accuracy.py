@@ -15,7 +15,7 @@
 from typing import List
 from typing import Tuple
 
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 
 
 class ClassificationAccuracy:
@@ -37,6 +37,7 @@ class ClassificationAccuracy:
         if len(object_results) == 0 or not isinstance(object_results[0], list):
             all_object_results = object_results
         else:
+            all_object_results = []
             for obj_results in object_results:
                 all_object_results += obj_results
         self.accuracy: float = self.get_accuracy_score(all_object_results)

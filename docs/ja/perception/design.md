@@ -49,14 +49,15 @@ json_result = json.dump(dict_result)
 
 - `PerceptionEvaluationConfig`の引数は以下
 
-  | Arguments                |       type       | Description                                                      |
-  | :----------------------- | :--------------: | :--------------------------------------------------------------- |
-  | `dataset_path`           |   `List[str]`    | データセットパス(List[]で指定するが複数データ対応については TBD) |
-  | `frame_id`               |      `str`       | オブジェクトの座標系，`map` or `base_link`                       |
-  | `merge_similar_labels`   |      `bool`      | 類似ラベルをマージするかの flag[参考](label.md)                  |
-  | `does_use_pointcloud`    |      `bool`      | データセットから点群データをロードするかの flag                  |
-  | `result_root_directory`  |      `str`       | 評価結果，ログ，可視化結果等を保存するディレクトリのパス         |
-  | `evaluation_config_dict` | `Dict[str, Any]` | 評価パラメータ                                                   |
+  | Arguments                |       type       | Description                                                                                                                      |
+  | :----------------------- | :--------------: | :------------------------------------------------------------------------------------------------------------------------------- |
+  | `dataset_path`           |   `List[str]`    | データセットパス(List[]で指定するが複数データ対応については TBD)                                                                 |
+  | `frame_id`               |      `str`       | オブジェクトの座標系，`map` or `base_link`                                                                                       |
+  | `merge_similar_labels`   |      `bool`      | 類似ラベルをマージするかの flag[参考](label.md)                                                                                  |
+  | `result_root_directory`  |      `str`       | 評価結果，ログ，可視化結果等を保存するディレクトリのパス                                                                         |
+  | `evaluation_config_dict` | `Dict[str, Any]` | 評価パラメータ                                                                                                                   |
+  | `label_prefix`           |      `str`       | ラベルのプレフィックス. `autoware` の場合, `AutowareLabel`がロードされ，`traffic_light`の場合，`TrafficLightLabel`がロードされる |
+  | `load_raw_data`          |      `bool`      | データセットから点群/画像データをロードするか                                                                                    |
 
 ##### `evaluation_config_dict`
 
@@ -110,7 +111,7 @@ json_result = json.dump(dict_result)
     "min_point_numbers": [0, 0, 0, 0],
     "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
     "plane_distance_thresholds": [2.0, 3.0],
-    "iou_bev_thresholds": [0.5],
+    "iou_2d_thresholds": [0.5],
     "iou_3d_thresholds": [0.5],
   }
   ```
@@ -136,7 +137,7 @@ json_result = json.dump(dict_result)
       "min_point_numbers": [0, 0, 0, 0],
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
     }
     ```
@@ -159,7 +160,7 @@ json_result = json.dump(dict_result)
       "min_point_numbers": [0, 0, 0, 0],
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
     }
     ```
@@ -180,7 +181,7 @@ json_result = json.dump(dict_result)
       # "min_point_numbers": [0, 0, 0, 0],  # <-- min_point_numbersをコメントアウト
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
     }
     ```
@@ -202,7 +203,7 @@ json_result = json.dump(dict_result)
       "max_y_position": 102.4,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
       "min_point_numbers": [0, 0, 0, 0],
       "foo_thresholds": [0.8],  # <-- foo_thresholdsを指定
@@ -279,3 +280,9 @@ json_result = json.dump(dict_result)
 
 | Metrics | Sub Metrics |
 | :-----: | :---------: |
+
+### Classification
+
+| Metrics  | Sub Metrics |
+| :------: | :---------: |
+| Accuracy |  Accuracy   |

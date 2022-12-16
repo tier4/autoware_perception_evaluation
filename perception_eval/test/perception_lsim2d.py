@@ -16,14 +16,15 @@ import argparse
 import logging
 import tempfile
 from typing import List
+from typing import Optional
 
 from perception_eval.common.object import DynamicObject
-from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
-from perception_eval.evaluation.metrics.metrics import MetricsScore
+from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.evaluation import PerceptionFrameResult
+from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
-from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
-from perception_eval.manager.perception_evaluation_manager import PerceptionEvaluationManager
+from perception_eval.manager import PerceptionEvaluationManager
 from perception_eval.util.logger_config import configure_logger
 
 
@@ -33,30 +34,39 @@ class PerceptionLSimMoc:
         dataset_paths: List[str],
         evaluation_task: str,
         result_root_directory: str,
+        label_prefix: Optional[str] = None,
     ):
-        evaluation_config_dict = {
-            # ラベル，max x/y，マッチング閾値 (detection/tracking/predictionで共通)
-            "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
-            # objectごとにparamを設定
-            "center_distance_thresholds": [
-                [1.0, 1.0, 1.0, 1.0],
-                [2.0, 2.0, 2.0, 2.0],
-            ],
-            "iou_2d_thresholds": [0.5],
-        }
-        if evaluation_task in ("detection2d", "tracking2d", "classification"):
-            frame_id: str = "base_link"  # objectのframe_id: base_link or map
-            evaluation_config_dict.update({"evaluation_task": evaluation_task})
+        self.evaluation_task = evaluation_task
+        self.label_prefix = label_prefix
+
+        if evaluation_task in ("detection2d", "tracking2d"):
+            evaluation_config_dict = {
+                "evaluation_task": evaluation_task,
+                "center_distance_thresholds": [
+                    [1.0, 1.0, 1.0, 1.0],
+                    [2.0, 2.0, 2.0, 2.0],
+                ],
+                "iou_2d_thresholds": [0.5],
+            }
+        elif evaluation_task == "classification2d":
+            evaluation_config_dict = {"evaluation_task": evaluation_task}
         else:
             raise ValueError(f"Unexpected evaluation task: {evaluation_task}")
 
+        evaluation_config_dict["target_labels"] = (
+            ["green", "red", "yellow", "unknown"]
+            if label_prefix == "traffic_light"
+            else ["car", "bicycle", "pedestrian", "motorbike"]
+        )
+
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=dataset_paths,
-            frame_id=frame_id,
+            frame_id="base_link",
             merge_similar_labels=False,
-            does_use_pointcloud=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
+            load_raw_data=False,
+            label_prefix=label_prefix,
         )
 
         _ = configure_logger(
@@ -83,17 +93,25 @@ class PerceptionLSimMoc:
         ros_critical_ground_truth_objects = ground_truth_now_frame.objects
 
         # 1 frameの評価
+        target_labels = (
+            ["green", "red", "yellow", "unknown"]
+            if self.label_prefix == "traffic_light"
+            else ["car", "bicycle", "pedestrian", "motorbike"]
+        )
+        matching_threshold_list = (
+            None if self.evaluation_task == "classification2d" else [0.8, 0.8, 0.8, 0.8]
+        )
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam
         critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
+            target_labels=target_labels,
         )
         # Pass fail を決めるパラメータ
         frame_pass_fail_config: PerceptionPassFailConfig = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            matching_threshold_list=[0.8, 0.8, 0.8, 0.8],
+            target_labels=target_labels,
+            matching_threshold_list=matching_threshold_list,
         )
 
         frame_result = self.evaluator.add_frame_result(
@@ -126,9 +144,6 @@ class PerceptionLSimMoc:
             f"{len(frame_result.pass_fail_result.fn_objects)} FN objects",
         )
 
-        if frame_result.metrics_score.maps[0].map < 0.7:
-            logging.debug("mAP is low")
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -137,6 +152,13 @@ if __name__ == "__main__":
         "--use_tmpdir",
         action="store_true",
         help="Whether save results to temporal directory",
+    )
+    parser.add_argument(
+        "-p",
+        "--label_prefix",
+        type=str,
+        default="autoware",
+        help="Whether evaluate Traffic Light Recognition",
     )
     args = parser.parse_args()
 
@@ -149,7 +171,12 @@ if __name__ == "__main__":
 
     # ========================================= Detection =========================================
     print("=" * 50 + "Start Detection 2D" + "=" * 50)
-    detection_lsim = PerceptionLSimMoc(dataset_paths, "detection2d", result_root_directory)
+    detection_lsim = PerceptionLSimMoc(
+        dataset_paths,
+        "detection2d",
+        result_root_directory,
+        args.label_prefix,
+    )
 
     for ground_truth_frame in detection_lsim.evaluator.ground_truth_frames:
         objects_with_difference = ground_truth_frame.objects
@@ -166,7 +193,12 @@ if __name__ == "__main__":
 
     # ========================================= Tracking =========================================
     print("=" * 50 + "Start Tracking 2D" + "=" * 50)
-    tracking_lsim = PerceptionLSimMoc(dataset_paths, "tracking2d", result_root_directory)
+    tracking_lsim = PerceptionLSimMoc(
+        dataset_paths,
+        "tracking2d",
+        result_root_directory,
+        args.label_prefix,
+    )
 
     for ground_truth_frame in tracking_lsim.evaluator.ground_truth_frames:
         objects_with_difference = ground_truth_frame.objects
@@ -180,3 +212,25 @@ if __name__ == "__main__":
 
     # final result
     tracking_final_metric_score = tracking_lsim.get_final_result()
+
+    # ========================================= Classification =========================================
+    print("=" * 50 + "Start Classification 2D" + "=" * 50)
+    classification_lsim = PerceptionLSimMoc(
+        dataset_paths,
+        "classification2d",
+        result_root_directory,
+        args.label_prefix,
+    )
+
+    for ground_truth_frame in classification_lsim.evaluator.ground_truth_frames:
+        objects_with_difference = ground_truth_frame.objects
+        # To avoid case of there is no object
+        if len(objects_with_difference) > 0:
+            objects_with_difference.pop(0)
+        classification_lsim.callback(
+            ground_truth_frame.unix_time,
+            objects_with_difference,
+        )
+
+    # final result
+    classification_final_metric_score = classification_lsim.get_final_result()

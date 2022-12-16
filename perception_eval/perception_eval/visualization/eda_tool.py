@@ -23,14 +23,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pandas_profiling as pdp
-from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import LabelConverter
+from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
-from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_tp_fp_objects
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import get_fn_objects
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from plotly import graph_objects as go
 from plotly.graph_objs import Figure
 from plotly.subplots import make_subplots
@@ -417,6 +417,7 @@ class EDAManager:
         width_lim_dict: Dict[str, List[float]],
         length_lim_dict: Dict[str, List[float]],
         merge_similar_labels: bool = False,
+        label_prefix: str = "autoware",
         show: bool = False,
     ) -> None:
         """[summary]
@@ -440,7 +441,10 @@ class EDAManager:
         self.xylim_dict = xylim_dict
         self.width_lim_dict = width_lim_dict
         self.length_lim_dict = length_lim_dict
-        self.label_converter = LabelConverter(merge_similar_labels=merge_similar_labels)
+        self.label_converter = LabelConverter(
+            merge_similar_labels=merge_similar_labels,
+            label_prefix=label_prefix,
+        )
         self.show = show
 
     def visualize_ground_truth_objects(
@@ -496,15 +500,15 @@ class EDAManager:
             confidence_threshold (float):
                     confidence threshold for visualization
         """
-        autoware_labels: List[AutowareLabel] = []
+        target_labels: List[LabelType] = []
         for name in self.class_names:
-            autoware_labels.append(self.label_converter.convert_label(name))
+            target_labels.append(self.label_converter.convert_label(name))
         # visualize tp, fp in estimated objects
         tp_results, fp_results = divide_tp_fp_objects(
             object_results,
-            autoware_labels,
+            target_labels,
             matching_mode,
-            [matching_threshold] * len(autoware_labels),
+            [matching_threshold] * len(target_labels),
         )
         if len(tp_results) == 0:
             logger.info("No TP results, so no graphs are generated for TP.")
@@ -516,11 +520,11 @@ class EDAManager:
         else:
             self.visualize(fp_results, "fp_results", is_gt=False)
             # visualize fp with high confidence in estimated objects
-            confidence_threshold_list: List[float] = [confidence_threshold] * len(autoware_labels)
+            confidence_threshold_list: List[float] = [confidence_threshold] * len(target_labels)
             fp_results_with_high_confidence = filter_object_results(
                 frame_id="base_link",
                 object_results=tp_results,
-                target_labels=autoware_labels,
+                target_labels=target_labels,
                 confidence_threshold_list=confidence_threshold_list,
             )
             self.visualize(

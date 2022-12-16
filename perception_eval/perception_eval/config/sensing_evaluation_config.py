@@ -47,9 +47,9 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         dataset_paths: List[str],
         frame_id: str,
         merge_similar_labels: bool,
-        does_use_pointcloud: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Dict[str, Any]],
+        load_raw_data: bool = False,
     ):
         """
         Args:
@@ -68,9 +68,9 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
             dataset_paths=dataset_paths,
             frame_id=frame_id,
             merge_similar_labels=merge_similar_labels,
-            does_use_pointcloud=does_use_pointcloud,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
+            load_raw_data=load_raw_data,
         )
         self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)
 

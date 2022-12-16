@@ -16,7 +16,7 @@ from typing import List
 from typing import Optional
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
 
 from ._metrics_config_base import _MetricsConfigBase
 
@@ -27,7 +27,7 @@ class DetectionMetricsConfig(_MetricsConfigBase):
 
     Attributes:
         self.evaluation_task (EvaluationTask.DETECTION)
-        self.target_labels (List[AutowareLabel]): The list of targets to evaluate
+        self.target_labels (List[LabelType]): The list of targets to evaluate
         self.center_distance_thresholds (List[float]): The threshold list of center distance for matching
         self.plane_distance_thresholds (List[float]): The threshold list of plane distance for matching
         self.iou_bev_thresholds (List[float]): The threshold list of bev iou for matching
@@ -38,7 +38,7 @@ class DetectionMetricsConfig(_MetricsConfigBase):
 
     def __init__(
         self,
-        target_labels: List[AutowareLabel],
+        target_labels: List[LabelType],
         center_distance_thresholds: Optional[List[float]] = None,
         plane_distance_thresholds: Optional[List[float]] = None,
         iou_2d_thresholds: Optional[List[float]] = None,

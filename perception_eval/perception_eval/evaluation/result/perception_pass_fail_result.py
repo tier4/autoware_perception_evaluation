@@ -12,24 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from logging import getLogger
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Union
 
 import numpy as np
-from perception_eval.common.dataset import DynamicObject
-from perception_eval.common.object import RoiObject
-from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.common import ObjectType
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_tp_fp_objects
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.matching.objects_filter import get_fn_objects
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
-
-logger = getLogger(__name__)
 
 
 class PassFailResult:
@@ -71,23 +66,22 @@ class PassFailResult:
         self.frame_id: str = frame_id
         self.ego2map: Optional[np.ndarray] = ego2map
 
-        self.critical_ground_truth_objects: Optional[List[DynamicObject]] = None
-        self.fn_objects: Optional[List[DynamicObject]] = None
+        self.critical_ground_truth_objects: Optional[List[ObjectType]] = None
+        self.fn_objects: Optional[List[ObjectType]] = None
         self.fp_objects_result: Optional[List[DynamicObjectWithPerceptionResult]] = None
         self.tp_objects: Optional[List[DynamicObjectWithPerceptionResult]] = None
 
     def evaluate(
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
-        ros_critical_ground_truth_objects: List[Union[DynamicObject, RoiObject]],
+        ros_critical_ground_truth_objects: List[ObjectType],
     ) -> None:
         """[summary]
         Evaluate pass fail objects.
 
         Args:
             object_results (List[DynamicObjectWithPerceptionResult]): The object results
-            ros_critical_ground_truth_objects (List[Union[DynamicObject, RoiObject]]):
-                    Ground truth objects filtered by ROS node.
+            ros_critical_ground_truth_objects (List[ObjectType]): Ground truth objects filtered by ROS node.
         """
         self.critical_ground_truth_objects = filter_objects(
             frame_id=self.frame_id,
@@ -126,7 +120,7 @@ class PassFailResult:
     def get_tp_fp_objects_result(
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
-        critical_ground_truth_objects: List[Union[DynamicObject, RoiObject]],
+        critical_ground_truth_objects: List[ObjectType],
     ) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
         """[summary]
         Get FP objects from object results
@@ -134,7 +128,7 @@ class PassFailResult:
         Args:
             object_results (List[DynamicObjectWithPerceptionResult]):
                     The object results.
-            critical_ground_truth_objects (List[Union[DynamicObject, RoiObject]]):
+            critical_ground_truth_objects (List[ObjectType]):
                     Ground truth objects to evaluate for use case objects.
 
         Returns:

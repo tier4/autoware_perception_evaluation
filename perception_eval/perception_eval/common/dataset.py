@@ -14,20 +14,19 @@
 
 import logging
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Union
 
 from nuimages import NuImages
 import numpy as np
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
+from perception_eval.common import ObjectType
 from perception_eval.common.dataset_utils import _sample_to_frame
 from perception_eval.common.dataset_utils import _sample_to_frame_2d
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelConverter
-from perception_eval.common.object import DynamicObject
-from perception_eval.common.object_base import Object2DBase
 from tqdm import tqdm
 
 
@@ -38,11 +37,9 @@ class FrameGroundTruth:
     Attributes:
         self.unix_time (float): The unix time for the frame [us].
         self.frame_name (str): The file name for the frame.
-        self.objects (List[Union[DynamicObject, RoiObject]]): Objects data.
-        self.pointcloud (Optional[numpy.ndarray], optional):
-                Pointcloud data. Defaults to None, but if you want to visualize dataset,
-                you should load pointcloud data.
-        self.transform_matrix (Optional[np.ndarray]): The numpy array to transform position.
+        self.objects (List[ObjectType]): Objects data.
+        self.ego2map (Optional[np.ndarray]): The numpy array to transform position.
+        self.raw_data (Optional[Dict[str, numpy.ndarray]]): Raw data for each sensor modality.
     """
 
     def __init__(
@@ -50,9 +47,9 @@ class FrameGroundTruth:
         unix_time: int,
         frame_name: str,
         frame_id: str,
-        objects: List[Union[DynamicObject, Object2DBase]],
+        objects: List[ObjectType],
         ego2map: Optional[np.ndarray] = None,
-        pointcloud: Optional[np.ndarray] = None,
+        raw_data: Optional[Dict[str, np.ndarray]] = None,
     ) -> None:
         """[summary]
 
@@ -60,44 +57,42 @@ class FrameGroundTruth:
             unix_time (int): The unix time for the frame [us]
             frame_name (str): The file name for the frame
             frame_id (str): The coord system which objects with respected to, base_link or map.
-            objects (List[Union[DynamicObject, RoiObject]]): Objects data
-            pointcloud (Optional[numpy.ndarray]):
-                    Pointcloud data in (x, y, z, i).
-                    Defaults to None, but if you want to visualize dataset,
-                    you should load pointcloud data.
+            objects (List[ObjectType]): Objects data
             ego2map (Optional[np.ndarray]): The array of 4x4 matrix.
                 Transform position with respect to vehicle coord system to map one.
+            raw_data (Optional[Dict[str, numpy.ndarray]]): Raw data for each sensor modality.
         """
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
         self.frame_id: str = frame_id
-        self.objects: List[Union[DynamicObject, Object2DBase]] = objects
-        self.pointcloud: Optional[np.ndarray] = pointcloud
+        self.objects: List[ObjectType] = objects
         self.ego2map: Optional[np.ndarray] = ego2map
+        self.raw_data: Optional[Dict[str, np.ndarray]] = raw_data
 
 
 def load_all_datasets(
     dataset_paths: List[str],
-    does_use_pointcloud: bool,
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
     frame_id: str,
+    load_raw_data: bool = False,
 ) -> List[FrameGroundTruth]:
     """
     Load tier4 datasets.
     Args:
         dataset_paths (List[str]): The list of root paths to dataset
-        does_use_pointcloud (bool): The flag of setting pointcloud
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
         frame_id (str): Frame ID, base_link or map.
+        load_raw_data (bool): The flag of setting pointcloud or image.
+            For 3D task, pointcloud will be loaded. For 2D, image will be loaded. Defaults to False.
 
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
     """
     logging.info(f"Start to load dataset {dataset_paths}")
     logging.info(
-        f"config: does_use_pointcloud: {does_use_pointcloud}, evaluation_task: {evaluation_task}, frame_id: {frame_id}"
+        f"config: load_raw_data: {load_raw_data}, evaluation_task: {evaluation_task}, frame_id: {frame_id}"
     )
 
     all_datasets: List[FrameGroundTruth] = []
@@ -105,10 +100,10 @@ def load_all_datasets(
     for dataset_path in dataset_paths:
         all_datasets += _load_dataset(
             dataset_path=dataset_path,
-            does_use_pointcloud=does_use_pointcloud,
             evaluation_task=evaluation_task,
             label_converter=label_converter,
             frame_id=frame_id,
+            load_raw_data=load_raw_data,
         )
     logging.info("Finish loading dataset\n" + _get_str_objects_number_info(label_converter))
     return all_datasets
@@ -116,10 +111,10 @@ def load_all_datasets(
 
 def _load_dataset(
     dataset_path: str,
-    does_use_pointcloud: bool,
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
     frame_id: str,
+    load_raw_data: bool,
 ) -> List[FrameGroundTruth]:
     """
     Load one tier4 dataset.
@@ -149,9 +144,6 @@ def _load_dataset(
     for category_dict in nusc.category:
         category_list.append(category_dict["name"])
 
-    # Only keep samples from this split.
-    # splits = create_splits_scenes()
-
     # Read out all sample_tokens in DB.
     sample_tokens = _get_sample_tokens(nusc.sample)
 
@@ -166,17 +158,18 @@ def _load_dataset(
                 label_converter=label_converter,
                 frame_id=frame_id,
                 frame_name=str(n),
+                load_raw_data=load_raw_data,
             )
         else:
             frame = _sample_to_frame(
                 nusc=nusc,
                 helper=helper,
                 sample_token=sample_token,
-                does_use_pointcloud=does_use_pointcloud,
                 evaluation_task=evaluation_task,
                 label_converter=label_converter,
                 frame_id=frame_id,
                 frame_name=str(n),
+                load_raw_data=load_raw_data,
             )
         dataset.append(frame)
     return dataset
@@ -194,7 +187,7 @@ def _get_str_objects_number_info(
     """
     str_: str = ""
     for label in label_converter.labels:
-        str_ += f"{label.label} (-> {label.autoware_label}): {label.num} \n"
+        str_ += f"{label.label} (-> {label.label}): {label.num} \n"
     return str_
 
 
@@ -223,11 +216,6 @@ def _get_sample_tokens(nuscenes_sample: dict) -> List[Any]:
 
     sample_tokens = []
     for sample_token in sample_tokens_all:
-        # TODO impl for evaluation scene filter
-        # scene_token = nusc.get("sample", sample_token)["scene_token"]
-        # scene_record = nusc.get("scene", scene_token)
-        # if scene_record["name"] in splits[eval_split]:
-        #    sample_tokens.append(sample_token)
         sample_tokens.append(sample_token)
 
     return sample_tokens_all

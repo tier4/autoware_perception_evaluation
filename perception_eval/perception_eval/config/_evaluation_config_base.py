@@ -34,7 +34,7 @@ class _EvaluationConfigBase(ABC):
         self.dataset_paths (List[str]): The list of dataset path.
         self.frame_id (str): The frame_id, base_link or map.
         self.merge_similar_labels (bool): Whether merge similar labels.
-        self.does_use_pointcloud (bool): Whether use pointcloud of dataset.
+        self.load_raw_data (bool): Whether load pointcloud/image data.
         self.result_root_directory (str): The directory path to save result.
         self.log_directory (str): The directory path to save log.
         self.visualization_directory (str): The directory path to save visualization result.
@@ -56,9 +56,10 @@ class _EvaluationConfigBase(ABC):
         dataset_paths: List[str],
         frame_id: str,
         merge_similar_labels: bool,
-        does_use_pointcloud: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
+        label_prefix: str = "autoware",
+        load_raw_data: bool = False,
     ) -> None:
         """[summary]
         Args:
@@ -68,9 +69,10 @@ class _EvaluationConfigBase(ABC):
                 If True,
                     - BUS, TRUCK, TRAILER -> CAR
                     - MOTORBIKE, CYCLIST -> BICYCLE
-            does_use_pointcloud (bool): Whether use pointcloud of dataset.
             result_root_directory (str): The directory path to save result.
             evaluation_config_dict (Dict[str, Any]): The config for each evaluation task. The key represents task name.
+            label_prefix (str): Defaults to autoware.
+            load_raw_data (bool): Defaults to False.
         """
         super().__init__()
         # Check tasks are supported
@@ -84,18 +86,20 @@ class _EvaluationConfigBase(ABC):
             raise ValueError(f"Unexpected frame_id: {frame_id}")
         self.frame_id: str = frame_id
         self.merge_similar_labels: bool = merge_similar_labels
-        self.does_use_pointcloud: bool = does_use_pointcloud
+        self.load_raw_data: bool = load_raw_data
 
         # directory
         time = "{0:%Y%m%d_%H%M%S}".format(datetime.datetime.now())
         self.result_root_directory: str = result_root_directory.format(TIME=time)
-        self._log_directory: str = osp.join(self.result_root_directory, "log")
-        self._visualization_directory: str = osp.join(self.result_root_directory, "visualization")
-        os.makedirs(self._log_directory)
-        os.makedirs(self._visualization_directory)
+        self.__log_directory: str = osp.join(self.result_root_directory, "log")
+        self.__visualization_directory: str = osp.join(self.result_root_directory, "visualization")
+        if not osp.exists(self.log_directory):
+            os.makedirs(self.log_directory)
+        if not osp.exists(self.visualization_directory):
+            os.makedirs(self.visualization_directory)
 
         # Labels
-        self.label_converter = LabelConverter(merge_similar_labels)
+        self.label_converter = LabelConverter(merge_similar_labels, label_prefix)
 
     @property
     def support_tasks(self) -> List[str]:
@@ -141,8 +145,8 @@ class _EvaluationConfigBase(ABC):
 
     @property
     def log_directory(self) -> str:
-        return self._log_directory
+        return self.__log_directory
 
     @property
     def visualization_directory(self) -> str:
-        return self._visualization_directory
+        return self.__visualization_directory

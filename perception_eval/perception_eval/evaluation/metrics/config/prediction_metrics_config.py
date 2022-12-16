@@ -15,7 +15,7 @@
 from typing import List
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
 
 from ._metrics_config_base import _MetricsConfigBase
 
@@ -26,7 +26,7 @@ class PredictionMetricsConfig(_MetricsConfigBase):
 
     Attributes:
         self.evaluation_task (EvaluationTask.PREDICTION)
-        self.target_labels (List[AutowareLabel]): The list of targets to evaluate
+        self.target_labels (List[LabelType]): The list of targets to evaluate
         self.center_distance_thresholds (List[float]): The threshold list of center distance for matching
         self.plane_distance_thresholds (List[float]): The threshold list of plane distance for matching
         self.iou_bev_thresholds (List[float]): The threshold list of bev iou for matching
@@ -37,7 +37,7 @@ class PredictionMetricsConfig(_MetricsConfigBase):
 
     def __init__(
         self,
-        target_labels: List[AutowareLabel],
+        target_labels: List[LabelType],
         center_distance_thresholds: List[List[float]],
         plane_distance_thresholds: List[List[float]],
         iou_2d_thresholds: List[List[float]],
@@ -45,7 +45,7 @@ class PredictionMetricsConfig(_MetricsConfigBase):
     ) -> None:
         """[summary]
         Args:
-            target_labels (List[AutowareLabel]): The list of targets to evaluate.
+            target_labels (List[LabelType]): The list of targets to evaluate.
             center_distance_thresholds (List[List[float]]):
                     The threshold List of center distance.
                     For example, if target_labels is ["car", "bike", "pedestrian"],

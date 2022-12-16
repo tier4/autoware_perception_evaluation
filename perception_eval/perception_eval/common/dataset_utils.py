@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
 
 from typing import Any
 from typing import Dict
@@ -19,20 +20,22 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
+import cv2
 from nuimages import NuImages
 import numpy as np
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
 from nuscenes.utils.data_classes import Box
-from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import LabelConverter
+from perception_eval.common.label import LabelType
+from perception_eval.common.object2d import DynamicObject2D
+from perception_eval.common.object2d import Roi
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.object_base import Roi
-from perception_eval.common.roi import RoiObject
 from perception_eval.common.status import Visibility
 from pyquaternion.quaternion import Quaternion
+
+from . import dataset
 
 #################################
 #           Dataset 3D          #
@@ -43,12 +46,12 @@ def _sample_to_frame(
     nusc: NuScenes,
     helper: PredictHelper,
     sample_token: Any,
-    does_use_pointcloud: bool,
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
     frame_id: str,
     frame_name: str,
-) -> FrameGroundTruth:
+    load_raw_data: bool,
+) -> dataset.FrameGroundTruth:
     """[summary]
     Convert Nuscenes sample to FrameGroundTruth
 
@@ -56,10 +59,10 @@ def _sample_to_frame(
         nusc (NuScenes): Nuscenes instance
         helper (PredictHelper): PredictHelper instance
         sample_token (Any): Nuscenes sample token
-        does_use_pointcloud (bool): The flag of setting pointcloud
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
         frame_name (str): Name of frame, number of frame is used.
+        load_raw_data (bool)
 
     Raises:
         NotImplementedError:
@@ -73,8 +76,10 @@ def _sample_to_frame(
     unix_time_ = sample["timestamp"]
     if "LIDAR_TOP" in sample["data"]:
         lidar_path_token = sample["data"]["LIDAR_TOP"]
+        sensor_name: str = "LIDAR_TOP"
     elif "LIDAR_CONCAT" in sample["data"]:
         lidar_path_token = sample["data"]["LIDAR_CONCAT"]
+        sensor_name: str = "LIDAR_CONCAT"
     else:
         raise ValueError("lidar data isn't found")
     frame_data = nusc.get("sample_data", lidar_path_token)
@@ -82,12 +87,13 @@ def _sample_to_frame(
     lidar_path, object_boxes, ego2map = _get_sample_boxes(nusc, frame_data, frame_id)
 
     # pointcloud
-    if does_use_pointcloud:
+    if load_raw_data:
         assert lidar_path.endswith(".bin"), f"Error: Unsupported filetype {lidar_path}"
-        pointcloud_: np.ndarray = np.fromfile(lidar_path, dtype=np.float32)
-        pointcloud_ = pointcloud_.reshape(-1, 5)[:, :4]
+        pointcloud: np.ndarray = np.fromfile(lidar_path, dtype=np.float32)
+        raw_data = {sensor_name: pointcloud.reshape(-1, 5)[:, :4]}
+
     else:
-        pointcloud_ = None
+        raw_data = None
 
     objects_: List[DynamicObject] = []
 
@@ -116,13 +122,13 @@ def _sample_to_frame(
         )
         objects_.append(object_)
 
-    frame = FrameGroundTruth(
+    frame = dataset.FrameGroundTruth(
         unix_time=unix_time_,
         frame_name=frame_name,
         frame_id=frame_id,
         objects=objects_,
-        pointcloud=pointcloud_,
         ego2map=ego2map,
+        raw_data=raw_data,
     )
     return frame
 
@@ -162,7 +168,7 @@ def _convert_nuscenes_box_to_dynamic_object(
     orientation_: Quaternion = object_box.orientation
     size_: Tuple[float, float, float] = tuple(object_box.wlh.tolist())  # type: ignore
     semantic_score_: float = 1.0
-    autoware_label_: AutowareLabel = label_converter.convert_label(
+    semantic_label_: LabelType = label_converter.convert_label(
         label=object_box.name,
         count_label_number=True,
     )
@@ -203,7 +209,7 @@ def _convert_nuscenes_box_to_dynamic_object(
         size=size_,
         velocity=velocity_,
         semantic_score=semantic_score_,
-        semantic_label=autoware_label_,
+        semantic_label=semantic_label_,
         pointcloud_num=pointcloud_num_,
         uuid=instance_token,
         tracked_positions=tracked_positions,
@@ -358,7 +364,8 @@ def _sample_to_frame_2d(
     label_converter: LabelConverter,
     frame_id: str,
     frame_name: str,
-) -> FrameGroundTruth:
+    load_raw_data: bool,
+) -> dataset.FrameGroundTruth:
     """[summary]
     Returns FrameGroundTruth constructed with RoiObject.
 
@@ -370,6 +377,7 @@ def _sample_to_frame_2d(
         label_converter (LabelConverter): LabelConverter instance.
         frame_id (str): Frame ID, base_link or map.
         frame_name (str): Name of frame.
+        load_raw_data (bool): The flag to load image data.
 
     Returns:
         frame (FrameGroundTruth): GT objects in one frame.
@@ -391,37 +399,61 @@ def _sample_to_frame_2d(
         ann for ann in nuim.object_ann if ann["sample_data_token"] in sample_data_tokens
     ]
 
-    if evaluation_task == EvaluationTask.CLASSIFICATION:
-        raise NotImplementedError("Classification is under construction.")
+    if load_raw_data:
+        raw_data = {}
+        for sample_data in frame_sample_data:
+            img_path: str = nusc.get_sample_data_path(sample_data["token"])
+            calibrated_sensor_info = nusc.get(
+                "calibrated_sensor",
+                sample_data["calibrated_sensor_token"],
+            )
+            sensor_info = nusc.get("sensor", calibrated_sensor_info["sensor_token"])
+            raw_data[sensor_info["channel"]] = cv2.imread(img_path)
     else:
-        objects_: List[RoiObject] = []
-        for ann in object_annotations:
+        raw_data = None
+
+    objects_: List[DynamicObject2D] = []
+    for ann in object_annotations:
+        if evaluation_task in (EvaluationTask.DETECTION2D, EvaluationTask.TRACKING2D):
             bbox: List[float] = ann["bbox"]
             offset: Tuple[int, int] = (int(bbox[0]), int(bbox[1]))
             size: Tuple[int, int] = (int(bbox[3]) - offset[1], int(bbox[2]) - offset[0])
             roi: Roi = Roi(offset=offset, size=size)
+        else:
+            roi = None
 
-            category_info: Dict[str, Any] = nuim.get("category", ann["category_token"])
-            autoware_label: AutowareLabel = label_converter.convert_label(
-                label=category_info["name"],
-            )
+        category_info: Dict[str, Any] = nuim.get("category", ann["category_token"])
+        semantic_label: LabelType = label_converter.convert_label(
+            label=category_info["name"],
+            count_label_number=True,
+        )
 
-            uuid: str = ann.get("instance_token")
+        uuid: str = ann.get("instance_token")
+        # if len(nusc.visibility) == 0:
+        #     visibility = None
+        # else:
+        #     sample_annotation = nusc.get("sample_annotation", ann["token"])
+        #     visibility_token: str = sample_annotation["visibility_token"]
+        #     visibility_info: Dict[str, Any] = nusc.get("visibility", visibility_token)
+        #     visibility: Visibility = Visibility.from_value(visibility_info["level"])
+        visibility = None
 
-            object_: RoiObject = RoiObject(
-                unix_time=unix_time,
-                roi=roi,
-                semantic_score=1.0,
-                semantic_label=autoware_label,
-                uuid=uuid,
-            )
-            objects_.append(object_)
+        object_: DynamicObject2D = DynamicObject2D(
+            unix_time=unix_time,
+            semantic_score=1.0,
+            semantic_label=semantic_label,
+            roi=roi,
+            uuid=uuid,
+            visibility=visibility,
+        )
+        objects_.append(object_)
 
-    frame = FrameGroundTruth(
+    frame = dataset.FrameGroundTruth(
         unix_time=unix_time,
         frame_name=frame_name,
         frame_id=frame_id,
         objects=objects_,
+        raw_data=raw_data,
     )
 
     return frame

@@ -18,15 +18,15 @@ from typing import Tuple
 
 import numpy as np
 from perception_eval.common.dataset import FrameGroundTruth
+from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import crop_pointcloud
-from perception_eval.config.sensing_evaluation_config import SensingEvaluationConfig
+from perception_eval.config import SensingEvaluationConfig
+from perception_eval.evaluation import SensingFrameResult
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
-from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
 from perception_eval.util.math import get_bbox_scale
 
 from ._evaluation_manager_base import _EvaluationMangerBase
-from ..common.object import DynamicObject
 
 
 class SensingEvaluationManager(_EvaluationMangerBase):
@@ -78,8 +78,8 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         """
         if sensing_frame_config is None:
             sensing_frame_config = SensingFrameConfig(
-                **self.evaluator_config.filtering_params,
-                **self.evaluator_config.metrics_params,
+                **self.filtering_params,
+                **self.metrics_params,
             )
 
         ground_truth_objects: List[DynamicObject] = self._filter_objects(
@@ -122,7 +122,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             List[DynamicObject]: Filtered ground truth objects
         """
         return filter_objects(
-            frame_id=self.evaluator_config.frame_id,
+            frame_id=self.frame_id,
             objects=frame_ground_truth.objects,
             is_gt=True,
             target_uuids=sensing_frame_config.target_uuids,

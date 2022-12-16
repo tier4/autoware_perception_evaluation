@@ -16,34 +16,30 @@ from abc import ABC
 from abc import abstractmethod
 from typing import List
 from typing import Optional
-from typing import Union
 
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.dataset import get_now_frame
 from perception_eval.common.dataset import load_all_datasets
-from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
-from perception_eval.config.sensing_evaluation_config import SensingEvaluationConfig
-from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
-from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
+from perception_eval.config import EvaluationConfigType
+from perception_eval.evaluation import FrameResultType
 
 
 class _EvaluationMangerBase(ABC):
     """Abstract base class for EvaluationManager
 
     Attributes:
-        self.evaluator_config (Union[PerceptionEvaluationConfig, SensingEvaluationConfig]):
-            Configuration for specified evaluation task.
+        self.evaluator_config (EvaluationConfigType): Configuration for specified evaluation task.
         self.ground_truth_frames (List[FrameGroundTruth]): The list of ground truths per frame.
     """
 
     @abstractmethod
     def __init__(
         self,
-        evaluation_config: Union[PerceptionEvaluationConfig, SensingEvaluationConfig],
+        evaluation_config: EvaluationConfigType,
     ) -> None:
         """[summary]
         Args:
-            evaluation_config (Union[PerceptionEvaluationConfig, SensingEvaluationConfig]):
+            evaluation_config (EvaluationConfigType):
                 The config for EvaluationManager.
         """
         super().__init__()
@@ -52,13 +48,29 @@ class _EvaluationMangerBase(ABC):
         self.ground_truth_frames: List[FrameGroundTruth] = load_all_datasets(
             dataset_paths=self.evaluator_config.dataset_paths,
             frame_id=self.evaluator_config.frame_id,
-            does_use_pointcloud=self.evaluator_config.does_use_pointcloud,
             evaluation_task=self.evaluator_config.evaluation_task,
+            load_raw_data=self.evaluator_config.load_raw_data,
             label_converter=self.evaluator_config.label_converter,
         )
 
+    @property
+    def evaluation_task(self):
+        return self.evaluator_config.evaluation_task
+
+    @property
+    def frame_id(self):
+        return self.evaluator_config.frame_id
+
+    @property
+    def filtering_params(self):
+        return self.evaluator_config.filtering_params
+
+    @property
+    def metrics_params(self):
+        return self.evaluator_config.metrics_params
+
     @abstractmethod
-    def add_frame_result(self) -> Union[PerceptionFrameResult, SensingFrameResult]:
+    def add_frame_result(self) -> FrameResultType:
         """[summary]
         Add perception/sensing frame result.
         """

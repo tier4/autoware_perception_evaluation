@@ -34,14 +34,15 @@
 
 - Parameters of `PerceptionEvaluationConfig` are following.
 
-  | Arguments                |       type       | Description                                                              |
-  | :----------------------- | :--------------: | :----------------------------------------------------------------------- |
-  | `dataset_path`           |   `List[str]`    | Dataset path(TBD supporting multiple dataset paths)                      |
-  | `frame_id`               |      `str`       | Name of coordinate system which objects respect to，`map` or `base_link` |
-  | `merge_similar_labels`   |      `bool`      | Whether merge similar labels([Reference])(label.md)                      |
-  | `does_use_pointcloud`    |      `bool`      | Whether load pointcloud data from dataset                                |
-  | `result_root_directory`  |      `str`       | Directory path to save result of log and visualization                   |
-  | `evaluation_config_dict` | `Dict[str, Any]` | Parameters of evaluation                                                 |
+  | Arguments                |       type       | Description                                                                                                                          |
+  | :----------------------- | :--------------: | :----------------------------------------------------------------------------------------------------------------------------------- |
+  | `dataset_path`           |   `List[str]`    | Dataset path(TBD supporting multiple dataset paths)                                                                                  |
+  | `frame_id`               |      `str`       | Name of coordinate system which objects respect to，`map` or `base_link`                                                             |
+  | `merge_similar_labels`   |      `bool`      | Whether merge similar labels([Reference])(label.md)                                                                                  |
+  | `result_root_directory`  |      `str`       | Directory path to save result of log and visualization                                                                               |
+  | `evaluation_config_dict` | `Dict[str, Any]` | Parameters of evaluation                                                                                                             |
+  | `label_prefix`           |      `str`       | Prefix of label. If `autoware`, then `AutowareLabel` will be loaded. Also, `traffic_light`, then `TrafficLightLabel` will be loaded. |
+  | `load_raw_data`          |      `bool`      | Whether load pointcloud/image data from dataset                                                                                      |
 
 ##### `evaluation_config_dict`
 
@@ -93,7 +94,7 @@
     "min_point_numbers": [0, 0, 0, 0],
     "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
     "plane_distance_thresholds": [2.0, 3.0],
-    "iou_bev_thresholds": [0.5],
+    "iou_2d_thresholds": [0.5],
     "iou_3d_thresholds": [0.5],
   }
   ```
@@ -119,7 +120,7 @@
       "min_point_numbers": [0, 0, 0, 0],
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
     }
     ```
@@ -142,7 +143,7 @@
       "min_point_numbers": [0, 0, 0, 0],
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
     }
     ```
@@ -163,7 +164,7 @@
       # "min_point_numbers": [0, 0, 0, 0],  # <-- comment-out "min_point_numbers"
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
     }
     ```
@@ -185,7 +186,7 @@
       "max_y_position": 102.4,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
       "min_point_numbers": [0, 0, 0, 0],
       "foo_thresholds": [0.8],  # <-- set "foo_thresholds"
@@ -196,7 +197,7 @@
     # Exception
     >>  perception_eval.evaluation.metrics.metrics_score_config.MetricsParameterError: MetricsConfig for 'EvaluationTask.DETECTION'
         Unexpected parameters: {'foo_thresholds'}
-        Usage: {'plane_distance_thresholds', 'iou_3d_thresholds', 'center_distance_thresholds', 'target_labels', 'iou_bev_thresholds'}
+        Usage: {'plane_distance_thresholds', 'iou_3d_thresholds', 'center_distance_thresholds', 'target_labels', 'iou_2d_thresholds'}
     ```
 
 ### `<class> CriticalObjectFilterConfig(...)`
@@ -263,3 +264,9 @@
 
 | Metrics | Sub Metrics |
 | :-----: | :---------: |
+
+### Classification
+
+| Metrics  | Sub Metrics |
+| :------: | :---------: |
+| Accuracy |  Accuracy   |

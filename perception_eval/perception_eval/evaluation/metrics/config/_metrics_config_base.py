@@ -18,7 +18,7 @@ from typing import List
 from typing import Optional
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
 from perception_eval.common.threshold import check_thresholds_list
 from perception_eval.common.threshold import set_thresholds
 
@@ -30,7 +30,7 @@ class _MetricsConfigBase(ABC):
     @abstractmethod
     def __init__(
         self,
-        target_labels: List[AutowareLabel],
+        target_labels: List[LabelType],
         center_distance_thresholds: Optional[List[float]] = None,
         plane_distance_thresholds: Optional[List[float]] = None,
         iou_2d_thresholds: Optional[List[float]] = None,
@@ -38,7 +38,7 @@ class _MetricsConfigBase(ABC):
     ) -> None:
         """[summary]
         Args:
-            target_labels (List[AutowareLabel]): The list of targets to evaluate.
+            target_labels (List[LabelType]): The list of targets to evaluate.
             center_distance_thresholds (List[List[float]]):
                     The threshold List of center distance.
                     For example, if target_labels is ["car", "bike", "pedestrian"],
@@ -55,7 +55,7 @@ class _MetricsConfigBase(ABC):
         """
         super().__init__()
 
-        self.target_labels: List[AutowareLabel] = target_labels
+        self.target_labels: List[LabelType] = target_labels
 
         if center_distance_thresholds:
             center_distance_thresholds_ = set_thresholds(

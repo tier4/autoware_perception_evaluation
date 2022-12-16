@@ -20,9 +20,10 @@ from typing import Optional
 from typing import Set
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
 
 from .config._metrics_config_base import _MetricsConfigBase
+from .config.classification_metrics_config import ClassificationMetricsConfig
 from .config.detection_metrics_config import DetectionMetricsConfig
 from .config.prediction_metrics_config import PredictionMetricsConfig
 from .config.tracking_metrics_config import TrackingMetricsConfig
@@ -36,6 +37,7 @@ class MetricsScoreConfig:
         self.detection_config (Optional[DetectionMetricsConfig])
         self.tracking_config (Optional[DetectionMetricsConfig])
         self.prediction_config (Optional[PredictionMetricsConfig])
+        self.classification_config (Optional[ClassificationMetricsConfig])
         self.evaluation_tasks (List[EvaluationTask])
     """
 
@@ -47,12 +49,13 @@ class MetricsScoreConfig:
         """
         self.detection_config: Optional[DetectionMetricsConfig] = None
         self.tracking_config: Optional[TrackingMetricsConfig] = None
+        self.classification_config: Optional[ClassificationMetricsConfig] = None
 
         # NOTE: prediction_config is under construction
         self.prediction_config = None
 
         self.evaluation_task: EvaluationTask = evaluation_task
-        self.target_labels: List[AutowareLabel] = cfg["target_labels"]
+        self.target_labels: List[LabelType] = cfg["target_labels"]
         if self.evaluation_task in (EvaluationTask.DETECTION2D, EvaluationTask.DETECTION):
             self._check_parameters(DetectionMetricsConfig, cfg)
             self.detection_config = DetectionMetricsConfig(**cfg)
@@ -67,6 +70,9 @@ class MetricsScoreConfig:
             raise NotImplementedError("Prediction config is under construction")
             # TODO
             # self.evaluation_tasks.append(task)
+        elif self.evaluation_task == EvaluationTask.CLASSIFICATION2D:
+            self._check_parameters(ClassificationMetricsConfig, cfg)
+            self.classification_config = ClassificationMetricsConfig(**cfg)
         else:
             raise KeyError(f"Unsupported perception evaluation task: {self.evaluation_task}")
 
