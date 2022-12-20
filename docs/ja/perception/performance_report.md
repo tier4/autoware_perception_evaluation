@@ -180,6 +180,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 | `get_num_tp()`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | TP 数                                                                                         |
 | `get_num_fp()`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | FP 数                                                                                         |
 | `get_num_fn()`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | FN 数                                                                                         |
+| `get_ego2map()`          |                              `scene=<int>`, `frame=<int>`                               |  `numpy.ndarray`   | 対象データを base_link->map 座標系に変換する 4x4 同次変換行列                                 |
 
 - `get()`では`*args`を指定することで指定した列を，`**kwargs`を指定することで指定した等号条件を満たす DataFrame を返す
 
@@ -212,6 +213,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 ### DataFrame 構造
 
 - `add()`によって，各`PerceptionFrameResult`は以下のような形式で累積される．`scene`は`add()`もしくは`add_from_pkl()`をした際に追加された順番で 1~N が割り当てられる．
+  - なお，x,y は base_link 座標系に，vx, vy は map 座標系に従っている．
 
 | index | type             | "timestamp" |   "x"   |   "y"   |   "w"   |   "l"   |   "h"   |  "yaw"  |  "vx"   |  "vy"   |  "nn_point1"   |  "nn_point2"   | "label" | "confidence" | "uuid" | "num_points" | "status" | "area" | "frame" | "scene" |
 | ----: | :--------------- | :---------: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :------------: | :------------: | :-----: | :----------: | :----: | :----------: | :------: | :----: | :-----: | :-----: |
