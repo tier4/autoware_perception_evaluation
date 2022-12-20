@@ -1,78 +1,63 @@
-# Perception 評価のためのデータ構造
+# Data structure for Perception Evaluation
 
-## 評価単位でのデータ構造
+## Data structure per one Evaluation
 
-- Catalog: Scenario の塊
-  - 例：右折 UseCase = (UC-0001, UC-0003, UC-0006)
+- Catalog: A set of scenario
+  - Example: turn right UseCase = (UC-0001, UC-0003, UC-0006)
 
 ```yaml
 - Catalog
   - List[Scenario]
 ```
 
-- Scenario: 評価する単位
-  - Scenario には 2 つ種類がある
-  - DB-Scenario: DataBase 用 Dataset で主に学習用に用いる
-    - 1 Scenario = DB-Scenario, n scene
-  - UC-Scenario: UseCase 評価用 Dataset
-    - 1 Scenario = UC-Scenario, 1 scene
+- Scenario: An unit of evaluation
+
+  - There are two types of scenario, DataBase(DB) and UseCase(UC).
 
 ```yaml
 - Scenario
   - List[Scene]
 ```
 
-- Scene: 1 連続 rosbag の単位
-  - 1 rosbag から構成されるデータ群
-  - 1 rosbag + pcd + jpeg + annotation の塊
+- Scene: An unit of one sequence of rosbag.
+  - A set of data constructed by one rosbag.
+  - A set of one rosbag and one .pcd file and some .jpeg files.
 
 ```yaml
 - Scene
   - List[PerceptionFrameResult]
 ```
 
-## Frame 単位でのデータ構造
+## Data structure per one Frame
 
-### PerceptionFrameResult
+### `<class> PerceptionFrameResult(...)`
 
-詳細は[perception_eval/evaluation/result/perception_frame_result.py](../../../perception_eval/perception_eval/evaluation/result/perception_frame_result.py)を参照
+For the details, see [perception_eval/evaluation/result/perception_frame_result.py](../../../perception_eval/perception_eval/evaluation/result/perception_frame_result.py)
 
 - Initialization
 
-  | Arguments                       |                   type                    | Description                                     |
-  | :------------------------------ | :---------------------------------------: | :---------------------------------------------- |
-  | `object_results`                | `List[DynamicObjectWithPerceptionResult]` | 推定オブジェクトと GT オブジェクトのペア        |
-  | `frame_ground_truth`            |            `FrameGroundTruth`             | 1 フレーム分の GT オブジェクト                  |
-  | `metrics_config`                |           `MetricsScoreConfig`            | メトリクス評価用の config                       |
-  | `critical_object_filter_config` |       `CriticalObjectFilterConfig`        | 必ず検出できてほしいオブジェクトに対する config |
-  | `frame_pass_fail_config`        |        `PerceptionPassFailConfig`         | Pass/Fail を決める config                       |
-  | `unix_time`                     |                   `int`                   | フレームの UNIX Time                            |
-  | `target_labels`                 |           `List[AutowareLabel]`           | 評価対象ラベル                                  |
-
-- Attributes
-
-  | Attributes           |                   type                    | Description                              |
-  | :------------------- | :---------------------------------------: | :--------------------------------------- |
-  | `frame_name`         |                   `str`                   | フレーム名                               |
-  | `unix_time`          |                   `int`                   | フレームの UNIX Time                     |
-  | `frame_id`           |                   `str`                   | オブジェクト座標系 frame ID              |
-  | `target_labels`      |           `List[AutowareLabel]`           | 評価対象ラベル                           |
-  | `object_results`     | `List[DynamicObjectWithPerceptionResult]` | 推定オブジェクトと GT オブジェクトのペア |
-  | `frame_ground_truth` |            `FrameGroundTruth`             | 1 フレーム分の GT オブジェクト           |
-  | `metrics_score`      |              `MetricsScore`               | メトリクス評価結果                       |
-  | `pass_fail_result`   |             `PassFailResult`              | Pass/Fail 結果                           |
+  | Attributes           |                   type                    | Description                                        |
+  | :------------------- | :---------------------------------------: | :------------------------------------------------- |
+  | `frame_name`         |                   `str`                   | Name of frame                                      |
+  | `unix_time`          |                   `int`                   | Unix time of frame                                 |
+  | `frame_id`           |                   `str`                   | Frame ID of coords system which objects respect to |
+  | `target_labels`      |           `List[AutowareLabel]`           | List of name of target labels                      |
+  | `object_results`     | `List[DynamicObjectWithPerceptionResult]` | List of pair of Estimation and ground truth(GT)    |
+  | `frame_ground_truth` |            `FrameGroundTruth`             | GT objects for one frame                           |
+  | `metrics_score`      |              `MetricsScore`               | Score of metrics result                            |
+  | `pass_fail_result`   |             `PassFailResult`              | Result of pass / fail                              |
 
 - Methods
 
-  | Methods            | Returns | Description                                          |
-  | :----------------- | :-----: | :--------------------------------------------------- |
-  | `evaluate_frame()` | `None`  | 1 フレーム分のメトリクス・Pass/Fail の評価を実行する |
+  | Methods            | Returns | Description                                                           |
+  | :----------------- | :-----: | :-------------------------------------------------------------------- |
+  | `evaluate_frame()` | `None`  | Execute evaluation of metrics and decision of pass/fail for one frame |
 
-- metrics_score (MetricsScore): Metrics 評価
-- pass_fail_result (PassFailResult): Use case 評価の結果
-  - tp_objects (List[DynamicObjectWithPerceptionResult]): Use case 評価で TP (True Positive) の ObjectResult
-  - fp_objects (List[DynamicObjectWithPerceptionResult]): Use case 評価で FP (False Positive) の ObjectResult
-  - fn_objects (List[DynamicObject]): Use case 評価で FN (False Negative) の DynamicObject
+- metrics_score (MetricsScore): Score of metrics result
+- pass_fail_result (PassFailResult): Result of usecase evaluation
+  - tp_objects (List[DynamicObjectWithPerceptionResult]): TP results in usecase evaluation
+  - fp_objects (List[DynamicObjectWithPerceptionResult]): TP results in usecase evaluation
+  - fn_objects (List[DynamicObject]): FN objects in usecase evaluation
 
 ```yaml
 [2022-08-10 10:38:11,341] [INFO] [perception_lsim.py:258 <module>] Frame result example (frame_results[0]):
@@ -131,13 +116,13 @@
  'unix_time': 1624164470849887}
 ```
 
-## Object 単位でのデータ構造
+## Data structure per one Object
 
-### DynamicObjectWithPerceptionResult
+### `<class> DynamicObjectWithPerceptionResult(...)`
 
-推定オブジェクトの集合`List[DynamicObject]`と GT オブジェクトの集合`List[DynamicObject]`からマッチングペアの集合`List[DynamicObjectWithPerceptionResult]`を得るには，`get_object_results()`関数を使う．
+Call `<func> get_object_results(...)` function to generate a set of matching pairs `List[DynamicObjectWithPerceptionResult]` from a set of Estimated objects `List[DynamicObject]`and a set of GT objects `List[DynamicObject]`.
 
-詳細は，[perception_eval/evaluation/result/object_result.py](../../../perception_eval/perception_eval/evaluation/result/object_result.py)を参照．
+For the details，see [perception_eval/evaluation/result/object_result.py](../../../perception_eval/perception_eval/evaluation/result/object_result.py)
 
 ```python
 from perception_eval.evaluation.result.object_results import get_object_results
@@ -151,30 +136,30 @@ object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(est
 
 - Initialization
 
-  | Arguments             |           type            | Description      |
-  | :-------------------- | :-----------------------: | :--------------- |
-  | `estimated_object`    |      `DynamicObject`      | 推定オブジェクト |
-  | `ground_truth_object` | `Optional[DynamicObject]` | GT オブジェクト  |
+  | Arguments             |           type            | Description |
+  | :-------------------- | :-----------------------: | :---------- |
+  | `estimated_object`    |      `DynamicObject`      | Estimation  |
+  | `ground_truth_object` | `Optional[DynamicObject]` | GT object   |
 
 - Attributes
 
-  | Attributes            |           type            | Description                                                      |
-  | :-------------------- | :-----------------------: | :--------------------------------------------------------------- |
-  | `estimated_object`    |      `DynamicObject`      | 推定オブジェクト                                                 |
-  | `ground_truth_object` | `Optional[DynamicObject]` | GT オブジェクト                                                  |
-  | `is_label_correct`    |          `bool`           | 推定オブジェクトと GT オブジェクトのラベルが同一かどうかのフラグ |
-  | `center_distance`     | `CenterDistanceMatching`  | 中心間距離                                                       |
-  | `plane_distance`      |  `PlaneDistanceMatching`  | 面距離                                                           |
-  | `iou_bev`             |     `IOUBEVMatching`      | BEV の IOU                                                       |
-  | `iou_3d`              |      `IOU3dMatching`      | 3D の IOU                                                        |
+  | Attributes            |           type            | Description                                                    |
+  | :-------------------- | :-----------------------: | :------------------------------------------------------------- |
+  | `estimated_object`    |      `DynamicObject`      | Estimation                                                     |
+  | `ground_truth_object` | `Optional[DynamicObject]` | GT object                                                      |
+  | `is_label_correct`    |          `bool`           | Whether the labels which estimation and GT object has are same |
+  | `center_distance`     | `CenterDistanceMatching`  | Distance of center between two objects                         |
+  | `plane_distance`      |  `PlaneDistanceMatching`  | Distance of the nearest plane between two objects              |
+  | `iou_bev`             |     `IOUBEVMatching`      | IOU score in BEV                                               |
+  | `iou_3d`              |      `IOU3dMatching`      | IOU score in 3-dimensions                                      |
 
 - Methods
 
-  | Methods                    |     Returns      | Description                     |
-  | :------------------------- | :--------------: | :------------------------------ |
-  | `get_matching()`           | `MatchingMethod` | 対応するマッチング結果を返す    |
-  | `get_distance_error_bev()` |     `float`      | 中心間距離の BEV での結果を返す |
-  | `is_result_correct()`      |      `bool`      | TP/FP の判定結果を返す          |
+  | Methods                    |     Returns      | Description                          |
+  | :------------------------- | :--------------: | :----------------------------------- |
+  | `get_matching()`           | `MatchingMethod` | Returns the corresponding matching   |
+  | `get_distance_error_bev()` |     `float`      | Returns the distance in BEV          |
+  | `is_result_correct()`      |      `bool`      | Returns the result if it is TP or FP |
 
 ```yaml
 [2022-08-09 18:56:45,237] [INFO] [perception_lsim.py:208 <module>] Object result example (frame_results[0].object_results[0]):

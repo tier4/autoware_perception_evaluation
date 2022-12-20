@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from enum import Enum
+import logging
 from typing import Dict
 
 
@@ -25,6 +26,7 @@ class Visibility(Enum):
     MOST = "most"
     PARTIAL = "partial"
     NONE = "none"
+    UNAVAILABLE = "not available"
 
     @staticmethod
     def from_alias(name: str) -> Dict[str, Visibility]:
@@ -37,7 +39,10 @@ class Visibility(Enum):
         elif name == "v80-100":
             return Visibility.FULL
         else:
-            raise ValueError(f"{Visibility.__class__.__name__}has not {name}")
+            logging.warning(
+                f"level: {name} is not supported, Visibility.UNAVAILABLE will be assigned."
+            )
+            return Visibility.UNAVAILABLE
 
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, str):
