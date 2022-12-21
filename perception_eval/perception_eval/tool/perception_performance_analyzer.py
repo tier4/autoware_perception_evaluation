@@ -848,8 +848,8 @@ class PerceptionPerformanceAnalyzer:
             err_avg = np.average(err)
             err_rms = np.sqrt(np.square(err).mean())
             err_std = np.std(err)
-            err_max = np.max(err)
-            err_min = np.min(err)
+            err_max = np.max(np.abs(err))
+            err_min = np.min(np.abs(err))
             return dict(average=err_avg, rms=err_rms, std=err_std, max=err_max, min=err_min)
 
         if df is None:
