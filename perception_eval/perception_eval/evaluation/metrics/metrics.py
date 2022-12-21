@@ -19,6 +19,9 @@ from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.map import Map
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
+from perception_eval.evaluation.metrics.prediction.prediction_metrics_score import (
+    PredictionMetricsScore,
+)
 from perception_eval.evaluation.metrics.tracking.tracking_metrics_score import TrackingMetricsScore
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
@@ -54,7 +57,7 @@ class MetricsScore:
         self.maps: List[Map] = []
         # tracking metrics scores for each matching method
         self.tracking_scores: List[TrackingMetricsScore] = []
-        # TODO: prediction metrics scores for each matching method
+        # prediction metrics scores for each matching method
         self.prediction_scores: List = []
 
         self.__num_frame: int = len(used_frame)
@@ -86,7 +89,9 @@ class MetricsScore:
         for track_score in self.tracking_scores:
             str_ += str(track_score)
 
-        # TODO: prediction
+        # prediction
+        for pred_score in self.prediction_scores:
+            str_ += str(pred_score)
 
         return str_
 
@@ -223,4 +228,41 @@ class MetricsScore:
         Args:
             object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
         """
-        pass
+        self.__num_gt += sum(num_ground_truth.values())
+
+        for distance_threshold_ in self.prediction_config.center_distance_thresholds:
+            prediction_score_ = PredictionMetricsScore(
+                object_results_dict=object_results,
+                num_ground_truth_dict=num_ground_truth,
+                target_labels=self.prediction_config.target_labels,
+                matching_mode=MatchingMode.CENTERDISTANCE,
+                matching_threshold_list=distance_threshold_,
+            )
+            self.prediction_scores.append(prediction_score_)
+        for iou_threshold_bev_ in self.prediction_config.iou_bev_thresholds:
+            prediction_score_ = PredictionMetricsScore(
+                object_results_dict=object_results,
+                num_ground_truth_dict=num_ground_truth,
+                target_labels=self.prediction_config.target_labels,
+                matching_mode=MatchingMode.IOUBEV,
+                matching_threshold_list=iou_threshold_bev_,
+            )
+            self.prediction_scores.append(prediction_score_)
+        for iou_threshold_3d_ in self.prediction_config.iou_3d_thresholds:
+            prediction_score_ = PredictionMetricsScore(
+                object_results_dict=object_results,
+                num_ground_truth_dict=num_ground_truth,
+                target_labels=self.prediction_config.target_labels,
+                matching_mode=MatchingMode.IOU3D,
+                matching_threshold_list=iou_threshold_3d_,
+            )
+            self.prediction_scores.append(prediction_score_)
+        for plane_distance_threshold_ in self.prediction_config.plane_distance_thresholds:
+            prediction_score_ = PredictionMetricsScore(
+                object_results_dict=object_results,
+                num_ground_truth_dict=num_ground_truth,
+                target_labels=self.prediction_config.target_labels,
+                matching_mode=MatchingMode.PLANEDISTANCE,
+                matching_threshold_list=plane_distance_threshold_,
+            )
+            self.prediction_scores.append(prediction_score_)

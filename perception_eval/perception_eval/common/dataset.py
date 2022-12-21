@@ -86,6 +86,7 @@ def load_all_datasets(
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
     frame_id: str,
+    path_seconds: float = 10.0,
 ) -> List[FrameGroundTruth]:
     """
     Load tier4 datasets.
@@ -94,6 +95,8 @@ def load_all_datasets(
         does_use_pointcloud (bool): The flag of setting pointcloud
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
+        frame_id (str): Objects' frame ID.
+        path_seconds (float): Time length of path in seconds. Defaults to 10.0.
 
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
@@ -112,6 +115,7 @@ def load_all_datasets(
             evaluation_task=evaluation_task,
             label_converter=label_converter,
             frame_id=frame_id,
+            path_seconds=path_seconds,
         )
     logger.info("Finish loading dataset\n" + _get_str_objects_number_info(label_converter))
     return all_datasets
@@ -123,6 +127,7 @@ def _load_dataset(
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
     frame_id: str,
+    path_seconds: float = 10.0,
 ) -> List[FrameGroundTruth]:
     """
     Load one tier4 dataset.
@@ -131,6 +136,8 @@ def _load_dataset(
         does_use_pointcloud (bool): The flag of setting pointcloud
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
+        frame_id (str): Objects' frame ID.
+        path_seconds (float): Time length of path in seconds. Defaults to 10.0.
 
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
@@ -164,6 +171,7 @@ def _load_dataset(
             label_converter=label_converter,
             frame_id=frame_id,
             frame_name=str(n),
+            path_seconds=path_seconds,
         )
         dataset.append(frame)
     return dataset
@@ -229,6 +237,7 @@ def _sample_to_frame(
     label_converter: LabelConverter,
     frame_id: str,
     frame_name: str,
+    path_seconds: float,
 ) -> FrameGroundTruth:
     """[summary]
     Convert Nuscenes sample to FrameGroundTruth
@@ -240,7 +249,9 @@ def _sample_to_frame(
         does_use_pointcloud (bool): The flag of setting pointcloud
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
+        frame_id (str): Objects' frame ID.
         frame_name (str): Name of frame, number of frame is used.
+        path_seconds (float): Time length of path in seconds.
 
     Raises:
         NotImplementedError:
@@ -293,6 +304,7 @@ def _sample_to_frame(
             label_converter=label_converter,
             instance_token=instance_token_,
             sample_token=sample_token,
+            path_seconds=path_seconds,
             visibility=visibility,
         )
         objects_.append(object_)
@@ -318,8 +330,8 @@ def _convert_nuscenes_box_to_dynamic_object(
     label_converter: LabelConverter,
     instance_token: str,
     sample_token: str,
-    visibility: Optional[Visibility] = None,
-    seconds: float = 3.0,
+    path_seconds: float,
+    visibility: Visibility,
 ) -> DynamicObject:
     """[summary]
     Convert nuscenes object bounding box to dynamic object
@@ -333,8 +345,8 @@ def _convert_nuscenes_box_to_dynamic_object(
         label_converter (LabelConverter): LabelConverter
         instance_token (str): Instance token
         sample_token (str): Sample token, used to get past/future record
+        path_seconds (float): Seconds to be referenced past/future record.
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
-        seconds (float): Seconds to be referenced past/future record
 
     Returns:
         DynamicObject: Converted dynamic object class
@@ -354,6 +366,7 @@ def _convert_nuscenes_box_to_dynamic_object(
         nusc.box_velocity(sample_annotation_["token"]).tolist()
     )
 
+    # TODO: refactoring following codes
     if evaluation_task == EvaluationTask.TRACKING:
         (
             tracked_positions,
@@ -366,7 +379,7 @@ def _convert_nuscenes_box_to_dynamic_object(
             frame_id=frame_id,
             instance_token=instance_token,
             sample_token=sample_token,
-            seconds=seconds,
+            seconds=path_seconds,
         )
     else:
         tracked_positions = None
@@ -375,7 +388,30 @@ def _convert_nuscenes_box_to_dynamic_object(
         tracked_velocities = None
 
     if evaluation_task == EvaluationTask.PREDICTION:
-        pass
+        (
+            predicted_positions,
+            predicted_orientations,
+            predicted_sizes,
+            predicted_velocities,
+        ) = _get_prediction_data(
+            nusc=nusc,
+            helper=helper,
+            frame_id=frame_id,
+            instance_token=instance_token,
+            sample_token=sample_token,
+            seconds=path_seconds,
+        )
+        predicted_positions = [predicted_positions]
+        predicted_orientations = [predicted_orientations]
+        predicted_sizes = [predicted_sizes]
+        predicted_velocities = [predicted_velocities]
+        predicted_confidences = [1.0]
+    else:
+        predicted_positions = None
+        predicted_orientations = None
+        predicted_sizes = None
+        predicted_velocities = None
+        predicted_confidences = None
 
     dynamic_object = DynamicObject(
         unix_time=unix_time,
@@ -390,7 +426,12 @@ def _convert_nuscenes_box_to_dynamic_object(
         tracked_positions=tracked_positions,
         tracked_orientations=tracked_orientations,
         tracked_sizes=tracked_sizes,
-        tracked_twists=tracked_velocities,
+        tracked_velocities=tracked_velocities,
+        predicted_positions=predicted_positions,
+        predicted_orientations=predicted_orientations,
+        predicted_sizes=predicted_sizes,
+        predicted_velocities=predicted_velocities,
+        predicted_confidences=predicted_confidences,
         visibility=visibility,
     )
     return dynamic_object
@@ -506,24 +547,46 @@ def _get_prediction_data(
     frame_id: str,
     instance_token: str,
     sample_token: str,
-    seconds: str,
+    seconds: float,
 ):
     """Get prediction data with PredictHelper.get_future_for_agent()
-
     Args:
         nusc (NuScenes): NuScenes instance.
         helper (PredictHelper): PredictHelper instance.
         instance_token (str): The unique token to access to instance.
         sample_token (str): The unique token to access to sample.
         seconds (float): Seconds to be referenced.[s]
-
     Returns:
         future_positions (List[Tuple[float, float, float]])
         future_orientations (List[Tuple[float, float, float]])
         future_sizes (List[Tuple[float, float, float]])
         future_velocities (List[Tuple[float, float, float]])
     """
-    pass
+    if frame_id == "base_link":
+        in_agent_frame: bool = True
+    elif frame_id == "map":
+        in_agent_frame: bool = False
+    else:
+        raise ValueError(f"Unexpected frame_id: {frame_id}")
+
+    future_records_: List[Dict[str, Any]] = helper.get_future_for_agent(
+        instance_token=instance_token,
+        sample_token=sample_token,
+        seconds=seconds,
+        in_agent_frame=in_agent_frame,
+        just_xy=False,
+    )
+    future_positions: List[Tuple[float, float, float]] = []
+    future_orientations: List[Quaternion] = []
+    future_sizes: List[Tuple[float, float, float]] = []
+    future_velocities: List[Tuple[float, float, float]] = []
+    for record_ in future_records_:
+        future_positions.append(tuple(record_["translation"]))
+        future_orientations.append(Quaternion(record_["rotation"]))
+        future_sizes.append(record_["size"])
+        future_velocities.append(nusc.box_velocity(record_["token"]))
+
+    return future_positions, future_orientations, future_sizes, future_velocities
 
 
 def get_now_frame(

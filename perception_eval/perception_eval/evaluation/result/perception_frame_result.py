@@ -123,7 +123,7 @@ class PerceptionFrameResult:
                 tracking_results[label] = [prev_results, tracking_results[label]]
             self.metrics_score.evaluate_tracking(tracking_results, num_ground_truth_dict)
         if self.metrics_score.prediction_config is not None:
-            pass
+            self.metrics_score.evaluate_prediction(object_results_dict, num_ground_truth_dict)
 
         self.pass_fail_result.evaluate(
             object_results=self.object_results,
