@@ -27,7 +27,6 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
 from perception_eval.common.object import DynamicObject
 from perception_eval.evaluation.metrics.metrics import MetricsScore
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult

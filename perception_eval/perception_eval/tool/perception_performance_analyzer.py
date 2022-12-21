@@ -82,7 +82,8 @@ class PerceptionPerformanceAnalyzer:
         self.__frame_results: Dict[int, List[PerceptionFrameResult]] = {}
 
         # NOTE: all_labels = ["ALL", ...(target_labels)]
-        self.__all_labels: List[str] = [label.value for label in self.config.target_labels]
+        self.__target_labels: List[str] = [label.value for label in self.config.target_labels]
+        self.__all_labels: List[str] = self.__target_labels.copy()
         self.__all_labels.insert(0, "ALL")
 
         max_x: float = self.config.evaluation_config_dict.get("max_x_position", 100.0)
@@ -172,6 +173,14 @@ class PerceptionPerformanceAnalyzer:
     @property
     def config(self) -> PerceptionEvaluationConfig:
         return self.__config
+
+    @property
+    def target_labels(self) -> List[str]:
+        return self.__target_labels
+
+    @property
+    def all_labels(self) -> List[str]:
+        return self.__all_labels
 
     @property
     def num_area_division(self) -> int:
