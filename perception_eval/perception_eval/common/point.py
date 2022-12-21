@@ -91,11 +91,13 @@ def crop_pointcloud(
     Returns:
         numpy.ndarray: The  of cropped pointcloud, in shape (M, 3)
     """
+    # NOTE: upper and lower plane has same shape.
+    num_vertices: int = len(area) // 2
     if pointcloud.ndim != 2 or pointcloud.shape[1] < 2:
         raise RuntimeError(
             f"The shape of pointcloud is {pointcloud.shape}, it needs (N, k>=2) and k is (x,y,z,i) order."
         )
-    if len(area) < 6 or len(area) % 2 != 0:
+    if num_vertices < 3 or len(area) % 2 != 0:
         raise RuntimeError(
             f"The area must be a 3D-polygon, it needs the edges more than 6, but got {len(area)}."
         )
@@ -104,43 +106,42 @@ def crop_pointcloud(
     z_max: float = max(area, key=(lambda x: x[2]))[2]
 
     # crop with polygon in xy-plane
-    num_vertices = len(area)
     cnt_arr_: np.ndarray = np.zeros(pointcloud.shape[0], dtype=np.uint8)
-    for i in range(num_vertices // 2 - 1):
-        flags_ = ((area[i][1] <= pointcloud[:, 1]) * (area[i + 1][1] > pointcloud[:, 1])) + (
-            (area[i][1] > pointcloud[:, 1]) * (area[i + 1][1] <= pointcloud[:, 1])
+    poly: List[Tuple[float, float, float]] = area[:num_vertices].copy()
+    poly.append(area[0])
+    for i, p in enumerate(poly[:-1]):
+        flags_ = ((p[1] <= pointcloud[:, 1]) * (poly[i + 1][1] > pointcloud[:, 1])) + (
+            (p[1] > pointcloud[:, 1]) * (poly[i + 1][1] <= pointcloud[:, 1])
         )
 
-        if area[i + 1][1] != area[i][1]:
-            vt = (pointcloud[:, 1] - area[i][1]) / (area[i + 1][1] - area[i][1])
+        if poly[i + 1][1] != p[1]:
+            vt = (pointcloud[:, 1] - p[1]) / (poly[i + 1][1] - p[1])
         else:
             vt = pointcloud[:, 0]
 
-        flags_ *= pointcloud[:, 0] < (area[i][0] + (vt * (area[i + 1][0] - area[i][0])))
+        flags_ *= pointcloud[:, 0] < (p[0] + (vt * (poly[i + 1][0] - p[0])))
         cnt_arr_[flags_] += 1
 
+    inside_xy_idx: np.ndarray = cnt_arr_ % 2 != 0
+    inside_z_idx: np.ndarray = (z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2])
+
+    inside_idx: np.ndarray = inside_xy_idx * inside_z_idx
     if inside:
-        xy_idx: np.ndarray = cnt_arr_ % 2 != 0
-        z_idx: np.ndarray = (z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2])
-    else:
-        xy_idx: np.ndarray = cnt_arr_ % 2 == 0
-        z_idx: np.ndarray = ~((z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2]))
-    return pointcloud[xy_idx * z_idx]
+        return pointcloud[inside_idx]
+    return pointcloud[~inside_idx]
 
 
-def polygon_to_list(polygon: Polygon):
+def polygon_to_list(polygon: Polygon) -> List[Tuple[float, float, float]]:
     """[summary]
     Convert from polygon to list.
     from Polygon[(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x0, y0, z0)]
     to List[(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3)]
-
     Args:
         polygon (Polygon): Polygon
-
     Returns:
-        [type]: List of coordinates
+        List[Tuple[float, float, float]]: List of coordinates
     """
-    return list(polygon.exterior.coords)[:4]
+    return list(polygon.exterior.coords)[:-1]
 
 
 def get_point_left_right(

@@ -28,6 +28,8 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.shape import Shape
+from perception_eval.common.shape import ShapeType
 from perception_eval.common.status import Visibility
 from pyquaternion.quaternion import Quaternion
 from tqdm import tqdm
@@ -341,7 +343,7 @@ def _convert_nuscenes_box_to_dynamic_object(
     """
     position_: Tuple[float, float, float] = tuple(object_box.center.tolist())  # type: ignore
     orientation_: Quaternion = object_box.orientation
-    size_: Tuple[float, float, float] = tuple(object_box.wlh.tolist())  # type: ignore
+    shape_: Shape = Shape(type=ShapeType.BOUNDING_BOX, size=tuple(object_box.wlh.tolist()))
     semantic_score_: float = 1.0
     autoware_label_: AutowareLabel = label_converter.convert_label(
         label=object_box.name,
@@ -358,7 +360,7 @@ def _convert_nuscenes_box_to_dynamic_object(
         (
             tracked_positions,
             tracked_orientations,
-            tracked_sizes,
+            tracked_shapes,
             tracked_velocities,
         ) = _get_tracking_data(
             nusc=nusc,
@@ -371,7 +373,7 @@ def _convert_nuscenes_box_to_dynamic_object(
     else:
         tracked_positions = None
         tracked_orientations = None
-        tracked_sizes = None
+        tracked_shapes = None
         tracked_velocities = None
 
     if evaluation_task == EvaluationTask.PREDICTION:
@@ -381,7 +383,7 @@ def _convert_nuscenes_box_to_dynamic_object(
         unix_time=unix_time,
         position=position_,
         orientation=orientation_,
-        size=size_,
+        shape=shape_,
         velocity=velocity_,
         semantic_score=semantic_score_,
         semantic_label=autoware_label_,
@@ -389,7 +391,7 @@ def _convert_nuscenes_box_to_dynamic_object(
         uuid=instance_token,
         tracked_positions=tracked_positions,
         tracked_orientations=tracked_orientations,
-        tracked_sizes=tracked_sizes,
+        tracked_shapes=tracked_shapes,
         tracked_twists=tracked_velocities,
         visibility=visibility,
     )
@@ -470,7 +472,7 @@ def _get_tracking_data(
     Returns:
         past_positions (List[Tuple[float, float, float]])
         past_orientations (List[Quaternion])
-        past_sizes (List[Tuple[float, float, float]]])
+        past_shapes (List[Shape]])
         past_velocities (List[Tuple[float, float]])
     """
     if frame_id == "base_link":
@@ -489,15 +491,15 @@ def _get_tracking_data(
     )
     past_positions: List[Tuple[float, float, float]] = []
     past_orientations: List[Quaternion] = []
-    past_sizes: List[Tuple[float, float, float]] = []
+    past_shapes: List[Tuple[float, float, float]] = []
     past_velocities: List[Tuple[float, float, float]] = []
     for record_ in past_records_:
         past_positions.append(tuple(record_["translation"]))
         past_orientations.append(Quaternion(record_["rotation"]))
-        past_sizes.append(record_["size"])
+        past_shapes.append(Shape(type=ShapeType.BOUNDING_BOX, size=record_["size"]))
         past_velocities.append(nusc.box_velocity(record_["token"]))
 
-    return past_positions, past_orientations, past_sizes, past_velocities
+    return past_positions, past_orientations, past_shapes, past_velocities
 
 
 def _get_prediction_data(
@@ -520,7 +522,7 @@ def _get_prediction_data(
     Returns:
         future_positions (List[Tuple[float, float, float]])
         future_orientations (List[Tuple[float, float, float]])
-        future_sizes (List[Tuple[float, float, float]])
+        future_shapes (List[Shape])
         future_velocities (List[Tuple[float, float, float]])
     """
     pass

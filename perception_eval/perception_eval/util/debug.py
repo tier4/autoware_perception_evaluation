@@ -19,6 +19,7 @@ from typing import Optional
 from typing import Tuple
 
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.shape import Shape
 from pyquaternion.quaternion import Quaternion
 
 
@@ -169,11 +170,13 @@ def get_objects_with_difference(
             radians=object_.state.orientation.radians + diff_yaw,
         )
 
+        shape: Shape = Shape(type=object_.state.shape_type, size=object_.state.size)
+
         test_object_: DynamicObject = DynamicObject(
             unix_time=object_.unix_time,
             position=position,
             orientation=orientation,
-            size=object_.state.size,
+            shape=shape,
             velocity=object_.state.velocity,
             semantic_score=semantic_score,
             semantic_label=object_.semantic_label,
