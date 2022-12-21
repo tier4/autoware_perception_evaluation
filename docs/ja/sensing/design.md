@@ -69,6 +69,7 @@
 
   ```txt
     Arguments:
+      target_uuids (List[str]): フィルタリング対象となるGTのuuidのリスト
       bbox_scale_0m (float): 0m地点でのBounding boxのスケーリング係数
       bbox_scale_100m (float): 100m地点でのBounding boxのスケーリング係数
       min_points_threshold (int): bounding box内で検出されるべき最低限の点群数の閾値
