@@ -14,6 +14,7 @@ assignees: ""
   - [ ] Detection
   - [ ] Tracking
   - [ ] Prediction
+  - [ ] Classification
 - [ ] Sensing
 
 ## Description

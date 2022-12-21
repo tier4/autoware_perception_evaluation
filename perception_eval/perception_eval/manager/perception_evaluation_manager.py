@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from typing import List
 from typing import Tuple
+from typing import Union
 
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.roi import RoiObject
 from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
@@ -45,8 +48,10 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         self.ground_truth_frames (List[FrameGroundTruth]): Ground truth frames from datasets
 
         - By PerceptionEvaluationManger
+        self.target_labels (List[AutowareLabel]): List of target labels.
         self.frame_results (List[PerceptionFrameResult]): Evaluation result
-        self.visualizer (PerceptionVisualizer): Visualization class for perception result.
+        self.visualizer (Optional[PerceptionVisualizer]): Visualization class for perception result.
+            If EvaluationTask.is_2d() is True, None.
     """
 
     def __init__(
@@ -61,14 +66,18 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         """
         self.target_labels: List[AutowareLabel] = evaluation_config.target_labels
         self.frame_results: List[PerceptionFrameResult] = []
-        self.visualizer = PerceptionVisualizer.from_eval_cfg(self.evaluator_config)
+        self.visualizer = (
+            None
+            if self.evaluator_config.evaluation_task.is_2d()
+            else PerceptionVisualizer.from_eval_cfg(self.evaluator_config)
+        )
 
     def add_frame_result(
         self,
         unix_time: int,
         ground_truth_now_frame: FrameGroundTruth,
-        estimated_objects: List[DynamicObject],
-        ros_critical_ground_truth_objects: List[DynamicObject],
+        estimated_objects: List[Union[DynamicObject, RoiObject]],
+        ros_critical_ground_truth_objects: List[Union[DynamicObject, RoiObject]],
         critical_object_filter_config: CriticalObjectFilterConfig,
         frame_pass_fail_config: PerceptionPassFailConfig,
     ) -> PerceptionFrameResult:
@@ -78,8 +87,8 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         Args:
             unix_time (int): Unix time of frame to evaluate [us]
             ground_truth_now_frame (FrameGroundTruth): Now frame ground truth
-            estimated_objects (List[DynamicObject]): estimated object which you want to evaluate
-            ros_critical_ground_truth_objects (List[DynamicObject]):
+            estimated_objects (List[Union[DynamicObject, RoiObject]]): estimated object which you want to evaluate
+            ros_critical_ground_truth_objects (List[Union[DynamicObject, RoiObject]]):
                     Critical ground truth objects filtered by ROS node to evaluate pass fail result
             critical_object_filter_config (CriticalObjectFilterConfig):
                     The parameter config to choose critical ground truth objects
@@ -119,16 +128,16 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
 
     def _filter_objects(
         self,
-        estimated_objects: List[DynamicObject],
+        estimated_objects: List[Union[DynamicObject, RoiObject]],
         frame_ground_truth: FrameGroundTruth,
     ) -> Tuple[List[DynamicObjectWithPerceptionResult], FrameGroundTruth]:
         """[summary]
         Filtering estimated and ground truth objects.
         Args:
-            estimated_objects (List[DynamicObject])
+            estimated_objects (List[Union[DynamicObject, RoiObject]])
             frame_ground_truth (FrameGroundTruth)
         Returns:
-            estimated_objects (List[DynamicObject])
+            estimated_objects (List[Union[DynamicObject, RoiObject]])
             frame_ground_truth (FrameGroundTruth)
         """
         estimated_objects = filter_objects(
@@ -200,6 +209,9 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         Args:
             animation (bool): Whether make animation. Defaults to True.
         """
+        if self.visualizer is None:
+            logging.warning("visualizer has not been initialized")
+            return
         self.visualizer.visualize_all(self.frame_results, animation=animation)
 
     def visualize_frame(self, frame_index: int = -1) -> None:
@@ -209,4 +221,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         Args:
             frame_index (int): The index of frame to be visualized. Defaults to -1 (latest frame).
         """
+        if self.visualizer is None:
+            logging.warning("visualizer has not been initialized")
+            return
         self.visualizer.visualize_frame(self.frame_results[frame_index])

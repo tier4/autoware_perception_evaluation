@@ -40,7 +40,7 @@ class PredictionMetricsConfig(_MetricsConfigBase):
         target_labels: List[AutowareLabel],
         center_distance_thresholds: List[List[float]],
         plane_distance_thresholds: List[List[float]],
-        iou_bev_thresholds: List[List[float]],
+        iou_2d_thresholds: List[List[float]],
         iou_3d_thresholds: List[List[float]],
     ) -> None:
         """[summary]
@@ -64,6 +64,6 @@ class PredictionMetricsConfig(_MetricsConfigBase):
             target_labels=target_labels,
             center_distance_thresholds=center_distance_thresholds,
             plane_distance_thresholds=plane_distance_thresholds,
-            iou_bev_thresholds=iou_bev_thresholds,
+            iou_2d_thresholds=iou_2d_thresholds,
             iou_3d_thresholds=iou_3d_thresholds,
         )

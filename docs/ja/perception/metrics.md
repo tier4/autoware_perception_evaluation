@@ -16,11 +16,19 @@
 
 - 各 config をもとにそれぞれの Metrics が計算される．
 
-| Evaluation Task |      Metrics       |
-| :-------------- | :----------------: |
-| `Detection`     |     mAP / mAPH     |
-| `Tracking`      | mAP / mAPH / CLEAR |
-| `Prediction`    |       [TBD]        |
+  - 3D 評価
+
+    | Evaluation Task |      Metrics       |
+    | :-------------- | :----------------: |
+    | `Detection`     |     mAP / mAPH     |
+    | `Tracking`      | mAP / mAPH / CLEAR |
+    | `Prediction`    |       [TBD]        |
+
+  - 2D 評価
+
+    | Evaluation Task | Metrics |
+    | :-------------- | :-----: |
+    | `Detection2D`   |   mAP   |
 
 ```yaml
 [2022-08-09 18:56:45,237] [INFO] [perception_lsim.py:214 <module>] Detection Metrics example (final_metric_score):
@@ -241,12 +249,12 @@
 - 予測 object と Ground Truth のマッチング方式の class
   - 詳細は，[perception_eval/evaluation/matching/object_matching.py](../../../perception_eval/perception_eval/evaluation/matching/object_matching.py)を参照
 
-| Matching Method    | Value                                             |
-| ------------------ | ------------------------------------------------- |
-| Center Distance 3D | 2 つの object の 3D 中心間距離                    |
-| IoU BEV            | 2 つの object のの IoU BEV の値                   |
-| IoU 3D             | 2 つの object の 3D IoU の値                      |
-| Plane Distance     | 2 つの object の近傍 2 点の距離の RMS(詳細は後述) |
+| Matching Method    | Value                                                                 |
+| ------------------ | --------------------------------------------------------------------- |
+| Center Distance 3D | 2 つの object の 3D 中心間距離                                        |
+| IoU 2D             | 2 つの object のの 2D IoU の値(3D オブジェクトの場合は，BEV から算出) |
+| IoU 3D             | 2 つの object の 3D IoU の値                                          |
+| Plane Distance     | 2 つの object の近傍 2 点の距離の RMS(詳細は後述)                     |
 
 - オブジェクト同士のマッチングの条件は以下．デフォルトで Center Distance 3D がマッチング方式として使用される．
 

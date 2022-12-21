@@ -17,10 +17,12 @@ from __future__ import annotations
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
 
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.roi import RoiObject
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.metrics import MetricsScore
@@ -90,7 +92,7 @@ class PerceptionFrameResult:
 
     def evaluate_frame(
         self,
-        ros_critical_ground_truth_objects: List[DynamicObject],
+        ros_critical_ground_truth_objects: List[Union[DynamicObject, RoiObject]],
         previous_result: Optional[PerceptionFrameResult] = None,
     ) -> None:
         """[summary]

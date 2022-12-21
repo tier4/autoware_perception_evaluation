@@ -16,11 +16,19 @@
 
 - Calculate each metrics based on each config
 
-| Evaluation Task |      Metrics       |
-| :-------------- | :----------------: |
-| `Detection`     |     mAP / mAPH     |
-| `Tracking`      | mAP / mAPH / CLEAR |
-| `Prediction`    |       [TBD]        |
+  - 3D evaluation
+
+  | Evaluation Task |      Metrics       |
+  | :-------------- | :----------------: |
+  | `Detection`     |     mAP / mAPH     |
+  | `Tracking`      | mAP / mAPH / CLEAR |
+  | `Prediction`    |       [TBD]        |
+
+  - 2D evaluation
+
+    | Evaluation Task | Metrics |
+    | :-------------- | :-----: |
+    | `Detection2D`   |   mAP   |
 
 ```yaml
 [2022-08-09 18:56:45,237] [INFO] [perception_lsim.py:214 <module>] Detection Metrics example (final_metric_score):
@@ -246,7 +254,7 @@
 | Matching Method    | Value                                                                 |
 | ------------------ | --------------------------------------------------------------------- |
 | Center Distance 3D | Center distance between two objects                                   |
-| IoU BEV            | IoU BEV score between two objects                                     |
+| IoU 2D             | IoU 2D score between two objects (In 3D evaluation, BEV is used)      |
 | IoU 3D             | IoU 3D score between two objects                                      |
 | Plane Distance     | Nearest plane distance between two objects(explain the details below) |
 

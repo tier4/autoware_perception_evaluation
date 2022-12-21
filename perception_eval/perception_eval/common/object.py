@@ -14,21 +14,20 @@
 
 from __future__ import annotations
 
-from logging import getLogger
 import math
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 import numpy as np
 from perception_eval.common.label import AutowareLabel
+from perception_eval.common.object_base import Object2DBase
 from perception_eval.common.point import distance_points
 from perception_eval.common.point import distance_points_bev
 from perception_eval.common.status import Visibility
 from pyquaternion import Quaternion
 from shapely.geometry import Polygon
-
-logger = getLogger(__name__)
 
 
 class ObjectState:
@@ -487,15 +486,25 @@ class DynamicObject:
             return None
 
 
-def distance_objects(object_1: DynamicObject, object_2: DynamicObject) -> float:
+def distance_objects(
+    object_1: Union[DynamicObject, Object2DBase],
+    object_2: Union[DynamicObject, Object2DBase],
+) -> float:
     """[summary]
     Calculate the 3d center distance between two objects.
     Args:
-         object_1 (DynamicObject): An object
-         object_2 (DynamicObject): An object
-    Returns: float: The center distance from object_1 (DynamicObject) to object_2.
+         object_1 (Union[DynamicObject, BaseObject2D]): An object
+         object_2 (Union[DynamicObject, BaseObject2D]): An object
+    Returns: float: The center distance between object_1 and object_2.
     """
-    return distance_points(object_1.state.position, object_2.state.position)
+    if type(object_1) != type(object_2):
+        raise TypeError(
+            f"objects' type must be same, but got {type(object_1) and {type(object_2)}}"
+        )
+
+    if isinstance(object_1, DynamicObject):
+        return distance_points(object_1.state.position, object_2.state.position)
+    return np.linalg.norm(np.array(object_1.roi.center) - np.array(object_2.roi.center))
 
 
 def distance_objects_bev(object_1: DynamicObject, object_2: DynamicObject) -> float:
@@ -506,4 +515,5 @@ def distance_objects_bev(object_1: DynamicObject, object_2: DynamicObject) -> fl
          object_2 (DynamicObject): An object
     Returns: float: The 2d center distance from object_1 to object_2.
     """
+    assert isinstance(object_1, DynamicObject) and isinstance(object_2, DynamicObject)
     return distance_points_bev(object_1.state.position, object_2.state.position)

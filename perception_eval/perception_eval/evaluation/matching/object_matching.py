@@ -20,10 +20,12 @@ from typing import Callable
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.object import distance_objects
 from perception_eval.common.object import distance_points_bev
+from perception_eval.common.object_base import Object2DBase
 from perception_eval.common.point import get_point_left_right
 from perception_eval.common.point import polygon_to_list
 from shapely.geometry import Polygon
@@ -34,13 +36,13 @@ class MatchingMode(Enum):
     The mode enum for matching algorithm.
 
     CENTERDISTANCE: center distance in 3d
-    IOUBEV : IoU (Intersection over Union) in BEV (Bird Eye View)
+    IOU2D : IoU (Intersection over Union) in BEV (Bird Eye View) for 3D objects, pixel for 2D objects.
     IOU3D : IoU (Intersection over Union) in 3D
     PLANEDISTANCE: The plane distance
     """
 
-    CENTERDISTANCE = "Center Distance 3d [m]"
-    IOUBEV = "IoU BEV"
+    CENTERDISTANCE = "Center Distance [m]"
+    IOU2D = "IoU 2D"
     IOU3D = "IoU 3D"
     PLANEDISTANCE = "Plane Distance [m]"
 
@@ -56,14 +58,15 @@ class MatchingMethod(ABC):
     @abstractmethod
     def __init__(
         self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
+        estimated_object: Union[DynamicObject, Object2DBase],
+        ground_truth_object: Optional[Union[DynamicObject, Object2DBase]],
     ) -> None:
         """[summary]
         Args:
-            estimated_object (DynamicObject): The estimated object
-            ground_truth_object (Optional[DynamicObject]): The ground truth object
+            estimated_object (Union[DynamicObject, RoiObject]): The estimated object
+            ground_truth_object (Optional[Union[DynamicObject, RoiObject]]): The ground truth object
         """
+        assert type(estimated_object) == type(ground_truth_object)
         self.mode: MatchingMode = MatchingMode.CENTERDISTANCE
         self.value: Optional[float] = None
 
@@ -95,14 +98,16 @@ class CenterDistanceMatching(MatchingMethod):
 
     def __init__(
         self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
+        estimated_object: Union[DynamicObject, Object2DBase],
+        ground_truth_object: Optional[Union[DynamicObject, Object2DBase]],
     ) -> None:
         """[summary]
         Args:
             estimated_object (DynamicObject): The estimated object
             ground_truth_object (Optional[DynamicObject]): The ground truth object
         """
+        if ground_truth_object:
+            assert type(estimated_object) == type(ground_truth_object)
         self.mode: MatchingMode = MatchingMode.CENTERDISTANCE
         self.value: Optional[float] = self._get_center_distance(
             estimated_object,
@@ -129,14 +134,14 @@ class CenterDistanceMatching(MatchingMethod):
 
     def _get_center_distance(
         self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
+        estimated_object: Union[DynamicObject, Object2DBase],
+        ground_truth_object: Optional[Union[DynamicObject, Object2DBase]],
     ) -> Optional[float]:
         """[summary]
         Get center distance
         Args:
-            estimated_object (DynamicObject): The estimated object
-            ground_truth_object (Optional[DynamicObject]): The ground truth object
+            estimated_object (Union[DynamicObject, RoiObject]): The estimated object
+            ground_truth_object (Optional[Union[DynamicObject, RoiObject]]): The ground truth object
         """
         if ground_truth_object is None:
             return None
@@ -264,27 +269,29 @@ class PlaneDistanceMatching(MatchingMethod):
         return plane_distance, ground_truth_nn_plane, estimated_nn_plane
 
 
-class IOUBEVMatching(MatchingMethod):
+class IOU2dMatching(MatchingMethod):
     """[summary]
-    Matching by IoU BEV
+    Matching by IoU 2d in BEV for 3D objects, pixel for 2D objects.
 
     Attributes:
         self.mode (MatchingMode): Matching mode
-        self.value (Optional[float]): IoU BEV
+        self.value (Optional[float]): IoU 2d
     """
 
     def __init__(
         self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
+        estimated_object: Union[DynamicObject, Object2DBase],
+        ground_truth_object: Optional[Union[DynamicObject, Object2DBase]],
     ) -> None:
         """[summary]
         Args:
-            estimated_object (DynamicObject): The estimated object
-            ground_truth_object (Optional[DynamicObject]): The ground truth object
+            estimated_object (Union[DynamicObject, RoiObject]): The estimated object
+            ground_truth_object (Optional[Union[DynamicObject, RoiObject]]): The ground truth object
         """
-        self.mode: MatchingMode = MatchingMode.IOUBEV
-        self.value: Optional[float] = self._get_iou_bev(
+        if ground_truth_object:
+            assert type(estimated_object) == type(ground_truth_object)
+        self.mode: MatchingMode = MatchingMode.IOU2D
+        self.value: Optional[float] = self._get_iou_2d(
             estimated_object,
             ground_truth_object,
         )
@@ -302,25 +309,29 @@ class IOUBEVMatching(MatchingMethod):
         Returns:
             bool: If value is better than threshold, return True.
         """
+        assert (
+            0.0 <= threshold_value <= 1.0
+        ), f"threshold must be [0.0, 1.0], but got {threshold_value}"
+
         if self.value is None:
             return False
         else:
             return self.value > threshold_value
 
-    def _get_iou_bev(
+    def _get_iou_2d(
         self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
+        estimated_object: Union[DynamicObject, Object2DBase],
+        ground_truth_object: Optional[Union[DynamicObject, Object2DBase]],
     ) -> float:
         """[summary]
-        Calculate BEV IoU
+        Calculate IoU 2d.
 
         Args:
-            estimated_object (DynamicObject): The estimated object
-            ground_truth_object (DynamicObject): The corresponded ground truth object
+            estimated_object (Union[DynamicObject, RoiObject]): The estimated object
+            ground_truth_object (Union[DynamicObject, RoiObject]): The corresponded ground truth object
 
         Returns:
-            Optional[float]: The value of BEV IoU.
+            Optional[float]: The value of IoU 2d.
                             If estimated_object do not have corresponded ground truth object,
                             return 0.0.
         Reference:
@@ -331,8 +342,12 @@ class IOUBEVMatching(MatchingMethod):
             return 0.0
 
         # TODO: if tiny box dim seen return 0.0 IOU
-        estimated_object_area: float = estimated_object.get_area_bev()
-        ground_truth_object_area: float = ground_truth_object.get_area_bev()
+        if isinstance(estimated_object, DynamicObject):
+            estimated_object_area: float = estimated_object.get_area_bev()
+            ground_truth_object_area: float = ground_truth_object.get_area_bev()
+        else:
+            estimated_object_area: float = estimated_object.get_area()
+            ground_truth_object_area: float = ground_truth_object.get_area()
         intersection_area: float = _get_area_intersection(estimated_object, ground_truth_object)
         union_area: float = estimated_object_area + ground_truth_object_area - intersection_area
         iou_bev: float = intersection_area / union_area
@@ -377,6 +392,10 @@ class IOU3dMatching(MatchingMethod):
         Returns:
             bool: If value is better than threshold, return True.
         """
+        assert (
+            0.0 <= threshold_value <= 1.0
+        ), f"threshold must be [0.0, 1.0], but got {threshold_value}"
+
         if self.value is None:
             return False
         else:
@@ -457,21 +476,25 @@ def _get_height_intersection(
 
 
 def _get_area_intersection(
-    estimated_object: DynamicObject,
-    ground_truth_object: DynamicObject,
+    estimated_object: Union[DynamicObject, Object2DBase],
+    ground_truth_object: Union[DynamicObject, Object2DBase],
 ) -> float:
     """[summary]
     Get the area at intersection
 
     Args:
-        estimated_object (DynamicObject): The estimated object
-        ground_truth_object (DynamicObject): The corresponded ground truth object
+        estimated_object (Union[DynamicObject, Object2DBase]): The estimated object.
+        ground_truth_object (Union[DynamicObject, Object2DBase]): The corresponded ground truth object.
 
     Returns:
-        float: The area at intersection
+        float: The area at intersection.
     """
     # estimated object footprint and Ground truth object footprint
-    pr_footprint_polygon: Polygon = estimated_object.get_footprint()
-    gt_footprint_polygon: Polygon = ground_truth_object.get_footprint()
-    area_intersection: float = pr_footprint_polygon.intersection(gt_footprint_polygon).area
+    if isinstance(estimated_object, DynamicObject):
+        pr_polygon: Polygon = estimated_object.get_footprint()
+        gt_polygon: Polygon = ground_truth_object.get_footprint()
+    else:
+        pr_polygon: Polygon = estimated_object.get_polygon()
+        gt_polygon: Polygon = ground_truth_object.get_polygon()
+    area_intersection: float = pr_polygon.intersection(gt_polygon).area
     return area_intersection

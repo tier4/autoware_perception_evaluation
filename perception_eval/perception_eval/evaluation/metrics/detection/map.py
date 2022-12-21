@@ -40,6 +40,7 @@ class Map:
         target_labels: List[AutowareLabel],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
+        is_detection_2d: bool = False,
     ) -> None:
         """[summary]
 
@@ -57,10 +58,13 @@ class Map:
         self.target_labels: List[AutowareLabel] = target_labels
         self.matching_mode: MatchingMode = matching_mode
         self.matching_threshold_list: List[float] = matching_threshold_list
+        self.is_detection_2d: bool = is_detection_2d
 
         # calculate AP & APH
         self.aps: List[Ap] = []
         self.aphs: List[Ap] = []
+        sum_ap: float = 0.0
+        sum_aph: float = 0.0
         for target_label, matching_threshold in zip(target_labels, matching_threshold_list):
             object_results = object_results_dict[target_label]
             num_ground_truth = num_ground_truth_dict[target_label]
@@ -73,23 +77,21 @@ class Map:
                 matching_threshold_list=[matching_threshold],
             )
             self.aps.append(ap_)
+            sum_ap += ap_.ap
 
-            aph_ = Ap(
-                tp_metrics=TPMetricsAph(),
-                object_results=object_results,
-                num_ground_truth=num_ground_truth,
-                target_labels=[target_label],
-                matching_mode=matching_mode,
-                matching_threshold_list=[matching_threshold],
-            )
-            self.aphs.append(aph_)
+            if not self.is_detection_2d:
+                aph_ = Ap(
+                    tp_metrics=TPMetricsAph(),
+                    object_results=object_results,
+                    num_ground_truth=num_ground_truth,
+                    target_labels=[target_label],
+                    matching_mode=matching_mode,
+                    matching_threshold_list=[matching_threshold],
+                )
+                self.aphs.append(aph_)
+                sum_aph += aph_.ap
 
         # calculate mAP & mAPH
-        sum_ap: float = 0.0
-        sum_aph: float = 0.0
-        for ap, aph in zip(self.aps, self.aphs):
-            sum_ap += ap.ap
-            sum_aph += aph.ap
         self.map: float = sum_ap / len(target_labels)
         self.maph: float = sum_aph / len(target_labels)
 
@@ -97,7 +99,8 @@ class Map:
         """__str__ method"""
 
         str_: str = "\n"
-        str_ += f"mAP: {self.map:.3f}, mAPH: {self.maph:.3f} "
+        str_ += f"mAP: {self.map:.3f}"
+        str_ += ", mAPH: {self.maph:.3f} " if not self.is_detection_2d else " "
         str_ += f"({self.matching_mode.value})\n"
         # Table
         str_ += "\n"
@@ -121,12 +124,13 @@ class Map:
         for ap_ in self.aps:
             str_ += f" {ap_.ap:.3f} | "
         str_ += "\n"
-        str_ += "|        APH |"
-        for aph_ in self.aphs:
-            target_str = ""
-            for target in aph_.target_labels:
-                target_str += target.value
-            str_ += f" {aph_.ap:.3f} | "
-        str_ += "\n"
+        if not self.is_detection_2d:
+            str_ += "|        APH |"
+            for aph_ in self.aphs:
+                target_str = ""
+                for target in aph_.target_labels:
+                    target_str += target.value
+                str_ += f" {aph_.ap:.3f} | "
+            str_ += "\n"
 
         return str_

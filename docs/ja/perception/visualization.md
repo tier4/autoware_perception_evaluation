@@ -65,3 +65,7 @@ visualizer.visualize_all(frame_results)
 | `min_point_numbers`            |      `List[int]`      |    No     | 評価対象オブジェクト box 内の最小点群数 |
 | `confidence_threshold_list`    |     `List[float]`     |    No     | 評価対象オブジェクトの confidence 閾値  |
 | `target_uuids`                 |      `List[str]`      |    No     | 評価対象オブジェクトの GT の uuid       |
+
+## Known issues / Limitations
+
+- `PerceptionVisualizer()`は 3D 評価のみ対応．

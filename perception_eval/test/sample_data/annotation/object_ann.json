@@ -1,0 +1,22 @@
+[
+    {
+        "token": "e20f1f1fcdd56b762ae00b694ae4cd9e",
+        "sample_data_token": "e3d495d4ac534d54b321f50006683844",
+        "instance_token": "6dd2cbf4c24b4caeb625035869bca7b5",
+        "category_token": "1fa93b757fc74fb197cdd60001ad8abf",
+        "attribute_tokens": ["4d8821270b4a47e3a8a300cbec48188e"],
+        "bbox": [
+            1345.8314871334414,
+            586.544873400329,
+            1440.0,
+            781.5474582294958
+        ],
+        "mask": {
+            "size": [
+                1440,
+                1080
+            ],
+            "counts": "UGheXzE='"
+        }
+    }
+]

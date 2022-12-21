@@ -56,6 +56,7 @@ class MetricsScore:
         self.tracking_scores: List[TrackingMetricsScore] = []
         # TODO: prediction metrics scores for each matching method
         self.prediction_scores: List = []
+        self.evaluation_task = config.evaluation_task
 
         self.__num_frame: int = len(used_frame)
         self.__num_gt: int = 0
@@ -127,35 +128,40 @@ class MetricsScore:
                 target_labels=self.detection_config.target_labels,
                 matching_mode=MatchingMode.CENTERDISTANCE,
                 matching_threshold_list=distance_threshold_,
+                is_detection_2d=self.evaluation_task.is_2d(),
             )
             self.maps.append(map_)
-        for iou_threshold_bev_ in self.detection_config.iou_bev_thresholds:
+        for iou_threshold_2d_ in self.detection_config.iou_2d_thresholds:
             map_ = Map(
                 object_results_dict=object_results,
                 num_ground_truth_dict=num_ground_truth,
                 target_labels=self.detection_config.target_labels,
-                matching_mode=MatchingMode.IOUBEV,
-                matching_threshold_list=iou_threshold_bev_,
+                matching_mode=MatchingMode.IOU2D,
+                matching_threshold_list=iou_threshold_2d_,
+                is_detection_2d=self.evaluation_task.is_2d(),
             )
             self.maps.append(map_)
-        for iou_threshold_3d_ in self.detection_config.iou_3d_thresholds:
-            map_ = Map(
-                object_results_dict=object_results,
-                num_ground_truth_dict=num_ground_truth,
-                target_labels=self.detection_config.target_labels,
-                matching_mode=MatchingMode.IOU3D,
-                matching_threshold_list=iou_threshold_3d_,
-            )
-            self.maps.append(map_)
-        for plane_distance_threshold_ in self.detection_config.plane_distance_thresholds:
-            map_ = Map(
-                object_results_dict=object_results,
-                num_ground_truth_dict=num_ground_truth,
-                target_labels=self.detection_config.target_labels,
-                matching_mode=MatchingMode.PLANEDISTANCE,
-                matching_threshold_list=plane_distance_threshold_,
-            )
-            self.maps.append(map_)
+
+        if self.evaluation_task.is_3d():
+            # Only for Detection3D
+            for iou_threshold_3d_ in self.detection_config.iou_3d_thresholds:
+                map_ = Map(
+                    object_results_dict=object_results,
+                    num_ground_truth_dict=num_ground_truth,
+                    target_labels=self.detection_config.target_labels,
+                    matching_mode=MatchingMode.IOU3D,
+                    matching_threshold_list=iou_threshold_3d_,
+                )
+                self.maps.append(map_)
+            for plane_distance_threshold_ in self.detection_config.plane_distance_thresholds:
+                map_ = Map(
+                    object_results_dict=object_results,
+                    num_ground_truth_dict=num_ground_truth,
+                    target_labels=self.detection_config.target_labels,
+                    matching_mode=MatchingMode.PLANEDISTANCE,
+                    matching_threshold_list=plane_distance_threshold_,
+                )
+                self.maps.append(map_)
 
     def evaluate_tracking(
         self,
@@ -184,33 +190,35 @@ class MetricsScore:
                 matching_threshold_list=distance_threshold_,
             )
             self.tracking_scores.append(tracking_score_)
-        for iou_threshold_bev_ in self.tracking_config.iou_bev_thresholds:
+        for iou_threshold_2d_ in self.tracking_config.iou_2d_thresholds:
             tracking_score_ = TrackingMetricsScore(
                 object_results_dict=object_results,
                 num_ground_truth_dict=num_ground_truth,
                 target_labels=self.tracking_config.target_labels,
-                matching_mode=MatchingMode.IOUBEV,
-                matching_threshold_list=iou_threshold_bev_,
+                matching_mode=MatchingMode.IOU2D,
+                matching_threshold_list=iou_threshold_2d_,
             )
             self.tracking_scores.append(tracking_score_)
-        for iou_threshold_3d_ in self.tracking_config.iou_3d_thresholds:
-            tracking_score_ = TrackingMetricsScore(
-                object_results_dict=object_results,
-                num_ground_truth_dict=num_ground_truth,
-                target_labels=self.tracking_config.target_labels,
-                matching_mode=MatchingMode.IOU3D,
-                matching_threshold_list=iou_threshold_3d_,
-            )
-            self.tracking_scores.append(tracking_score_)
-        for plane_distance_threshold_ in self.tracking_config.plane_distance_thresholds:
-            tracking_score_ = TrackingMetricsScore(
-                object_results_dict=object_results,
-                num_ground_truth_dict=num_ground_truth,
-                target_labels=self.tracking_config.target_labels,
-                matching_mode=MatchingMode.PLANEDISTANCE,
-                matching_threshold_list=plane_distance_threshold_,
-            )
-            self.tracking_scores.append(tracking_score_)
+
+        if self.evaluation_task.is_3d():
+            for iou_threshold_3d_ in self.tracking_config.iou_3d_thresholds:
+                tracking_score_ = TrackingMetricsScore(
+                    object_results_dict=object_results,
+                    num_ground_truth_dict=num_ground_truth,
+                    target_labels=self.tracking_config.target_labels,
+                    matching_mode=MatchingMode.IOU3D,
+                    matching_threshold_list=iou_threshold_3d_,
+                )
+                self.tracking_scores.append(tracking_score_)
+            for plane_distance_threshold_ in self.tracking_config.plane_distance_thresholds:
+                tracking_score_ = TrackingMetricsScore(
+                    object_results_dict=object_results,
+                    num_ground_truth_dict=num_ground_truth,
+                    target_labels=self.tracking_config.target_labels,
+                    matching_mode=MatchingMode.PLANEDISTANCE,
+                    matching_threshold_list=plane_distance_threshold_,
+                )
+                self.tracking_scores.append(tracking_score_)
 
     def evaluate_prediction(
         self,

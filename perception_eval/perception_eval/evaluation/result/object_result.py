@@ -14,17 +14,20 @@
 
 from __future__ import annotations
 
+from typing import Callable
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 import numpy as np
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.object import distance_objects
 from perception_eval.common.object import distance_objects_bev
+from perception_eval.common.object_base import Object2DBase
 from perception_eval.evaluation.matching.object_matching import CenterDistanceMatching
+from perception_eval.evaluation.matching.object_matching import IOU2dMatching
 from perception_eval.evaluation.matching.object_matching import IOU3dMatching
-from perception_eval.evaluation.matching.object_matching import IOUBEVMatching
 from perception_eval.evaluation.matching.object_matching import MatchingMethod
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.object_matching import PlaneDistanceMatching
@@ -35,9 +38,9 @@ class DynamicObjectWithPerceptionResult:
     Evaluation result for a estimated object
 
     Attributes:
-        self.estimated_object (DynamicObject):
+        self.estimated_object (Union[DynamicObject, RoiObject]):
                 The estimated object by inference like CenterPoint.
-        self.ground_truth_object (Optional[DynamicObject]):
+        self.ground_truth_object (Optional[Union[DynamicObject, RoiObject]]):
                 Ground truth object corresponding to estimated object.
         self.is_label_correct (bool):
                 Whether the label of estimated_object is same as the label of ground truth object
@@ -53,36 +56,46 @@ class DynamicObjectWithPerceptionResult:
 
     def __init__(
         self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
+        estimated_object: Union[DynamicObject, Object2DBase],
+        ground_truth_object: Optional[Union[DynamicObject, Object2DBase]],
     ) -> None:
         """[summary]
         Evaluation result for an object estimated object.
 
         Args:
-            estimated_object (DynamicObject): The estimated object by inference like CenterPoint
-            ground_truth_objects (Optional[DynamicObject]): The list of Ground truth objects
+            estimated_object (Union[DynamicObject, RoiObject]): The estimated object by inference like CenterPoint
+            ground_truth_objects (Optional[Union[DynamicObject, RoiObject]]): The list of Ground truth objects
         """
-        self.estimated_object: DynamicObject = estimated_object
-        self.ground_truth_object: Optional[DynamicObject] = ground_truth_object
+        if ground_truth_object is not None:
+            assert type(estimated_object) == type(
+                ground_truth_object
+            ), f"Input objects type must be same, but got {type(estimated_object)} and {type(ground_truth_object)}"
+
+        self.estimated_object: Union[DynamicObject, Object2DBase] = estimated_object
+        self.ground_truth_object: Optional[Union[DynamicObject, Object2DBase]] = ground_truth_object
 
         # detection
         self.center_distance: CenterDistanceMatching = CenterDistanceMatching(
             self.estimated_object,
             self.ground_truth_object,
         )
-        self.iou_bev: IOUBEVMatching = IOUBEVMatching(
+        self.iou_2d: IOU2dMatching = IOU2dMatching(
             self.estimated_object,
             self.ground_truth_object,
         )
-        self.iou_3d: IOU3dMatching = IOU3dMatching(
-            self.estimated_object,
-            self.ground_truth_object,
-        )
-        self.plane_distance: PlaneDistanceMatching = PlaneDistanceMatching(
-            self.estimated_object,
-            self.ground_truth_object,
-        )
+
+        if isinstance(estimated_object, DynamicObject):
+            self.iou_3d: IOU3dMatching = IOU3dMatching(
+                self.estimated_object,
+                self.ground_truth_object,
+            )
+            self.plane_distance: PlaneDistanceMatching = PlaneDistanceMatching(
+                self.estimated_object,
+                self.ground_truth_object,
+            )
+        else:
+            self.iou_3d = None
+            self.plane_distance = None
 
     def is_result_correct(
         self,
@@ -132,8 +145,8 @@ class DynamicObjectWithPerceptionResult:
             return self.center_distance
         elif matching_mode == MatchingMode.PLANEDISTANCE:
             return self.plane_distance
-        elif matching_mode == MatchingMode.IOUBEV:
-            return self.iou_bev
+        elif matching_mode == MatchingMode.IOU2D:
+            return self.iou_2d
         elif matching_mode == MatchingMode.IOU3D:
             return self.iou_3d
         else:
@@ -218,16 +231,16 @@ class DynamicObjectWithPerceptionResult:
 
 
 def get_object_results(
-    estimated_objects: List[DynamicObject],
-    ground_truth_objects: List[DynamicObject],
+    estimated_objects: List[Union[DynamicObject, Object2DBase]],
+    ground_truth_objects: List[Union[DynamicObject, Object2DBase]],
     matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
 ) -> List[DynamicObjectWithPerceptionResult]:
     """[summary]
     Returns list of DynamicObjectWithPerceptionResult.
 
     Args:
-        estimated_objects (List[DynamicObject]): The list of estimated object.
-        ground_truth_objects (List[DynamicObject]): The list of ground truth object.
+        estimated_objects (List[Union[DynamicObject, RoiObject]]): The list of estimated object.
+        ground_truth_objects (List[Union[DynamicObject, RoiObject]]): The list of ground truth object.
         matching_mode (MatchingMode): The MatchingMode instance.
 
     Returns:
@@ -238,62 +251,39 @@ def get_object_results(
         return []
 
     # There is no GT (= all FP)
-    object_results: List[DynamicObjectWithPerceptionResult] = []
     if not ground_truth_objects:
-        for estimated_object_ in estimated_objects:
-            object_results.append(
-                DynamicObjectWithPerceptionResult(
-                    estimated_object=estimated_object_,
-                    ground_truth_object=None,
-                )
-            )
-        return object_results
+        return _get_fp_object_results(estimated_objects)
 
-    if matching_mode == MatchingMode.CENTERDISTANCE:
-        matching_method_module: CenterDistanceMatching = CenterDistanceMatching
-        maximize: bool = False
-    elif matching_mode == MatchingMode.PLANEDISTANCE:
-        matching_method_module: PlaneDistanceMatching = PlaneDistanceMatching
-        maximize: bool = False
-    elif matching_mode == MatchingMode.IOUBEV:
-        matching_method_module: IOUBEVMatching = IOUBEVMatching
-        maximize: bool = True
-    elif matching_mode == MatchingMode.IOU3D:
-        matching_method_module: IOU3dMatching = IOU3dMatching
-        maximize: bool = True
-    else:
-        raise ValueError(f"Unsupported matching mode: {matching_mode}")
+    if isinstance(estimated_objects[0], Object2DBase) and estimated_objects[0].roi is None:
+        return _get_object_results_with_id(estimated_objects, ground_truth_objects)
 
-    # fill matching score table, in shape (NumEst, NumGT)
-    num_row: int = len(estimated_objects)
-    num_col: int = len(ground_truth_objects)
-    score_table: np.ndarray = np.full((num_row, num_col), np.nan)
-    for i, estimated_object_ in enumerate(estimated_objects):
-        for j, ground_truth_object_ in enumerate(ground_truth_objects):
-            if estimated_object_.semantic_label == ground_truth_object_.semantic_label:
-                matching_method: MatchingMethod = matching_method_module(
-                    estimated_object=estimated_object_,
-                    ground_truth_object=ground_truth_object_,
-                )
-                score_table[i, j] = matching_method.value
+    matching_method_module, maximize = _get_matching_module(matching_mode)
+    score_table: np.ndarray = _get_score_table(
+        estimated_objects,
+        ground_truth_objects,
+        matching_method_module,
+    )
 
     # assign correspond GT to estimated objects
+    object_results: List[DynamicObjectWithPerceptionResult] = []
     estimated_objects_: List[DynamicObject] = estimated_objects.copy()
     ground_truth_objects_: List[DynamicObject] = ground_truth_objects.copy()
-    for _ in range(num_row):
+    num_estimation: int = score_table.shape[0]
+    for _ in range(num_estimation):
         if np.isnan(score_table).all():
             break
 
-        if maximize:
-            est_idx, gt_idx = np.unravel_index(
+        est_idx, gt_idx = (
+            np.unravel_index(
                 np.nanargmax(score_table),
                 score_table.shape,
             )
-        else:
-            est_idx, gt_idx = np.unravel_index(
+            if maximize
+            else np.unravel_index(
                 np.nanargmin(score_table),
                 score_table.shape,
             )
+        )
 
         # remove corresponding estimated and GT objects
         est_obj_: DynamicObject = estimated_objects_.pop(est_idx)
@@ -308,11 +298,119 @@ def get_object_results(
 
     # when there are rest of estimated objects, they all are FP.
     if len(estimated_objects_) > 0:
-        for est_obj_ in estimated_objects_:
-            object_result_: DynamicObjectWithPerceptionResult = DynamicObjectWithPerceptionResult(
-                estimated_object=est_obj_,
-                ground_truth_object=None,
-            )
-            object_results.append(object_result_)
+        object_results += _get_fp_object_results(estimated_objects_)
 
     return object_results
+
+
+def _get_object_results_with_id(
+    estimated_objects: List[Object2DBase],
+    ground_truth_objects: List[Object2DBase],
+) -> List[DynamicObjectWithPerceptionResult]:
+    """[summary]
+    Returns the list of DynamicObjectWithPerceptionResult comparing with their uuid for classification evaluation.
+
+    Args:
+        estimated_objects (List[Object2DBase])
+        ground_truth_objects (List[Object2DBase])
+
+    Returns:
+        object_results (List[DynamicObject])
+    """
+    object_results: List[DynamicObjectWithPerceptionResult] = []
+    for est_object in estimated_objects:
+        for gt_object in ground_truth_objects:
+            if est_object.uuid is None or gt_object.uuid is None:
+                raise RuntimeError(
+                    f"uuid of estimation and ground truth must be set, but got {est_object.uuid} and {gt_object.uuid}"
+                )
+            if est_object.uuid == gt_object.uuid:
+                object_results.append(
+                    DynamicObjectWithPerceptionResult(
+                        estimated_object=est_object,
+                        ground_truth_object=gt_object,
+                    )
+                )
+
+    # when there are rest of estimated objects, they all are FP.
+    if len(estimated_objects) > 0:
+        object_results += _get_fp_object_results(estimated_objects)
+
+    return object_results
+
+
+def _get_fp_object_results(
+    estimated_objects: List[Union[DynamicObject, Object2DBase]],
+) -> List[DynamicObjectWithPerceptionResult]:
+    """[summary]
+    Returns the list of DynamicObjectWithPerceptionResult that have no ground truth.
+    Args:
+        estimated_objects (List[Union[DynamicObject, Object2DBase]])
+    Returns:
+        object_results (List[DynamicObjectWithPerceptionResult])
+    """
+    object_results: List[DynamicObjectWithPerceptionResult] = []
+    for est_obj_ in estimated_objects:
+        object_result_: DynamicObjectWithPerceptionResult = DynamicObjectWithPerceptionResult(
+            estimated_object=est_obj_,
+            ground_truth_object=None,
+        )
+        object_results.append(object_result_)
+
+    return object_results
+
+
+def _get_matching_module(matching_mode: MatchingMode) -> Tuple[Callable, bool]:
+    """[summary]
+    Returns the matching function and boolean flag whether choose maximum value or not.
+    Args:
+        matching_mode (MatchingMode)
+    Returns:
+        matching_method_module (Callable)
+        maximize (bool)
+    """
+    if matching_mode == MatchingMode.CENTERDISTANCE:
+        matching_method_module: CenterDistanceMatching = CenterDistanceMatching
+        maximize: bool = False
+    elif matching_mode == MatchingMode.PLANEDISTANCE:
+        matching_method_module: PlaneDistanceMatching = PlaneDistanceMatching
+        maximize: bool = False
+    elif matching_mode == MatchingMode.IOU2D:
+        matching_method_module: IOU2dMatching = IOU2dMatching
+        maximize: bool = True
+    elif matching_mode == MatchingMode.IOU3D:
+        matching_method_module: IOU3dMatching = IOU3dMatching
+        maximize: bool = True
+    else:
+        raise ValueError(f"Unsupported matching mode: {matching_mode}")
+
+    return matching_method_module, maximize
+
+
+def _get_score_table(
+    estimated_objects: List[Union[DynamicObject, Object2DBase]],
+    ground_truth_objects: List[Union[DynamicObject, Object2DBase]],
+    matching_method_module: Callable,
+) -> np.ndarray:
+    """[summary]
+    Returns score table in shape (num_estimation, num_ground_truth).
+    Args:
+        estimated_objects (List[Union[DynamicObject, Object2DBase]])
+        ground_truth_objects (List[Union[DynamicObject, Object2DBase]])
+        matching_method_module (Callable)
+    Returns:
+        score_table (numpy.ndarray): in shape (num_estimation, num_ground_truth).
+    """
+    # fill matching score table, in shape (NumEst, NumGT)
+    num_row: int = len(estimated_objects)
+    num_col: int = len(ground_truth_objects)
+    score_table: np.ndarray = np.full((num_row, num_col), np.nan)
+    for i, estimated_object_ in enumerate(estimated_objects):
+        for j, ground_truth_object_ in enumerate(ground_truth_objects):
+            if estimated_object_.semantic_label == ground_truth_object_.semantic_label:
+                matching_method: MatchingMethod = matching_method_module(
+                    estimated_object=estimated_object_,
+                    ground_truth_object=ground_truth_object_,
+                )
+                score_table[i, j] = matching_method.value
+    return score_table
