@@ -212,7 +212,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 ### DataFrame structure
 
 - By `add()` method, each `PerceptionFrameResult` will be accumulated as following format. The number of order (1,...,N) will be assigned to `scene`.
-  - x,y are with respect to base_link, and vx, vy are map coordinates system.
+  - x,y,yaw,vx,vy are with respect to base_link coordinates system.
 
 | index | type             | "timestamp" |   "x"   |   "y"   |   "w"   |   "l"   |   "h"   |  "yaw"  |  "vx"   |  "vy"   |  "nn_point1"   |  "nn_point2"   | "label" | "confidence" | "uuid" | "num_points" | "status" | "area" | "frame" | "scene" |
 | ----: | :--------------- | :---------: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :------------: | :------------: | :-----: | :----------: | :----: | :----------: | :------: | :----: | :-----: | :-----: |
