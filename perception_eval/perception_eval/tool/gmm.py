@@ -54,6 +54,7 @@ class Gmm:
         self.n_init: int = n_init
         self.random_state: int = random_state
         self.model: Optional[GaussianMixture] = None
+        self.__models: Optional[List[GaussianMixture]] = None
 
     @classmethod
     def load(cls, filename: str) -> Gmm:
@@ -106,16 +107,19 @@ class Gmm:
             x_test (Optional[numpy.ndarray]): Test data to determine number of components, in shape (N, D).
                 If None, input data will be used. Defaults to None.
         """
-        models = [
-            GaussianMixture(n, n_init=self.n_init, random_state=self.random_state).fit(x)
-            for n in range(1, self.max_k + 1)
-        ]
+        if self.__models is None:
+            self.__models = [
+                GaussianMixture(n, n_init=self.n_init, random_state=self.random_state).fit(x)
+                for n in range(1, self.max_k + 1)
+            ]
+        else:
+            self.__models = [model.fit(x) for model in self.__models]
 
         if x_test is None:
             x_test = x
 
-        self.aic_list: List[float] = [m.aic(x_test) for m in models]
-        self.bic_list: List[float] = [m.bic(x_test) for m in models]
+        self.aic_list: List[float] = [m.aic(x_test) for m in self.__models]
+        self.bic_list: List[float] = [m.bic(x_test) for m in self.__models]
 
         min_aic_idx: int = np.argmin(self.aic_list)
         min_bic_idx: int = np.argmin(self.bic_list)
@@ -123,7 +127,7 @@ class Gmm:
             logging.warning(
                 f"min AIC and BIC is not same, got K={min_aic_idx + 1} and {min_bic_idx + 1}"
             )
-        self.model = models[min_bic_idx]
+        self.model = self.__models[min_bic_idx]
 
     def save(self, filename: str) -> None:
         """[summary]
