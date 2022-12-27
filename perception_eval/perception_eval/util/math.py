@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import math
+from typing import Sequence
 
 import numpy as np
 
@@ -77,3 +78,54 @@ def get_bbox_scale(distance: float, box_scale_0m: float, box_scale_100m: float) 
     """
     slope: float = 0.01 * (box_scale_100m - box_scale_0m)
     return slope * distance + box_scale_0m
+
+
+def get_skew_matrix(arr: np.ndarray, use_tril: bool = True) -> np.ndarray:
+    """Returns the skew-symmetric matrix.
+    Args:
+        arr (numpy.ndarray)
+        use_tril (bool)
+    Returns:
+        numpy.ndarray
+    """
+    ret: np.ndarray = arr.copy()
+    if use_tril:
+        ret = np.tril(ret)
+    else:
+        ret = np.triu(ret)
+    return ret - ret.T
+
+
+def get_pose_transform_matrix(position: Sequence, rotation: np.ndarray) -> np.ndarray:
+    """Returns 4x4 homogeneous transformation matrix for pose.
+    Args:
+        position (Sequence): In shape (3,)
+        rotation (numpy.ndarray): In shape (3, 3).
+    Returns:
+        ret (numpy.ndarray)
+    """
+    if not isinstance(position, np.ndarray):
+        position = np.array(position)
+
+    ret: np.ndarray = np.eye(4)
+    ret[:3, :3] = rotation
+    ret[:3, 3] = position
+    return ret
+
+
+def get_velocity_transform_matrix(position: Sequence, rotation: np.ndarray) -> np.ndarray:
+    """Returns 6x6 homogeneous transformation matrix for pose.
+    Args:
+        position (Sequence): In shape (3,)
+        rotation (numpy.ndarray): In shape (3, 3).
+    Returns:
+        ret (numpy.ndarray): In shape (6, 6).
+    """
+    if not isinstance(position, np.ndarray):
+        position = np.array(position)
+
+    ret: np.ndarray = np.zeros((6, 6))
+    ret[:3, :3] = rotation
+    ret[3:, 3:] = rotation
+    ret[3:, :3] = np.matmul(get_skew_matrix(position), rotation)
+    return ret
