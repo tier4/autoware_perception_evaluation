@@ -16,7 +16,6 @@ import argparse
 import logging
 import tempfile
 from typing import List
-from typing import Optional
 
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import PerceptionEvaluationConfig
@@ -34,7 +33,8 @@ class PerceptionLSimMoc:
         dataset_paths: List[str],
         evaluation_task: str,
         result_root_directory: str,
-        label_prefix: Optional[str] = None,
+        label_prefix: str,
+        camera_type: str,
     ):
         self.evaluation_task = evaluation_task
         self.label_prefix = label_prefix
@@ -67,6 +67,7 @@ class PerceptionLSimMoc:
             evaluation_config_dict=evaluation_config_dict,
             load_raw_data=False,
             label_prefix=label_prefix,
+            camera_type=camera_type,
         )
 
         _ = configure_logger(
@@ -160,6 +161,13 @@ if __name__ == "__main__":
         default="autoware",
         help="Whether evaluate Traffic Light Recognition",
     )
+    parser.add_argument(
+        "-c",
+        "--camera_type",
+        type=str,
+        default="CAM_FRONT",
+        help="Name of camera data",
+    )
     args = parser.parse_args()
 
     dataset_paths = args.dataset_paths
@@ -176,6 +184,7 @@ if __name__ == "__main__":
         "detection2d",
         result_root_directory,
         args.label_prefix,
+        args.camera_type,
     )
 
     for ground_truth_frame in detection_lsim.evaluator.ground_truth_frames:
@@ -198,6 +207,7 @@ if __name__ == "__main__":
         "tracking2d",
         result_root_directory,
         args.label_prefix,
+        args.camera_type,
     )
 
     for ground_truth_frame in tracking_lsim.evaluator.ground_truth_frames:
@@ -220,6 +230,7 @@ if __name__ == "__main__":
         "classification2d",
         result_root_directory,
         args.label_prefix,
+        args.camera_type,
     )
 
     for ground_truth_frame in classification_lsim.evaluator.ground_truth_frames:

@@ -20,6 +20,7 @@ import os.path as osp
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 from perception_eval.common.evaluation_task import EvaluationTask
@@ -59,6 +60,7 @@ class _EvaluationConfigBase(ABC):
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
         label_prefix: str = "autoware",
+        camera_type: Optional[str] = None,
         load_raw_data: bool = False,
     ) -> None:
         """[summary]
@@ -86,6 +88,8 @@ class _EvaluationConfigBase(ABC):
             raise ValueError(f"Unexpected frame_id: {frame_id}")
         self.frame_id: str = frame_id
         self.merge_similar_labels: bool = merge_similar_labels
+        self.label_prefix: str = label_prefix
+        self.camera_type: Optional[str] = camera_type
         self.load_raw_data: bool = load_raw_data
 
         # directory

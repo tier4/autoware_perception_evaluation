@@ -57,6 +57,7 @@ json_result = json.dump(dict_result)
   | `result_root_directory`  |      `str`       | 評価結果，ログ，可視化結果等を保存するディレクトリのパス                                                                         |
   | `evaluation_config_dict` | `Dict[str, Any]` | 評価パラメータ                                                                                                                   |
   | `label_prefix`           |      `str`       | ラベルのプレフィックス. `autoware` の場合, `AutowareLabel`がロードされ，`traffic_light`の場合，`TrafficLightLabel`がロードされる |
+  | `camera_type`            | `Optional[str]`  | 2D 評価の場合のみ使用．T4dataset/data/に含まれるカメラ名を指定する．                                                             |
   | `load_raw_data`          |      `bool`      | データセットから点群/画像データをロードするか                                                                                    |
 
 ##### `evaluation_config_dict`

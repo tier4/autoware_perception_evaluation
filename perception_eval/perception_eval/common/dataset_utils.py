@@ -364,6 +364,7 @@ def _sample_to_frame_2d(
     label_converter: LabelConverter,
     frame_id: str,
     frame_name: str,
+    camera_type: str,
     load_raw_data: bool,
 ) -> dataset.FrameGroundTruth:
     """[summary]
@@ -386,29 +387,15 @@ def _sample_to_frame_2d(
     sample: Dict[str, Any] = nuim.get("sample", sample_token)
 
     unix_time: int = sample["timestamp"]
-    camera_tokens: List[str] = [
-        nusc_sample["data"][name] for name in nusc_sample["data"].keys() if "CAM" in name
-    ]
+    sample_data_token: str = nusc_sample["data"][camera_type]
 
-    frame_sample_data: List[Dict[str, Any]] = [
-        nuim.get("sample_data", token) for token in camera_tokens
-    ]
-
-    sample_data_tokens: List[str] = [sample_data["token"] for sample_data in frame_sample_data]
     object_annotations: List[Dict[str, Any]] = [
-        ann for ann in nuim.object_ann if ann["sample_data_token"] in sample_data_tokens
+        ann for ann in nuim.object_ann if ann["sample_data_token"] == sample_data_token
     ]
 
     if load_raw_data:
-        raw_data = {}
-        for sample_data in frame_sample_data:
-            img_path: str = nusc.get_sample_data_path(sample_data["token"])
-            calibrated_sensor_info = nusc.get(
-                "calibrated_sensor",
-                sample_data["calibrated_sensor_token"],
-            )
-            sensor_info = nusc.get("sensor", calibrated_sensor_info["sensor_token"])
-            raw_data[sensor_info["channel"]] = cv2.imread(img_path)
+        img_path: str = nusc.get_sample_data_path(sample_data_token)
+        raw_data = {camera_type: cv2.imread(img_path)}
     else:
         raw_data = None
 
@@ -429,13 +416,6 @@ def _sample_to_frame_2d(
         )
 
         uuid: str = ann.get("instance_token")
-        # if len(nusc.visibility) == 0:
-        #     visibility = None
-        # else:
-        #     sample_annotation = nusc.get("sample_annotation", ann["token"])
-        #     visibility_token: str = sample_annotation["visibility_token"]
-        #     visibility_info: Dict[str, Any] = nusc.get("visibility", visibility_token)
-        #     visibility: Visibility = Visibility.from_value(visibility_info["level"])
         visibility = None
 
         object_: DynamicObject2D = DynamicObject2D(

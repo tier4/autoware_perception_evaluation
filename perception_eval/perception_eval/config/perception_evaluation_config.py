@@ -66,6 +66,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
         label_prefix: str = "autoware",
+        camera_type: Optional[str] = None,
         load_raw_data: bool = False,
     ) -> None:
         """[summary]
@@ -90,6 +91,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
             label_prefix=label_prefix,
+            camera_type=camera_type,
             load_raw_data=load_raw_data,
         )
         self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)

@@ -50,6 +50,7 @@ class _EvaluationMangerBase(ABC):
             frame_id=self.evaluator_config.frame_id,
             evaluation_task=self.evaluator_config.evaluation_task,
             load_raw_data=self.evaluator_config.load_raw_data,
+            camera_type=self.evaluator_config.camera_type,
             label_converter=self.evaluator_config.label_converter,
         )
 
