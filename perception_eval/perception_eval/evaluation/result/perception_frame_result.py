@@ -126,20 +126,7 @@ class PerceptionFrameResult:
         if self.metrics_score.prediction_config is not None:
             pass
         if self.metrics_score.classification_config is not None:
-            if previous_result is None:
-                previous_results_dict = {label: [] for label in self.target_labels}
-            else:
-                previous_results_dict = divide_objects(
-                    previous_result.object_results, self.target_labels
-                )
-            classification_results: Dict[
-                LabelType, List[DynamicObjectWithPerceptionResult]
-            ] = object_results_dict.copy()
-            for label, prev_results in previous_results_dict.items():
-                classification_results[label] = [prev_results, classification_results[label]]
-            self.metrics_score.evaluate_classification(
-                classification_results, num_ground_truth_dict
-            )
+            self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
 
         self.pass_fail_result.evaluate(
             object_results=self.object_results,

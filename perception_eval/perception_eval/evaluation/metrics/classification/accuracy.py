@@ -12,62 +12,71 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import OrderedDict
+from typing import Dict
 from typing import List
 from typing import Tuple
 
+from perception_eval.common.label import LabelType
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 
 
 class ClassificationAccuracy:
     """[summary]
     Class to calculate classification accuracy.
+
+    Attributes:
+        self.target_labels (List[LabelType])
+        self.num_ground_truth (int)
+        self.objects_results_num (int)
+        self.num_tp (int)
+        self.num_fp (int)
+        self.accuracy (float)
+        self.precision (float)
+        self.recall (float)
+        self.f1score (float)
+        self.results (Dict[str, float])
     """
 
     def __init__(
         self,
-        object_results,
-        num_ground_truth,
-        target_labels,
+        object_results: List[DynamicObjectWithPerceptionResult],
+        num_ground_truth: int,
+        target_labels: List[LabelType],
     ) -> None:
         """
         Args:
+            object_results (List[DynamicObjectWithPerceptionResult])
+            num_ground_truth (int)
+            target_labels (List[LabelType])
         """
         self.num_ground_truth: int = num_ground_truth
-        self.target_labels = target_labels
+        self.target_labels: List[LabelType] = target_labels
         if len(object_results) == 0 or not isinstance(object_results[0], list):
             all_object_results = object_results
         else:
             all_object_results = []
             for obj_results in object_results:
                 all_object_results += obj_results
-        self.accuracy: float = self.get_accuracy_score(all_object_results)
+        self.objects_results_num: int = len(all_object_results)
+        self.num_tp, self.num_fp = self.calculate_tp_fp(all_object_results)
+        self.accuracy = self.calculate_accuracy(self.num_tp)
+        self.precision, self.recall = self.calculate_precision_recall(self.num_tp)
+        self.f1score = self.calculate_f1score(self.precision, self.recall)
 
-        self.tp: float = 0.0
-        self.fp: float = 0.0
-        self.id_switch: int = 0
-        self.tp_matching_score: float = 0.0
-        self.objects_results_num: int = 0
-
-        for i, cur_object_results in enumerate(object_results[1:], 1):
-            prev_object_results: List[DynamicObjectWithPerceptionResult] = object_results[i - 1]
-            self.objects_results_num += len(cur_object_results)
-
-            # Calculate TP/FP/IDSwitch and total matching score in TP at frame t
-            tp_t, fp_t, id_switch_t = self.get_tsca_score(
-                cur_object_results=cur_object_results,
-                prev_object_results=prev_object_results,
-            )
-            self.tp += tp_t
-            self.fp += fp_t
-            self.id_switch += id_switch_t
-        tsca: float = (
-            float("inf")
-            if self.num_ground_truth == 0
-            else (self.tp - self.fp - self.id_switch) / self.num_ground_truth
+    @property
+    def results(self) -> Dict[str, float]:
+        return OrderedDict(
+            {
+                "predict_num": self.objects_results_num,
+                "Accuracy": self.accuracy,
+                "Precision": self.precision,
+                "Recall": self.recall,
+                "F1score": self.f1score,
+            }
         )
-        self.tsca: float = max(0.0, tsca)
 
-    def get_accuracy_score(
+    def calculate_tp_fp(
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
     ) -> float:
@@ -78,143 +87,73 @@ class ClassificationAccuracy:
             object_results (List[DynamicObjectWithPerceptionResult])
 
         Returns:
-            float: Accuracy score.
+            num_tp (int): Number of TP.
+            num_fp (int): Number of FP.
         """
-        sum_acc: int = 0
+        num_tp: int = 0
+        num_fp: int = 0
         for obj_result in object_results:
             if obj_result.is_label_correct:
-                sum_acc += 1
-        return float("inf") if self.num_ground_truth == 0 else sum_acc / self.num_ground_truth
-
-    def get_tsca_score(
-        self,
-        cur_object_results: List[DynamicObjectWithPerceptionResult],
-        prev_object_results: List[DynamicObjectWithPerceptionResult],
-    ) -> Tuple[float, float, int]:
-        """[summary]
-        Calculate Time-Series Classification Accuracy score.
-
-        Args:
-            cur_object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results at current frame.
-            prev_object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results at previous frame.
-
-        Returns:
-            tp (float): Total value of TP. If matching is True, num_tp += 1.0.
-            fp (float): Total value of FP. If matching is False, num_fp += 1.0.
-            num_id_switch (int): Total number of ID switch. If matching is switched compared with previous result, num_id_switch += 1.
-        """
-        tp: float = 0.0
-        fp: float = 0.0
-        num_id_switch: int = 0
-
-        for cur_obj_result in cur_object_results:
-            # Assign previous results if same matching pair has
-            is_same_match: bool = False
-            is_id_switched: bool = False
-            for prev_obj_result in prev_object_results:
-                if not prev_obj_result.is_label_correct:
-                    continue
-                is_id_switched = self._is_id_switched(cur_obj_result, prev_obj_result)
-                if is_id_switched:
-                    break
-                is_same_match: bool = self._is_same_match(cur_obj_result, prev_obj_result)
-                if is_same_match:
-                    # NOTE: If current/previous has same matching pair and both current/previous is TP,
-                    #       previous TP score is assigned.
-                    tp += 1.0
-                    break
-            if is_same_match:
-                continue
-            # If there is no same matching pair with previous results
-            if cur_obj_result.is_label_correct:
-                tp += 1.0
-                if is_id_switched:
-                    num_id_switch += 1
+                num_tp += 1
             else:
-                fp += 1.0
+                num_fp += 1
+        return num_tp, num_fp
 
-        return tp, fp, num_id_switch
+    def calculate_accuracy(self, num_tp: int) -> float:
+        """[summary]
 
-    @staticmethod
-    def _is_id_switched(
-        cur_object_result: DynamicObjectWithPerceptionResult,
-        prev_object_result: DynamicObjectWithPerceptionResult,
-    ) -> bool:
-        """Check whether current and previous object result have switched ID for TP pairs.
-
-        NOTE:
-            There is a case the label is not same in spite of the same ID is given.
-            GT ID is unique between the different labels.
+        Accuracy = (TP + TN) / (TP + TN + FP + FN)
 
         Args:
-            cur_object_result (DynamicObjectWithPerceptionResult): An object result at current frame.
-            prev_object_result (DynamicObjectWithPerceptionResult): An object result at previous frame.
+            num_tp (int): Number of TP.
 
         Returns:
-            bool: Return True if ID switched.
+            accuracy (float)
         """
-        # current GT = None -> FP
-        if (
-            cur_object_result.ground_truth_object is None
-            or prev_object_result.ground_truth_object is None
-        ):
-            return False
-
-        # 1. Check whether current/previous estimated objects has same ID.
-        # NOTE: There is a case current/previous estimated objects has same ID,
-        #       but different label(Checked by 2.)
-        has_same_estimated_id: bool = (
-            cur_object_result.estimated_object.uuid == prev_object_result.estimated_object.uuid
+        return (
+            num_tp / (self.objects_results_num + self.num_ground_truth - num_tp)
+            if (self.objects_results_num + self.num_ground_truth - num_tp) != 0
+            else float("inf")
         )
-        # 2. Check whether current/previous estimated objects has same label.
-        has_same_estimated_label: bool = (
-            cur_object_result.estimated_object.semantic_label
-            == prev_object_result.estimated_object.semantic_label
-        )
-        # 3. Check whether current/previous GT has same ID.
-        # NOTE: There is no case GT has same ID, but different label. (Like 1.)
-        has_same_ground_truth_id: bool = (
-            cur_object_result.ground_truth_object.uuid
-            == prev_object_result.ground_truth_object.uuid
-        )
-        if bool(has_same_estimated_id * has_same_estimated_label):
-            return not has_same_ground_truth_id
-        elif has_same_ground_truth_id:
-            return not (has_same_estimated_id * has_same_estimated_label)
 
-        return False
+    def calculate_precision_recall(self, num_tp: int) -> Tuple[float, float]:
+        """[summary]
 
-    @staticmethod
-    def _is_same_match(
-        cur_object_result: DynamicObjectWithPerceptionResult,
-        prev_object_result: DynamicObjectWithPerceptionResult,
-    ) -> bool:
-        """Check whether current and previous object result have same matching pair.
-        When previous or current GT is None(=FP), return False regardless the ID of estimated.
+        Precision = TP / (TP + FP)
+        Recall = TP / (TP + FN)
 
         Args:
-            cur_object_result (DynamicObjectWithPerceptionResult): An object result at current frame.
-            prev_object_result (DynamicObjectWithPerceptionResult): An object result at previous frame.
+            num_tp (int)
 
         Returns:
-            bool: Return True if both estimated and GT ID are same.
+            precision (float)
+            recall (float)
         """
-        if (
-            cur_object_result.ground_truth_object is None
-            or prev_object_result.ground_truth_object is None
-        ):
-            return False
+        precision = (
+            num_tp / self.objects_results_num if self.objects_results_num != 0 else float("inf")
+        )
+        recall = num_tp / self.num_ground_truth if self.num_ground_truth != 0 else float("inf")
+        return precision, recall
 
-        has_same_estimated_id: bool = (
-            cur_object_result.estimated_object.uuid == prev_object_result.estimated_object.uuid
-        )
-        has_same_estimated_label: bool = (
-            cur_object_result.estimated_object.semantic_label
-            == prev_object_result.estimated_object.semantic_label
-        )
-        has_same_ground_truth_id: bool = (
-            cur_object_result.ground_truth_object.uuid
-            == prev_object_result.ground_truth_object.uuid
-        )
+    def calculate_f1score(self, precision: float, recall: float, beta: float = 1.0) -> float:
+        """[summary]
 
-        return bool(has_same_estimated_id * has_same_estimated_label * has_same_ground_truth_id)
+        F score = (1 + beta**2) * precision * recall / (beta**2 * precision + recall)
+
+        Args:
+            precision (float)
+            recall (float)
+            beta (float): Defaults 1.0.
+
+        Returns:
+            f1score (float)
+        """
+        return (
+            (1 + beta**2) * precision * recall / (beta**2 * precision + recall)
+            if (
+                precision != float("inf")
+                and recall != float("inf")
+                and (beta**2 * precision + recall) != 0
+            )
+            else float("inf")
+        )

@@ -284,6 +284,6 @@ json_result = json.dump(dict_result)
 
 ### Classification
 
-| Metrics  | Sub Metrics |
-| :------: | :---------: |
-| Accuracy |  Accuracy   |
+| Metrics  |             Sub Metrics              |
+| :------: | :----------------------------------: |
+| Accuracy | Accuracy, Precision, Recall, F1score |

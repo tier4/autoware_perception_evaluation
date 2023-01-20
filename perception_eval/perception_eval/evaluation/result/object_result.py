@@ -321,23 +321,30 @@ def _get_object_results_with_id(
         object_results (List[DynamicObject])
     """
     object_results: List[DynamicObjectWithPerceptionResult] = []
+    estimated_objects_ = estimated_objects.copy()
+    ground_truth_objects_ = ground_truth_objects.copy()
     for est_object in estimated_objects:
-        for gt_object in ground_truth_objects:
+        for gt_object in ground_truth_objects_:
             if est_object.uuid is None or gt_object.uuid is None:
                 raise RuntimeError(
                     f"uuid of estimation and ground truth must be set, but got {est_object.uuid} and {gt_object.uuid}"
                 )
-            if est_object.uuid == gt_object.uuid:
+            if (
+                est_object.uuid == gt_object.uuid
+                and est_object.semantic_label == gt_object.semantic_label
+            ):
                 object_results.append(
                     DynamicObjectWithPerceptionResult(
                         estimated_object=est_object,
                         ground_truth_object=gt_object,
                     )
                 )
+                estimated_objects_.remove(est_object)
+                ground_truth_objects_.remove(gt_object)
 
     # when there are rest of estimated objects, they all are FP.
-    if len(estimated_objects) > 0:
-        object_results += _get_fp_object_results(estimated_objects)
+    if len(estimated_objects_) > 0:
+        object_results += _get_fp_object_results(estimated_objects_)
 
     return object_results
 

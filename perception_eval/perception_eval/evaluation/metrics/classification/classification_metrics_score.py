@@ -43,29 +43,35 @@ class ClassificationMetricsScore:
             self.accuracies.append(acc_)
 
     def _summarize(self) -> float:
-        acc: float = 0.0
-        tsca: float = 0.0
+        num_est: int = 0
         num_gt: int = 0
         num_tp: int = 0
-        num_id_switch: int = 0
+        num_fp: int = 0
         for acc_ in self.accuracies:
-            if acc_.accuracy != float("inf"):
-                acc += acc_.accuracy * acc_.num_ground_truth
-            if acc_.tsca != float("inf"):
-                tsca += acc_.tsca * acc_.num_ground_truth
+            num_est += acc_.objects_results_num
             num_gt += acc_.num_ground_truth
-            num_tp += int(acc_.tp)
-            num_id_switch += acc_.id_switch
-        acc: float = float("inf") if num_gt == 0 else acc / num_gt
-        tsca: float = float("inf") if num_gt == 0 else tsca / num_gt
-        return acc, tsca
+            num_tp += acc_.num_tp
+            num_fp += acc_.num_fp
+        accuracy = (
+            num_tp / (num_est + num_gt - num_tp)
+            if (num_est + num_gt - num_tp) != 0
+            else float("inf")
+        )
+        precision = num_tp / (num_tp + num_fp) if (num_tp + num_fp) != 0 else float("inf")
+        recall = num_tp / num_gt if num_gt != 0 else float("inf")
+        f1score = (
+            2 * precision * recall / (precision + recall)
+            if precision + recall != 0
+            else float("inf")
+        )
+        return accuracy, precision, recall, f1score
 
     def __str__(self) -> str:
         """__str__ method"""
         str_: str = "\n"
         # === Total ===
-        acc, tsca = self._summarize()
-        str_ += f"[TOTAL] ACC: {acc:.3f}, TSCA: {tsca:.3f}"
+        acc, precision, recall, f1score = self._summarize()
+        str_ += f"[TOTAL] Accuracy: {acc:.3f}, Precision: {precision:.3f}, Recall: {recall:.3f}, F1score: {f1score:.3f}"
         # === For each label ===
         # --- Table ---
         str_ += "\n"
@@ -79,14 +85,29 @@ class ClassificationMetricsScore:
         for _ in self.accuracies:
             str_ += " :---: |"
         str_ += "\n"
-        str_ += "|    ACC |"
+        str_ += "|    predict_num |"
+        for acc_ in self.accuracies:
+            score: float = acc_.objects_results_num
+            str_ += f" {score} |"
+        str_ += "\n"
+        str_ += "|    Accuracy |"
         for acc_ in self.accuracies:
             score: float = acc_.accuracy
             str_ += f" {score:.3f} |"
         str_ += "\n"
-        str_ += "|   TSCA |"
+        str_ += "|   Precision |"
         for acc_ in self.accuracies:
-            score: float = acc_.tsca
+            score: float = acc_.precision
+            str_ += f" {score:.3f} |"
+        str_ += "\n"
+        str_ += "|   Recall |"
+        for acc_ in self.accuracies:
+            score: float = acc_.recall
+            str_ += f" {score:.3f} |"
+        str_ += "\n"
+        str_ += "|   F1score |"
+        for acc_ in self.accuracies:
+            score: float = acc_.f1score
             str_ += f" {score:.3f} |"
         str_ += "\n"
 

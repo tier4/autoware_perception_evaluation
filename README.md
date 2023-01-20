@@ -21,8 +21,8 @@
 
 - 2D task
 
-| Task             | Metrics  | Sub-metrics          |
-| :--------------- | :------: | :------------------- |
-| Detection2D      |   mAP    | AP                   |
-| Tracking2D       |  CLEAR   | MOTA, MOTP, IDswitch |
-| Classification2D | Accuracy | Accuracy             |
+| Task             | Metrics  | Sub-metrics                          |
+| :--------------- | :------: | :----------------------------------- |
+| Detection2D      |   mAP    | AP                                   |
+| Tracking2D       |  CLEAR   | MOTA, MOTP, IDswitch                 |
+| Classification2D | Accuracy | Accuracy, Precision, Recall, F1score |
