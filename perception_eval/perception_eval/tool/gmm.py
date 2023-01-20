@@ -18,9 +18,11 @@ import logging
 import pickle
 from typing import List
 from typing import Optional
+from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
+from perception_eval.tool.perception_performance_analyzer import PerceptionPerformanceAnalyzer
 from scipy.stats import multivariate_normal
 from sklearn.mixture import GaussianMixture
 
@@ -264,3 +266,27 @@ class Gmm:
         if show:
             plt.show()
         plt.close()
+
+
+def load_sample(
+    analyzer: PerceptionPerformanceAnalyzer,
+    state: List[str],
+    error: List[str],
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Load sample data
+    Args:
+        state (List[str]): List of state names. For example, [x, y].
+        error (List[str]): List of error names. For example, [x, y].
+    Returns:
+        state_arr (numpy.ndarray): Array of states, in shape (N, num_state).
+        error_arr (numpy.ndarray): Array of errors, in shape (N, num_error).
+    """
+    state_arr = np.array(analyzer.get_ground_truth(status="TP")[state])
+    error_arr = np.array([analyzer.calculate_error(col) for col in error])
+
+    # Remove nan
+    not_nan = ~np.isnan(state_arr).any(1) * ~np.isnan(error_arr).any(1)
+    state_arr = state_arr[not_nan]
+    error_arr = error_arr[not_nan]
+
+    return state_arr, error_arr
