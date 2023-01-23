@@ -110,5 +110,5 @@
     "ylabel",
     "ylim"
   ],
-  "ros.distro": "humble",
+  "ros.distro": "humble"
 }
