@@ -21,9 +21,9 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-from perception_eval.common import ObjectType
 from perception_eval.common import distance_objects
 from perception_eval.common import distance_points_bev
+from perception_eval.common import ObjectType
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import get_point_left_right
 from perception_eval.common.point import polygon_to_list

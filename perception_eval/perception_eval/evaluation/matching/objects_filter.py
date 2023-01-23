@@ -23,8 +23,8 @@ import numpy as np
 from perception_eval.common import ObjectType
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.threshold import LabelThreshold
 from perception_eval.common.threshold import get_label_threshold
+from perception_eval.common.threshold import LabelThreshold
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
 

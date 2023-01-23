@@ -20,8 +20,8 @@ from typing import Optional
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
-from perception_eval.common.threshold import ThresholdsError
 from perception_eval.common.threshold import check_thresholds
+from perception_eval.common.threshold import ThresholdsError
 from perception_eval.evaluation.metrics import MetricsScoreConfig
 
 from ._evaluation_config_base import _EvaluationConfigBase

@@ -18,9 +18,9 @@ from typing import Tuple
 import unittest
 
 from perception_eval.common.object import DynamicObject
-from perception_eval.evaluation.matching.object_matching import IOU3dMatching
 from perception_eval.evaluation.matching.object_matching import _get_height_intersection
 from perception_eval.evaluation.matching.object_matching import _get_volume_intersection
+from perception_eval.evaluation.matching.object_matching import IOU3dMatching
 from perception_eval.util.debug import get_objects_with_difference
 
 
