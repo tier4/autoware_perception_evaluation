@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from importlib.metadata import version
+import pkg_resources
 
-try:
-    __version__ = version("perception_eval")
-except Exception:
-    __version__ = "0.0.0"
+__version__ = pkg_resources.get_distribution("perception_eval").version
