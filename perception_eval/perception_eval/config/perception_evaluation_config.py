@@ -35,12 +35,14 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         - By _EvaluationConfigBase
         self.dataset_paths (List[str]): The list of dataset path.
         self.frame_id (str): The frame_id, base_link or map.
-        self.does_use_pointcloud (bool): The boolean flag if load pointcloud data from dataset.
-        self.result_root_directory (str): The path to result directory
-        self.log_directory (str): The path to sub directory for log
-        self.visualization_directory (str): The path to sub directory for visualization
-        self.label_converter (LabelConverter): The label convert class
-        self.evaluation_task (EvaluationTask): The instance of EvaluationTask
+        self.result_root_directory (str): The path to result directory.
+        self.log_directory (str): The path to sub directory for log.
+        self.visualization_directory (str): The path to sub directory for visualization.
+        self.label_converter (LabelConverter): The label convert class.
+        self.evaluation_task (EvaluationTask): The instance of EvaluationTask.
+        self.label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
+        self.camera_type (Optional[str]): Name of camera. Specify in 2D evaluation. Defaults to None.
+        self.load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
 
         - By PerceptionEvaluationConfig
         self.target_labels (List[AutowareLabel]): The list of target label.
@@ -78,11 +80,11 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
                 If True,
                     - BUS, TRUCK, TRAILER -> CAR
                     - MOTORBIKE, CYCLIST -> BICYCLE
-            does_use_pointcloud (bool): The flag for loading pointcloud data from dataset
             result_root_directory (str): The path to result directory
             evaluation_config_dict (Dict[str, Dict[str, Any]]): The dictionary of evaluation config for each task.
-            label_prefix (str): Defaults to autoware.
-            load_raw_data (bool): Defaults to False.
+            label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
+            camera_type (Optional[str]): Name of camera. Specify in 2D evaluation. Defaults to None.
+            load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
         """
         super().__init__(
             dataset_paths=dataset_paths,

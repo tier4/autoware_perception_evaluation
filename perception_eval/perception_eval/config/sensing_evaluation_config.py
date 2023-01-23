@@ -27,12 +27,12 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         - By _EvaluationConfigBase:
         self.dataset_paths (List[str]): The path(s) of dataset(s).
         self.frame_id (str): The frame_id, base_link or map.
-        self.does_use_pointcloud (bool): The boolean flag if load pointcloud data from dataset.
         self.result_root_directory (str): The directory path to save result.
         self.log_directory (str): The directory path to save log.
         self.visualization_directory (str): The directory path to save visualization result.
         self.label_converter (LabelConverter): The instance to convert label names.
         self.evaluation_task (EvaluationTask): The instance of EvaluationTask
+        self.load_raw_data (bool): Whether load pointcloud/image data.
 
         - By SensingEvaluationConfig
         self.filtering_params (Dict[str, Any]): Filtering parameters.
@@ -59,10 +59,10 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
                 If True,
                     - BUS, TRUCK, TRAILER -> CAR
                     - MOTORBIKE, CYCLIST -> BICYCLE
-            does_use_pointcloud (bool): The boolean flag if load pointcloud data from dataset.
             result_root_directory (str): The directory path to save result.
             evaluation_config_dict (Dict[str, Dict[str, Any]]): The dictionary of evaluation config for each task.
                                           This has a key of evaluation task name which support in EvaluationTask class(ex. ["sensing"])
+            load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
         """
         super().__init__(
             dataset_paths=dataset_paths,

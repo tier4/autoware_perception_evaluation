@@ -62,7 +62,7 @@ def _sample_to_frame(
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
         frame_name (str): Name of frame, number of frame is used.
-        load_raw_data (bool)
+        load_raw_data (bool): Whether load pointcloud/image data.
 
     Raises:
         NotImplementedError:
@@ -232,14 +232,14 @@ def _get_sample_boxes(
 
     Args:
         nusc (NuScenes): NuScenes object.
-        frame_data (Dict[str, Any]):
+        frame_data (Dict[str, Any]): A set of frame record.
         frame_id (str): base_link or map.
+        use_sensor_frame (bool): Whether use sensor frame. Defaults to True.
 
     Returns:
-        lidar_path (str)
-        object_boxes (List[Box])
-        ego2map (np.ndarray)
-        use_sensor_frame (bool): The fla
+        lidar_path (str): File path of lidar pointcloud.
+        object_boxes (List[Box]): A list of boxes.
+        ego2map (np.ndarray): 4x4 transformation matrix.
 
     Raises:
         ValueError: If got unexpected frame_id except of base_link or map.
@@ -368,7 +368,7 @@ def _sample_to_frame_2d(
     load_raw_data: bool,
 ) -> dataset.FrameGroundTruth:
     """[summary]
-    Returns FrameGroundTruth constructed with RoiObject.
+    Returns FrameGroundTruth constructed with DynamicObject2D.
 
     Args:
         nusc (NuScenes): NuScenes instance.
@@ -378,6 +378,7 @@ def _sample_to_frame_2d(
         label_converter (LabelConverter): LabelConverter instance.
         frame_id (str): Frame ID, base_link or map.
         frame_name (str): Name of frame.
+        camera_type (str): Name of camera.
         load_raw_data (bool): The flag to load image data.
 
     Returns:

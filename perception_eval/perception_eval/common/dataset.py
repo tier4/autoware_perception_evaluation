@@ -122,10 +122,11 @@ def _load_dataset(
     """
     Load one tier4 dataset.
     Args:
-        dataset_path (str): The root path to dataset
-        does_use_pointcloud (bool): The flag of setting pointcloud
-        evaluation_tasks (EvaluationTask): The evaluation task
-        label_converter (LabelConverter): Label convertor
+        dataset_path (str): The root path to dataset.
+        evaluation_tasks (EvaluationTask): The evaluation task.
+        label_converter (LabelConverter): Label convertor.
+        camera_type (Optional[str]): Name of camera. Specify in 2D evaluation.
+        load_raw_data (bool): Whether load pointcloud/image data.
 
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py

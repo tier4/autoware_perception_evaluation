@@ -55,12 +55,11 @@
 
 ### [`<func> load_all_datasets(...) -> List[FrameGroundTruth]`](../../perception_eval/perception_eval/common/dataset.py)
 
-| Argument              |       type       | Description                                                                        |
-| :-------------------- | :--------------: | :--------------------------------------------------------------------------------- |
-| `dataset_paths`       |   `List[str]`    | List of dataset path(s).                                                           |
-| `does_use_pointcloud` |      `bool`      | Whether load pointcloud.                                                           |
-| `evaluation_task`     | `EvaluationTask` | Name of evaluation task.                                                           |
-| `label_converter`     | `LabelConverter` | LabelConverter instance.                                                           |
-| `frame_id`            |      `str`       | Frame ID of coordinate system which objects are with respect to. base_link or map. |
-| `camera_type`         | `Optional[str]`  | Name of camera for 2D evaluation. (Default: None)                                  |
-| `load_raw_data`       |      `bool`      | Whether load pointcloud/image. (Default: False)                                    |
+| Argument          |       type       | Description                                                                        |
+| :---------------- | :--------------: | :--------------------------------------------------------------------------------- |
+| `dataset_paths`   |   `List[str]`    | List of dataset path(s).                                                           |
+| `evaluation_task` | `EvaluationTask` | Name of evaluation task.                                                           |
+| `label_converter` | `LabelConverter` | LabelConverter instance.                                                           |
+| `frame_id`        |      `str`       | Frame ID of coordinate system which objects are with respect to. base_link or map. |
+| `camera_type`     | `Optional[str]`  | Name of camera for 2D evaluation. (Default: None)                                  |
+| `load_raw_data`   |      `bool`      | Whether load pointcloud/image. (Default: False)                                    |

@@ -62,12 +62,11 @@
 
 データセットをロードする関数．
 
-| Argument              |       type       | Description                                                |
-| :-------------------- | :--------------: | :--------------------------------------------------------- |
-| `dataset_paths`       |   `List[str]`    | データセットのパス.                                        |
-| `does_use_pointcloud` |      `bool`      | 点群をロードするか.                                        |
-| `evaluation_task`     | `EvaluationTask` | 評価タスク名.                                              |
-| `label_converter`     | `LabelConverter` | LabelConverter のインスタンス.                             |
-| `frame_id`            |      `str`       | オブジェクトが従う座標系の FrameID．base_link または map． |
-| `camera_type`         | `Optional[str]`  | 2D 評価の際のカメラ名．(Default: None)                     |
-| `load_raw_data`       |      `bool`      | 点群/画像をロードするかどうか. (Default: False)            |
+| Argument          |       type       | Description                                                |
+| :---------------- | :--------------: | :--------------------------------------------------------- |
+| `dataset_paths`   |   `List[str]`    | データセットのパス.                                        |
+| `evaluation_task` | `EvaluationTask` | 評価タスク名.                                              |
+| `label_converter` | `LabelConverter` | LabelConverter のインスタンス.                             |
+| `frame_id`        |      `str`       | オブジェクトが従う座標系の FrameID．base_link または map． |
+| `camera_type`     | `Optional[str]`  | 2D 評価の際のカメラ名．(Default: None)                     |
+| `load_raw_data`   |      `bool`      | 点群/画像をロードするかどうか. (Default: False)            |

@@ -62,8 +62,8 @@ class MatchingMethod(ABC):
     ) -> None:
         """[summary]
         Args:
-            estimated_object (Union[DynamicObject, RoiObject]): The estimated object
-            ground_truth_object (Optional[Union[DynamicObject, RoiObject]]): The ground truth object
+            estimated_object (ObjectType): The estimated object
+            ground_truth_object (Optional[ObjectType]): The ground truth object
         """
         assert type(estimated_object) == type(ground_truth_object)
         self.mode: MatchingMode = MatchingMode.CENTERDISTANCE
@@ -139,8 +139,8 @@ class CenterDistanceMatching(MatchingMethod):
         """[summary]
         Get center distance
         Args:
-            estimated_object (Union[DynamicObject, RoiObject]): The estimated object
-            ground_truth_object (Optional[Union[DynamicObject, RoiObject]]): The ground truth object
+            estimated_object (ObjectType): The estimated object
+            ground_truth_object (Optional[ObjectType]): The ground truth object
         """
         if ground_truth_object is None:
             return None

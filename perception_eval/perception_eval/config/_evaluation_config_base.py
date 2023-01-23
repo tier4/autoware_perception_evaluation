@@ -35,12 +35,14 @@ class _EvaluationConfigBase(ABC):
         self.dataset_paths (List[str]): The list of dataset path.
         self.frame_id (str): The frame_id, base_link or map.
         self.merge_similar_labels (bool): Whether merge similar labels.
-        self.load_raw_data (bool): Whether load pointcloud/image data.
         self.result_root_directory (str): The directory path to save result.
         self.log_directory (str): The directory path to save log.
         self.visualization_directory (str): The directory path to save visualization result.
         self.label_converter (LabelConverter): The converter to convert string label to autoware format.
         self.evaluation_config_dict (Dict[str, Any]): The original config dict.
+        self.label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
+        self.camera_type (Optional[str]): Name of camera. Specify in 2D evaluation. Defaults to None.
+        self.load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
 
     properties:
         self.support_tasks (List[str]): The list of supported task of EvaluationManager.
@@ -73,8 +75,9 @@ class _EvaluationConfigBase(ABC):
                     - MOTORBIKE, CYCLIST -> BICYCLE
             result_root_directory (str): The directory path to save result.
             evaluation_config_dict (Dict[str, Any]): The config for each evaluation task. The key represents task name.
-            label_prefix (str): Defaults to autoware.
-            load_raw_data (bool): Defaults to False.
+            label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
+            camera_type (Optional[str]): Name of camera. Specify in 2D evaluation. Defaults to None.
+            load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
         """
         super().__init__()
         # Check tasks are supported
