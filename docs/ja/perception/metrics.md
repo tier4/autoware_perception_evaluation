@@ -26,9 +26,11 @@
 
   - 2D 評価
 
-    | Evaluation Task | Metrics |
-    | :-------------- | :-----: |
-    | `Detection2D`   |   mAP   |
+    | Task               |   Metrics   |
+    | :----------------- | :---------: |
+    | `Detection2D`      |     mAP     |
+    | `Tracking2D`       | mAP / CLEAR |
+    | `Classification2D` |  Accuracy   |
 
 ```yaml
 [2022-08-09 18:56:45,237] [INFO] [perception_lsim.py:214 <module>] Detection Metrics example (final_metric_score):

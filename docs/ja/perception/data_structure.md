@@ -70,7 +70,7 @@
 - pass_fail_result (PassFailResult): Use case 評価の結果
   - tp_objects (List[DynamicObjectWithPerceptionResult]): Use case 評価で TP (True Positive) の ObjectResult
   - fp_objects (List[DynamicObjectWithPerceptionResult]): Use case 評価で FP (False Positive) の ObjectResult
-  - fn_objects (List[Union[DynamicObject, RoiObject]]): Use case 評価で FN (False Negative) の DynamicObject
+  - fn_objects (List[ObjectType]): Use case 評価で FN (False Negative) の DynamicObject
 
 ```yaml
 [2022-08-10 10:38:11,341] [INFO] [perception_lsim.py:258 <module>] Frame result example (frame_results[0]):

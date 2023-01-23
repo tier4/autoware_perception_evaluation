@@ -101,7 +101,7 @@ json_result = json.dump(dict_result)
 
 - **パラメータ指定時の Error ケース**
 
-  - **1. `evaluation_task`に `detection/tracking/prediction` 以外を指定した場合**
+  - **1. `evaluation_task`に `detection/tracking/prediction/detection2d/tracking2d/classification2d` 以外を指定した場合**
 
   ```python
   evaluation_config_dict = {
@@ -120,7 +120,7 @@ json_result = json.dump(dict_result)
   ```shell
   # Exception
   >>  ValueError: Unsupported task: 'foo'
-      Supported tasks: ['detection', 'tracking', 'prediction', 'detection2d']
+      Supported tasks: ['detection', 'tracking', 'prediction', 'detection2d', 'tracking2d', 'classification2d']
   ```
 
   - **2. `max_x/y_position`，`max/min_distance` がどちらも未指定 or 両方指定した場合**

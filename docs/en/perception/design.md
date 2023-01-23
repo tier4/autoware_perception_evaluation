@@ -86,7 +86,7 @@
 
 - **Error cases in setting parameters**
 
-  - **1. Set the invalid `evaluation_task` except of `detection/tracking/prediction`**
+  - **1. Set the invalid `evaluation_task` except of `detection/tracking/prediction/detection2d/tracking2d/classification2d`**
 
   ```python
   evaluation_config_dict = {
@@ -105,7 +105,7 @@
   ```shell
   # Exception
   >>  ValueError: Unsupported task: 'foo'
-      Supported tasks: ['detection', 'tracking', 'prediction', 'detection2d']
+      Supported tasks: ['detection', 'tracking', 'prediction', 'detection2d', 'tracking2d', 'classification2d']
   ```
 
   - **2. Unset either `max_x/y_position` and `max/min_distance` or set both of them**

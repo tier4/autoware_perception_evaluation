@@ -57,7 +57,7 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
 - pass_fail_result (PassFailResult): Result of usecase evaluation
   - tp_objects (List[DynamicObjectWithPerceptionResult]): TP results in usecase evaluation
   - fp_objects (List[DynamicObjectWithPerceptionResult]): TP results in usecase evaluation
-  - fn_objects (List[Union[DynamicObject, RoiObject]]): FN objects in usecase evaluation
+  - fn_objects (List[ObjectType]): FN objects in usecase evaluation
 
 ```yaml
 [2022-08-10 10:38:11,341] [INFO] [perception_lsim.py:258 <module>] Frame result example (frame_results[0]):
