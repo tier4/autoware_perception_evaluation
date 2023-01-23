@@ -231,7 +231,7 @@ class LabelConverter:
 
 
 def set_target_lists(
-    target_labels: List[str],
+    target_labels: Optional[List[str]],
     label_converter: LabelConverter,
 ) -> List[LabelType]:
     """[summary]
@@ -244,6 +244,8 @@ def set_target_lists(
     Returns:
         List[LabelType]:  The list of target class
     """
+    if target_labels is None or len(target_labels) == 0:
+        return [label for label in label_converter.label_type]
     target_autoware_labels = []
     for target_label in target_labels:
         target_autoware_labels.append(label_converter.convert_label(target_label))

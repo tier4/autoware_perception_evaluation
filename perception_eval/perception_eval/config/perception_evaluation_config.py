@@ -116,7 +116,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
 
         # Covert labels to autoware labels for Metrics
         target_labels: List[LabelType] = set_target_lists(
-            e_cfg["target_labels"],
+            e_cfg.get("target_labels"),
             self.label_converter,
         )
         self.target_labels: List[LabelType] = target_labels

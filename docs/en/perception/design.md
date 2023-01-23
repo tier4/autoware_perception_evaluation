@@ -51,7 +51,7 @@
 
   ```python
   evaluation_config_dict: [Dict[str, Any]] = {
-    "evaluation_task": "detection"/"tracking"/"prediction" or "detection2d",
+    "evaluation_task": "detection"/"tracking"/"prediction" or "detection2d/tracking2d/classification2d",
     ...
   }
   ```
@@ -62,7 +62,7 @@
 
     | Arguments              |    type     |     Mandatory      | Description                                                                                                     |
     | :--------------------- | :---------: | :----------------: | :-------------------------------------------------------------------------------------------------------------- |
-    | `target_labels`        | `List[str]` |        Yes         | List of name of target labels                                                                                   |
+    | `target_labels`        | `List[str]` |         No         | List of name of target labels. If None, all labels will be evaluated.                                           |
     | `max_x_position`       |   `float`   |         \*         | Maximum x position of area to be evaluated (Only 3D)                                                            |
     | `max_y_position`       |   `float`   |         \*         | Maximum y position of area to be evaluated (Only 3D)                                                            |
     | `max_distance`         |   `float`   |         \*         | Maximum distance from `base_link` of ego to be evaluated (Only 3D)                                              |
@@ -74,6 +74,8 @@
     \* It is necessary to specify either **max_x/y_position** or **max/min_distance**. Another groups must be `None`.
 
   - **2. Thresholds to determine TP/FP/FN for `DynamicObjectWithPerceptionResult`**
+
+    - For `classification2d`, there is no need to specify the following parameters.
 
     | Arguments                    |     type      | Mandatory | Description                            |
     | :--------------------------- | :-----------: | :-------: | :------------------------------------- |
@@ -261,7 +263,7 @@
 |   CLEAR    | MOTA, MOTP, ID switch |
 | HOTA (TBD) |   HOTA, DetA, AssA    |
 
-### Prediction (TBD)
+### Prediction (WIP)
 
 | Metrics | Sub Metrics |
 | :-----: | :---------: |

@@ -42,10 +42,7 @@ class PerceptionLSimMoc:
         if evaluation_task in ("detection2d", "tracking2d"):
             evaluation_config_dict = {
                 "evaluation_task": evaluation_task,
-                "center_distance_thresholds": [
-                    [1.0, 1.0, 1.0, 1.0],
-                    [2.0, 2.0, 2.0, 2.0],
-                ],
+                "center_distance_thresholds": [1.0, 2.0],
                 "iou_2d_thresholds": [0.5],
             }
         elif evaluation_task == "classification2d":
@@ -53,6 +50,7 @@ class PerceptionLSimMoc:
         else:
             raise ValueError(f"Unexpected evaluation task: {evaluation_task}")
 
+        # If target_labels = None, all labels will be evaluated.
         evaluation_config_dict["target_labels"] = (
             ["green", "red", "yellow", "unknown"]
             if label_prefix == "traffic_light"

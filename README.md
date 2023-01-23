@@ -8,7 +8,7 @@
 
 ## Overview
 
-### Evaluate Perception(=Detection/Tracking/Prediction/Classification) & Sensing task
+### Evaluate Perception & Sensing task
 
 - 3D task
 

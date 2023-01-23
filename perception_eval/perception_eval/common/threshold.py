@@ -151,8 +151,8 @@ def check_thresholds(
     """
     if len(thresholds) != len(target_labels):
         raise exception(
-            "Error: Thresholds is not proper! \
-            The length of the thresholds is not same as target labels",
+            "Error: Threshold is not proper! "
+            + "The length of the thresholds' list is not same with target labels' one.",
         )
     return thresholds
 
@@ -179,7 +179,7 @@ def check_thresholds_list(
     for thresholds in thresholds_list:
         if len(thresholds) != 0 and len(thresholds) != len(target_labels):
             raise exception(
-                "Error: Metrics threshold is not proper! \
-                The length of the threshold is not same as target labels"
+                "Error: Metrics threshold is not proper! "
+                + "The length of the thresholds' list is not same as target labels' one.",
             )
     return thresholds_list
