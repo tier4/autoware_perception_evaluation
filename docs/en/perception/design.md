@@ -229,11 +229,11 @@
 - Specify in every frame, not in initializing `PerceptionEvaluationManager`.
 - For the details, see [perception_eval/evaluation/result/perception_frame_config](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py).
 
-| Arguments                       |             type             | Mandatory | Description                                                    |
-| :------------------------------ | :--------------------------: | :-------: | :------------------------------------------------------------- |
-| `evaluator_config`              | `PerceptionEvaluationConfig` |    Yes    | Configuration settings which `PerceptionEvaluationManager` has |
-| `target_labels`                 |         `List[str]`          |    Yes    | List of name of target labels                                  |
-| `plane_distance_threshold_list` |        `List[float]`         |    Yes    | Thresholds of plane distance                                   |
+| Arguments                 |             type             | Mandatory | Description                                                    |
+| :------------------------ | :--------------------------: | :-------: | :------------------------------------------------------------- |
+| `evaluator_config`        | `PerceptionEvaluationConfig` |    Yes    | Configuration settings which `PerceptionEvaluationManager` has |
+| `target_labels`           |         `List[str]`          |    Yes    | List of name of target labels                                  |
+| `matching_threshold_list` |        `List[float]`         |    Yes    | Thresholds of plane distance                                   |
 
 ### Execute evaluation
 

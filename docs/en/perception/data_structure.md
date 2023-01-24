@@ -109,7 +109,7 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
                       'fp_objects_result': ' --- length of element 17 ---,',
                       'frame_id': 'map',
                       'frame_pass_fail_config': {'confidence_threshold_list': None,
-                                                 'plane_distance_threshold_list': ' --- length of element 4 ---,',
+                                                 'matching_threshold_list': ' --- length of element 4 ---,',
                                                  'target_labels': ' --- length of element 4 ---,'},
                       'tp_objects': ' --- length of element 22 ---,'},
  'target_labels': ' --- length of element 4 ---,',
