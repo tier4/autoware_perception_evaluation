@@ -22,6 +22,24 @@ from ._metrics_config_base import _MetricsConfigBase
 
 
 class ClassificationMetricsConfig(_MetricsConfigBase):
+    """Configuration class for classification evaluation metrics.
+
+    Attributes:
+        evaluation_task (EvaluationTask.CLASSIFICATION)
+        target_labels (List[LabelType]): Target labels list.
+        center_distance_thresholds (List[float]): Thresholds list of center distance matching.
+        plane_distance_thresholds (List[float]): Threshold list of plane distance matching.
+        iou_2d_thresholds (List[float]): Thresholds list of 2d iou matching.
+        iou_3d_thresholds (List[float]): Thresholds list of 3d iou matching.
+
+    Args:
+        target_labels (List[LabelType]): Target labels list.
+        center_distance_thresholds (List[float]): Thresholds list of center distance matching.
+        plane_distance_thresholds (List[float]): Threshold list of plane distance matching.
+        iou_2d_thresholds (List[float]): Thresholds list of 2d iou matching.
+        iou_3d_thresholds (List[float]): Thresholds list of 3d iou matching.
+    """
+
     evaluation_task: EvaluationTask = [EvaluationTask.CLASSIFICATION2D]
 
     def __init__(

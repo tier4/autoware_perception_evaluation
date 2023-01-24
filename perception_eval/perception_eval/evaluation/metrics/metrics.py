@@ -26,17 +26,23 @@ from .tracking import TrackingMetricsScore
 
 
 class MetricsScore:
-    """[summary]
-    Metrics score class.
+    """Metrics score class.
 
     Attributes:
-        self.detection_config (Optional[DetectionMetricsConfig])
-        self.tracking_config (Optional[TrackingMetricsConfig])
-        self.prediction_config (Optional[PredictionMetricsConfig]): TBD
-        self.maps (List[Map]): The list of mAP class object. Each mAP is different from threshold
+        detection_config (Optional[DetectionMetricsConfig]): Config for detection evaluation.
+        tracking_config (Optional[DetectionMetricsConfig]): Config for tracking evaluation.
+        prediction_config (Optional[PredictionMetricsConfig]): Config for prediction evaluation.
+        classification_config (Optional[ClassificationMetricsConfig]): Config for classification evaluation.
+        evaluation_task (EvaluationTask): EvaluationTask instance.
+        maps (List[Map]): List of mAP instances. Each mAP is different from threshold
                                for matching (ex. IoU 0.3).
-        self.tracking_scores (List[TrackingMetricsScore])
-        self.prediction_scores (List[TODO]): TBD
+        tracking_scores (List[TrackingMetricsScore]): List of TrackingMetricsScore instances.
+        prediction_scores (List[TODO]): TBD
+        classification_score (List[ClassificationMetricsScore]): List of ClassificationMetricsScore instances.
+
+    Args:
+        config (MetricsScoreConfig): MetricsScoreConfig instance.
+        used_frame: List[int]: List of frame numbers loaded to evaluate.
     """
 
     def __init__(
@@ -44,11 +50,6 @@ class MetricsScore:
         config: MetricsScoreConfig,
         used_frame: List[int],
     ) -> None:
-        """[summary]
-        Args:
-            metrics_config (MetricsScoreConfig): A config for metrics
-            used_frame: List[int]: The list of chosen frame.
-        """
         self.detection_config = config.detection_config
         self.tracking_config = config.tracking_config
         self.prediction_config = config.prediction_config
@@ -67,8 +68,10 @@ class MetricsScore:
         self.__used_frame: List[int] = used_frame
 
     def __str__(self) -> str:
-        """[summary]
-        Str method
+        """__str__ method
+
+        Returns:
+            str: Formatted string.
         """
         str_: str = "\n\n"
         # total frame

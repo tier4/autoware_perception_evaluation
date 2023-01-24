@@ -30,23 +30,21 @@ from .config.tracking_metrics_config import TrackingMetricsConfig
 
 
 class MetricsScoreConfig:
-    """[summary]
-    The config for each evaluation task metrics.
+    """A configuration class for each evaluation task metrics.
 
     Attributes:
-        self.detection_config (Optional[DetectionMetricsConfig])
-        self.tracking_config (Optional[DetectionMetricsConfig])
-        self.prediction_config (Optional[PredictionMetricsConfig])
-        self.classification_config (Optional[ClassificationMetricsConfig])
-        self.evaluation_tasks (List[EvaluationTask])
+        detection_config (Optional[DetectionMetricsConfig]): Config for detection evaluation.
+        tracking_config (Optional[DetectionMetricsConfig]): Config for tracking evaluation.
+        prediction_config (Optional[PredictionMetricsConfig]): Config for prediction evaluation.
+        classification_config (Optional[ClassificationMetricsConfig]): Config for classification evaluation.
+        evaluation_task (EvaluationTask): EvaluationTask instance.
+
+    Args:
+        evaluation_task (EvaluationTask): EvaluationTask instance.
+        **cfg: Configuration data.
     """
 
     def __init__(self, evaluation_task: EvaluationTask, **cfg) -> None:
-        """[summary]
-
-        Args:
-            evaluation_task (EvaluationTask)
-        """
         self.detection_config: Optional[DetectionMetricsConfig] = None
         self.tracking_config: Optional[TrackingMetricsConfig] = None
         self.classification_config: Optional[ClassificationMetricsConfig] = None
@@ -81,8 +79,8 @@ class MetricsScoreConfig:
         """Check if input parameters are valid.
 
         Args:
-            config (_MetricsConfigBase): The config for metrics.
-            params (Dict[str, any]): The parameters for metrics.
+            config (_MetricsConfigBase): Metrics score instance.
+            params (Dict[str, any]): Parameters for metrics.
 
         Raises:
             KeyError: When got invalid parameter names.

@@ -94,7 +94,7 @@
 | `TrafficLightLabel.RED_RIGHT`          |     "red_right"      | red_right          |
 | `TrafficLightLabel.RED_RIGHT_STRAIGHT` | "red_right_straight" | red_right_straight |
 | `TrafficLightLabel.RED_RIGHT_DIAGONAL` | "red_right_diagonal" | red_right_diagonal |
-| `TrafficLightLabel.YELLOW_RIGHT`       |  "red_yellow_right"  | red_yellow_right   |
+| `TrafficLightLabel.YELLOW_RIGHT`       |    "yellow_right"    | yellow_right       |
 | `TrafficLightLabel.UNKNOWN`            |      "unknown"       | unknown            |
 
 ## [TBD]`BlinkerLabel`

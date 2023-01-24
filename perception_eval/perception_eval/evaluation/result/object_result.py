@@ -34,24 +34,17 @@ from perception_eval.evaluation.matching import PlaneDistanceMatching
 
 
 class DynamicObjectWithPerceptionResult:
-    """[summary]
-    Evaluation result for a estimated object
+    """Object result class for perception evaluation.
 
     Attributes:
-        self.estimated_object (ObjectType):
-                The estimated object by inference like CenterPoint.
-        self.ground_truth_object (Optional[ObjectType]):
-                Ground truth object corresponding to estimated object.
-        self.is_label_correct (bool):
-                Whether the label of estimated_object is same as the label of ground truth object
-        self.center_distance (CenterDistanceMatching):
-                The center distance between estimated object and ground truth object
-        self.plane_distance (PlaneDistanceMatching):
-                The plane distance for use case evaluation
-        self.iou_bev (IOUBEVMatching):
-                The bev IoU between estimated object and ground truth object
-        self.iou_3d (IOU3dMatching):
-                The 3d IoU between estimated object and ground truth object
+        estimated_object (ObjectType): Estimated object.
+        ground_truth_object (Optional[ObjectType]): Ground truth object.
+        is_label_correct (bool): Whether the label both of `estimated_object` and `ground_truth_object` are same.
+        center_distance (Optional[CenterDistanceMatching]): CenterDistanceMatching instance.
+        plane_distance (Optional[PlaneDistanceMatching]): PlaneDistanceMatching instance.
+            In 2D evaluation, this is None.
+        iou_2d (IOU2dMatching): IOU2dMatching instance.
+        iou_3d (IOU3dMatching): IOU3dMatching instance. In 2D evaluation, this is None.
     """
 
     def __init__(
@@ -131,18 +124,16 @@ class DynamicObjectWithPerceptionResult:
         self,
         matching_mode: MatchingMode,
     ) -> MatchingMethod:
-        """[summary]
-        Get matching class
+        """Get MatchingMethod instance with corresponding MatchingMode.
 
         Args:
-            matching_mode (MatchingMode):
-                    The matching mode to evaluate. Defaults to None.
+            matching_mode (MatchingMode): MatchingMode instance.
 
         Raises:
-            NotImplementedError: Not implemented matching class
+            NotImplementedError: When unexpected MatchingMode is input.
 
         Returns:
-            Matching: Matching class
+            MatchingMethod: Corresponding MatchingMethods instance.
         """
         if matching_mode == MatchingMode.CENTERDISTANCE:
             return self.center_distance
@@ -157,8 +148,9 @@ class DynamicObjectWithPerceptionResult:
 
     @property
     def distance_error_bev(self) -> Optional[float]:
-        """[summary]
-        Get error center distance between ground truth and estimated object in BEV space.
+        """Get error center distance between ground truth and estimated object in BEV space.
+
+        If `self.ground_truth_object=None`, returns None.
 
         Returns:
             Optional[float]: error center distance between ground truth and estimated object.
@@ -169,8 +161,9 @@ class DynamicObjectWithPerceptionResult:
 
     @property
     def distance_error(self) -> Optional[float]:
-        """[summary]
-        Get error center distance between ground truth and estimated object.
+        """Get error center distance between ground truth and estimated object.
+
+        If `self.ground_truth_object=None`, returns None.
 
         Returns:
             Optional[float]: error center distance between ground truth and estimated object.
@@ -181,48 +174,47 @@ class DynamicObjectWithPerceptionResult:
 
     @property
     def position_error(self) -> Optional[Tuple[float, float, float]]:
-        """[summary]
-        Get the position error vector from estimated to ground truth object.
-        If ground truth object is None, returns None.
+        """Get the position error vector from estimated to ground truth object.
+
+        If `self.ground_truth_object=None`, returns None.
 
         Returns:
-            err_x (float): Error of x[m].
-            err_y (float): Error of y[m].
-            err_z (float): Error of z[m].
+            float: x-axis position error[m].
+            float: y-axis position error[m].
+            float: z-axis position error[m].
         """
         return self.estimated_object.get_position_error(self.ground_truth_object)
 
     @property
     def heading_error(self) -> Optional[Tuple[float, float, float]]:
-        """[summary]
-        Get the heading error vector from estimated to ground truth object.
-        If ground truth object is None, returns None.
+        """Get the heading error vector from estimated to ground truth object.
+
+        If `self.ground_truth_object=None`, returns None.
 
         Returns:
-            err_x (float): Error of rotation angle around x-axis, in the range [-pi, pi].
-            err_y (float): Error of rotation angle around y-axis, in the range [-pi, pi].
-            err_z (float): Error of rotation angle around z-axis, in the range [-pi, pi].
+            float: Roll error, in [-pi, pi].
+            float: Pitch error, in [-pi, pi].
+            float: Yaw error, in [-pi, pi].
         """
         return self.estimated_object.get_heading_error(self.ground_truth_object)
 
     @property
     def velocity_error(self) -> Optional[Tuple[float, float, float]]:
-        """[summary]
-        Get the velocity error vector from estimated to ground truth object.
-        If ground truth object is None, returns None.
+        """Get the velocity error vector from estimated to ground truth object.
+
+        If `self.ground_truth_object=None`, returns None.
         Also, velocity of estimated or ground truth object is None, returns None too.
 
         Returns:
-            err_vx (float): Error of vx[m].
-            err_vy (float): Error of vy[m].
-            err_vz (float): Error of vz[m].
+            float: x-axis velocity error[m/s].
+            float: y-axis velocity error[m/s].
+            float: z-axis velocity error[m/s].
         """
         return self.estimated_object.get_velocity_error(self.ground_truth_object)
 
     @property
     def is_label_correct(self) -> bool:
-        """[summary]
-        Get whether label is correct.
+        """Get whether label is correct.
 
         Returns:
             bool: Whether label is correct
@@ -238,16 +230,15 @@ def get_object_results(
     ground_truth_objects: List[ObjectType],
     matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
 ) -> List[DynamicObjectWithPerceptionResult]:
-    """[summary]
-    Returns list of DynamicObjectWithPerceptionResult.
+    """Returns list of DynamicObjectWithPerceptionResult.
 
     Args:
-        estimated_objects (List[ObjectType]): The list of estimated object.
-        ground_truth_objects (List[ObjectType]): The list of ground truth object.
-        matching_mode (MatchingMode): The MatchingMode instance.
+        estimated_objects (List[ObjectType]): Estimated objects list.
+        ground_truth_objects (List[ObjectType]): Ground truth objects list.
+        matching_mode (MatchingMode): MatchingMode instance.
 
     Returns:
-        object_results (List[DynamicObjectWithPerceptionResult]): The list of object result.
+        object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
     """
     # There is no estimated object (= all FN)
     if not estimated_objects:
@@ -310,15 +301,16 @@ def _get_object_results_with_id(
     estimated_objects: List[DynamicObject2D],
     ground_truth_objects: List[DynamicObject2D],
 ) -> List[DynamicObjectWithPerceptionResult]:
-    """[summary]
-    Returns the list of DynamicObjectWithPerceptionResult comparing with their uuid for classification evaluation.
+    """Returns the list of DynamicObjectWithPerceptionResult considering their uuids.
+
+    This function is used in 2D classification evaluation.
 
     Args:
-        estimated_objects (List[DynamicObject2D])
-        ground_truth_objects (List[DynamicObject2D])
+        estimated_objects (List[DynamicObject2D]): Estimated objects list.
+        ground_truth_objects (List[DynamicObject2D]): Ground truth objects list.
 
     Returns:
-        object_results (List[DynamicObject])
+        object_results (List[DynamicObjectWithPerceptionEvaluation]): Object results list.
     """
     object_results: List[DynamicObjectWithPerceptionResult] = []
     estimated_objects_ = estimated_objects.copy()
@@ -352,12 +344,13 @@ def _get_object_results_with_id(
 def _get_fp_object_results(
     estimated_objects: List[ObjectType],
 ) -> List[DynamicObjectWithPerceptionResult]:
-    """[summary]
-    Returns the list of DynamicObjectWithPerceptionResult that have no ground truth.
+    """Returns the list of DynamicObjectWithPerceptionResult that have no ground truth.
+
     Args:
-        estimated_objects (List[ObjectType])
+        estimated_objects (List[ObjectType]): Estimated objects list.
+
     Returns:
-        object_results (List[DynamicObjectWithPerceptionResult])
+        object_results (List[DynamicObjectWithPerceptionResult]): FP object results list.
     """
     object_results: List[DynamicObjectWithPerceptionResult] = []
     for est_obj_ in estimated_objects:
@@ -371,13 +364,14 @@ def _get_fp_object_results(
 
 
 def _get_matching_module(matching_mode: MatchingMode) -> Tuple[Callable, bool]:
-    """[summary]
-    Returns the matching function and boolean flag whether choose maximum value or not.
+    """Returns the matching function and boolean flag whether choose maximum value or not.
+
     Args:
-        matching_mode (MatchingMode)
+        matching_mode (MatchingMode): MatchingMode instance.
+
     Returns:
-        matching_method_module (Callable)
-        maximize (bool)
+        matching_method_module (Callable): MatchingMethod instance.
+        maximize (bool): Whether much bigger is better.
     """
     if matching_mode == MatchingMode.CENTERDISTANCE:
         matching_method_module: CenterDistanceMatching = CenterDistanceMatching
@@ -402,12 +396,13 @@ def _get_score_table(
     ground_truth_objects: List[ObjectType],
     matching_method_module: Callable,
 ) -> np.ndarray:
-    """[summary]
-    Returns score table in shape (num_estimation, num_ground_truth).
+    """Returns score table, in shape (num_estimation, num_ground_truth).
+
     Args:
-        estimated_objects (List[ObjectType])
-        ground_truth_objects (List[ObjectType])
-        matching_method_module (Callable)
+        estimated_objects (List[ObjectType]): Estimated objects list.
+        ground_truth_objects (List[ObjectType]): Ground truth objects list.
+        matching_method_module (Callable): MatchingMethod instance.
+
     Returns:
         score_table (numpy.ndarray): in shape (num_estimation, num_ground_truth).
     """

@@ -36,20 +36,18 @@ from ..evaluation.result.object_result import get_object_results
 
 
 class PerceptionEvaluationManager(_EvaluationMangerBase):
-    """[summary]
-    PerceptionEvaluationManager class.
-    This class is management interface for perception interface.
+    """A manager class to evaluate perception task.
 
     Attributes:
-        - By _EvaluationMangerBase
-        self.evaluator_config (PerceptionEvaluatorConfig): Configuration for perception evaluation.
-        self.ground_truth_frames (List[FrameGroundTruth]): Ground truth frames from datasets
-        self.target_labels (List[LabelType]): List of target labels.
+        evaluator_config (PerceptionEvaluatorConfig): Configuration for perception evaluation.
+        ground_truth_frames (List[FrameGroundTruth]): Ground truth frames from datasets
+        target_labels (List[LabelType]): List of target labels.
+        frame_results (List[PerceptionFrameResult]): Perception results list at each frame.
+        visualizer (Optional[PerceptionVisualizer]): Visualization class for perception result.
+            If `self.evaluation_task.is_2d()=True`, this is None.
 
-        - By PerceptionEvaluationManger
-        self.frame_results (List[PerceptionFrameResult]): Evaluation result
-        self.visualizer (Optional[PerceptionVisualizer]): Visualization class for perception result.
-            If EvaluationTask.is_2d() is True, None.
+    Args:
+        evaluator_config (PerceptionEvaluatorConfig): Configuration for perception evaluation.
     """
 
     def __init__(
@@ -57,11 +55,6 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         evaluation_config: PerceptionEvaluationConfig,
     ) -> None:
         super().__init__(evaluation_config=evaluation_config)
-        """[summary]
-
-        Args:
-            evaluator_config (PerceptionEvaluatorConfig): Configuration for perception evaluation.
-        """
         self.frame_results: List[PerceptionFrameResult] = []
         self.visualizer = (
             None
@@ -86,22 +79,26 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         critical_object_filter_config: CriticalObjectFilterConfig,
         frame_pass_fail_config: PerceptionPassFailConfig,
     ) -> PerceptionFrameResult:
-        """[summary]
-        Evaluate one frame
+        """Get perception result at current frame.
+
+        Evaluated result is appended to `self.frame_results`.
+
+        TODO:
+        - Arrange `CriticalObjectFilterConfig` and `PerceptionPassFailConfig` to `PerceptionFrameConfig`.
+        - Allow input `PerceptionFrameConfig` and `ros_critical_ground_truth_objects` are None.
 
         Args:
-            unix_time (int): Unix time of frame to evaluate [us]
-            ground_truth_now_frame (FrameGroundTruth): Now frame ground truth
-            estimated_objects (List[ObjectType]): estimated object which you want to evaluate
-            ros_critical_ground_truth_objects (List[ObjectType]):
-                    Critical ground truth objects filtered by ROS node to evaluate pass fail result
-            critical_object_filter_config (CriticalObjectFilterConfig):
-                    The parameter config to choose critical ground truth objects
-            frame_pass_fail_config (PerceptionPassFailConfig):
-                    The parameter config to evaluate
+            unix_time (int): Unix timestamp [us].
+            ground_truth_now_frame (FrameGroundTruth): FrameGroundTruth instance that has the closest
+                timestamp with `unix_time`.
+            estimated_objects (List[ObjectType]): Estimated objects list.
+            ros_critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects filtered by ROS
+                node to evaluate pass fail result.
+            critical_object_filter_config (CriticalObjectFilterConfig): Parameter config to filter objects.
+            frame_pass_fail_config (PerceptionPassFailConfig):Parameter config to evaluate pass/fail.
 
         Returns:
-            PerceptionFrameResult: Evaluation result
+            PerceptionFrameResult: Evaluation result.
         """
         object_results, ground_truth_now_frame = self._filter_objects(
             estimated_objects,
@@ -136,14 +133,19 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         estimated_objects: List[ObjectType],
         frame_ground_truth: FrameGroundTruth,
     ) -> Tuple[List[DynamicObjectWithPerceptionResult], FrameGroundTruth]:
-        """[summary]
-        Filtering estimated and ground truth objects.
+        """Returns filtered list of DynamicObjectResult and FrameGroundTruth instance.
+
+        First of all, filter `estimated_objects` and `frame_ground_truth`.
+        Then generate a list of DynamicObjectResult as `object_results`.
+        Finally, filter `object_results` when `target_uuids` is specified.
+
         Args:
-            estimated_objects (List[ObjectType])
-            frame_ground_truth (FrameGroundTruth)
+            estimated_objects (List[ObjectType]): Estimated objects list.
+            frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
+
         Returns:
-            object_results (List[DynamicObjectWithPerceptionResult])
-            frame_ground_truth (FrameGroundTruth)
+            object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results list.
+            frame_ground_truth (FrameGroundTruth): Filtered FrameGroundTruth instance.
         """
         estimated_objects = filter_objects(
             frame_id=self.frame_id,
@@ -174,11 +176,10 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         return object_results, frame_ground_truth
 
     def get_scene_result(self) -> MetricsScore:
-        """[summary]
-        Evaluate metrics score thorough a scene.
+        """Evaluate metrics score thorough a scene.
 
         Returns:
-            MetricsScore: Metrics score
+            scene_metrics_score (MetricsScore): MetricsScore instance.
         """
         # Gather objects from frame results
         target_labels: List[LabelType] = self.target_labels

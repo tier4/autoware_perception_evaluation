@@ -22,8 +22,18 @@ from typing import Union
 
 
 class EvaluationTask(Enum):
-    """[summary]
-    Evaluation tasks enum class
+    """Evaluation tasks enum class.
+
+    # 3D
+    DETECTION
+    TRACKING
+    PREDICTION
+    SENSING
+
+    # 2D
+    DETECTION2D
+    TRACKING2D
+    CLASSIFICATION2D
     """
 
     # 3D
@@ -58,14 +68,17 @@ class EvaluationTask(Enum):
 
 
 def set_task_lists(evaluation_tasks_str: List[str]) -> List[EvaluationTask]:
-    """[summary]
-    Convert str to EvaluationTask class
+    """Convert str to EvaluationTask instances list.
 
     Args:
-        evaluation_tasks (List[str]): The tasks to evaluate
+        evaluation_tasks_str (List[str]): Task names list in string.
 
     Returns:
-        List[EvaluationTask]: The tasks to evaluate
+        List[EvaluationTask]: Tasks list to be evaluated.
+
+    Examples:
+        >>> set_task_lists(["detection", "tracking"])
+        [<EvaluationTask.DETECTION: 'detection'>, <EvaluationTask.TRACKING: 'tracking'>]
     """
     task_lists: List[EvaluationTask] = []
     for evaluation_task_str in evaluation_tasks_str:
@@ -78,14 +91,18 @@ def set_task_lists(evaluation_tasks_str: List[str]) -> List[EvaluationTask]:
 def set_task_dict(
     evaluation_tasks_dict: Dict[str, Dict[str, Any]]
 ) -> Dict[EvaluationTask, Dict[str, Any]]:
-    """[summary]
-    Convert str key to EvaluationTask class
+    """Convert str key to EvaluationTask instance dict.
 
     Args:
-        evaluation_tasks_str (Dict[str, Dict[str, Any]]): The tasks to evaluate
+        evaluation_tasks_str (Dict[str, Dict[str, Any]]): Dict object keyed by task name.
 
     Returns:
-        Dict[EvaluationTask, Dict[str, Any]]: The tasks to evaluate
+        Dict[EvaluationTask, Dict[str, Any]]: Dict object keyed by EvaluationTask instance.
+
+    Examples:
+        >>> data = {"foo": 1, "bar": 2}
+        >>> set_task_dict(dict(detection=data))
+        {<EvaluationTask.DETECTION: 'detection'>: {"foo": 1, "bar": 2}}
     """
     task_dict: Dict[EvaluationTask, Dict[str, Any]] = {}
     for key, item in evaluation_tasks_dict.items():
@@ -96,14 +113,17 @@ def set_task_dict(
 
 
 def set_task(task_name: str) -> EvaluationTask:
-    """[summary]
-    Convert str task name to EvaluationTask class
+    """Convert string task name to EvaluationTask instance.
 
     Args:
-        task_name (str): The task to evaluate
+        task_name (str): Task name in string.
 
     Returns:
-        EvaluationTask: The
+        EvaluationTask: EvaluationTask instance.
+
+    Examples:
+        >>> set_task("detection")
+        <EvaluationTask.DETECTION: 'detection'>
     """
     for task in EvaluationTask:
         if task_name == task.value:

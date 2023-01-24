@@ -26,16 +26,21 @@ class ClassificationAccuracy:
     Class to calculate classification accuracy.
 
     Attributes:
-        self.target_labels (List[LabelType])
-        self.num_ground_truth (int)
-        self.objects_results_num (int)
-        self.num_tp (int)
-        self.num_fp (int)
-        self.accuracy (float)
-        self.precision (float)
-        self.recall (float)
-        self.f1score (float)
-        self.results (Dict[str, float])
+        target_labels (List[LabelType]): Target labels list.
+        num_ground_truth (int): Number of ground truths.
+        objects_results_num (int): Number of object results.
+        num_tp (int): Number of TP results.
+        num_fp (int): Number of FP results.
+        accuracy (float): Accuracy score. When `num_ground_truth+objects_results_num-num_tp=0`, this is float('inf').
+        precision (float): Precision score. When `num_tp+num_fp=0`, this is float('inf').
+        recall (float): Recall score. When `num_ground_truth=0`, this is float('inf').
+        f1score (float): F1 score. When `precision+recall=0`, this is float('inf').
+        results (Dict[str, float]): Dict that items are scores mapped by score names.
+
+    Args:
+        object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
+        num_ground_truth (int): Number of ground truths.
+        target_labels (List[LabelType]): Target labels list.
     """
 
     def __init__(
@@ -44,12 +49,6 @@ class ClassificationAccuracy:
         num_ground_truth: int,
         target_labels: List[LabelType],
     ) -> None:
-        """
-        Args:
-            object_results (List[DynamicObjectWithPerceptionResult])
-            num_ground_truth (int)
-            target_labels (List[LabelType])
-        """
         self.num_ground_truth: int = num_ground_truth
         self.target_labels: List[LabelType] = target_labels
         if len(object_results) == 0 or not isinstance(object_results[0], list):
@@ -79,16 +78,15 @@ class ClassificationAccuracy:
     def calculate_tp_fp(
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
-    ) -> float:
-        """[summary]
-        Calculate accuracy score.
+    ) -> Tuple[int, int]:
+        """Calculate accuracy score.
 
         Args:
-            object_results (List[DynamicObjectWithPerceptionResult])
+            object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
 
         Returns:
-            num_tp (int): Number of TP.
-            num_fp (int): Number of FP.
+            num_tp (int): Number of TP results.
+            num_fp (int): Number of FP results.
         """
         num_tp: int = 0
         num_fp: int = 0
@@ -100,15 +98,15 @@ class ClassificationAccuracy:
         return num_tp, num_fp
 
     def calculate_accuracy(self, num_tp: int) -> float:
-        """[summary]
+        """Calculate accuracy score.
 
         Accuracy = (TP + TN) / (TP + TN + FP + FN)
 
         Args:
-            num_tp (int): Number of TP.
+            num_tp (int): Number of TP results.
 
         Returns:
-            accuracy (float)
+            float: Accuracy score. When `objects_results_num+num_ground_truth-num_tp=0`, returns float('inf').
         """
         return (
             num_tp / (self.objects_results_num + self.num_ground_truth - num_tp)
@@ -117,17 +115,17 @@ class ClassificationAccuracy:
         )
 
     def calculate_precision_recall(self, num_tp: int) -> Tuple[float, float]:
-        """[summary]
+        """Calculate precision and recall scores.
 
         Precision = TP / (TP + FP)
         Recall = TP / (TP + FN)
 
         Args:
-            num_tp (int)
+            num_tp (int): Number of TP results.
 
         Returns:
-            precision (float)
-            recall (float)
+            precision (float): Precision score. When `self.object_results_num=0`, returns float('inf').
+            recall (float): Recall score. When `self.num_ground_truth=0`, returns float('inf').
         """
         precision = (
             num_tp / self.objects_results_num if self.objects_results_num != 0 else float("inf")
@@ -136,17 +134,17 @@ class ClassificationAccuracy:
         return precision, recall
 
     def calculate_f1score(self, precision: float, recall: float, beta: float = 1.0) -> float:
-        """[summary]
+        """Calculate F1 score.
 
         F score = (1 + beta**2) * precision * recall / (beta**2 * precision + recall)
 
         Args:
-            precision (float)
-            recall (float)
+            precision (float): Precision score.
+            recall (float): Recall score.
             beta (float): Defaults 1.0.
 
         Returns:
-            f1score (float)
+            f1score (float): F1 score. When `precision+recall=0`, returns float('inf').
         """
         return (
             (1 + beta**2) * precision * recall / (beta**2 * precision + recall)

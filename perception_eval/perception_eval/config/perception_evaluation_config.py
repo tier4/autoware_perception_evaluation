@@ -16,6 +16,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
@@ -28,27 +29,41 @@ from ._evaluation_config_base import _EvaluationConfigBase
 
 
 class PerceptionEvaluationConfig(_EvaluationConfigBase):
-    """[summary]
-    Evaluation configure class
+    """Configuration class for perception evaluation.
+
+    Directory structure to save log and visualization result is following
+    - result_root_directory/
+        ├── log_directory/
+        └── visualization_directory/
 
     Attributes:
-        - By _EvaluationConfigBase
-        self.dataset_paths (List[str]): The list of dataset path.
-        self.frame_id (str): The frame_id, base_link or map.
-        self.result_root_directory (str): The path to result directory.
-        self.log_directory (str): The path to sub directory for log.
-        self.visualization_directory (str): The path to sub directory for visualization.
-        self.label_converter (LabelConverter): The label convert class.
-        self.evaluation_task (EvaluationTask): The instance of EvaluationTask.
-        self.label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
-        self.camera_type (Optional[str]): Name of camera. Specify in 2D evaluation. Defaults to None.
-        self.load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
+        dataset_paths (List[str]): Dataset paths list.
+        frame_id (str): Frame ID, `base_link` or `map`.
+        result_root_directory (str): Directory path to save result.
+        log_directory (str): Directory Directory path to save log.
+        visualization_directory (str): Directory path to save visualization result.
+        label_converter (LabelConverter): LabelConverter instance.
+        evaluation_task (EvaluationTask): EvaluationTask instance.
+        label_prefix (str): Prefix of label type. Choose from [`autoware", `traffic_light`]. Defaults to autoware.
+        camera_type (Optional[str]): Camera name. Specify in 2D evaluation. Defaults to None.
+        load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
+        target_labels (List[LabelType]): Target labels list.
+        filtering_params (Dict[str, Any]): Filtering parameters.
+        metrics_params (Dict[str, Any]): Metrics parameters.
+        metrics_config (MetricsScoreConfig): MetricsScoreConfig instance.
 
-        - By PerceptionEvaluationConfig
-        self.target_labels (List[AutowareLabel]): The list of target label.
-        self.filtering_params (Dict[str, Any]): Filtering parameters.
-        self.metrics_params (Dict[str, Any]): Metrics parameters.
-        self.metrics_config (MetricsScoreConfig): The config for metrics
+    Args:
+        dataset_paths (List[str]): Dataset paths list.
+        frame_id (str): Frame ID, `base_link` or `map`.
+        merge_similar_labels (bool): Whether merge similar labels.
+            If True,
+                - BUS, TRUCK, TRAILER -> CAR
+                - MOTORBIKE, CYCLIST -> BICYCLE
+        result_root_directory (str): Directory path to save result.
+        evaluation_config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
+        label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
+        camera_type (Optional[str]): Name of camera. Specify in 2D evaluation. Defaults to None.
+        load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
     """
 
     _support_tasks: List[str] = [
@@ -71,21 +86,6 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         camera_type: Optional[str] = None,
         load_raw_data: bool = False,
     ) -> None:
-        """[summary]
-
-        Args:
-            dataset_paths (List[str]): The paths of dataset
-            frame_id (str): Frame ID, base_link or map
-            merge_similar_labels (bool): Whether merge similar labels.
-                If True,
-                    - BUS, TRUCK, TRAILER -> CAR
-                    - MOTORBIKE, CYCLIST -> BICYCLE
-            result_root_directory (str): The path to result directory
-            evaluation_config_dict (Dict[str, Dict[str, Any]]): The dictionary of evaluation config for each task.
-            label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
-            camera_type (Optional[str]): Name of camera. Specify in 2D evaluation. Defaults to None.
-            load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
-        """
         super().__init__(
             dataset_paths=dataset_paths,
             frame_id=frame_id,
@@ -103,12 +103,14 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             **self.metrics_params,
         )
 
-    def _extract_params(self, evaluation_config_dict: Dict[str, Any]) -> None:
-        """[summary]
-        Extract and divide parameters from evaluation_config_dict.
+    def _extract_params(
+        self,
+        evaluation_config_dict: Dict[str, Any],
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Extract and divide parameters from evaluation_config_dict into filtering and metrics parameters.
 
         Args:
-            evaluation_config_dict (Dict[str, Any])
+            evaluation_config_dict (Dict[str, Any]): Dict that items are evaluation config for each task.
 
         Returns:
             f_params (Dict[str, Any]): Parameters for filtering objects.

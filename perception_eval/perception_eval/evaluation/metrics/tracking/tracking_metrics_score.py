@@ -25,12 +25,22 @@ from .clear import CLEAR
 
 
 class TrackingMetricsScore:
-    """Metrics score class for tracking.
+    """Metrics score class for tracking evaluation.
+
+    Length of input `target_labels` and `matching_threshold_list` must be same.
 
     Attributes:
-        self.target_labels: (List[LabelType]): The list of LabelType.
-        self.matching_mode (MatchingMode): The target matching mode.
-        self.clears (List[CLEAR]): The list of CLEAR score.
+        target_labels: (List[LabelType]): Target labels list.
+        matching_mode (MatchingMode): MatchingMode instance.
+        clears (List[CLEAR]): List of CLEAR instances.
+
+    Args:
+        object_results_dict (Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]):
+            Dict that items are object results list mapped by their labels.
+        num_ground_truth (int): Number of ground truths.
+        target_labels (List[LabelType]): Target labels list.
+        matching_mode (MatchingMode): MatchingMode instance.
+        matching_threshold_list (List[float]): Matching thresholds list.
     """
 
     def __init__(
@@ -41,16 +51,6 @@ class TrackingMetricsScore:
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
     ) -> None:
-        """[summary]
-
-        Args:
-            object_results_dict (Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]):
-                object results divided by label for multi frame.
-            num_ground_truth (int): The number of ground truth.
-            target_labels (List[LabelType]): e.g. ["car", "pedestrian", "bus"]
-            matching_mode (MatchingMode): The target matching mode.
-            matching_threshold_list (List[float]): The list of matching threshold for each category. (e.g. [0.5, 0.3, 0.5])
-        """
         assert len(target_labels) == len(matching_threshold_list)
         self.target_labels: List[LabelType] = target_labels
         self.matching_mode: MatchingMode = matching_mode
@@ -99,7 +99,11 @@ class TrackingMetricsScore:
         return mota, motp, num_id_switch
 
     def __str__(self) -> str:
-        """__str__ method"""
+        """__str__ method
+
+        Returns:
+            str: Formatted string.
+        """
         str_: str = "\n"
         # === Total ===
         # CLEAR

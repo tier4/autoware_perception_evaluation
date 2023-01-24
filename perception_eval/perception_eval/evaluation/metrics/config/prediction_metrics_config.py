@@ -21,16 +21,22 @@ from ._metrics_config_base import _MetricsConfigBase
 
 
 class PredictionMetricsConfig(_MetricsConfigBase):
-    """[summary]
-    The config for prediction evaluation metrics.
+    """Configuration class for prediction evaluation metrics.
 
     Attributes:
-        self.evaluation_task (EvaluationTask.PREDICTION)
-        self.target_labels (List[LabelType]): The list of targets to evaluate
-        self.center_distance_thresholds (List[float]): The threshold list of center distance for matching
-        self.plane_distance_thresholds (List[float]): The threshold list of plane distance for matching
-        self.iou_bev_thresholds (List[float]): The threshold list of bev iou for matching
-        self.iou_3d_thresholds (List[float]): The threshold list of 3d iou for matching
+        evaluation_task (EvaluationTask.PREDICTION)
+        target_labels (List[LabelType]): Target labels list.
+        center_distance_thresholds (List[float]): Thresholds list of center distance matching.
+        plane_distance_thresholds (List[float]): Threshold list of plane distance matching.
+        iou_2d_thresholds (List[float]): Thresholds list of 2d iou matching.
+        iou_3d_thresholds (List[float]): Thresholds list of 3d iou matching.
+
+    Args:
+        target_labels (List[LabelType]): Target labels list.
+        center_distance_thresholds (List[float]): Thresholds list of center distance matching.
+        plane_distance_thresholds (List[float]): Threshold list of plane distance matching.
+        iou_2d_thresholds (List[float]): Thresholds list of 2d iou matching.
+        iou_3d_thresholds (List[float]): Thresholds list of 3d iou matching.
     """
 
     evaluation_task = EvaluationTask.PREDICTION
@@ -43,23 +49,6 @@ class PredictionMetricsConfig(_MetricsConfigBase):
         iou_2d_thresholds: List[List[float]],
         iou_3d_thresholds: List[List[float]],
     ) -> None:
-        """[summary]
-        Args:
-            target_labels (List[LabelType]): The list of targets to evaluate.
-            center_distance_thresholds (List[List[float]]):
-                    The threshold List of center distance.
-                    For example, if target_labels is ["car", "bike", "pedestrian"],
-                    List[float] : [1.0, 0.5, 0.5] means
-                    center distance threshold for a car is 1.0.
-                    center distance threshold for a bike is 0.5.
-                    center distance threshold for a pedestrian is 0.5.
-            plane_distance_thresholds (List[List[float]]):
-                    The mAP threshold of plane distance as map_thresholds_center_distance.
-            iou_bev_thresholds (List[List[float])]:
-                    The threshold List of BEV iou for matching as map_thresholds_center_distance.
-            iou_3d_thresholds (List[List[float])]:
-                    The threshold list of 3D iou for matching as map_thresholds_center_distance.
-        """
         super().__init__(
             target_labels=target_labels,
             center_distance_thresholds=center_distance_thresholds,

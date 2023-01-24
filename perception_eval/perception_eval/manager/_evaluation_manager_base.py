@@ -25,11 +25,14 @@ from perception_eval.evaluation import FrameResultType
 
 
 class _EvaluationMangerBase(ABC):
-    """Abstract base class for EvaluationManager
+    """Abstract base class for EvaluationManager.
 
     Attributes:
-        self.evaluator_config (EvaluationConfigType): Configuration for specified evaluation task.
-        self.ground_truth_frames (List[FrameGroundTruth]): The list of ground truths per frame.
+        evaluator_config (EvaluationConfigType): Configuration for specified evaluation task.
+        ground_truth_frames (List[FrameGroundTruth]): List of ground truths per frame.
+
+    Args:
+        evaluation_config (EvaluationConfigType): Parameter config for EvaluationManager.
     """
 
     @abstractmethod
@@ -37,11 +40,6 @@ class _EvaluationMangerBase(ABC):
         self,
         evaluation_config: EvaluationConfigType,
     ) -> None:
-        """[summary]
-        Args:
-            evaluation_config (EvaluationConfigType):
-                The config for EvaluationManager.
-        """
         super().__init__()
 
         self.evaluator_config = evaluation_config
@@ -72,14 +70,16 @@ class _EvaluationMangerBase(ABC):
 
     @abstractmethod
     def add_frame_result(self) -> FrameResultType:
-        """[summary]
-        Add perception/sensing frame result.
+        """Add perception/sensing frame result to `self.frame_results`
+
+        Returns:
+            FrameResultType: Frame result at current frame.
         """
         pass
 
     @abstractmethod
     def _filter_objects(self):
-        """[summary]"""
+        """Filter objects with `self.filtering_params`"""
         pass
 
     def get_ground_truth_now_frame(
@@ -87,17 +87,16 @@ class _EvaluationMangerBase(ABC):
         unix_time: int,
         threshold_min_time: int = 75000,
     ) -> Optional[FrameGroundTruth]:
-        """[summary]
-        Get now frame of ground truth
+        """Returns a FrameGroundTruth instance that has the closest timestamp with `unix_time`.
+
+        If there is no corresponding ground truth, returns None.
 
         Args:
             unix_time (int): Unix time of frame to evaluate.
-            threshold_min_time (int, optional):
-                    Min time for unix time difference [us].
-                    Default is 75000 sec = 75 ms.
+            threshold_min_time (int, optional): Minimum timestamp threshold[s]. Defaults to 75000[s]=75[ms].
 
         Returns:
-            Optional[FrameGroundTruth]: Now frame of ground truth.
+            Optional[FrameGroundTruth]: FrameGroundTruth instance at current frame.
                 If there is no corresponding ground truth, returns None.
         """
         ground_truth_now_frame: FrameGroundTruth = get_now_frame(

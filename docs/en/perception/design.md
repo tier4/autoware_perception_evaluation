@@ -212,7 +212,7 @@
 | Arguments                   |             type             |    Mandatory    | Description                                                                                                     |
 | :-------------------------- | :--------------------------: | :-------------: | :-------------------------------------------------------------------------------------------------------------- |
 | `evaluator_config`          | `PerceptionEvaluationConfig` |       Yes       | Configuration settings which `PerceptionEvaluationManager` has                                                  |
-| `target_labels`             |         `List[str]`          |       Yes       | List of name of target labels                                                                                   |
+| `target_labels`             |         `List[str]`          |       No        | List of name of target labels                                                                                   |
 | `max_x_position_list`       |        `List[float]`         |       \*        | Maximum x position of area to be evaluated (Only 3D)                                                            |
 | `max_y_position_list`       |        `List[float]`         |       \*        | Maximum y position of area to be evaluated (Only 3D)                                                            |
 | `max_distance_list`         |        `List[float]`         |       \*        | Maximum distance from `base_link` of ego to be evaluated (Only 3D)                                              |
@@ -229,11 +229,11 @@
 - Specify in every frame, not in initializing `PerceptionEvaluationManager`.
 - For the details, see [perception_eval/evaluation/result/perception_frame_config](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py).
 
-| Arguments                 |             type             | Mandatory | Description                                                    |
-| :------------------------ | :--------------------------: | :-------: | :------------------------------------------------------------- |
-| `evaluator_config`        | `PerceptionEvaluationConfig` |    Yes    | Configuration settings which `PerceptionEvaluationManager` has |
-| `target_labels`           |         `List[str]`          |    Yes    | List of name of target labels                                  |
-| `matching_threshold_list` |        `List[float]`         |    Yes    | Thresholds of plane distance                                   |
+| Arguments                 |             type             | Mandatory | Description                                                                                                            |
+| :------------------------ | :--------------------------: | :-------: | :--------------------------------------------------------------------------------------------------------------------- |
+| `evaluator_config`        | `PerceptionEvaluationConfig` |    Yes    | Configuration settings which `PerceptionEvaluationManager` has.                                                        |
+| `target_labels`           |         `List[str]`          |    No     | List of name of target labels.                                                                                         |
+| `matching_threshold_list` |        `List[float]`         |    No     | Thresholds of matching. For 3D evaluation, plane distance will be used. For 2D detection/tracking, IoU2D will be used. |
 
 ### Execute evaluation
 

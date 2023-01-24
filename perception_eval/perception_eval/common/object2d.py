@@ -26,9 +26,18 @@ from shapely.geometry import Polygon
 
 class Roi:
     """Region of Interest; ROI class.
+
     Attributes:
-        self.offset (Tuple[int, int]): (x, y) offset from (0, 0).
-        self.size (Tuple[int, int]): (height, width) of bounding box.
+        offset (Tuple[int, int]): Top-left pixels from (0, 0), (x, y) order.
+        size (Tuple[int, int]): Size of ROI, (height, width) order.
+        center (Tuple[int, int]): Center of ROI, (x, y) order.
+        height (int): Height of ROI.
+        width (int): Width  of ROI.
+        area (int): Area of ROI.
+
+    Args:
+        offset (Tuple[int, int]): Top-left pixels from (0, 0), (x, y) order.
+        size (Tuple[int, int]): Size of ROI, (height, width) order.
     """
 
     def __init__(
@@ -36,11 +45,6 @@ class Roi:
         offset: Tuple[int, int],
         size: Tuple[int, int],
     ) -> None:
-        """
-        Args:
-            offset (Tuple[int, int]): (x, y) offset from (0, 0).
-            size (Tuple[int, int]): (height, width) of bounding box.
-        """
         self.offset: Tuple[int, int] = offset
         self.size: Tuple[int, int] = size
 
@@ -70,6 +74,25 @@ class Roi:
 
 
 class DynamicObject2D:
+    """Dynamic object class for 2D object.
+
+    Attributes:
+        unix_time (int): Unix time[us].
+        semantic_score (float): Object's confidence [0, 1].
+        semantic_label (LabelType): Object's Label.
+        roi (Optional[Roi]): ROI in image. For classification, None is OK. Defaults to None.
+        uuid (Optional[str]): Unique ID. For traffic light objects, set lane ID. Defaults to None.
+        visibility (Optional[Visibility]): Visibility status. Defaults to None.
+
+    Args:
+        unix_time (int): Unix time[us].
+        semantic_score (float): Object's confidence [0, 1].
+        semantic_label (LabelType): Object's Label.
+        roi (Optional[Roi]): ROI in image. For classification, None is OK. Defaults to None.
+        uuid (Optional[str]): Unique ID. For traffic light objects, set lane ID. Defaults to None.
+        visibility (Optional[Visibility]): Visibility status. Defaults to None.
+    """
+
     def __init__(
         self,
         unix_time: int,
@@ -88,8 +111,7 @@ class DynamicObject2D:
         self.visibility: Optional[Visibility] = visibility
 
     def get_corners(self) -> np.ndarray:
-        """[summary]
-        Returns the corners of bounding box in pixel.
+        """Returns the corners of bounding box in pixel.
 
         Returns:
             numpy.ndarray: (top_left, top_right, bottom_right, bottom_left), in shape (4, 2).
@@ -113,8 +135,7 @@ class DynamicObject2D:
         return np.array([top_left, top_right, bottom_right, bottom_left])
 
     def get_area(self) -> int:
-        """[summary]
-        Returns the area of bounding box in pixel.
+        """Returns the area of bounding box in pixel.
 
         Returns:
             int: Area of bounding box[px].
@@ -124,8 +145,7 @@ class DynamicObject2D:
         return self.roi.area
 
     def get_polygon(self) -> Polygon:
-        """[summary]
-        Returns the corners as polygon.
+        """Returns the corners as polygon.
 
         Returns:
             Polygon: Corners as Polygon. ((x0, y0), ..., (x0, y0))

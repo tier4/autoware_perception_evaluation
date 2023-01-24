@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from typing import Dict
 from typing import List
+from typing import Tuple
 
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
@@ -24,6 +25,19 @@ from .accuracy import ClassificationAccuracy
 
 
 class ClassificationMetricsScore:
+    """Metrics score class for classification evaluation.
+
+    Attributes:
+        self.accuracies (List[ClassificationAccuracy]): List of ClassificationAccuracy instances.
+
+    Args:
+        object_results_dict (Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]]):
+            Dict that are list of DynamicObjectWithPerceptionResult mapped by their labels.
+        num_ground_truth_dict (Dict[LabelType, int]): Dict that are number of DynamicObjectWithPerceptionResult
+            mapped by their labels.
+        target_labels (List[LabelType]): Target labels list.
+    """
+
     def __init__(
         self,
         object_results_dict: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
@@ -42,7 +56,15 @@ class ClassificationMetricsScore:
             )
             self.accuracies.append(acc_)
 
-    def _summarize(self) -> float:
+    def _summarize(self) -> Tuple[float, float, float, float]:
+        """Summarize all ClassificationAccuracy.
+
+        Returns:
+            accuracy (float): Accuracy score. When `num_est+num_gt-num_tp=0`, this is float('inf').
+            precision (float): Precision score. When `num_gt+num_fp=0`, this is float('inf').
+            recall (float): Recall score. When `num_gt=0`, this is float('inf').
+            f1score (float): F1 score. When `precision+recall=0`, this is float('inf').
+        """
         num_est: int = 0
         num_gt: int = 0
         num_tp: int = 0
@@ -67,7 +89,11 @@ class ClassificationMetricsScore:
         return accuracy, precision, recall, f1score
 
     def __str__(self) -> str:
-        """__str__ method"""
+        """__str__ method
+
+        Returns:
+            str: Formatted string.
+        """
         str_: str = "\n"
         # === Total ===
         acc, precision, recall, f1score = self._summarize()

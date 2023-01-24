@@ -52,20 +52,20 @@ def _sample_to_frame(
     frame_name: str,
     load_raw_data: bool,
 ) -> dataset.FrameGroundTruth:
-    """[summary]
-    Convert Nuscenes sample to FrameGroundTruth
+    """Load FrameGroundTruth instance from sample record.
 
     Args:
-        nusc (NuScenes): Nuscenes instance
-        helper (PredictHelper): PredictHelper instance
-        sample_token (Any): Nuscenes sample token
-        evaluation_tasks (EvaluationTask): The evaluation task
-        label_converter (LabelConverter): Label convertor
+        nusc (NuScenes): Nuscenes instance.
+        helper (PredictHelper): PredictHelper instance.
+        sample_token (Any): Nuscenes sample token.
+        evaluation_tasks (EvaluationTask): The evaluation task.
+        label_converter (LabelConverter): LabelConvertor instance.
+        frame_id (str): base_link or map.
         frame_name (str): Name of frame, number of frame is used.
         load_raw_data (bool): Whether load pointcloud/image data.
 
     Raises:
-        NotImplementedError:
+        ValueError: When both `LIDAR_TOP` or `LIDAR_CONCAT`  are not included in data.
 
     Returns:
         FrameGroundTruth: Ground truth per frame
@@ -146,20 +146,20 @@ def _convert_nuscenes_box_to_dynamic_object(
     visibility: Optional[Visibility] = None,
     seconds: float = 3.0,
 ) -> DynamicObject:
-    """[summary]
-    Convert nuscenes object bounding box to dynamic object
+    """Convert nuscenes object bounding box to dynamic object.
 
     Args:
-        nusc (NuScenes): NuScenes instance
-        helper (PredictHelper): PredictHelper instance
-        object_box (Box): Annotation data from nuscenes dataset defined by Box
-        unix_time (int): The unix time [us]
-        evaluation_task (EvaluationTask): Evaluation task
-        label_converter (LabelConverter): LabelConverter
-        instance_token (str): Instance token
-        sample_token (str): Sample token, used to get past/future record
+        nusc (NuScenes): NuScenes instance.
+        helper (PredictHelper): PredictHelper instance.
+        frame_id (str): base_link or map.
+        object_box (Box): Annotation data from nuscenes dataset defined by Box.
+        unix_time (int): The unix time [us].
+        evaluation_task (EvaluationTask): Evaluation task.
+        label_converter (LabelConverter): LabelConverter instance.
+        instance_token (str): Instance token.
+        sample_token (str): Sample token, used to get past/future record.
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
-        seconds (float): Seconds to be referenced past/future record
+        seconds (float): Seconds to be referenced past/future record. Defaults to 3.0.
 
     Returns:
         DynamicObject: Converted dynamic object class
@@ -227,12 +227,11 @@ def _get_sample_boxes(
     frame_id: str,
     use_sensor_frame: bool = True,
 ) -> Tuple[str, List[Box], np.ndarray]:
-    """[summary]
-    Get bbox from frame data.
+    """Get bbox from frame data.
 
     Args:
-        nusc (NuScenes): NuScenes object.
-        frame_data (Dict[str, Any]): A set of frame record.
+        nusc (NuScenes): NuScenes instance.
+        frame_data (Dict[str, Any]): Set of frame record.
         frame_id (str): base_link or map.
         use_sensor_frame (bool): Whether use sensor frame. Defaults to True.
 
@@ -287,10 +286,10 @@ def _get_tracking_data(
     Args:
         nusc (NuScenes): NuScenes instance.
         helper (PredictHelper): PredictHelper instance.
-        frame_id (str): The frame_id base_link or map.
+        frame_id (str): base_link or map.
         instance_token (str): The unique token to access to instance.
         sample_token (str): The unique Token to access to sample.
-        seconds (float): Seconds to be referenced.[s]
+        seconds (float): Seconds to reference past/future records.
 
     Returns:
         past_positions (List[Tuple[float, float, float]])
@@ -367,8 +366,7 @@ def _sample_to_frame_2d(
     camera_type: str,
     load_raw_data: bool,
 ) -> dataset.FrameGroundTruth:
-    """[summary]
-    Returns FrameGroundTruth constructed with DynamicObject2D.
+    """Returns FrameGroundTruth constructed with DynamicObject2D.
 
     Args:
         nusc (NuScenes): NuScenes instance.
@@ -376,7 +374,7 @@ def _sample_to_frame_2d(
         sample_token (str): Sample token.
         evaluation_task (EvaluationTask): 2D evaluation Task.
         label_converter (LabelConverter): LabelConverter instance.
-        frame_id (str): Frame ID, base_link or map.
+        frame_id (str): base_link or map.
         frame_name (str): Name of frame.
         camera_type (str): Name of camera.
         load_raw_data (bool): The flag to load image data.

@@ -24,13 +24,23 @@ from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 
 
 class Map:
-    """[summary]
-    mAP class
+    """mAP metrics score class.
 
     Attributes:
-        self.map_config (MapConfig): The config for mAP calculation
-        self.aps (List[Ap]): The list of AP (Average Precision) for each label
-        self.map (float): mAP value
+        map_config (MapConfig): The config for mAP calculation.
+        aps (List[Ap]): The list of AP (Average Precision) for each label.
+        map (float): mAP value.
+
+    Args:
+        object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results
+        target_labels (List[LabelType]): Target labels to evaluate mAP
+        matching_mode (MatchingMode): Matching mode like distance between the center of
+            the object, 3d IoU.
+        matching_threshold_list (List[float]):
+            The matching threshold to evaluate. Defaults to None.
+            For example, if matching_mode = IOU3d and matching_threshold = 0.5,
+            and IoU of the object is higher than "matching_threshold",
+            this function appends to return objects.
     """
 
     def __init__(
@@ -42,19 +52,6 @@ class Map:
         matching_threshold_list: List[float],
         is_detection_2d: bool = False,
     ) -> None:
-        """[summary]
-
-        Args:
-            object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results
-            target_labels (List[LabelType]): Target labels to evaluate mAP
-            matching_mode (MatchingMode): Matching mode like distance between the center of
-                                           the object, 3d IoU.
-            matching_threshold_list (List[float]):
-                    The matching threshold to evaluate. Defaults to None.
-                    For example, if matching_mode = IOU3d and matching_threshold = 0.5,
-                    and IoU of the object is higher than "matching_threshold",
-                    this function appends to return objects.
-        """
         self.target_labels: List[LabelType] = target_labels
         self.matching_mode: MatchingMode = matching_mode
         self.matching_threshold_list: List[float] = matching_threshold_list
@@ -96,7 +93,11 @@ class Map:
         self.maph: float = sum_aph / len(target_labels)
 
     def __str__(self) -> str:
-        """__str__ method"""
+        """__str__ method
+
+        Returns:
+            str: Formatted string.
+        """
 
         str_: str = "\n"
         str_ += f"mAP: {self.map:.3f}"

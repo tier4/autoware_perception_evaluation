@@ -166,23 +166,25 @@ class LabelInfo:
 
 
 class LabelConverter:
-    """[summary]
-    Label lapper between Autoware label and Tier4 dataset
-    Convert from self.labels[i].label to self.labels[i].autoware_label
+    """A class to convert string label name to LabelType instance.
 
     Attributes:
-        self.labels (List[LabelInfo]): The list of label to convert
+        self.labels (List[LabelInfo]): The list of label to convert.
+        self.label_type (LabelType): This is determined by `label_prefix`.
+
+    Args:
+        merge_similar_labels (bool): Whether merge similar labels.
+            If True,
+                - BUS, TRUCK, TRAILER -> CAR
+                - MOTORBIKE, CYCLIST -> BICYCLE
+        label_prefix (str): Prefix of label, [autoware, traffic_light]. Defaults to autoware.
+
+    Raises:
+        NotImplementedError: For prefix named `blinker` and `brake_lamp` is under construction.
+        ValueError: When unexpected prefix is specified.
     """
 
     def __init__(self, merge_similar_labels: bool, label_prefix: str = "autoware") -> None:
-        """
-        Args:
-            merge_similar_labels (bool): Whether merge similar labels.
-                If True,
-                    - BUS, TRUCK, TRAILER -> CAR
-                    - MOTORBIKE, CYCLIST -> BICYCLE
-            label_prefix (str): Prefix of label, [autoware, traffic_light]. Defaults to autoware.
-        """
         if label_prefix == "autoware":
             self.label_type = AutowareLabel
             pair_list: List[Tuple[AutowareLabel, str]] = AutowareLabel.get_pairs(
@@ -205,15 +207,20 @@ class LabelConverter:
         label: str,
         count_label_number: bool = False,
     ) -> LabelType:
-        """[summary]
-        Convert from Nuscenes label to autoware label
+        """Convert to LabelType instance from label name in string.
 
         Args:
-            label (str): The label you want to convert from predicted object
-            count_label_number (bool): The flag of counting the number of labels. Default is False
+            label (str): Label name you want to convert to any LabelType object.
+            count_label_number (bool): Whether to count how many labels have been converted.
+                Defaults to False.
 
         Returns:
-            LabelType: Converted label
+            LabelType: Converted label.
+
+        Examples:
+            >>> converter = LabelConverter(False, "autoware")
+            >>> converter.convert_label("car")
+            <AutowareLabel.CAR: 'car'>
         """
         return_label: Optional[LabelType] = None
         for label_class in self.labels:
@@ -221,11 +228,11 @@ class LabelConverter:
                 if count_label_number:
                     label_class.num += 1
                     if return_label is not None:
-                        logging.error(f"Label {label} is already converted to {return_label}")
+                        logging.error(f"Label {label} is already converted to {return_label}.")
                 return_label = label_class.label
                 break
         if return_label is None:
-            logging.warning(f"Label {label} is not registered")
+            logging.warning(f"Label {label} is not registered.")
             return_label = self.label_type.UNKNOWN
         return return_label
 
@@ -234,15 +241,21 @@ def set_target_lists(
     target_labels: Optional[List[str]],
     label_converter: LabelConverter,
 ) -> List[LabelType]:
-    """[summary]
-    Set the target class configure
+    """Returns a LabelType list from a list of label names in string.
+
+    If no label is specified, returns all LabelType elements.
 
     Args:
         target_labels (List[str]): The target class to evaluate
         label_converter (LabelConverter): Label Converter class
 
     Returns:
-        List[LabelType]:  The list of target class
+        List[LabelType]:  LabelType instance list.
+
+    Examples:
+        >>> converter = LabelConverter(False, "autoware")
+        >>> set_target_lists(["car", "pedestrian"], converter)
+        [<AutowareLabel.CAR: 'car'>, <AutowareLabel.PEDESTRIAN: 'pedestrian'>]
     """
     if target_labels is None or len(target_labels) == 0:
         return [label for label in label_converter.label_type]

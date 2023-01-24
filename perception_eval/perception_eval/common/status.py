@@ -20,7 +20,14 @@ from typing import Dict
 
 
 class Visibility(Enum):
-    """[summary]"""
+    """Visibility status class.
+
+    FULL
+    MOST
+    PARTIAL
+    NONE
+    UNAVAILABLE
+    """
 
     FULL = "full"
     MOST = "most"
@@ -54,6 +61,20 @@ class Visibility(Enum):
 
     @classmethod
     def from_value(cls, name: str) -> Visibility:
+        """Returns Visibility instance from string.
+
+        If `name` is not in the set of Visibility values, call self.from_alias(`name`).
+
+        Args:
+            name (str): Visibility name in string.
+
+        Returns:
+            Visibility: Visibility instance.
+
+        Examples:
+            >>> Visibility.from_value("most")
+            Visibility.MOST
+        """
         for k, v in cls.__members__.items():
             if v == name:
                 return k
@@ -74,7 +95,19 @@ class SensorModality(Enum):
         return self.value
 
     @classmethod
-    def from_value(cls, name: str) -> Visibility:
+    def from_value(cls, name: str) -> SensorModality:
+        """Returns the SensorModality instance from string.
+
+        Args:
+            name (str): Sensor name in string.
+
+        Returns:
+            SensorModality: SensorModality instance.
+
+        Examples:
+            >>> SensorModality.from_value("camera")
+            SensorModality.CAMERA
+        """
         for k, v in cls.__members__.items():
             if v == name:
                 return k

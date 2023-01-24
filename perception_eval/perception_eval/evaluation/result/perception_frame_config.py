@@ -151,7 +151,7 @@ class PerceptionPassFailConfig:
     Attributes:
         self.evaluation_task (EvaluationTask): Evaluation task.
         self.target_labels (List[str]): The list of target label.
-        self.matching_distance_list (List[float]): The threshold list for Pass/Fail.
+        self.matching_distance_list (Optional[List[float]]): The threshold list for Pass/Fail.
             For 2D evaluation, IOU2D, for 3D evaluation, PLANEDISTANCE will be used.
         self.confidence_threshold_list (Optional[List[float]]): The list of confidence threshold.
     """
@@ -159,18 +159,17 @@ class PerceptionPassFailConfig:
     def __init__(
         self,
         evaluator_config,  #: PerceptionEvaluationConfig,
-        target_labels: List[str],
+        target_labels: Optional[List[str]],
         matching_threshold_list: Optional[List[float]] = None,
         confidence_threshold_list: Optional[List[float]] = None,
     ) -> None:
         """[summary]
         Args:
             evaluator_config (PerceptionEvaluationConfig): Evaluation config
-            target_labels (List[str]): Target list
+            target_labels (List[str]): Target list. If None or empty list is specified, all labels will be evaluated.
             matching_threshold_list (List[float]): The threshold list for Pass/Fail.
-                For 2D evaluation, IOU2D, for 3D evaluation, PLANEDISTANCE will be used.
-            confidence_threshold_list (Optional[List[float]]): The list of confidence threshold.
-                Defaults to None.
+                For 2D evaluation, IOU2D, for 3D evaluation, PLANEDISTANCE will be used. Defaults to None.
+            confidence_threshold_list (Optional[List[float]]): The list of confidence threshold. Defaults to None.
         """
         self.evaluation_task: EvaluationTask = evaluator_config.evaluation_task
         self.target_labels: List[LabelType] = set_target_lists(

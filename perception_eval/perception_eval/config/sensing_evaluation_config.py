@@ -23,21 +23,36 @@ from ._evaluation_config_base import _EvaluationConfigBase
 class SensingEvaluationConfig(_EvaluationConfigBase):
     """The class of config for sensing evaluation.
 
-    Attributes:
-        - By _EvaluationConfigBase:
-        self.dataset_paths (List[str]): The path(s) of dataset(s).
-        self.frame_id (str): The frame_id, base_link or map.
-        self.result_root_directory (str): The directory path to save result.
-        self.log_directory (str): The directory path to save log.
-        self.visualization_directory (str): The directory path to save visualization result.
-        self.label_converter (LabelConverter): The instance to convert label names.
-        self.evaluation_task (EvaluationTask): The instance of EvaluationTask
-        self.load_raw_data (bool): Whether load pointcloud/image data.
+    Directory structure to save log and visualization result is following
+    - result_root_directory/
+        ├── log_directory/
+        └── visualization_directory/
 
-        - By SensingEvaluationConfig
-        self.filtering_params (Dict[str, Any]): Filtering parameters.
-        self.metrics_params (Dict[str, Any]): Metrics parameters.
-        self.sensing_frame_config (SensingFrameConfig)
+    Attributes:
+        dataset_paths (List[str]): Dataset paths list.
+        frame_id (str): Frame ID, `base_link` or `map`.
+        result_root_directory (str): Directory path to save result.
+        log_directory (str): Directory Directory path to save log.
+        visualization_directory (str): Directory path to save visualization result.
+        label_converter (LabelConverter): LabelConverter instance.
+        evaluation_task (EvaluationTask): EvaluationTask instance.
+        label_prefix (str): Prefix of label type. Choose from [`autoware", `traffic_light`]. Defaults to autoware.
+        camera_type (Optional[str]): Camera name. Specify in 2D evaluation. Defaults to None.
+        load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
+        target_labels (List[LabelType]): Target labels list.
+        filtering_params (Dict[str, Any]): Filtering parameters.
+        metrics_params (Dict[str, Any]): Metrics parameters.
+
+    Args:
+        dataset_paths (List[str]): Dataset paths list.
+        frame_id (str): Frame ID, `base_link` or `map`.
+        merge_similar_labels (bool): Whether merge similar labels.
+            If True,
+                - BUS, TRUCK, TRAILER -> CAR
+                - MOTORBIKE, CYCLIST -> BICYCLE
+        result_root_directory (str): Directory path to save result.
+        evaluation_config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
+        load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
     """
 
     _support_tasks: List[str] = ["sensing"]

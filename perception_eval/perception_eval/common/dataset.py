@@ -80,16 +80,23 @@ def load_all_datasets(
 ) -> List[FrameGroundTruth]:
     """
     Load tier4 datasets.
+
     Args:
         dataset_paths (List[str]): The list of root paths to dataset
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
         frame_id (str): Frame ID, base_link or map.
+        camera_type (Optional[str]): Camera name. Only specified in 2D evaluation. Defaults to None.
         load_raw_data (bool): The flag of setting pointcloud or image.
             For 3D task, pointcloud will be loaded. For 2D, image will be loaded. Defaults to False.
 
-    Reference
-        https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
+    Returns:
+        List[FrameGroundTruth]: FrameGroundTruth instance list.
+
+    Examples:
+        >>> converter = LabelConverter(False, "autoware")
+        >>> load_all_datasets(["./data"], EvaluationTask.DETECTION, converter, "base_link")
+        [<perception_eval.common.dataset.FrameGroundTruth object at 0x7f66040c36a0>, ...]
     """
     logging.info(f"Start to load dataset {dataset_paths}")
     logging.info(
@@ -124,7 +131,8 @@ def _load_dataset(
     Args:
         dataset_path (str): The root path to dataset.
         evaluation_tasks (EvaluationTask): The evaluation task.
-        label_converter (LabelConverter): Label convertor.
+        label_converter (LabelConverter): LabelConvertor instance.
+        frame_id (str): base_link or map.
         camera_type (Optional[str]): Name of camera. Specify in 2D evaluation.
         load_raw_data (bool): Whether load pointcloud/image data.
 
@@ -237,8 +245,8 @@ def get_now_frame(
     Select the ground truth frame whose unix time is most close to args unix time from dataset.
 
     Args:
-        ground_truth_frames (List[FrameGroundTruth]): datasets
-        unix_time (int): Unix time [us]
+        ground_truth_frames (List[FrameGroundTruth]): FrameGroundTruth instance list.
+        unix_time (int): Unix time [us].
         threshold_min_time (int): Min time for unix time difference [us].
 
     Returns:
@@ -247,6 +255,11 @@ def get_now_frame(
                 from dataset.
                 If the difference time between unix time parameter and the most close time
                 ground truth frame is larger than threshold_min_time, return None.
+
+    Examples:
+        >>> ground_truth_frames = load_all_datasets(...)
+        >>> get_now_frame(ground_truth_frames, 1624157578750212, 7500)
+        <perception_eval.common.dataset.FrameGroundTruth object at 0x7f66040c36a0>
     """
 
     # error handling

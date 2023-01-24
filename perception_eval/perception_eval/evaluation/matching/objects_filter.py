@@ -42,34 +42,50 @@ def filter_object_results(
     target_uuids: Optional[str] = None,
     ego2map: Optional[np.ndarray] = None,
 ) -> List[DynamicObjectWithPerceptionResult]:
-    """[summary]
-    Filter DynamicObjectWithPerceptionResult to filter ground truth objects.
+    """Filter DynamicObjectWithPerceptionResult considering both estimated and ground truth objects.
+
+    If any of `target_labels`, `max_x_position_list`, `max_y_position_list`, `max_distance_list`, `min_distance_list`,
+    `min_point_numbers` or `confidence_threshold_list` are specified, each of them must be same length list.
+
+    It first filters `object_results` with input parameters considering estimated objects.
+    After that, remained `object_results` are filtered with input parameters considering ground truth objects.
 
     Args:
-        object_results (List[DynamicObjectWithPerceptionResult]): The object results
-        max_x_position_list (Optional[List[float]], optional):
-                The threshold list of maximum x-axis position for each object.
-                Return the object that
-                - max_x_position < object x-axis position < max_x_position.
-                This param use for range limitation of detection algorithm.
-        max_y_position_list (Optional[List[float]], optional):
-                The threshold list of maximum y-axis position for each object.
-                Return the object that
-                - max_y_position < object y-axis position < max_y_position.
-                This param use for range limitation of detection algorithm.
-        max_distance_list (Optional[List[float]], optional):
-                Maximum distance threshold list for object. Defaults to None.
-        min_distance_list (Optional[List[float]], optional):
-                Minimum distance threshold list for object. Defaults to None.
-        target_uuids (Optional[List[str]]): The list of ground truths' target uuid.
-                This is unused is_gt=True. Defaults to None.
-        ego2map (Optional[np.ndarray]): The array of matrix to transform from ego coords to map coords.
-                This is only needed when frame_id=map. Defaults to None.
+        object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
+        target_labels Optional[List[LabelType]]): Filter target list of labels.
+            Keep all `object_results` that both of their `estimated_object` and `ground_truth_object`
+            have same label in this list. Defaults to None.
+        max_x_position_list (Optional[List[float]]): Thresholds list of maximum x-axis position from ego vehicle.
+            Keep all `object_results` that their each x position are in [`-max_x_position`, `max_x_position`]
+            for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
+        max_y_position_list (Optional[List[float]]): Thresholds list of maximum y-axis position from ego vehicle.
+            Keep all `object_results` that their each y position are in [`-max_y_position`, `max_y_position`]
+            for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
+        max_distance_list (Optional[List[float]]): Thresholds list of maximum distance range from ego vehicle.
+            Keep all `object_results` that their each distance is smaller than `max_distance`
+            for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
+        min_distance_list (Optional[List[float]]): Thresholds list of minimum distance range from ego vehicle.
+            Keep all `object_results` that their each distance is bigger than `min_distance`
+            for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
+        min_point_numbers (Optional[List[int]]): Thresholds list of minimum number of points
+            must be contained in object's box. Keep all `object_results` that their boxes contain more points than
+            `min_point_number` only considering their `ground_truth_object`. Defaults to None.
+            For example, `target_labels=["car", "bike", "pedestrian"]` and `min_point_numbers=[5, 0, 0]`,
+            Then objects that has car label and their boxes contain 4 or less points are filtered.
+            Otherwise, all objects that has bike or pedestrian label are not filtered.
+        confidence_threshold_list (Optional[List[float]]): Thresholds list of minimum confidence score.
+            Keep all `object_results` that their confidence is bigger than `confidence_threshold`
+            only considering their `estimated_object`. Defaults to None.
+        target_uuids (Optional[List[str]]): Filter target list of ground truths' uuids.
+            Keep all `object_results` that their each uuid is in `target_uuids`
+            only considering their `ground_truth_object`.
+            Defaults to None.
+        ego2map (Optional[numpy.ndarray]): Array of 4x4 matrix to transform objects' coordinates from ego to map.
+            This is only needed when `frame_id=map`. Defaults to None.
 
     Returns:
-        filtered_object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results.
+        filtered_object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results list.
     """
-
     filtered_object_results: List[DynamicObjectWithPerceptionResult] = []
     for object_result in object_results:
         is_target: bool = _is_target_object(
@@ -119,31 +135,41 @@ def filter_objects(
     target_uuids: Optional[List[str]] = None,
     ego2map: Optional[np.ndarray] = None,
 ) -> List[ObjectType]:
-    """[summary]
-    Filter DynamicObject to filter ground truth objects.
+    """Filter DynamicObject considering ground truth objects.
+
+    If any of `target_labels`, `max_x_position_list`, `max_y_position_list`, `max_distance_list`, `min_distance_list`,
+    `min_point_numbers` or `confidence_threshold_list` are specified, each of them must be same length list.
 
     Args:
-        frame_id (str): Frame id.
-        objects (List[Union[DynamicObject, Object2DBase]]): The objects you want to filter.
-        is_gt (bool): Flag whether object is GT.
-        target_labels Optional[List[AutowareLabel]], optional):
-                The target label to evaluate. If object label is in this parameter,
-                this function appends to return objects. Defaults to None.
-        max_distance_list (Optional[List[float]], optional):
-                Maximum distance threshold list for object. Defaults to None.
-        min_distance_list (Optional[List[float]], optional):
-                Minimum distance threshold list for object. Defaults to None.
-        min_point_numbers (Optional[List[int]]):
-                Min point numbers. This is only used if is_gt=True.
-                For example, if target_labels is ["car", "bike", "pedestrian"],
-                min_point_numbers [5, 0, 0] means
-                Car bboxes including 4 points are filtered out.
-                Car bboxes including 5 points are NOT filtered out.
-                Bike and Pedestrian bboxes are not filtered out(All bboxes are used when calculating metrics.)
-        target_uuids (Optional[List[str]]): The list of ground truths' target uuid.
-                This is only used if is_gt=True. Defaults to None.
-        ego2map (Optional[np.ndarray]): The array of matrix to transform from ego coords to map coords.
-                This is only needed when frame_id=map. Defaults to None.
+        frame_id (str): Frame id, `base_link` or `map`.
+        objects (List[ObjectType]: The objects you want to filter.
+        is_gt (bool): Flag if input object is ground truth.
+        target_labels Optional[List[LabelType]]): Filter target list of labels.
+            Keep all `objects` that have same label in this list. Defaults to None.
+        max_x_position_list (Optional[List[float]]): Thresholds list of maximum x-axis position from ego vehicle.
+            Keep all `objects` that their each x position are in [`-max_x_position`, `max_x_position`].
+            Defaults to None.
+        max_y_position_list (Optional[List[float]]): Thresholds list of maximum y-axis position from ego vehicle.
+            Keep all `objects` that their each y position are in [`-max_y_position`, `max_y_position`].
+            Defaults to None.
+        max_distance_list (Optional[List[float]]): Thresholds list of maximum distance range from ego vehicle.
+            Keep all `objects` that their each distance is smaller than `max_distance`. Defaults to None.
+        min_distance_list (Optional[List[float]]): Thresholds list of minimum distance range from ego vehicle.
+            Keep all `objects` that their each distance is bigger than `min_distance`. Defaults to None.
+        min_point_numbers (Optional[List[int]]): Thresholds list of minimum number of points
+            must be contained in object's box. Keep all `objects` that their boxes contain more points than
+            `min_point_number`. This is only used when `is_gr=True`. Defaults to None.
+            For example, `target_labels=["car", "bike", "pedestrian"]` and `min_point_numbers=[5, 0, 0]`,
+            Then objects that has car label and their boxes contain 4 or less points are filtered.
+            Otherwise, all objects that has bike or pedestrian label are not filtered.
+        confidence_threshold_list (Optional[List[float]]): Thresholds list of minimum confidence score.
+            Keep all `objects` that their confidence is bigger than `confidence_threshold`.
+            This is only used when `is_gt=False`. Defaults to None.
+        target_uuids (Optional[List[str]]): Filter target list of ground truths' uuids.
+            Keep all `objects` that their each uuid is in `target_uuids`. This is only used when `is_gt=True`.
+            Defaults to None.
+        ego2map (Optional[numpy.ndarray]): Array of 4x4 matrix to transform objects' coordinates from ego to map.
+            This is only needed when `frame_id=map`. Defaults to None.
 
     Returns:
         List[Union[DynamicObject, Object2DBase]]: Filtered objects.
@@ -188,30 +214,33 @@ def divide_tp_fp_objects(
     matching_threshold_list: Optional[List[float]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
 ) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
-    """[summary]
-    Divide TP (True Positive) objects and FP (False Positive) objects
-    from Prediction condition positive objects.
+    """Divide input `object_results` into TP (True Positive) and FP (False Positive) object results.
+
+    This function judge whether input `object_results` is TP or FP with `matching_threshold` when
+    `matching_threshold_list` is specified.
+
+    Otherwise, determine it considering whether labels between `estimated_object` and `ground_truth_object`
+    that are member variables of `object_results` are same.
+
+    And also, judge with `confidence_threshold` when `confidence_threshold_list` is specified.
 
     Args:
         object_results (List[DynamicObjectWithPerceptionResult]): The object results you want to filter
-        target_labels Optional[List[AutowareLabel]], optional):
-                The target label to evaluate. If object label is in this parameter,
-                this function appends to return objects. Defaults to None.
-        matching_mode (Optional[MatchingMode], optional):
-                The matching mode to evaluate. Defaults to None.
-        matching_threshold_list (Optional[List[float]], optional):
-                The matching threshold to evaluate. Defaults to None.
-                For example, if matching_mode = IOU3d and matching_threshold = 0.5,
-                and IoU of the object is higher than "matching_threshold",
-                this function appends to return objects.
-        confidence_threshold_list (Optional[List[float]], optional):
-                The confidence threshold list. If estimated object's confidence is higher than
-                this parameter, this function appends to return objects.
-                It is often used to visualization.
-                Defaults to None.
+        target_labels Optional[List[AutowareLabel]]): Target labels list.
+            Get threshold value from `matching_threshold_list` at corresponding label index.
+        matching_mode (Optional[MatchingMode]): MatchingMode instance.
+            When `matching_threshold_list=None`, this is not have to be specified. Defaults to None.
+        matching_threshold_list (Optional[List[float]]): Matching thresholds list. Defaults to None.
+            For example, if `matching_mode=MatchingMode.IOU3D` and `matching_threshold=0.5`,
+            and `object_result.is_result_correct(matching_mode, matching_threshold)=True`,
+            then those `object_results` are regarded as TP object results. Defaults to None.
+        confidence_threshold_list (Optional[List[float]]): Confidence thresholds list.
+            All `object_results` are regarded as TP when their `estimated_object` has higher confidence
+            than `confidence_threshold`. Defaults to None.
 
     Returns:
-        Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]: tp_objects, fp_objects
+        List[DynamicObjectWithPerceptionResult]]: TP object results.
+        List[DynamicObjectWithPerceptionResult]]: FP object results.
     """
 
     tp_objects: List[DynamicObjectWithPerceptionResult] = []
@@ -257,16 +286,17 @@ def get_fn_objects(
     object_results: Optional[List[DynamicObjectWithPerceptionResult]],
     tp_objects: Optional[List[DynamicObjectWithPerceptionResult]],
 ) -> List[ObjectType]:
-    """[summary]
-    Get FN (False Negative) objects from ground truth objects by using object result
+    """Get FN (False Negative) objects from ground truth objects by using object result.
+
+    This function returns a set of `ground_truth_objects` that are not contained in TP object results.
 
     Args:
-        ground_truth_objects (List[Union[DynamicObject, Object2DBase]]): The ground truth objects
-        object_results (Optional[List[DynamicObjectWithPerceptionResult]]): The object results
-        tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results in object results
+        ground_truth_objects (List[ObjectType]): Ground truth objects list.
+        object_results (Optional[List[DynamicObjectWithPerceptionResult]]): Object results list.
+        tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results list in object results.
 
     Returns:
-        List[Union[DynamicObject, Object2DBase]]: FN (False Negative) objects
+        List[ObjectType]: FN (False Negative) objects list.
     """
 
     if object_results is None:
@@ -289,14 +319,12 @@ def _is_fn_object(
     object_results: List[DynamicObjectWithPerceptionResult],
     tp_objects: List[DynamicObjectWithPerceptionResult],
 ) -> bool:
-    """[summary]
-    Judge whether ground truth object is FN (False Negative) object.
-    If there are TP TN object
+    """Judge whether ground truth object is FN (False Negative) object.
 
     Args:
-        ground_truth_object (Union[DynamicObject, Object2DBase]): A ground truth object
-        object_results (List[DynamicObjectWithPerceptionResult]): object result
-        tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results in object results
+        ground_truth_object (ObjectType): Ground truth object.
+        object_results (List[DynamicObjectWithPerceptionResult]): object results list.
+        tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results list in object results.
 
     Returns:
         bool: Whether ground truth object is FN (False Negative) object.
@@ -321,42 +349,36 @@ def _is_target_object(
     target_uuids: Optional[List[str]] = None,
     ego2map: Optional[np.ndarray] = None,
 ) -> bool:
-    """[summary]
-    The function judging whether the dynamic object is target or not.
+    """Judge whether the input `dynamic_object` is target or not.
+
     This function used to filtering for both of ground truths and object results.
 
     Args:
-        dynamic_object (Union[DynamicObject, Object2DBase]): The dynamic object
-        target_labels Optional[List[AutowareLabel]], optional):
-                The target label to evaluate. If object label is in this parameter,
-                this function appends to return objects. Defaults to None.
-        max_x_position_list (Optional[List[float]], optional):
-                The threshold list of maximum x-axis position for each object.
-                Return the object that
-                - max_x_position < object x-axis position < max_x_position.
-                This param use for range limitation of detection algorithm.
-        max_y_position_list (Optional[List[float]], optional):
-                The threshold list of maximum y-axis position for each object.
-                Return the object that
-                - max_y_position < object y-axis position < max_y_position.
-                This param use for range limitation of detection algorithm.
-        max_distance_list (Optional[List[float]], optional):
-                Maximum distance threshold list for object. Defaults to None.
-        min_distance_list (Optional[List[float]], optional):
-                Minimum distance threshold list for object. Defaults to None.
-        confidence_threshold_list (Optional[List[float]], optional):
-                The confidence threshold list. If estimated object's confidence is higher than
-                this parameter, this function appends to return objects.
-                It is often used to visualization.
-                Defaults to None.
-        min_point_numbers (List[int]):
-                Min point numbers.
-                For example, if target_labels is ["car", "bike", "pedestrian"],
-                min_point_numbers [5, 0, 0] means
-                Car bboxes including 4 points are filtered out.
-                Car bboxes including 5 points are NOT filtered out.
-                Bike and Pedestrian bboxes are not filtered out(All bboxes are used when calculating metrics.)
-        target_uuids (Optional[List[str]]): The list of target uuid. Defaults to None.
+        dynamic_object (ObjectType): The dynamic object
+        target_labels Optional[List[LabelType]]): Target labels list.
+            Keep all `dynamic_object` that have same labels in this list. Defaults to None.
+        max_x_position_list (Optional[List[float]]): Thresholds list of maximum x-axis position from ego vehicle.
+            Keep all `dynamic_object` that their each x position are in [`-max_x_position`, `max_x_position`].
+            Defaults to None.
+        max_y_position_list (Optional[List[float]]): Thresholds list of maximum y-axis position from ego vehicle.
+            Keep all `dynamic_object` that their each y position are in [`-max_y_position`, `max_y_position`].
+            Defaults to None.
+        max_distance_list (Optional[List[float]]): Thresholds list of maximum distance range from ego vehicle.
+            Keep all `dynamic_object` that their each distance is smaller than `max_distance`. Defaults to None.
+        min_distance_list (Optional[List[float]]): Thresholds list of minimum distance range from ego vehicle.
+            Keep all `dynamic_object` that their each distance is bigger than `min_distance`. Defaults to None.
+        min_point_numbers (Optional[List[int]]): Thresholds list of minimum number of points
+            must be contained in object's box. Keep all `dynamic_objects` that their boxes contain more points than
+            `min_point_number`. Defaults to None.
+            For example, `target_labels=["car", "bike", "pedestrian"]` and `min_point_numbers=[5, 0, 0]`,
+            Then objects that has car label and their boxes contain 4 or less points are filtered.
+            Otherwise, all objects that has bike or pedestrian label are not filtered.
+        confidence_threshold_list (Optional[List[float]]): Thresholds list of minimum confidence score.
+            Keep all `dynamic_objects` that their confidence is bigger than `confidence_threshold`. Defaults to None.
+        target_uuids (Optional[List[str]]): Filter target list of ground truths' uuids.
+            Keep all `dynamic_objects` that their each uuid is in `target_uuids`. Defaults to None.
+        ego2map (Optional[numpy.ndarray]): Array of 4x4 matrix to transform objects' coordinates from ego to map.
+            This is only needed when `frame_id=map`. Defaults to None.
 
     Returns:
         bool: If the object is filter target, return True
@@ -418,19 +440,18 @@ def divide_objects(
     objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
     target_labels: Optional[List[LabelType]] = None,
 ) -> Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]:
-    """[summary]
-    Divide DynamicObject or DynamicObjectWithPerceptionResult for each label as dict.
+    """Divide DynamicObject or DynamicObjectWithPerceptionResult into dict mapped by their labels.
 
     Args:
-        objects (List[Union[DynamicObject, Object2DBase, DynamicObjectWithPerceptionResult]]):
-            The list of DynamicObject, Object2DBase or DynamicObjectWithPerceptionResult.
-        target_labels (Optional[List[AutowareLabel]]): If this is specified, create empty list even
+        objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
+            List of ObjectType or DynamicObjectWithPerceptionResult.
+        target_labels (Optional[List[LabelType]]): If this is specified, create empty list even
             if there is no object having specified label. Defaults to None.
 
     Returns:
-        ret (Dict[AutowareLabel, List[Union[DynamicObject, Object2DBase, DynamicObjectWithPerceptionResult]]]):
-            key is label, item is list of DynamicObject, Object2DBase or DynamicObjectWithPerceptionResult.
-            It depends on the input type of object.
+        ret (Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]):
+            Dict that are list of ObjectType or DynamicObjectWithPerceptionResult mapped by their labels.
+            It depends on the type of input object.
     """
     if target_labels is not None:
         ret = {label: [] for label in target_labels}
@@ -454,17 +475,17 @@ def divide_objects_to_num(
     objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
     target_labels: Optional[List[LabelType]] = None,
 ) -> Dict[LabelType, int]:
-    """[summary]
-    Divide objects to the number of them for each label as dict.
+    """Divide the number of input `objects` mapped by their labels.
 
     Args:
-        objects (List[Union[DynamicObject, Object2DBase, DynamicObjectWithPerceptionResult]]):
-            The list of DynamicObject, Object2DBase or DynamicObjectWithPerceptionResult.
-        target_labels (Optional[List[AutowareLabel]]): If this is specified, create empty list even
+        objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
+            List of ObjectType or DynamicObjectWithPerceptionResult.
+        target_labels (Optional[List[LabelType]]): If this is specified, create empty list even
             if there is no object having specified label. Defaults to None.
 
     Returns:
-        ret (Dict[LabelType, int]): key is label, item is the number of objects.
+        ret (Dict[LabelType, int]): Dict that are number of ObjectType or DynamicObjectWithPerceptionResult
+            mapped by their labels.
     """
     if target_labels is not None:
         ret = {label: 0 for label in target_labels}

@@ -26,7 +26,7 @@ ObjectType = Union[DynamicObject, DynamicObject2D]
 
 def distance_objects(object_1: ObjectType, object_2: ObjectType) -> float:
     """[summary]
-    Calculate the 3d center distance between two objects.
+    Calculate the 3D/2D center distance between two objects.
     Args:
          object_1 (ObjectType): An object
          object_2 (ObjectType): An object
