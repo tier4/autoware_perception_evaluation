@@ -18,7 +18,6 @@ from typing import Tuple
 
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object2d import DynamicObject2D
-from perception_eval.common.object2d import Roi
 from perception_eval.common.object import DynamicObject
 from pyquaternion.quaternion import Quaternion
 
@@ -134,21 +133,21 @@ def make_dummy_data2d(use_roi: bool = True) -> Tuple[List[DynamicObject2D], List
             unix_time=100,
             semantic_score=0.9,
             semantic_label=AutowareLabel.CAR,
-            roi=Roi(offset=(100, 100), size=(100, 200)) if use_roi else None,
+            roi=(100, 100, 200, 100) if use_roi else None,
             uuid=token_hex(16) if use_roi else "0",
         ),
         DynamicObject2D(
             unix_time=100,
             semantic_score=0.9,
             semantic_label=AutowareLabel.BICYCLE,
-            roi=Roi(offset=(0, 0), size=(50, 50)) if use_roi else None,
+            roi=(0, 0, 50, 50) if use_roi else None,
             uuid=token_hex(16) if use_roi else "1",
         ),
         DynamicObject2D(
             unix_time=100,
             semantic_score=0.9,
             semantic_label=AutowareLabel.CAR,
-            roi=Roi(offset=(200, 200), size=(100, 200)) if use_roi else None,
+            roi=(200, 200, 200, 100) if use_roi else None,
             uuid=token_hex(16) if use_roi else "2",
         ),
     ]
@@ -157,28 +156,28 @@ def make_dummy_data2d(use_roi: bool = True) -> Tuple[List[DynamicObject2D], List
             unix_time=100,
             semantic_score=1.0,
             semantic_label=AutowareLabel.CAR,
-            roi=Roi(offset=(100, 100), size=(100, 200)) if use_roi else None,
+            roi=(100, 100, 200, 100) if use_roi else None,
             uuid=token_hex(16) if use_roi else "0",
         ),
         DynamicObject2D(
             unix_time=100,
             semantic_score=1.0,
             semantic_label=AutowareLabel.BICYCLE,
-            roi=Roi(offset=(0, 0), size=(50, 50)) if use_roi else None,
+            roi=(0, 0, 50, 50) if use_roi else None,
             uuid=token_hex(16) if use_roi else "1",
         ),
         DynamicObject2D(
             unix_time=100,
             semantic_score=1.0,
             semantic_label=AutowareLabel.PEDESTRIAN,
-            roi=Roi(offset=(200, 200), size=(100, 200)) if use_roi else None,
+            roi=(200, 200, 200, 100) if use_roi else None,
             uuid=token_hex(16) if use_roi else "2",
         ),
         DynamicObject2D(
             unix_time=100,
             semantic_score=1.0,
             semantic_label=AutowareLabel.MOTORBIKE,
-            roi=Roi(offset=(300, 100), size=(50, 50)) if use_roi else None,
+            roi=(300, 100, 50, 50) if use_roi else None,
             uuid=token_hex(16) if use_roi else "3",
         ),
     ]

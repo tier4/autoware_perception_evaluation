@@ -31,14 +31,14 @@
 
 - Evaluation task: `DETECTION2D`, `TRACING2D`, `CLASSIFICATION2D`
 
-| Argument         |          type          | Description                        |
-| :--------------- | :--------------------: | :--------------------------------- |
-| `unix_time`      |         `int`          | Unix time .                        |
-| `semantic_score` |        `float`         | Object's confidence [0, 1].        |
-| `semantic_label` |      `LabelType`       | Label name.                        |
-| `roi`            |    `Optional[Roi]`     | ROI. (Default: None)               |
-| `uuid`           |    `Optional[str]`     | Object's UUID. (Default: None)     |
-| `visibility`     | `Optional[Visibility]` | Visibility status. (Default: None) |
+| Argument         |                 type                  | Description                                           |
+| :--------------- | :-----------------------------------: | :---------------------------------------------------- |
+| `unix_time`      |                 `int`                 | Unix time .                                           |
+| `semantic_score` |                `float`                | Object's confidence [0, 1].                           |
+| `semantic_label` |              `LabelType`              | Label name.                                           |
+| `roi`            | `Optional[Tuple[int, int, int, int]]` | (x_min, y_min, width, height) of ROI. (Default: None) |
+| `uuid`           |            `Optional[str]`            | Object's UUID. (Default: None)                        |
+| `visibility`     |        `Optional[Visibility]`         | Visibility status. (Default: None)                    |
 
 ## Ground truth
 

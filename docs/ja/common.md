@@ -34,14 +34,14 @@
 
 - 使用される評価タスク: `DETECTION2D`, `TRACING2D`, `CLASSIFICATION2D`
 
-| Argument         |          type          | Description                          |
-| :--------------- | :--------------------: | :----------------------------------- |
-| `unix_time`      |         `int`          | Unix time .                          |
-| `semantic_score` |        `float`         | 信頼度 [0, 1].                       |
-| `semantic_label` |      `LabelType`       | ラベル名.                            |
-| `roi`            |    `Optional[Roi]`     | ROI. (Default: None)                 |
-| `uuid`           |    `Optional[str]`     | オブジェクトの UUID. (Default: None) |
-| `visibility`     | `Optional[Visibility]` | 視認性のステータス. (Default: None)  |
+| Argument         |                 type                  | Description                                           |
+| :--------------- | :-----------------------------------: | :---------------------------------------------------- |
+| `unix_time`      |                 `int`                 | Unix time .                                           |
+| `semantic_score` |                `float`                | 信頼度 [0, 1].                                        |
+| `semantic_label` |              `LabelType`              | ラベル名.                                             |
+| `roi`            | `Optional[Tuple[int, int, int, int]]` | (x_min, y_min, height, width) of ROI. (Default: None) |
+| `uuid`           |            `Optional[str]`            | オブジェクトの UUID. (Default: None)                  |
+| `visibility`     |        `Optional[Visibility]`         | 視認性のステータス. (Default: None)                   |
 
 ## Ground truth
 

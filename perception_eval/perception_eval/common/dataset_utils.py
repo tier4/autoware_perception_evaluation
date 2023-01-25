@@ -30,7 +30,6 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.label import LabelType
 from perception_eval.common.object2d import DynamicObject2D
-from perception_eval.common.object2d import Roi
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.status import Visibility
 from pyquaternion.quaternion import Quaternion
@@ -402,9 +401,11 @@ def _sample_to_frame_2d(
     for ann in object_annotations:
         if evaluation_task in (EvaluationTask.DETECTION2D, EvaluationTask.TRACKING2D):
             bbox: List[float] = ann["bbox"]
-            offset: Tuple[int, int] = (int(bbox[0]), int(bbox[1]))
-            size: Tuple[int, int] = (int(bbox[3]) - offset[1], int(bbox[2]) - offset[0])
-            roi: Roi = Roi(offset=offset, size=size)
+            x_offset: int = int(bbox[0])
+            y_offset: int = int(bbox[1])
+            width: int = int(bbox[2]) - x_offset
+            height: int = int(bbox[3]) - y_offset
+            roi = (x_offset, y_offset, width, height)
         else:
             roi = None
 
