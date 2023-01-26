@@ -90,7 +90,7 @@
 | `TrafficLightLabel.YELLOW`             |       "yellow"       | yellow             |
 | `TrafficLightLabel.RED_STRAIGHT`       |    "red_straight"    | red_straight       |
 | `TrafficLightLabel.RED_LEFT`           |      "red_left"      | red_left           |
-| `TrafficLightLabel.RED_left_straight`  | "red_left_straight"  | red_left_straight  |
+| `TrafficLightLabel.RED_LEFT_STRAIGHT`  | "red_left_straight"  | red_left_straight  |
 | `TrafficLightLabel.RED_RIGHT`          |     "red_right"      | red_right          |
 | `TrafficLightLabel.RED_RIGHT_STRAIGHT` | "red_right_straight" | red_right_straight |
 | `TrafficLightLabel.RED_RIGHT_DIAGONAL` | "red_right_diagonal" | red_right_diagonal |
