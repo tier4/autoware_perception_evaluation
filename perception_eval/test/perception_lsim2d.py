@@ -24,6 +24,7 @@ from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.manager import PerceptionEvaluationManager
+from perception_eval.tool import PerceptionAnalyzer2D
 from perception_eval.util.logger_config import configure_logger
 
 
@@ -198,6 +199,15 @@ if __name__ == "__main__":
     # final result
     detection_final_metric_score = detection_lsim.get_final_result()
 
+    # Detection performance report
+    detection_analyzer = PerceptionAnalyzer2D(detection_lsim.evaluator.evaluator_config)
+    detection_analyzer.add(detection_lsim.evaluator.frame_results)
+    score_df, error_df = detection_analyzer.analyze()
+    if score_df is not None:
+        logging.info(score_df.to_string())
+    if error_df is not None:
+        logging.info(error_df.to_string())
+
     # ========================================= Tracking =========================================
     print("=" * 50 + "Start Tracking 2D" + "=" * 50)
     tracking_lsim = PerceptionLSimMoc(
@@ -221,6 +231,15 @@ if __name__ == "__main__":
     # final result
     tracking_final_metric_score = tracking_lsim.get_final_result()
 
+    # Tracking performance report
+    tracking_analyzer = PerceptionAnalyzer2D(tracking_lsim.evaluator.evaluator_config)
+    tracking_analyzer.add(tracking_lsim.evaluator.frame_results)
+    score_df, error_df = tracking_analyzer.analyze()
+    if score_df is not None:
+        logging.info(score_df.to_string())
+    if error_df is not None:
+        logging.info(error_df.to_string())
+
     # ========================================= Classification =========================================
     print("=" * 50 + "Start Classification 2D" + "=" * 50)
     classification_lsim = PerceptionLSimMoc(
@@ -243,3 +262,16 @@ if __name__ == "__main__":
 
     # final result
     classification_final_metric_score = classification_lsim.get_final_result()
+
+    # Classification performance report
+    classification_analyzer = PerceptionAnalyzer2D(classification_lsim.evaluator.evaluator_config)
+    classification_analyzer.add(classification_lsim.evaluator.frame_results)
+    score_df, error_df = classification_analyzer.analyze()
+    if score_df is not None:
+        logging.info(score_df.to_string())
+    if error_df is not None:
+        logging.info(error_df.to_string())
+
+    # Clean up tmpdir
+    if args.use_tmpdir:
+        tmpdir.cleanup()

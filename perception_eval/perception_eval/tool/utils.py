@@ -48,7 +48,7 @@ class MatchingStatus(Enum):
 
 
 class PlotAxes(Enum):
-    """[summary]
+    """Enum class for plot axes.
 
     2D plot:
         FRAME: X-axis is the number of frame.
@@ -58,6 +58,7 @@ class PlotAxes(Enum):
         Y: X-axis is y[m].
         VX: X-axis is vx[m/s].
         VY: X-axis is vy[m/s].
+        CONFIDENCE: X-axis is confidence in [0, 100][%].
     3D plot:
         POSITION: X-axis is x[m], y-axis is y[m].
         VELOCITY: X-axis is vx[m/s], y-axis is vy[m/s].
@@ -71,6 +72,7 @@ class PlotAxes(Enum):
     Y = "y"
     VX = "vx"
     VY = "vy"
+    CONFIDENCE = "confidence"
     POSITION = "position"
     SIZE = "size"
     VELOCITY = "velocity"
@@ -91,8 +93,7 @@ class PlotAxes(Enum):
         return not self.is_3d()
 
     def get_axes(self, df: pd.DataFrame, **kwargs) -> np.ndarray:
-        """[summary]
-        Returns axes values for plot.
+        """Returns axes values for plot.
 
         Args:
             df (pandas.DataFrame): Source DataFrame.
@@ -117,6 +118,8 @@ class PlotAxes(Enum):
             axes: np.ndarray = np.array(df["vx"])
         elif self == PlotAxes.VY:
             axes: np.ndarray = np.array(df["vy"])
+        elif self == PlotAxes.CONFIDENCE:
+            axes: np.ndarray = np.array(df["confidence"]) * 100
         elif self == PlotAxes.POSITION:
             axes: np.ndarray = np.array(df[["x", "y"]]).reshape(2, -1)
         elif self == PlotAxes.SIZE:
@@ -134,8 +137,7 @@ class PlotAxes(Enum):
         return axes
 
     def get_label(self) -> Union[str, Tuple[str]]:
-        """[summary]
-        Returns label name for plot.
+        """Returns label name for plot.
 
         Returns:
             str: Name of label.
@@ -148,6 +150,8 @@ class PlotAxes(Enum):
             return str(self) + " [m]"
         elif self in (PlotAxes.VX, PlotAxes.VY):
             return str(self) + " [m/s]"
+        elif self == PlotAxes.CONFIDENCE:
+            return str(self) + " [%]"
         elif self == PlotAxes.POSITION:
             return "x [m]", "y [m]"
         elif self == PlotAxes.SIZE:
@@ -158,8 +162,7 @@ class PlotAxes(Enum):
             return "theta [rad]", "r [m]"
 
     def get_bin(self) -> Union[float, Tuple[float, float]]:
-        """[summary]
-        Returns default bins.
+        """Returns default bins.
 
         Returns:
             Union[float, Tuple[float, float]]
@@ -172,6 +175,8 @@ class PlotAxes(Enum):
             return 0.5
         elif self in (PlotAxes.VX, PlotAxes.VY):
             return 1.0
+        elif self == PlotAxes.CONFIDENCE:
+            return 0.1
         elif self == PlotAxes.POSITION:
             return (0.5, 0.5)
         elif self == PlotAxes.SIZE:
@@ -183,8 +188,7 @@ class PlotAxes(Enum):
 
     @property
     def projection(self) -> Optional[str]:
-        """[summary]
-        Returns type of projection.
+        """Returns type of projection.
 
         Returns:
             Optional[str]: If 3D, returns "3d", otherwise returns None.

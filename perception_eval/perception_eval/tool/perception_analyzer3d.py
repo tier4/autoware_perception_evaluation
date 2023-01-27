@@ -16,13 +16,10 @@ from __future__ import annotations
 
 import logging
 import os
-import pickle
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Set
-from typing import Tuple
 from typing import Union
 
 from matplotlib import cm
@@ -32,21 +29,15 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa
 import numpy as np
 import pandas as pd
-from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation import PerceptionFrameResult
-from perception_eval.evaluation.matching.objects_filter import divide_objects
-from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
-from perception_eval.evaluation.metrics.metrics import MetricsScore
 from perception_eval.util.math import get_pose_transform_matrix
 from perception_eval.util.math import rotation_matrix_to_euler
-from tqdm import tqdm
 import yaml
 
+from .perception_analyzer_base import PerceptionAnalyzerBase
 from .utils import extract_area_results
-from .utils import filter_df
 from .utils import generate_area_points
 from .utils import get_area_idx
 from .utils import get_metrics_info
@@ -57,9 +48,32 @@ from .utils import setup_axis
 # TODO: Refactor plot methods
 
 
-class PerceptionPerformanceAnalyzer:
-    """[summary]
-    An class to analyze perception results.
+class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
+    """An analyzer class for 3D perception evaluation results.
+
+    Attributes:
+        config (PerceptionEvaluationConfig): Configurations for evaluation parameters.
+        target_labels (List[str]): Target labels list. (e.g. ["car", "pedestrian", "motorbike"]).
+        all_labels (List[str]): Target labels list including "ALL". (e.g. ["ALL", "car", "pedestrian", "motorbike"]).
+        num_area_division (int): Number
+        upper_rights (numpy.ndarray)
+        bottom_lefts (numpy.ndarray)
+        columns (List[str])
+        state_columns (List[str])
+        df (pandas.DataFrame)
+        plot_directory (str)
+        frame_results (Dict[str, List[PerceptionFrameResult]])
+        num_frame (int)
+        num_scene (int)
+        num_ground_truth (int)
+        num_estimation (int)
+        num_tp (int)
+        num_fp (int)
+        num_fn (int)
+
+    Args:
+        evaluation_config (PerceptionEvaluationConfig): Config used in evaluation.
+        num_area_division (int): Number to divide area. Defaults to 1.
     """
 
     def __init__(
@@ -67,62 +81,16 @@ class PerceptionPerformanceAnalyzer:
         evaluation_config: PerceptionEvaluationConfig,
         num_area_division: int = 1,
     ) -> None:
-        """[summary]
-        Args:
-            evaluation_config (PerceptionEvaluationConfig): Config used in evaluation.
-            num_area_division (int): Number to divide area. Defaults to 1.
-        """
-        self.__config = evaluation_config
+        super().__init__(evaluation_config=evaluation_config)
+
+        if not self.config.evaluation_task.is_3d():
+            raise RuntimeError("Evaluation task must be 3D.")
+
         self.__num_area_division: int = num_area_division
-
-        self.__plot_dir: str = os.path.join(self.__config.result_root_directory, "plot")
-        if not os.path.exists(self.__plot_dir):
-            os.makedirs(self.__plot_dir)
-
-        self.__frame_results: Dict[int, List[PerceptionFrameResult]] = {}
-
-        # NOTE: all_labels = ["ALL", ...(target_labels)]
-        self.__target_labels: List[str] = [label.value for label in self.config.target_labels]
-        self.__all_labels: List[str] = self.__target_labels.copy()
-        self.__all_labels.insert(0, "ALL")
-
         max_x: float = self.config.evaluation_config_dict.get("max_x_position", 100.0)
         max_y: float = self.config.evaluation_config_dict.get("max_y_position", 100.0)
         self.__upper_rights, self.__bottom_lefts = generate_area_points(
             self.num_area_division, max_x=max_x, max_y=max_y
-        )
-        self.__initialize()
-
-        self.__ego2maps: Dict[str, Dict[str, np.ndarray]] = {}
-
-    def __initialize(self) -> None:
-        """[summary]
-        Initialize attributes.
-        """
-        self.__num_scene: int = 0
-        self.__num_frame: int = 0
-        self.__df: pd.DataFrame = pd.DataFrame(
-            columns=[
-                "timestamp",
-                "x",
-                "y",
-                "w",
-                "l",
-                "h",
-                "yaw",
-                "vx",
-                "vy",
-                "nn_point1",
-                "nn_point2",
-                "label",
-                "confidence",
-                "uuid",
-                "num_points",
-                "status",
-                "area",
-                "frame",
-                "scene",
-            ]
         )
 
     @classmethod
@@ -131,16 +99,19 @@ class PerceptionPerformanceAnalyzer:
         result_root_directory: str,
         scenario_path: str,
         num_area_division: int = 1,
-    ) -> PerceptionPerformanceAnalyzer:
-        """[summary]
-        Perception results made by logsim are reproduced from pickle file.
+    ) -> PerceptionAnalyzer3D:
+        """Perception results made by logsim are reproduced from pickle file.
 
         Args:
             result_root_directory (str): The root path to save result.
             scenario_path (str): The path of scenario file .yaml.
-            is_usecase (bool): Whether usecase or database evaluation is.
+            num_area_division (int): Number to divide evaluation target area.
+
         Returns:
-            PerceptionPerformanceAnalyzer
+            PerceptionAnalyzer3D: PerceptionAnalyzer3D instance.
+
+        Raises:
+            ValueError: When unexpected evaluation task is specified in scenario file.
         """
 
         # Load scenario file
@@ -152,9 +123,7 @@ class PerceptionPerformanceAnalyzer:
         eval_task_: str = eval_cfg_dict["evaluation_task"]
         if eval_task_ == "detection":
             frame_id = "base_link"
-        elif eval_task_ == "tracking":
-            frame_id = "map"
-        elif eval_task_ == "prediction":
+        elif eval_task_ in ("tracking", "prediction"):
             frame_id = "map"
         else:
             raise ValueError(f"Unexpected evaluation task: {eval_task_}")
@@ -171,16 +140,43 @@ class PerceptionPerformanceAnalyzer:
         return cls(evaluation_config, num_area_division)
 
     @property
-    def config(self) -> PerceptionEvaluationConfig:
-        return self.__config
+    def columns(self) -> List[str]:
+        return [
+            "timestamp",
+            "x",
+            "y",
+            "w",
+            "l",
+            "h",
+            "yaw",
+            "vx",
+            "vy",
+            "nn_point1",
+            "nn_point2",
+            "label",
+            "confidence",
+            "uuid",
+            "num_points",
+            "status",
+            "area",
+            "frame",
+            "scene",
+        ]
 
     @property
-    def target_labels(self) -> List[str]:
-        return self.__target_labels
-
-    @property
-    def all_labels(self) -> List[str]:
-        return self.__all_labels
+    def state_columns(self) -> List[str]:
+        return [
+            "x",
+            "y",
+            "w",
+            "l",
+            "h",
+            "yaw",
+            "vx",
+            "vy",
+            "nn_point1",
+            "nn_point2",
+        ]
 
     @property
     def num_area_division(self) -> int:
@@ -193,374 +189,6 @@ class PerceptionPerformanceAnalyzer:
     @property
     def bottom_lefts(self) -> np.ndarray:
         return self.__bottom_lefts
-
-    @property
-    def df(self) -> pd.DataFrame:
-        return self.__df
-
-    @property
-    def plot_directory(self) -> str:
-        return self.__plot_dir
-
-    @property
-    def frame_results(self) -> Dict[int, List[PerceptionFrameResult]]:
-        return self.__frame_results
-
-    @property
-    def num_frame(self) -> int:
-        return self.__num_frame
-
-    @property
-    def num_scene(self) -> int:
-        return self.__num_scene
-
-    @property
-    def num_ground_truth(self) -> int:
-        return self.get_num_ground_truth()
-
-    @property
-    def num_estimation(self) -> int:
-        return self.get_num_estimation()
-
-    @property
-    def num_tp(self) -> int:
-        return self.get_num_tp()
-
-    @property
-    def num_fp(self) -> int:
-        return self.get_num_fp()
-
-    @property
-    def num_fn(self) -> int:
-        return self.get_num_fn()
-
-    def get_num_ground_truth(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
-        """[summary]
-        Returns the number of ground truths.
-        Args:
-            df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
-            **kwargs: Specify if you want to get the number of FP that their columns are specified value.
-        Returns:
-            int: The number of ground truths.
-        """
-        df_ = self.get_ground_truth(**kwargs)
-        return len(df_)
-
-    def get_num_estimation(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
-        """[summary]
-        Returns the number of estimations.
-        Args:
-            df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
-            **kwargs: Specify if you want to get the number of FP that their columns are specified value.
-        Returns:
-            int: The number of estimations.
-        """
-        df_ = self.get_estimation(df=df, **kwargs)
-        return len(df_)
-
-    def get_status_num(
-        self,
-        status: Union[str, MatchingStatus],
-        df: Optional[pd.DataFrame] = None,
-        **kwargs,
-    ) -> int:
-        """[summary]
-        Returns number of matching status TP/FP/FN.
-
-        Args:
-            status (Union[str, MatchingStatus]): Status.
-            df (Optional[pandas.DataFrame]): Target DataFrame. Defaults to None.
-            **kwargs
-
-        Returns:
-            int: Number of matching status.
-        """
-        if status == MatchingStatus.TP:
-            return self.get_num_tp(df, **kwargs)
-        elif status == MatchingStatus.FP:
-            return self.get_num_fp(df, **kwargs)
-        elif status == MatchingStatus.FN:
-            return self.get_num_fn(df, **kwargs)
-        else:
-            raise ValueError(f"Expected status is TP/FP/FN, but got {status}")
-
-    def get_num_tp(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
-        """[summary]
-        Returns the number of TP.
-        Args:
-            df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
-            **kwargs: Specify if you want to get the number of FP that their columns are specified value.
-        Returns:
-            inf: The number of TP.
-        """
-        df_ = self.get_estimation(df=df, **kwargs)
-        return sum(df_["status"] == "TP")
-
-    def get_num_fp(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
-        """[summary]
-        Returns the number of FP.
-        Args:
-            df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
-            **kwargs: Specify if you want to get the number of FP that their columns are specified value.
-        Returns:
-            inf: The number of FP.
-        """
-        df_ = self.get_estimation(df=df, **kwargs)
-        return sum(df_["status"] == "FP")
-
-    def get_num_fn(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
-        """[summary]
-        Returns the number of FN.
-        Args:
-            df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
-            **kwargs: Specify if you want to get the number of FN that their columns are specified value.
-        Returns:
-            inf: The number of FN.
-        """
-        df_ = self.get_ground_truth(df=df, **kwargs)
-        return sum(df_["status"] == "FN")
-
-    def get_ground_truth(self, df: Optional[pd.DataFrame] = None, **kwargs) -> pd.DataFrame:
-        """[summary]
-        Returns the DataFrame for ground truth.
-        Args:
-            df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
-        Returns:
-            pandas.DataFrame
-        """
-        if df is None:
-            df = self.df
-
-        df = df.xs("ground_truth", level=1)
-        df = df[~df["status"].isnull()]
-        for key, item in kwargs.items():
-            if item is None:
-                continue
-            df = df[df[key] == item]
-        return df
-
-    def get_estimation(self, df: Optional[pd.DataFrame] = None, **kwargs) -> pd.DataFrame:
-        """[summary]
-        Returns the DataFrame for estimation.
-        Args:
-            df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
-        Returns:
-            pandas.DataFrame
-        """
-        if df is None:
-            df = self.df
-
-        df = df.xs("estimation", level=1)
-        df = df[~df["status"].isnull()]
-        for key, item in kwargs.items():
-            if item is None:
-                continue
-            df = df[df[key] == item]
-
-        return df
-
-    def get_scenes(self, df: Optional[pd.DataFrame] = None, **kwargs) -> np.ndarray:
-        """[summary]
-        Returns numpy array of unique scenes.
-        Args:
-            df (optional[pd.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
-        Returns:
-            numpy.ndarray
-        """
-        if df is None:
-            df = self.get(**kwargs)
-
-        scenes: np.ndarray = pd.unique(df["scene"])
-        return scenes[~np.isnan(scenes)]
-
-    def get_ego2map(self, scene: int, frame: int) -> np.ndarray:
-        """[summary]
-        Returns 4x4 ego2map transform matrix.
-        Args:
-            scene (int): Number of scene.
-            frame (int): Number of frame.
-        Returns:
-            numpy.ndarray: In shape (4, 4).
-        """
-        return self.__ego2maps[str(scene)][str(frame)]
-
-    def __len__(self) -> int:
-        return len(self.df)
-
-    def get_metrics_score(self, frame_results: List[PerceptionFrameResult]) -> MetricsScore:
-        """[summary]
-        Returns the metrics score for each evaluator
-
-        Args:
-            frame_results (List[PerceptionFrameResult]): List of frame results.
-
-        Returns:
-            metrics_score (MetricsScore): The final metrics score.
-        """
-        target_labels: List[AutowareLabel] = self.config.target_labels
-        scene_results = {label: [[]] for label in target_labels}
-        scene_num_gt = {label: 0 for label in target_labels}
-        used_frame: List[int] = []
-
-        for frame in frame_results:
-            obj_results_dict = divide_objects(frame.object_results, target_labels)
-            num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, target_labels)
-            for label in target_labels:
-                scene_results[label].append(obj_results_dict[label])
-                scene_num_gt[label] += num_gt_dict[label]
-            used_frame.append(int(frame.frame_name))
-
-        metrics_score: MetricsScore = MetricsScore(
-            config=self.config.metrics_config,
-            used_frame=used_frame,
-        )
-        if self.__config.metrics_config.detection_config is not None:
-            metrics_score.evaluate_detection(scene_results, scene_num_gt)
-        if self.__config.metrics_config.tracking_config is not None:
-            metrics_score.evaluate_tracking(scene_results, scene_num_gt)
-        if self.__config.metrics_config.prediction_config is not None:
-            pass
-
-        return metrics_score
-
-    def analyze(self, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
-        """[summary]
-        Analyze TP/FP/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
-
-        Args:
-            **kwargs: Specify scene, frame, area or uuid.
-
-        Returns:
-            score_df (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
-            error_df (Optional[pandas.DataFrame]): DataFrame of errors.
-        """
-        df: pd.DataFrame = self.get(**kwargs)
-        if len(df) > 0:
-            ratio_df = self.summarize_ratio(df=df)
-            error_df = self.summarize_error(df=df)
-            metrics_df = self.summarize_score(scene=kwargs.get("scene"), area=kwargs.get("area"))
-            score_df = pd.concat([ratio_df, metrics_df], axis=1)
-            return score_df, error_df
-
-        logging.warning("There is no DataFrame to be able to analyze.")
-        return None, None
-
-    def add(self, frame_results: List[PerceptionFrameResult]) -> pd.DataFrame:
-        """[summary]
-        Add frame results and update DataFrame.
-
-        Args:
-            frame_results (List[PerceptionFrameResult]): List of frame results.
-
-        Returns:
-            pandas.DataFrame
-        """
-        self.__num_scene += 1
-        start = len(self.df) // 2
-        self.__ego2maps[str(self.num_scene)] = {}
-        for frame in tqdm(frame_results, "Updating DataFrame"):
-            concat: List[pd.DataFrame] = []
-            if len(self) > 0:
-                concat.append(self.df)
-
-            self.__ego2maps[str(self.num_scene)][
-                str(frame.frame_name)
-            ] = frame.frame_ground_truth.ego2map
-
-            tp_df = self.format2df(
-                frame.pass_fail_result.tp_objects,
-                status=MatchingStatus.TP,
-                start=start,
-                frame_num=int(frame.frame_name),
-                ego2map=frame.frame_ground_truth.ego2map,
-            )
-            if len(tp_df) > 0:
-                start += len(tp_df) // 2
-                concat.append(tp_df)
-
-            fp_df = self.format2df(
-                frame.pass_fail_result.fp_objects_result,
-                status=MatchingStatus.FP,
-                start=start,
-                frame_num=int(frame.frame_name),
-                ego2map=frame.frame_ground_truth.ego2map,
-            )
-            if len(fp_df) > 0:
-                start += len(fp_df) // 2
-                concat.append(fp_df)
-
-            fn_df = self.format2df(
-                frame.pass_fail_result.fn_objects,
-                status=MatchingStatus.FN,
-                start=start,
-                frame_num=int(frame.frame_name),
-                ego2map=frame.frame_ground_truth.ego2map,
-            )
-            if len(fn_df) > 0:
-                start += len(fn_df) // 2
-                concat.append(fn_df)
-
-            if len(concat) > 0:
-                self.__df = pd.concat(concat)
-
-        self.__frame_results[self.num_scene] = frame_results
-        self.__num_frame += len(frame_results)
-
-        return self.__df
-
-    def add_from_pkl(self, pickle_path: str) -> pd.DataFrame:
-        """[summary]
-        Add frame results from pickle and update DataFrame.
-
-        Args:
-            pickle_path (str)
-
-        Returns:
-            pandas.DataFrame
-        """
-        with open(pickle_path, "rb") as pickle_file:
-            frame_results: List[PerceptionFrameResult] = pickle.load(pickle_file)
-        return self.add(frame_results)
-
-    def clear(self) -> None:
-        """[summary]
-        Clear frame results and DataFrame.
-        """
-        self.__frame_results.clear()
-        del self.__df
-        self.__initialize()
-
-    def format2df(
-        self,
-        object_results: List[Union[DynamicObject, DynamicObjectWithPerceptionResult]],
-        status: MatchingStatus,
-        frame_num: int,
-        start: int = 0,
-        ego2map: Optional[np.ndarray] = None,
-    ) -> pd.DataFrame:
-        """[summary]
-        Format objects to pandas.DataFrame.
-
-        Args:
-            object_results (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): List of objects or object results.
-            status (MatchingStatus): Object's status.
-            frame_num (int): Number of frame.
-            start (int): Number of the first index. Defaults to 0.
-            ego2map (Optional[np.ndarray]): Matrix to transform from ego coords to map coords. Defaults to None.
-
-        Returns:
-            df (pandas.DataFrame)
-        """
-        rets: Dict[int, Dict[str, Any]] = {}
-        for i, obj_result in enumerate(object_results, start=start):
-            rets[i] = self.format2dict(obj_result, status, frame_num, ego2map)
-
-        df = pd.DataFrame.from_dict(
-            {(i, j): rets[i][j] for i in rets.keys() for j in rets[i].keys()},
-            orient="index",
-            columns=self.keys(),
-        )
-        return df
 
     def format2dict(
         self,
@@ -711,130 +339,6 @@ class PerceptionPerformanceAnalyzer:
 
         return {"ground_truth": gt_ret, "estimation": est_ret}
 
-    def get(self, *args, **kwargs) -> pd.DataFrame:
-        """[summary]
-        Returns specified columns of DataFrame.
-        Returns:
-            pandas.DataFrame: Selected DataFrame.
-        """
-        df = self.df
-        return filter_df(df, *args, **kwargs)
-
-    def sortby(
-        self,
-        columns: Union[str, List[str]],
-        df: Optional[pd.DataFrame] = None,
-        ascending: bool = False,
-    ) -> pd.DataFrame:
-        """[summary]
-        Sort DataFrame by specified column's values.
-        Args:
-            column (str): Name of column.
-            df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
-            ascending (bool): Whether sort ascending order. Defaults to False.
-        Returns:
-            pandas.DataFrame: Sorted DataFrame.
-        """
-        if df is None:
-            df = self.df
-
-        return df.sort_values(columns, ascending=ascending)
-
-    def keys(self) -> pd.Index:
-        return self.df.keys()
-
-    def shape(self, columns: Optional[Union[str, List[str]]] = None) -> Tuple[int]:
-        """[summary]
-        Get the shape of DataFrame or specified column(s).
-        Args:
-            columns (Optional[Union[str, List[str]]): Name of column(s).
-        Returns:
-            Tuple[int]: Shape.
-        """
-        if columns:
-            return self.df[columns].shape
-        return self.df.shape
-
-    def head(self, n: int = 5) -> pd.DataFrame:
-        """[summary]
-        Returns the first `n` rows of DataFrame.
-        Args:
-            n (int): Number of rows to select.
-        Returns:
-            pandas.DataFrame: The first `n` rows of the caller object.
-        """
-        return self.df.head(n)
-
-    def tail(self, n: int = 5) -> pd.DataFrame:
-        """[summary]
-        Returns the last `n` rows of DataFrame.
-        Args:
-            n (int): Number of rows to select.
-        Returns:
-            pandas.DataFrame: The last `n` rows of the caller object.
-        """
-        return self.df.tail(n)
-
-    def calculate_error(
-        self,
-        column: Union[str, List[str]],
-        df: Optional[pd.DataFrame] = None,
-        remove_nan: bool = False,
-    ) -> np.ndarray:
-        """[summary]
-        Calculate specified column's error for TP.
-
-        Args:
-            column (Union[str, List[str]]): name of column
-            df (pandas.DataFrame): Specify if you want use filtered DataFrame. Defaults to None.
-            remove_nan (bool): Whether remove nan value. Defaults to False.
-
-        Returns:
-            np.ndarray: Array of error, in shape (N, M).
-                N is number of TP, M is dimensions.
-        """
-        expects: Set[str] = set(
-            (
-                "x",
-                "y",
-                "w",
-                "l",
-                "h",
-                "yaw",
-                "vx",
-                "vy",
-                "nn_point1",
-                "nn_point2",
-            )
-        )
-        keys: Set[str] = set([column]) if isinstance(column, str) else set(column)
-        if keys > expects:
-            raise ValueError(f"Unexpected keys: {column}, expected: {expects}")
-
-        if df is None:
-            df = self.df
-
-        df_ = df[df["status"] == "TP"]
-        if isinstance(column, list):
-            df_arr: np.ndarray = np.concatenate(
-                [np.array(df_[col].to_list()) for col in column],
-                axis=-1,
-            )
-        else:
-            df_arr: np.ndarray = np.array(df_[column])
-        gt_vals = df_arr[::2]
-        est_vals = df_arr[1::2]
-        err: np.ndarray = gt_vals - est_vals
-        if remove_nan:
-            err = err[~np.isnan(err)]
-
-        if column == "yaw":
-            # Clip err from [-2pi, 2pi] to [-pi, pi]
-            err[err > np.pi] = -2 * np.pi + err[err > np.pi]
-            err[err < -np.pi] = 2 * np.pi + err[err < -np.pi]
-
-        return err
-
     def summarize_error(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """[summary]
         Calculate mean, sigma, RMS, max and min of error.
@@ -885,32 +389,6 @@ class PerceptionPerformanceAnalyzer:
         )
 
         return ret_df
-
-    def summarize_ratio(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
-        """[summary]
-        Summarize TP/FP/FN ratio.
-
-        Args:
-            df (Optional[pandas.DataFrame]): Specify, if you want to use any filtered DataFrame. Defaults to None.
-
-        Returns:
-            pd.DataFrame
-        """
-        if df is None:
-            df = self.df
-
-        data: Dict[str, List[float]] = {
-            str(s): [0.0] * len(self.__all_labels) for s in MatchingStatus
-        }
-        for i, label in enumerate(self.__all_labels):
-            if label == "ALL":
-                label = None
-            num_ground_truth: int = self.get_num_ground_truth(label=label)
-            if num_ground_truth > 0:
-                data["TP"][i] = self.get_num_tp(label=label) / num_ground_truth
-                data["FN"][i] = self.get_num_fn(label=label) / num_ground_truth
-                data["FP"][i] = self.get_num_fp(label=label) / num_ground_truth
-        return pd.DataFrame(data, index=self.__all_labels)
 
     def summarize_score(
         self,
@@ -996,7 +474,7 @@ class PerceptionPerformanceAnalyzer:
 
         # TODO: Arrange to single figure
         fig: Figure = plt.figure(figsize=(16, 8))
-        ax1: Axes = fig.add_subplot(
+        ax1: Union[Axes, Axes3D] = fig.add_subplot(
             1,
             2,
             1,
@@ -1005,7 +483,7 @@ class PerceptionPerformanceAnalyzer:
             title="GT",
             projection=mode.projection,
         )
-        ax2: Axes = fig.add_subplot(
+        ax2: Union[Axes, Axes3D] = fig.add_subplot(
             1,
             2,
             2,

@@ -22,7 +22,8 @@ from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from perception_eval.tool.perception_performance_analyzer import PerceptionPerformanceAnalyzer
+
+# from perception_eval.tool import PerceptionAnalyzerType
 from scipy.stats import multivariate_normal
 from sklearn.mixture import GaussianMixture
 
@@ -269,12 +270,13 @@ class Gmm:
 
 
 def load_sample(
-    analyzer: PerceptionPerformanceAnalyzer,
+    analyzer,  # PerceptionAnalyzerType
     state: List[str],
     error: List[str],
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Load sample data
     Args:
+        analyzer (PerceptionAnalyzerType): Perception analyzer instance.
         state (List[str]): List of state names. For example, [x, y].
         error (List[str]): List of error names. For example, [x, y].
     Returns:

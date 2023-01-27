@@ -1,6 +1,6 @@
-# [`<class> PerceptionPerformanceAnalyzer(...)`](../../../perception_eval/perception_eval/tool/perception_performance_analyzer.py)
+# [`<class> PerceptionAnalyzer3D(...)`](../../../perception_eval/perception_eval/tool/perception_analyzer3d.py)
 
-Analyze based on perception results.
+Analyze results for 3D perception evaluation.
 
 ## Type of perception evaluation
 
@@ -40,20 +40,20 @@ After running driving_log_replayer, evaluation results (`List[PerceptionFrameRes
 There are two ways of initialization, 1. with `PerceptionEvaluationConfig`, or 2. with scenario file (`.yaml`).
 
 ```python
-from perception_eval.tool.perception_performance_analyzer import PerceptionPerformanceAnalyzer
+from perception_eval.tool.perception_performance_analyzer import PerceptionAnalyzer3D
 
 
 # 1. with PerceptionEvaluationConfig
 # REQUIRED:
 #   - evaluation_config <PerceptionEvaluationConfig>
 
-analyzer = PerceptionPerformanceAnalyzer(evaluation_config)
+analyzer = PerceptionAnalyzer3D(evaluation_config)
 
 # 2. with scenario file (.yaml)
 # REQUIRED:
 #   - scenario_path <str>
 
-analyzer = PerceptionPerformanceAnalyzer.from_scenario(
+analyzer = PerceptionAnalyzer3D.from_scenario(
     result_root_directory,
     scenario_path,
 )
@@ -126,7 +126,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
            nn_plane  0.688891  0.893696  5.693175e-01  2.190708  0.020005
 ```
 
-## `<class> PerceptionPerformanceAnalyzer(...)`
+## `<class> PerceptionAnalyzer3D(...)`
 
 | Arguments           |             type             | Mandatory | Description                                                    |
 | :------------------ | :--------------------------: | :-------: | :------------------------------------------------------------- |
@@ -184,7 +184,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 - `get()` returns columns of DataFrame specified in `*args` and meet requirements specified in `**kwargs`.
 
 ```python
->>> analyzer = PerceptionPerformanceAnalyzer(...)
+>>> analyzer = PerceptionAnalyzer3D(...)
 
 # Example: Returns xy and uuid columns labeled as truck
 >>> analyzer.get("x", "y", "uuid", label="truck")
@@ -219,7 +219,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 |     0 | **ground_truth** |   `float`   | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `tuple[float]` | `tuple[float]` |  `str`  |   `float`    | `str`  |    `int`     |  `str`   | `int`  |  `int`  |  `int`  |
 |       | **estimation**   |
 
-- `PerceptionPerformanceAnalyzer.df` allow to show the DataFrame
+- `PerceptionAnalyzer3D.df` allow to show the DataFrame
 
 ```python
 >>> analyzer.df
@@ -396,7 +396,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ## Known issues / Limitations
 
-- `PerceptionPerformanceAnalyzer()` only supports 3D evaluation.
+- `PerceptionAnalyzer3D()` only supports 3D evaluation.
   <img src="../../fig/perception/plot_num_object_by_distance.png" width=800>
 
 - `<func> box_plot(...) -> None`
@@ -444,20 +444,20 @@ And then, it predicts means of posterior distribution P(Y|X), where X represents
 
 - Returns input array of specified states and errors.
 
-| Arguments  |              type               | Mandatory | Description                               |
-| :--------- | :-----------------------------: | :-------: | :---------------------------------------- |
-| `analyzer` | `PerceptionPerformanceAnalyzer` |    Yes    | `PerceptionPerformanceAnalyzer` instance. |
-| `state`    |           `List[str]`           |    Yes    | List of target state names.               |
-| `error`    |           `List[str]`           |    Yes    | List of target error names.               |
+| Arguments  |          type          | Mandatory | Description                      |
+| :--------- | :--------------------: | :-------: | :------------------------------- |
+| `analyzer` | `PerceptionAnalyzer3D` |    Yes    | `PerceptionAnalyzer3D` instance. |
+| `state`    |      `List[str]`       |    Yes    | List of target state names.      |
+| `error`    |      `List[str]`       |    Yes    | List of target error names.      |
 
 ### Example usage
 
 ```python
-from perception_eval.tool import PerceptionPerformanceAnalyzer, Gmm, load_sample
+from perception_eval.tool import PerceptionAnalyzer3D, Gmm, load_sample
 import numpy as np
 
-# Initialize PerceptionPerformanceAnalyzer
-analyzer = PerceptionPerformanceAnalyzer(...)
+# Initialize PerceptionAnalyzer3D
+analyzer = PerceptionAnalyzer3D(...)
 
 # Load sample data, X: state, Y: error
 state = ["x", "y", "yaw", "vx", "xy"]
