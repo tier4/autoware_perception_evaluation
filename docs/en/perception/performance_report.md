@@ -448,7 +448,7 @@ And then, it predicts means of posterior distribution P(Y|X), where X represents
 ### Example usage
 
 ```python
-from perception_eval.tool import PerceptionPerformanceAnalyzer, GMM, load_sample
+from perception_eval.tool import PerceptionPerformanceAnalyzer, Gmm, load_sample
 import numpy as np
 
 # Initialize PerceptionPerformanceAnalyzer
@@ -463,7 +463,7 @@ X, Y = load_sample(analyzer, state, error)
 sample = np.concatenate([X, Y], axis=-1)  # (N, 7)
 
 # Estimated model parameters
-model = GMM(max_k)
+model = Gmm(max_k)
 model.fit(sample)
 
 # Predict Y(error) using X(state)

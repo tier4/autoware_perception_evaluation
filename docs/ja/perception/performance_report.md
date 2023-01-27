@@ -413,7 +413,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
   <img src="../../fig/perception/box_plot_xy.png" width=400>
 
-## [`<class> GMM(...)`](../../../perception_eval/perception_eval/tool/gmm.py)
+## [`<class> Gmm(...)`](../../../perception_eval/perception_eval/tool/gmm.py)
 
 [`sklearn.mixture.GaussianMixture`](https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html)のラッパークラス．
 同時確率分布 P(X, Y)のパラメータを EM アルゴリズムを用いて推定し，入力データ X から事後確率分布 P(Y|X)の平均値を予測する．
@@ -451,7 +451,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 ### Example usage
 
 ```python
-from perception_eval.tool import PerceptionPerformanceAnalyzer, GMM, load_sample
+from perception_eval.tool import PerceptionPerformanceAnalyzer, Gmm, load_sample
 import numpy as np
 
 # PerceptionPerformanceAnalyzerの初期化
@@ -466,7 +466,7 @@ X, Y = load_sample(analyzer, state, error)
 sample = np.concatenate([X, Y], axis=-1)  # (N, 7)
 
 # モデルパラメータの推定
-model = GMM(max_k)
+model = Gmm(max_k)
 model.fit(sample)
 
 # X(状態量)からY(誤差)を予測．

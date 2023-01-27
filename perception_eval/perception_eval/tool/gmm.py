@@ -22,9 +22,10 @@ from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from perception_eval.tool.perception_performance_analyzer import PerceptionPerformanceAnalyzer
 from scipy.stats import multivariate_normal
 from sklearn.mixture import GaussianMixture
+
+from perception_eval.tool.perception_performance_analyzer import PerceptionPerformanceAnalyzer
 
 
 class Gmm:
@@ -282,7 +283,7 @@ def load_sample(
         error_arr (numpy.ndarray): Array of errors, in shape (N, num_error).
     """
     state_arr = np.array(analyzer.get_ground_truth(status="TP")[state])
-    error_arr = np.array([analyzer.calculate_error(col) for col in error])
+    error_arr = np.array([analyzer.calculate_error(col) for col in error]).reshape(-1, len(error))
 
     # Remove nan
     not_nan = ~np.isnan(state_arr).any(1) * ~np.isnan(error_arr).any(1)
