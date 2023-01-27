@@ -22,10 +22,9 @@ from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
+from perception_eval.tool.perception_performance_analyzer import PerceptionPerformanceAnalyzer
 from scipy.stats import multivariate_normal
 from sklearn.mixture import GaussianMixture
-
-from perception_eval.tool.perception_performance_analyzer import PerceptionPerformanceAnalyzer
 
 
 class Gmm:
