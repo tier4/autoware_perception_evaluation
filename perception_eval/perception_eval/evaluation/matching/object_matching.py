@@ -21,9 +21,10 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
+from perception_eval.common import distance_objects
+from perception_eval.common import distance_points_bev
+from perception_eval.common import ObjectType
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.object import distance_objects
-from perception_eval.common.object import distance_points_bev
 from perception_eval.common.point import get_point_left_right
 from perception_eval.common.point import polygon_to_list
 from shapely.geometry import Polygon
@@ -34,13 +35,13 @@ class MatchingMode(Enum):
     The mode enum for matching algorithm.
 
     CENTERDISTANCE: center distance in 3d
-    IOUBEV : IoU (Intersection over Union) in BEV (Bird Eye View)
+    IOU2D : IoU (Intersection over Union) in BEV (Bird Eye View) for 3D objects, pixel for 2D objects.
     IOU3D : IoU (Intersection over Union) in 3D
     PLANEDISTANCE: The plane distance
     """
 
-    CENTERDISTANCE = "Center Distance 3d [m]"
-    IOUBEV = "IoU BEV"
+    CENTERDISTANCE = "Center Distance [m]"
+    IOU2D = "IoU 2D"
     IOU3D = "IoU 3D"
     PLANEDISTANCE = "Plane Distance [m]"
 
@@ -49,34 +50,55 @@ class MatchingMode(Enum):
 
 
 class MatchingMethod(ABC):
-    """[summary]
-    Meta class for matching
+    """A base class for matching method class.
+
+    Attributes:
+        mode (MatchingMode): MatchingMode instance.
+        value (Optional[float]): Matching score.
+
+    Args:
+        estimated_object (ObjectType): Estimated object.
+        ground_truth_object (Optional[ObjectType]): Ground truth object.
+
+    Raises:
+        AssertionError: When types of input objects are not same.
     """
+
+    mode: MatchingMode
 
     @abstractmethod
     def __init__(
         self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
+        estimated_object: ObjectType,
+        ground_truth_object: Optional[ObjectType],
     ) -> None:
-        """[summary]
-        Args:
-            estimated_object (DynamicObject): The estimated object
-            ground_truth_object (Optional[DynamicObject]): The ground truth object
-        """
-        self.mode: MatchingMode = MatchingMode.CENTERDISTANCE
-        self.value: Optional[float] = None
+        if ground_truth_object is not None:
+            assert type(estimated_object) == type(ground_truth_object)
+        self.value: Optional[float] = self._calculate_matching_score(
+            estimated_object=estimated_object,
+            ground_truth_object=ground_truth_object,
+        )
+
+    @abstractmethod
+    def _calculate_matching_score(
+        self,
+        estimated_object: ObjectType,
+        ground_truth_object: Optional[ObjectType],
+    ) -> Optional[float]:
+        pass
 
     @abstractmethod
     def is_better_than(
         self,
         threshold_value: float,
     ) -> bool:
-        """[summary]
-        Judge whether value is better than threshold.
+        """Judge whether value is better than threshold.
+
+        This function must be implemented in each inherited class.
+        If input `self.value=None`, it always returns False.
 
         Args:
-            threshold_value (float): The threshold value
+            threshold_value (float): Threshold value.
 
         Returns:
             bool: If value is better than threshold, return True.
@@ -85,29 +107,27 @@ class MatchingMethod(ABC):
 
 
 class CenterDistanceMatching(MatchingMethod):
-    """[summary]
-    Matching by center distance
+    """A class for matching objects by center distance.
+
+    If input `ground_truth_object=None`, `self.value=None`
 
     Attributes:
-        self.mode (MatchingMode): Matching mode
-        self.value (Optional[float]): Center distance
+        mode (MatchingMode): Matching mode that is `MatchingMode.CENTERDISTANCE`.
+        value (Optional[float]): Center distance score.
+
+    Args:
+        estimated_object (ObjectType): Estimated object.
+        ground_truth_object (Optional[ObjectType]): Ground truth object.
     """
+
+    mode: MatchingMode = MatchingMode.CENTERDISTANCE
 
     def __init__(
         self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
+        estimated_object: ObjectType,
+        ground_truth_object: Optional[ObjectType],
     ) -> None:
-        """[summary]
-        Args:
-            estimated_object (DynamicObject): The estimated object
-            ground_truth_object (Optional[DynamicObject]): The ground truth object
-        """
-        self.mode: MatchingMode = MatchingMode.CENTERDISTANCE
-        self.value: Optional[float] = self._get_center_distance(
-            estimated_object,
-            ground_truth_object,
-        )
+        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
 
     def is_better_than(
         self,
@@ -116,8 +136,10 @@ class CenterDistanceMatching(MatchingMethod):
         """[summary]
         Judge whether value is better than threshold.
 
+        If `self.value=None`, always returns False.
+
         Args:
-            threshold_value (float): The threshold value
+            threshold_value (float): Threshold value.
 
         Returns:
             bool: If value is better than threshold, return True.
@@ -127,16 +149,21 @@ class CenterDistanceMatching(MatchingMethod):
         else:
             return self.value < threshold_value
 
-    def _get_center_distance(
+    def _calculate_matching_score(
         self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
+        estimated_object: ObjectType,
+        ground_truth_object: Optional[ObjectType],
     ) -> Optional[float]:
-        """[summary]
-        Get center distance
+        """Get center distance.
+
+        If input `ground_truth_object=None`, it always returns None.
+
         Args:
-            estimated_object (DynamicObject): The estimated object
-            ground_truth_object (Optional[DynamicObject]): The ground truth object
+            estimated_object (ObjectType): Estimated object.
+            ground_truth_object (Optional[ObjectType]): Ground truth object.
+
+        Returns:
+            Optional[float]: Center distance between 2 objects.
         """
         if ground_truth_object is None:
             return None
@@ -144,54 +171,49 @@ class CenterDistanceMatching(MatchingMethod):
 
 
 class PlaneDistanceMatching(MatchingMethod):
-    """[summary]
-    Matching by plane distance
+    """A class for matching objects by plane distance.
+
+    Input objects of this class must be 3D that means `DynamicObject3D`.
+    If input `ground_truth_object=None`, `self.value` and each NN plane attribute is None.
 
     Attributes:
-        self.mode (MatchingMode): Matching mode
-        self.value (Optional[float]):
-                Plane distance value [m].
-                If estimated_object do not have corresponded ground truth object, value is None.
-        self.ground_truth_nn_plane (Optional[Tuple[Tuple[float, float]]]):
-                The nearest neighbor plane coordinate of ground truth object ((x1, y1), (x2, y2)).
-                If estimated_object do not have corresponded ground truth object, value is None.
-        self.estimated_nn_plane (Optional[Tuple[Tuple[float, float]]])]:
-                The nearest neighbor plane coordinate of estimated object ((x1, y1), (x2, y2)).
-                If estimated_object do not have corresponded ground truth object, value is None.
+        mode (MatchingMode): Matching mode that is `MatchingMode.PLANEDISTANCE`.
+        value (Optional[float]): Plane distance[m].
+        ground_truth_nn_plane (Optional[Tuple[Tuple[float, float]]]):
+            Vertices of NN plane of ground truth object ((x1, y1), (x2, y2)).
+        estimated_nn_plane (Optional[Tuple[Tuple[float, float]]])]:
+            Vertices of NN plane for estimation ((x1, y1), (x2, y2)).
+
+    Args:
+        estimated_object (DynamicObject): Estimated object.
+        ground_truth_object (Optional[DynamicObject]): Ground truth object.
     """
+
+    mode: MatchingMode = MatchingMode.PLANEDISTANCE
 
     def __init__(
         self,
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> None:
-        """[summary]
-        Args:
-            estimated_object (DynamicObject): The estimated object
-            ground_truth_object (Optional[DynamicObject]): The ground truth object
-        """
-        self.mode: MatchingMode = MatchingMode.PLANEDISTANCE
-        self.value: Optional[float] = None
         self.ground_truth_nn_plane: Optional[
             Tuple[Tuple[float, float, float], Tuple[float, float, float]]
         ] = None
         self.estimated_nn_plane: Optional[
             Tuple[Tuple[float, float, float], Tuple[float, float, float]]
         ] = None
-        self.value, self.ground_truth_nn_plane, self.estimated_nn_plane = self._get_plane_distance(
-            estimated_object,
-            ground_truth_object,
-        )
+        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
 
     def is_better_than(
         self,
         threshold_value: float,
     ) -> bool:
-        """[summary]
-        Judge whether value is better than threshold.
+        """Judge whether value is better than threshold.
+
+        If `self.value=None`, it always returns False.
 
         Args:
-            threshold_value (float): The threshold value
+            threshold_value (float): Threshold value.
 
         Returns:
             bool: If value is better than threshold, return True.
@@ -201,29 +223,25 @@ class PlaneDistanceMatching(MatchingMethod):
         else:
             return self.value < threshold_value
 
-    def _get_plane_distance(
+    def _calculate_matching_score(
         self,
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
-    ) -> Tuple[
-        Optional[float],
-        Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float]]],
-        Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float]]],
-    ]:
+    ) -> Optional[float]:
+        """Calculate plane distance between estimation and ground truth and NN planes.
 
-        """[summary]
-        Calculate plane distance for use case evaluation.
+        This function also set NN plane attributes for estimation and ground truth.
+        If input `ground_truth_object=None`, it always returns None,
 
         Args:
-            estimated_object (DynamicObject): A estimated object
-            ground_truth_object (Optional[DynamicObject]): The correspond ground truth object
+            estimated_object (DynamicObject): Estimated object.
+            ground_truth_object (Optional[DynamicObject]): Ground truth object.
 
         Returns:
-            Tuple[value, ground_truth_nn_plane, estimated_nn_plane]
-            See class attribute in detail
+            Optional[float]: Plane distance.
         """
         if ground_truth_object is None:
-            return None, None, None
+            return None
 
         # Get corner_points of estimated object from footprint
         pr_footprint_polygon: Polygon = estimated_object.get_footprint()
@@ -253,76 +271,88 @@ class PlaneDistanceMatching(MatchingMethod):
         distance_squared: float = distance_left_point**2 + distance_right_point**2
         plane_distance: float = math.sqrt(distance_squared / 2.0)
 
-        ground_truth_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
+        self.ground_truth_nn_plane: Tuple[
+            Tuple[float, float, float], Tuple[float, float, float]
+        ] = (
             gt_left_point,
             gt_right_point,
         )
-        estimated_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
+        self.estimated_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
             pr_left_point,
             pr_right_point,
         )
-        return plane_distance, ground_truth_nn_plane, estimated_nn_plane
+        return plane_distance
 
 
-class IOUBEVMatching(MatchingMethod):
-    """[summary]
-    Matching by IoU BEV
+class IOU2dMatching(MatchingMethod):
+    """A class for Matching by 2D IoU in BEV for 3D objects or in pixels for 2D objects.
+
+    This class allows either `DynamicObject` or `DynamicObject2D` as input type.
 
     Attributes:
-        self.mode (MatchingMode): Matching mode
-        self.value (Optional[float]): IoU BEV
+        mode (MatchingMode): Matching mode that is `MatchingMode.IOU2D`.
+        value (Optional[float]): 2D IoU score.
+
+    Args:
+        estimated_object (DynamicObject): Estimated object.
+        ground_truth_object (Optional[DynamicObject]): Ground truth object.
     """
+
+    mode: MatchingMode = MatchingMode.IOU2D
 
     def __init__(
         self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
+        estimated_object: ObjectType,
+        ground_truth_object: Optional[ObjectType],
     ) -> None:
-        """[summary]
-        Args:
-            estimated_object (DynamicObject): The estimated object
-            ground_truth_object (Optional[DynamicObject]): The ground truth object
-        """
-        self.mode: MatchingMode = MatchingMode.IOUBEV
-        self.value: Optional[float] = self._get_iou_bev(
-            estimated_object,
-            ground_truth_object,
-        )
+        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
 
     def is_better_than(
         self,
         threshold_value: float,
     ) -> bool:
-        """[summary]
-        Judge whether value is better than threshold.
+        """Judge whether value is better than threshold.
+
+        If input `self.value=None`, always returns False.
+        Input `threshold_value` must be in [0.0, 1.0].
 
         Args:
             threshold_value (float): The threshold value
 
         Returns:
             bool: If value is better than threshold, return True.
+
+        Raises:
+            AssertionError: When `threshold_value` is not in [0.0, 1.0].
         """
+        assert (
+            0.0 <= threshold_value <= 1.0
+        ), f"threshold must be [0.0, 1.0], but got {threshold_value}."
+
         if self.value is None:
             return False
         else:
             return self.value > threshold_value
 
-    def _get_iou_bev(
+    def _calculate_matching_score(
         self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
+        estimated_object: ObjectType,
+        ground_truth_object: Optional[ObjectType],
     ) -> float:
-        """[summary]
-        Calculate BEV IoU
+        """Calculate 2D IoU score.
+
+        If input `ground_truth_object=None`, always returns 0.0.
+
+        NOTE:
+            If Object's size is tiny, it returns wrong IoU score.
 
         Args:
-            estimated_object (DynamicObject): The estimated object
-            ground_truth_object (DynamicObject): The corresponded ground truth object
+            estimated_object (ObjectType): Estimated object
+            ground_truth_object (Optional[ObjectType]): Ground truth object.
 
         Returns:
-            Optional[float]: The value of BEV IoU.
-                            If estimated_object do not have corresponded ground truth object,
-                            return 0.0.
+            float: The value of 2D IoU score. If ground truth object is None, returns 0.0.
+
         Reference:
             https://github.com/lyft/nuscenes-devkit/blob/49c36da0a85da6bc9e8f2a39d5d967311cd75069/lyft_dataset_sdk/eval/detection/mAP_evaluation.py
         """
@@ -331,8 +361,12 @@ class IOUBEVMatching(MatchingMethod):
             return 0.0
 
         # TODO: if tiny box dim seen return 0.0 IOU
-        estimated_object_area: float = estimated_object.get_area_bev()
-        ground_truth_object_area: float = ground_truth_object.get_area_bev()
+        if isinstance(estimated_object, DynamicObject):
+            estimated_object_area: float = estimated_object.get_area_bev()
+            ground_truth_object_area: float = ground_truth_object.get_area_bev()
+        else:
+            estimated_object_area: float = estimated_object.get_area()
+            ground_truth_object_area: float = ground_truth_object.get_area()
         intersection_area: float = _get_area_intersection(estimated_object, ground_truth_object)
         union_area: float = estimated_object_area + ground_truth_object_area - intersection_area
         iou_bev: float = intersection_area / union_area
@@ -340,55 +374,62 @@ class IOUBEVMatching(MatchingMethod):
 
 
 class IOU3dMatching(MatchingMethod):
-    """[summary]
-    Matching by IoU 3d
+    """A class for matching by 3d IoU.
+
+    This class only allows `DynamicObject` as input.
 
     Attributes:
-        self.mode (MatchingMode): Matching mode
-        self.value (Optional[float]): IoU 3d
+        mode (MatchingMode): Matching mode that is `MatchingMode.IOU3D`.
+        value (Optional[float]): 3D IoU score.
+
+    Args:
+        estimated_object (DynamicObject): Estimated object.
+        ground_truth_object (Optional[DynamicObject]): Ground truth object.
     """
+
+    mode: MatchingMode = MatchingMode.IOU3D
 
     def __init__(
         self,
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> None:
-        """[summary]
-        Args:
-            estimated_object (DynamicObject): The estimated object
-            ground_truth_object (Optional[DynamicObject]): The ground truth object
-        """
-        self.mode: MatchingMode = MatchingMode.IOU3D
-        self.value: Optional[float] = self._get_iou_3d(
-            estimated_object,
-            ground_truth_object,
-        )
+        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
 
     def is_better_than(
         self,
         threshold_value: float,
     ) -> bool:
-        """[summary]
-        Judge whether value is better than threshold.
+        """Judge whether value is better than threshold.
+
+        If `self.value` is None, it always returns `False`.
 
         Args:
-            threshold_value (float): The threshold value
+            threshold_value (float): Threshold value that must be in [0.0, 1.0].
 
         Returns:
             bool: If value is better than threshold, return True.
+
+        Raises:
+            AssertionError: When `threshold_value` is not in [0.0, 1.0].
         """
+        assert (
+            0.0 <= threshold_value <= 1.0
+        ), f"threshold must be [0.0, 1.0], but got {threshold_value}"
+
         if self.value is None:
             return False
         else:
             return self.value > threshold_value
 
-    def _get_iou_3d(
+    def _calculate_matching_score(
         self,
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> float:
-        """[summary]
-        Calculate 3D IoU
+        """Calculate 3D IoU score.
+
+        If input `ground_truth_object=None`, it always returns 0.0.
 
         Args:
             estimated_object (DynamicObject): The estimated object
@@ -414,16 +455,14 @@ def _get_volume_intersection(
     estimated_object: DynamicObject,
     ground_truth_object: DynamicObject,
 ) -> float:
-    """[summary]
-    Get the volume at intersection
+    """Get the volume at intersected area.
 
     Args:
-        estimated_object (DynamicObject): The estimated object
-        ground_truth_object (DynamicObject): The corresponded ground truth object
+        estimated_object (DynamicObject): Estimated object.
+        ground_truth_object (DynamicObject): Corresponding ground truth object.
 
     Returns:
-        float: The volume at intersection
-
+        float: Volume at intersected area.
     """
     area_intersection = _get_area_intersection(estimated_object, ground_truth_object)
     height_intersection = _get_height_intersection(estimated_object, ground_truth_object)
@@ -434,16 +473,14 @@ def _get_height_intersection(
     estimated_object: DynamicObject,
     ground_truth_object: DynamicObject,
 ) -> float:
-    """[summary]
-    Get the height at intersection
+    """Get the height at intersection.
 
     Args:
-        estimated_object (DynamicObject): The estimated object
-        ground_truth_object (DynamicObject): The corresponded ground truth object
+        estimated_object (DynamicObject): Estimated object
+        ground_truth_object (DynamicObject): Corresponding ground truth object.
 
     Returns:
         float: The height at intersection
-
     """
     min_z = max(
         estimated_object.state.position[2] - estimated_object.state.size[2] / 2,
@@ -456,22 +493,26 @@ def _get_height_intersection(
     return max(0, max_z - min_z)
 
 
-def _get_area_intersection(
-    estimated_object: DynamicObject,
-    ground_truth_object: DynamicObject,
-) -> float:
-    """[summary]
-    Get the area at intersection
+def _get_area_intersection(estimated_object: ObjectType, ground_truth_object: ObjectType) -> float:
+    """Get the area at intersection.
+
+    This function allows either 3D or 2D object as inputs.
+    For 3D object, get footprint of 3D box as polygon.
+    For 2D object, get ROI of 2D box as a polygon.
 
     Args:
-        estimated_object (DynamicObject): The estimated object
-        ground_truth_object (DynamicObject): The corresponded ground truth object
+        estimated_object (ObjectType): Estimated object.
+        ground_truth_object (ObjectType): Corresponding ground truth object.
 
     Returns:
-        float: The area at intersection
+        float: Area at intersection.
     """
     # estimated object footprint and Ground truth object footprint
-    pr_footprint_polygon: Polygon = estimated_object.get_footprint()
-    gt_footprint_polygon: Polygon = ground_truth_object.get_footprint()
-    area_intersection: float = pr_footprint_polygon.intersection(gt_footprint_polygon).area
+    if isinstance(estimated_object, DynamicObject):
+        pr_polygon: Polygon = estimated_object.get_footprint()
+        gt_polygon: Polygon = ground_truth_object.get_footprint()
+    else:
+        pr_polygon: Polygon = estimated_object.get_polygon()
+        gt_polygon: Polygon = ground_truth_object.get_polygon()
+    area_intersection: float = pr_polygon.intersection(gt_polygon).area
     return area_intersection

@@ -20,6 +20,7 @@ import os.path as osp
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 from perception_eval.common.evaluation_task import EvaluationTask
@@ -30,22 +31,48 @@ from perception_eval.common.label import LabelConverter
 class _EvaluationConfigBase(ABC):
     """Abstract base class for evaluation config
 
+    Directory structure to save log and visualization result is following
+    - result_root_directory/
+        ├── log_directory/
+        └── visualization_directory/
+
     Attributes:
-        self.dataset_paths (List[str]): The list of dataset path.
-        self.frame_id (str): The frame_id, base_link or map.
-        self.merge_similar_labels (bool): Whether merge similar labels.
-        self.does_use_pointcloud (bool): Whether use pointcloud of dataset.
-        self.result_root_directory (str): The directory path to save result.
-        self.log_directory (str): The directory path to save log.
-        self.visualization_directory (str): The directory path to save visualization result.
-        self.label_converter (LabelConverter): The converter to convert string label to autoware format.
-        self.evaluation_config_dict (Dict[str, Any]): The original config dict.
+        dataset_paths (List[str]): Dataset paths list.
+        frame_id (str): Frame ID, `base_link` or `map`.
+        result_root_directory (str): Directory path to save result.
+        log_directory (str): Directory Directory path to save log.
+        visualization_directory (str): Directory path to save visualization result.
+        label_converter (LabelConverter): LabelConverter instance.
+        evaluation_task (EvaluationTask): EvaluationTask instance.
+        label_prefix (str): Prefix of label type. Choose from [`autoware", `traffic_light`]. Defaults to autoware.
+        camera_type (Optional[str]): Camera name. Specify in 2D evaluation. Defaults to None.
+        load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
+        target_labels (List[LabelType]): Target labels list.
 
     properties:
-        self.support_tasks (List[str]): The list of supported task of EvaluationManager.
-            (e.g.)
-            - PerceptionEvaluationManager: ["detection", "tracking", "prediction"]
-            - SensingEvaluationManager: ["sensing"]
+        support_tasks (List[str]): The list of supported task of EvaluationManager.
+            PerceptionEvaluationManager: [
+                "detection",
+                "tracking",
+                "prediction",
+                "detection2d",
+                "tracking2d",
+                "classification2d"
+            ]
+            SensingEvaluationManager: ["sensing"]
+
+    Args:
+        dataset_paths (List[str]): Dataset paths list.
+        frame_id (str): Frame ID, `base_link` or `map`.
+        merge_similar_labels (bool): Whether merge similar labels.
+            If True,
+                - BUS, TRUCK, TRAILER -> CAR
+                - MOTORBIKE, CYCLIST -> BICYCLE
+        result_root_directory (str): Directory path to save result.
+        evaluation_config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
+        label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
+        camera_type (Optional[str]): Name of camera. Specify in 2D evaluation. Defaults to None.
+        load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
     """
 
     _support_tasks: List[str] = []
@@ -56,9 +83,11 @@ class _EvaluationConfigBase(ABC):
         dataset_paths: List[str],
         frame_id: str,
         merge_similar_labels: bool,
-        does_use_pointcloud: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
+        label_prefix: str = "autoware",
+        camera_type: Optional[str] = None,
+        load_raw_data: bool = False,
     ) -> None:
         """[summary]
         Args:
@@ -68,9 +97,11 @@ class _EvaluationConfigBase(ABC):
                 If True,
                     - BUS, TRUCK, TRAILER -> CAR
                     - MOTORBIKE, CYCLIST -> BICYCLE
-            does_use_pointcloud (bool): Whether use pointcloud of dataset.
             result_root_directory (str): The directory path to save result.
             evaluation_config_dict (Dict[str, Any]): The config for each evaluation task. The key represents task name.
+            label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
+            camera_type (Optional[str]): Name of camera. Specify in 2D evaluation. Defaults to None.
+            load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
         """
         super().__init__()
         # Check tasks are supported
@@ -84,20 +115,22 @@ class _EvaluationConfigBase(ABC):
             raise ValueError(f"Unexpected frame_id: {frame_id}")
         self.frame_id: str = frame_id
         self.merge_similar_labels: bool = merge_similar_labels
-        self.does_use_pointcloud: bool = does_use_pointcloud
+        self.label_prefix: str = label_prefix
+        self.camera_type: Optional[str] = camera_type
+        self.load_raw_data: bool = load_raw_data
 
         # directory
         time = "{0:%Y%m%d_%H%M%S}".format(datetime.datetime.now())
         self.result_root_directory: str = result_root_directory.format(TIME=time)
-        self._log_directory: str = osp.join(self.result_root_directory, "log")
-        self._visualization_directory: str = osp.join(self.result_root_directory, "visualization")
-        if not os.path.exists(self.log_directory):
-            os.makedirs(self._log_directory)
-        if not os.path.exists(self._visualization_directory):
-            os.makedirs(self._visualization_directory)
+        self.__log_directory: str = osp.join(self.result_root_directory, "log")
+        self.__visualization_directory: str = osp.join(self.result_root_directory, "visualization")
+        if not osp.exists(self.log_directory):
+            os.makedirs(self.log_directory)
+        if not osp.exists(self.visualization_directory):
+            os.makedirs(self.visualization_directory)
 
         # Labels
-        self.label_converter = LabelConverter(merge_similar_labels)
+        self.label_converter = LabelConverter(merge_similar_labels, label_prefix)
 
     @property
     def support_tasks(self) -> List[str]:
@@ -143,8 +176,8 @@ class _EvaluationConfigBase(ABC):
 
     @property
     def log_directory(self) -> str:
-        return self._log_directory
+        return self.__log_directory
 
     @property
     def visualization_directory(self) -> str:
-        return self._visualization_directory
+        return self.__visualization_directory

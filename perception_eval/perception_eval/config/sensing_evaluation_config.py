@@ -23,21 +23,36 @@ from ._evaluation_config_base import _EvaluationConfigBase
 class SensingEvaluationConfig(_EvaluationConfigBase):
     """The class of config for sensing evaluation.
 
-    Attributes:
-        - By _EvaluationConfigBase:
-        self.dataset_paths (List[str]): The path(s) of dataset(s).
-        self.frame_id (str): The frame_id, base_link or map.
-        self.does_use_pointcloud (bool): The boolean flag if load pointcloud data from dataset.
-        self.result_root_directory (str): The directory path to save result.
-        self.log_directory (str): The directory path to save log.
-        self.visualization_directory (str): The directory path to save visualization result.
-        self.label_converter (LabelConverter): The instance to convert label names.
-        self.evaluation_task (EvaluationTask): The instance of EvaluationTask
+    Directory structure to save log and visualization result is following
+    - result_root_directory/
+        ├── log_directory/
+        └── visualization_directory/
 
-        - By SensingEvaluationConfig
-        self.filtering_params (Dict[str, Any]): Filtering parameters.
-        self.metrics_params (Dict[str, Any]): Metrics parameters.
-        self.sensing_frame_config (SensingFrameConfig)
+    Attributes:
+        dataset_paths (List[str]): Dataset paths list.
+        frame_id (str): Frame ID, `base_link` or `map`.
+        result_root_directory (str): Directory path to save result.
+        log_directory (str): Directory Directory path to save log.
+        visualization_directory (str): Directory path to save visualization result.
+        label_converter (LabelConverter): LabelConverter instance.
+        evaluation_task (EvaluationTask): EvaluationTask instance.
+        label_prefix (str): Prefix of label type. Choose from [`autoware", `traffic_light`]. Defaults to autoware.
+        camera_type (Optional[str]): Camera name. Specify in 2D evaluation. Defaults to None.
+        load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
+        target_labels (List[LabelType]): Target labels list.
+        filtering_params (Dict[str, Any]): Filtering parameters.
+        metrics_params (Dict[str, Any]): Metrics parameters.
+
+    Args:
+        dataset_paths (List[str]): Dataset paths list.
+        frame_id (str): Frame ID, `base_link` or `map`.
+        merge_similar_labels (bool): Whether merge similar labels.
+            If True,
+                - BUS, TRUCK, TRAILER -> CAR
+                - MOTORBIKE, CYCLIST -> BICYCLE
+        result_root_directory (str): Directory path to save result.
+        evaluation_config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
+        load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
     """
 
     _support_tasks: List[str] = ["sensing"]
@@ -47,9 +62,9 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         dataset_paths: List[str],
         frame_id: str,
         merge_similar_labels: bool,
-        does_use_pointcloud: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Dict[str, Any]],
+        load_raw_data: bool = False,
     ):
         """
         Args:
@@ -59,18 +74,18 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
                 If True,
                     - BUS, TRUCK, TRAILER -> CAR
                     - MOTORBIKE, CYCLIST -> BICYCLE
-            does_use_pointcloud (bool): The boolean flag if load pointcloud data from dataset.
             result_root_directory (str): The directory path to save result.
             evaluation_config_dict (Dict[str, Dict[str, Any]]): The dictionary of evaluation config for each task.
                                           This has a key of evaluation task name which support in EvaluationTask class(ex. ["sensing"])
+            load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
         """
         super().__init__(
             dataset_paths=dataset_paths,
             frame_id=frame_id,
             merge_similar_labels=merge_similar_labels,
-            does_use_pointcloud=does_use_pointcloud,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
+            load_raw_data=load_raw_data,
         )
         self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)
 

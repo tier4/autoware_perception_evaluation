@@ -16,57 +16,70 @@ from abc import ABC
 from abc import abstractmethod
 from typing import List
 from typing import Optional
-from typing import Union
 
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.dataset import get_now_frame
 from perception_eval.common.dataset import load_all_datasets
-from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
-from perception_eval.config.sensing_evaluation_config import SensingEvaluationConfig
-from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
-from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
+from perception_eval.config import EvaluationConfigType
+from perception_eval.evaluation import FrameResultType
 
 
 class _EvaluationMangerBase(ABC):
-    """Abstract base class for EvaluationManager
+    """Abstract base class for EvaluationManager.
 
     Attributes:
-        self.evaluator_config (Union[PerceptionEvaluationConfig, SensingEvaluationConfig]):
-            Configuration for specified evaluation task.
-        self.ground_truth_frames (List[FrameGroundTruth]): The list of ground truths per frame.
+        evaluator_config (EvaluationConfigType): Configuration for specified evaluation task.
+        ground_truth_frames (List[FrameGroundTruth]): List of ground truths per frame.
+
+    Args:
+        evaluation_config (EvaluationConfigType): Parameter config for EvaluationManager.
     """
 
     @abstractmethod
     def __init__(
         self,
-        evaluation_config: Union[PerceptionEvaluationConfig, SensingEvaluationConfig],
+        evaluation_config: EvaluationConfigType,
     ) -> None:
-        """[summary]
-        Args:
-            evaluation_config (Union[PerceptionEvaluationConfig, SensingEvaluationConfig]):
-                The config for EvaluationManager.
-        """
         super().__init__()
 
         self.evaluator_config = evaluation_config
         self.ground_truth_frames: List[FrameGroundTruth] = load_all_datasets(
             dataset_paths=self.evaluator_config.dataset_paths,
             frame_id=self.evaluator_config.frame_id,
-            does_use_pointcloud=self.evaluator_config.does_use_pointcloud,
             evaluation_task=self.evaluator_config.evaluation_task,
+            load_raw_data=self.evaluator_config.load_raw_data,
+            camera_type=self.evaluator_config.camera_type,
             label_converter=self.evaluator_config.label_converter,
         )
 
+    @property
+    def evaluation_task(self):
+        return self.evaluator_config.evaluation_task
+
+    @property
+    def frame_id(self):
+        return self.evaluator_config.frame_id
+
+    @property
+    def filtering_params(self):
+        return self.evaluator_config.filtering_params
+
+    @property
+    def metrics_params(self):
+        return self.evaluator_config.metrics_params
+
     @abstractmethod
-    def add_frame_result(self) -> Union[PerceptionFrameResult, SensingFrameResult]:
-        """[summary]
-        Add perception/sensing frame result.
+    def add_frame_result(self) -> FrameResultType:
+        """Add perception/sensing frame result to `self.frame_results`
+
+        Returns:
+            FrameResultType: Frame result at current frame.
         """
         pass
 
     @abstractmethod
     def _filter_objects(self):
-        """[summary]"""
+        """Filter objects with `self.filtering_params`"""
         pass
 
     def get_ground_truth_now_frame(
@@ -74,17 +87,16 @@ class _EvaluationMangerBase(ABC):
         unix_time: int,
         threshold_min_time: int = 75000,
     ) -> Optional[FrameGroundTruth]:
-        """[summary]
-        Get now frame of ground truth
+        """Returns a FrameGroundTruth instance that has the closest timestamp with `unix_time`.
+
+        If there is no corresponding ground truth, returns None.
 
         Args:
             unix_time (int): Unix time of frame to evaluate.
-            threshold_min_time (int, optional):
-                    Min time for unix time difference [us].
-                    Default is 75000 sec = 75 ms.
+            threshold_min_time (int, optional): Minimum timestamp threshold[s]. Defaults to 75000[s]=75[ms].
 
         Returns:
-            Optional[FrameGroundTruth]: Now frame of ground truth.
+            Optional[FrameGroundTruth]: FrameGroundTruth instance at current frame.
                 If there is no corresponding ground truth, returns None.
         """
         ground_truth_now_frame: FrameGroundTruth = get_now_frame(

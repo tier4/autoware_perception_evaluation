@@ -17,41 +17,42 @@ from typing import Dict
 from typing import List
 from typing import Tuple
 
-from perception_eval.common.label import AutowareLabel
-from perception_eval.evaluation.matching.object_matching import MatchingMode
-from perception_eval.evaluation.metrics.tracking.clear import CLEAR
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+from perception_eval.common.label import LabelType
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.matching import MatchingMode
+
+from .clear import CLEAR
 
 
 class TrackingMetricsScore:
-    """Metrics score class for tracking.
+    """Metrics score class for tracking evaluation.
+
+    Length of input `target_labels` and `matching_threshold_list` must be same.
 
     Attributes:
-        self.target_labels: (List[AutowareLabel]): The list of AutowareLabel.
-        self.matching_mode (MatchingMode): The target matching mode.
-        self.clears (List[CLEAR]): The list of CLEAR score.
+        target_labels: (List[LabelType]): Target labels list.
+        matching_mode (MatchingMode): MatchingMode instance.
+        clears (List[CLEAR]): List of CLEAR instances.
+
+    Args:
+        object_results_dict (Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]):
+            Dict that items are object results list mapped by their labels.
+        num_ground_truth (int): Number of ground truths.
+        target_labels (List[LabelType]): Target labels list.
+        matching_mode (MatchingMode): MatchingMode instance.
+        matching_threshold_list (List[float]): Matching thresholds list.
     """
 
     def __init__(
         self,
-        object_results_dict: Dict[AutowareLabel, List[List[DynamicObjectWithPerceptionResult]]],
-        num_ground_truth_dict: Dict[AutowareLabel, int],
-        target_labels: List[AutowareLabel],
+        object_results_dict: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
+        num_ground_truth_dict: Dict[LabelType, int],
+        target_labels: List[LabelType],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
     ) -> None:
-        """[summary]
-
-        Args:
-            object_results_dict (Dict[AutowareLabel, List[List[DynamicObjectWithPerceptionResult]]):
-                object results divided by label for multi frame.
-            num_ground_truth (int): The number of ground truth.
-            target_labels (List[AutowareLabel]): e.g. ["car", "pedestrian", "bus"]
-            matching_mode (MatchingMode): The target matching mode.
-            matching_threshold_list (List[float]): The list of matching threshold for each category. (e.g. [0.5, 0.3, 0.5])
-        """
         assert len(target_labels) == len(matching_threshold_list)
-        self.target_labels: List[AutowareLabel] = target_labels
+        self.target_labels: List[LabelType] = target_labels
         self.matching_mode: MatchingMode = matching_mode
 
         # CLEAR results for each class
@@ -98,7 +99,11 @@ class TrackingMetricsScore:
         return mota, motp, num_id_switch
 
     def __str__(self) -> str:
-        """__str__ method"""
+        """__str__ method
+
+        Returns:
+            str: Formatted string.
+        """
         str_: str = "\n"
         # === Total ===
         # CLEAR

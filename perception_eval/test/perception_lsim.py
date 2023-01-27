@@ -18,13 +18,13 @@ import tempfile
 from typing import List
 
 from perception_eval.common.object import DynamicObject
-from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
-from perception_eval.evaluation.metrics.metrics import MetricsScore
+from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.evaluation import PerceptionFrameResult
+from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
-from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
-from perception_eval.manager.perception_evaluation_manager import PerceptionEvaluationManager
-from perception_eval.tool.perception_performance_analyzer import PerceptionPerformanceAnalyzer
+from perception_eval.manager import PerceptionEvaluationManager
+from perception_eval.tool import PerceptionPerformanceAnalyzer
 from perception_eval.util.debug import format_class_for_log
 from perception_eval.util.debug import get_objects_with_difference
 from perception_eval.util.logger_config import configure_logger
@@ -79,9 +79,9 @@ class PerceptionLSimMoc:
             dataset_paths=dataset_paths,
             frame_id=frame_id,
             merge_similar_labels=False,
-            does_use_pointcloud=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
+            load_raw_data=False,
         )
 
         _ = configure_logger(
@@ -120,7 +120,7 @@ class PerceptionLSimMoc:
         frame_pass_fail_config: PerceptionPassFailConfig = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            plane_distance_threshold_list=[2.0, 2.0, 2.0, 2.0],
+            matching_threshold_list=[2.0, 2.0, 2.0, 2.0],
         )
 
         frame_result = self.evaluator.add_frame_result(

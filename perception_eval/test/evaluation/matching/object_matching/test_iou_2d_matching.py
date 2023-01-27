@@ -19,12 +19,12 @@ from typing import Tuple
 import unittest
 
 from perception_eval.common.object import DynamicObject
-from perception_eval.evaluation.matching.object_matching import IOUBEVMatching
 from perception_eval.evaluation.matching.object_matching import _get_area_intersection
+from perception_eval.evaluation.matching.object_matching import IOU2dMatching
 from perception_eval.util.debug import get_objects_with_difference
 
 
-class TestIouBEVMatching(unittest.TestCase):
+class TestIou2dMatching(unittest.TestCase):
     def setUp(self):
         self.dummy_estimated_objects: List[DynamicObject] = []
         self.dummy_ground_truth_objects: List[DynamicObject] = []
@@ -121,7 +121,7 @@ class TestIouBEVMatching(unittest.TestCase):
                 for estimated_object, ground_truth_object in zip(
                     diff_yaw_dummy_ground_truth_objects, self.dummy_ground_truth_objects
                 ):
-                    iou_bev = IOUBEVMatching(estimated_object, ground_truth_object)
+                    iou_bev = IOU2dMatching(estimated_object, ground_truth_object)
                     self.assertAlmostEqual(iou_bev.value, ans_iou_bev)
 
         for diff_yaw, ans_iou_bev in yaw_patterns:
@@ -136,7 +136,7 @@ class TestIouBEVMatching(unittest.TestCase):
                 for estimated_object, ground_truth_object in zip(
                     diff_yaw_dummy_ground_truth_objects, self.dummy_ground_truth_objects
                 ):
-                    iou_bev = IOUBEVMatching(estimated_object, ground_truth_object)
+                    iou_bev = IOU2dMatching(estimated_object, ground_truth_object)
                     self.assertAlmostEqual(iou_bev.value, ans_iou_bev)
 
 

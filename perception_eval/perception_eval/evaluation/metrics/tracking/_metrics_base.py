@@ -20,21 +20,30 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-from perception_eval.common.label import AutowareLabel
-from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.common.label import LabelType
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetrics
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
 class _TrackingMetricsBase(ABC):
-    """Abstract base class for tracking metrics
+    """Abstract base class for tracking metrics.
 
     Attributes:
-        self.target_labels (List[AutowareLabel]): The list of target label.
-        self.matching_mode (MatchingMode): The target matching mode.
-        self.metrics_field (Optional[List[str]]): The list of target metrics name. If not specified, set default supported metrics.
-        self.num_ground_truth (int): The number of ground truth.
-        self.support_metrics (List[str]): The list of supported metrics name.
+        num_ground_truth (int): Number of ground truths.
+        target_labels (List[LabelType]): Target labels list.
+        matching_mode (MatchingMode): MatchingMode instance.
+        matching_threshold_list (List[float]): Thresholds list for matching.
+        metrics_field (Optional[List[str]]): Filed name of target metrics. If it is not specified, default supported metrics are used.
+        support_metrics (List[str]): List of supported metrics names.
+
+    Args:
+        num_ground_truth (int): Number of ground truths.
+        target_labels (List[LabelType]): Target labels list.
+        matching_mode (MatchingMode): MatchingMode instance.
+        matching_threshold_list (List[float]): Thresholds list for matching.
+        tp_metrics (TPMetrics): TPMetrics instance.
+        metrics_field (Optional[List[str]]: The list of target sub metrics.
     """
 
     _support_metrics: List[str] = []
@@ -43,27 +52,14 @@ class _TrackingMetricsBase(ABC):
     def __init__(
         self,
         num_ground_truth: int,
-        target_labels: List[AutowareLabel],
+        target_labels: List[LabelType],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
         tp_metrics: TPMetrics,
         metrics_field: Optional[List[str]],
     ) -> None:
-        """[summary]
-        The abstract base class for tracking metrics.
-
-        NOTE: objects_results, ground_truth_objects
-            If evaluate 1-frame, index 0 is previous object results.
-            If evaluate all frames, index 0 is empty list.
-
-        Args:
-            frame_ground_truths (List[List[DynamicObject]]): The list of ground truth objects for each frames.
-            target_labels (List[AutowareLabel]): The list of target labels.
-            matching_mode (MatchingMode): Matching mode class.
-            metrics_field (Optional[List[str]]: The list of target sub metrics.
-        """
         self._num_ground_truth: int = num_ground_truth
-        self._target_labels: List[AutowareLabel] = target_labels
+        self._target_labels: List[LabelType] = target_labels
         self._matching_mode: MatchingMode = matching_mode
         self._matching_threshold_list = matching_threshold_list
         self._tp_metrics: TPMetrics = tp_metrics
@@ -89,8 +85,9 @@ class _TrackingMetricsBase(ABC):
         return self._support_metrics
 
     def _check_metrics(self, metrics_field: Optional[List[str]]) -> List[str]:
-        """[summary]
-        Check if specified metrics is supported.
+        """Check if specified metrics is supported.
+
+        If `metrics_field=None`, returns default supported metrics.
 
         Args:
             metrics_field (Optional[List[str]]): The list of executing metrics field.
@@ -116,7 +113,7 @@ class _TrackingMetricsBase(ABC):
         return self._num_ground_truth
 
     @property
-    def target_labels(self) -> List[AutowareLabel]:
+    def target_labels(self) -> List[LabelType]:
         return self._target_labels
 
     @property
@@ -140,22 +137,23 @@ class _TrackingMetricsBase(ABC):
         tp_list: List[float],
         ground_truth_objects_num: int,
     ) -> Tuple[List[float], List[float]]:
-        """[summary]
-        Calculate precision recall.
+        """Calculate precision recall.
 
         Args:
-            tp_list (List[float])
-            ground_truth_objects_num (int)
+            tp_list (List[float]): TP results list.
+            ground_truth_objects_num (int): Number of ground truths.
 
         Returns:
             Tuple[List[float], List[float]]: tp_list and fp_list
-        Example:
-            state
-                self.tp_list = [1, 1, 2, 3]
-                self.fp_list = [0, 1, 1, 1]
-            return
-                precision_list = [1.0, 0.5, 0.67, 0.75]
-                recall_list = [0.25, 0.25, 0.5, 0.75]
+
+        Examples:
+            >>> tp_list = [1, 1, 2, 3]
+            >>> ground_truth_num = 4
+            >>> precision_list, recall_list = self.get_precision_recall(tp_list, ground_truth_num)
+            >>> precision_list
+            [1.0, 0.5, 0.67, 0.75]
+            >>> recall_list
+            [0.25, 0.25, 0.5, 0.75]
         """
         precisions_list: List[float] = [0.0 for i in range(len(tp_list))]
         recalls_list: List[float] = [0.0 for i in range(len(tp_list))]
@@ -170,7 +168,11 @@ class _TrackingMetricsBase(ABC):
         return precisions_list, recalls_list
 
     def __str__(self) -> str:
-        """__str__ method"""
+        """__str__ method
+
+        Returns:
+            str: Formatted string.
+        """
         str_: str = "\n"
         for name, score in self.results.items():
             # Each label result

@@ -20,43 +20,44 @@ from typing import Optional
 from typing import Set
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
 
 from .config._metrics_config_base import _MetricsConfigBase
+from .config.classification_metrics_config import ClassificationMetricsConfig
 from .config.detection_metrics_config import DetectionMetricsConfig
 from .config.prediction_metrics_config import PredictionMetricsConfig
 from .config.tracking_metrics_config import TrackingMetricsConfig
 
 
 class MetricsScoreConfig:
-    """[summary]
-    The config for each evaluation task metrics.
+    """A configuration class for each evaluation task metrics.
 
     Attributes:
-        self.detection_config (Optional[DetectionMetricsConfig])
-        self.tracking_config (Optional[DetectionMetricsConfig])
-        self.prediction_config (Optional[PredictionMetricsConfig])
-        self.evaluation_tasks (List[EvaluationTask])
+        detection_config (Optional[DetectionMetricsConfig]): Config for detection evaluation.
+        tracking_config (Optional[DetectionMetricsConfig]): Config for tracking evaluation.
+        prediction_config (Optional[PredictionMetricsConfig]): Config for prediction evaluation.
+        classification_config (Optional[ClassificationMetricsConfig]): Config for classification evaluation.
+        evaluation_task (EvaluationTask): EvaluationTask instance.
+
+    Args:
+        evaluation_task (EvaluationTask): EvaluationTask instance.
+        **cfg: Configuration data.
     """
 
     def __init__(self, evaluation_task: EvaluationTask, **cfg) -> None:
-        """[summary]
-
-        Args:
-            evaluation_task (EvaluationTask)
-        """
         self.detection_config: Optional[DetectionMetricsConfig] = None
         self.tracking_config: Optional[TrackingMetricsConfig] = None
+        self.classification_config: Optional[ClassificationMetricsConfig] = None
 
         # NOTE: prediction_config is under construction
         self.prediction_config = None
 
         self.evaluation_task: EvaluationTask = evaluation_task
-        self.target_labels: List[AutowareLabel] = cfg["target_labels"]
-        if self.evaluation_task == EvaluationTask.DETECTION:
+        self.target_labels: List[LabelType] = cfg["target_labels"]
+        if self.evaluation_task in (EvaluationTask.DETECTION2D, EvaluationTask.DETECTION):
             self._check_parameters(DetectionMetricsConfig, cfg)
             self.detection_config = DetectionMetricsConfig(**cfg)
-        elif self.evaluation_task == EvaluationTask.TRACKING:
+        elif self.evaluation_task in (EvaluationTask.TRACKING2D, EvaluationTask.TRACKING):
             self._check_parameters(TrackingMetricsConfig, cfg)
             self.tracking_config = TrackingMetricsConfig(**cfg)
             # NOTE: In tracking, evaluate mAP too
@@ -67,6 +68,9 @@ class MetricsScoreConfig:
             raise NotImplementedError("Prediction config is under construction")
             # TODO
             # self.evaluation_tasks.append(task)
+        elif self.evaluation_task == EvaluationTask.CLASSIFICATION2D:
+            self._check_parameters(ClassificationMetricsConfig, cfg)
+            self.classification_config = ClassificationMetricsConfig(**cfg)
         else:
             raise KeyError(f"Unsupported perception evaluation task: {self.evaluation_task}")
 
@@ -75,8 +79,8 @@ class MetricsScoreConfig:
         """Check if input parameters are valid.
 
         Args:
-            config (_MetricsConfigBase): The config for metrics.
-            params (Dict[str, any]): The parameters for metrics.
+            config (_MetricsConfigBase): Metrics score instance.
+            params (Dict[str, any]): Parameters for metrics.
 
         Raises:
             KeyError: When got invalid parameter names.

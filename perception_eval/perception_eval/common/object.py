@@ -14,26 +14,32 @@
 
 from __future__ import annotations
 
-from logging import getLogger
 import math
 from typing import List
 from typing import Optional
 from typing import Tuple
 
 import numpy as np
-from perception_eval.common.label import AutowareLabel
-from perception_eval.common.point import distance_points
-from perception_eval.common.point import distance_points_bev
+from perception_eval.common.label import LabelType
 from perception_eval.common.status import Visibility
 from pyquaternion import Quaternion
 from shapely.geometry import Polygon
 
-logger = getLogger(__name__)
-
 
 class ObjectState:
-    """[summary]
-    Object state class
+    """Object state class.
+
+    Attributes:
+        position (Tuple[float, float, float]): (center_x, center_y, center_z)[m].
+        orientation (Quaternion) : Quaternion instance.
+        size (Tuple[float, float, float]): Bounding box size, (wx, wy, wz)[m].
+        velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz)[m/s].
+
+    Args:
+        position (Tuple[float, float, float]): (center_x, center_y, center_z)[m].
+        orientation (Quaternion) : Quaternion instance.
+        size (Tuple[float, float, float]): Bounding box size, (wx, wy, wz)[m].
+        velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz)[m/s].
     """
 
     def __init__(
@@ -41,47 +47,66 @@ class ObjectState:
         position: Tuple[float, float, float],
         orientation: Quaternion,
         size: Tuple[float, float, float],
-        velocity: Tuple[float, float, float],
+        velocity: Optional[Tuple[float, float, float]],
     ) -> None:
-        """
-        Args:
-            position (Tuple[float, float, float]) : center_x, center_y, center_z [m]
-            orientation (Quaternion) : Quaternion class.
-                                       See reference http://kieranwynn.github.io/pyquaternion/
-            size (Tuple[float, float, float]): bounding box size of (wx, wy, wz) [m]
-            velocity (Tuple[float, float, float]): velocity of (vx, vy, vz) [m/s]
-        """
-
         self.position: Tuple[float, float, float] = position
         self.orientation: Quaternion = orientation
         self.size: Tuple[float, float, float] = size
-        self.velocity: Tuple[float, float, float] = velocity
+        self.velocity: Optional[Tuple[float, float, float]] = velocity
 
 
 class DynamicObject:
-    """
-    Dynamic object class
+    """Dynamic object class for 3D object.
 
-    Args:
-        self.unix_time (int) : Unix time [us]
+    Attributes:
+        unix_time (int) : Unix time [us].
 
         # Detection
-        self.state (ObjectState): The state of object
-        self.semantic_score (float): Detection score (0.0-1.0)
-        self.semantic_label (AutowareLabel): The object label
+        state (ObjectState): State of object.
+        semantic_score (float): Detection score in [0.0, 1.0].
+        semantic_label (LabelType): Object label
 
         # Use case object evaluation for detection
-        self.pointcloud_num (Optional[int]): Pointcloud number inside bounding box
+        pointcloud_num (Optional[int]): Pointcloud number inside of bounding box.
 
         # Tracking
-        self.uuid (Optional[str]): The uuid for tracking
-        self.tracked_path (Optional[List[ObjectState]]): List of the past states
+        uuid (Optional[str]): The uuid for tracking.
+        self.tracked_path (Optional[List[ObjectState]]): List of the past states.
 
         # Prediction
-        self.predicted_confidence (Optional[float]): Prediction score
-        self.predicted_path (Optional[List[ObjectState]]): List of the future states
+        predicted_confidence (Optional[float]): Prediction score.
+        predicted_path (Optional[List[ObjectState]]): List of the future states.
 
-        self.visibility (Optional[Visibility]): Visibility status. Defaults to None.
+        visibility (Optional[Visibility]): Visibility status. Defaults to None.
+
+    Args:
+        unix_time (int): Unix time [us]
+        position (Tuple[float, float, float]): (center_x, center_y, center_z)[m].
+        orientation (Quaternion) : Quaternion instance.
+        size (Tuple[float, float, float]): Bounding box size, (wx, wy, wz)[m].
+        velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz)[m/s].
+        semantic_score (float): [description]
+        semantic_label (LabelType): [description]
+        pointcloud_num (Optional[int]): Number of points inside of bounding box. Defaults to None.
+        uuid (Optional[str]): Unique ID. Defaults to None.
+        tracked_positions (Optional[List[Tuple[float, float, float]]]):
+                Sequence of positions for tracked object. Defaults to None.
+        tracked_orientations (Optional[List[Quaternion]]):
+                Sequence of quaternions for tracked object. Defaults to None.
+        tracked_sizes (Optional[List[Tuple[float, float, float]]]):
+                The list of bounding box size for tracked object. Defaults to None.
+        tracked_twists (Optional[List[Tuple[float, float, float]]]):
+                The list of twist for tracked object. Defaults to None.
+        predicted_positions (Optional[List[Tuple[float, float, float]]]):
+                The list of position for predicted object. Defaults to None.
+        predicted_orientations (Optional[List[Quaternion]]):
+                The list of quaternion for predicted object. Defaults to None.
+        predicted_sizes (Optional[List[Tuple[float, float, float]]]):
+                The list of bounding box size for predicted object. Defaults to None.
+        predicted_twists (Optional[List[Tuple[float, float, float]]]):
+                The list of twist for predicted object. Defaults to None.
+        predicted_confidence (Optional[float]): Prediction score. Defaults to None.
+        visibility (Optional[Visibility]): Visibility status. Defaults to None.
     """
 
     def __init__(
@@ -90,9 +115,9 @@ class DynamicObject:
         position: Tuple[float, float, float],
         orientation: Quaternion,
         size: Tuple[float, float, float],
-        velocity: Tuple[float, float, float],
+        velocity: Optional[Tuple[float, float, float]],
         semantic_score: float,
-        semantic_label: AutowareLabel,
+        semantic_label: LabelType,
         pointcloud_num: Optional[int] = None,
         uuid: Optional[str] = None,
         tracked_positions: Optional[List[Tuple[float, float, float]]] = None,
@@ -106,38 +131,6 @@ class DynamicObject:
         predicted_confidence: Optional[float] = None,
         visibility: Optional[Visibility] = None,
     ) -> None:
-        """[summary]
-
-        Args:
-            unix_time (int): Unix time [us]
-            position (Tuple[float, float, float]): The position
-            orientation (Quaternion): [description]
-            size (Tuple[float, float, float]): [description]
-            velocity (Tuple[float, float, float]): [description]
-            semantic_score (float): [description]
-            semantic_label (AutowareLabel): [description]
-            pointcloud_num (Optional[int], optional):
-                    Pointcloud number inside bounding box. Defaults to None.
-            uuid (Optional[str], optional): The uuid for tracking. Defaults to None.
-            tracked_positions (Optional[List[Tuple[float, float, float]]], optional):
-                    The list of position for tracked object. Defaults to None.
-            tracked_orientations (Optional[List[Quaternion]], optional):
-                    The list of quaternion for tracked object. Defaults to None.
-            tracked_sizes (Optional[List[Tuple[float, float, float]]], optional):
-                    The list of bounding box size for tracked object. Defaults to None.
-            tracked_twists (Optional[List[Tuple[float, float, float]]], optional):
-                    The list of twist for tracked object. Defaults to None.
-            predicted_positions (Optional[List[Tuple[float, float, float]]], optional):
-                    The list of position for predicted object. Defaults to None.
-            predicted_orientations (Optional[List[Quaternion]], optional):
-                    The list of quaternion for predicted object. Defaults to None.
-            predicted_sizes (Optional[List[Tuple[float, float, float]]], optional):
-                    The list of bounding box size for predicted object. Defaults to None.
-            predicted_twists (Optional[List[Tuple[float, float, float]]], optional):
-                    The list of twist for predicted object. Defaults to None.
-            predicted_confidence (Optional[float], optional): Prediction score. Defaults to None.
-            visibility (Optional[Visibility]): Visibility status. Defaults to None.
-        """
 
         # detection
         self.unix_time: int = unix_time
@@ -148,7 +141,7 @@ class DynamicObject:
             velocity=velocity,
         )
         self.semantic_score: float = semantic_score
-        self.semantic_label: AutowareLabel = semantic_label
+        self.semantic_label: LabelType = semantic_label
 
         # for detection label for case evaluation
         # pointcloud number inside bounding box
@@ -175,10 +168,13 @@ class DynamicObject:
         self.visibility: Optional[Visibility] = visibility
 
     def __eq__(self, other: Optional[DynamicObject]) -> bool:
-        """[summary]
-        Check if other equals this object.
-        If other is not None and does NOT has attributes unix_time, semantic_label, state.position, state.orientation \
+        """Check if other equals this object.
+
+        If other is not None and does NOT has attributes unix_time, semantic_label, state.position, state.orientation
         it causes error.
+
+        Args:
+            other (Optional[DynamicObject]): Another object.
 
         Returns:
             bool
@@ -194,26 +190,23 @@ class DynamicObject:
             return eq
 
     def get_distance(self) -> float:
-        """[summary]
-        Get the 3d distance to the object from ego vehicle in bird eye view
+        """Get the 3d distance to the object from ego vehicle in bird eye view.
 
         Returns:
-            float: The 3d distance to the object from ego vehicle in bird eye view
+            float: The 3d distance to the object from ego vehicle in bird eye view.
         """
         return np.linalg.norm(self.state.position)
 
     def get_distance_bev(self) -> float:
-        """[summary]
-        Get the 2d distance to the object from ego vehicle in bird eye view
+        """Get the 2d distance to the object from ego vehicle in bird eye view.
 
         Returns:
-            float: The 2d distance to the object from ego vehicle in bird eye view
+            float: The 2d distance to the object from ego vehicle in bird eye view.
         """
         return math.hypot(self.state.position[0], self.state.position[1])
 
     def get_heading_bev(self) -> float:
-        """[summary]
-        Get the object heading from ego vehicle in bird eye view
+        """Get the object heading from ego vehicle in bird eye view
 
         Returns:
             float: The heading (radian)
@@ -225,14 +218,13 @@ class DynamicObject:
         return trans_rots
 
     def get_corners(self, bbox_scale: float) -> np.ndarray:
-        """[summary]
-        Get the bounding box corners.
+        """Get the bounding box corners.
 
         Args:
             bbox_scale (float): The factor to scale the box. Defaults to 1.0.
 
         Returns:
-            corners (numpy.ndarray)
+            corners (numpy.ndarray): Objects corners array.
         """
         width = self.state.size[0] * bbox_scale
         length = self.state.size[1] * bbox_scale
@@ -294,13 +286,12 @@ class DynamicObject:
         self,
         other: Optional[DynamicObject],
     ) -> Optional[Tuple[float, float, float]]:
-        """[summary]
-        Get the position error between myself and other. If other is None, returns None.
+        """Get the position error between myself and other. If other is None, returns None.
 
         Returns:
-            err_x (float): Error of x[m].
-            err_y (float): Error of y[m].
-            err_z (float): Error of z[m].
+            err_x (float): x-axis position error[m].
+            err_y (float): y-axis position error[m].
+            err_z (float): z-axis position error[m].
         """
         if other is None:
             return None
@@ -313,13 +304,12 @@ class DynamicObject:
         self,
         other: Optional[DynamicObject],
     ) -> Optional[Tuple[float, float, float]]:
-        """[summary]
-        Get the heading error between myself and other. If other is None, returns None.
+        """Get the heading error between myself and other. If other is None, returns None.
 
         Returns:
-            err_x (float): Error of rotation angle around x-axis, in the range [-pi, pi].
-            err_y (float): Error of rotation angle around y-axis, in the range [-pi, pi].
-            err_z (float): Error of rotation angle around z-axis, in the range [-pi, pi].
+            err_x (float): Roll error[rad], in [-pi, pi].
+            err_y (float): Pitch error[rad], in [-pi, pi].
+            err_z (float): Yaw error[rad], in [-pi, pi].
         """
         if other is None:
             return None
@@ -344,14 +334,14 @@ class DynamicObject:
         self,
         other: Optional[DynamicObject],
     ) -> Optional[Tuple[float, float, float]]:
-        """[summary]
-        Get the velocity error between myself and other.
+        """Get the velocity error between myself and other.
+
         If other is None, returns None. Also, velocity of myself or other is None, returns None too.
 
         Returns:
-            err_vx (float): Error of vx[m].
-            err_vy (float): Error of vy[m].
-            err_vz (float): Error of vz[m].
+            err_vx (float): x-axis velocity error[m/s].
+            err_vy (float): y-axis velocity error[m/s].
+            err_vz (float): z-axis velocity error[m/s].
         """
         if other is None:
             return None
@@ -366,15 +356,19 @@ class DynamicObject:
         return err_vx, err_vy, err_vz
 
     def get_area_bev(self) -> float:
-        """[summary]
-        Get area of object BEV.
+        """Get area of object BEV.
 
         Returns:
-            float: The 2d area from object.
+            float: Area of footprint.
         """
         return self.state.size[0] * self.state.size[1]
 
     def get_volume(self) -> float:
+        """Get volume of bounding box.
+
+        Returns:
+            float: Box volume.
+        """
         return self.get_area_bev() * self.state.size[2]
 
     def crop_pointcloud(
@@ -383,15 +377,18 @@ class DynamicObject:
         bbox_scale: float,
         inside: bool = True,
     ) -> np.ndarray:
-        """[summary]
-        Get pointcloud inside of bounding box.
+        """Returns pointcloud inside or outsize of own bounding box.
+
+        If `inside=True`, returns pointcloud array inside of box.
+        Otherwise, returns pointcloud array outside of box.
 
         Args:
-            pointcloud (np.ndarray): The Array of pointcloud, in shape (N, 3).
-            bbox_scale (float): Scale factor for bounding box.
+            pointcloud (numpy.ndarray): Pointcloud array, in shape (N, 3).
+            bbox_scale (float): Scale factor for bounding box size.
+            inside (bool): Whether crop pointcloud inside or outside of box.
 
         Returns:
-            numpy.ndarray: The array of pointcloud in bounding box.
+            numpy.ndarray: Pointcloud array inside or outside box.
         """
         scaled_bbox_size_object_coords: np.ndarray = np.array(
             [
@@ -419,28 +416,27 @@ class DynamicObject:
         pointcloud: np.ndarray,
         bbox_scale: float,
     ) -> int:
-        """[summary]
-        Calculate the number of pointcloud inside of bounding box.
+        """Calculate the number of pointcloud inside of own bounding box.
 
         Args:
-            pointcloud (np.ndarray): The Array of pointcloud, in shape (N, 3).
-            bbox_scale (float): Scale factor for bounding box.
+            pointcloud (numpy.ndarray): Pointcloud array, in shape (N, 3).
+            bbox_scale (float): Scale factor for bounding box size.
 
         Returns:
-            int: The number of points in bounding box.
+            int: Number of points inside of the own box.
         """
         inside_pointcloud: np.ndarray = self.crop_pointcloud(pointcloud, bbox_scale)
         return len(inside_pointcloud)
 
     def point_exist(self, pointcloud: np.ndarray, bbox_scale: float) -> bool:
-        """Evaluate whether any input points are inside of bounding box.
+        """Evaluate whether any input points inside of own bounding box.
 
         Args:
-            pointcloud (numpy.ndarray): The array of pointcloud.
-            bbox_scale (float): Scale factor for bounding box.
+            pointcloud (numpy.ndarray): Pointcloud array.
+            bbox_scale (float): Scale factor for bounding box size.
 
         Returns:
-            bool: Return True if exists.
+            bool: Return True if any points exist.
         """
         num_inside: int = self.get_inside_pointcloud_num(pointcloud, bbox_scale)
         return num_inside > 0
@@ -452,18 +448,13 @@ class DynamicObject:
         sizes: Optional[List[Tuple[float, float, float]]] = None,
         twists: Optional[List[Tuple[float, float, float]]] = None,
     ) -> Optional[List[ObjectState]]:
-        """[summary]
-        Set object state from positions, orientations, sizes, and twists.
+        """Set object state from positions, orientations, sizes, and twists.
 
         Args:
-            positions (Optional[List[Tuple[float, float, float]]], optional):
-                    The list of positions for object. Defaults to None.
-            orientations (Optional[List[Quaternion]], optional):
-                    The list of quaternions for object. Defaults to None.
-            sizes (Optional[List[Tuple[float, float, float]]], optional):
-                    The list of bounding box sizes for object. Defaults to None.
-            twists (Optional[List[Tuple[float, float, float]]], optional):
-                    The list of twists for object. Defaults to None.
+            positions (Optional[List[Tuple[float, float, float]]]): Sequence of positions. Defaults to None.
+            orientations (Optional[List[Quaternion]], optional): Sequence of orientations. Defaults to None.
+            sizes (Optional[List[Tuple[float, float, float]]]): Sequence of boxes sizes. Defaults to None.
+            twists (Optional[List[Tuple[float, float, float]]]): Sequence of velocities. Defaults to None.
 
         Returns:
             Optional[List[ObjectState]]: The list of ObjectState
@@ -485,25 +476,3 @@ class DynamicObject:
             return states
         else:
             return None
-
-
-def distance_objects(object_1: DynamicObject, object_2: DynamicObject) -> float:
-    """[summary]
-    Calculate the 3d center distance between two objects.
-    Args:
-         object_1 (DynamicObject): An object
-         object_2 (DynamicObject): An object
-    Returns: float: The center distance from object_1 (DynamicObject) to object_2.
-    """
-    return distance_points(object_1.state.position, object_2.state.position)
-
-
-def distance_objects_bev(object_1: DynamicObject, object_2: DynamicObject) -> float:
-    """[summary]
-    Calculate the BEV 2d center distance between two objects.
-    Args:
-         object_1 (DynamicObject): An object
-         object_2 (DynamicObject): An object
-    Returns: float: The 2d center distance from object_1 to object_2.
-    """
-    return distance_points_bev(object_1.state.position, object_2.state.position)

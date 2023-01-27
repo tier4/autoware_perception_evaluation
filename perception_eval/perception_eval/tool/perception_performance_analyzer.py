@@ -34,24 +34,24 @@ import numpy as np
 import pandas as pd
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
-from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
+from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.metrics import MetricsScore
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
 from perception_eval.util.math import get_pose_transform_matrix
 from perception_eval.util.math import rotation_matrix_to_euler
 from tqdm import tqdm
 import yaml
 
-from .utils import MatchingStatus
-from .utils import PlotAxes
 from .utils import extract_area_results
 from .utils import filter_df
 from .utils import generate_area_points
 from .utils import get_area_idx
 from .utils import get_metrics_info
+from .utils import MatchingStatus
+from .utils import PlotAxes
 from .utils import setup_axis
 
 # TODO: Refactor plot methods
@@ -163,9 +163,9 @@ class PerceptionPerformanceAnalyzer:
             dataset_paths=[""],  # dummy path
             frame_id=frame_id,
             merge_similar_labels=p_cfg.get("merge_similar_labels", False),
-            does_use_pointcloud=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
+            load_raw_data=False,
         )
 
         return cls(evaluation_config, num_area_division)
