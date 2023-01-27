@@ -24,6 +24,7 @@ from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.manager import PerceptionEvaluationManager
+from perception_eval.util.debug import get_objects_with_difference2d
 from perception_eval.util.logger_config import configure_logger
 
 
@@ -42,7 +43,7 @@ class PerceptionLSimMoc:
         if evaluation_task in ("detection2d", "tracking2d"):
             evaluation_config_dict = {
                 "evaluation_task": evaluation_task,
-                "center_distance_thresholds": [1.0, 2.0],
+                "center_distance_thresholds": [10, 20],
                 "iou_2d_thresholds": [0.5],
             }
         elif evaluation_task == "classification2d":
@@ -63,7 +64,7 @@ class PerceptionLSimMoc:
             merge_similar_labels=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
-            load_raw_data=False,
+            load_raw_data=True,
             label_prefix=label_prefix,
             camera_type=camera_type,
         )
@@ -186,7 +187,10 @@ if __name__ == "__main__":
     )
 
     for ground_truth_frame in detection_lsim.evaluator.ground_truth_frames:
-        objects_with_difference = ground_truth_frame.objects
+        objects_with_difference = get_objects_with_difference2d(
+            ground_truth_frame.objects,
+            translate=(100, 50),
+        )
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
             objects_with_difference.pop(0)
@@ -197,6 +201,10 @@ if __name__ == "__main__":
 
     # final result
     detection_final_metric_score = detection_lsim.get_final_result()
+
+    # Visualize all frame results.
+    logging.info("Start visualizing detection results")
+    detection_lsim.evaluator.visualize_all()
 
     # ========================================= Tracking =========================================
     print("=" * 50 + "Start Tracking 2D" + "=" * 50)
@@ -220,6 +228,7 @@ if __name__ == "__main__":
 
     # final result
     tracking_final_metric_score = tracking_lsim.get_final_result()
+    tracking_lsim.evaluator.visualize_all()
 
     # ========================================= Classification =========================================
     print("=" * 50 + "Start Classification 2D" + "=" * 50)
@@ -243,3 +252,4 @@ if __name__ == "__main__":
 
     # final result
     classification_final_metric_score = classification_lsim.get_final_result()
+    classification_lsim.evaluator.visualize_all()

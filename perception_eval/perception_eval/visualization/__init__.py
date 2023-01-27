@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from perception_eval.visualization.perception_visualization_config import (
-    PerceptionVisualizationConfig,
-)
-from perception_eval.visualization.perception_visualizer import PerceptionVisualizer
+from typing import Union
 
-__all__ = ("PerceptionVisualizationConfig", "PerceptionVisualizer")
+from perception_eval.visualization.perception_visualizer2d import PerceptionVisualizer2D
+from perception_eval.visualization.perception_visualizer3d import PerceptionVisualizer3D
+
+# type aliases
+PerceptionVisualizerType = Union[PerceptionVisualizer2D, PerceptionVisualizer3D]
+
+__all__ = ("PerceptionVisualizer2D", "PerceptionVisualizer3D")

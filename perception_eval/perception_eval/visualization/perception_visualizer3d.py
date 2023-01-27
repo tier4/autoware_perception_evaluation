@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from logging import getLogger
+import logging
 import os.path as osp
 from typing import Dict
 from typing import List
@@ -28,99 +28,100 @@ from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 from matplotlib.transforms import Affine2D
 import numpy as np
-from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation import PerceptionFrameResult
-from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.matching.objects_filter import divide_tp_fp_objects
-from perception_eval.evaluation.matching.objects_filter import filter_object_results
-from perception_eval.evaluation.matching.objects_filter import filter_objects
-from perception_eval.evaluation.matching.objects_filter import get_fn_objects
 from perception_eval.util.math import rotation_matrix_to_euler
 from perception_eval.visualization.color import ColorMap
 from pyquaternion import Quaternion
 from tqdm import tqdm
-
-from .perception_visualization_config import PerceptionVisualizationConfig
-
-logger = getLogger(__name__)
+import yaml
 
 
-class PerceptionVisualizer:
+class PerceptionVisualizer3D:
     """The class to visualize perception results in BEV space.
 
     Properties:
-        self.config (PerceptionVisualizationConfig)
+        config (PerceptionVisualizationConfig)
+
+    Args:
+        config (PerceptionVisualizationConfig)
     """
 
-    def __init__(self, config: PerceptionVisualizationConfig) -> None:
-        """[summary]
-        Args:
-            config (PerceptionVisualizationConfig)
-        """
-        self.__config: PerceptionVisualizationConfig = config
+    def __init__(self, config: PerceptionEvaluationConfig, **kwargs) -> None:
+        assert config.evaluation_task.is_3d()
+        self.__config: PerceptionEvaluationConfig = config
         self.__cmap: ColorMap = ColorMap(rgb=True)
-        self.__figsize: Tuple[float, float] = (
-            self.config.width / 100.0,
-            self.config.height / 100.0,
-        )
+        self.__width, self.__height = kwargs.get("width", 640), kwargs.get("height", 640)
+        self.__figsize: Tuple[float, float] = (self.__width / 100.0, self.__height / 100.0)
 
-        if self.config.evaluation_task == EvaluationTask.TRACKING:
+        if self.config.evaluation_task == EvaluationTask.TRACKING2D:
             # Each tracked path is specified by uuid.gt/est_track.label
             self.__tracked_paths: Dict[str, List[Tuple[float, float]]] = {}
 
         self.__figure, self.__axes = plt.subplots(figsize=self.__figsize)
         self.__animation_frames: List[List[plt.Artist]] = []
 
+        max_x_position_list = config.filtering_params.get("max_x_position")
+        max_y_position_list = config.filtering_params.get("max_y_position")
+        max_distance_list = config.filtering_params.get("max_distance_list")
+        if max_distance_list is None and (
+            max_x_position_list is None or max_y_position_list is None
+        ):
+            self.xlim: float = 100.0
+            self.ylim: float = 100.0
+        elif max_x_position_list is None or max_y_position_list is None:
+            self.xlim: float = max(max_distance_list)
+            self.ylim: float = max(max_distance_list)
+        elif max_distance_list is None:
+            self.xlim: float = max(max_x_position_list)
+            self.ylim: float = max(max_y_position_list)
+
     @classmethod
-    def from_eval_cfg(
+    def from_scenario(
         cls,
-        eval_cfg: PerceptionEvaluationConfig,
-        height: int = 480,
-        width: int = 640,
-    ) -> PerceptionVisualizer:
-        """[summary]
+        result_root_directory: str,
+        scenario_path: str,
+        **kwargs,
+    ) -> PerceptionVisualizer3D:
+        """Perception results made by logsim are reproduced from pickle file.
 
         Args:
-            eval_cfg (PerceptionEvaluationConfig): Evaluation config for perception.
-            height (int): The image height. Defaults to 640.
-            width (int): The image width. Defaults to 640.
+            result_root_directory (str): The root path to save result.
+            scenario_path (str): The path of scenario file .yaml.
+        Returns:
+            PerceptionVisualizer3D
         """
-        config: PerceptionVisualizationConfig = PerceptionVisualizationConfig(
-            visualization_directory_path=eval_cfg.visualization_directory,
-            frame_id=eval_cfg.frame_id,
-            evaluation_task=eval_cfg.evaluation_task,
-            height=height,
-            width=width,
-            **eval_cfg.filtering_params,
-        )
-        return cls(config)
 
-    @classmethod
-    def from_args(
-        cls,
-        visualization_directory_path: str,
-        frame_id: str,
-        evaluation_task: EvaluationTask,
-        height: int = 480,
-        width: int = 640,
-        **kwargs,
-    ) -> PerceptionVisualizer:
-        config: PerceptionVisualizationConfig = PerceptionVisualizationConfig(
-            visualization_directory_path=visualization_directory_path,
+        # Load scenario file
+        with open(scenario_path, "r") as scenario_file:
+            scenario_obj: Optional[Dict[str, any]] = yaml.safe_load(scenario_file)
+
+        p_cfg: Dict[str, any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
+        eval_cfg_dict: Dict[str, any] = p_cfg["evaluation_config_dict"]
+        eval_task_: str = eval_cfg_dict["evaluation_task"]
+        if eval_task_ == "detection":
+            frame_id = "base_link"
+        elif eval_task_ in ("tracking", "prediction"):
+            frame_id = "map"
+        else:
+            raise ValueError(f"Unexpected evaluation task: {eval_task_}")
+
+        evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
+            dataset_paths=[""],  # dummy path
             frame_id=frame_id,
-            evaluation_task=evaluation_task,
-            height=height,
-            width=width,
-            **kwargs,
+            merge_similar_labels=p_cfg.get("merge_similar_labels", False),
+            result_root_directory=result_root_directory,
+            evaluation_config_dict=eval_cfg_dict,
+            load_raw_data=False,
         )
-        return cls(config)
+
+        return cls(evaluation_config, **kwargs)
 
     @property
-    def config(self) -> PerceptionVisualizationConfig:
+    def config(self) -> PerceptionEvaluationConfig:
         return self.__config
 
     def visualize_all(
@@ -128,72 +129,55 @@ class PerceptionVisualizer:
         frame_results: List[PerceptionFrameResult],
         animation: bool = False,
         cache_figure: bool = False,
-        matching_mode: Optional[MatchingMode] = None,
-        matching_threshold_list: Optional[List[float]] = None,
     ) -> None:
-        """[summary]
-        Visualize all frames in BEV space.
+        """Visualize all frames in BEV space.
 
         Args:
             frame_results (List[PerceptionFrameResult]): The list of PerceptionFrameResult.
             save_html (bool): Wether save image as html. Defaults to False.
             animation (bool): Whether create animation as gif. Defaults to False.
             cache_figure (bool): Whether cache figure for each frame. Defaults to False.
-            matching_mode (Optional[MatchingMode]): The MatchingMode instance. Defaults to None.
-            matching_threshold_list (Optional[List[float]]): The list of matching threshold. Defaults to None.
         """
         if self.config.evaluation_task == EvaluationTask.TRACKING:
             self.__tracked_paths = {}
 
         frame_result_: PerceptionFrameResult
         for frame_result_ in tqdm(frame_results, desc="Visualize results for each frame"):
-            self.__axes: Axes = self.visualize_frame(
-                frame_result=frame_result_,
-                matching_mode=matching_mode,
-                matching_threshold_list=matching_threshold_list,
-                axes=self.__axes,
-            )
+            self.__axes: Axes = self.visualize_frame(frame_result=frame_result_, axes=self.__axes)
             if cache_figure is False:
                 self.__axes.clear()
 
         # save animation as gif
         if animation:
             # self._save_animation(file_name)
-            logger.warning("animation is under construction")
+            logging.warning("animation is under construction")
         self.clear()
 
     def clear(self) -> None:
-        """[summary]
-        Clear properties at the enf of visualize all frame.
-        """
+        """Clear properties at the enf of visualize all frame."""
         self.__axes.clear()
         self.__animation_frames.clear()
         if self.config.evaluation_task == EvaluationTask.TRACKING:
             self.__tracked_paths.clear()
 
     def set_figsize(self, height: int, width: int) -> None:
-        """[summary]
-        Set figure size.
+        """Set figure size.
         Args:
             height (int): The height of figure.
             width (int): The width of figure.
         """
-        self.__config.height = height
-        self.__config.width = width
+        self.__width, self.__height = width, height
         self.__figure.set_figheight(height / 100.0)
-        self.__figure.set_figwidth(height / 100.0)
-        self.__figsize = (height / 100.0, width / 100.0)
+        self.__figure.set_figwidth(width / 100.0)
+        self.__figsize = (width / 100.0, height / 100.0)
 
     def visualize_frame(
         self,
         frame_result: PerceptionFrameResult,
         file_name: Optional[str] = None,
         axes: Optional[Axes] = None,
-        matching_mode: Optional[MatchingMode] = None,
-        matching_threshold_list: Optional[List[float]] = None,
     ) -> Axes:
-        """[summary]
-        Visualize a frame result in BEV space.
+        """Visualize a frame result in BEV space.
 
         Color:
             TP estimated    : Blue
@@ -205,8 +189,6 @@ class PerceptionVisualizer:
             frame_result (PerceptionFrameResult)
             file_name (Optional[str]): The name of file. If not specified, saved by frame name. Defaults to None.
             axes (Optional[Axes]): The Axes instance. Defaults to None.
-            matching_mode (Optional[MatchingMode]): The matching mode instance.
-            matching_threshold_list (Optional[List[float]]): The list of matching threshold.
         """
         if axes is None:
             axes: Axes = plt.subplot()
@@ -225,17 +207,9 @@ class PerceptionVisualizer:
         )
         frame_artists += artists
 
-        # set object
-        tp_objects, fp_objects, fn_objects = self._divide_objects(
-            frame_result.object_results,
-            frame_result.frame_ground_truth,
-            matching_mode=matching_mode,
-            matching_threshold_list=matching_threshold_list,
-        )
-
         # Plot objects
         axes, artists = self.plot_objects(
-            objects=tp_objects,
+            objects=frame_result.pass_fail_result.tp_objects,
             is_ground_truth=False,
             axes=axes,
             label="TP est",
@@ -244,7 +218,7 @@ class PerceptionVisualizer:
         frame_artists += artists
 
         axes, artists = self.plot_objects(
-            objects=tp_objects,
+            objects=frame_result.pass_fail_result.tp_objects,
             is_ground_truth=True,
             axes=axes,
             label="TP GT",
@@ -253,7 +227,7 @@ class PerceptionVisualizer:
         frame_artists += artists
 
         axes, artists = self.plot_objects(
-            objects=fp_objects,
+            objects=frame_result.pass_fail_result.fp_objects_result,
             is_ground_truth=False,
             axes=axes,
             label="FP",
@@ -262,7 +236,7 @@ class PerceptionVisualizer:
         frame_artists += artists
 
         axes, artists = self.plot_objects(
-            objects=fn_objects,
+            objects=frame_result.pass_fail_result.fn_objects,
             is_ground_truth=True,
             axes=axes,
             label="FN",
@@ -282,7 +256,7 @@ class PerceptionVisualizer:
         # save_figure:
         if file_name is None:
             file_name = frame_result.frame_ground_truth.frame_name
-        filepath: str = osp.join(self.config.visualization_directory_path, file_name)
+        filepath: str = osp.join(self.config.visualization_directory, file_name)
 
         plt.savefig(filepath + ".png")
 
@@ -294,8 +268,7 @@ class PerceptionVisualizer:
         axes: Optional[Axes] = None,
         size: Tuple[float, float] = (5.0, 2.5),
     ) -> Tuple[Axes, List[plt.Artist]]:
-        """[summary]
-        Plot ego vehicle.
+        """Plot ego vehicle.
 
         Args:
             ego2map (np.ndarray): The 4x4 array of transform matrix from ego coords system to map coords system.
@@ -323,12 +296,12 @@ class PerceptionVisualizer:
             ego_xy[1],
             color=ego_color,
             label="Ego vehicle",
-            s=0.5 * self.config.width / 640,
+            s=0.5 * self.__width / 640,
         )
         artists.append(scatter_)
 
-        plt.xlim([-self.config.xlim + ego_xy[0], self.config.xlim + ego_xy[0]])
-        plt.ylim([-self.config.ylim + ego_xy[1], self.config.ylim + ego_xy[1]])
+        plt.xlim([-self.xlim + ego_xy[0], self.xlim + ego_xy[0]])
+        plt.ylim([-self.ylim + ego_xy[1], self.ylim + ego_xy[1]])
 
         box_bottom_left: np.ndarray = ego_xy - (np.array(size) / 2.0)
 
@@ -360,8 +333,7 @@ class PerceptionVisualizer:
         label: Optional[str] = None,
         color: Optional[str] = None,
     ) -> Tuple[Axes, List[plt.Artist]]:
-        """[summary]
-        Plot objects in BEV space.
+        """Plot objects in BEV space.
 
         :                +------------------+
         :   y            |                  |
@@ -466,8 +438,7 @@ class PerceptionVisualizer:
         is_ground_truth: bool,
         axes: Optional[Axes] = None,
     ) -> Tuple[Axes, List[plt.Artist]]:
-        """[summary]
-        Plot tracked paths for one object.
+        """Plot tracked paths for one object.
 
         Args:
             dynamic_objects (List[DynamicObject]): The list of object being visualized.
@@ -504,8 +475,7 @@ class PerceptionVisualizer:
         is_ground_truth: bool,
         axes: Optional[Axes] = None,
     ) -> Axes:
-        """[summary]
-        Plot predicted paths for one object.
+        """Plot predicted paths for one object.
 
         Args:
             dynamic_objects (List[DynamicObject]): The list of object being visualized.
@@ -518,83 +488,17 @@ class PerceptionVisualizer:
         pass
 
     def _save_animation(self, file_name: Optional[str] = None):
-        """[summary]
-        Save animation as gif.
+        """Save animation as gif.
 
         Args:
             file_name (str)
         """
         if file_name is None:
             file_name = "all"
-        filepath: str = osp.join(self.config.visualization_directory_path, file_name)
+        filepath: str = osp.join(self.config.visualization_directory, file_name)
         ani: ArtistAnimation = ArtistAnimation(
             self.__figure,
             self.__animation_frames,
             interval=100,
         )
         ani.save(filepath + "_animation.gif", writer="pillow")
-
-    def _divide_objects(
-        self,
-        object_results: List[DynamicObjectWithPerceptionResult],
-        frame_ground_truth: FrameGroundTruth,
-        matching_mode: Optional[MatchingMode] = None,
-        matching_threshold_list: Optional[List[float]] = None,
-    ) -> Tuple[
-        List[DynamicObjectWithPerceptionResult],
-        List[DynamicObjectWithPerceptionResult],
-        List[DynamicObject],
-    ]:
-        """[summary]
-        Divide TP/FP object results and FN objects.
-
-        Args:
-            object_results (List[DynamicObjectWithPerceptionResult])
-            frame_ground_truth (FrameGroundTruth)
-            matching_mode (Optional[MatchingMode])
-            matching_threshold_list (Optional[List[float]])
-
-        Returns:
-            tp_objects (List[DynamicObjectWithPerceptionResult])
-            fp_objects (List[DynamicObjectWithPerceptionResult])
-            fn_objects (List[DynamicObject])
-        """
-        # filter object results
-        filtered_estimated_objects: List[DynamicObjectWithPerceptionResult] = filter_object_results(
-            frame_id=self.config.frame_id,
-            object_results=object_results,
-            target_labels=self.config.target_labels,
-            max_x_position_list=self.config.max_x_position_list,
-            max_y_position_list=self.config.max_y_position_list,
-            max_distance_list=self.config.max_distance_list,
-            min_distance_list=self.config.min_distance_list,
-            min_point_numbers=self.config.min_point_numbers,
-            target_uuids=self.config.target_uuids,
-            ego2map=frame_ground_truth.ego2map,
-        )
-        filtered_ground_truth: List[DynamicObject] = filter_objects(
-            frame_id=self.config.frame_id,
-            objects=frame_ground_truth.objects,
-            is_gt=True,
-            target_labels=self.config.target_labels,
-            max_x_position_list=self.config.max_x_position_list,
-            max_y_position_list=self.config.max_y_position_list,
-            max_distance_list=self.config.max_distance_list,
-            min_distance_list=self.config.min_distance_list,
-            min_point_numbers=self.config.min_point_numbers,
-            target_uuids=self.config.target_uuids,
-            ego2map=frame_ground_truth.ego2map,
-        )
-        # divide TP/FP objects
-        tp_objects, fp_objects = divide_tp_fp_objects(
-            object_results=filtered_estimated_objects,
-            target_labels=self.config.target_labels,
-            matching_mode=matching_mode,
-            matching_threshold_list=matching_threshold_list,
-        )
-        fn_objects = get_fn_objects(
-            ground_truth_objects=filtered_ground_truth,
-            object_results=object_results,
-            tp_objects=tp_objects,
-        )
-        return tp_objects, fp_objects, fn_objects

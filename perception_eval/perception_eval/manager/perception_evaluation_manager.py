@@ -28,7 +28,8 @@ from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
-from perception_eval.visualization import PerceptionVisualizer
+from perception_eval.visualization import PerceptionVisualizer2D
+from perception_eval.visualization import PerceptionVisualizer3D
 
 from ._evaluation_manager_base import _EvaluationMangerBase
 from ..evaluation.result.object_result import DynamicObjectWithPerceptionResult
@@ -43,7 +44,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         ground_truth_frames (List[FrameGroundTruth]): Ground truth frames from datasets
         target_labels (List[LabelType]): List of target labels.
         frame_results (List[PerceptionFrameResult]): Perception results list at each frame.
-        visualizer (Optional[PerceptionVisualizer]): Visualization class for perception result.
+        visualizer (Optional[PerceptionVisualizerType]): Visualization class for perception result.
             If `self.evaluation_task.is_2d()=True`, this is None.
 
     Args:
@@ -57,9 +58,9 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         super().__init__(evaluation_config=evaluation_config)
         self.frame_results: List[PerceptionFrameResult] = []
         self.visualizer = (
-            None
+            PerceptionVisualizer2D(self.evaluator_config)
             if self.evaluation_task.is_2d()
-            else PerceptionVisualizer.from_eval_cfg(self.evaluator_config)
+            else PerceptionVisualizer3D(self.evaluator_config)
         )
 
     @property
