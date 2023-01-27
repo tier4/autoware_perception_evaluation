@@ -11,3 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from typing import Union
+
+from perception_eval.manager.perception_evaluation_manager import PerceptionEvaluationManager
+from perception_eval.manager.sensing_evaluation_manager import SensingEvaluationManager
+
+EvaluationManagerType = Union[PerceptionEvaluationManager, SensingEvaluationManager]

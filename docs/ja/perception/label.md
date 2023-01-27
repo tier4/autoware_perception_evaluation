@@ -1,6 +1,8 @@
-# Autoware Label
+# オブジェクト　ラベル
 
 - 詳細は[perception_eval.common.label.py](../../../perception_eval/perception_eval/common/label.py)を参照
+
+## Autoware Label
 
 | type                       |    value     | support labels                         |
 | :------------------------- | :----------: | :------------------------------------- |
@@ -37,7 +39,7 @@
 |                            |              | movable_object.traffic_cone            |
 |                            |              | static_object.bicycle rack             |
 
-## 類似ラベルのマージ
+### 類似ラベルのマージ
 
 - `PerceptionEvaluationConfig`の引数`merge_similar_labels=True`とすると，以下のように類似ラベルがマージされた状態で評価される．
 
@@ -78,3 +80,27 @@
 |                            |              | movable_object.trafficcone             |
 |                            |              | movable_object.traffic_cone            |
 |                            |              | static_object.bicycle rack             |
+
+## `TrafficLightLabel`
+
+| type                                   |        value         | support labels     |
+| :------------------------------------- | :------------------: | :----------------- |
+| `TrafficLightLabel.GREEN`              |       "green"        | green              |
+| `TrafficLightLabel.RED`                |        "red"         | red                |
+| `TrafficLightLabel.YELLOW`             |       "yellow"       | yellow             |
+| `TrafficLightLabel.RED_STRAIGHT`       |    "red_straight"    | red_straight       |
+| `TrafficLightLabel.RED_LEFT`           |      "red_left"      | red_left           |
+| `TrafficLightLabel.RED_left_straight`  | "red_left_straight"  | red_left_straight  |
+| `TrafficLightLabel.RED_RIGHT`          |     "red_right"      | red_right          |
+| `TrafficLightLabel.RED_RIGHT_STRAIGHT` | "red_right_straight" | red_right_straight |
+| `TrafficLightLabel.RED_RIGHT_DIAGONAL` | "red_right_diagonal" | red_right_diagonal |
+| `TrafficLightLabel.YELLOW_RIGHT`       |    "yellow_right"    | yellow_right       |
+| `TrafficLightLabel.UNKNOWN`            |      "unknown"       | unknown            |
+
+## [TBD]`BlinkerLabel`
+
+TBD
+
+## [TBD]`BrakeLampLabel`
+
+TBD

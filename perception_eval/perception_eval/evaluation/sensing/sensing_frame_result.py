@@ -24,21 +24,28 @@ from perception_eval.evaluation.sensing.sensing_result import DynamicObjectWithS
 
 
 class SensingFrameResult:
-    """[summary]
-    The result for 1 frame (the pair of detected points and ground truth)
+    """Object result class for sensing evaluation at current frame.
+
+    In sensing evaluation we defined words `detection area` and `non-detection area`
+    - `detection area`: The area pointcloud should be detected, that means, the area in objects' boxes.
+    - `non-detection area`: The area pointcloud should not be detected, that means, the area there is no objects.
 
     Attributes:
-        self.sensing_frame_config (SensingFrameConfig):
-            The configuration of sensing evaluation.
-        self.unix_time (int): Unix time [us]
-        self.frame_name (str): The name of frame.
-        self.detection_success_results (list[DynamicObjectWithSensingResult]):
-            The container for succeeded results of detection.
-        self.detection_fail_results (list[DynamicObjectWithSensingResult]):
-            The container for failed results of detection.
-        self.detection_warning_results (List[DynamicObjectWithSensingResult]):
-            The container for warned
-        self.pointcloud_failed_non_detection (np.ndarray): The array of pointcloud for non-detected.
+        sensing_frame_config (SensingFrameConfig): Configuration of sensing evaluation at current frame.
+        unix_time (int): Unix time [us].
+        frame_name (str): The name of frame.
+        detection_success_results (list[DynamicObjectWithSensingResult]): Container for succeeded results
+            in detection area.
+        detection_fail_results (list[DynamicObjectWithSensingResult]): Container for failed results in detection area.
+        detection_warning_results (List[DynamicObjectWithSensingResult]): Container for warned results
+            in detection area. This is used when objects are occluded.
+        pointcloud_failed_non_detection (List[numpy.ndarray]): Container for array of detected pointcloud
+            in non-detection area.
+
+    Args:
+        sensing_frame_config (SensingFrameConfig): The configuration of sensing evaluation.
+        unix_time (int): Unix time [us].
+        frame_name (str): Frame name in string.
     """
 
     def __init__(
@@ -47,12 +54,6 @@ class SensingFrameResult:
         unix_time: int,
         frame_name: str,
     ) -> None:
-        """[summary]
-        Args:
-            sensing_frame_config (SensingFrameConfig): The configuration of sensing evaluation.
-            unix_time (int): Unix time [us]
-            frame_name (str): The name of frame.
-        """
         # Config
         self.sensing_frame_config = sensing_frame_config
 
@@ -72,14 +73,12 @@ class SensingFrameResult:
         pointcloud_for_detection: np.ndarray,
         pointcloud_for_non_detection: List[np.ndarray],
     ) -> None:
-        """[summary]
-        Evaluate each object per frame.
+        """Evaluate each object at current frame.
 
         Args:
-            ground_truth_objects (list[DynamicObject]): The list of ground truth objects.
-            pointcloud_for_detection (numpy.ndarray): The array of pointcloud for detection.
-            pointcloud_for_non_detection (List[numpy.ndarray]):
-                The array of pointcloud for non-detection.
+            ground_truth_objects (list[DynamicObject]): Ground truth objects list.
+            pointcloud_for_detection (numpy.ndarray): Array of pointcloud in detection area.
+            pointcloud_for_non_detection (List[numpy.ndarray]): List of pointcloud array in non-detection area.
         """
         self._evaluate_pointcloud_for_detection(
             ground_truth_objects,
@@ -96,13 +95,13 @@ class SensingFrameResult:
         ground_truth_objects: List[DynamicObject],
         pointcloud_for_detection: np.ndarray,
     ) -> None:
-        """[summary]
-        Evaluate if pointcloud are detected.
-        If the object is occluded, the result is appended to warning.
+        """Evaluate if pointcloud are detected.
+
+        If the object is occluded, the result is appended to `self.detection_warning_results`.
 
         Args:
-            ground_truth_objects (list[DynamicObject]): The list of ground truth objects.
-            pointcloud_for_detection (numpy.ndarray): The array of pointcloud for detection.
+            ground_truth_objects (list[DynamicObject]): Ground truth objects list.
+            pointcloud_for_detection (numpy.ndarray): Array of pointcloud in detection area.
         """
         if len(ground_truth_objects) == 0:
             logging.warn("There is no annotated objects")
@@ -131,13 +130,15 @@ class SensingFrameResult:
         ground_truth_objects: List[DynamicObject],
         pointcloud_for_non_detection: List[np.ndarray],
     ) -> None:
-        """[summary]
-        Evaluate if pointcloud are not detected.
+        """Evaluate if there are any pointcloud were detection in non-detection area.
+
+        First of all, input `pointcloud_for_non_detection` is cropped by objects' boxes.
+        Then count the number of points, and if points are remained, these points are appended to
+        `self.pointcloud_failed_non_detection`.
 
         Args:
-            ground_truth_objects (list[DynamicObject]): The list of ground truth objects.
-            pointcloud_for_non_detection (list[numpy.ndarray]):
-                The list of pointcloud array for non-detection.
+            ground_truth_objects (list[DynamicObject]): Ground truth objects list.
+            pointcloud_for_non_detection (list[numpy.ndarray]): List of pointcloud array in non-detection area.
         """
         for point_non_detection in pointcloud_for_non_detection:
             for ground_truth_object in ground_truth_objects:

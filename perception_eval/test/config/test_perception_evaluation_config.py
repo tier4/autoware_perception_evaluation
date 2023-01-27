@@ -54,7 +54,6 @@ class TestPerceptionEvaluationConfig(unittest.TestCase):
                         dataset_paths="/tmp",
                         frame_id=frame_id,
                         merge_similar_labels=False,
-                        does_use_pointcloud=False,
                         result_root_directory="/tmp",
                         evaluation_config_dict=evaluation_config_dict,
                     )

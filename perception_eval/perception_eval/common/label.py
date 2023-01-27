@@ -16,15 +16,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from logging import getLogger
+import logging
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
-logger = getLogger(__name__)
+
+class LabelBase(Enum):
+    def __str__(self) -> str:
+        return self.value
+
+    @staticmethod
+    def get_pairs() -> List[Tuple[LabelBase, str]]:
+        raise NotImplementedError
 
 
-class AutowareLabel(Enum):
+class AutowareLabel(LabelBase):
     """[summary]
     Autoware label enum.
     See https://github.com/tier4/autoware_iv_msgs/blob/main/autoware_perception_msgs/msg/object_recognition/Semantic.msg
@@ -39,82 +47,8 @@ class AutowareLabel(Enum):
     PEDESTRIAN = "pedestrian"
     ANIMAL = "animal"
 
-    def __str__(self) -> str:
-        return self.value
-
-
-@dataclass
-class Label:
-    """[summary]
-    Label convert class
-
-    Attributes:
-        self.autoware_label (AutowareLabel): Corresponded Autoware label
-        label (str): Label before converted
-        num (int): The number of a label
-    """
-
-    autoware_label: AutowareLabel
-    label: str
-    num: int = 0
-
-
-class LabelConverter:
-    """[summary]
-    Label lapper between Autoware label and Tier4 dataset
-    Convert from self.labels[i].label to self.labels[i].autoware_label
-
-    Attributes:
-        self.labels (List[Label]): The list of label to convert
-    """
-
-    def __init__(self, merge_similar_labels: bool) -> None:
-        """
-        Args:
-            merge_similar_labels (bool): Whether merge similar labels.
-                If True,
-                    - BUS, TRUCK, TRAILER -> CAR
-                    - MOTORBIKE, CYCLIST -> BICYCLE
-        """
-        self.labels: List[Label] = []
-        pair_list: List[Tuple[AutowareLabel, str]] = LabelConverter._set_pair_list(
-            merge_similar_labels
-        )
-        for autoware_label, label in pair_list:
-            self.labels.append(Label(autoware_label, label))
-        logger.debug(f"label {self.labels}")
-
-    def convert_label(
-        self,
-        label: str,
-        count_label_number: bool = False,
-    ) -> AutowareLabel:
-        """[summary]
-        Convert from Nuscenes label to autoware label
-
-        Args:
-            label (str): The label you want to convert from predicted object
-            count_label_number (bool): The flag of counting the number of labels. Default is False
-
-        Returns:
-            AutowareLabel: Converted label
-        """
-        return_label: Optional[AutowareLabel] = None
-        for label_class in self.labels:
-            if label.lower() == label_class.label:
-                if count_label_number:
-                    label_class.num += 1
-                    if return_label is not None:
-                        logger.error(f"Label {label} is already converted to {return_label}")
-                return_label = label_class.autoware_label
-                break
-        if return_label is None:
-            logger.warning(f"Label {label} is not registered")
-            return_label = AutowareLabel.UNKNOWN
-        return return_label
-
     @staticmethod
-    def _set_pair_list(merge_similar_labels: bool) -> List[Tuple[AutowareLabel, str]]:
+    def get_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel, str]]:
         """[summary]
         Set pairs of AutowareLabel and str as list.
 
@@ -150,6 +84,7 @@ class LabelConverter:
             (AutowareLabel.UNKNOWN, "movable_object.trafficcone"),
             (AutowareLabel.UNKNOWN, "movable_object.traffic_cone"),
             (AutowareLabel.UNKNOWN, "static_object.bicycle rack"),
+            (AutowareLabel.UNKNOWN, "static_object.bollard"),
         ]
         if merge_similar_labels:
             pair_list += [
@@ -178,20 +113,152 @@ class LabelConverter:
         return pair_list
 
 
-def set_target_lists(
-    target_labels: List[str],
-    label_converter: LabelConverter,
-) -> List[AutowareLabel]:
+class TrafficLightLabel(LabelBase):
+    GREEN = "green"
+    RED = "red"
+    YELLOW = "yellow"
+    RED_STRAIGHT = "red_straight"
+    RED_LEFT = "red_left"
+    RED_LEFT_STRAIGHT = "red_left_straight"
+    RED_LEFT_DIAGONAL = "red_left_diagonal"
+    RED_RIGHT = "red_right"
+    RED_RIGHT_STRAIGHT = "red_right_straight"
+    RED_RIGHT_DIAGONAL = "red_right_diagonal"
+    YELLOW_RIGHT = "yellow_right"
+    UNKNOwN = "unknown"
+
+    @staticmethod
+    def get_pairs() -> List[Tuple[TrafficLightLabel, str]]:
+        pair_list: List[Tuple[TrafficLightLabel, str]] = [
+            (TrafficLightLabel.GREEN, "green"),
+            (TrafficLightLabel.RED, "red"),
+            (TrafficLightLabel.YELLOW, "yellow"),
+            (TrafficLightLabel.RED_STRAIGHT, "red_straight"),
+            (TrafficLightLabel.RED_LEFT, "red_left"),
+            (TrafficLightLabel.RED_LEFT_STRAIGHT, "red_left_straight"),
+            (TrafficLightLabel.RED_LEFT_DIAGONAL, "red_left_diagonal"),
+            (TrafficLightLabel.RED_RIGHT, "red_right"),
+            (TrafficLightLabel.RED_RIGHT_STRAIGHT, "red_right_straight"),
+            (TrafficLightLabel.RED_RIGHT_DIAGONAL, "red_right_diagonal"),
+            (TrafficLightLabel.YELLOW_RIGHT, "yellow_right"),
+            (TrafficLightLabel.UNKNOwN, "unknown"),
+        ]
+        return pair_list
+
+
+LabelType = Union[AutowareLabel, TrafficLightLabel]
+
+
+@dataclass
+class LabelInfo:
     """[summary]
-    Set the target class configure
+    Label data class
+
+    Attributes:
+        self.autoware_label (AutowareLabel): Corresponded Autoware label
+        label (str): Label before converted
+        num (int): The number of a label
+    """
+
+    label: LabelType
+    name: str
+    num: int = 0
+
+
+class LabelConverter:
+    """A class to convert string label name to LabelType instance.
+
+    Attributes:
+        self.labels (List[LabelInfo]): The list of label to convert.
+        self.label_type (LabelType): This is determined by `label_prefix`.
+
+    Args:
+        merge_similar_labels (bool): Whether merge similar labels.
+            If True,
+                - BUS, TRUCK, TRAILER -> CAR
+                - MOTORBIKE, CYCLIST -> BICYCLE
+        label_prefix (str): Prefix of label, [autoware, traffic_light]. Defaults to autoware.
+
+    Raises:
+        NotImplementedError: For prefix named `blinker` and `brake_lamp` is under construction.
+        ValueError: When unexpected prefix is specified.
+    """
+
+    def __init__(self, merge_similar_labels: bool, label_prefix: str = "autoware") -> None:
+        if label_prefix == "autoware":
+            self.label_type = AutowareLabel
+            pair_list: List[Tuple[AutowareLabel, str]] = AutowareLabel.get_pairs(
+                merge_similar_labels=merge_similar_labels,
+            )
+        elif label_prefix == "traffic_light":
+            self.label_type = TrafficLightLabel
+            pair_list: List[Tuple[TrafficLightLabel, str]] = TrafficLightLabel.get_pairs()
+        elif label_prefix in ("blinker", "brake_lamp"):
+            raise NotImplementedError(f"{label_prefix} is under construction.")
+        else:
+            raise ValueError(f"Unexpected `label_prefix`: {label_prefix}")
+
+        self.labels: List[LabelInfo] = [LabelInfo(label, name) for label, name in pair_list]
+
+        logging.debug(f"label {self.labels}")
+
+    def convert_label(
+        self,
+        label: str,
+        count_label_number: bool = False,
+    ) -> LabelType:
+        """Convert to LabelType instance from label name in string.
+
+        Args:
+            label (str): Label name you want to convert to any LabelType object.
+            count_label_number (bool): Whether to count how many labels have been converted.
+                Defaults to False.
+
+        Returns:
+            LabelType: Converted label.
+
+        Examples:
+            >>> converter = LabelConverter(False, "autoware")
+            >>> converter.convert_label("car")
+            <AutowareLabel.CAR: 'car'>
+        """
+        return_label: Optional[LabelType] = None
+        for label_class in self.labels:
+            if label.lower() == label_class.name:
+                if count_label_number:
+                    label_class.num += 1
+                    if return_label is not None:
+                        logging.error(f"Label {label} is already converted to {return_label}.")
+                return_label = label_class.label
+                break
+        if return_label is None:
+            logging.warning(f"Label {label} is not registered.")
+            return_label = self.label_type.UNKNOWN
+        return return_label
+
+
+def set_target_lists(
+    target_labels: Optional[List[str]],
+    label_converter: LabelConverter,
+) -> List[LabelType]:
+    """Returns a LabelType list from a list of label names in string.
+
+    If no label is specified, returns all LabelType elements.
 
     Args:
         target_labels (List[str]): The target class to evaluate
         label_converter (LabelConverter): Label Converter class
 
     Returns:
-        List[AutowareLabel]:  The list of target class
+        List[LabelType]:  LabelType instance list.
+
+    Examples:
+        >>> converter = LabelConverter(False, "autoware")
+        >>> set_target_lists(["car", "pedestrian"], converter)
+        [<AutowareLabel.CAR: 'car'>, <AutowareLabel.PEDESTRIAN: 'pedestrian'>]
     """
+    if target_labels is None or len(target_labels) == 0:
+        return [label for label in label_converter.label_type]
     target_autoware_labels = []
     for target_label in target_labels:
         target_autoware_labels.append(label_converter.convert_label(target_label))

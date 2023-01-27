@@ -17,11 +17,11 @@ from typing import Tuple
 import unittest
 
 from perception_eval.common.label import AutowareLabel
-from perception_eval.common.threshold import ThresholdsError
 from perception_eval.common.threshold import check_thresholds
 from perception_eval.common.threshold import check_thresholds_list
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.common.threshold import set_thresholds
+from perception_eval.common.threshold import ThresholdsError
 
 
 class TestThreshold(unittest.TestCase):

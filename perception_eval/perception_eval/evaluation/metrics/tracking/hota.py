@@ -16,12 +16,13 @@ from typing import Any
 from typing import List
 from typing import Optional
 
-from perception_eval.common.label import AutowareLabel
-from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.common.label import LabelType
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetrics
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
-from perception_eval.evaluation.metrics.tracking._metrics_base import _TrackingMetricsBase
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+
+from ._metrics_base import _TrackingMetricsBase
 
 
 class HOTA(_TrackingMetricsBase):
@@ -29,7 +30,7 @@ class HOTA(_TrackingMetricsBase):
     HOTA metrics class that has HOTA, LocA, DetA and AssA as sub metrics.
 
     Attributes:
-        self.target_labels (List[AutowareLabel]): The list of target label.
+        self.target_labels (List[LabelType]): The list of target label.
         self.matching_mode (MatchingMode): The target matching mode.
         self.metrics_field (Optional[List[str]]): The list of target metrics name. If not specified, set default supported metrics.
         self.ground_truth_objects_num (int): The number of ground truth.
@@ -43,7 +44,7 @@ class HOTA(_TrackingMetricsBase):
         self,
         object_results: List[List[DynamicObjectWithPerceptionResult]],
         num_ground_truth: int,
-        target_labels: List[AutowareLabel],
+        target_labels: List[LabelType],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
         tp_metrics: TPMetrics = TPMetricsAp(),
@@ -59,7 +60,7 @@ class HOTA(_TrackingMetricsBase):
         Args:
             object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results for each frames.
             num_ground_truth (int): The number of ground truth.
-            target_labels (List[AutowareLabel]): The list of target labels.
+            target_labels (List[LabelType]): The list of target labels.
             matching_mode: (MatchingMode): Matching mode class.
             tp_metrics (TPMetrics): The way of calculating TP value. Defaults to TPMetricsAP.
             metrics_field: List[str]: The list of target sub metrics.

@@ -23,11 +23,10 @@ def distance_points(
     point_1: np.ndarray,
     point_2: np.ndarray,
 ) -> float:
-    """[summary]
-    Calculate the center distance between two points.
+    """Calculate the center distance between two points.
     Args:
-        point_1 (numpy.ndarray[3,]): A point
-        point_2 (numpy.ndarray[3,]): A point
+        point_1 (numpy.ndarray[3,]): 3D point.
+        point_2 (numpy.ndarray[3,]): 3D point.
     Returns: float: The distance between two points
     """
     if not (len(point_1) == 3 and len(point_2) == 3):
@@ -42,13 +41,12 @@ def distance_points_bev(
     point_1: np.ndarray,
     point_2: np.ndarray,
 ) -> float:
-    """[summary]
-    Calculate the 2d center distance between two points.
+    """Calculate the 2d center distance between two points.
     Args:
-        point_1 (numpy.ndarray[3,]): A point
-        point_2 (numpy.ndarray[3,]): A point
+        point_1 (numpy.ndarray[3,]): 3D point.
+        point_2 (numpy.ndarray[3,]): 3D point.
     Returns:
-        float: The distance between two points
+        float: Distance between two points in BEV space.
     """
     if not (len(point_1) == 3 and len(point_2) == 3):
         raise RuntimeError(
@@ -61,12 +59,11 @@ def distance_points_bev(
 
 
 def to_bev(point_1: np.ndarray) -> np.ndarray:
-    """[summary]
-    (x, y, z) -> (x, y)
+    """(x, y, z) -> (x, y).
     Args:
-        point_1 (np.ndarray): A 3d point.
+        point_1 (np.ndarray): 3D point.
     Returns:
-        np.ndarray: The 2d point of point_1.
+        np.ndarray: (x, y) point of input `point_1`.
     """
     if not len(point_1) == 3:
         raise RuntimeError(f"The length of a point is {len(point_1)}, it needs 3.")
@@ -129,10 +126,10 @@ def crop_pointcloud(
 
 
 def polygon_to_list(polygon: Polygon):
-    """[summary]
-    Convert from polygon to list.
-    from Polygon[(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x0, y0, z0)]
-    to List[(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3)]
+    """Convert polygon to list.
+
+    Polygon: [(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x0, y0, z0)]
+    List: [(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3)]
 
     Args:
         polygon (Polygon): Polygon
@@ -147,12 +144,12 @@ def get_point_left_right(
     point_1: Tuple[float, float, float],
     point_2: Tuple[float, float, float],
 ) -> Tuple[Tuple[float, float, float]]:
-    """[summary]
-    Examine the 2D geometric location of a point1 and a point2.
+    """Examine the 2D geometric location of a point1 and a point2.
     Args:
         point_1 (Tuple[float, float, float]): A point
         point_2 (Tuple[float, float, float]): A point
-    Returns: Tuple[Tuple[float, float, float]]: Returns [left_point, right_point]
+    Returns:
+        Tuple[Tuple[float, float, float]]: Returns [left_point, right_point]
     """
     if not (len(point_1) > 2 and len(point_2) > 2):
         raise RuntimeError(

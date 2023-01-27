@@ -18,14 +18,14 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
+from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
-from perception_eval.common.label import AutowareLabel
-from perception_eval.common.object import DynamicObject
+from perception_eval.common.label import LabelType
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
-from perception_eval.evaluation.metrics.metrics import MetricsScore
-from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.metrics import MetricsScore
+from perception_eval.evaluation.metrics import MetricsScoreConfig
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.evaluation.result.perception_pass_fail_result import PassFailResult
@@ -54,7 +54,7 @@ class PerceptionFrameResult:
         critical_object_filter_config: CriticalObjectFilterConfig,
         frame_pass_fail_config: PerceptionPassFailConfig,
         unix_time: int,
-        target_labels: List[AutowareLabel],
+        target_labels: List[LabelType],
     ):
         """[summary]
         Args:
@@ -71,7 +71,7 @@ class PerceptionFrameResult:
         self.frame_name: str = frame_ground_truth.frame_name
         self.unix_time: int = unix_time
         self.frame_id: str = frame_ground_truth.frame_id
-        self.target_labels: List[AutowareLabel] = target_labels
+        self.target_labels: List[LabelType] = target_labels
 
         self.object_results: List[DynamicObjectWithPerceptionResult] = object_results
         self.frame_ground_truth: FrameGroundTruth = frame_ground_truth
@@ -90,22 +90,21 @@ class PerceptionFrameResult:
 
     def evaluate_frame(
         self,
-        ros_critical_ground_truth_objects: List[DynamicObject],
+        ros_critical_ground_truth_objects: List[ObjectType],
         previous_result: Optional[PerceptionFrameResult] = None,
     ) -> None:
         """[summary]
         Evaluate a frame from the pair of estimated objects and ground truth objects
         Args:
-            estimated_objects (List[DynamicObject]): The list of estimated object which you want to evaluate
-            ros_critical_ground_truth_objects (List[DynamicObject]): The list of Ground truth objects filtered by ROS node.
+            ros_critical_ground_truth_objects (List[ObjectType]): The list of Ground truth objects filtered by ROS node.
             previous_result (Optional[PerceptionFrameResult]): The previous frame result. If None, set it as empty list []. Defaults to None.
         """
         # Divide objects by label to dict
         object_results_dict: Dict[
-            AutowareLabel, List[DynamicObjectWithPerceptionResult]
+            LabelType, List[DynamicObjectWithPerceptionResult]
         ] = divide_objects(self.object_results, self.target_labels)
 
-        num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
+        num_ground_truth_dict: Dict[LabelType, int] = divide_objects_to_num(
             self.frame_ground_truth.objects, self.target_labels
         )
 
@@ -118,12 +117,16 @@ class PerceptionFrameResult:
                 previous_results_dict = divide_objects(
                     previous_result.object_results, self.target_labels
                 )
-            tracking_results: Dict[AutowareLabel] = object_results_dict.copy()
+            tracking_results: Dict[
+                LabelType, List[DynamicObjectWithPerceptionResult]
+            ] = object_results_dict.copy()
             for label, prev_results in previous_results_dict.items():
                 tracking_results[label] = [prev_results, tracking_results[label]]
             self.metrics_score.evaluate_tracking(tracking_results, num_ground_truth_dict)
         if self.metrics_score.prediction_config is not None:
             pass
+        if self.metrics_score.classification_config is not None:
+            self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
 
         self.pass_fail_result.evaluate(
             object_results=self.object_results,

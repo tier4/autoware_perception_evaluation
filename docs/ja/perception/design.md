@@ -49,22 +49,24 @@ json_result = json.dump(dict_result)
 
 - `PerceptionEvaluationConfig`の引数は以下
 
-  | Arguments                |       type       | Description                                                      |
-  | :----------------------- | :--------------: | :--------------------------------------------------------------- |
-  | `dataset_path`           |   `List[str]`    | データセットパス(List[]で指定するが複数データ対応については TBD) |
-  | `frame_id`               |      `str`       | オブジェクトの座標系，`map` or `base_link`                       |
-  | `merge_similar_labels`   |      `bool`      | 類似ラベルをマージするかの flag[参考](label.md)                  |
-  | `does_use_pointcloud`    |      `bool`      | データセットから点群データをロードするかの flag                  |
-  | `result_root_directory`  |      `str`       | 評価結果，ログ，可視化結果等を保存するディレクトリのパス         |
-  | `evaluation_config_dict` | `Dict[str, Any]` | 評価パラメータ                                                   |
+  | Arguments                |       type       | Description                                                                                                                      |
+  | :----------------------- | :--------------: | :------------------------------------------------------------------------------------------------------------------------------- |
+  | `dataset_path`           |   `List[str]`    | データセットパス(List[]で指定するが複数データ対応については TBD)                                                                 |
+  | `frame_id`               |      `str`       | オブジェクトの座標系，`map` or `base_link`                                                                                       |
+  | `merge_similar_labels`   |      `bool`      | 類似ラベルをマージするかの flag[参考](label.md)                                                                                  |
+  | `result_root_directory`  |      `str`       | 評価結果，ログ，可視化結果等を保存するディレクトリのパス                                                                         |
+  | `evaluation_config_dict` | `Dict[str, Any]` | 評価パラメータ                                                                                                                   |
+  | `label_prefix`           |      `str`       | ラベルのプレフィックス. `autoware` の場合, `AutowareLabel`がロードされ，`traffic_light`の場合，`TrafficLightLabel`がロードされる |
+  | `camera_type`            | `Optional[str]`  | 2D 評価の場合のみ使用．T4dataset/data/に含まれるカメラ名を指定する．                                                             |
+  | `load_raw_data`          |      `bool`      | データセットから点群/画像データをロードするか                                                                                    |
 
 ##### `evaluation_config_dict`
 
-- `evaluation_config_dict (Dict[str, Any])`には，`evaluation_task`に detection/tracking/prediction を指定して各評価パラメータを設定する
+- `evaluation_config_dict (Dict[str, Any])`には，`evaluation_task`に detection/tracking/prediction または detection2d を指定して各評価パラメータを設定する
 
   ```python
   evaluation_config_dict: [Dict[str, Any]] = {
-    "evaluation_task": "detection"/"tracking"/"prediction",
+    "evaluation_task": "detection"/"tracking"/"prediction" or "detection2d/tracking2d/classification2d",
     ...
   }
   ```
@@ -75,31 +77,31 @@ json_result = json.dump(dict_result)
 
   - **1. `DynamicObjectWithPerceptionResult`生成時のオブジェクトのフィルタ用の閾値**
 
-    | Arguments              |    type     |     Mandatory      | Description                                                                                                      |
-    | :--------------------- | :---------: | :----------------: | :--------------------------------------------------------------------------------------------------------------- |
-    | `target_labels`        | `List[str]` |        Yes         | 評価対象ラベル名                                                                                                 |
-    | `max_x_position`       |   `float`   |         \*         | 評価対象 object の最大 x 位置                                                                                    |
-    | `max_y_position`       |   `float`   |         \*         | 評価対象 object の最大 y 位置                                                                                    |
-    | `max_distance`         |   `float`   |         \*         | 評価対象 object の base_link からの最大距離                                                                      |
-    | `min_distance`         |   `float`   |         \*         | 評価対象 object の base_link からの最小距離                                                                      |
-    | `min_point_numbers`    | `List[int]` | Yes (in Detection) | ground truth object における，bbox 内の最小点群数．`min_point_numbers=0` の場合は，全 ground truth object を評価 |
-    | `confidence_threshold` |   `float`   |         No         | 評価対象の estimated object の confidence の閾値                                                                 |
-    | `target_uuids`         | `List[str]` |         No         | 特定の ground truth のみに対して評価を行いたい場合，対象とする ground truth の UUID を指定する                   |
+    | Arguments              |    type     |       Mandatory       | Description                                                                                                                 |
+    | :--------------------- | :---------: | :-------------------: | :-------------------------------------------------------------------------------------------------------------------------- |
+    | `target_labels`        | `List[str]` |          No           | 評価対象ラベル名．非指定の場合，全ラベルを対象に評価が実行される．                                                          |
+    | `max_x_position`       |   `float`   |          \*           | 評価対象 object の最大 x 位置 (3D のみ)                                                                                     |
+    | `max_y_position`       |   `float`   |          \*           | 評価対象 object の最大 y 位置 (3D のみ)                                                                                     |
+    | `max_distance`         |   `float`   |          \*           | 評価対象 object の base_link からの最大距離 (3D のみ)                                                                       |
+    | `min_distance`         |   `float`   |          \*           | 評価対象 object の base_link からの最小距離 (3D のみ)                                                                       |
+    | `min_point_numbers`    | `List[int]` | No (Yes in Detection) | ground truth object における，bbox 内の最小点群数．`min_point_numbers=0` の場合は，全 ground truth object を評価．(3D のみ) |
+    | `confidence_threshold` |   `float`   |          No           | 評価対象の estimated object の confidence の閾値                                                                            |
+    | `target_uuids`         | `List[str]` |          No           | 特定の ground truth のみに対して評価を行いたい場合，対象とする ground truth の UUID を指定する                              |
 
     \* **max_x/y_position**，**max/min_distance**についてはどちらか片方のみ指定する必要がある．
 
   - **2. メトリクス評価時の `DynamicObjectWithPerceptionResult`の TP/FP/FN 判定用の閾値**
 
-    | Arguments                    |     type      | Mandatory | Description                  |
-    | :--------------------------- | :-----------: | :-------: | :--------------------------- |
-    | `center_distance_thresholds` | `List[float]` |    Yes    | 中心間距離マッチング時の閾値 |
-    | `plane_distance_thresholds`  | `List[float]` |    Yes    | 平面距離マッチング時の閾値   |
-    | `iou_bev_thresholds`         | `List[float]` |    Yes    | BEV IoU 　マッチング時の閾値 |
-    | `iou_3d_thresholds`          | `List[float]` |    Yes    | 3D IoU マッチング時の閾値    |
+    | Arguments                    |     type      | Mandatory | Description                          |
+    | :--------------------------- | :-----------: | :-------: | :----------------------------------- |
+    | `center_distance_thresholds` | `List[float]` |    Yes    | 中心間距離マッチング時の閾値         |
+    | `plane_distance_thresholds`  | `List[float]` | Yes (3D)  | 平面距離マッチング時の閾値 (3D のみ) |
+    | `iou_2d_thresholds`          | `List[float]` |    Yes    | BEV IoU 　マッチング時の閾値         |
+    | `iou_3d_thresholds`          | `List[float]` | Yes (3D)  | 3D IoU マッチング時の閾値 (3D のみ)  |
 
 - **パラメータ指定時の Error ケース**
 
-  - **1. `evaluation_task`に `detection/tracking/prediction` 以外を指定した場合**
+  - **1. `evaluation_task`に `detection/tracking/prediction/detection2d/tracking2d/classification2d` 以外を指定した場合**
 
   ```python
   evaluation_config_dict = {
@@ -110,7 +112,7 @@ json_result = json.dump(dict_result)
     "min_point_numbers": [0, 0, 0, 0],
     "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
     "plane_distance_thresholds": [2.0, 3.0],
-    "iou_bev_thresholds": [0.5],
+    "iou_2d_thresholds": [0.5],
     "iou_3d_thresholds": [0.5],
   }
   ```
@@ -118,7 +120,7 @@ json_result = json.dump(dict_result)
   ```shell
   # Exception
   >>  ValueError: Unsupported task: 'foo'
-      Supported tasks: ['detection', 'tracking', 'prediction']
+      Supported tasks: ['detection', 'tracking', 'prediction', 'detection2d', 'tracking2d', 'classification2d']
   ```
 
   - **2. `max_x/y_position`，`max/min_distance` がどちらも未指定 or 両方指定した場合**
@@ -136,7 +138,7 @@ json_result = json.dump(dict_result)
       "min_point_numbers": [0, 0, 0, 0],
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
     }
     ```
@@ -159,7 +161,7 @@ json_result = json.dump(dict_result)
       "min_point_numbers": [0, 0, 0, 0],
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
     }
     ```
@@ -180,7 +182,7 @@ json_result = json.dump(dict_result)
       # "min_point_numbers": [0, 0, 0, 0],  # <-- min_point_numbersをコメントアウト
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
     }
     ```
@@ -202,7 +204,7 @@ json_result = json.dump(dict_result)
       "max_y_position": 102.4,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
       "min_point_numbers": [0, 0, 0, 0],
       "foo_thresholds": [0.8],  # <-- foo_thresholdsを指定
@@ -221,17 +223,17 @@ json_result = json.dump(dict_result)
 - 注目物体を動的決定するためのインターフェイス．
 - `PerceptionEvaluationManger`の初期化時ではなく，各フレーム毎(=callback)に指定する．
 
-| Arguments                   |             type             |    Mandatory    | Description                                                                                                      |
-| :-------------------------- | :--------------------------: | :-------------: | :--------------------------------------------------------------------------------------------------------------- |
-| `evaluator_config`          | `PerceptionEvaluationConfig` |       Yes       | `PerceptionEvaluationManager`の持つ config                                                                       |
-| `target_labels`             |         `List[str]`          |       Yes       | 評価対象ラベル名                                                                                                 |
-| `max_x_position_list`       |        `List[float]`         |       \*        | 評価対象 object の最大 x 位置                                                                                    |
-| `max_y_position_list`       |        `List[float]`         |       \*        | 評価対象 object の最大 y 位置                                                                                    |
-| `max_distance_list`         |        `List[float]`         |       \*        | 評価対象 object の base_link からの最大距離                                                                      |
-| `min_distance_list`         |        `List[float]`         |       \*        | 評価対象 object の base_link からの最小距離                                                                      |
-| `min_point_numbers`         |         `List[int]`          | Yes (Detection) | ground truth object における，bbox 内の最小点群数．`min_point_numbers=0` の場合は，全 ground truth object を評価 |
-| `confidence_threshold_list` |        `List[float]`         |       No        | 評価対象の estimated object の confidence の閾値                                                                 |
-| `target_uuids`              |         `List[str]`          |       No        | 特定の ground truth のみに対して評価を行いたい場合，対象とする ground truth の UUID を指定する                   |
+| Arguments                   |             type             |    Mandatory    | Description                                                                                                                 |
+| :-------------------------- | :--------------------------: | :-------------: | :-------------------------------------------------------------------------------------------------------------------------- |
+| `evaluator_config`          | `PerceptionEvaluationConfig` |       Yes       | `PerceptionEvaluationManager`の持つ config                                                                                  |
+| `target_labels`             |         `List[str]`          |       Yes       | 評価対象ラベル名                                                                                                            |
+| `max_x_position_list`       |        `List[float]`         |       \*        | 評価対象 object の最大 x 位置 (3D のみ)                                                                                     |
+| `max_y_position_list`       |        `List[float]`         |       \*        | 評価対象 object の最大 y 位置 (3D のみ)                                                                                     |
+| `max_distance_list`         |        `List[float]`         |       \*        | 評価対象 object の base_link からの最大距離 (3D のみ)                                                                       |
+| `min_distance_list`         |        `List[float]`         |       \*        | 評価対象 object の base_link からの最小距離 (3D のみ)                                                                       |
+| `min_point_numbers`         |         `List[int]`          | Yes (Detection) | ground truth object における，bbox 内の最小点群数．`min_point_numbers=0` の場合は，全 ground truth object を評価．(3D のみ) |
+| `confidence_threshold_list` |        `List[float]`         |       No        | 評価対象の estimated object の confidence の閾値                                                                            |
+| `target_uuids`              |         `List[str]`          |       No        | 特定の ground truth のみに対して評価を行いたい場合，対象とする ground truth の UUID を指定する                              |
 
 \* **max_x/y_position**，**max/min_distance**についてはどちらか片方のみ指定する必要がある．
 
@@ -240,12 +242,12 @@ json_result = json.dump(dict_result)
 - Pass / Fail を決めるためのパラメータ. Pass/Fail の判定については，**Plane distance**によって TP/FP の判定を行う．
 - `PerceptionEvaluationManger`の初期化時ではなく，各フレーム毎(=callback)に指定する．
 
-| Arguments                       |             type             | Mandatory | Description                                      |
-| :------------------------------ | :--------------------------: | :-------: | :----------------------------------------------- |
-| `evaluator_config`              | `PerceptionEvaluationConfig` |    Yes    | `PerceptionEvaluationManager`の持つ config       |
-| `target_labels`                 |         `List[str]`          |    Yes    | 評価対象ラベル名                                 |
-| `plane_distance_threshold_list` |        `List[float]`         |    Yes    | 平面距離マッチング時の閾値                       |
-| `confidence_threshold_list`     |        `List[float]`         |    No     | 評価対象の estimated object の confidence の閾値 |
+| Arguments                   |             type             | Mandatory | Description                                            |
+| :-------------------------- | :--------------------------: | :-------: | :----------------------------------------------------- |
+| `evaluator_config`          | `PerceptionEvaluationConfig` |    Yes    | `PerceptionEvaluationManager`の持つ config             |
+| `target_labels`             |         `List[str]`          |    No     | 評価対象ラベル名                                       |
+| `matching_threshold_list`   |        `List[float]`         |    No     | マッチング閾値．3D の場合は平面距離，2D の場合は IOU． |
+| `confidence_threshold_list` |        `List[float]`         |    No     | 評価対象の estimated object の confidence の閾値       |
 
 ### 評価実行
 
@@ -279,3 +281,9 @@ json_result = json.dump(dict_result)
 
 | Metrics | Sub Metrics |
 | :-----: | :---------: |
+
+### Classification
+
+| Metrics  |             Sub Metrics              |
+| :------: | :----------------------------------: |
+| Accuracy | Accuracy, Precision, Recall, F1score |
