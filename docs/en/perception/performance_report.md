@@ -398,10 +398,10 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
   - Plot specified state's error with box-plot.
 
-  | Arguments |          type          | Mandatory |              Description               |
-  | :-------- | :--------------------: | :-------: | :------------------------------------: |
+  | Arguments |          type          | Mandatory | Description                            |
+  | :-------- | :--------------------: | :-------: | :------------------------------------- |
   | `columns` | `Union[str, List[str]` |    Yes    | Target error (x, y, yaw, w, l, vx, vy) |
-  | `show`    |         `bool`         |    No     |  Whether show plot.(Defaults=`False`)  |
+  | `show`    |         `bool`         |    No     | Whether show plot.(Defaults=`False`)   |
 
   ```python
   # Plot xy error with box-plot.
@@ -409,3 +409,63 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
   ```
 
   <img src="../../fig/perception/box_plot_xy.png" width=400>
+
+## [`<class> GMM(...)`](../../../perception_eval/perception_eval/tool/gmm.py)
+
+A wrapper class of [`sklearn.mixture.GaussianMixture`](https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html).
+This model estimates the parameters for the joint distribution P(X, Y).
+And then, it predicts means of posterior distribution P(Y|X), where X represents states, Y represents error states.
+
+- Initialization
+
+  | Arguments      | type  | Description                                                 |
+  | :------------- | :---: | :---------------------------------------------------------- |
+  | `max_k`        | `int` | Maximum number of cluster K.                                |
+  | `n_init`       | `int` | Number of initial cluster. (Default: 1)                     |
+  | `random_state` | `int` | Seed to save the state of a random function. (Default=1234) |
+
+- Methods
+
+  | Methods           |     Returns     | Description                                                   |
+  | :---------------- | :-------------: | :------------------------------------------------------------ |
+  | `fit()`           |     `None`      | Estimate model parameters with the EM algorithm.              |
+  | `predict()`       | `numpy.ndarray` | Predict means of posterior distribution for the data samples. |
+  | `predict_label()` | `numpy.ndarray` | Predict the labels for the data samples.                      |
+  | `save()`          |     `None`      | Save estimated the best model's parameters with pickle.       |
+  | `load()`          |      `GMM`      | Load saved model's parameters from pickle.                    |
+  | `plot_ic()`       |     `None`      | Plot Information Criterion scores, which are AIC and BIC.     |
+
+### `<func> load_sample(...) -> Tuple[numpy.ndarray, numpy.ndarray]`
+
+- Returns input array of specified states and errors.
+
+| Arguments  |              type               | Mandatory | Description                               |
+| :--------- | :-----------------------------: | :-------: | :---------------------------------------- |
+| `analyzer` | `PerceptionPerformanceAnalyzer` |    Yes    | `PerceptionPerformanceAnalyzer` instance. |
+| `state`    |           `List[str]`           |    Yes    | List of target state names.               |
+| `error`    |           `List[str]`           |    Yes    | List of target error names.               |
+
+### Example usage
+
+```python
+from perception_eval.tool import PerceptionPerformanceAnalyzer, GMM, load_sample
+import numpy as np
+
+# Initialize PerceptionPerformanceAnalyzer
+analyzer = PerceptionPerformanceAnalyzer(...)
+
+# Load sample data, X: state, Y: error
+state = ["x", "y", "yaw", "vx", "xy"]
+error = ["x", "y"]
+
+# X: (N, 5), Y: (N, 2)
+X, Y = load_sample(analyzer, state, error)
+sample = np.concatenate([X, Y], axis=-1)  # (N, 7)
+
+# Estimated model parameters
+model = GMM(max_k)
+model.fit(sample)
+
+# Predict Y(error) using X(state)
+y_pred = model.predict(X)  # (N, 2)
+```

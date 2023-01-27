@@ -412,3 +412,63 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
   ```
 
   <img src="../../fig/perception/box_plot_xy.png" width=400>
+
+## [`<class> GMM(...)`](../../../perception_eval/perception_eval/tool/gmm.py)
+
+[`sklearn.mixture.GaussianMixture`](https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html)のラッパークラス．
+同時確率分布 P(X, Y)のパラメータを EM アルゴリズムを用いて推定し，入力データ X から事後確率分布 P(Y|X)の平均値を予測する．
+このとき，X は状態量，Y は誤差の状態量を表す．
+
+- Initialization
+
+  | Arguments      | type  | Description                      |
+  | :------------- | :---: | :------------------------------- |
+  | `max_k`        | `int` | クラスタ数 K の最大値.           |
+  | `n_init`       | `int` | クラスタ数の初期値. (Default: 1) |
+  | `random_state` | `int` | 乱数シードの値. (Default=1234)   |
+
+- Methods
+
+  | Methods           |     Returns     | Description                                      |
+  | :---------------- | :-------------: | :----------------------------------------------- |
+  | `fit()`           |     `None`      | EM アルゴリズムを用いてモデルのパラメータを推定. |
+  | `predict()`       | `numpy.ndarray` | 入力データ X の事後確立分布の平均値を予測.       |
+  | `predict_label()` | `numpy.ndarray` | 入力データ X の各ラベルを予測.                   |
+  | `save()`          |     `None`      | 推定された最良モデルを pickle で保存.            |
+  | `load()`          |      `GMM`      | pickle で保存されたモデルをロード.               |
+  | `plot_ic()`       |     `None`      | AIC と BIC の値をプロット.                       |
+
+### `<func> load_sample(...) -> Tuple[numpy.ndarray, numpy.ndarray]`
+
+- Returns input array of specified states and errors.
+
+| Arguments  |              type               | Mandatory | Description                                     |
+| :--------- | :-----------------------------: | :-------: | :---------------------------------------------- |
+| `analyzer` | `PerceptionPerformanceAnalyzer` |    Yes    | `PerceptionPerformanceAnalyzer` のインスタンス. |
+| `state`    |           `List[str]`           |    Yes    | 対象となる状態量名のリスト.                     |
+| `error`    |           `List[str]`           |    Yes    | 対象となる誤差名のリスト.                       |
+
+### Example usage
+
+```python
+from perception_eval.tool import PerceptionPerformanceAnalyzer, GMM, load_sample
+import numpy as np
+
+# PerceptionPerformanceAnalyzerの初期化
+analyzer = PerceptionPerformanceAnalyzer(...)
+
+# サンプルのロード, X: state, Y: error
+state = ["x", "y", "yaw", "vx", "xy"]
+error = ["x", "y"]
+
+# X: (N, 5), Y: (N, 2)
+X, Y = load_sample(analyzer, state, error)
+sample = np.concatenate([X, Y], axis=-1)  # (N, 7)
+
+# モデルパラメータの推定
+model = GMM(max_k)
+model.fit(sample)
+
+# X(状態量)からY(誤差)を予測．
+y_pred = model.predict(X)  # (N, 2)
+```
