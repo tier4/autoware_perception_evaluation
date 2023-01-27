@@ -239,11 +239,15 @@ if __name__ == "__main__":
     detection_analyzer = PerceptionPerformanceAnalyzer(detection_lsim.evaluator.evaluator_config)
     detection_analyzer.add(detection_lsim.evaluator.frame_results)
     score_df, error_df = detection_analyzer.analyze()
-    logging.info(score_df.to_string())
-    logging.info(error_df.to_string())
+    if score_df is not None:
+        logging.info(score_df.to_string())
+    if error_df is not None:
+        logging.info(error_df.to_string())
 
-    # detection_analyzer.plot_by_time("4bae7e75c7de70be980ce20ce8cbb642", ["x", "y"])
-    # detection_analyzer.plot_num_objects()
+    # detection_analyzer.plot_state("4bae7e75c7de70be980ce20ce8cbb642", ["x", "y"])
+    # detection_analyzer.plot_error(["x", "y"])
+    # detection_analyzer.plot_num_object()
+    # detection_analyzer.box_plot()
 
     # ========================================= Tracking =========================================
     print("=" * 50 + "Start Tracking" + "=" * 50)
@@ -311,8 +315,10 @@ if __name__ == "__main__":
     tracking_analyzer = PerceptionPerformanceAnalyzer(tracking_lsim.evaluator.evaluator_config)
     tracking_analyzer.add(tracking_lsim.evaluator.frame_results)
     score_df, error_df = tracking_analyzer.analyze()
-    logging.info(score_df.to_string())
-    logging.info(error_df.to_string())
+    if score_df is not None:
+        logging.info(score_df.to_string())
+    if error_df is not None:
+        logging.info(error_df.to_string())
 
     # Clean up tmpdir
     if args.use_tmpdir:
