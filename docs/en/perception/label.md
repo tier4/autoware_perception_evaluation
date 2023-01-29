@@ -10,6 +10,9 @@
 |                            |              | vehicle.car                            |
 |                            |              | vehicle.construction                   |
 |                            |              | vehicle.emergency (ambulance & police) |
+|                            |              | vehicle.police                         |
+|                            |              | vehicle.fire                           |
+|                            |              | vehicle.ambulance                      |
 | `AutowareLabel.TRUCK`      |   "truck"    | truck                                  |
 |                            |              | vehicle.truck                          |
 |                            |              | trailer                                |
@@ -38,6 +41,8 @@
 |                            |              | movable_object.trafficcone             |
 |                            |              | movable_object.traffic_cone            |
 |                            |              | static_object.bicycle rack             |
+|                            |              | static_object.bollard                  |
+|                            |              | static_object.forklift                 |
 
 ### Merge similar labels option
 
@@ -52,6 +57,9 @@
 |                            |              | vehicle.car                            |
 |                            |              | vehicle.construction                   |
 |                            |              | vehicle.emergency (ambulance & police) |
+|                            |              | vehicle.police                         |
+|                            |              | vehicle.fire                           |
+|                            |              | vehicle.ambulance                      |
 |                            |              | truck                                  |
 |                            |              | vehicle.truck                          |
 |                            |              | trailer                                |
@@ -80,6 +88,8 @@
 |                            |              | movable_object.trafficcone             |
 |                            |              | movable_object.traffic_cone            |
 |                            |              | static_object.bicycle rack             |
+|                            |              | static_object.bollard                  |
+|                            |              | static_object.forklift                 |
 
 ## `TrafficLightLabel`
 
