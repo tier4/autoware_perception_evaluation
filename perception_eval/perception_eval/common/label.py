@@ -68,6 +68,9 @@ class AutowareLabel(LabelBase):
             (AutowareLabel.CAR, "vehicle.car"),
             (AutowareLabel.CAR, "vehicle.construction"),
             (AutowareLabel.CAR, "vehicle.emergency (ambulance & police)"),
+            (AutowareLabel.CAR, "vehicle.police"),
+            (AutowareLabel.CAR, "vehicle.fire"),
+            (AutowareLabel.CAR, "vehicle.ambulance"),
             (AutowareLabel.PEDESTRIAN, "pedestrian"),
             (AutowareLabel.PEDESTRIAN, "pedestrian.adult"),
             (AutowareLabel.PEDESTRIAN, "pedestrian.child"),
@@ -85,6 +88,7 @@ class AutowareLabel(LabelBase):
             (AutowareLabel.UNKNOWN, "movable_object.traffic_cone"),
             (AutowareLabel.UNKNOWN, "static_object.bicycle rack"),
             (AutowareLabel.UNKNOWN, "static_object.bollard"),
+            (AutowareLabel.UNKNOWN, "forklift"),
         ]
         if merge_similar_labels:
             pair_list += [
