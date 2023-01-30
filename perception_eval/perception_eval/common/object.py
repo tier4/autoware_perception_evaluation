@@ -49,8 +49,7 @@ class DynamicObject:
         self.tracked_path (Optional[List[ObjectState]]): List of the past states.
 
         # Prediction
-        predicted_confidence (Optional[float]): Prediction score.
-        predicted_path (Optional[List[ObjectState]]): List of the future states.
+        predicted_paths (Optional[List[ObjectPath]]): List of the future states.
 
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
 
@@ -69,17 +68,17 @@ class DynamicObject:
         tracked_orientations (Optional[List[Quaternion]]):
                 Sequence of quaternions for tracked object. Defaults to None.
         tracked_sizes (Optional[List[Tuple[float, float, float]]]):
-                The list of bounding box size for tracked object. Defaults to None.
-        tracked_twists (Optional[List[Tuple[float, float, float]]]):
-                The list of twist for tracked object. Defaults to None.
+                Sequence of bounding box sizes for tracked object. Defaults to None.
+        tracked_velocities (Optional[List[Tuple[float, float, float]]]):
+                Sequence of velocities for tracked object. Defaults to None.
         predicted_positions (Optional[List[Tuple[float, float, float]]]):
-                The list of position for predicted object. Defaults to None.
+                Sequence of positions for predicted object. Defaults to None.
         predicted_orientations (Optional[List[Quaternion]]):
-                The list of quaternion for predicted object. Defaults to None.
+                Sequence of quaternions for predicted object. Defaults to None.
         predicted_sizes (Optional[List[Tuple[float, float, float]]]):
-                The list of bounding box size for predicted object. Defaults to None.
-        predicted_twists (Optional[List[Tuple[float, float, float]]]):
-                The list of twist for predicted object. Defaults to None.
+                Sequence of bounding box sizes for predicted object. Defaults to None.
+        predicted_velocities (Optional[List[Tuple[float, float, float]]]):
+                Sequence of velocities for predicted object. Defaults to None.
         predicted_confidence (Optional[float]): Prediction score. Defaults to None.
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
     """
@@ -221,8 +220,7 @@ class DynamicObject:
         return corners
 
     def get_footprint(self) -> Polygon:
-        """[summary]
-        Get footprint polygon from an object
+        """Get footprint polygon from an object
 
         Returns:
             Polygon: The footprint polygon of object. It consists of 4 corner 2d position of
@@ -335,8 +333,7 @@ class DynamicObject:
         num_waypoints: Optional[int] = None,
         padding: float = np.nan,
     ) -> Optional[np.ndarray]:
-        """[summary]
-        Returns errors of path as numpy.ndarray.
+        """Returns errors of path as numpy.ndarray.
 
         Args:
             other (Optional[DynamicObject]): DynamicObject instance.

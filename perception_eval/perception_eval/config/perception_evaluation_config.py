@@ -32,9 +32,11 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
     """Configuration class for perception evaluation.
 
     Directory structure to save log and visualization result is following
-    - result_root_directory/
+    ```
+    result_root_directory/
         ├── log_directory/
         └── visualization_directory/
+    ```
 
     Attributes:
         dataset_paths (List[str]): Dataset paths list.

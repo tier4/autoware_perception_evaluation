@@ -255,12 +255,12 @@ class MetricsScore:
                 matching_threshold_list=distance_threshold_,
             )
             self.prediction_scores.append(prediction_score_)
-        for iou_threshold_bev_ in self.prediction_config.iou_bev_thresholds:
+        for iou_threshold_bev_ in self.prediction_config.iou_2d_thresholds:
             prediction_score_ = PredictionMetricsScore(
                 object_results_dict=object_results,
                 num_ground_truth_dict=num_ground_truth,
                 target_labels=self.prediction_config.target_labels,
-                matching_mode=MatchingMode.IOUBEV,
+                matching_mode=MatchingMode.IOU2D,
                 matching_threshold_list=iou_threshold_bev_,
             )
             self.prediction_scores.append(prediction_score_)

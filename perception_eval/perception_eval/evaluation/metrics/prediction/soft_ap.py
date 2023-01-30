@@ -18,11 +18,12 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
 from perception_eval.common.threshold import get_label_threshold
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching.object_matching import MatchingMode
-from perception_eval.evaluation.metrics.prediction.utils import prepare_path
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+
+from .utils import prepare_path
 
 
 class SoftAp:
@@ -36,7 +37,7 @@ class SoftAp:
 
     Attributes:
         self.num_ground_truth (int)
-        self.target_labels (List[AutowareLabel])
+        self.target_labels (List[LabelType])
         self.matching_mode (MatchingMode)
         self.matching_threshold_list (List[float])
         self.top_k (Optional[int])
@@ -48,7 +49,7 @@ class SoftAp:
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
         num_ground_truth: int,
-        target_labels: List[AutowareLabel],
+        target_labels: List[LabelType],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
         top_k: Optional[int] = 1,
@@ -61,7 +62,7 @@ class SoftAp:
         Args:
             object_results (List[DynamicObjectWithPerceptionResult]):
             num_ground_truth (int):
-            target_labels (List[AutowareLabel]):
+            target_labels (List[LabelType]):
             matching_mode (MatchingMode):
             matching_threshold_list (List[float])
             num_path_frames (int): Number of horizontal frames. Defaults to 10[frames].
@@ -71,7 +72,7 @@ class SoftAp:
 
         self.num_ground_truth: int = num_ground_truth
 
-        self.target_labels: List[AutowareLabel] = target_labels
+        self.target_labels: List[LabelType] = target_labels
         self.matching_mode: MatchingMode = matching_mode
         self.matching_threshold_list: List[float] = matching_threshold_list
         self.top_k: Optional[int] = top_k

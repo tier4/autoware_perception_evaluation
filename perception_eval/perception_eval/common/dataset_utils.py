@@ -240,7 +240,7 @@ def _convert_nuscenes_box_to_dynamic_object(
         tracked_positions=tracked_positions,
         tracked_orientations=tracked_orientations,
         tracked_sizes=tracked_sizes,
-        tracked_twists=tracked_velocities,
+        tracked_velocities=tracked_velocities,
         predicted_positions=predicted_positions,
         predicted_orientations=predicted_orientations,
         predicted_sizes=predicted_sizes,

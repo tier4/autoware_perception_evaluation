@@ -23,8 +23,21 @@ from pyquaternion import Quaternion
 
 
 class ObjectState:
-    """[summary]
-    Object state class
+    """Object state class.
+
+    Attributes:
+        position (Tuple[float, float, float]) : center_x, center_y, center_z [m]
+        orientation (Quaternion) : Quaternion class.
+            See reference http://kieranwynn.github.io/pyquaternion/
+        size (Tuple[float, float, float]): bounding box size of (wx, wy, wz) [m]
+        velocity (Tuple[float, float, float]): velocity of (vx, vy, vz) [m/s]
+
+    Args:
+        position (Tuple[float, float, float]) : center_x, center_y, center_z [m]
+        orientation (Quaternion) : Quaternion class.
+            See reference http://kieranwynn.github.io/pyquaternion/
+        size (Tuple[float, float, float]): bounding box size of (wx, wy, wz) [m]
+        velocity (Tuple[float, float, float]): velocity of (vx, vy, vz) [m/s]
     """
 
     def __init__(
@@ -34,23 +47,13 @@ class ObjectState:
         size: Optional[Tuple[float, float, float]] = None,
         velocity: Optional[Tuple[float, float, float]] = None,
     ) -> None:
-        """
-        Args:
-            position (Tuple[float, float, float]) : center_x, center_y, center_z [m]
-            orientation (Quaternion) : Quaternion class.
-                                       See reference http://kieranwynn.github.io/pyquaternion/
-            size (Tuple[float, float, float]): bounding box size of (wx, wy, wz) [m]
-            velocity (Tuple[float, float, float]): velocity of (vx, vy, vz) [m/s]
-        """
-
         self.position: Tuple[float, float, float] = position
         self.orientation: Quaternion = orientation
         self.size: Tuple[float, float, float] = size
         self.velocity: Tuple[float, float, float] = velocity
 
     def get_position_error(self, other: ObjectState) -> Tuple[float, float, float]:
-        """[summary]
-        Returns the position error between other and itself.
+        """Returns the position error between other and itself.
 
         Args:
             other (ObjectState): Other state.
@@ -65,8 +68,7 @@ class ObjectState:
         )
 
     def get_size_error(self, other: ObjectState) -> Tuple[float, float, float]:
-        """[summary]
-        Returns the size error between other and itself.
+        """Returns the size error between other and itself.
 
         Args:
             other (ObjectState): Other state.
@@ -81,8 +83,7 @@ class ObjectState:
         )
 
     def get_velocity_error(self, other: ObjectState) -> Tuple[float, float, float]:
-        """[summary]
-        Returns the velocity error between other and itself.
+        """Returns the velocity error between other and itself.
 
         Args:
             other (ObjectState): Other state.
@@ -98,18 +99,33 @@ class ObjectState:
 
 
 class ObjectPath:
-    """[summary]"""
+    """Object path class.
+
+    You can access corresponding state with its index as shown below.
+    ```
+    >>> path = ObjectPath(states, confidence)
+    >>> for idx in range(len(path)):
+            state = path[idx]
+    ```
+
+    Attributes:
+        states (List[ObjectState]): List of ObjectState instances.
+        confidence (float): Path confidence in [0, 1].
+
+    Args:
+        states (List[ObjectState]): List of ObjectState instances.
+        confidence (float): Path confidence in [0, 1].
+    """
 
     def __init__(self, states: List[ObjectState], confidence: float) -> None:
         self.states: List[ObjectState] = states
         self.confidence: float = confidence
 
     def __getitem__(self, idx: int) -> Union[ObjectState, List[ObjectState]]:
-        """[summary]
-        Returns Nth state.
+        """Returns Nth state.
 
         Args:
-            idx (int)
+            idx (int): Index.
 
         Returns:
             Union[ObjectState, List[ObjectState]]
@@ -127,8 +143,7 @@ class ObjectPath:
         raise StopIteration
 
     def __len__(self) -> int:
-        """[summary]
-        Returns length of states.
+        """Returns length of states.
 
         Returns:
             int: length of states.
