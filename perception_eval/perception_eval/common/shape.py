@@ -77,7 +77,7 @@ class Shape:
             Footprint should be with respect to each object's coordinate system.
 
     Args:
-        type (Union[str, ShapeType]): Type of shape, BOUNDING_BOX, CYLINDER or POLYGON.
+        shape_type (Union[str, ShapeType]): Type of shape, BOUNDING_BOX, CYLINDER or POLYGON.
         size (Tuple[float, float, float]): Size of bbox, (width, length, height) order.
             - BOUNDING_BOX:
                 (width, length, height)
@@ -92,18 +92,18 @@ class Shape:
 
     def __init__(
         self,
-        type: Union[str, ShapeType],
+        shape_type: Union[str, ShapeType],
         size: Tuple[float, float, float],
         footprint: Optional[Polygon] = None,
     ) -> None:
-        if isinstance(type, str):
-            type = ShapeType.from_value(type)
+        if isinstance(shape_type, str):
+            shape_type = ShapeType.from_value(shape_type)
 
-        if type == ShapeType.POLYGON and footprint is None:
+        if shape_type == ShapeType.POLYGON and footprint is None:
             raise RuntimeError("For POLYGON shape objects, footprint must be set")
 
-        self.type: ShapeType = type
-        self.size = (size[0], size[0], size[2]) if type == ShapeType.CYLINDER else size
+        self.type: ShapeType = shape_type
+        self.size = (size[0], size[0], size[2]) if shape_type == ShapeType.CYLINDER else size
         self.footprint: Optional[Polygon] = footprint if footprint else self.get_footprint()
 
     def get_footprint(self) -> Polygon:

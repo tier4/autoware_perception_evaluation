@@ -174,7 +174,7 @@ def get_objects_with_difference(
             radians=object_.state.orientation.radians + diff_yaw,
         )
 
-        shape: Shape = Shape(type=object_.state.shape_type, size=object_.state.size)
+        shape: Shape = Shape(shape_type=object_.state.shape_type, size=object_.state.size)
 
         test_object_: DynamicObject = DynamicObject(
             unix_time=object_.unix_time,
