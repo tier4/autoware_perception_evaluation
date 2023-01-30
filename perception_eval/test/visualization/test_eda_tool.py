@@ -348,7 +348,7 @@ class TestEDAManager:
             frame_id=FrameID.BASE_LINK,
             position=(1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            shape=Shape(type=ShapeType.BOUNDING_BOX, size=(1.0, 2.0, 1.0)),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 2.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.BICYCLE, "bicycle", []),
             velocity=(1.0, 1.0, 1.0),
