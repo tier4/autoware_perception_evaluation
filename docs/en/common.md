@@ -10,7 +10,7 @@
 | `frame_id`               |             `FrameID`              | FrameID instance, where 3D objects are with respect, BASE_LINK or MAP. |
 | `position`               |    `Tuple[float, float, float]`    | Position (x, y, z).                                                    |
 | `orientation`            |            `Quaternion`            | Quaternion (w, x, y, z).                                               |
-| `size`                   |    `Tuple[float, float, float]`    | Size of box (width, length, depth).                                    |
+| `shape`                  |              `Shape`               | Shape instance that contains box size information, (width, length, depth). |
 | `velocity`               |    `Tuple[float, float, float]`    | Velocity (vx, vy, vz).                                                 |
 | `semantic_score`         |              `float`               | Object's confidence [0, 1].                                            |
 | `semantic_label`         |          `AutowareLabel`           | Label name.                                                            |

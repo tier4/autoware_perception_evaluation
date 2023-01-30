@@ -12,7 +12,7 @@
 | `frame_id`               |                  `FrameID`                   | 3 次元オブジェクトが従う FrameID インスタンス．BASE_LINK または MAP． |
 | `position`               |         `Tuple[float, float, float]`         | 位置 (x, y, z).                                                       |
 | `orientation`            |                 `Quaternion`                 | クォータニオン (w, x, y, z).                                          |
-| `size`                   |         `Tuple[float, float, float]`         | ボックスサイズ (width, length, depth).                                |
+| `shape`                  |                   `Shape`                    | Shapeインスタンス．ボックスサイズ (width, length, depth)の情報等を持つ. |
 | `velocity`               |         `Tuple[float, float, float]`         | 速度 (vx, vy, vz).                                                    |
 | `semantic_score`         |                   `float`                    | 信頼度 [0, 1].                                                        |
 | `semantic_label`         |                 `LabelType`                  | ラベル名.                                                             |
