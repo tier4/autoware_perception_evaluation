@@ -12,67 +12,93 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from enum import Enum
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 import numpy as np
 from shapely.geometry import Polygon
 
 
 class ShapeType(Enum):
-    """[summary]
-    Type of shape
-        - BOUNDING_BOX
-        - CYLINDER
-        - POLYGON
+    """Type of shape.
+
+    BOUNDING_BOX
+    CYLINDER
+    POLYGON
     """
 
     BOUNDING_BOX = "bounding_box"
     CYLINDER = "cylinder"
     POLYGON = "polygon"
 
+    @classmethod
+    def from_value(cls, name: str) -> ShapeType:
+        """Returns ShapeType instance from string.
+
+        Args:
+            name (str): ShapeTYpe name in string.
+
+        Returns:
+            ShapeType: ShapeType instance.
+
+        Raises:
+            ValueError: When unexpected name is specified.
+
+        Examples:
+            >>> ShapeType.from_value("bounding_box")
+            ShapeType.BOUNDING_BOX
+        """
+        for k, v in cls.__members__.items():
+            if v == name:
+                return k
+        raise ValueError(f"Unexpected name: {name}, choose from {list(cls.__members__.keys())}")
+
 
 class Shape:
-    """[summary]
-    Shape class.
+    """Shape class.
 
     NOTE: Footprint of cylinder is rectangle.
 
     Attributes:
-        self.type (ShapeType): Type of shape.
-        self.size (Tuple[float, float, float]): Size of bbox, (width, length, height) order.
+        type (ShapeType): Type of shape.
+        size (Tuple[float, float, float]): Size of bbox, (width, length, height) order.
             - BOUNDING_BOX:
                 (width, length, height)
             - CYLINDER:
                 (diameter, 0.0, height)
             - POLYGON:
                 (0.0, 0.0, height)
-        self.footprint (Optional[Polygon]): When shape is BOUNDING_BOX, it is allowed to be None.
+        footprint (Optional[Polygon]): When shape is BOUNDING_BOX, it is allowed to be None.
+            Footprint should be with respect to each object's coordinate system.
+
+    Args:
+        type (Union[str, ShapeType]): Type of shape, BOUNDING_BOX, CYLINDER or POLYGON.
+        size (Tuple[float, float, float]): Size of bbox, (width, length, height) order.
+            - BOUNDING_BOX:
+                (width, length, height)
+            - CYLINDER:
+                (diameter, 0.0, height)
+            - POLYGON:
+                (0.0, 0.0, height)
+        footprint (Optional[Polygon]): When shape type is BOUNDING_BOX or CYLINDER, this needs not to be set.
+            However, when POLYGON, this must be set. Defaults to None.
             Footprint should be with respect to each object's coordinate system.
     """
 
     def __init__(
         self,
-        type: ShapeType,
+        type: Union[str, ShapeType],
         size: Tuple[float, float, float],
         footprint: Optional[Polygon] = None,
     ) -> None:
-        """
-        Args:
-            type (ShapeType): Type of shape, BOUNDING_BOX, CYLINDER or POLYGON
-            size (Tuple[float, float, float]): Size of bbox, (width, length, height) order.
-                - BOUNDING_BOX:
-                    (width, length, height)
-                - CYLINDER:
-                    (diameter, 0.0, height)
-                - POLYGON:
-                    (0.0, 0.0, height)
-            footprint (Optional[Polygon]): When shape type is BOUNDING_BOX or CYLINDER, this needs not to be set.
-                However, when POLYGON, this must be set. Defaults to None.
-                Footprint should be with respect to each object's coordinate system.
-        """
+        if isinstance(type, str):
+            type = ShapeType.from_value(type)
+
         if type == ShapeType.POLYGON and footprint is None:
             raise RuntimeError("For POLYGON shape objects, footprint must be set")
 
@@ -81,8 +107,7 @@ class Shape:
         self.footprint: Optional[Polygon] = footprint if footprint else self.get_footprint()
 
     def get_footprint(self) -> Polygon:
-        """[summary]
-        Calculate footprint for type of BOUNDING_BOX or CYLINDER with respect to each object's coordinate system.
+        """Calculate footprint for type of BOUNDING_BOX or CYLINDER with respect to each object's coordinate system.
 
         Returns:
             footprint (Polygon): Object's footprint.
