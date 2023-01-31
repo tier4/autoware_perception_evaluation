@@ -81,7 +81,6 @@ def load_all_datasets(
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
     frame_id: FrameID,
-    camera_type: Optional[str] = None,
     load_raw_data: bool = False,
 ) -> List[FrameGroundTruth]:
     """
@@ -92,7 +91,6 @@ def load_all_datasets(
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
         frame_id (FrameID): FrameID instance, where objects are with respect.
-        camera_type (Optional[str]): Camera name. Only specified in 2D evaluation. Defaults to None.
         load_raw_data (bool): The flag of setting pointcloud or image.
             For 3D task, pointcloud will be loaded. For 2D, image will be loaded. Defaults to False.
 
@@ -117,7 +115,6 @@ def load_all_datasets(
             evaluation_task=evaluation_task,
             label_converter=label_converter,
             frame_id=frame_id,
-            camera_type=camera_type,
             load_raw_data=load_raw_data,
         )
     logging.info("Finish loading dataset\n" + _get_str_objects_number_info(label_converter))
@@ -129,7 +126,6 @@ def _load_dataset(
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
     frame_id: FrameID,
-    camera_type: Optional[str],
     load_raw_data: bool,
 ) -> List[FrameGroundTruth]:
     """
@@ -139,7 +135,6 @@ def _load_dataset(
         evaluation_tasks (EvaluationTask): The evaluation task.
         label_converter (LabelConverter): LabelConvertor instance.
         frame_id (FrameID): FrameID instance, where objects are with respect.
-        camera_type (Optional[str]): Name of camera. Specify in 2D evaluation.
         load_raw_data (bool): Whether load pointcloud/image data.
 
     Reference
@@ -168,8 +163,6 @@ def _load_dataset(
     dataset: List[FrameGroundTruth] = []
     for n, sample_token in enumerate(tqdm(sample_tokens)):
         if evaluation_task.is_2d():
-            if camera_type is None:
-                raise RuntimeError("For 2D evaluation `camera_type must be specified.`")
             frame = _sample_to_frame_2d(
                 nusc=nusc,
                 nuim=nuim,
@@ -178,7 +171,6 @@ def _load_dataset(
                 label_converter=label_converter,
                 frame_id=frame_id,
                 frame_name=str(n),
-                camera_type=camera_type,
                 load_raw_data=load_raw_data,
             )
         else:

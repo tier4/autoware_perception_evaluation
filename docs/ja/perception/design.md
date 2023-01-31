@@ -52,12 +52,11 @@ json_result = json.dump(dict_result)
   | Arguments                |       type       | Description                                                                                                                      |
   | :----------------------- | :--------------: | :------------------------------------------------------------------------------------------------------------------------------- |
   | `dataset_path`           |   `List[str]`    | データセットパス(List[]で指定するが複数データ対応については TBD)                                                                 |
-  | `frame_id`               |      `str`       | オブジェクトの座標系，`map` or `base_link`                                                                                       |
+  | `frame_id`               |    `FrameID`     | オブジェクトが従う FrameID インスタンス.                                                                                         |
   | `merge_similar_labels`   |      `bool`      | 類似ラベルをマージするかの flag[参考](label.md)                                                                                  |
   | `result_root_directory`  |      `str`       | 評価結果，ログ，可視化結果等を保存するディレクトリのパス                                                                         |
   | `evaluation_config_dict` | `Dict[str, Any]` | 評価パラメータ                                                                                                                   |
   | `label_prefix`           |      `str`       | ラベルのプレフィックス. `autoware` の場合, `AutowareLabel`がロードされ，`traffic_light`の場合，`TrafficLightLabel`がロードされる |
-  | `camera_type`            | `Optional[str]`  | 2D 評価の場合のみ使用．T4dataset/data/に含まれるカメラ名を指定する．                                                             |
   | `load_raw_data`          |      `bool`      | データセットから点群/画像データをロードするか                                                                                    |
 
 ##### `evaluation_config_dict`

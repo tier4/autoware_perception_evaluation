@@ -37,12 +37,11 @@
   | Arguments                |       type       | Description                                                                                                                          |
   | :----------------------- | :--------------: | :----------------------------------------------------------------------------------------------------------------------------------- |
   | `dataset_path`           |   `List[str]`    | Dataset path(TBD supporting multiple dataset paths)                                                                                  |
-  | `frame_id`               |      `str`       | Name of coordinate system which objects respect to，`map` or `base_link`                                                             |
+  | `frame_id`               |    `FrameID`     | FrameID instance, where objects are with respect.                                                                                    |
   | `merge_similar_labels`   |      `bool`      | Whether merge similar labels([Reference])(label.md)                                                                                  |
   | `result_root_directory`  |      `str`       | Directory path to save result of log and visualization                                                                               |
   | `evaluation_config_dict` | `Dict[str, Any]` | Parameters of evaluation                                                                                                             |
   | `label_prefix`           |      `str`       | Prefix of label. If `autoware`, then `AutowareLabel` will be loaded. Also, `traffic_light`, then `TrafficLightLabel` will be loaded. |
-  | `camera_type`            | `Optional[str]`  | Use only 2D evaluation. Specify camera name in T4dataset/data.                                                                       |
   | `load_raw_data`          |      `bool`      | Whether load pointcloud/image data from dataset                                                                                      |
 
 ##### `evaluation_config_dict`

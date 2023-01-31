@@ -46,7 +46,6 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         label_converter (LabelConverter): LabelConverter instance.
         evaluation_task (EvaluationTask): EvaluationTask instance.
         label_prefix (str): Prefix of label type. Choose from [`autoware", `traffic_light`]. Defaults to autoware.
-        camera_type (Optional[str]): Camera name. Specify in 2D evaluation. Defaults to None.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
         target_labels (List[LabelType]): Target labels list.
         filtering_params (Dict[str, Any]): Filtering parameters.
@@ -63,7 +62,6 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         result_root_directory (str): Directory path to save result.
         evaluation_config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
         label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
-        camera_type (Optional[str]): Name of camera. Specify in 2D evaluation. Defaults to None.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
     """
 
@@ -84,7 +82,6 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
         label_prefix: str = "autoware",
-        camera_type: Optional[str] = None,
         load_raw_data: bool = False,
     ) -> None:
         super().__init__(
@@ -94,7 +91,6 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
             label_prefix=label_prefix,
-            camera_type=camera_type,
             load_raw_data=load_raw_data,
         )
         self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)

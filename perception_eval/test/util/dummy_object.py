@@ -139,9 +139,11 @@ def make_dummy_data2d(use_roi: bool = True) -> Tuple[List[DynamicObject2D], List
     Returns:
         List[DynamicObject2D], List[DynamicObject2D]: dummy_estimated_objects and dummy_ground_truth_objects.
     """
+    frame_id = FrameID.CAM_FRONT
     dummy_estimated_objects: List[DynamicObject2D] = [
         DynamicObject2D(
             unix_time=100,
+            frame_id=frame_id,
             semantic_score=0.9,
             semantic_label=AutowareLabel.CAR,
             roi=(100, 100, 200, 100) if use_roi else None,
@@ -149,6 +151,7 @@ def make_dummy_data2d(use_roi: bool = True) -> Tuple[List[DynamicObject2D], List
         ),
         DynamicObject2D(
             unix_time=100,
+            frame_id=frame_id,
             semantic_score=0.9,
             semantic_label=AutowareLabel.BICYCLE,
             roi=(0, 0, 50, 50) if use_roi else None,
@@ -156,6 +159,7 @@ def make_dummy_data2d(use_roi: bool = True) -> Tuple[List[DynamicObject2D], List
         ),
         DynamicObject2D(
             unix_time=100,
+            frame_id=frame_id,
             semantic_score=0.9,
             semantic_label=AutowareLabel.CAR,
             roi=(200, 200, 200, 100) if use_roi else None,
@@ -165,6 +169,7 @@ def make_dummy_data2d(use_roi: bool = True) -> Tuple[List[DynamicObject2D], List
     dummy_ground_truth_objects: List[DynamicObject2D] = [
         DynamicObject2D(
             unix_time=100,
+            frame_id=frame_id,
             semantic_score=1.0,
             semantic_label=AutowareLabel.CAR,
             roi=(100, 100, 200, 100) if use_roi else None,
@@ -172,6 +177,7 @@ def make_dummy_data2d(use_roi: bool = True) -> Tuple[List[DynamicObject2D], List
         ),
         DynamicObject2D(
             unix_time=100,
+            frame_id=frame_id,
             semantic_score=1.0,
             semantic_label=AutowareLabel.BICYCLE,
             roi=(0, 0, 50, 50) if use_roi else None,
@@ -179,6 +185,7 @@ def make_dummy_data2d(use_roi: bool = True) -> Tuple[List[DynamicObject2D], List
         ),
         DynamicObject2D(
             unix_time=100,
+            frame_id=frame_id,
             semantic_score=1.0,
             semantic_label=AutowareLabel.PEDESTRIAN,
             roi=(200, 200, 200, 100) if use_roi else None,
@@ -186,6 +193,7 @@ def make_dummy_data2d(use_roi: bool = True) -> Tuple[List[DynamicObject2D], List
         ),
         DynamicObject2D(
             unix_time=100,
+            frame_id=frame_id,
             semantic_score=1.0,
             semantic_label=AutowareLabel.MOTORBIKE,
             roi=(300, 100, 50, 50) if use_roi else None,

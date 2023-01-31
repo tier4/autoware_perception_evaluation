@@ -23,8 +23,19 @@ from perception_eval.common.evaluation_task import EvaluationTask
 
 
 class FrameID(Enum):
+    # 3D
     BASE_LINK = "base_link"
     MAP = "map"
+
+    # 2D
+    CAM_FRONT = "cam_front"
+    CAM_FRONT_RIGHT = "cam_front_right"
+    CAM_FRONT_LEFT = "cam_front_left"
+    CAM_BACK = "cam_back"
+    CAM_BACK_LEFT = "cam_back_left"
+    CAM_BACK_RIGHT = "cam_back_right"
+    CAM_TRAFFIC_LIGHT_NEAR = "cam_traffic_licht_near"
+    CAM_TRAFFIC_LIGHT_FAR = "cam_traffic_light_far"
 
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, str):
@@ -36,21 +47,44 @@ class FrameID(Enum):
 
     @classmethod
     def from_value(cls, name: str) -> FrameID:
-        for k, v in cls.__members__.items():
+        """Returns FrameID from its value.
+
+        NOTE:
+            This method allow that input value is upper case.
+
+        Args:
+            name (str): Value in string.
+
+        Returns:
+            FrameID: Corresponding FrameID instance.
+        """
+        name = name.lower()
+        for _, v in cls.__members__.items():
             if v == name:
-                return k
+                return v
+        raise ValueError(f"Unexpected value: {name}")
 
     @classmethod
     def from_task(cls, task: Union[str, EvaluationTask]) -> FrameID:
-        """[summary]
-        Return FrameID from EvaluationTask.
+        """Return FrameID from EvaluationTask.
 
         Args:
             task (Union[str, EvaluationTask]): Task name.
 
         Returns:
             FrameID: For DETECTION or SENSING, Returns BASE_LINK. For TRACKING or PREDICTION, returns MAP.
+
+        Raises:
+            ValueError: When `task` is evaluation for 2D input data.
         """
+        if isinstance(task, str):
+            task = EvaluationTask.from_value(task)
+
+        if task.is_2d():
+            raise ValueError(
+                "For 2D task, FrameID must be initialized explicitly, or use `FrameID.from_value(name)`."
+            )
+
         if task in (EvaluationTask.DETECTION, EvaluationTask.SENSING):
             return FrameID.BASE_LINK
         elif task in (EvaluationTask.TRACKING, EvaluationTask.PREDICTION):

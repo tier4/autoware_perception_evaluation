@@ -364,7 +364,6 @@ def _sample_to_frame_2d(
     label_converter: LabelConverter,
     frame_id: FrameID,
     frame_name: str,
-    camera_type: str,
     load_raw_data: bool,
 ) -> dataset.FrameGroundTruth:
     """Returns FrameGroundTruth constructed with DynamicObject2D.
@@ -375,9 +374,8 @@ def _sample_to_frame_2d(
         sample_token (str): Sample token.
         evaluation_task (EvaluationTask): 2D evaluation Task.
         label_converter (LabelConverter): LabelConverter instance.
-        frame_id (FrameID): FrameID instance, where 2D objects are with respect, related to CAMERA.
+        frame_id (FrameID): FrameID instance, where 2D objects are with respect, related to CAM_**.
         frame_name (str): Name of frame.
-        camera_type (str): Name of camera.
         load_raw_data (bool): The flag to load image data.
 
     Returns:
@@ -387,6 +385,7 @@ def _sample_to_frame_2d(
     sample: Dict[str, Any] = nuim.get("sample", sample_token)
 
     unix_time: int = sample["timestamp"]
+    camera_type: str = frame_id.value.upper()
     sample_data_token: str = nusc_sample["data"][camera_type]
 
     object_annotations: List[Dict[str, Any]] = [
@@ -422,6 +421,7 @@ def _sample_to_frame_2d(
 
         object_: DynamicObject2D = DynamicObject2D(
             unix_time=unix_time,
+            frame_id=frame_id,
             semantic_score=1.0,
             semantic_label=semantic_label,
             roi=roi,

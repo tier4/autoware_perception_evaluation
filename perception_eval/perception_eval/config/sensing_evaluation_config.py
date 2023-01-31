@@ -39,7 +39,6 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         label_converter (LabelConverter): LabelConverter instance.
         evaluation_task (EvaluationTask): EvaluationTask instance.
         label_prefix (str): Prefix of label type. Choose from [`autoware", `traffic_light`]. Defaults to autoware.
-        camera_type (Optional[str]): Camera name. Specify in 2D evaluation. Defaults to None.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
         target_labels (List[LabelType]): Target labels list.
         filtering_params (Dict[str, Any]): Filtering parameters.
