@@ -22,7 +22,6 @@
   ```txt
     Arguments:
       dataset_paths (List[str]): データセットのパス
-      does_use_pointcloud (bool): データセットの点群を読み込むかどうか
       result_root_directory (str): 評価結果の保存ディレクトリパス
       log_directory (str): ログの保存ディレクトリパス
       visualization_directory (str): 可視化結果の保存ディレクトリパス
@@ -30,6 +29,7 @@
       box_scale_0m (float): 0m位置でのbounding boxのスケーリング係数
       box_scale_100m (float): 100m位置でのbounding boxのスケーリング係数
       min_points_threshold (int): bounding box内で検出されるべき最低限の点群数の閾値
+      load_raw_data (bool): データセットの点群/画像を読み込むかどうか
   ```
 
 - SensingEvaluationManager: 評価全体のための manager[(参照)](../../../perception_eval/perception_eval/manager/perception_evaluation_manager.py)
@@ -69,6 +69,7 @@
 
   ```txt
     Arguments:
+      target_uuids (List[str]): フィルタリング対象となるGTのuuidのリスト
       bbox_scale_0m (float): 0m地点でのBounding boxのスケーリング係数
       bbox_scale_100m (float): 100m地点でのBounding boxのスケーリング係数
       min_points_threshold (int): bounding box内で検出されるべき最低限の点群数の閾値

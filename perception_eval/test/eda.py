@@ -103,7 +103,6 @@ def get_all_ground_truths(dataset_paths: List[str]) -> List[DynamicObject]:
     """
     frame_results: List[FrameGroundTruth] = load_all_datasets(
         dataset_paths,
-        does_use_pointcloud=False,
         evaluation_task=EvaluationTask.DETECTION,
         label_converter=LabelConverter(merge_similar_labels=False),
         frame_id=FrameID.BASE_LINK,

@@ -65,3 +65,7 @@ Each visualized image will be saved in `visualization_directory_path` specified 
 | `min_point_numbers`            |      `List[int]`      |    No     | Minimum number of pointcloud included in bounding box of GT. |
 | `confidence_threshold_list`    |     `List[float]`     |    No     | Threshold list of estimation's confidence.                   |
 | `target_uuids`                 |      `List[str]`      |    No     | List of target GT's uuid.                                    |
+
+## Known issues / Limitations
+
+- `PerceptionVisualizer()` only supports 3D evaluation.

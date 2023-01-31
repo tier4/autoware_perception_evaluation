@@ -12,29 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import List
+from typing import Optional
+
 
 class SensingFrameConfig:
-    """[summary]
-    Config class for sensing detection evaluation per frame.
+    """Config class for sensing detection evaluation per frame.
 
     Attributes:
-        self.box_scale_0m (float): Scale factor for bounding box at 0m.
-        self.box_scale_100m (float): Scale factor for bounding box at 100m.
-        self.min_points_threshold (int): The minimum number of points should be detected in bounding box.
+        box_scale_0m (float): Scale factor for bounding box at 0m.
+        box_scale_100m (float): Scale factor for bounding box at 100m.
+        min_points_threshold (int): The minimum number of points should be detected in bounding box.
+
+    Args:
+        target_uuids (Optional[List[str]]): List of target uuids to be filtered.
+        box_scale_0m (float): Scale factor for bounding box at 0m.
+        box_scale_100m (float): Scale factor for bounding box at 100m.
+        min_points_threshold (int): The minimum number of points should be detected in bounding box.
     """
 
     def __init__(
         self,
+        target_uuids: Optional[List[str]],
         box_scale_0m: float,
         box_scale_100m: float,
         min_points_threshold: int,
     ) -> None:
-        """[summary]
-        Args:
-            box_scale_0m (float): Scale factor for bounding box at 0m.
-            box_scale_100m (float): Scale factor for bounding box at 100m.
-            min_points_threshold (int): The minimum number of points should be detected in bounding box.
-        """
+        self.target_uuids: Optional[List[str]] = target_uuids
         self.box_scale_0m: float = box_scale_0m
         self.box_scale_100m: float = box_scale_100m
         self.min_points_threshold: int = min_points_threshold

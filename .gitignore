@@ -1,3 +1,6 @@
+# vscode ros cpp setting
+.vscode/c_cpp_properties.json
+
 # tmp data
 perception_eval/data/result
 

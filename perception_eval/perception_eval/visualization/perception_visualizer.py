@@ -32,21 +32,20 @@ from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.status import FrameID
-from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
-from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation import PerceptionFrameResult
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_tp_fp_objects
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.matching.objects_filter import get_fn_objects
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
 from perception_eval.util.math import rotation_matrix_to_euler
 from perception_eval.visualization.color import ColorMap
-from perception_eval.visualization.perception_visualization_config import (
-    PerceptionVisualizationConfig,
-)
 from pyquaternion import Quaternion
 from tqdm import tqdm
+
+from .perception_visualization_config import PerceptionVisualizationConfig
 
 logger = getLogger(__name__)
 

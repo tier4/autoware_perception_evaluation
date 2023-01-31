@@ -18,36 +18,33 @@ from typing import Tuple
 
 import numpy as np
 from perception_eval.common.dataset import FrameGroundTruth
+from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import crop_pointcloud
-from perception_eval.config.sensing_evaluation_config import SensingEvaluationConfig
+from perception_eval.config import SensingEvaluationConfig
+from perception_eval.evaluation import SensingFrameResult
 from perception_eval.evaluation.matching.objects_filter import filter_objects
-from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
+from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
 from perception_eval.util.math import get_bbox_scale
 
 from ._evaluation_manager_base import _EvaluationMangerBase
-from ..common.object import DynamicObject
 
 
 class SensingEvaluationManager(_EvaluationMangerBase):
-    """The class to manage sensing evaluation.
+    """A manager class to evaluate sensing task.
 
     Attributes:
-        - By _EvaluationMangerBase
-        self.evaluator_config (SensingEvaluationConfig): Configuration for sensing evaluation.
-        self.ground_truth_frames (List[FrameGroundTruth]): The list of ground truths per frame.
+        evaluator_config (SensingEvaluationConfig): Configuration for sensing evaluation.
+        ground_truth_frames (List[FrameGroundTruth]): FrameGroundTruth instances list.
+        frame_results (List[SensingFrameResult]): Sensing results list at each frame.
 
-        - By SensingEvaluationManger
-        self.frame_results (List[SensingFrameResult]): The list of sensing result per frame.
+    Args:
+        evaluation_config (SensingEvaluationConfig): Configuration for sensing evaluation.
     """
 
     def __init__(
         self,
         evaluation_config: SensingEvaluationConfig,
     ) -> None:
-        """
-        Args:
-            evaluation_config (SensingEvaluationConfig): The configuration for sensing evaluation.
-        """
         super().__init__(evaluation_config)
         self.frame_results: List[SensingFrameResult] = []
 
@@ -57,23 +54,34 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         ground_truth_now_frame: FrameGroundTruth,
         pointcloud: np.ndarray,
         non_detection_areas: List[List[Tuple[float, float, float]]],
+        sensing_frame_config: Optional[SensingFrameConfig] = None,
     ) -> SensingFrameResult:
-        """[summary]
-        Get sensing result at current frame.
-        The results is kept in self.frame_results.
+        """Get sensing result at current frame.
+
+        Evaluated result is appended to `self.frame_results`.
 
         Args:
-            unix_time (int)
-            ground_truth_now_frame (FrameGroundTruth): If there is no corresponding annotation, allow None.
+            unix_time (int): Unix timestamp [us].
+            ground_truth_now_frame (FrameGroundTruth): FrameGroundTruth instance that has the closest
+                timestamp with `unix_time`.
             pointcloud (np.ndarray): Observed pointcloud.
-            non_detection_area (List[List[Tuple[float, float, float]]]):
-                List of non-detection areas.
+            non_detection_area (List[List[Tuple[float, float, float]]]): List of non-detection areas.
+            sensing_frame_config (Optional[SensingFrameConfig]): Evaluation config for one frame.
+                If not specified, filtering and metrics parameters will be used specified in initialization. Defaults to None.
 
         Returns:
-            result (SensingFrameResult)
+            result (SensingFrameResult): Frame result.
         """
-        ground_truth_objects: List[DynamicObject] = self._filter_objects(ground_truth_now_frame)
-        frame_name: str = ground_truth_now_frame.frame_name
+        if sensing_frame_config is None:
+            sensing_frame_config = SensingFrameConfig(
+                **self.filtering_params,
+                **self.metrics_params,
+            )
+
+        ground_truth_objects: List[DynamicObject] = self._filter_objects(
+            ground_truth_now_frame,
+            sensing_frame_config,
+        )
 
         # Crop pointcloud for non-detection area
         pointcloud_for_non_detection: np.ndarray = self.crop_pointcloud(
@@ -84,9 +92,9 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         )
 
         result = SensingFrameResult(
-            sensing_frame_config=self.evaluator_config.sensing_frame_config,
+            sensing_frame_config=sensing_frame_config,
             unix_time=unix_time,
-            frame_name=frame_name,
+            frame_name=ground_truth_now_frame.frame_name,
         )
 
         result.evaluate_frame(
@@ -98,12 +106,25 @@ class SensingEvaluationManager(_EvaluationMangerBase):
 
         return result
 
-    def _filter_objects(self, frame_ground_truth: FrameGroundTruth) -> List[DynamicObject]:
+    def _filter_objects(
+        self,
+        frame_ground_truth: FrameGroundTruth,
+        sensing_frame_config: SensingFrameConfig,
+    ) -> List[DynamicObject]:
+        """Filter ground truth objects.
+
+        Args:
+            frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
+            sensing_frame_config (SensingFrameConfig): SensingFrameConfig instance.
+
+        Returns:
+            List[DynamicObject]: Filtered ground truth objects.
+        """
         return filter_objects(
             objects=frame_ground_truth.objects,
             is_gt=True,
+            target_uuids=sensing_frame_config.target_uuids,
             ego2map=frame_ground_truth.ego2map,
-            **self.evaluator_config.filtering_params,
         )
 
     def crop_pointcloud(
@@ -113,19 +134,16 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         non_detection_areas: List[List[Tuple[float, float, float]]],
         ego2map: Optional[np.ndarray] = None,
     ) -> List[np.ndarray]:
-        """Crop pointcloud from (N, 3) to (M, 3) with the non-detection area
-        specified in SensingEvaluationConfig.
+        """Crop pointcloud from (N, 3) to (M, 3) with the non-detection area.
 
         Args:
-            ground_truth_objects: List[DynamicObject]
-            pointcloud (numpy.ndarray): The array of pointcloud, in shape (N, 3).
-            non_detection_areas (List[List[Tuple[float, float, float]]]):
-                The list of 3D-polygon areas for non-detection.
-            ego2map (Optional[numpy.ndarray]):4x4 Transform matrix
-                from base_link coordinate system to map coordinate system.
+            ground_truth_objects (List[DynamicObject]): Ground truth objects list.
+            pointcloud (numpy.ndarray): Array of pointcloud, in shape (N, 3).
+            non_detection_areas (List[List[Tuple[float, float, float]]]): List of 3D-polygon areas for non-detection.
+            ego2map (Optional[numpy.ndarray]):4x4 Transform matrix from base_link coordinate system to map coordinate system.
 
         Returns:
-            cropped_pointcloud (List[numpy.ndarray]): The list of cropped pointcloud.
+            cropped_pointcloud (List[numpy.ndarray]): List of cropped pointcloud array.
         """
         cropped_pointcloud: List[np.ndarray] = []
         for non_detection_area in non_detection_areas:

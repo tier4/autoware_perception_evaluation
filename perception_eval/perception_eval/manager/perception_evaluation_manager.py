@@ -12,22 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from typing import List
 from typing import Tuple
 
+from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
-from perception_eval.common.label import AutowareLabel
-from perception_eval.common.object import DynamicObject
-from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
+from perception_eval.common.label import LabelType
+from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
-from perception_eval.evaluation.metrics.metrics import MetricsScore
-from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
-from perception_eval.evaluation.result.perception_pass_fail_result import CriticalObjectFilterConfig
-from perception_eval.evaluation.result.perception_pass_fail_result import PerceptionPassFailConfig
-from perception_eval.visualization.perception_visualizer import PerceptionVisualizer
+from perception_eval.evaluation.metrics import MetricsScore
+from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
+from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from perception_eval.visualization import PerceptionVisualizer
 
 from ._evaluation_manager_base import _EvaluationMangerBase
 from ..evaluation.result.object_result import DynamicObjectWithPerceptionResult
@@ -35,18 +36,18 @@ from ..evaluation.result.object_result import get_object_results
 
 
 class PerceptionEvaluationManager(_EvaluationMangerBase):
-    """[summary]
-    PerceptionEvaluationManager class.
-    This class is management interface for perception interface.
+    """A manager class to evaluate perception task.
 
     Attributes:
-        - By _EvaluationMangerBase
-        self.evaluator_config (PerceptionEvaluatorConfig): Configuration for perception evaluation.
-        self.ground_truth_frames (List[FrameGroundTruth]): Ground truth frames from datasets
+        evaluator_config (PerceptionEvaluatorConfig): Configuration for perception evaluation.
+        ground_truth_frames (List[FrameGroundTruth]): Ground truth frames from datasets
+        target_labels (List[LabelType]): List of target labels.
+        frame_results (List[PerceptionFrameResult]): Perception results list at each frame.
+        visualizer (Optional[PerceptionVisualizer]): Visualization class for perception result.
+            If `self.evaluation_task.is_2d()=True`, this is None.
 
-        - By PerceptionEvaluationManger
-        self.frame_results (List[PerceptionFrameResult]): Evaluation result
-        self.visualizer (PerceptionVisualizer): Visualization class for perception result.
+    Args:
+        evaluator_config (PerceptionEvaluatorConfig): Configuration for perception evaluation.
     """
 
     def __init__(
@@ -54,40 +55,50 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         evaluation_config: PerceptionEvaluationConfig,
     ) -> None:
         super().__init__(evaluation_config=evaluation_config)
-        """[summary]
-
-        Args:
-            evaluator_config (PerceptionEvaluatorConfig): Configuration for perception evaluation.
-        """
-        self.target_labels: List[AutowareLabel] = evaluation_config.target_labels
         self.frame_results: List[PerceptionFrameResult] = []
-        self.visualizer = PerceptionVisualizer.from_eval_cfg(self.evaluator_config)
+        self.visualizer = (
+            None
+            if self.evaluation_task.is_2d()
+            else PerceptionVisualizer.from_eval_cfg(self.evaluator_config)
+        )
+
+    @property
+    def target_labels(self) -> List[LabelType]:
+        return self.evaluator_config.target_labels
+
+    @property
+    def metrics_config(self):
+        return self.evaluator_config.metrics_config
 
     def add_frame_result(
         self,
         unix_time: int,
         ground_truth_now_frame: FrameGroundTruth,
-        estimated_objects: List[DynamicObject],
-        ros_critical_ground_truth_objects: List[DynamicObject],
+        estimated_objects: List[ObjectType],
+        ros_critical_ground_truth_objects: List[ObjectType],
         critical_object_filter_config: CriticalObjectFilterConfig,
         frame_pass_fail_config: PerceptionPassFailConfig,
     ) -> PerceptionFrameResult:
-        """[summary]
-        Evaluate one frame
+        """Get perception result at current frame.
+
+        Evaluated result is appended to `self.frame_results`.
+
+        TODO:
+        - Arrange `CriticalObjectFilterConfig` and `PerceptionPassFailConfig` to `PerceptionFrameConfig`.
+        - Allow input `PerceptionFrameConfig` and `ros_critical_ground_truth_objects` are None.
 
         Args:
-            unix_time (int): Unix time of frame to evaluate [us]
-            ground_truth_now_frame (FrameGroundTruth): Now frame ground truth
-            estimated_objects (List[DynamicObject]): estimated object which you want to evaluate
-            ros_critical_ground_truth_objects (List[DynamicObject]):
-                    Critical ground truth objects filtered by ROS node to evaluate pass fail result
-            critical_object_filter_config (CriticalObjectFilterConfig):
-                    The parameter config to choose critical ground truth objects
-            frame_pass_fail_config (PerceptionPassFailConfig):
-                    The parameter config to evaluate
+            unix_time (int): Unix timestamp [us].
+            ground_truth_now_frame (FrameGroundTruth): FrameGroundTruth instance that has the closest
+                timestamp with `unix_time`.
+            estimated_objects (List[ObjectType]): Estimated objects list.
+            ros_critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects filtered by ROS
+                node to evaluate pass fail result.
+            critical_object_filter_config (CriticalObjectFilterConfig): Parameter config to filter objects.
+            frame_pass_fail_config (PerceptionPassFailConfig):Parameter config to evaluate pass/fail.
 
         Returns:
-            PerceptionFrameResult: Evaluation result
+            PerceptionFrameResult: Evaluation result.
         """
         object_results, ground_truth_now_frame = self._filter_objects(
             estimated_objects,
@@ -97,7 +108,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         result = PerceptionFrameResult(
             object_results=object_results,
             frame_ground_truth=ground_truth_now_frame,
-            metrics_config=self.evaluator_config.metrics_config,
+            metrics_config=self.metrics_config,
             critical_object_filter_config=critical_object_filter_config,
             frame_pass_fail_config=frame_pass_fail_config,
             unix_time=unix_time,
@@ -119,30 +130,35 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
 
     def _filter_objects(
         self,
-        estimated_objects: List[DynamicObject],
+        estimated_objects: List[ObjectType],
         frame_ground_truth: FrameGroundTruth,
     ) -> Tuple[List[DynamicObjectWithPerceptionResult], FrameGroundTruth]:
-        """[summary]
-        Filtering estimated and ground truth objects.
+        """Returns filtered list of DynamicObjectResult and FrameGroundTruth instance.
+
+        First of all, filter `estimated_objects` and `frame_ground_truth`.
+        Then generate a list of DynamicObjectResult as `object_results`.
+        Finally, filter `object_results` when `target_uuids` is specified.
+
         Args:
-            estimated_objects (List[DynamicObject])
-            frame_ground_truth (FrameGroundTruth)
+            estimated_objects (List[ObjectType]): Estimated objects list.
+            frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
+
         Returns:
-            estimated_objects (List[DynamicObject])
-            frame_ground_truth (FrameGroundTruth)
+            object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results list.
+            frame_ground_truth (FrameGroundTruth): Filtered FrameGroundTruth instance.
         """
         estimated_objects = filter_objects(
             objects=estimated_objects,
             is_gt=False,
             ego2map=frame_ground_truth.ego2map,
-            **self.evaluator_config.filtering_params,
+            **self.filtering_params,
         )
 
         frame_ground_truth.objects = filter_objects(
             objects=frame_ground_truth.objects,
             is_gt=True,
             ego2map=frame_ground_truth.ego2map,
-            **self.evaluator_config.filtering_params,
+            **self.filtering_params,
         )
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
             estimated_objects=estimated_objects,
@@ -152,19 +168,18 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             object_results = filter_object_results(
                 object_results=object_results,
                 ego2map=frame_ground_truth.ego2map,
-                target_uuids=self.evaluator_config.filtering_params["target_uuids"],
+                target_uuids=self.filtering_params["target_uuids"],
             )
         return object_results, frame_ground_truth
 
     def get_scene_result(self) -> MetricsScore:
-        """[summary]
-        Evaluate metrics score thorough a scene.
+        """Evaluate metrics score thorough a scene.
 
         Returns:
-            MetricsScore: Metrics score
+            scene_metrics_score (MetricsScore): MetricsScore instance.
         """
         # Gather objects from frame results
-        target_labels: List[AutowareLabel] = self.evaluator_config.target_labels
+        target_labels: List[LabelType] = self.target_labels
         all_frame_results = {label: [[]] for label in target_labels}
         all_num_gt = {label: 0 for label in target_labels}
         used_frame: List[int] = []
@@ -178,7 +193,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
 
         # Calculate score
         scene_metrics_score: MetricsScore = MetricsScore(
-            config=self.evaluator_config.metrics_config,
+            config=self.metrics_config,
             used_frame=used_frame,
         )
         if self.evaluator_config.metrics_config.detection_config is not None:
@@ -187,6 +202,8 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             scene_metrics_score.evaluate_tracking(all_frame_results, all_num_gt)
         if self.evaluator_config.metrics_config.prediction_config is not None:
             pass
+        if self.evaluator_config.metrics_config.classification_config is not None:
+            scene_metrics_score.evaluate_classification(all_frame_results, all_num_gt)
 
         return scene_metrics_score
 
@@ -197,6 +214,9 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         Args:
             animation (bool): Whether make animation. Defaults to True.
         """
+        if self.visualizer is None:
+            logging.warning("visualizer has not been initialized")
+            return
         self.visualizer.visualize_all(self.frame_results, animation=animation)
 
     def visualize_frame(self, frame_index: int = -1) -> None:
@@ -206,4 +226,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         Args:
             frame_index (int): The index of frame to be visualized. Defaults to -1 (latest frame).
         """
+        if self.visualizer is None:
+            logging.warning("visualizer has not been initialized")
+            return
         self.visualizer.visualize_frame(self.frame_results[frame_index])

@@ -16,71 +16,86 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.status import FrameID
-from perception_eval.common.threshold import ThresholdsError
 from perception_eval.common.threshold import check_thresholds
-from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
+from perception_eval.common.threshold import ThresholdsError
+from perception_eval.evaluation.metrics import MetricsScoreConfig
 
 from ._evaluation_config_base import _EvaluationConfigBase
 
 
 class PerceptionEvaluationConfig(_EvaluationConfigBase):
-    """[summary]
-    Evaluation configure class
+    """Configuration class for perception evaluation.
+
+    Directory structure to save log and visualization result is following
+    - result_root_directory/
+        ├── log_directory/
+        └── visualization_directory/
 
     Attributes:
-        - By _EvaluationConfigBase
-        self.dataset_paths (List[str]): The list of dataset path.
-        self.frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
-        self.does_use_pointcloud (bool): The boolean flag if load pointcloud data from dataset.
-        self.result_root_directory (str): The path to result directory
-        self.log_directory (str): The path to sub directory for log
-        self.visualization_directory (str): The path to sub directory for visualization
-        self.label_converter (LabelConverter): The label convert class
-        self.evaluation_task (EvaluationTask): The instance of EvaluationTask
+        dataset_paths (List[str]): Dataset paths list.
+        frame_id (FrameID): FrameID instance, where objects are with respect.
+        result_root_directory (str): Directory path to save result.
+        log_directory (str): Directory Directory path to save log.
+        visualization_directory (str): Directory path to save visualization result.
+        label_converter (LabelConverter): LabelConverter instance.
+        evaluation_task (EvaluationTask): EvaluationTask instance.
+        label_prefix (str): Prefix of label type. Choose from [`autoware", `traffic_light`]. Defaults to autoware.
+        camera_type (Optional[str]): Camera name. Specify in 2D evaluation. Defaults to None.
+        load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
+        target_labels (List[LabelType]): Target labels list.
+        filtering_params (Dict[str, Any]): Filtering parameters.
+        metrics_params (Dict[str, Any]): Metrics parameters.
+        metrics_config (MetricsScoreConfig): MetricsScoreConfig instance.
 
-        - By PerceptionEvaluationConfig
-        self.target_labels (List[AutowareLabel]): The list of target label.
-        self.filtering_params (Dict[str, Any]): Filtering parameters.
-        self.metrics_params (Dict[str, Any]): Metrics parameters.
-        self.metrics_config (MetricsScoreConfig): The config for metrics
+    Args:
+        dataset_paths (List[str]): Dataset paths list.
+        frame_id (FrameID): FrameID instance, where objects are with respect.
+        merge_similar_labels (bool): Whether merge similar labels.
+            If True,
+                - BUS, TRUCK, TRAILER -> CAR
+                - MOTORBIKE, CYCLIST -> BICYCLE
+        result_root_directory (str): Directory path to save result.
+        evaluation_config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
+        label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
+        camera_type (Optional[str]): Name of camera. Specify in 2D evaluation. Defaults to None.
+        load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
     """
 
-    _support_tasks: List[str] = ["detection", "tracking", "prediction"]
+    _support_tasks: List[str] = [
+        "detection2d",
+        "tracking2d",
+        "classification2d",
+        "detection",
+        "tracking",
+        "prediction",
+    ]
 
     def __init__(
         self,
         dataset_paths: List[str],
         frame_id: FrameID,
         merge_similar_labels: bool,
-        does_use_pointcloud: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
+        label_prefix: str = "autoware",
+        camera_type: Optional[str] = None,
+        load_raw_data: bool = False,
     ) -> None:
-        """[summary]
-
-        Args:
-            dataset_paths (List[str]): The paths of dataset
-            frame_id (FrameID): The coords system which objects with respected to, BASE_LINK or MAP.
-            merge_similar_labels (bool): Whether merge similar labels.
-                If True,
-                    - BUS, TRUCK, TRAILER -> CAR
-                    - MOTORBIKE, CYCLIST -> BICYCLE
-            does_use_pointcloud (bool): The flag for loading pointcloud data from dataset
-            result_root_directory (str): The path to result directory
-            evaluation_config_dict (Dict[str, Dict[str, Any]]): The dictionary of evaluation config for each task.
-        """
         super().__init__(
             dataset_paths=dataset_paths,
             frame_id=frame_id,
             merge_similar_labels=merge_similar_labels,
-            does_use_pointcloud=does_use_pointcloud,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
+            label_prefix=label_prefix,
+            camera_type=camera_type,
+            load_raw_data=load_raw_data,
         )
         self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)
 
@@ -89,12 +104,14 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             **self.metrics_params,
         )
 
-    def _extract_params(self, evaluation_config_dict: Dict[str, Any]) -> None:
-        """[summary]
-        Extract and divide parameters from evaluation_config_dict.
+    def _extract_params(
+        self,
+        evaluation_config_dict: Dict[str, Any],
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Extract and divide parameters from evaluation_config_dict into filtering and metrics parameters.
 
         Args:
-            evaluation_config_dict (Dict[str, Any])
+            evaluation_config_dict (Dict[str, Any]): Dict that items are evaluation config for each task.
 
         Returns:
             f_params (Dict[str, Any]): Parameters for filtering objects.
@@ -103,11 +120,11 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         e_cfg = evaluation_config_dict.copy()
 
         # Covert labels to autoware labels for Metrics
-        target_labels: List[AutowareLabel] = set_target_lists(
-            e_cfg["target_labels"],
+        target_labels: List[LabelType] = set_target_lists(
+            e_cfg.get("target_labels"),
             self.label_converter,
         )
-        self.target_labels: List[AutowareLabel] = target_labels
+        self.target_labels: List[LabelType] = target_labels
 
         max_x_position: Optional[float] = e_cfg.get("max_x_position")
         max_y_position: Optional[float] = e_cfg.get("max_y_position")
@@ -146,6 +163,11 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             )
             max_x_position_list = None
             max_y_position_list = None
+        elif self.evaluation_task.is_2d():
+            max_x_position_list = None
+            max_y_position_list = None
+            max_distance_list = None
+            min_distance_list = None
         else:
             raise RuntimeError("Either max x/y position or max/min distance should be specified")
 
@@ -182,10 +204,10 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
 
         m_params: Dict[str, Any] = {
             "target_labels": target_labels,
-            "center_distance_thresholds": e_cfg["center_distance_thresholds"],
-            "plane_distance_thresholds": e_cfg["plane_distance_thresholds"],
-            "iou_bev_thresholds": e_cfg["iou_bev_thresholds"],
-            "iou_3d_thresholds": e_cfg["iou_3d_thresholds"],
+            "center_distance_thresholds": e_cfg.get("center_distance_thresholds"),
+            "plane_distance_thresholds": e_cfg.get("plane_distance_thresholds"),
+            "iou_2d_thresholds": e_cfg.get("iou_2d_thresholds"),
+            "iou_3d_thresholds": e_cfg.get("iou_3d_thresholds"),
         }
 
         return f_params, m_params

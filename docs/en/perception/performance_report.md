@@ -78,9 +78,11 @@ analyzer.add_from_pkl(pickle_path)
 
 ```python
 >>> analyzer.df
-                    timestamp          x          y         w          l         h       yaw            vx        vy                      nn_point1                      nn_point2 label                              uuid status  area  frame  scene
-0  ground_truth  1.603763e+15  85.536254   2.151734  3.237000  12.112000  3.816000  0.017880  1.302359e-02  0.044080  (-7.172930, -49.5320, -0.2938) (-7.172930, -49.5320, -0.2938) truck  a0e19d9fc8e528fb471d0d29bdf32927     TP   0.0   48.0    1.0
-   estimation    1.603763e+15  83.445015   2.306474  2.821630   6.807208  2.983142  0.030410  4.937477e-09  0.000000  truck                              None     TP   0.0   48.0    1.0
+                      timestamp          x         y         w          l  ...
+0    ground_truth  1.603763e+15  45.108863  4.415448  3.237000  12.112000
+     estimation    1.603763e+15  42.187082  4.216309  2.818074   6.961135
+1    ground_truth  1.603763e+15  41.231904  4.528642  3.237000  12.112000
+     estimation    1.603763e+15  37.909447  4.304737  2.694330   6.547065
 ...
 ```
 
@@ -162,21 +164,22 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ### Basic methods
 
-| name                   |                                          input                                          |       return       | Description                                                                                                  |
-| :--------------------- | :-------------------------------------------------------------------------------------: | :----------------: | :----------------------------------------------------------------------------------------------------------- |
-| `get`                  |                                   `*args`, `**kwargs`                                   | `pandas.DataFrame` | DataFrame of columns specified in `args` or `kwargs`                                                         |
-| `sortby`               | `Union[str, List[str]]`, `df<Optional[pandas.DataFrame]>=None`, `ascending<bool>=False` | `pandas.DataFrame` | DataFrame sorted by columns specified in `Union[str, List[str]]`. `ascending=True` makes it ascending order. |
-| `head`                 |                                          `int`                                          | `pandas.DataFrame` | DataFrame the length of number of raws specified in `int(Defaults=5)` from top.                              |
-| `tail`                 |                                          `int`                                          | `pandas.DataFrame` | DataFrame the length of number of raws specified in `int(Defaults=5)` from bottom.                           |
-| `shape`                |                            `Optional[Union[str, List[str]]]`                            |    `Tuple[int]`    | Shape of DataFrame (row, column) specified in `int(Defaults=5)` from top.                                    |
-| `keys`                 |                                                                                         |     `pd.Index`     | Name of column of `self.df`                                                                                  |
-| `get_ground_truth`     |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      | `pandas.DataFrame` | DataFrame of GT.                                                                                             |
-| `get_estimation`       |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      | `pandas.DataFrame` | DataFrame of estimation.                                                                                     |
-| `get_num_ground_truth` |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Number of GT.                                                                                                |
-| `get_num_estimation`   |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Number of estimation.                                                                                        |
-| `get_num_tp`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Number of TP.                                                                                                |
-| `get_num_fp`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Number of FP.                                                                                                |
-| `get_num_fn`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Number of FN.                                                                                                |
+| name                     |                                          input                                          |       return       | Description                                                                                                   |
+| :----------------------- | :-------------------------------------------------------------------------------------: | :----------------: | :------------------------------------------------------------------------------------------------------------ |
+| `get()`                  |                                   `*args`, `**kwargs`                                   | `pandas.DataFrame` | DataFrame of columns specified in `args` or `kwargs`                                                          |
+| `sortby()`               | `Union[str, List[str]]`, `df<Optional[pandas.DataFrame]>=None`, `ascending<bool>=False` | `pandas.DataFrame` | DataFrame sorted by columns specified in `Union[str, List[str]]`. `ascending=True` makes it ascending order.  |
+| `head()`                 |                                          `int`                                          | `pandas.DataFrame` | DataFrame the length of number of raws specified in `int(Defaults=5)` from top.                               |
+| `tail()`                 |                                          `int`                                          | `pandas.DataFrame` | DataFrame the length of number of raws specified in `int(Defaults=5)` from bottom.                            |
+| `shape()`                |                            `Optional[Union[str, List[str]]]`                            |    `Tuple[int]`    | Shape of DataFrame (row, column) specified in `int(Defaults=5)` from top.                                     |
+| `keys()`                 |                                                                                         |     `pd.Index`     | Name of column of `self.df`                                                                                   |
+| `get_ground_truth()`     |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      | `pandas.DataFrame` | DataFrame of GT.                                                                                              |
+| `get_estimation()`       |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      | `pandas.DataFrame` | DataFrame of estimation.                                                                                      |
+| `get_num_ground_truth()` |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Number of GT.                                                                                                 |
+| `get_num_estimation()`   |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Number of estimation.                                                                                         |
+| `get_num_tp()`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Number of TP.                                                                                                 |
+| `get_num_fp()`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Number of FP.                                                                                                 |
+| `get_num_fn()`           |                      `df=<Optional[pandas.DataFrame]>`, `**kwargs`                      |       `int`        | Number of FN.                                                                                                 |
+| `get_ego2map()`          |                              `scene=<int>`, `frame=<int>`                               |  `numpy.ndarray`   | Homogeneous transformation matrix transforming coordinates with respect to base_link to map, in shape (4, 4). |
 
 - `get()` returns columns of DataFrame specified in `*args` and meet requirements specified in `**kwargs`.
 
@@ -209,36 +212,42 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 ### DataFrame structure
 
 - By `add()` method, each `PerceptionFrameResult` will be accumulated as following format. The number of order (1,...,N) will be assigned to `scene`.
+  - x,y,yaw,vx,vy are with respect to base_link coordinates system.
 
-| index | type             | "timestamp" |   "x"   |   "y"   |   "w"   |   "l"   |   "h"   |  "yaw"  |  "vx"   |  "vy"   |  "nn_point1"   |  "nn_point2"   | "label" | "uuid" | "status" | "area" | "frame" | "scene" |
-| ----: | :--------------- | :---------: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :------------: | :------------: | :-----: | :----: | :------: | :----: | :-----: | :-----: |
-|     0 | **ground_truth** |   `float`   | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `tuple[float]` | `tuple[float]` |  `str`  | `str`  |  `str`   | `int`  |  `int`  |  `int`  |
-|       | **estimation**   |             |         |         |         |         |         |         |         |         |                |                |         |        |          |        |         |         |
+| index | type             | "timestamp" |   "x"   |   "y"   |   "w"   |   "l"   |   "h"   |  "yaw"  |  "vx"   |  "vy"   |  "nn_point1"   |  "nn_point2"   | "label" | "confidence" | "uuid" | "num_points" | "status" | "area" | "frame" | "scene" |
+| ----: | :--------------- | :---------: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :------------: | :------------: | :-----: | :----------: | :----: | :----------: | :------: | :----: | :-----: | :-----: |
+|     0 | **ground_truth** |   `float`   | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `tuple[float]` | `tuple[float]` |  `str`  |   `float`    | `str`  |    `int`     |  `str`   | `int`  |  `int`  |  `int`  |
+|       | **estimation**   |
 
 - `PerceptionPerformanceAnalyzer.df` allow to show the DataFrame
 
 ```python
 >>> analyzer.df
-                    timestamp          x          y         w          l         h       yaw            vx        vy  label                              uuid status  area  frame  scene
-0  ground_truth  1.603763e+15  85.536254   2.151734  3.237000  12.112000  3.816000  0.017880  1.302359e-02  0.044080  truck  a0e19d9fc8e528fb471d0d29bdf32927     TP   0.0   48.0    1.0
-   estimation    1.603763e+15  83.445015   2.306474  2.821630   6.807208  2.983142  0.030410  4.937477e-09  0.000000  truck                              None     TP   0.0   48.0    1.0
+                      timestamp          x         y         w          l  ...
+0    ground_truth  1.603763e+15  45.108863  4.415448  3.237000  12.112000
+     estimation    1.603763e+15  42.187082  4.216309  2.818074   6.961135
+1    ground_truth  1.603763e+15  41.231904  4.528642  3.237000  12.112000
+     estimation    1.603763e+15  37.909447  4.304737  2.694330   6.547065
+...
 ```
 
 - Available to reference elements only for GT or estimation.
 
 ```python
 >>> analyzer.get_ground_truth()
-       timestamp          x         y      w       l      h       yaw        vx        vy                      nn_point1                       nn_point2 label                              uuid status  area  frame  scene
-0   1.603763e+15  85.536254  2.151734  3.237  12.112  3.816  0.017880  0.013024  0.044080  (-7.172930, -49.5320, -0.2938), (-7.172930, -49.5320, -0.2938) truck  a0e19d9fc8e528fb471d0d29bdf32927     TP   0.0   48.0    1.0
-1   1.603763e+15  82.125830  2.415408  3.237  12.112  3.816  0.020902 -0.001111  0.035555  (-7.172930, -49.5320, -0.2938), (-7.172930, -49.5320, -0.2938) truck  a0e19d9fc8e528fb471d0d29bdf32927     TP   0.0   49.0    1.0
+         timestamp          x         y         w       l         h       yaw ...
+0     1.603763e+15  45.108863  4.415448  3.237000  12.112  3.816000  0.056254
+1     1.603763e+15  41.231904  4.528642  3.237000  12.112  3.816000  0.059814
+2     1.603763e+15  38.064378  4.594842  3.237000  12.112  3.816000  0.062258
 ...
 ```
 
 ```python
 >>> analyzer.get_estimation()
-      timestamp          x          y         w         l         h       yaw            vx   vy                      nn_point1                       nn_point2 label  uuid status  area  frame  scene
-0  1.603763e+15  83.445015   2.306474  2.821630  6.807208  2.983142  0.030410  4.937477e-09  0.0  (-7.172930, -49.5320, -0.2938), (-7.172930, -49.5320, -0.2938) truck  None     TP   0.0   48.0    1.0
-1  1.603763e+15  77.737808   2.873984  2.822067  6.618567  3.053950 -0.001258  4.937477e-09  0.0  (-7.172930, -49.5320, -0.2938), (-7.172930, -49.5320, -0.2938) truck  None     TP   0.0   49.0    1.0
+         timestamp          x         y         w       l         h       yaw ...
+0     1.603763e+15  45.108863  4.415448  3.237000  12.112  3.816000  0.056254
+1     1.603763e+15  41.231904  4.528642  3.237000  12.112  3.816000  0.059814
+2     1.603763e+15  38.064378  4.594842  3.237000  12.112  3.816000  0.062258
 ...
 ```
 
@@ -314,37 +323,154 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ### Plot functions
 
-- `<func> plot_by_time() -> None`
+- `<enum> PlotAxes`
+
+  - A class to specify plot axes.
+
+    | Member       | Description                             |
+    | :----------- | :-------------------------------------- |
+    | `FRAME`      | The number of frame.                    |
+    | `TIME`       | Time[s].                                |
+    | `DISTANCE`   | Distance[m] from ego vehicle.           |
+    | `X`          | x position[m] from ego vehicle.         |
+    | `Y`          | y position[m] from ego vehicle.         |
+    | `VX`         | longitudinal velocity[m/s].             |
+    | `VY`         | lateral velocity[m/s].                  |
+    | `CONFIDENCE` | Confidence of estimation[GT=1.0](0, 1). |
+    | `POSITION`   | xy position[m] from ego vehicle.        |
+    | `VELOCITY`   | xy velocity[m/s].                       |
+    | `POLAR`      | polar coordinates, (theta[rad], r[m]).  |
+
+- `<func> plot_state(...) -> None`
 
   - Plot the state change over time for specified GT with uuid.
 
-    | Arguments |  type  | Mandatory | Description                                          |
-    | :-------- | :----: | :-------: | :--------------------------------------------------- |
-    | `uuid`    | `str`  |    Yes    | GT object's uuid.                                    |
-    | `column`  | `str`  |    Yes    | Column name．(Options=[`x`, `y`, `yaw`, `vx`, `vy`]) |
-    | `scene`   | `int`  |    No     | Target scene. The last scene visualized by default.  |
-    | `show`    | `bool` |    No     | Whether show plot result.(Defaults=`False`)          |
+    | Arguments |                  type                  | Mandatory | Description                                          |
+    | :-------- | :------------------------------------: | :-------: | :--------------------------------------------------- |
+    | `uuid`    |                 `str`                  |    Yes    | GT object's uuid.                                    |
+    | `column`  |                 `str`                  |    Yes    | Column name．(Options=[`x`, `y`, `yaw`, `vx`, `vy`]) |
+    | `mode`    |               `PlotAxes`               |    No     | Target plot axes. (Defaults=`PlotAxes.TIME`)         |
+    | `status`  | `Optional[Union[str, MatchingStatus]]` |    No     | Matching status TP/FP/FN. (Defaults=`None`)          |
+    | `show`    |                 `bool`                 |    No     | Whether show plot result. (Defaults=`False`)         |
 
     ```python
     # Example: Plot an object's xy with uuid: "4bae7e75c7de70be980ce20ce8cbb642"
-
     >> analyzer.plot_by_time("4bae7e75c7de70be980ce20ce8cbb642", ["x", "y"])
     ```
 
-    <img src="../../fig/perception/sample_plot_by_time.png" width=800 height=400>
+  <img src="../../fig/perception/plot_state_by_time.png" width=800>
 
-- `<func> plot_num_objects() -> None`
+- `<func> plot_error(...) -> None`
+
+  - Plot error of specified states between GT and estimation.
+
+  | Arguments |          type           | Mandatory | Description                                                    |
+  | :-------- | :---------------------: | :-------: | :------------------------------------------------------------- |
+  | `columns` | `Union[str, List[str]]` |    Yes    | Column name. (Options=[`x`, `y`, `yaw`, `w`, `l`, `vx`, `vy`]) |
+  | `mode`    |       `PlotAxes`        |    No     | Target plot axes. (Defaults=`PlotAxes.TIME`)                   |
+  | `show`    |         `bool`          |    No     | Whether show plot result. (Defaults=`False`)                   |
+
+  ```python
+  # Example: Plot xy error with time axis
+  >> analyzer.plot_error(["x", "y"])
+  ```
+
+  <img src="../../fig/perception/plot_error_by_time.png" width=800>
+
+- `<func> plot_num_object(...) -> None`
 
   - Plot number of objects by distance from `base_link` in histogram
 
-  | Arguments  |  type   | Mandatory | Description                                |
-  | :--------- | :-----: | :-------: | :----------------------------------------- |
-  | `dist_bin` | `float` |    No     | Bin of distance. (Defaults=`0.5`)          |
-  | `show`     | `bool`  |    No     | Whether sho plot result.(Defaults=`False`) |
+  | Arguments |    type    | Mandatory | Description                                      |
+  | :-------- | :--------: | :-------: | :----------------------------------------------- |
+  | `mode`    | `PlotAxes` |    No     | Target plot axes. (Defaults=`PlotAxes.DISTANCE`) |
+  | `bin`     |  `float`   |    No     | Bin of distance. (Defaults=`0.5`)                |
+  | `show`    |   `bool`   |    No     | Whether sho plot result.(Defaults=`False`)       |
 
   ```python
   # Plot the number of all objects
-  >> analyzer.plot_num_objects()
+  >> analyzer.plot_num_object()
   ```
 
-  <img src="../../fig/perception/sample_plot_num_objects.png" width=800 height=400>
+  <img src="../../fig/perception/plot_num_object_by_distance.png" width=800 height=400>
+
+## Known issues / Limitations
+
+- `PerceptionPerformanceAnalyzer()` only supports 3D evaluation.
+  <img src="../../fig/perception/plot_num_object_by_distance.png" width=800>
+
+- `<func> box_plot(...) -> None`
+
+  - Plot specified state's error with box-plot.
+
+  | Arguments |          type          | Mandatory | Description                            |
+  | :-------- | :--------------------: | :-------: | :------------------------------------- |
+  | `columns` | `Union[str, List[str]` |    Yes    | Target error (x, y, yaw, w, l, vx, vy) |
+  | `show`    |         `bool`         |    No     | Whether show plot.(Defaults=`False`)   |
+
+  ```python
+  # Plot xy error with box-plot.
+  >> analyzer.box_plot(["x", "y"])
+  ```
+
+  <img src="../../fig/perception/box_plot_xy.png" width=400>
+
+## [`<class> Gmm(...)`](../../../perception_eval/perception_eval/tool/gmm.py)
+
+A wrapper class of [`sklearn.mixture.GaussianMixture`](https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html).
+This model estimates the parameters for the joint distribution P(X, Y).
+And then, it predicts means of posterior distribution P(Y|X), where X represents states, Y represents error states.
+
+- Initialization
+
+  | Arguments      | type  | Description                                                 |
+  | :------------- | :---: | :---------------------------------------------------------- |
+  | `max_k`        | `int` | Maximum number of cluster K.                                |
+  | `n_init`       | `int` | Number of initial cluster. (Default: 1)                     |
+  | `random_state` | `int` | Seed to save the state of a random function. (Default=1234) |
+
+- Methods
+
+  | Methods           |     Returns     | Description                                                   |
+  | :---------------- | :-------------: | :------------------------------------------------------------ |
+  | `fit()`           |     `None`      | Estimate model parameters with the EM algorithm.              |
+  | `predict()`       | `numpy.ndarray` | Predict means of posterior distribution for the data samples. |
+  | `predict_label()` | `numpy.ndarray` | Predict the labels for the data samples.                      |
+  | `save()`          |     `None`      | Save estimated the best model's parameters with pickle.       |
+  | `load()`          |      `GMM`      | Load saved model's parameters from pickle.                    |
+  | `plot_ic()`       |     `None`      | Plot Information Criterion scores, which are AIC and BIC.     |
+
+### `<func> load_sample(...) -> Tuple[numpy.ndarray, numpy.ndarray]`
+
+- Returns input array of specified states and errors.
+
+| Arguments  |              type               | Mandatory | Description                               |
+| :--------- | :-----------------------------: | :-------: | :---------------------------------------- |
+| `analyzer` | `PerceptionPerformanceAnalyzer` |    Yes    | `PerceptionPerformanceAnalyzer` instance. |
+| `state`    |           `List[str]`           |    Yes    | List of target state names.               |
+| `error`    |           `List[str]`           |    Yes    | List of target error names.               |
+
+### Example usage
+
+```python
+from perception_eval.tool import PerceptionPerformanceAnalyzer, Gmm, load_sample
+import numpy as np
+
+# Initialize PerceptionPerformanceAnalyzer
+analyzer = PerceptionPerformanceAnalyzer(...)
+
+# Load sample data, X: state, Y: error
+state = ["x", "y", "yaw", "vx", "xy"]
+error = ["x", "y"]
+
+# X: (N, 5), Y: (N, 2)
+X, Y = load_sample(analyzer, state, error)
+sample = np.concatenate([X, Y], axis=-1)  # (N, 7)
+
+# Estimated model parameters
+model = Gmm(max_k)
+model.fit(sample)
+
+# Predict Y(error) using X(state)
+y_pred = model.predict(X)  # (N, 2)
+```

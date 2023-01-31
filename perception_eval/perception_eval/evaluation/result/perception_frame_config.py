@@ -12,15 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.evaluation_task import EvaluationTask
+from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.threshold import check_thresholds
-from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
+
+# from perception_eval.config import PerceptionEvaluationConfig
 
 
 class CriticalObjectFilterConfig:
@@ -47,7 +51,7 @@ class CriticalObjectFilterConfig:
 
     def __init__(
         self,
-        evaluator_config: PerceptionEvaluationConfig,
+        evaluator_config,  #: PerceptionEvaluationConfig,
         target_labels: List[str],
         max_x_position_list: Optional[List[float]] = None,
         max_y_position_list: Optional[List[float]] = None,
@@ -76,7 +80,7 @@ class CriticalObjectFilterConfig:
                 The list of confidence threshold for each label. Defaults to None.
             target_uuids (Optional[List[str]]): The list of target uuid. Defaults to None.
         """
-        self.target_labels: List[AutowareLabel] = set_target_lists(
+        self.target_labels: List[LabelType] = set_target_lists(
             target_labels,
             evaluator_config.label_converter,
         )
@@ -102,6 +106,11 @@ class CriticalObjectFilterConfig:
             )
             self.max_x_position_list = None
             self.max_y_position_list = None
+        elif evaluator_config.evaluation_task.is_2d():
+            self.max_x_position_list = None
+            self.max_y_position_list = None
+            self.max_distance_list = None
+            self.min_distance_list = None
         else:
             raise RuntimeError("Either max x/y position or max/min distance should be specified")
 
@@ -140,34 +149,40 @@ class PerceptionPassFailConfig:
     Config filter for pass fail to frame result
 
     Attributes:
+        self.evaluation_task (EvaluationTask): Evaluation task.
         self.target_labels (List[str]): The list of target label.
-        self.threshold_plane_distance_list (List[float]): The threshold list for plane distance.
+        self.matching_distance_list (Optional[List[float]]): The threshold list for Pass/Fail.
+            For 2D evaluation, IOU2D, for 3D evaluation, PLANEDISTANCE will be used.
         self.confidence_threshold_list (Optional[List[float]]): The list of confidence threshold.
     """
 
     def __init__(
         self,
-        evaluator_config: PerceptionEvaluationConfig,
-        target_labels: List[str],
-        plane_distance_threshold_list: List[float],
+        evaluator_config,  #: PerceptionEvaluationConfig,
+        target_labels: Optional[List[str]],
+        matching_threshold_list: Optional[List[float]] = None,
         confidence_threshold_list: Optional[List[float]] = None,
     ) -> None:
         """[summary]
         Args:
             evaluator_config (PerceptionEvaluationConfig): Evaluation config
-            target_labels (List[str]): Target list
-            plane_distance_threshold_list (List[float]): The threshold list for plane distance
-            confidence_threshold_list (Optional[List[float]]): The list of confidence threshold.
-                Defaults to None.
+            target_labels (List[str]): Target list. If None or empty list is specified, all labels will be evaluated.
+            matching_threshold_list (List[float]): The threshold list for Pass/Fail.
+                For 2D evaluation, IOU2D, for 3D evaluation, PLANEDISTANCE will be used. Defaults to None.
+            confidence_threshold_list (Optional[List[float]]): The list of confidence threshold. Defaults to None.
         """
-        self.target_labels: List[AutowareLabel] = set_target_lists(
+        self.evaluation_task: EvaluationTask = evaluator_config.evaluation_task
+        self.target_labels: List[LabelType] = set_target_lists(
             target_labels,
             evaluator_config.label_converter,
         )
-        self.plane_distance_threshold_list: List[float] = check_thresholds(
-            plane_distance_threshold_list,
-            self.target_labels,
-        )
+        if matching_threshold_list is None:
+            self.matching_threshold_list = None
+        else:
+            self.matching_threshold_list: List[float] = check_thresholds(
+                matching_threshold_list,
+                self.target_labels,
+            )
         if confidence_threshold_list is None:
             self.confidence_threshold_list = None
         else:

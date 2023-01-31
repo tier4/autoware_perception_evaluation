@@ -34,14 +34,16 @@
 
 - Parameters of `PerceptionEvaluationConfig` are following.
 
-  | Arguments                |       type       | Description                                                              |
-  | :----------------------- | :--------------: | :----------------------------------------------------------------------- |
-  | `dataset_path`           |   `List[str]`    | Dataset path(TBD supporting multiple dataset paths)                      |
-  | `frame_id`               |      `str`       | Name of coordinate system which objects respect to，`map` or `base_link` |
-  | `merge_similar_labels`   |      `bool`      | Whether merge similar labels([Reference])(label.md)                      |
-  | `does_use_pointcloud`    |      `bool`      | Whether load pointcloud data from dataset                                |
-  | `result_root_directory`  |      `str`       | Directory path to save result of log and visualization                   |
-  | `evaluation_config_dict` | `Dict[str, Any]` | Parameters of evaluation                                                 |
+  | Arguments                |       type       | Description                                                                                                                          |
+  | :----------------------- | :--------------: | :----------------------------------------------------------------------------------------------------------------------------------- |
+  | `dataset_path`           |   `List[str]`    | Dataset path(TBD supporting multiple dataset paths)                                                                                  |
+  | `frame_id`               |      `str`       | Name of coordinate system which objects respect to，`map` or `base_link`                                                             |
+  | `merge_similar_labels`   |      `bool`      | Whether merge similar labels([Reference])(label.md)                                                                                  |
+  | `result_root_directory`  |      `str`       | Directory path to save result of log and visualization                                                                               |
+  | `evaluation_config_dict` | `Dict[str, Any]` | Parameters of evaluation                                                                                                             |
+  | `label_prefix`           |      `str`       | Prefix of label. If `autoware`, then `AutowareLabel` will be loaded. Also, `traffic_light`, then `TrafficLightLabel` will be loaded. |
+  | `camera_type`            | `Optional[str]`  | Use only 2D evaluation. Specify camera name in T4dataset/data.                                                                       |
+  | `load_raw_data`          |      `bool`      | Whether load pointcloud/image data from dataset                                                                                      |
 
 ##### `evaluation_config_dict`
 
@@ -49,7 +51,7 @@
 
   ```python
   evaluation_config_dict: [Dict[str, Any]] = {
-    "evaluation_task": "detection"/"tracking"/"prediction",
+    "evaluation_task": "detection"/"tracking"/"prediction" or "detection2d/tracking2d/classification2d",
     ...
   }
   ```
@@ -58,31 +60,33 @@
 
   - **1. Thresholds for filtering objects to generate `DynamicObjectWithPerceptionResult`**
 
-    | Arguments              |    type     |     Mandatory      | Description                                                                                           |
-    | :--------------------- | :---------: | :----------------: | :---------------------------------------------------------------------------------------------------- |
-    | `target_labels`        | `List[str]` |        Yes         | List of name of target labels                                                                         |
-    | `max_x_position`       |   `float`   |         \*         | Maximum x position of area to be evaluated                                                            |
-    | `max_y_position`       |   `float`   |         \*         | Maximum y position of area to be evaluated                                                            |
-    | `max_distance`         |   `float`   |         \*         | Maximum distance from `base_link` of ego to be evaluated                                              |
-    | `min_distance`         |   `float`   |         \*         | Minimum distance from `base_link` of ego to be evaluated                                              |
-    | `min_point_numbers`    | `List[int]` | Yes (in Detection) | Minimum number of pointcloud included in GT's bounding box．If `min_point_numbers=0`，evaluate all GT |
-    | `confidence_threshold` |   `float`   |         No         | Threshold of confidence of estimation                                                                 |
-    | `target_uuids`         | `List[str]` |         No         | List of GTs' ID. Specify if you want to evaluated specific objects                                    |
+    | Arguments              |    type     |     Mandatory      | Description                                                                                                     |
+    | :--------------------- | :---------: | :----------------: | :-------------------------------------------------------------------------------------------------------------- |
+    | `target_labels`        | `List[str]` |         No         | List of name of target labels. If None, all labels will be evaluated.                                           |
+    | `max_x_position`       |   `float`   |         \*         | Maximum x position of area to be evaluated (Only 3D)                                                            |
+    | `max_y_position`       |   `float`   |         \*         | Maximum y position of area to be evaluated (Only 3D)                                                            |
+    | `max_distance`         |   `float`   |         \*         | Maximum distance from `base_link` of ego to be evaluated (Only 3D)                                              |
+    | `min_distance`         |   `float`   |         \*         | Minimum distance from `base_link` of ego to be evaluated (Only 3D)                                              |
+    | `min_point_numbers`    | `List[int]` | Yes (in Detection) | Minimum number of pointcloud included in GT's bounding box. If `min_point_numbers=0`, evaluate all GT (Only 3D) |
+    | `confidence_threshold` |   `float`   |         No         | Threshold of confidence of estimation                                                                           |
+    | `target_uuids`         | `List[str]` |         No         | List of GTs' ID. Specify if you want to evaluated specific objects                                              |
 
     \* It is necessary to specify either **max_x/y_position** or **max/min_distance**. Another groups must be `None`.
 
   - **2. Thresholds to determine TP/FP/FN for `DynamicObjectWithPerceptionResult`**
 
-    | Arguments                    |     type      | Mandatory | Description                   |
-    | :--------------------------- | :-----------: | :-------: | :---------------------------- |
-    | `center_distance_thresholds` | `List[float]` |    Yes    | Thresholds of center distance |
-    | `plane_distance_thresholds`  | `List[float]` |    Yes    | Thresholds of plane distance  |
-    | `iou_bev_thresholds`         | `List[float]` |    Yes    | Thresholds of IoU in BEV      |
-    | `iou_3d_thresholds`          | `List[float]` |    Yes    | Thresholds of IoU in 3D       |
+    - For `classification2d`, there is no need to specify the following parameters.
+
+    | Arguments                    |     type      | Mandatory | Description                            |
+    | :--------------------------- | :-----------: | :-------: | :------------------------------------- |
+    | `center_distance_thresholds` | `List[float]` |    Yes    | Thresholds of center distance          |
+    | `plane_distance_thresholds`  | `List[float]` |    Yes    | Thresholds of plane distance (Only 3D) |
+    | `iou_2d_thresholds`          | `List[float]` |    Yes    | Thresholds of IoU in 2D                |
+    | `iou_3d_thresholds`          | `List[float]` |    Yes    | Thresholds of IoU in 3D (Only 3D)      |
 
 - **Error cases in setting parameters**
 
-  - **1. Set the invalid `evaluation_task` except of `detection/tracking/prediction`**
+  - **1. Set the invalid `evaluation_task` except of `detection/tracking/prediction/detection2d/tracking2d/classification2d`**
 
   ```python
   evaluation_config_dict = {
@@ -93,7 +97,7 @@
     "min_point_numbers": [0, 0, 0, 0],
     "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
     "plane_distance_thresholds": [2.0, 3.0],
-    "iou_bev_thresholds": [0.5],
+    "iou_2d_thresholds": [0.5],
     "iou_3d_thresholds": [0.5],
   }
   ```
@@ -101,7 +105,7 @@
   ```shell
   # Exception
   >>  ValueError: Unsupported task: 'foo'
-      Supported tasks: ['detection', 'tracking', 'prediction']
+      Supported tasks: ['detection', 'tracking', 'prediction', 'detection2d', 'tracking2d', 'classification2d']
   ```
 
   - **2. Unset either `max_x/y_position` and `max/min_distance` or set both of them**
@@ -119,7 +123,7 @@
       "min_point_numbers": [0, 0, 0, 0],
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
     }
     ```
@@ -142,7 +146,7 @@
       "min_point_numbers": [0, 0, 0, 0],
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
     }
     ```
@@ -163,7 +167,7 @@
       # "min_point_numbers": [0, 0, 0, 0],  # <-- comment-out "min_point_numbers"
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
     }
     ```
@@ -185,7 +189,7 @@
       "max_y_position": 102.4,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
-      "iou_bev_thresholds": [0.5],
+      "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
       "min_point_numbers": [0, 0, 0, 0],
       "foo_thresholds": [0.8],  # <-- set "foo_thresholds"
@@ -196,7 +200,7 @@
     # Exception
     >>  perception_eval.evaluation.metrics.metrics_score_config.MetricsParameterError: MetricsConfig for 'EvaluationTask.DETECTION'
         Unexpected parameters: {'foo_thresholds'}
-        Usage: {'plane_distance_thresholds', 'iou_3d_thresholds', 'center_distance_thresholds', 'target_labels', 'iou_bev_thresholds'}
+        Usage: {'plane_distance_thresholds', 'iou_3d_thresholds', 'center_distance_thresholds', 'target_labels', 'iou_2d_thresholds'}
     ```
 
 ### `<class> CriticalObjectFilterConfig(...)`
@@ -205,17 +209,17 @@
 - Specify in every frame, not in initialization of `PerceptionEvaluationManger`
 - See [perception_eval/evaluation/result/perception_frame_config](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py)
 
-| Arguments                   |             type             |    Mandatory    | Description                                                                                           |
-| :-------------------------- | :--------------------------: | :-------------: | :---------------------------------------------------------------------------------------------------- |
-| `evaluator_config`          | `PerceptionEvaluationConfig` |       Yes       | Configuration settings which `PerceptionEvaluationManager` has                                        |
-| `target_labels`             |         `List[str]`          |       Yes       | List of name of target labels                                                                         |
-| `max_x_position_list`       |        `List[float]`         |       \*        | Maximum x position of area to be evaluated                                                            |
-| `max_y_position_list`       |        `List[float]`         |       \*        | Maximum y position of area to be evaluated                                                            |
-| `max_distance_list`         |        `List[float]`         |       \*        | Maximum distance from `base_link` of ego to be evaluated                                              |
-| `min_distance_list`         |        `List[float]`         |       \*        | Minimum distance from `base_link` of ego to be evaluated                                              |
-| `min_point_numbers`         |         `List[int]`          | Yes (Detection) | Minimum number of pointcloud included in GT's bounding box．If `min_point_numbers=0`，evaluate all GT |
-| `confidence_threshold_list` |        `List[float]`         |       No        | Threshold of confidence of estimation                                                                 |
-| `target_uuids`              |         `List[str]`          |       No        | List of GTs' ID. Specify if you want to evaluated specific objects                                    |
+| Arguments                   |             type             |    Mandatory    | Description                                                                                                     |
+| :-------------------------- | :--------------------------: | :-------------: | :-------------------------------------------------------------------------------------------------------------- |
+| `evaluator_config`          | `PerceptionEvaluationConfig` |       Yes       | Configuration settings which `PerceptionEvaluationManager` has                                                  |
+| `target_labels`             |         `List[str]`          |       No        | List of name of target labels                                                                                   |
+| `max_x_position_list`       |        `List[float]`         |       \*        | Maximum x position of area to be evaluated (Only 3D)                                                            |
+| `max_y_position_list`       |        `List[float]`         |       \*        | Maximum y position of area to be evaluated (Only 3D)                                                            |
+| `max_distance_list`         |        `List[float]`         |       \*        | Maximum distance from `base_link` of ego to be evaluated (Only 3D)                                              |
+| `min_distance_list`         |        `List[float]`         |       \*        | Minimum distance from `base_link` of ego to be evaluated (Only 3D)                                              |
+| `min_point_numbers`         |         `List[int]`          | Yes (Detection) | Minimum number of pointcloud included in GT's bounding box. If `min_point_numbers=0`, evaluate all GT (Only 3D) |
+| `confidence_threshold_list` |        `List[float]`         |       No        | Threshold of confidence of estimation                                                                           |
+| `target_uuids`              |         `List[str]`          |       No        | List of GTs' ID. Specify if you want to evaluated specific objects                                              |
 
 \* It is necessary to specify either **max_x/y_position_list** or **max/min_distance_list**. Another groups must be `None`.
 
@@ -225,11 +229,11 @@
 - Specify in every frame, not in initializing `PerceptionEvaluationManager`.
 - For the details, see [perception_eval/evaluation/result/perception_frame_config](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py).
 
-| Arguments                       |             type             | Mandatory | Description                                                    |
-| :------------------------------ | :--------------------------: | :-------: | :------------------------------------------------------------- |
-| `evaluator_config`              | `PerceptionEvaluationConfig` |    Yes    | Configuration settings which `PerceptionEvaluationManager` has |
-| `target_labels`                 |         `List[str]`          |    Yes    | List of name of target labels                                  |
-| `plane_distance_threshold_list` |        `List[float]`         |    Yes    | Thresholds of plane distance                                   |
+| Arguments                 |             type             | Mandatory | Description                                                                                                            |
+| :------------------------ | :--------------------------: | :-------: | :--------------------------------------------------------------------------------------------------------------------- |
+| `evaluator_config`        | `PerceptionEvaluationConfig` |    Yes    | Configuration settings which `PerceptionEvaluationManager` has.                                                        |
+| `target_labels`           |         `List[str]`          |    No     | List of name of target labels.                                                                                         |
+| `matching_threshold_list` |        `List[float]`         |    No     | Thresholds of matching. For 3D evaluation, plane distance will be used. For 2D detection/tracking, IoU2D will be used. |
 
 ### Execute evaluation
 
@@ -259,7 +263,13 @@
 |   CLEAR    | MOTA, MOTP, ID switch |
 | HOTA (TBD) |   HOTA, DetA, AssA    |
 
-### Prediction (TBD)
+### Prediction (WIP)
 
 | Metrics | Sub Metrics |
 | :-----: | :---------: |
+
+### Classification
+
+| Metrics  |             Sub Metrics              |
+| :------: | :----------------------------------: |
+| Accuracy | Accuracy, Precision, Recall, F1score |

@@ -16,7 +16,7 @@ from typing import List
 from typing import Optional
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
 from perception_eval.common.status import FrameID
 
 
@@ -29,7 +29,7 @@ class PerceptionVisualizationConfig:
         self.evaluation_task (EvaluationTask): Evaluation task.
         self.height (int): The height of image.
         self.width (int): The width of image.
-        self.target_labels (Optional[List[AutowareLabel]]): target_labels
+        self.target_labels (Optional[List[LabelType]]): target_labels
         self.max_x_position_list (Optional[List[float]]): max_x_position_list
         self.max_y_position_list (Optional[List[float]]): max_y_position_list
         self.max_distance_list (Optional[List[float]]): max_distance_list
@@ -49,7 +49,7 @@ class PerceptionVisualizationConfig:
         evaluation_task: EvaluationTask,
         height: int = 640,
         width: int = 640,
-        target_labels: Optional[List[AutowareLabel]] = None,
+        target_labels: Optional[List[LabelType]] = None,
         max_x_position_list: Optional[List[float]] = None,
         max_y_position_list: Optional[List[float]] = None,
         max_distance_list: Optional[List[float]] = None,
@@ -65,7 +65,7 @@ class PerceptionVisualizationConfig:
             evaluation_task (EvaluationTask): Name of evaluation.
             height (int): Image height. Defaults to 640.
             width (int): Image width. Defaults to 640.
-            target_labels (Optional[List[AutowareLabel]]): The list of target label. Defaults to None.
+            target_labels (Optional[List[LabelType]]): The list of target label. Defaults to None.
             max_x_position_list (Optional[List[float]]): The list of max x position. Defaults to None.
             max_y_position_list (Optional[List[float]]): The list of max y position. Defaults to None.
             max_distance_list (Optional[List[float]]): The list of max distance. Defaults to None.
@@ -80,7 +80,7 @@ class PerceptionVisualizationConfig:
         self.height: int = height
         self.width: int = width
 
-        self.target_labels: Optional[List[AutowareLabel]] = target_labels
+        self.target_labels: Optional[List[LabelType]] = target_labels
         self.max_x_position_list: Optional[List[float]] = max_x_position_list
         self.max_y_position_list: Optional[List[float]] = max_y_position_list
         self.max_distance_list: Optional[List[float]] = max_distance_list

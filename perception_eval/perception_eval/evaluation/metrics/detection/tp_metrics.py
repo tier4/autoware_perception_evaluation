@@ -16,31 +16,33 @@ from abc import ABCMeta
 from abc import abstractmethod
 from math import pi
 
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 
 
 class TPMetrics(metaclass=ABCMeta):
-    """
-    Tp metrics meta class
+    """Tp metrics meta class
+
+    Attributes:
+        mode (str): TP metrics name.
     """
 
-    @abstractmethod
+    mode: str
+
     def __init__(self) -> None:
-        self.mode: str = "TPMetrics"
+        super().__init__()
 
     @abstractmethod
     def get_value(
         self,
         object_result: DynamicObjectWithPerceptionResult,
     ) -> float:
-        """[summary]
-        Get TP metrics value
+        """Get TP metrics value
 
         Args:
-            object_result (DynamicObjectWithPerceptionResult): The object result
+            object_result (DynamicObjectWithPerceptionResult): Object result.
 
         Returns:
-            float: Tp metrics value
+            float: TP metrics value
         """
         pass
 
@@ -48,25 +50,26 @@ class TPMetrics(metaclass=ABCMeta):
 class TPMetricsAp(TPMetrics):
     """
     Ap metrics class
+
+    Attributes:
+        mode (str): TP metrics name that is TPMetricsAp.
     """
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.mode: str = "TPMetricsAp"
+    mode: str = "TPMetricsAp"
 
     def get_value(
         self,
         object_result: DynamicObjectWithPerceptionResult,
     ) -> float:
-        """[summary]
-        Get TP (True positive) value.
-        If TP metrics is AP, return 1.0.
+        """Get TP (True positive) value.
+
+        This function always returns 1.0.
 
         Args:
-            object_result (DynamicObjectWithPerceptionResult): The object result
+            object_result (DynamicObjectWithPerceptionResult): Object result.
 
         Returns:
-            float: TP (True positive) value, 1.0.
+            float: TP value, 1.0.
         """
         return 1.0
 
@@ -74,11 +77,12 @@ class TPMetricsAp(TPMetrics):
 class TPMetricsAph(TPMetrics):
     """
     Aph metrics class
+
+    Attributes:
+        mode (str): TP metrics name that is TPMetricsAph.
     """
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.mode: str = "TPMetricsAph"
+    mode: str = "TPMetricsAph"
 
     def get_value(
         self,
@@ -89,7 +93,7 @@ class TPMetricsAph(TPMetrics):
         APH is used in evaluation for waymo dataset.
 
         Args:
-            object_result (DynamicObjectWithPerceptionResult): The object result
+            object_result (DynamicObjectWithPerceptionResult): Object result.
 
         Returns:
             float: The heading similarity rate using for APH.
@@ -115,13 +119,13 @@ class TPMetricsAph(TPMetrics):
 
 
 class TPMetricsConfidence(TPMetrics):
-    """
-    Confidence TP class
+    """Confidence TP class.
+
+    Attributes:
+        mode (str): TP metrics name that is TPMetricsConfidence.
     """
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.mode: str = "TPMetricsConfidence"
+    mode: str = "TPMetricsConfidence"
 
     def get_value(self, object_result: DynamicObjectWithPerceptionResult) -> float:
         """[summary]

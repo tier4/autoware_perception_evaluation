@@ -12,39 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from logging import getLogger
 from typing import List
 from typing import Optional
 from typing import Tuple
 
 import numpy as np
-from perception_eval.common.dataset import DynamicObject
-from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.common import ObjectType
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_tp_fp_objects
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.matching.objects_filter import get_fn_objects
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
-
-logger = getLogger(__name__)
 
 
 class PassFailResult:
     """[summary]
     Attributes:
-        self.critical_object_filter_config (CriticalObjectFilterConfig):
-                Critical object filter config
-        self.frame_pass_fail_config (PerceptionPassFailConfig):
-                Frame pass fail config
-        self.critical_ground_truth_objects (Optional[List[DynamicObject]]):
-                Critical ground truth objects to evaluate for use case
-        self.fn_objects (Optional[List[DynamicObject]]):
-                The FN (False Negative) ground truth object.
-        self.fp_objects (Optional[List[DynamicObjectWithPerceptionResult]]):
-                The FP (False Positive) object result.
-        self.tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]):
-                The TP (True Positive) object result.
+        critical_object_filter_config (CriticalObjectFilterConfig): Critical object filter config.
+        frame_pass_fail_config (PerceptionPassFailConfig): Frame pass fail config.
+        critical_ground_truth_objects (Optional[List[DynamicObject]]): Critical ground truth objects
+            must be evaluated at current frame.
+        fn_objects (Optional[List[ObjectType]]): FN ground truth objects list.
+        fp_objects_result (Optional[List[DynamicObjectWithPerceptionResult]]): FP object results list.
+        tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP object results list.
+
+    Args:
+        critical_object_filter_config (CriticalObjectFilterConfig): Critical object filter config.
+        frame_pass_fail_config (PerceptionPassFailConfig): Frame pass fail config.
+        frame_id (str): `base_link` or `map`.
+        ego2map (Optional[numpy.ndarray]): Array of 4x4 matrix to transform coordinates from ego to map.
+            Defaults to None.
     """
 
     def __init__(
@@ -53,37 +52,28 @@ class PassFailResult:
         frame_pass_fail_config: PerceptionPassFailConfig,
         ego2map: Optional[np.ndarray] = None,
     ) -> None:
-        """[summary]
-
-        Args:
-            critical_object_filter_config (CriticalObjectFilterConfig):
-                    Critical object filter config
-            frame_pass_fail_config (PerceptionPassFailConfig):
-                    Frame pass fail config
-        """
         self.critical_object_filter_config: CriticalObjectFilterConfig = (
             critical_object_filter_config
         )
         self.frame_pass_fail_config: PerceptionPassFailConfig = frame_pass_fail_config
         self.ego2map: Optional[np.ndarray] = ego2map
 
-        self.critical_ground_truth_objects: Optional[List[DynamicObject]] = None
-        self.fn_objects: Optional[List[DynamicObject]] = None
+        self.critical_ground_truth_objects: Optional[List[ObjectType]] = None
+        self.fn_objects: Optional[List[ObjectType]] = None
         self.fp_objects_result: Optional[List[DynamicObjectWithPerceptionResult]] = None
         self.tp_objects: Optional[List[DynamicObjectWithPerceptionResult]] = None
 
     def evaluate(
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
-        ros_critical_ground_truth_objects: List[DynamicObject],
+        ros_critical_ground_truth_objects: List[ObjectType],
     ) -> None:
-        """[summary]
-        Evaluate pass fail objects.
+        """Evaluate object results' pass fail.
 
         Args:
-            object_results (List[DynamicObjectWithPerceptionResult]): The object results
-            ros_critical_ground_truth_objects (List[DynamicObject]):
-                    Ground truth objects filtered by ROS node.
+            object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
+            ros_critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects
+                must be evaluated at current frame.
         """
         self.critical_ground_truth_objects = filter_objects(
             objects=ros_critical_ground_truth_objects,
@@ -107,11 +97,10 @@ class PassFailResult:
             self.fp_objects_result = None
 
     def get_fail_object_num(self) -> int:
-        """[summary]
-        Get the number of fail objects
+        """Get the number of fail objects.
 
         Returns:
-            int: The number of fail objects
+            int: Number of fail objects.
         """
         if self.fn_objects is not None and self.fp_objects_result is not None:
             return len(self.fn_objects) + len(self.fp_objects_result)
@@ -121,26 +110,27 @@ class PassFailResult:
     def get_tp_fp_objects_result(
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
-        critical_ground_truth_objects: List[DynamicObject],
+        critical_ground_truth_objects: List[ObjectType],
     ) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
-        """[summary]
-        Get FP objects from object results
+        """Get TP and FP object results list from `object_results`.
 
         Args:
-            object_results (List[DynamicObjectWithPerceptionResult]):
-                    The object results.
-            critical_ground_truth_objects (List[DynamicObject]):
-                    Ground truth objects to evaluate for use case objects.
+            object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
+            critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects
+                must be evaluated at current frame.
 
         Returns:
-            Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]: tp_objects, fp_critical_objects
+            List[DynamicObjectWithPerceptionResult]: TP object results.
+            List[DynamicObjectWithPerceptionResult]: FP object results.
         """
         fp_object_results: List[DynamicObjectWithPerceptionResult] = []
         tp_object_results, fp_object_results = divide_tp_fp_objects(
             object_results=object_results,
             target_labels=self.frame_pass_fail_config.target_labels,
-            matching_mode=MatchingMode.PLANEDISTANCE,
-            matching_threshold_list=self.frame_pass_fail_config.plane_distance_threshold_list,
+            matching_mode=MatchingMode.IOU2D
+            if self.frame_pass_fail_config.evaluation_task.is_2d()
+            else MatchingMode.PLANEDISTANCE,
+            matching_threshold_list=self.frame_pass_fail_config.matching_threshold_list,
         )
 
         # filter by critical_ground_truth_objects

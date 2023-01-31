@@ -19,7 +19,7 @@ jobs:
       - name: Merge .cspell.json
         uses: sergeysova/jq-action@v2
         with:
-          cmd: jq ".words += $(jq '.words' .github/.cspell-addition.json)" .github/.cspell-base.json > .github/.cspell.json
+          cmd: jq ".words += $(jq '.words' .cspell.json)" .github/.cspell-base.json > .github/.cspell.json
 
       - uses: streetsidesoftware/cspell-action@v2
         with:

@@ -598,9 +598,9 @@ class TestAp(unittest.TestCase):
         self.assertAlmostEqual(ap.ap, ans_ap)
         self.assertAlmostEqual(aph.ap, ans_aph)
 
-    def test_ap_iou_bev_translation_difference(self):
+    def test_ap_iou_2d_translation_difference(self):
         """[summary]
-        Test AP and APH with iou bev matching for translation difference.
+        Test AP and APH with iou 2d matching for translation difference.
 
         test objects:
             dummy_ground_truth_objects (List[DynamicObject])
@@ -700,7 +700,7 @@ class TestAp(unittest.TestCase):
                     object_results=[object_results],
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
-                    matching_mode=MatchingMode.IOUBEV,
+                    matching_mode=MatchingMode.IOU2D,
                     matching_threshold_list=[0.7],
                 )
                 aph: Ap = Ap(
@@ -708,7 +708,7 @@ class TestAp(unittest.TestCase):
                     object_results=[object_results],
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
-                    matching_mode=MatchingMode.IOUBEV,
+                    matching_mode=MatchingMode.IOU2D,
                     matching_threshold_list=[0.7],
                 )
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
@@ -718,9 +718,9 @@ class TestAp(unittest.TestCase):
                     out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}"
                 )
 
-    def test_ap_iou_bev_yaw_difference(self):
+    def test_ap_iou_2d_yaw_difference(self):
         """[summary]
-        Test ap and APH with iou bev matching for yaw difference.
+        Test ap and APH with iou 2d matching for yaw difference.
 
         test objects:
             dummy_ground_truth_objects (List[DynamicObject])
@@ -814,7 +814,7 @@ class TestAp(unittest.TestCase):
                     object_results=[object_results],
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
-                    matching_mode=MatchingMode.IOUBEV,
+                    matching_mode=MatchingMode.IOU2D,
                     matching_threshold_list=[0.8],
                 )
                 aph: Ap = Ap(
@@ -822,7 +822,7 @@ class TestAp(unittest.TestCase):
                     object_results=[object_results],
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
-                    matching_mode=MatchingMode.IOUBEV,
+                    matching_mode=MatchingMode.IOU2D,
                     matching_threshold_list=[0.7],
                 )
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -834,9 +834,9 @@ class TestAp(unittest.TestCase):
                 #     out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}"
                 # )
 
-    def test_ap_iou_bev_random_objects(self):
+    def test_ap_iou_2d_random_objects(self):
         """[summary]
-        Test AP and APH with iou bev matching for random objects.
+        Test AP and APH with iou 2d(bev) matching for random objects.
 
         test objects:
             dummy_ground_truth_objects (List[DynamicObject])
@@ -875,7 +875,7 @@ class TestAp(unittest.TestCase):
             object_results=[object_results],
             num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
-            matching_mode=MatchingMode.IOUBEV,
+            matching_mode=MatchingMode.IOU2D,
             matching_threshold_list=[0.4],
         )
         aph: Ap = Ap(
@@ -883,7 +883,7 @@ class TestAp(unittest.TestCase):
             object_results=[object_results],
             num_ground_truth=num_ground_truth,
             target_labels=self.target_labels,
-            matching_mode=MatchingMode.IOUBEV,
+            matching_mode=MatchingMode.IOU2D,
             matching_threshold_list=[0.4],
         )
 

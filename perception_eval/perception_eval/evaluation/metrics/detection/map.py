@@ -15,52 +15,53 @@
 from typing import Dict
 from typing import List
 
-from perception_eval.common.label import AutowareLabel
-from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.common.label import LabelType
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.ap import Ap
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
 class Map:
-    """[summary]
-    mAP class
+    """mAP metrics score class.
 
     Attributes:
-        self.map_config (MapConfig): The config for mAP calculation
-        self.aps (List[Ap]): The list of AP (Average Precision) for each label
-        self.map (float): mAP value
+        map_config (MapConfig): The config for mAP calculation.
+        aps (List[Ap]): The list of AP (Average Precision) for each label.
+        map (float): mAP value.
+
+    Args:
+        object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results
+        target_labels (List[LabelType]): Target labels to evaluate mAP
+        matching_mode (MatchingMode): Matching mode like distance between the center of
+            the object, 3d IoU.
+        matching_threshold_list (List[float]):
+            The matching threshold to evaluate. Defaults to None.
+            For example, if matching_mode = IOU3d and matching_threshold = 0.5,
+            and IoU of the object is higher than "matching_threshold",
+            this function appends to return objects.
     """
 
     def __init__(
         self,
-        object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]],
-        num_ground_truth_dict: Dict[AutowareLabel, int],
-        target_labels: List[AutowareLabel],
+        object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]],
+        num_ground_truth_dict: Dict[LabelType, int],
+        target_labels: List[LabelType],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
+        is_detection_2d: bool = False,
     ) -> None:
-        """[summary]
-
-        Args:
-            object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results
-            target_labels (List[AutowareLabel]): Target labels to evaluate mAP
-            matching_mode (MatchingMode): Matching mode like distance between the center of
-                                           the object, 3d IoU.
-            matching_threshold_list (List[float]):
-                    The matching threshold to evaluate. Defaults to None.
-                    For example, if matching_mode = IOU3d and matching_threshold = 0.5,
-                    and IoU of the object is higher than "matching_threshold",
-                    this function appends to return objects.
-        """
-        self.target_labels: List[AutowareLabel] = target_labels
+        self.target_labels: List[LabelType] = target_labels
         self.matching_mode: MatchingMode = matching_mode
         self.matching_threshold_list: List[float] = matching_threshold_list
+        self.is_detection_2d: bool = is_detection_2d
 
         # calculate AP & APH
         self.aps: List[Ap] = []
         self.aphs: List[Ap] = []
+        sum_ap: float = 0.0
+        sum_aph: float = 0.0
         for target_label, matching_threshold in zip(target_labels, matching_threshold_list):
             object_results = object_results_dict[target_label]
             num_ground_truth = num_ground_truth_dict[target_label]
@@ -73,31 +74,34 @@ class Map:
                 matching_threshold_list=[matching_threshold],
             )
             self.aps.append(ap_)
+            sum_ap += ap_.ap
 
-            aph_ = Ap(
-                tp_metrics=TPMetricsAph(),
-                object_results=object_results,
-                num_ground_truth=num_ground_truth,
-                target_labels=[target_label],
-                matching_mode=matching_mode,
-                matching_threshold_list=[matching_threshold],
-            )
-            self.aphs.append(aph_)
+            if not self.is_detection_2d:
+                aph_ = Ap(
+                    tp_metrics=TPMetricsAph(),
+                    object_results=object_results,
+                    num_ground_truth=num_ground_truth,
+                    target_labels=[target_label],
+                    matching_mode=matching_mode,
+                    matching_threshold_list=[matching_threshold],
+                )
+                self.aphs.append(aph_)
+                sum_aph += aph_.ap
 
         # calculate mAP & mAPH
-        sum_ap: float = 0.0
-        sum_aph: float = 0.0
-        for ap, aph in zip(self.aps, self.aphs):
-            sum_ap += ap.ap
-            sum_aph += aph.ap
         self.map: float = sum_ap / len(target_labels)
         self.maph: float = sum_aph / len(target_labels)
 
     def __str__(self) -> str:
-        """__str__ method"""
+        """__str__ method
+
+        Returns:
+            str: Formatted string.
+        """
 
         str_: str = "\n"
-        str_ += f"mAP: {self.map:.3f}, mAPH: {self.maph:.3f} "
+        str_ += f"mAP: {self.map:.3f}"
+        str_ += ", mAPH: {self.maph:.3f} " if not self.is_detection_2d else " "
         str_ += f"({self.matching_mode.value})\n"
         # Table
         str_ += "\n"
@@ -121,12 +125,13 @@ class Map:
         for ap_ in self.aps:
             str_ += f" {ap_.ap:.3f} | "
         str_ += "\n"
-        str_ += "|        APH |"
-        for aph_ in self.aphs:
-            target_str = ""
-            for target in aph_.target_labels:
-                target_str += target.value
-            str_ += f" {aph_.ap:.3f} | "
-        str_ += "\n"
+        if not self.is_detection_2d:
+            str_ += "|        APH |"
+            for aph_ in self.aphs:
+                target_str = ""
+                for target in aph_.target_labels:
+                    target_str += target.value
+                str_ += f" {aph_.ap:.3f} | "
+            str_ += "\n"
 
         return str_
