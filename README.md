@@ -10,7 +10,7 @@
 
 ### Evaluate Perception & Sensing task
 
-- 3D task
+#### 3D tasks
 
 | Task       |     Metrics      | Sub-metrics                         |
 | :--------- | :--------------: | :---------------------------------- |
@@ -19,7 +19,7 @@
 | Prediction |       WIP        | WIP                                 |
 | Sensing    | Check Pointcloud | Detection Area & Non-detection Area |
 
-- 2D task
+#### 2D tasks
 
 | Task             | Metrics  | Sub-metrics                          |
 | :--------------- | :------: | :----------------------------------- |
@@ -85,9 +85,12 @@ pass_fail_config = PerceptionPassFailConfig(
     matching_threshold_list=[2.0, 2.0, 2.0, 2.0],
 )
 
+# LIDAR_TOP or LIDAR_CONCAT
+sensor_name = "LIDAR_TOR"
+
 for frame in datasets:
     unix_time = frame.unix_time
-    pointcloud: numpy.ndarray = frame.raw_data
+    pointcloud: numpy.ndarray = frame.raw_data[sensor_name]
     outputs = model(pointcloud)
     # create a list of estimated objects with your model's outputs
     estimated_objects = [DynamicObject(unix_time=unix_time, ...) for out in outputs]
