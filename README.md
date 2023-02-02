@@ -27,16 +27,34 @@
 | Tracking2D       |  CLEAR   | MOTA, MOTP, IDswitch                 |
 | Classification2D | Accuracy | Accuracy, Precision, Recall, F1score |
 
+### Dataset format
+
+We support `T4Dataset` format. This has same structure with [NuScenes](https://www.nuscenes.org/nuscenes).
+The expected dataset directory tree is shown as below.
+
+```shell
+data_root/
+    │── annotation/     ... annotation information in json format.
+    │   │── sample.json
+    │   │── sample_data.json
+    │   │── sample_annotation.json
+    │   └── ...
+    └── data/           ... raw data.
+        │── LIDAR_CONCAT/  # LIDAR_TOP is also OK.
+        └── CAM_**/
+```
+
 ## Using `perception_eval`
 
-### Evaluate with ROS node
+### Evaluate with ROS
 
-`perception_eval` are mainly used in [tier4/driving_log_replayer](https://github.com/tier4/driving_log_replayer).
-If you want to evaluated your perception results using ROS node, use driving_log_replayer or see [test/perception_lsim.py](./perception_eval/test/perception_lsim.py).
+`perception_eval` is mainly used in [tier4/driving_log_replayer](https://github.com/tier4/driving_log_replayer) that is a tool to evaluate output of [autoware](https://github.com/autowarefoundation/autoware).
+If you want to evaluate your perception results through ROS, use `driving_log_replayer` or refer [test/perception_lsim.py](./perception_eval/test/perception_lsim.py).
 
 ### Evaluate with your ML model
 
 This is a simple example to evaluate your 3D detection ML model.
+Basically, most parts of the codes are same with [test/perception_lsim.py](perception_eval/test/perception_lsim.py), so please refer it.
 
 ```python
 from perception_eval.config import PerceptionEvaluationConfig
@@ -54,43 +72,19 @@ evaluation_config = PerceptionEvaluationConfig(
     frame_id="base_link",
     merge_similar_labels=False,
     result_root_directory="./data/result",
-    evaluation_config_dict={
-        "evaluation_task": "detection"
-        "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
-        "max_x_position": 100,
-        "max_y_position": 100,
-        "center_distance_thresholds": [1.0],
-        "plane_distance_thresholds": [1.0],
-        "iou_2d_thresholds": [0.5],
-        "iou_3d_thresholds": [0.5],
-        "min_point_numbers": [0, 0, 0, 0],
-    }
+    evaluation_config_dict={"evaluation_task": "detection",...},
     load_raw_data=True,
 )
 
 # initialize Evaluation Manager
 evaluator = PerceptionEvaluationManager(evaluation_config=evaluation_config)
 
-# this is optional
-critical_object_filter_config = CriticalObjectFilterConfig(
-    evaluator_config=evaluator.evaluator_config,
-    target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-    max_x_position_list=[100, 100, 100, 100],
-    max_y_position_list=[100, 100, 100, 100],
-)
-
-pass_fail_config = PerceptionPassFailConfig(
-    evaluator_config=evaluator.evaluator_config,
-    target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-    matching_threshold_list=[2.0, 2.0, 2.0, 2.0],
-)
-
-# LIDAR_TOP or LIDAR_CONCAT
-sensor_name = "LIDAR_TOR"
+critical_object_filter_config = CriticalObjectFilterConfig(...)
+pass_fail_config = PerceptionPassFailConfig(...)
 
 for frame in datasets:
     unix_time = frame.unix_time
-    pointcloud: numpy.ndarray = frame.raw_data[sensor_name]
+    pointcloud: numpy.ndarray = frame.raw_data
     outputs = model(pointcloud)
     # create a list of estimated objects with your model's outputs
     estimated_objects = [DynamicObject(unix_time=unix_time, ...) for out in outputs]
