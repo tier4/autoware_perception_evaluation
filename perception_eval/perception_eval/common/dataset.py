@@ -14,7 +14,6 @@
 
 import logging
 from typing import Any
-from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -39,7 +38,7 @@ class FrameGroundTruth:
         self.frame_name (str): The file name for the frame.
         self.objects (List[ObjectType]): Objects data.
         self.ego2map (Optional[np.ndarray]): The numpy array to transform position.
-        self.raw_data (Optional[Dict[str, numpy.ndarray]]): Raw data for each sensor modality.
+        self.raw_data (Optional[numpy.ndarray]): Raw data for each sensor modality.
     """
 
     def __init__(
@@ -49,7 +48,7 @@ class FrameGroundTruth:
         frame_id: str,
         objects: List[ObjectType],
         ego2map: Optional[np.ndarray] = None,
-        raw_data: Optional[Dict[str, np.ndarray]] = None,
+        raw_data: Optional[np.ndarray] = None,
     ) -> None:
         """[summary]
 
@@ -60,14 +59,14 @@ class FrameGroundTruth:
             objects (List[ObjectType]): Objects data
             ego2map (Optional[np.ndarray]): The array of 4x4 matrix.
                 Transform position with respect to vehicle coord system to map one.
-            raw_data (Optional[Dict[str, numpy.ndarray]]): Raw data for each sensor modality.
+            raw_data (Optional[numpy.ndarray]): Raw data for each sensor modality.
         """
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
         self.frame_id: str = frame_id
         self.objects: List[ObjectType] = objects
         self.ego2map: Optional[np.ndarray] = ego2map
-        self.raw_data: Optional[Dict[str, np.ndarray]] = raw_data
+        self.raw_data: Optional[np.ndarray] = raw_data
 
 
 def load_all_datasets(
