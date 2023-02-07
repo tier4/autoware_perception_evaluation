@@ -18,6 +18,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
+from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
 from pyquaternion.quaternion import Quaternion
 
@@ -182,4 +183,27 @@ def get_objects_with_difference(
         )
 
         output_objects.append(test_object_)
+    return output_objects
+
+
+def get_objects_with_difference2d(
+    objects: List[DynamicObject2D], translate: Tuple[int, int]
+) -> List[DynamicObject2D]:
+    output_objects: List[DynamicObject2D] = []
+    for object_ in objects:
+        offset_: Tuple[int, int] = (
+            object_.roi.offset[0] + translate[0],
+            object_.roi.offset[1] + translate[1],
+        )
+
+        output_objects.append(
+            DynamicObject2D(
+                unix_time=object_.unix_time,
+                semantic_score=object_.semantic_score,
+                semantic_label=object_.semantic_label,
+                roi=(*offset_, *object_.roi.size),
+                uuid=object_.uuid,
+                visibility=object_.visibility,
+            )
+        )
     return output_objects
