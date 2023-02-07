@@ -266,11 +266,11 @@ if __name__ == "__main__":
     # Classification performance report
     classification_analyzer = PerceptionAnalyzer2D(classification_lsim.evaluator.evaluator_config)
     classification_analyzer.add(classification_lsim.evaluator.frame_results)
-    score_df, error_df = classification_analyzer.analyze()
+    score_df, conf_mat_df = classification_analyzer.analyze()
     if score_df is not None:
         logging.info(score_df.to_string())
-    if error_df is not None:
-        logging.info(error_df.to_string())
+    if conf_mat_df is not None:
+        logging.info(conf_mat_df.to_string())
 
     # Clean up tmpdir
     if args.use_tmpdir:

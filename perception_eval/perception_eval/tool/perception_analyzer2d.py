@@ -20,6 +20,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 from matplotlib.axes import Axes
@@ -27,6 +28,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
@@ -216,6 +218,32 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
 
         return {"ground_truth": gt_ret, "estimation": est_ret}
 
+    def analyze(self, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
+        """[summary]
+        Analyze TP/FP/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
+
+        Args:
+            **kwargs: Specify scene, frame, area or uuid.
+
+        Returns:
+            score_df (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
+            error_df (Optional[pandas.DataFrame]): DataFrame of errors. For classification, returns confusion matrix.
+        """
+        df: pd.DataFrame = self.get(**kwargs)
+        if len(df) > 0:
+            ratio_df = self.summarize_ratio(df=df)
+            error_df = (
+                self.get_confusion_matrix(df=df)
+                if self.config.evaluation_task == EvaluationTask.CLASSIFICATION2D
+                else self.summarize_error(df=df)
+            )
+            metrics_df = self.summarize_score(scene=kwargs.get("scene"), **kwargs)
+            score_df = pd.concat([ratio_df, metrics_df], axis=1)
+            return score_df, error_df
+
+        logging.warning("There is no DataFrame to be able to analyze.")
+        return None, None
+
     def summarize_error(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """Calculate mean, sigma, RMS, max and min of error.
 
@@ -245,7 +273,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             df = self.df
 
         all_data: Dict[str, Dict[str, any]] = {}
-        for label in self.__all_labels:
+        for label in self.all_labels:
             data = {}
             df_ = df if label == "ALL" else df[df["label"] == label]
 
@@ -261,6 +289,35 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         )
 
         return ret_df
+
+    def get_confusion_matrix(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        """Returns confusion matrix as DataFrame.
+
+        Args:
+            df (Optional[pd.DataFrame]): Specify if you want to use filtered DataFrame. Defaults to None.
+
+        Returns:
+            pd.DataFrame: Confusion matrix.
+        """
+        if df is None:
+            df = self.df
+
+        est_indices: np.ndarray = (
+            self.get_estimation(df=df)["label"]
+            .apply(lambda label: self.target_labels.index(label))
+            .to_numpy()
+        )
+        gt_indices: np.ndarray = (
+            self.get_ground_truth(df=df)["label"]
+            .apply(lambda label: self.target_labels.index(label))
+            .to_numpy()
+        )
+
+        num_classes = len(self.target_labels)
+        indices = num_classes * gt_indices + est_indices
+        matrix: np.ndarray = np.bincount(indices, minlength=num_classes**2)
+        matrix = matrix.reshape(num_classes, num_classes)
+        return pd.DataFrame(data=matrix, index=self.target_labels, columns=self.target_labels)
 
     def plot_num_object(
         self,

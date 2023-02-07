@@ -404,6 +404,7 @@ def get_metrics_info(metrics_score: MetricsScore) -> Dict[str, Any]:
             data[ap_mode].append(ap.ap)
             data[aph_mode].append(aph.ap)
 
+    # tracking
     for tracking_score in metrics_score.tracking_scores:
         mode: str = str(tracking_score.matching_mode)
         mota_mode: str = f"MOTA({mode})"
@@ -417,6 +418,19 @@ def get_metrics_info(metrics_score: MetricsScore) -> Dict[str, Any]:
             data[mota_mode].append(clear.results["MOTA"])
             data[motp_mode].append(clear.results["MOTP"])
             data[id_switch_mode].append(clear.results["id_switch"])
+
+    # classification
+    for classification_score in metrics_score.classification_scores:
+        accuracy, precision, recall, f1score = classification_score._summarize()
+        data["Accuracy"] = [accuracy]
+        data["Precision"] = [precision]
+        data["Recall"] = [recall]
+        data["F1score"] = [f1score]
+        for cls_acc in classification_score.accuracies:
+            data["Accuracy"].append(cls_acc.accuracy)
+            data["Precision"].append(cls_acc.precision)
+            data["Recall"].append(cls_acc.recall)
+            data["F1score"].append(cls_acc.f1score)
 
     return data
 

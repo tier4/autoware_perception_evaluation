@@ -397,12 +397,14 @@ class PerceptionAnalyzerBase(ABC):
             config=self.config.metrics_config,
             used_frame=used_frame,
         )
-        if self.__config.metrics_config.detection_config is not None:
+        if self.config.metrics_config.detection_config is not None:
             metrics_score.evaluate_detection(scene_results, scene_num_gt)
-        if self.__config.metrics_config.tracking_config is not None:
+        if self.config.metrics_config.tracking_config is not None:
             metrics_score.evaluate_tracking(scene_results, scene_num_gt)
-        if self.__config.metrics_config.prediction_config is not None:
+        if self.config.metrics_config.prediction_config is not None:
             pass
+        if self.config.metrics_config.classification_config is not None:
+            metrics_score.evaluate_classification(scene_results, scene_num_gt)
 
         return metrics_score
 
@@ -636,9 +638,9 @@ class PerceptionAnalyzerBase(ABC):
             df = self.df
 
         data: Dict[str, List[float]] = {
-            str(s): [0.0] * len(self.__all_labels) for s in MatchingStatus
+            str(s): [0.0] * len(self.all_labels) for s in MatchingStatus
         }
-        for i, label in enumerate(self.__all_labels):
+        for i, label in enumerate(self.all_labels):
             if label == "ALL":
                 label = None
             num_ground_truth: int = self.get_num_ground_truth(label=label)
@@ -646,7 +648,7 @@ class PerceptionAnalyzerBase(ABC):
                 data["TP"][i] = self.get_num_tp(label=label) / num_ground_truth
                 data["FN"][i] = self.get_num_fn(label=label) / num_ground_truth
                 data["FP"][i] = self.get_num_fp(label=label) / num_ground_truth
-        return pd.DataFrame(data, index=self.__all_labels)
+        return pd.DataFrame(data, index=self.all_labels)
 
     def summarize_score(self, scene: Optional[Union[int, List[int]]] = None) -> pd.DataFrame:
         """Summarize MetricsScore.
@@ -667,4 +669,4 @@ class PerceptionAnalyzerBase(ABC):
         metrics_score = self.get_metrics_score(frame_results)
         data: Dict[str, Any] = get_metrics_info(metrics_score)
 
-        return pd.DataFrame(data, index=self.__all_labels)
+        return pd.DataFrame(data, index=self.all_labels)

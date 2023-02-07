@@ -369,7 +369,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             df = self.df
 
         all_data = {}
-        for label in self.__all_labels:
+        for label in self.all_labels:
             data = {}
             df_ = df if label == "ALL" else df[df["label"] == label]
 
@@ -424,7 +424,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         metrics_score = self.get_metrics_score(frame_results)
         data: Dict[str, Any] = get_metrics_info(metrics_score)
 
-        return pd.DataFrame(data, index=self.__all_labels)
+        return pd.DataFrame(data, index=self.all_labels)
 
     def plot_num_object(
         self,
