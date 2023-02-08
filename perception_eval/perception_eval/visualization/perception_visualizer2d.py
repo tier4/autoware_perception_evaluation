@@ -24,7 +24,7 @@ from typing import Union
 
 from matplotlib.animation import ArtistAnimation
 from matplotlib.axes import Axes
-import matplotlib.patches as patches
+from matplotlib.patches import Patch
 from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 import numpy as np
@@ -53,13 +53,9 @@ class PerceptionVisualizer2D:
         self.__config: PerceptionEvaluationConfig = config
         self.__cmap: ColorMap = ColorMap(rgb=True)
         self.__figsize: Tuple[float, float] = (
-            kwargs.get("width", 640) / 100.0,
-            kwargs.get("height", 640) / 100.0,
+            kwargs.get("width", 800) / 100.0,
+            kwargs.get("height", 600) / 100.0,
         )
-
-        if self.config.evaluation_task == EvaluationTask.TRACKING2D:
-            # Each tracked path is specified by uuid.gt/est_track.label
-            self.__tracked_paths: Dict[str, List[Tuple[float, float]]] = {}
 
         self.__figure, self.__axes = plt.subplots(figsize=self.__figsize)
         self.__animation_frames: List[List[plt.Artist]] = []
@@ -191,48 +187,44 @@ class PerceptionVisualizer2D:
         frame_artists: List[Axes.ArtistList] = []
 
         # Plot objects
-        handles: List[patches.Patch] = []
+        handles: List[Patch] = []
         axes, artists = self.plot_objects(
             objects=frame_result.pass_fail_result.tp_objects,
             is_ground_truth=False,
             axes=axes,
-            label="TP est",
             color="blue",
         )
         frame_artists += artists
-        handles.append(patches.Patch(color="blue", label="TP est"))
+        handles.append(Patch(color="blue", label="TP est"))
 
         axes, artists = self.plot_objects(
             objects=frame_result.pass_fail_result.tp_objects,
             is_ground_truth=True,
             axes=axes,
-            label="TP GT",
             color="red",
         )
         frame_artists += artists
-        handles.append(patches.Patch(color="red", label="TP GT"))
+        handles.append(Patch(color="red", label="TP GT"))
 
         axes, artists = self.plot_objects(
             objects=frame_result.pass_fail_result.fp_objects_result,
             is_ground_truth=False,
             axes=axes,
-            label="FP",
             color="cyan",
         )
         frame_artists += artists
-        handles.append(patches.Patch(color="cyan", label="FP"))
+        handles.append(Patch(color="cyan", label="FP"))
 
         axes, artists = self.plot_objects(
             objects=frame_result.pass_fail_result.fn_objects,
             is_ground_truth=True,
             axes=axes,
-            label="FN",
             color="orange",
         )
         frame_artists += artists
-        handles.append(patches.Patch(color="orange", label="FN"))
+        handles.append(Patch(color="orange", label="FN"))
 
-        legend = plt.legend(
+        legend = axes.legend(
             handles=handles,
             bbox_to_anchor=(1.1, 1.1),
             loc="upper right",
@@ -256,7 +248,6 @@ class PerceptionVisualizer2D:
         objects: List[Union[DynamicObject2D, DynamicObjectWithPerceptionResult]],
         is_ground_truth: bool,
         axes: Optional[Axes] = None,
-        label: Optional[str] = None,
         color: Optional[str] = None,
     ) -> Tuple[Axes, List[plt.Artist]]:
         """Plot objects on image.
@@ -271,7 +262,6 @@ class PerceptionVisualizer2D:
             objects (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): The list of object being visualized.
             is_ground_truth (bool): Whether ground truth object is.
             axes (Optional[Axes]): The Axes instance. If not specified, new Axes is created. Defaults to None.
-            label (str): The label of object type, e.g. TP/FP/FP. Defaults to None.
             color (Optional[str]): The name of color, red/green/blue/yellow/cyan/black. Defaults to None.
                 If not be specified, red is used.
 
@@ -285,6 +275,7 @@ class PerceptionVisualizer2D:
         artists: List[plt.Artist] = []
         color: str = "red" if color is None else color
         edge_color = self.__cmap.get_simple(color)
+        object_text = "GT" if is_ground_truth else "Est"
         for object_ in objects:
             if isinstance(object_, DynamicObjectWithPerceptionResult):
                 object_: DynamicObject2D = (
@@ -295,17 +286,21 @@ class PerceptionVisualizer2D:
             box_top_left: np.ndarray = np.array(object_.roi.offset)
             box_size: np.ndarray = np.array(object_.roi.size)
             box_bottom_left: np.ndarray = box_top_left
+            if self.config.evaluation_task == EvaluationTask.TRACKING2D:
+                edge_color = self.__cmap.get(object_.uuid)
 
+            box_text = f"{object_text}: {str(object_.semantic_label)}"
             box: Rectangle = Rectangle(
                 xy=box_bottom_left,
                 width=box_size[0],
                 height=box_size[1],
                 edgecolor=edge_color,
                 fill=False,
-                label=str(object_.semantic_label),
+                label=box_text,
             )
             axes.add_patch(box)
             artists.append(box)
+            axes.text(*box_bottom_left, s=box_text, fontsize="x-small", color=edge_color)
 
         return axes, artists
 

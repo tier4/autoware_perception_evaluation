@@ -81,7 +81,7 @@ class PerceptionLSimMoc:
             merge_similar_labels=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
-            load_raw_data=False,
+            load_raw_data=True,
         )
 
         _ = configure_logger(
@@ -191,7 +191,7 @@ if __name__ == "__main__":
     for ground_truth_frame in detection_lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference(
             ground_truth_objects=ground_truth_frame.objects,
-            diff_distance=(2.3, 0.0, 0.2),
+            diff_distance=(1.0, 0.0, 0.2),
             diff_yaw=0.2,
             is_confidence_with_distance=True,
         )
