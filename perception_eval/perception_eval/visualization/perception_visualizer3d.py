@@ -64,8 +64,8 @@ class PerceptionVisualizer3D:
         self.__figure, self.__axes = plt.subplots(figsize=self.__figsize)
         self.__animation_frames: List[List[plt.Artist]] = []
 
-        max_x_position_list = config.filtering_params.get("max_x_position")
-        max_y_position_list = config.filtering_params.get("max_y_position")
+        max_x_position_list = config.filtering_params.get("max_x_position_list")
+        max_y_position_list = config.filtering_params.get("max_y_position_list")
         max_distance_list = config.filtering_params.get("max_distance_list")
         if max_distance_list is None and (
             max_x_position_list is None or max_y_position_list is None
@@ -214,6 +214,7 @@ class PerceptionVisualizer3D:
             axes=axes,
             label="TP est",
             color="blue",
+            pointcloud=frame_result.frame_ground_truth.raw_data,
         )
         frame_artists += artists
 
@@ -223,6 +224,7 @@ class PerceptionVisualizer3D:
             axes=axes,
             label="TP GT",
             color="red",
+            pointcloud=frame_result.frame_ground_truth.raw_data,
         )
         frame_artists += artists
 
@@ -232,6 +234,7 @@ class PerceptionVisualizer3D:
             axes=axes,
             label="FP",
             color="cyan",
+            pointcloud=frame_result.frame_ground_truth.raw_data,
         )
         frame_artists += artists
 
@@ -241,6 +244,7 @@ class PerceptionVisualizer3D:
             axes=axes,
             label="FN",
             color="orange",
+            pointcloud=frame_result.frame_ground_truth.raw_data,
         )
         frame_artists += artists
 
@@ -291,14 +295,6 @@ class PerceptionVisualizer3D:
             ego_xy: np.ndarray = ego2map[:2, 3]
         box_width: float = size[0]
         box_height: float = size[1]
-        scatter_ = axes.scatter(
-            ego_xy[0],
-            ego_xy[1],
-            color=ego_color,
-            label="Ego vehicle",
-            s=0.5 * self.__width / 640,
-        )
-        artists.append(scatter_)
 
         plt.xlim([-self.xlim + ego_xy[0], self.xlim + ego_xy[0]])
         plt.ylim([-self.ylim + ego_xy[1], self.ylim + ego_xy[1]])
@@ -332,6 +328,7 @@ class PerceptionVisualizer3D:
         axes: Optional[Axes] = None,
         label: Optional[str] = None,
         color: Optional[str] = None,
+        pointcloud: Optional[np.ndarray] = None,
     ) -> Tuple[Axes, List[plt.Artist]]:
         """Plot objects in BEV space.
 
@@ -358,10 +355,10 @@ class PerceptionVisualizer3D:
 
         artists: List[plt.Artist] = []
 
-        box_center_x: List[float] = []
-        box_center_y: List[float] = []
         color: str = "red" if color is None else color
         edge_color = self.__cmap.get_simple(color)
+
+        cropped_pointcloud = []
         for object_ in objects:
             if isinstance(object_, DynamicObjectWithPerceptionResult):
                 if is_ground_truth:
@@ -425,10 +422,23 @@ class PerceptionVisualizer3D:
             if self.config.evaluation_task == EvaluationTask.PREDICTION:
                 pass
 
-            box_center_x.append(box_center[0])
-            box_center_y.append(box_center[1])
-        scatter_ = axes.scatter(box_center_x, box_center_y, color=edge_color, label=label, s=0.5)
-        artists.append(scatter_)
+            if pointcloud is not None:
+                cropped_pointcloud += object_.crop_pointcloud(
+                    pointcloud=pointcloud.copy(),
+                    inside=True,
+                ).tolist()
+
+        if pointcloud is not None and len(cropped_pointcloud) > 0:
+            cropped_pointcloud = np.array(cropped_pointcloud)
+            scatter_ = axes.scatter(
+                x=cropped_pointcloud[:, 0],
+                y=cropped_pointcloud[:, 1],
+                marker=".",
+                color=edge_color,
+                label=label,
+                s=0.5,
+            )
+            artists.append(scatter_)
 
         return axes, artists
 

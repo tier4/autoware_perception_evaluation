@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from typing import List
+from typing import Sequence
 from typing import Tuple
 
 import numpy as np
@@ -72,21 +73,22 @@ def to_bev(point_1: np.ndarray) -> np.ndarray:
 
 def crop_pointcloud(
     pointcloud: np.ndarray,
-    area: List[Tuple[float, float, float]],
+    area: List[Sequence[float]],
     inside: bool = True,
 ) -> np.ndarray:
-    """Crop pointcloud from (N, 3) to (M, 3) with Crossing Number Algorithm.
+    """Crop pointcloud from (N, C) to (M, C) with Crossing Number Algorithm.
+    If input pointcloud is 2D, crop with xy area.
 
     TODO:
         Implement to support the case area min/max height is not constant.
 
     Args:
-        pointcloud (numpy.ndarray): The array of pointcloud, in shape (N, 3)
-        area (List[Tuple[float, float, float]]): The 3D-polygon area to be cropped
+        pointcloud (numpy.ndarray): The array of pointcloud, in shape (N, C)
+        area (List[Sequence[float]): The 3D-polygon area to be cropped
         inside (bool): Whether output inside pointcloud. Defaults to True.
 
     Returns:
-        numpy.ndarray: The  of cropped pointcloud, in shape (M, 3)
+        numpy.ndarray: The  of cropped pointcloud, in shape (M, C)
     """
     if pointcloud.ndim != 2 or pointcloud.shape[1] < 2:
         raise RuntimeError(
@@ -96,9 +98,6 @@ def crop_pointcloud(
         raise RuntimeError(
             f"The area must be a 3D-polygon, it needs the edges more than 6, but got {len(area)}."
         )
-
-    z_min: float = min(area, key=(lambda x: x[2]))[2]
-    z_max: float = max(area, key=(lambda x: x[2]))[2]
 
     # crop with polygon in xy-plane
     num_vertices = len(area)
@@ -116,12 +115,17 @@ def crop_pointcloud(
         flags_ *= pointcloud[:, 0] < (area[i][0] + (vt * (area[i + 1][0] - area[i][0])))
         cnt_arr_[flags_] += 1
 
-    if inside:
-        xy_idx: np.ndarray = cnt_arr_ % 2 != 0
-        z_idx: np.ndarray = (z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2])
-    else:
-        xy_idx: np.ndarray = cnt_arr_ % 2 == 0
-        z_idx: np.ndarray = ~((z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2]))
+    if pointcloud.shape[1] < 3:
+        xy_idx: np.ndarray = cnt_arr_ % 2 != 0 if inside else cnt_arr_ % 2 == 0
+        return pointcloud[xy_idx]
+
+    z_min: float = min(area, key=(lambda x: x[2]))[2]
+    z_max: float = max(area, key=(lambda x: x[2]))[2]
+    z_idx: np.ndarray = (
+        (z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2])
+        if inside
+        else ~((z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2]))
+    )
     return pointcloud[xy_idx * z_idx]
 
 
