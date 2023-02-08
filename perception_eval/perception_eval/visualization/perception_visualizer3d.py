@@ -24,6 +24,7 @@ from typing import Union
 
 from matplotlib.animation import ArtistAnimation
 from matplotlib.axes import Axes
+from matplotlib.patches import Patch
 from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 from matplotlib.transforms import Affine2D
@@ -54,7 +55,7 @@ class PerceptionVisualizer3D:
         assert config.evaluation_task.is_3d()
         self.__config: PerceptionEvaluationConfig = config
         self.__cmap: ColorMap = ColorMap(rgb=True)
-        self.__width, self.__height = kwargs.get("width", 640), kwargs.get("height", 640)
+        self.__width, self.__height = kwargs.get("width", 800), kwargs.get("height", 600)
         self.__figsize: Tuple[float, float] = (self.__width / 100.0, self.__height / 100.0)
 
         if self.config.evaluation_task == EvaluationTask.TRACKING2D:
@@ -208,6 +209,7 @@ class PerceptionVisualizer3D:
         frame_artists += artists
 
         # Plot objects
+        handles: List[Patch] = []
         axes, artists = self.plot_objects(
             objects=frame_result.pass_fail_result.tp_objects,
             is_ground_truth=False,
@@ -217,6 +219,7 @@ class PerceptionVisualizer3D:
             pointcloud=frame_result.frame_ground_truth.raw_data,
         )
         frame_artists += artists
+        handles.append(Patch(color="blue", label="TP est"))
 
         axes, artists = self.plot_objects(
             objects=frame_result.pass_fail_result.tp_objects,
@@ -227,6 +230,7 @@ class PerceptionVisualizer3D:
             pointcloud=frame_result.frame_ground_truth.raw_data,
         )
         frame_artists += artists
+        handles.append(Patch(color="red", label="TP GT"))
 
         axes, artists = self.plot_objects(
             objects=frame_result.pass_fail_result.fp_objects_result,
@@ -237,6 +241,7 @@ class PerceptionVisualizer3D:
             pointcloud=frame_result.frame_ground_truth.raw_data,
         )
         frame_artists += artists
+        handles.append(Patch(color="cyan", label="FP"))
 
         axes, artists = self.plot_objects(
             objects=frame_result.pass_fail_result.fn_objects,
@@ -247,8 +252,10 @@ class PerceptionVisualizer3D:
             pointcloud=frame_result.frame_ground_truth.raw_data,
         )
         frame_artists += artists
+        handles.append(Patch(color="orange", label="FN"))
 
         legend = plt.legend(
+            handles=handles,
             bbox_to_anchor=(1.1, 1.1),
             loc="upper right",
             borderaxespad=0,
