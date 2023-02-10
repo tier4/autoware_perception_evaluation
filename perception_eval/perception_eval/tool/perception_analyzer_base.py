@@ -18,6 +18,7 @@ from abc import ABC
 from abc import abstractmethod
 import logging
 import os
+import os.path as osp
 import pickle
 from typing import Any
 from typing import Dict
@@ -27,6 +28,11 @@ from typing import Set
 from typing import Tuple
 from typing import Union
 
+from matplotlib import cm
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import pandas as pd
 from perception_eval.common.label import AutowareLabel
@@ -42,6 +48,8 @@ from tqdm import tqdm
 from .utils import filter_df
 from .utils import get_metrics_info
 from .utils import MatchingStatus
+from .utils import PlotAxes
+from .utils import setup_axis
 
 
 class PerceptionAnalyzerBase(ABC):
@@ -670,3 +678,328 @@ class PerceptionAnalyzerBase(ABC):
         data: Dict[str, Any] = get_metrics_info(metrics_score)
 
         return pd.DataFrame(data, index=self.all_labels)
+
+    def plot_num_object(
+        self,
+        mode: PlotAxes = PlotAxes.DISTANCE,
+        show: bool = False,
+        bin: Optional[float] = None,
+        **kwargs,
+    ) -> None:
+        """Plot the number of objects for each time/distance range with histogram.
+
+        Args:
+            mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.DISTANCE (1-dimensional).
+            show (bool): Whether show the plotted figure. Defaults to False.
+            bin (float): The interval of time/distance. If not specified, 0.1[s] for time and 0.5[m] for distance will be use.
+                Defaults to None.
+            **kwargs: Specify if you want to plot for the specific conditions.
+                For example, label, area, frame or scene.
+        """
+
+        def _get_min_value(value1: np.ndarray, value2: np.ndarray) -> float:
+            return min(value1[~np.isnan(value1)].min(), value2[~np.isnan(value2)].min())
+
+        def _get_max_value(value1: np.ndarray, value2: np.ndarray) -> float:
+            return max(value1[~np.isnan(value1)].max(), value2[~np.isnan(value2)].max())
+
+        if len(kwargs) == 0:
+            title = "Number of Objects @all"
+            filename = "all"
+        else:
+            title: str = f"Num Object @{str(self.all_labels)}"
+            filename: str = ""
+            for key, item in kwargs.items():
+                title += f"@{key.upper()}:{item} "
+                filename += f"{item}_"
+            title = title.rstrip(" ")
+            filename = filename.rstrip("_")
+
+        if mode.is_2d():
+            xlabel: str = mode.xlabel
+            ylabel: str = "Number of samples"
+        else:
+            xlabel, ylabel = mode.get_label()
+
+        fig: Figure = plt.figure(figsize=(16, 8))
+        ax: Union[Axes, Axes3D] = fig.add_subplot(
+            xlabel=xlabel,
+            ylabel=ylabel,
+            title="Number of samples",
+            projection=mode.projection,
+        )
+        mode.setup_axis(ax, **kwargs)
+        gt_axes = mode.get_axes(self.get_ground_truth(**kwargs))
+        est_axes = mode.get_axes(self.get_estimation(**kwargs))
+
+        if mode.is_2d():
+            min_value = 0 if mode == PlotAxes.CONFIDENCE else _get_min_value(gt_axes, est_axes)
+            max_value = 100 if mode == PlotAxes.CONFIDENCE else _get_max_value(gt_axes, est_axes)
+            step = bin if bin else mode.get_bin()
+            bins = np.arange(min_value, max_value, step=step)
+            ax.hist([gt_axes, est_axes], bins=bins, label=["GT", "Estimation"], stacked=False)
+        else:
+            ax.set_zlabel("Number of samples")
+            gt_xaxes, gt_yaxes = gt_axes[:, ~np.isnan(gt_axes).any(0)]
+            est_xaxes, est_yaxes = est_axes[:, ~np.isnan(est_axes).any(0)]
+            gt_hist, gt_x_edges, gt_y_edges = np.histogram2d(gt_xaxes, gt_yaxes)
+            est_hist, est_x_edges, est_y_edges = np.histogram2d(est_xaxes, est_yaxes)
+            gt_x, gt_y = np.meshgrid(gt_x_edges[:-1], gt_y_edges[:-1])
+            est_x, est_y = np.meshgrid(est_x_edges[:-1], est_y_edges[:-1])
+            if bin is None:
+                dx, dy = mode.get_bin()
+            else:
+                if isinstance(bin, float):
+                    bin = (bin, bin)
+                elif not isinstance(bin, (list, tuple)) or len(bin) != 2:
+                    raise ValueError(f"bin for 3D plot must be 2-length, but got {bin}")
+                dx, dy = bin
+            dx *= 0.5
+            dy *= 0.5
+            ax.bar3d(gt_x.ravel(), gt_y.ravel(), 0, dx, dy, gt_hist.ravel(), alpha=0.6)
+            ax.bar3d(est_x.ravel(), est_y.ravel(), 0, dx, dy, est_hist.ravel(), alpha=0.6)
+
+        self.__post_process_figure(
+            fig=fig,
+            title=title,
+            filename=f"num_object_{str(mode)}_{filename}",
+            show=show,
+        )
+
+    def plot_state(
+        self,
+        uuid: str,
+        columns: Union[str, List[str]],
+        mode: PlotAxes = PlotAxes.TIME,
+        status: Optional[MatchingStatus] = None,
+        show: bool = False,
+        **kwargs,
+    ) -> None:
+        """[summary]
+        Plot states for each time/distance estimated and GT object in TP.
+
+        Args:
+            uuid (str): Target object's uuid.
+            columns (Union[str, List[str]]): Target column name.
+                If you want plot multiple column for one image, use List[str].
+            mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
+            status (Optional[int]): Target status TP/FP/FN. If not specified, plot all status. Defaults to None.
+            show (bool): Whether show the plotted figure. Defaults to False.
+            **kwargs
+        """
+        if isinstance(columns, str):
+            columns: List[str] = [columns]
+
+        gt_df = self.get_ground_truth(uuid=uuid, status=status)
+        index = pd.unique(gt_df.index.get_level_values(level=0))
+
+        if len(index) == 0:
+            logging.warning(f"There is no object ID: {uuid}")
+            return
+
+        est_df = self.get_estimation(df=self.df.loc[index])
+
+        gt_axes = mode.get_axes(gt_df)
+        est_axes = mode.get_axes(est_df)
+
+        # Plot GT and estimation
+        num_cols = len(columns)
+        fig: Figure = plt.figure(figsize=(8 * num_cols, 4))
+        for n, col in enumerate(columns):
+            if mode.is_2d():
+                xlabel: str = mode.xlabel
+                ylabel: str = f"{col}"
+                title: str = f"State {ylabel} = F({xlabel})"
+            else:
+                xlabel, ylabel = mode.get_label()
+                title: str = f"State {col} = F({xlabel}, {ylabel})"
+            ax: Axes = fig.add_subplot(
+                1,
+                num_cols,
+                n + 1,
+                xlabel=xlabel,
+                ylabel=ylabel,
+                title=title,
+                projection=mode.projection,
+            )
+            mode.setup_axis(ax, **kwargs)
+            gt_states = np.array(gt_df[col].tolist())
+            est_states = np.array(est_df[col].tolist())
+            if mode.is_2d():
+                ax.scatter(gt_axes, gt_states, label="GT", c="red", s=100)
+                ax.scatter(est_axes, est_states, label="Estimation")
+            else:
+                ax.set_zlabel(f"{col}")
+                gt_xaxes, gt_yaxes = gt_axes
+                est_xaxes, est_yaxes = est_axes
+                ax.scatter(gt_xaxes, gt_yaxes, gt_states, label="GT", c="red", s=100)
+                ax.scatter(est_xaxes, est_yaxes, est_states, label="Estimation")
+            ax.legend(loc="upper right", framealpha=0.4)
+
+        columns_str: str = "".join(columns)
+        self.__post_process_figure(
+            fig=fig,
+            title=f"State of {columns} @uuid:{uuid}",
+            filename=f"state_{columns_str}_{uuid}_{str(mode)}",
+            show=show,
+        )
+
+    def plot_error(
+        self,
+        columns: Union[str, List[str]],
+        mode: PlotAxes = PlotAxes.TIME,
+        heatmap: bool = False,
+        show: bool = False,
+        bin: int = 50,
+        **kwargs,
+    ) -> None:
+        """Plot states for each time/distance estimated and GT object in TP.
+
+        Args:
+            columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
+                If you want plot multiple column for one image, use List[str].
+            mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
+            heatmap (bool): Whether overlay heatmap. Defaults to False.
+            show (bool): Whether show the plotted figure. Defaults to False.
+            bin (int): Bin size to plot heatmap. Defaults to 50.
+            **kwargs: Specify if you want to plot for the specific conditions.
+                For example, label, area, frame or scene.
+        """
+        if isinstance(columns, str):
+            columns: List[str] = [columns]
+
+        tp_gt_df = self.get_ground_truth(status="TP", **kwargs)
+        tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
+
+        if len(tp_index) == 0:
+            logging.warning("There is no TP object. Could not calculate error.")
+            return
+
+        tp_df = self.df.loc[tp_index]
+
+        num_cols = len(columns)
+        fig: Figure = plt.figure(figsize=(8 * num_cols, 8))
+        for n, col in enumerate(columns):
+            if mode.is_2d():
+                xlabel: str = mode.xlabel
+                ylabel: str = f"err_{col}"
+                title: str = f"Error {ylabel} = F({xlabel})"
+            else:
+                xlabel, ylabel = mode.get_label()
+                title: str = f"Error {col} = F({xlabel}, {ylabel})"
+            ax: Union[Axes, Axes3D] = fig.add_subplot(
+                1,
+                num_cols,
+                n + 1,
+                xlabel=xlabel,
+                ylabel=ylabel,
+                title=title,
+                projection=mode.projection,
+            )
+
+            mode.setup_axis(ax, **kwargs)
+            err: np.ndarray = self.calculate_error(col, df=tp_df)
+            axes: np.ndarray = mode.get_axes(tp_gt_df)
+            if mode.is_2d():
+                non_nan = ~np.isnan(err) * ~np.isnan(axes)
+                axes = axes[non_nan]
+                err = err[non_nan]
+                if heatmap:
+                    ax.hist2d(axes, err, bins=(bin, bin), cmap=cm.jet)
+                else:
+                    ax.scatter(axes, err)
+            else:
+                ax.set_zlabel(f"err_{col}")
+                non_nan = ~np.isnan(err) * ~np.isnan(axes).any(0)
+                xaxes, yaxes = axes[:, non_nan]
+                err = err[non_nan]
+                if heatmap:
+                    ax.scatter(xaxes, yaxes, err, c=err, cmap=cm.jet)
+                    color_map = cm.ScalarMappable(cmap=cm.jet)
+                    color_map.set_array([err])
+                    plt.colorbar(color_map)
+                else:
+                    ax.scatter(xaxes, yaxes, err)
+
+        columns_str: str = "".join(columns)
+        columns_str += "_heatmap" if heatmap else ""
+        self.__post_process_figure(
+            fig=fig,
+            title=f"Errors@{columns}",
+            filename=f"error_{columns_str}_{str(mode)}",
+            show=show,
+        )
+
+    def box_plot(
+        self,
+        columns: Union[str, List[str]],
+        show: bool = False,
+        **kwargs,
+    ) -> None:
+        """Plot box-plot of errors.
+
+        Args:
+            column (Union[str, List[str]]): Target column name.
+                If you want plot multiple column for one image, use List[str].
+            show (bool): Whether show the plotted figure. Defaults to False.
+        """
+        if isinstance(columns, str):
+            columns: List[str] = [columns]
+
+        fig, ax = plt.subplots()
+        setup_axis(ax, **kwargs)
+
+        df = self.get(**kwargs)
+        errors: List[np.ndarray] = [self.calculate_error(col, df) for col in columns]
+        ax.boxplot(errors)
+        ax.set_xticklabels(columns)
+        columns_str: str = "".join(columns)
+        self.__post_process_figure(
+            fig=fig,
+            title=f"Box-plot of errors @{columns}",
+            filename=f"box_plot_{columns_str}",
+            show=show,
+        )
+
+    def plot_score(
+        self,
+        metric: str,
+        mode: PlotAxes,
+        show: bool = False,
+        **kwargs,
+    ) -> None:
+        """Plot the specified metrics score per confidence.
+
+        Args:
+            mode (PlotAxes): PlotAxes instance.
+            metrics (str): Metrics name.
+            show (bool): Whether show the plotted figure. Defaults to False.
+        """
+        est_df = self.get_estimation(**kwargs)
+        axes = mode.get_axes(est_df)
+        score_df = self.summarize_score(scene=kwargs.get("scene"))
+        num_labels: int = len(self.target_labels)
+        fig: Figure = plt.figure(figsize=(16, 8 * num_labels))
+        ax: Axes = fig.add_subplot(xlabel=mode.xlabel, ylabel="Score")
+        for i, target_label in enumerate(self.target_labels):
+            label_idx = est_df["label"] == target_label
+            label_axes = axes[label_idx]
+            label_score = score_df[metric][target_label]
+        ax.scatter(np.mean(label_axes), label_score, s=300, marker="*")
+
+        self.__post_process_figure(
+            fig=fig,
+            title=f"Score @{metric}",
+            filename=f"score_{mode.value}_{metric}",
+            show=show,
+        )
+
+    def __post_process_figure(self, fig: Figure, title: str, filename: str, show: bool) -> None:
+        fig.suptitle(title)
+        fig.legend()
+        fig.tight_layout()
+        fig.savefig(osp.join(self.plot_directory, f"{filename}.png"))
+        if show:
+            plt.show()
+        fig.clear()
+        plt.close()

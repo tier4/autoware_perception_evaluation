@@ -15,18 +15,12 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
 
-from matplotlib import cm
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D  # noqa
 import numpy as np
 import pandas as pd
 from perception_eval.common.object import DynamicObject
@@ -43,7 +37,6 @@ from .utils import get_area_idx
 from .utils import get_metrics_info
 from .utils import MatchingStatus
 from .utils import PlotAxes
-from .utils import setup_axis
 
 # TODO: Refactor plot methods
 
@@ -145,9 +138,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             "timestamp",
             "x",
             "y",
-            "w",
-            "l",
-            "h",
+            "width",
+            "length",
+            "height",
             "yaw",
             "vx",
             "vy",
@@ -168,9 +161,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         return [
             "x",
             "y",
-            "w",
-            "l",
-            "h",
+            "width",
+            "length",
+            "height",
             "yaw",
             "vx",
             "vy",
@@ -267,9 +260,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 timestamp=gt.unix_time,
                 x=gt_x,
                 y=gt_y,
-                w=gt_w,
-                l=gt_l,
-                h=gt_h,
+                width=gt_w,
+                length=gt_l,
+                hight=gt_h,
                 yaw=gt_yaw,
                 vx=gt_vx,
                 vy=gt_vy,
@@ -317,9 +310,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 timestamp=estimation.unix_time,
                 x=est_x,
                 y=est_y,
-                w=est_w,
-                l=est_l,
-                h=est_h,
+                width=est_w,
+                length=est_l,
+                height=est_h,
                 yaw=est_yaw,
                 vx=est_vx,
                 vy=est_vy,
@@ -376,8 +369,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             data["x"] = _summarize("x", df_)
             data["y"] = _summarize("y", df_)
             data["yaw"] = _summarize("yaw", df_)
-            data["length"] = _summarize("l", df_)
-            data["width"] = _summarize("w", df_)
+            data["length"] = _summarize("length", df_)
+            data["width"] = _summarize("width", df_)
             data["vx"] = _summarize("vx", df_)
             data["vy"] = _summarize("vy", df_)
             data["nn_plane"] = _summarize(["nn_point1", "nn_point2"], df_)
@@ -426,109 +419,6 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
         return pd.DataFrame(data, index=self.all_labels)
 
-    def plot_num_object(
-        self,
-        mode: PlotAxes = PlotAxes.DISTANCE,
-        show: bool = False,
-        bin: Optional[float] = None,
-        **kwargs,
-    ) -> None:
-        """[summary]
-        Plot the number of objects for each time/distance range with histogram.
-
-        Args:
-            mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.DISTANCE (1-dimensional).
-            show (bool): Whether show the plotted figure. Defaults to False.
-            bin (float): The interval of time/distance. If not specified, 0.1[s] for time and 0.5[m] for distance will be use.
-                Defaults to None.
-            **kwargs: Specify if you want to plot for the specific conditions.
-                For example, label, area, frame or scene.
-        """
-
-        def _get_min_value(value1: np.ndarray, value2: np.ndarray) -> float:
-            return min(value1[~np.isnan(value1)].min(), value2[~np.isnan(value2)].min())
-
-        def _get_max_value(value1: np.ndarray, value2: np.ndarray) -> float:
-            return max(value1[~np.isnan(value1)].max(), value2[~np.isnan(value2)].max())
-
-        if len(kwargs) == 0:
-            title = "Num Object @all"
-            filename = "all"
-        else:
-            title: str = "Num Object "
-            filename: str = ""
-            for key, item in kwargs.items():
-                title += f"@{key.upper()}:{item} "
-                filename += f"{item}_"
-            title = title.rstrip(" ")
-            filename = filename.rstrip("_")
-
-        gt_axes = mode.get_axes(self.get_ground_truth(**kwargs))
-        est_axes = mode.get_axes(self.get_estimation(**kwargs))
-
-        if mode.is_2d():
-            xlabel: str = mode.xlabel
-            ylabel: str = "num"
-        else:
-            xlabel, ylabel = mode.get_label()
-
-        # TODO: Arrange to single figure
-        fig: Figure = plt.figure(figsize=(16, 8))
-        ax1: Union[Axes, Axes3D] = fig.add_subplot(
-            1,
-            2,
-            1,
-            xlabel=xlabel,
-            ylabel=ylabel,
-            title="GT",
-            projection=mode.projection,
-        )
-        ax2: Union[Axes, Axes3D] = fig.add_subplot(
-            1,
-            2,
-            2,
-            xlabel=xlabel,
-            ylabel=ylabel,
-            title="Estimation",
-            projection=mode.projection,
-        )
-
-        setup_axis(ax1, **kwargs)
-        setup_axis(ax2, **kwargs)
-
-        if mode.is_2d():
-            min_value = _get_min_value(gt_axes, est_axes)
-            max_value = _get_max_value(gt_axes, est_axes)
-            step = bin if bin else mode.get_bin()
-            bins = np.arange(min_value, max_value, step=step)
-            ax1.hist(gt_axes, bins=bins)
-            ax2.hist(est_axes, bins=bins)
-        else:
-            ax1.set_zlabel("num")
-            ax2.set_zlabel("num")
-            gt_xaxes, gt_yaxes = gt_axes[:, ~np.isnan(gt_axes).any(0)]
-            est_xaxes, est_yaxes = est_axes[:, ~np.isnan(est_axes).any(0)]
-            gt_hist, gt_x_edges, gt_y_edges = np.histogram2d(gt_xaxes, gt_yaxes)
-            est_hist, est_x_edges, est_y_edges = np.histogram2d(est_xaxes, est_yaxes)
-            gt_x, gt_y = np.meshgrid(gt_x_edges[:-1], gt_y_edges[:-1])
-            est_x, est_y = np.meshgrid(est_x_edges[:-1], est_y_edges[:-1])
-            if bin is None:
-                dx, dy = mode.get_bin()
-            else:
-                if isinstance(bin, float):
-                    bin = (bin, bin)
-                if not isinstance(bin, (list, tuple)) or len(bin) != 2:
-                    raise RuntimeError(f"bin for 3D plot must be 2-length, but got {bin}")
-                dx, dy = bin
-            ax1.bar3d(gt_x.ravel(), gt_y.ravel(), 0, dx, dy, gt_hist.ravel())
-            ax2.bar3d(est_x.ravel(), est_y.ravel(), 0, dx, dy, est_hist.ravel())
-
-        plt.suptitle(f"{title}")
-        plt.savefig(os.path.join(self.plot_directory, f"num_object_{str(mode)}_{filename}.png"))
-        if show:
-            plt.show()
-        plt.close()
-
     def plot_state(
         self,
         uuid: str,
@@ -552,68 +442,16 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-
-        if set(columns) > set(["x", "y", "yaw", "w", "l", "vx", "vy"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
             raise ValueError(f"{columns} is unsupported for plot")
-
-        gt_df = self.get_ground_truth(uuid=uuid, status=status)
-        index = pd.unique(gt_df.index.get_level_values(level=0))
-
-        if len(index) == 0:
-            logging.warning(f"There is no object ID: {uuid}")
-            return
-
-        est_df = self.get_estimation(df=self.df.loc[index])
-
-        gt_axes = mode.get_axes(gt_df)
-        est_axes = mode.get_axes(est_df)
-
-        # Plot GT and estimation
-        num_cols = len(columns)
-        fig: Figure = plt.figure(figsize=(8 * num_cols, 4))
-        for n, col in enumerate(columns):
-            if mode.is_2d():
-                xlabel: str = mode.xlabel
-                ylabel: str = f"{col}"
-                title: str = f"State {ylabel} = F({xlabel})"
-            else:
-                xlabel, ylabel = mode.get_label()
-                title: str = f"State {col} = F({xlabel}, {ylabel})"
-            ax: Axes = fig.add_subplot(
-                1,
-                num_cols,
-                n + 1,
-                xlabel=xlabel,
-                ylabel=ylabel,
-                title=title,
-                projection=mode.projection,
-            )
-            setup_axis(ax, **kwargs)
-            gt_states = np.array(gt_df[col].tolist())
-            est_states = np.array(est_df[col].tolist())
-            if mode.is_2d():
-                ax.scatter(gt_axes, gt_states, label="GT", c="red", s=100)
-                ax.scatter(est_axes, est_states, label="Estimation")
-            else:
-                ax.set_zlabel(f"{col}")
-                gt_xaxes, gt_yaxes = gt_axes
-                est_xaxes, est_yaxes = est_axes
-                ax.scatter(gt_xaxes, gt_yaxes, gt_states, label="GT", c="red", s=100)
-                ax.scatter(est_xaxes, est_yaxes, est_states, label="Estimation")
-            ax.legend(loc="upper right", framealpha=0.4)
-
-        plt.suptitle(f"State of {columns} @uuid:{uuid}")
-        plt.tight_layout()
-        columns_str: str = "".join(columns)
-        plt.savefig(
-            os.path.join(
-                self.plot_directory,
-                f"state_{columns_str}_{uuid}_{str(mode)}.png",
-            )
+        return super().plot_state(
+            uuid=uuid,
+            columns=columns,
+            mode=mode,
+            status=status,
+            show=show,
+            **kwargs,
         )
-        if show:
-            plt.show()
-        plt.close()
 
     def plot_error(
         self,
@@ -639,71 +477,11 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-
-        if set(columns) > set(["x", "y", "yaw", "w", "l", "vx", "vy"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
             raise ValueError(f"{columns} is unsupported for plot")
-
-        tp_gt_df = self.get_ground_truth(status="TP", **kwargs)
-        tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
-
-        if len(tp_index) == 0:
-            logging.warning("There is no TP object")
-            return
-
-        tp_df = self.df.loc[tp_index]
-
-        num_cols = len(columns)
-        fig: Figure = plt.figure(figsize=(8 * num_cols, 8))
-        for n, col in enumerate(columns):
-            if mode.is_2d():
-                xlabel: str = mode.xlabel
-                ylabel: str = f"err_{col}"
-                title: str = f"Error {ylabel} = F({xlabel})"
-            else:
-                xlabel, ylabel = mode.get_label()
-                title: str = f"Error {col} = F({xlabel}, {ylabel})"
-            ax: Union[Axes, Axes3D] = fig.add_subplot(
-                1,
-                num_cols,
-                n + 1,
-                xlabel=xlabel,
-                ylabel=ylabel,
-                title=title,
-                projection=mode.projection,
-            )
-
-            setup_axis(ax, **kwargs)
-            err: np.ndarray = self.calculate_error(col, df=tp_df)
-            axes: np.ndarray = mode.get_axes(tp_gt_df)
-            if mode.is_2d():
-                non_nan = ~np.isnan(err) * ~np.isnan(axes)
-                axes = axes[non_nan]
-                err = err[non_nan]
-                if heatmap:
-                    ax.hist2d(axes, err, bins=(bin, bin), cmap=cm.jet)
-                else:
-                    ax.scatter(axes, err)
-            else:
-                ax.set_zlabel(f"err_{col}")
-                non_nan = ~np.isnan(err) * ~np.isnan(axes).any(0)
-                xaxes, yaxes = axes[:, non_nan]
-                err = err[non_nan]
-                if heatmap:
-                    ax.scatter(xaxes, yaxes, err, c=err, cmap=cm.jet)
-                    color_map = cm.ScalarMappable(cmap=cm.jet)
-                    color_map.set_array([err])
-                    plt.colorbar(color_map)
-                else:
-                    ax.scatter(xaxes, yaxes, err)
-
-        plt.suptitle(f"Error of {columns}")
-        plt.tight_layout()
-        columns_str: str = "".join(columns)
-        columns_str += "_heatmap" if heatmap else ""
-        plt.savefig(os.path.join(self.plot_directory, f"error_{columns_str}_{str(mode)}.png"))
-        if show:
-            plt.show()
-        plt.close()
+        return super().plot_error(
+            columns=columns, mode=mode, heatmap=heatmap, show=show, bin=bin, **kwargs
+        )
 
     def box_plot(
         self,
@@ -722,24 +500,6 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-
-        if set(columns) > set(["x", "y", "yaw", "w", "l", "vx", "vy"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
             raise ValueError(f"{columns} is unsupported for plot")
-
-        _, ax = plt.subplots()
-        setup_axis(ax, **kwargs)
-
-        df = self.get(**kwargs)
-        errs: List[np.ndarray] = []
-        for col in columns:
-            errs.append(self.calculate_error(col, df))
-        ax.boxplot(errs)
-        ax.set_xticklabels(columns)
-
-        plt.suptitle("Box-Plot of Errors")
-        plt.tight_layout()
-        columns_str: str = "".join(columns)
-        plt.savefig(os.path.join(self.plot_directory, f"box_plot_{columns_str}.png"))
-        if show:
-            plt.show()
-        plt.close()
+        return super().box_plot(columns=columns, show=show, **kwargs)

@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import logging
-import os.path as osp
 from typing import Any
 from typing import Dict
 from typing import List
@@ -23,9 +22,6 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from perception_eval.common.evaluation_task import EvaluationTask
@@ -67,7 +63,6 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         super().__init__(evaluation_config=evaluation_config)
         if not self.config.evaluation_task.is_2d():
             raise RuntimeError("Evaluation task must be 2D.")
-        self.mode = PlotAxes.CONFIDENCE
 
     @classmethod
     def from_scenario(
@@ -115,8 +110,8 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
     def columns(self) -> List[str]:
         return [
             "timestamp",
-            "x_offset",
-            "y_offset",
+            "x",
+            "y",
             "width",
             "height",
             "label",
@@ -130,7 +125,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
 
     @property
     def state_columns(self) -> List[str]:
-        return ["x_offset", "y_offset", "width", "height"]
+        return ["x", "y", "width", "height"]
 
     def format2dict(
         self,
@@ -177,8 +172,8 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
 
             gt_ret = dict(
                 timestamp=gt.unix_time,
-                x_offset=gt_x_offset,
-                y_offset=gt_y_offset,
+                x=gt_x_offset,
+                y=gt_y_offset,
                 width=gt_width,
                 height=gt_height,
                 label=str(gt.semantic_label),
@@ -201,8 +196,8 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
 
             est_ret = dict(
                 timestamp=estimation.unix_time,
-                x_offset=est_x_offset,
-                y_offset=est_y_offset,
+                x=est_x_offset,
+                y=est_y_offset,
                 width=est_width,
                 height=est_height,
                 label=str(estimation.semantic_label),
@@ -277,8 +272,8 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             data = {}
             df_ = df if label == "ALL" else df[df["label"] == label]
 
-            data["x_offset"] = _summarize("x_offset", df_)
-            data["y_offset"] = _summarize("y_offset", df_)
+            data["x"] = _summarize("x", df_)
+            data["y"] = _summarize("y", df_)
             data["width"] = _summarize("width", df_)
             data["height"] = _summarize("height", df_)
             all_data[str(label)] = data
@@ -322,7 +317,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
     def plot_num_object(
         self,
         show: bool = False,
-        bin: int = 0.1,
+        bin: int = 1.0,
         **kwargs,
     ) -> None:
         """Plot the number of objects per confidence.
@@ -331,47 +326,26 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             show (bool): Whether show the plotted figure. Defaults to False.
             bin (int): Bin of axis. Defaults to False.
         """
-        est_df = self.get_estimation(**kwargs)
-        axes = self.mode.get_axes(est_df)
-        fig: Figure = plt.figure(figsize=(16, 8))
-        ax: Axes = fig.add_subplot(1, 1, 1, xlabel=self.mode.xlabel, ylabel="number of samples")
-        ax.hist(axes, bins=bin)
-        plt.savefig(osp.join(self.plot_directory, "number_of_samples.png"))
-        if show:
-            plt.show()
-        plt.close()
+        return super().plot_num_object(mode=PlotAxes.CONFIDENCE, show=show, bin=bin, **kwargs)
 
-    def plot_score(
+    def plot_error(
         self,
-        metrics: str,
+        columns: Union[str, List[str]],
+        heatmap: bool = False,
         show: bool = False,
+        bin: int = 50,
         **kwargs,
     ) -> None:
-        """Plot the specified metrics score per confidence.
+        if self.config.evaluation_task == EvaluationTask.CLASSIFICATION2D:
+            raise RuntimeError("For classification 2D, `plot_error` is not supported.")
+        return super().plot_error(columns, PlotAxes.CONFIDENCE, heatmap, show, bin, **kwargs)
 
-        Args:
-            metrics (str): Metrics name.
-            show (bool): Whether show the plotted figure. Defaults to False.
-        """
-        est_df = self.get_estimation(**kwargs)
-        axes = self.mode.get_axes(est_df)
-        score_df = self.summarize_score(scene=kwargs.get("scene"))
-        num_labels: int = len(self.target_labels)
-        fig: Figure = plt.figure(figsize=(16, 8 * num_labels))
-        for i, target_label in enumerate(self.target_labels):
-            ax: Axes = fig.add_subplot(
-                1,
-                i + 1,
-                i + 1,
-                xlabel=self.mode.xlabel,
-                ylabel="number of samples",
-                title=target_label,
-            )
-            label_idx = est_df["label"] == target_label
-            label_axes = axes[label_idx]
-            label_score = score_df[metrics][target_label]
-            ax.scatter(np.mean(label_axes), label_score, s=300, marker="*")
-        plt.savefig(osp.join(self.plot_directory, f"label_confidence_vs_{metrics}.png"))
-        if show:
-            plt.show()
-        plt.close()
+    def plot_score(self, metric: str, show: bool = False, **kwargs) -> None:
+        return super().plot_score(metric=metric, mode=PlotAxes.CONFIDENCE, show=show, **kwargs)
+
+    def box_plot(self, columns: Union[str, List[str]], show: bool = False, **kwargs) -> None:
+        if isinstance(columns, str):
+            columns = [columns]
+        if set(columns) > set(["x", "y", "width", "height"]):
+            raise ValueError(f"{columns} is unsupported for plot")
+        return super().box_plot(columns, show, **kwargs)

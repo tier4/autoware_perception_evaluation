@@ -62,6 +62,7 @@ class PlotAxes(Enum):
     3D plot:
         POSITION: X-axis is x[m], y-axis is y[m].
         VELOCITY: X-axis is vx[m/s], y-axis is vy[m/s].
+        SIZE: X-axis is width[m], y-axis is height[m](2D) or length[m](3D).
         POLAR: X-axis is theta[rad], y-axis is r[m]
     """
 
@@ -123,7 +124,11 @@ class PlotAxes(Enum):
         elif self == PlotAxes.POSITION:
             axes: np.ndarray = np.array(df[["x", "y"]]).reshape(2, -1)
         elif self == PlotAxes.SIZE:
-            axes: np.ndarray = np.array(df[["w", "l"]]).reshape(2, -1)
+            axes: np.ndarray = (
+                np.array(df[["width", "length"]]).reshape(2, -1)
+                if "length" in df.columns
+                else np.array(df[["width", "height"]]).reshape(2, -1)
+            )
         elif self == PlotAxes.VELOCITY:
             axes: np.ndarray = np.array(df[["vx", "vy"]]).reshape(2, -1)
         elif self == PlotAxes.POLAR:
@@ -155,7 +160,7 @@ class PlotAxes(Enum):
         elif self == PlotAxes.POSITION:
             return "x [m]", "y [m]"
         elif self == PlotAxes.SIZE:
-            return "w [m]", "l [m]"
+            return "width [m]", "length [m]"
         elif self == PlotAxes.VELOCITY:
             return "vx [m/s]", "vy [m/s]"
         elif self == PlotAxes.POLAR:
@@ -170,21 +175,36 @@ class PlotAxes(Enum):
         if self == PlotAxes.FRAME:
             return 1.0
         elif self == PlotAxes.TIME:
-            return 5.0
+            return 1.0
         elif self in (PlotAxes.DISTANCE, PlotAxes.X, PlotAxes.Y):
-            return 0.5
+            return 10
         elif self in (PlotAxes.VX, PlotAxes.VY):
             return 1.0
         elif self == PlotAxes.CONFIDENCE:
-            return 0.1
+            return 1.0
         elif self == PlotAxes.POSITION:
-            return (0.5, 0.5)
+            return (10, 10)
         elif self == PlotAxes.SIZE:
-            return (1.0, 1.0)
+            return (5.0, 5.0)
         elif self == PlotAxes.VELOCITY:
             return (1.0, 1.0)
         elif self == PlotAxes.POLAR:
-            return (0.2, 0.5)
+            return (0.2, 10)
+
+    def setup_axis(self, ax: plt.Axes, **kwargs) -> None:
+        """[summary]
+        Setup axis limits and grid interval to plt.Axes.
+
+        Args:
+            ax (plt.Axes)
+            **kwargs:
+                xlim (Union[float, Sequence]): If use sequence, (left, right) order.
+                ylim (Union[float, Sequence]): If use sequence, (left, right) order. Defaults to None.
+                grid_interval (float): Interval of grid. Defaults to None.
+        """
+        setup_axis(ax, **kwargs)
+        if self == PlotAxes.CONFIDENCE:
+            ax.set_xlim(-5, 105)
 
     @property
     def projection(self) -> Optional[str]:
@@ -365,6 +385,7 @@ def setup_axis(ax: plt.Axes, **kwargs) -> None:
             ylim (Union[float, Sequence]): If use sequence, (left, right) order. Defaults to None.
             grid_interval (float): Interval of grid. Defaults to None.
     """
+    ax.grid()
     if kwargs.get("xlim"):
         xlim: Union[float, Sequence] = kwargs.pop("xlim")
         if isinstance(xlim, float):
