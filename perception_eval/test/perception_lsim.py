@@ -18,7 +18,6 @@ import tempfile
 from typing import List
 
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.status import FrameID
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.metrics import MetricsScore
@@ -67,7 +66,7 @@ class PerceptionLSimMoc:
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=dataset_paths,
-            frame_id=FrameID.from_task(evaluation_task),
+            frame_id="base_link" if evaluation_task == "detection" else "map",
             merge_similar_labels=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,

@@ -62,7 +62,7 @@ class _EvaluationConfigBase(ABC):
 
     Args:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (FrameID): FrameID instance, where objects are with respect.
+        frame_id (str): FrameID in string, where objects are with respect.
         merge_similar_labels (bool): Whether merge similar labels.
             If True,
                 - BUS, TRUCK, TRAILER -> CAR
@@ -79,7 +79,7 @@ class _EvaluationConfigBase(ABC):
     def __init__(
         self,
         dataset_paths: List[str],
-        frame_id: FrameID,
+        frame_id: str,
         merge_similar_labels: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
@@ -94,9 +94,7 @@ class _EvaluationConfigBase(ABC):
         # dataset
         self.dataset_paths: List[str] = dataset_paths
 
-        if frame_id not in FrameID:
-            raise ValueError(f"Unexpected frame_id: {frame_id}")
-        self.frame_id: FrameID = frame_id
+        self.frame_id: FrameID = FrameID.from_value(frame_id)
         self.merge_similar_labels: bool = merge_similar_labels
         self.label_prefix: str = label_prefix
         self.load_raw_data: bool = load_raw_data

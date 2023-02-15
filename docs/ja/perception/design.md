@@ -52,7 +52,7 @@ json_result = json.dump(dict_result)
   | Arguments                |       type       | Description                                                                                                                      |
   | :----------------------- | :--------------: | :------------------------------------------------------------------------------------------------------------------------------- |
   | `dataset_path`           |   `List[str]`    | データセットパス(List[]で指定するが複数データ対応については TBD)                                                                 |
-  | `frame_id`               |    `FrameID`     | オブジェクトが従う FrameID インスタンス.                                                                                         |
+  | `frame_id`               |      `str`       | オブジェクトが従う FrameIDの文字列.                                                                                              |
   | `merge_similar_labels`   |      `bool`      | 類似ラベルをマージするかの flag[参考](label.md)                                                                                  |
   | `result_root_directory`  |      `str`       | 評価結果，ログ，可視化結果等を保存するディレクトリのパス                                                                         |
   | `evaluation_config_dict` | `Dict[str, Any]` | 評価パラメータ                                                                                                                   |

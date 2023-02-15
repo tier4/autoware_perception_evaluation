@@ -37,7 +37,7 @@
   | Arguments                |       type       | Description                                                                                                                          |
   | :----------------------- | :--------------: | :----------------------------------------------------------------------------------------------------------------------------------- |
   | `dataset_path`           |   `List[str]`    | Dataset path(TBD supporting multiple dataset paths)                                                                                  |
-  | `frame_id`               |    `FrameID`     | FrameID instance, where objects are with respect.                                                                                    |
+  | `frame_id`               |      `str`       | FrameID in string, where objects are with respect.                                                                                   |
   | `merge_similar_labels`   |      `bool`      | Whether merge similar labels([Reference])(label.md)                                                                                  |
   | `result_root_directory`  |      `str`       | Directory path to save result of log and visualization                                                                               |
   | `evaluation_config_dict` | `Dict[str, Any]` | Parameters of evaluation                                                                                                             |

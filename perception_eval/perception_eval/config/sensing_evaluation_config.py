@@ -17,8 +17,6 @@ from typing import Dict
 from typing import List
 from typing import Tuple
 
-from perception_eval.common.status import FrameID
-
 from ._evaluation_config_base import _EvaluationConfigBase
 
 
@@ -46,7 +44,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
 
     Args:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (FrameID): FrameID instance, where objects are with respect.
+        frame_id (str): FrameID in string, where objects are with respect.
         merge_similar_labels (bool): Whether merge similar labels.
             If True,
                 - BUS, TRUCK, TRAILER -> CAR
@@ -61,7 +59,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
     def __init__(
         self,
         dataset_paths: List[str],
-        frame_id: FrameID,
+        frame_id: str,
         merge_similar_labels: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Dict[str, Any]],

@@ -21,7 +21,6 @@ from typing import Tuple
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
-from perception_eval.common.status import FrameID
 from perception_eval.common.threshold import check_thresholds
 from perception_eval.common.threshold import ThresholdsError
 from perception_eval.evaluation.metrics import MetricsScoreConfig
@@ -54,7 +53,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
 
     Args:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (FrameID): FrameID instance, where objects are with respect.
+        frame_id (str): FrameID in string, where objects are with respect.
         merge_similar_labels (bool): Whether merge similar labels.
             If True,
                 - BUS, TRUCK, TRAILER -> CAR
@@ -77,7 +76,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
     def __init__(
         self,
         dataset_paths: List[str],
-        frame_id: FrameID,
+        frame_id: str,
         merge_similar_labels: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
