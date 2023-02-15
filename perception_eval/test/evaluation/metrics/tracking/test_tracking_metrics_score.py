@@ -41,7 +41,6 @@ class TestTrackingMetricsScore(unittest.TestCase):
         self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
-        self.frame_id: str = "base_link"
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
             AutowareLabel.BICYCLE,
@@ -129,7 +128,6 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Filter previous objects
                 prev_estimated_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=prev_estimated_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
@@ -137,7 +135,6 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
                 prev_ground_truth_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=prev_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
@@ -165,7 +162,6 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Filter current objects
                 cur_estimated_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=cur_estimated_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
@@ -173,7 +169,6 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
                 cur_ground_truth_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=cur_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
@@ -245,7 +240,6 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Filter previous objects
                 prev_estimated_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=prev_estimated_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
@@ -253,7 +247,6 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
                 prev_ground_truth_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=prev_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
@@ -284,7 +277,6 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Filter current objects
                 cur_estimated_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=cur_estimated_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
@@ -292,7 +284,6 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
                 cur_ground_truth_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=cur_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
@@ -373,7 +364,6 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Filter previous objects
                 prev_estimated_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=prev_estimated_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
@@ -381,7 +371,6 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
                 prev_ground_truth_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=prev_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
@@ -409,7 +398,6 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Filter current objects
                 cur_estimated_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=cur_estimated_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
@@ -417,7 +405,6 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
                 cur_ground_truth_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=cur_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,

@@ -20,12 +20,12 @@ import os.path as osp
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Optional
 from typing import Tuple
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.evaluation_task import set_task
 from perception_eval.common.label import LabelConverter
+from perception_eval.common.status import FrameID
 
 
 class _EvaluationConfigBase(ABC):
@@ -38,14 +38,13 @@ class _EvaluationConfigBase(ABC):
 
     Attributes:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (str): Frame ID, `base_link` or `map`.
+        frame_id (FrameID): FrameID instance, where objects are with respect.
         result_root_directory (str): Directory path to save result.
         log_directory (str): Directory Directory path to save log.
         visualization_directory (str): Directory path to save visualization result.
         label_converter (LabelConverter): LabelConverter instance.
         evaluation_task (EvaluationTask): EvaluationTask instance.
         label_prefix (str): Prefix of label type. Choose from [`autoware", `traffic_light`]. Defaults to autoware.
-        camera_type (Optional[str]): Camera name. Specify in 2D evaluation. Defaults to None.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
         target_labels (List[LabelType]): Target labels list.
 
@@ -63,7 +62,7 @@ class _EvaluationConfigBase(ABC):
 
     Args:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (str): Frame ID, `base_link` or `map`.
+        frame_id (str): FrameID in string, where objects are with respect.
         merge_similar_labels (bool): Whether merge similar labels.
             If True,
                 - BUS, TRUCK, TRAILER -> CAR
@@ -71,7 +70,6 @@ class _EvaluationConfigBase(ABC):
         result_root_directory (str): Directory path to save result.
         evaluation_config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
         label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
-        camera_type (Optional[str]): Name of camera. Specify in 2D evaluation. Defaults to None.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
     """
 
@@ -86,23 +84,8 @@ class _EvaluationConfigBase(ABC):
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
         label_prefix: str = "autoware",
-        camera_type: Optional[str] = None,
         load_raw_data: bool = False,
     ) -> None:
-        """[summary]
-        Args:
-            dataset_paths (List[str]): The list of dataset path.
-            frame_id (str): Frame ID, base_link or map.
-            merge_similar_labels (bool): Whether merge similar labels.
-                If True,
-                    - BUS, TRUCK, TRAILER -> CAR
-                    - MOTORBIKE, CYCLIST -> BICYCLE
-            result_root_directory (str): The directory path to save result.
-            evaluation_config_dict (Dict[str, Any]): The config for each evaluation task. The key represents task name.
-            label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
-            camera_type (Optional[str]): Name of camera. Specify in 2D evaluation. Defaults to None.
-            load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
-        """
         super().__init__()
         # Check tasks are supported
         self.evaluation_task: EvaluationTask = self._check_tasks(evaluation_config_dict)
@@ -111,12 +94,9 @@ class _EvaluationConfigBase(ABC):
         # dataset
         self.dataset_paths: List[str] = dataset_paths
 
-        if frame_id not in ("base_link", "map"):
-            raise ValueError(f"Unexpected frame_id: {frame_id}")
-        self.frame_id: str = frame_id
+        self.frame_id: FrameID = FrameID.from_value(frame_id)
         self.merge_similar_labels: bool = merge_similar_labels
         self.label_prefix: str = label_prefix
-        self.camera_type: Optional[str] = camera_type
         self.load_raw_data: bool = load_raw_data
 
         # directory
@@ -137,8 +117,7 @@ class _EvaluationConfigBase(ABC):
         return self._support_tasks
 
     def _check_tasks(self, evaluation_config_dict: Dict[str, Any]) -> EvaluationTask:
-        """[summary]
-        Check if specified tasks are supported.
+        """Check if specified tasks are supported.
 
         Args:
             evaluation_config_dict (Dict[str, Any]): The config has params as dict.
@@ -162,8 +141,7 @@ class _EvaluationConfigBase(ABC):
         self,
         evaluation_config_dict: Dict[str, Any],
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-        """[summary]
-        Extract filtering and metrics parameters from evaluation config.
+        """Extract filtering and metrics parameters from evaluation config.
 
         Args:
             evaluation_config_dict (Dict[str, Any])

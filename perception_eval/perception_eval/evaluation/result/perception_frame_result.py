@@ -32,18 +32,25 @@ from perception_eval.evaluation.result.perception_pass_fail_result import PassFa
 
 
 class PerceptionFrameResult:
-    """[summary]
-    The result for 1 frame (the pair of estimated objects and ground truth objects)
+    """The result for 1 frame (the pair of estimated objects and ground truth objects)
 
     Attributes:
-        self.object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results to each estimated object.
-        self.frame_ground_truth (FrameGroundTruth): Filtered ground truth of frame.
-        self.frame_name (str): The file name of frame in the datasets.
-        self.unix_time (int): The unix time for frame [us].
-        self.frame_id (str): base_link or map.
-        self.target_labels (List[AutowareLabel]): The list of target label.
-        self.metrics_score (MetricsScore): Metrics score results.
-        self.pass_fail_result (PassFailResult): Pass fail results.
+        object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results to each estimated object.
+        frame_ground_truth (FrameGroundTruth): Filtered ground truth of frame.
+        frame_name (str): The file name of frame in the datasets.
+        unix_time (int): The unix time for frame [us].
+        target_labels (List[AutowareLabel]): The list of target label.
+        metrics_score (MetricsScore): Metrics score results.
+        pass_fail_result (PassFailResult): Pass fail results.
+
+    Args:
+        object_results (List[DynamicObjectWithPerceptionResult]): The list of object result.
+        frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
+        metrics_config (MetricsScoreConfig): Metrics config class.
+        critical_object_filter_config (CriticalObjectFilterConfig): Critical object filter config.
+        frame_pass_fail_config (PerceptionPassFailConfig): Frame pass fail config.
+        unix_time (int): The unix time for frame [us]
+        target_labels (List[AutowareLabel]): The list of target label.
     """
 
     def __init__(
@@ -56,21 +63,9 @@ class PerceptionFrameResult:
         unix_time: int,
         target_labels: List[LabelType],
     ):
-        """[summary]
-        Args:
-            object_results (List[DynamicObjectWithPerceptionResult]): The list of object result.
-            frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
-            metrics_config (MetricsScoreConfig): Metrics config class.
-            critical_object_filter_config (CriticalObjectFilterConfig): Critical object filter config.
-            frame_pass_fail_config (PerceptionPassFailConfig): Frame pass fail config.
-            unix_time (int): The unix time for frame [us]
-            target_labels (List[AutowareLabel]): The list of target label.
-        """
-
         # frame information
         self.frame_name: str = frame_ground_truth.frame_name
         self.unix_time: int = unix_time
-        self.frame_id: str = frame_ground_truth.frame_id
         self.target_labels: List[LabelType] = target_labels
 
         self.object_results: List[DynamicObjectWithPerceptionResult] = object_results
@@ -84,7 +79,6 @@ class PerceptionFrameResult:
         self.pass_fail_result: PassFailResult = PassFailResult(
             critical_object_filter_config=critical_object_filter_config,
             frame_pass_fail_config=frame_pass_fail_config,
-            frame_id=frame_ground_truth.frame_id,
             ego2map=frame_ground_truth.ego2map,
         )
 
