@@ -113,17 +113,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
         p_cfg: Dict[str, Any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
         eval_cfg_dict: Dict[str, Any] = p_cfg["evaluation_config_dict"]
-        eval_task_: str = eval_cfg_dict["evaluation_task"]
-        if eval_task_ == "detection":
-            frame_id = "base_link"
-        elif eval_task_ in ("tracking", "prediction"):
-            frame_id = "map"
-        else:
-            raise ValueError(f"Unexpected evaluation task: {eval_task_}")
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
-            frame_id=frame_id,
+            frame_id="base_link" if eval_cfg_dict["evaluation_task"] == "detection" else "map",
             merge_similar_labels=p_cfg.get("merge_similar_labels", False),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
@@ -190,8 +183,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         frame_num: int,
         ego2map: Optional[np.ndarray] = None,
     ) -> Dict[str, Dict[str, Any]]:
-        """[summary]
-        Format objects to dict.
+        """Format objects to dict.
 
         Args:
             object_results (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): List of objects or object results.
@@ -333,8 +325,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         return {"ground_truth": gt_ret, "estimation": est_ret}
 
     def summarize_error(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
-        """[summary]
-        Calculate mean, sigma, RMS, max and min of error.
+        """Calculate mean, sigma, RMS, max and min of error.
 
         Args:
             df (Optional[pd.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
@@ -388,8 +379,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         scene: Optional[Union[int, List[int]]] = None,
         area: Optional[int] = None,
     ) -> pd.DataFrame:
-        """[summary]
-        Summarize MetricsScore.
+        """Summarize MetricsScore.
 
         Args:
             area (Optional[int]): Number of area. If it is not specified, calculate metrics score for all areas.
@@ -428,8 +418,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         show: bool = False,
         **kwargs,
     ) -> None:
-        """[summary]
-        Plot states for each time/distance estimated and GT object in TP.
+        """Plot states for each time/distance estimated and GT object in TP.
 
         Args:
             uuid (str): Target object's uuid.
@@ -462,8 +451,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         bin: int = 50,
         **kwargs,
     ) -> None:
-        """[summary]
-        Plot states for each time/distance estimated and GT object in TP.
+        """Plot states for each time/distance estimated and GT object in TP.
 
         Args:
             columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
@@ -489,8 +477,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         show: bool = False,
         **kwargs,
     ) -> None:
-        """[summary]
-        Plot box-plot of errors.
+        """Plot box-plot of errors.
 
         Args:
             column (Union[str, List[str]]): Target column name.

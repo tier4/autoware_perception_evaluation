@@ -226,8 +226,7 @@ class PerceptionAnalyzerBase(ABC):
         return self.df.tail(n)
 
     def get_num_ground_truth(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
-        """[summary]
-        Returns the number of ground truths.
+        """Returns the number of ground truths.
         Args:
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
             **kwargs: Specify if you want to get the number of FP that their columns are specified value.
@@ -238,8 +237,7 @@ class PerceptionAnalyzerBase(ABC):
         return len(df_)
 
     def get_num_estimation(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
-        """[summary]
-        Returns the number of estimations.
+        """Returns the number of estimations.
         Args:
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
             **kwargs: Specify if you want to get the number of FP that their columns are specified value.
@@ -276,8 +274,7 @@ class PerceptionAnalyzerBase(ABC):
             raise ValueError(f"Expected status is TP/FP/FN, but got {status}")
 
     def get_num_tp(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
-        """[summary]
-        Returns the number of TP.
+        """Returns the number of TP.
         Args:
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
             **kwargs: Specify if you want to get the number of FP that their columns are specified value.
@@ -288,8 +285,7 @@ class PerceptionAnalyzerBase(ABC):
         return sum(df_["status"] == "TP")
 
     def get_num_fp(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
-        """[summary]
-        Returns the number of FP.
+        """Returns the number of FP.
         Args:
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
             **kwargs: Specify if you want to get the number of FP that their columns are specified value.
@@ -300,8 +296,7 @@ class PerceptionAnalyzerBase(ABC):
         return sum(df_["status"] == "FP")
 
     def get_num_fn(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
-        """[summary]
-        Returns the number of FN.
+        """Returns the number of FN.
         Args:
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
             **kwargs: Specify if you want to get the number of FN that their columns are specified value.
@@ -312,8 +307,7 @@ class PerceptionAnalyzerBase(ABC):
         return sum(df_["status"] == "FN")
 
     def get_ground_truth(self, df: Optional[pd.DataFrame] = None, **kwargs) -> pd.DataFrame:
-        """[summary]
-        Returns the DataFrame for ground truth.
+        """Returns the DataFrame for ground truth.
         Args:
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
         Returns:
@@ -331,8 +325,7 @@ class PerceptionAnalyzerBase(ABC):
         return df
 
     def get_estimation(self, df: Optional[pd.DataFrame] = None, **kwargs) -> pd.DataFrame:
-        """[summary]
-        Returns the DataFrame for estimation.
+        """Returns the DataFrame for estimation.
         Args:
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
         Returns:
@@ -351,8 +344,7 @@ class PerceptionAnalyzerBase(ABC):
         return df
 
     def get_scenes(self, df: Optional[pd.DataFrame] = None, **kwargs) -> np.ndarray:
-        """[summary]
-        Returns numpy array of unique scenes.
+        """Returns numpy array of unique scenes.
         Args:
             df (optional[pd.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
         Returns:
@@ -365,8 +357,7 @@ class PerceptionAnalyzerBase(ABC):
         return scenes[~np.isnan(scenes)]
 
     def get_ego2map(self, scene: int, frame: int) -> np.ndarray:
-        """[summary]
-        Returns 4x4 ego2map transform matrix.
+        """Returns 4x4 ego2map transform matrix.
         Args:
             scene (int): Number of scene.
             frame (int): Number of frame.
@@ -379,8 +370,7 @@ class PerceptionAnalyzerBase(ABC):
         return len(self.df)
 
     def get_metrics_score(self, frame_results: List[PerceptionFrameResult]) -> MetricsScore:
-        """[summary]
-        Returns the metrics score for each evaluator
+        """Returns the metrics score for each evaluator
 
         Args:
             frame_results (List[PerceptionFrameResult]): List of frame results.
@@ -417,8 +407,7 @@ class PerceptionAnalyzerBase(ABC):
         return metrics_score
 
     def analyze(self, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
-        """[summary]
-        Analyze TP/FP/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
+        """Analyze TP/FP/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
 
         Args:
             **kwargs: Specify scene, frame, area or uuid.
@@ -516,9 +505,7 @@ class PerceptionAnalyzerBase(ABC):
         return self.add(frame_results)
 
     def clear(self) -> None:
-        """[summary]
-        Clear frame results and DataFrame.
-        """
+        """Clear frame results and DataFrame."""
         self.__frame_results.clear()
         del self.__df
         self.__initialize()
@@ -775,8 +762,7 @@ class PerceptionAnalyzerBase(ABC):
         show: bool = False,
         **kwargs,
     ) -> None:
-        """[summary]
-        Plot states for each time/distance estimated and GT object in TP.
+        """Plot states for each time/distance estimated and GT object in TP.
 
         Args:
             uuid (str): Target object's uuid.
@@ -961,36 +947,69 @@ class PerceptionAnalyzerBase(ABC):
             show=show,
         )
 
-    def plot_score(
+    def plot_ratio(
         self,
-        metric: str,
-        mode: PlotAxes,
+        status: Union[str, MatchingStatus],
+        mode: PlotAxes = PlotAxes.DISTANCE,
         show: bool = False,
+        bins: Optional[Union[float, Tuple[float, float]]] = None,
         **kwargs,
     ) -> None:
-        """Plot the specified metrics score per confidence.
+        """Plot TP/FP/FN ratio.
 
         Args:
             mode (PlotAxes): PlotAxes instance.
-            metrics (str): Metrics name.
             show (bool): Whether show the plotted figure. Defaults to False.
         """
+        gt_df = self.get_ground_truth(**kwargs)
         est_df = self.get_estimation(**kwargs)
-        axes = mode.get_axes(est_df)
-        score_df = self.summarize_score(scene=kwargs.get("scene"))
+        gt_values = mode.get_axes(gt_df)
+        est_values = mode.get_axes(est_df)
         num_labels: int = len(self.target_labels)
         fig: Figure = plt.figure(figsize=(16, 8 * num_labels))
-        ax: Axes = fig.add_subplot(xlabel=mode.xlabel, ylabel="Score")
-        for i, target_label in enumerate(self.target_labels):
-            label_idx = est_df["label"] == target_label
-            label_axes = axes[label_idx]
-            label_score = score_df[metric][target_label]
-        ax.scatter(np.mean(label_axes), label_score, s=300, marker="*")
+        ax: Union[Axes, Axes3D] = fig.add_subplot(xlabel=mode.xlabel, ylabel="TP Ratio [%]")
+
+        if mode.is_2d():
+            bins = mode.get_bin() if bins is None else bins
+            _, bins = np.histogram(gt_values, bins=bins)
+        else:
+            x_bins, y_bins = mode.get_bin() if bins is None else bins
+            _, bins = np.histogram2d(gt_values[:, 0], gt_values[:, 1], bins=[x_bins, y_bins])
+            bins = np.array(bins).reshape(2, -1)
+
+        axes = []
+        ratios = []
+        for target_label in enumerate(self.target_labels):
+            for i in range(len(bins) - 1):
+                est_idx = (bins[i] <= est_values) * (est_values <= bins[i + 1])
+                est_df_ = est_df[est_idx * (est_df["label"] == target_label)]
+                gt_idx = (bins[i] <= gt_values) * (gt_values <= bins[i + 1])
+                gt_df_ = gt_df[gt_idx * (gt_df["label"] == target_label)]
+                if len(est_df_) > 0 and len(gt_df_) > 0:
+                    if status == "TP":
+                        ratios.append(np.sum(est_df_["status"] == status) / len(gt_df_))
+                    elif status == "FP":
+                        ratios.append(1 - (np.sum(est_df_["status"] == "TP") / len(gt_df_)))
+                    elif status == "FN":
+                        ratios.append(np.sum(gt_df_["status"] == status) / len(gt_df_))
+                    else:
+                        continue
+                else:
+                    ratios.append(0) if mode.is_2d() else ratios.append((0, 0))
+                axes.append((bins[i] + bins[i + 1]) * 0.5)
+        axes = np.array(axes)
+        ratios = np.array(ratios)
+
+        if mode.is_2d():
+            ax.bar(axes, ratios)
+        else:
+            # TODO
+            pass
 
         self.__post_process_figure(
             fig=fig,
-            title=f"Score @{metric}",
-            filename=f"score_{mode.value}_{metric}",
+            title="TP ratio",
+            filename=f"tp_{mode.value}",
             show=show,
         )
 

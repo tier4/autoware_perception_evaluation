@@ -126,7 +126,6 @@ class TestCLEAR(unittest.TestCase):
         )
         self.dummy_estimated_objects, _ = make_dummy_data(use_unique_id=False)
 
-        self.frame_id: str = "base_link"
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
             AutowareLabel.BICYCLE,
@@ -414,7 +413,6 @@ class TestCLEAR(unittest.TestCase):
 
                     # Filter previous objects
                     prev_estimated_objects = filter_objects(
-                        frame_id=self.frame_id,
                         objects=prev_estimated_objects,
                         is_gt=False,
                         target_labels=[target_label],
@@ -422,7 +420,6 @@ class TestCLEAR(unittest.TestCase):
                         max_y_position_list=self.max_y_position_list,
                     )
                     prev_ground_truth_objects = filter_objects(
-                        frame_id=self.frame_id,
                         objects=prev_ground_truth_objects,
                         is_gt=True,
                         target_labels=[target_label],
@@ -454,7 +451,6 @@ class TestCLEAR(unittest.TestCase):
 
                 # Filter current objects
                 cur_estimated_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=cur_estimated_objects,
                     is_gt=False,
                     target_labels=[target_label],
@@ -462,7 +458,6 @@ class TestCLEAR(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
                 cur_ground_truth_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=cur_ground_truth_objects,
                     is_gt=True,
                     target_labels=[target_label],
@@ -597,7 +592,6 @@ class TestCLEAR(unittest.TestCase):
 
                     # Filter previous objects
                     prev_estimated_objects = filter_objects(
-                        frame_id=self.frame_id,
                         objects=prev_estimated_objects,
                         is_gt=False,
                         target_labels=self.target_labels,
@@ -605,7 +599,6 @@ class TestCLEAR(unittest.TestCase):
                         max_y_position_list=self.max_y_position_list,
                     )
                     prev_ground_truth_objects = filter_objects(
-                        frame_id=self.frame_id,
                         objects=prev_ground_truth_objects,
                         is_gt=True,
                         target_labels=self.target_labels,
@@ -637,7 +630,6 @@ class TestCLEAR(unittest.TestCase):
 
                 # Filter current objects
                 cur_estimated_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=cur_estimated_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
@@ -645,7 +637,6 @@ class TestCLEAR(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
                 cur_ground_truth_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=cur_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
@@ -783,7 +774,6 @@ class TestCLEAR(unittest.TestCase):
 
                     # Filter previous objects
                     prev_estimated_objects = filter_objects(
-                        frame_id=self.frame_id,
                         objects=prev_estimated_objects,
                         is_gt=False,
                         target_labels=self.target_labels,
@@ -791,7 +781,6 @@ class TestCLEAR(unittest.TestCase):
                         max_y_position_list=self.max_y_position_list,
                     )
                     prev_ground_truth_objects = filter_objects(
-                        frame_id=self.frame_id,
                         objects=prev_ground_truth_objects,
                         is_gt=True,
                         target_labels=self.target_labels,
@@ -823,7 +812,6 @@ class TestCLEAR(unittest.TestCase):
 
                 # Filter current objects
                 cur_estimated_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=cur_estimated_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
@@ -831,7 +819,6 @@ class TestCLEAR(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
                 cur_ground_truth_objects = filter_objects(
-                    frame_id=self.frame_id,
                     objects=cur_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,

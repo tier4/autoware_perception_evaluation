@@ -13,14 +13,14 @@ About coordinate system, see [docs/perception/design.md](../perception/design.md
 
 - [perception_eval/config/sensing_evaluation_config.py](../../../perception_eval/perception_eval/config/sensing_evaluation_config.py)
 
-  | Arguments                |       type       | Description                                                                |
-  | :----------------------- | :--------------: | :------------------------------------------------------------------------- |
-  | `dataset_path`           |   `List[str]`    | Dataset path(TBD supporting multiple dataset paths) .                      |
-  | `frame_id`               |      `str`       | Name of coordinate system which objects respect to，`map` or `base_link` . |
-  | `merge_similar_labels`   |      `bool`      | Whether merge similar labels[Reference](../perception/label.md) .          |
-  | `result_root_directory`  |      `str`       | Directory path to save result of log and visualization .                   |
-  | `evaluation_config_dict` | `Dict[str, Any]` | Parameters of evaluation .                                                 |
-  | `load_raw_data`          |      `bool`      | Whether load pointcloud/image data from dataset .                          |
+  | Arguments                |       type       | Description                                                               |
+  | :----------------------- | :--------------: | :------------------------------------------------------------------------ |
+  | `dataset_path`           |   `List[str]`    | Dataset path(TBD supporting multiple dataset paths) .                     |
+  | `frame_id`               |      `str`       | Name of coordinate system which objects respect to，`map` or `base_link`. |
+  | `merge_similar_labels`   |      `bool`      | Whether merge similar labels[Reference](../perception/label.md) .         |
+  | `result_root_directory`  |      `str`       | Directory path to save result of log and visualization .                  |
+  | `evaluation_config_dict` | `Dict[str, Any]` | Parameters of evaluation .                                                |
+  | `load_raw_data`          |      `bool`      | Whether load pointcloud/image data from dataset .                         |
 
 #### `evaluation_config_dict`
 

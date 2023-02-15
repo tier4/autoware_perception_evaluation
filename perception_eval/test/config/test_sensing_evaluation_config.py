@@ -35,7 +35,6 @@ class TestSensingEvaluationConfig(unittest.TestCase):
         patterns: List[Tuple(str, Dict[str, Any])] = [
             ("map", {"evaluation_task": "foo"}),
             ("base_link", {"evaluation_task": "foo"}),
-            ("foo", {"evaluation_task": "sensing"}),
         ]
         for n, (frame_id, evaluation_task) in enumerate(patterns):
             with self.subTest(f"Test if it can detect the exception of task keys: {n + 1}"):

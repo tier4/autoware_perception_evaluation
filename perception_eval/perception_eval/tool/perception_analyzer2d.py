@@ -38,7 +38,8 @@ from .utils import PlotAxes
 class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
     """An class to analyze perception results.
 
-    config (PerceptionEvaluationConfig): Configurations for evaluation parameters.
+    Attributes:
+        config (PerceptionEvaluationConfig): Configurations for evaluation parameters.
         target_labels (List[str]): Target labels list. (e.g. `["car", "pedestrian", "motorbike"]`).
         all_labels (List[str]): Target labels list including "ALL". (e.g. `["ALL", "car", "pedestrian", "motorbike"]`).
         columns (List[str]): Columns in `df`. `["timestamp", "x_offset", "y_offset", "width", "height",\
@@ -69,12 +70,14 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         cls,
         result_root_directory: str,
         scenario_path: str,
+        camera_frame: str,
     ) -> PerceptionAnalyzer2D:
         """Perception results made by logsim are reproduced from pickle file.
 
         Args:
             result_root_directory (str): The root path to save result.
             scenario_path (str): The path of scenario file .yaml.
+            camera_frame (str): Name of camera frame. (e.g CAM_FRONT, CAM_RIGHT).
 
         Returns:
             PerceptionAnalyzer2D: PerceptionAnalyzer2D instance.
@@ -89,15 +92,10 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
 
         p_cfg: Dict[str, Any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
         eval_cfg_dict: Dict[str, Any] = p_cfg["evaluation_config_dict"]
-        eval_task_: str = eval_cfg_dict["evaluation_task"]
-        if eval_task_ == ("detection2d", "tracking2d", "classification2d"):
-            frame_id = "base_link"
-        else:
-            raise ValueError(f"Unexpected evaluation task: {eval_task_}")
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
-            frame_id=frame_id,
+            frame_id=camera_frame,
             merge_similar_labels=p_cfg.get("merge_similar_labels", False),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
@@ -340,8 +338,19 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             raise RuntimeError("For classification 2D, `plot_error` is not supported.")
         return super().plot_error(columns, PlotAxes.CONFIDENCE, heatmap, show, bin, **kwargs)
 
-    def plot_score(self, metric: str, show: bool = False, **kwargs) -> None:
-        return super().plot_score(metric=metric, mode=PlotAxes.CONFIDENCE, show=show, **kwargs)
+    def plot_ratio(
+        self,
+        status: Union[str, MatchingStatus],
+        show: bool = False,
+        **kwargs,
+    ) -> None:
+        """Plot TP/FP/FN ratio per confidence.
+
+        Args:
+            status (Union[str, MatchingStatus])
+            show (bool): Whether show plot results. Defaults to None.
+        """
+        return super().plot_tp_ratio(mode=PlotAxes.CONFIDENCE, show=show, **kwargs)
 
     def box_plot(self, columns: Union[str, List[str]], show: bool = False, **kwargs) -> None:
         if isinstance(columns, str):
