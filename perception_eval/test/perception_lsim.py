@@ -60,7 +60,7 @@ class PerceptionLSimMoc:
             ],
             # objectごとに同じparamの場合はこのような指定が可能
             "plane_distance_thresholds": [2.0, 3.0],
-            "iou_bev_thresholds": [0.5],
+            "iou_2d_thresholds": [0.5],
             "iou_3d_thresholds": [0.5],
             "min_point_numbers": [0, 0, 0, 0],
         }

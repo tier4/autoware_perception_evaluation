@@ -45,14 +45,14 @@
 
 ### [`<class> FrameGroundTruth(...)`](../../perception_eval/perception_eval/common/dataset.py)
 
-| Argument     |                 type                 | Description                                                                                             |
-| :----------- | :----------------------------------: | :------------------------------------------------------------------------------------------------------ |
-| `unix_time`  |                `int`                 | Unix time.                                                                                              |
-| `frame_name` |                `str`                 | Name of frame.                                                                                          |
-| `frame_id`   |              `FrameID`               | FrameID instance, where objects are with respect.                                                       |
-| `objects`    |          `List[ObjectType]`          | List of ground truth objects.                                                                           |
-| `ego2map`    |      `Optional[numpy.ndarray]`       | 4x4 matrix to transform objects with respect to base_link coordinate system map one. (Defaults to None) |
-| `raw_data`   | `Optional[Dict[str, numpy.ndarray]]` | Array of pointcloud/image keyed by sensor name. (Defaults to None)                                      |
+| Argument     |           type            | Description                                                                                             |
+| :----------- | :-----------------------: | :------------------------------------------------------------------------------------------------------ |
+| `unix_time`  |           `int`           | Unix time.                                                                                              |
+| `frame_name` |           `str`           | Name of frame.                                                                                          |
+| `frame_id`   |         `FrameID`         | FrameID instance, where objects are with respect.                                                       |
+| `objects`    |    `List[ObjectType]`     | List of ground truth objects.                                                                           |
+| `ego2map`    | `Optional[numpy.ndarray]` | 4x4 matrix to transform objects with respect to base_link coordinate system map one. (Defaults to None) |
+| `raw_data`   | `Optional[numpy.ndarray]` | Array of pointcloud/image. (Defaults to None)                                                           |
 
 ### [`<func> load_all_datasets(...) -> List[FrameGroundTruth]`](../../perception_eval/perception_eval/common/dataset.py)
 

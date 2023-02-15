@@ -20,7 +20,6 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-import cv2
 from nuimages import NuImages
 import numpy as np
 from nuscenes.nuscenes import NuScenes
@@ -33,6 +32,7 @@ from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.status import FrameID
 from perception_eval.common.status import Visibility
+from PIL import Image
 from pyquaternion.quaternion import Quaternion
 
 from . import dataset
@@ -76,10 +76,8 @@ def _sample_to_frame(
     unix_time_ = sample["timestamp"]
     if "LIDAR_TOP" in sample["data"]:
         lidar_path_token = sample["data"]["LIDAR_TOP"]
-        sensor_name: str = "LIDAR_TOP"
     elif "LIDAR_CONCAT" in sample["data"]:
         lidar_path_token = sample["data"]["LIDAR_CONCAT"]
-        sensor_name: str = "LIDAR_CONCAT"
     else:
         raise ValueError("lidar data isn't found")
     frame_data = nusc.get("sample_data", lidar_path_token)
@@ -90,7 +88,7 @@ def _sample_to_frame(
     if load_raw_data:
         assert lidar_path.endswith(".bin"), f"Error: Unsupported filetype {lidar_path}"
         pointcloud: np.ndarray = np.fromfile(lidar_path, dtype=np.float32)
-        raw_data = {sensor_name: pointcloud.reshape(-1, 5)[:, :4]}
+        raw_data = pointcloud.reshape(-1, 5)[:, :4]
 
     else:
         raw_data = None
@@ -394,7 +392,7 @@ def _sample_to_frame_2d(
 
     if load_raw_data:
         img_path: str = nusc.get_sample_data_path(sample_data_token)
-        raw_data = {camera_type: cv2.imread(img_path)}
+        raw_data = np.array(Image.open(img_path), dtype=np.uint8)
     else:
         raw_data = None
 
