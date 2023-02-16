@@ -33,11 +33,9 @@ class PerceptionLSimMoc:
         dataset_paths: List[str],
         evaluation_task: str,
         result_root_directory: str,
-        label_prefix: str,
         camera_type: str,
     ):
         self.evaluation_task = evaluation_task
-        self.label_prefix = label_prefix
 
         if evaluation_task in ("detection2d", "tracking2d"):
             evaluation_config_dict = {
@@ -45,15 +43,17 @@ class PerceptionLSimMoc:
                 "center_distance_thresholds": [1.0, 2.0],
                 "iou_2d_thresholds": [0.5],
             }
+            self.label_prefix = "autoware"
         elif evaluation_task == "classification2d":
             evaluation_config_dict = {"evaluation_task": evaluation_task}
+            self.label_prefix = "traffic_light"
         else:
             raise ValueError(f"Unexpected evaluation task: {evaluation_task}")
 
         # If target_labels = None, all labels will be evaluated.
         evaluation_config_dict["target_labels"] = (
             ["green", "red", "yellow", "unknown"]
-            if label_prefix == "traffic_light"
+            if self.label_prefix == "traffic_light"
             else ["car", "bicycle", "pedestrian", "motorbike"]
         )
 
@@ -64,7 +64,7 @@ class PerceptionLSimMoc:
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
             load_raw_data=False,
-            label_prefix=label_prefix,
+            label_prefix=self.label_prefix,
         )
 
         _ = configure_logger(
@@ -152,17 +152,20 @@ if __name__ == "__main__":
         help="Whether save results to temporal directory",
     )
     parser.add_argument(
-        "-p",
-        "--label_prefix",
-        type=str,
-        default="autoware",
-        help="Whether evaluate Traffic Light Recognition",
-    )
-    parser.add_argument(
         "-c",
         "--camera_type",
-        type=str,
-        default="CAM_FRONT",
+        type=str.lower,
+        default="cam_front",
+        choices=[
+            "cam_front",
+            "cam_front_right",
+            "cam_front_left",
+            "cam_back",
+            "cam_back_left",
+            "cam_back_right",
+            "cam_traffic_licht_near",
+            "cam_traffic_light_far",
+        ],
         help="Name of camera data",
     )
     args = parser.parse_args()
@@ -180,7 +183,6 @@ if __name__ == "__main__":
         dataset_paths,
         "detection2d",
         result_root_directory,
-        args.label_prefix,
         args.camera_type,
     )
 
@@ -203,7 +205,6 @@ if __name__ == "__main__":
         dataset_paths,
         "tracking2d",
         result_root_directory,
-        args.label_prefix,
         args.camera_type,
     )
 
@@ -226,7 +227,6 @@ if __name__ == "__main__":
         dataset_paths,
         "classification2d",
         result_root_directory,
-        args.label_prefix,
         args.camera_type,
     )
 
