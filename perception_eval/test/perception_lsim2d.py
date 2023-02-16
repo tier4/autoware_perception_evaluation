@@ -161,8 +161,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "-c",
         "--camera_type",
-        type=str,
-        default="CAM_FRONT",
+        type=str.lower,
+        default="cam_front",
+        choices=[
+            "cam_front",
+            "cam_front_right",
+            "cam_front_left",
+            "cam_back",
+            "cam_back_left",
+            "cam_back_right",
+            "cam_traffic_licht_near",
+            "cam_traffic_light_far",
+        ],
         help="Name of camera data",
     )
     args = parser.parse_args()
