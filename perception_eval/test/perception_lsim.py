@@ -322,6 +322,7 @@ if __name__ == "__main__":
             diff_distance=(2.3, 0.0, 0.2),
             diff_yaw=0.2,
             is_confidence_with_distance=False,
+            ego2map=ground_truth_frame.ego2map,
         )
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
