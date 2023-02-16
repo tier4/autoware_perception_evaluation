@@ -28,6 +28,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.status import FrameID
 from perception_eval.evaluation.metrics.metrics import MetricsScore
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
@@ -255,7 +256,6 @@ def generate_area_points(
 
 
 def get_area_idx(
-    frame_id: str,
     object_result: Union[DynamicObject, DynamicObjectWithPerceptionResult],
     upper_rights: np.ndarray,
     bottom_lefts: np.ndarray,
@@ -274,15 +274,17 @@ def get_area_idx(
         area_idx (Optional[int]): If the position is out of range, returns None.
     """
     if isinstance(object_result, DynamicObject):
+        frame_id: FrameID = object_result.frame_id
         obj_xyz: np.ndarray = np.array(object_result.state.position)
     elif isinstance(object_result, DynamicObjectWithPerceptionResult):
+        frame_id: FrameID = object_result.estimated_object.frame_id
         obj_xyz: np.ndarray = np.array(object_result.estimated_object.state.position)
     else:
         raise TypeError(f"Unexpected object type: {type(object_result)}")
 
-    if frame_id == "map":
+    if frame_id == FrameID.MAP:
         if ego2map is None:
-            raise ValueError("When frame id is map, ego2map must be specified.")
+            raise RuntimeError("When frame id is map, ego2map must be specified.")
         obj_xyz: np.ndarray = np.append(obj_xyz, 1.0)
         obj_xy = np.linalg.inv(ego2map).dot(obj_xyz)[:2]
     elif frame_id == "base_link":

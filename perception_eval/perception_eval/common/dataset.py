@@ -26,6 +26,8 @@ from perception_eval.common.dataset_utils import _sample_to_frame
 from perception_eval.common.dataset_utils import _sample_to_frame_2d
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelConverter
+from perception_eval.common.object import DynamicObject
+from perception_eval.common.status import FrameID
 from tqdm import tqdm
 
 
@@ -34,33 +36,37 @@ class FrameGroundTruth:
     Ground truth data per frame
 
     Attributes:
-        self.unix_time (float): The unix time for the frame [us].
-        self.frame_name (str): The file name for the frame.
-        self.objects (List[ObjectType]): Objects data.
-        self.ego2map (Optional[np.ndarray]): The numpy array to transform position.
-        self.raw_data (Optional[numpy.ndarray]): Raw data for each sensor modality.
+        unix_time (float): The unix time for the frame [us].
+        frame_name (str): The file name for the frame.
+        frame_id (FrameID): FrameID instance, where objects are with respect.
+        objects (List[DynamicObject]): Objects data.
+        pointcloud (Optional[numpy.ndarray], optional):
+                Pointcloud data. Defaults to None, but if you want to visualize dataset,
+                you should load pointcloud data.
+        transform_matrix (Optional[np.ndarray]): The numpy array to transform position.
+        objects (List[ObjectType]): Objects data.
+        ego2map (Optional[np.ndarray]): The numpy array to transform position.
+        raw_data (Optional[Dict[str, numpy.ndarray]]): Raw data for each sensor modality.
+
+    Args:
+        unix_time (int): The unix time for the frame [us]
+        frame_name (str): The file name for the frame
+        frame_id (FrameID): FrameID instance, where objects are with respect.
+        objects (List[DynamicObject]): Objects data.
+        ego2map (Optional[np.ndarray]): The array of 4x4 matrix.
+            Transform position with respect to vehicle coord system to map one.
+        raw_data (Optional[numpy.ndarray]): Raw data for each sensor modality.
     """
 
     def __init__(
         self,
         unix_time: int,
         frame_name: str,
-        frame_id: str,
-        objects: List[ObjectType],
+        frame_id: FrameID,
+        objects: List[DynamicObject],
         ego2map: Optional[np.ndarray] = None,
         raw_data: Optional[np.ndarray] = None,
     ) -> None:
-        """[summary]
-
-        Args:
-            unix_time (int): The unix time for the frame [us]
-            frame_name (str): The file name for the frame
-            frame_id (str): The coord system which objects with respected to, base_link or map.
-            objects (List[ObjectType]): Objects data
-            ego2map (Optional[np.ndarray]): The array of 4x4 matrix.
-                Transform position with respect to vehicle coord system to map one.
-            raw_data (Optional[numpy.ndarray]): Raw data for each sensor modality.
-        """
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
         self.frame_id: str = frame_id
@@ -73,8 +79,7 @@ def load_all_datasets(
     dataset_paths: List[str],
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
-    frame_id: str,
-    camera_type: Optional[str] = None,
+    frame_id: FrameID,
     load_raw_data: bool = False,
 ) -> List[FrameGroundTruth]:
     """
@@ -84,8 +89,7 @@ def load_all_datasets(
         dataset_paths (List[str]): The list of root paths to dataset
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
-        frame_id (str): Frame ID, base_link or map.
-        camera_type (Optional[str]): Camera name. Only specified in 2D evaluation. Defaults to None.
+        frame_id (FrameID): FrameID instance, where objects are with respect.
         load_raw_data (bool): The flag of setting pointcloud or image.
             For 3D task, pointcloud will be loaded. For 2D, image will be loaded. Defaults to False.
 
@@ -110,7 +114,6 @@ def load_all_datasets(
             evaluation_task=evaluation_task,
             label_converter=label_converter,
             frame_id=frame_id,
-            camera_type=camera_type,
             load_raw_data=load_raw_data,
         )
     logging.info("Finish loading dataset\n" + _get_str_objects_number_info(label_converter))
@@ -121,8 +124,7 @@ def _load_dataset(
     dataset_path: str,
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
-    frame_id: str,
-    camera_type: Optional[str],
+    frame_id: FrameID,
     load_raw_data: bool,
 ) -> List[FrameGroundTruth]:
     """
@@ -131,8 +133,7 @@ def _load_dataset(
         dataset_path (str): The root path to dataset.
         evaluation_tasks (EvaluationTask): The evaluation task.
         label_converter (LabelConverter): LabelConvertor instance.
-        frame_id (str): base_link or map.
-        camera_type (Optional[str]): Name of camera. Specify in 2D evaluation.
+        frame_id (FrameID): FrameID instance, where objects are with respect.
         load_raw_data (bool): Whether load pointcloud/image data.
 
     Reference
@@ -161,8 +162,6 @@ def _load_dataset(
     dataset: List[FrameGroundTruth] = []
     for n, sample_token in enumerate(tqdm(sample_tokens)):
         if evaluation_task.is_2d():
-            if camera_type is None:
-                raise RuntimeError("For 2D evaluation `camera_type must be specified.`")
             frame = _sample_to_frame_2d(
                 nusc=nusc,
                 nuim=nuim,
@@ -171,7 +170,6 @@ def _load_dataset(
                 label_converter=label_converter,
                 frame_id=frame_id,
                 frame_name=str(n),
-                camera_type=camera_type,
                 load_raw_data=load_raw_data,
             )
         else:
@@ -192,12 +190,11 @@ def _load_dataset(
 def _get_str_objects_number_info(
     label_converter: LabelConverter,
 ) -> str:
-    """[summary]
-    Get str for the information of object label number
+    """Get str for the information of object label number.
     Args:
-        label_converter (LabelConverter): label convertor
+        label_converter (LabelConverter): label convertor.
     Returns:
-        str: print str
+        str: string.
     """
     str_: str = ""
     for label in label_converter.labels:
@@ -211,8 +208,7 @@ class DatasetLoadingError(Exception):
 
 
 def _get_sample_tokens(nuscenes_sample: dict) -> List[Any]:
-    """[summary]
-    Get sample tokens
+    """Get sample tokens
 
     Args:
         nuscenes_sample (dict): nusc.sample
@@ -240,8 +236,7 @@ def get_now_frame(
     unix_time: int,
     threshold_min_time: int,
 ) -> Optional[FrameGroundTruth]:
-    """
-    Select the ground truth frame whose unix time is most close to args unix time from dataset.
+    """Select the ground truth frame whose unix time is most close to args unix time from dataset.
 
     Args:
         ground_truth_frames (List[FrameGroundTruth]): FrameGroundTruth instance list.

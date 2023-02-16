@@ -53,7 +53,7 @@
   | :------------------- | :---------------------------------------: | :--------------------------------------- |
   | `frame_name`         |                   `str`                   | フレーム名                               |
   | `unix_time`          |                   `int`                   | フレームの UNIX Time                     |
-  | `frame_id`           |                   `str`                   | オブジェクト座標系 frame ID              |
+  | `frame_id`           |                 `FrameID`                 | オブジェクト座標系 FrameIDのインスタンス |
   | `target_labels`      |             `List[LabelType]`             | 評価対象ラベル                           |
   | `object_results`     | `List[DynamicObjectWithPerceptionResult]` | 推定オブジェクトと GT オブジェクトのペア |
   | `frame_ground_truth` |            `FrameGroundTruth`             | 1 フレーム分の GT オブジェクト           |

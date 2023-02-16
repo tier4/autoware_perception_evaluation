@@ -31,6 +31,7 @@ from matplotlib.transforms import Affine2D
 import numpy as np
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.status import FrameID
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation import PerceptionFrameResult
@@ -51,16 +52,15 @@ class PerceptionVisualizer3D:
         config (PerceptionVisualizationConfig)
     """
 
-    def __init__(self, config: PerceptionEvaluationConfig, **kwargs) -> None:
+    def __init__(
+        self,
+        config: PerceptionEvaluationConfig,
+        figsize: Tuple[int, int] = (600, 800),
+    ) -> None:
         assert config.evaluation_task.is_3d()
         self.__config: PerceptionEvaluationConfig = config
         self.__cmap: ColorMap = ColorMap(rgb=True)
-        self.__width, self.__height = kwargs.get("width", 800), kwargs.get("height", 600)
-        self.__figsize: Tuple[float, float] = (self.__width / 100.0, self.__height / 100.0)
-
-        if self.config.evaluation_task == EvaluationTask.TRACKING2D:
-            # Each tracked path is specified by uuid.gt/est_track.label
-            self.__tracked_paths: Dict[str, List[Tuple[float, float]]] = {}
+        self.set_figsize(height=figsize[0], width=figsize[1])
 
         self.__figure, self.__axes = plt.subplots(figsize=self.__figsize)
         self.__animation_frames: List[List[plt.Artist]] = []
@@ -68,17 +68,19 @@ class PerceptionVisualizer3D:
         max_x_position_list = config.filtering_params.get("max_x_position_list")
         max_y_position_list = config.filtering_params.get("max_y_position_list")
         max_distance_list = config.filtering_params.get("max_distance_list")
-        if max_distance_list is None and (
-            max_x_position_list is None or max_y_position_list is None
-        ):
-            self.xlim: float = 100.0
-            self.ylim: float = 100.0
-        elif max_x_position_list is None or max_y_position_list is None:
-            self.xlim: float = max(max_distance_list)
-            self.ylim: float = max(max_distance_list)
-        elif max_distance_list is None:
-            self.xlim: float = max(max_x_position_list)
-            self.ylim: float = max(max_y_position_list)
+        if max_x_position_list is not None and max_y_position_list is not None:
+            self.__xlim: float = max(max_x_position_list)
+            self.__ylim: float = max(max_y_position_list)
+        elif max_distance_list is not None:
+            self.__xlim: float = max(max_distance_list)
+            self.__ylim: float = max(max_distance_list)
+        else:
+            self.__xlim: float = 100.0
+            self.__ylim: float = 100.0
+
+        if self.config.evaluation_task == EvaluationTask.TRACKING2D:
+            # Each tracked path is specified by uuid.gt/est_track.label
+            self.__tracked_paths: Dict[str, List[Tuple[float, float]]] = {}
 
     @classmethod
     def from_scenario(
@@ -102,17 +104,10 @@ class PerceptionVisualizer3D:
 
         p_cfg: Dict[str, any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
         eval_cfg_dict: Dict[str, any] = p_cfg["evaluation_config_dict"]
-        eval_task_: str = eval_cfg_dict["evaluation_task"]
-        if eval_task_ == "detection":
-            frame_id = "base_link"
-        elif eval_task_ in ("tracking", "prediction"):
-            frame_id = "map"
-        else:
-            raise ValueError(f"Unexpected evaluation task: {eval_task_}")
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
-            frame_id=frame_id,
+            frame_id="base_link" if eval_cfg_dict["evaluation_task"] == "detection" else "map",
             merge_similar_labels=p_cfg.get("merge_similar_labels", False),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
@@ -124,6 +119,24 @@ class PerceptionVisualizer3D:
     @property
     def config(self) -> PerceptionEvaluationConfig:
         return self.__config
+
+    @property
+    def xlim(self) -> float:
+        return self.__xlim
+
+    @property
+    def ylim(self) -> float:
+        return self.__ylim
+
+    def set_axes_limit(self, xlim: float, ylim: float) -> None:
+        """Set xy-axes limit.
+
+        Args:
+            xlim (float): Limit of x-axis.
+            ylim (float): Limit of y-axis.
+        """
+        self.__xlim = xlim
+        self.__ylim = ylim
 
     def visualize_all(
         self,
@@ -296,10 +309,9 @@ class PerceptionVisualizer3D:
         artists: List[plt.Artist] = []
 
         ego_color: np.ndarray = self.__cmap.get_simple("black")
-        if self.config.frame_id == "base_link":
-            ego_xy: Tuple[float, float] = np.array((0.0, 0.0))
-        elif self.config.frame_id == "map":
-            ego_xy: np.ndarray = ego2map[:2, 3]
+        ego_xy: np.ndarray = (
+            np.array((0.0, 0.0)) if self.config.frame_id == FrameID.BASE_LINK else ego2map[:2, 3]
+        )
         box_width: float = size[0]
         box_height: float = size[1]
 
@@ -307,13 +319,11 @@ class PerceptionVisualizer3D:
         plt.ylim([-self.ylim + ego_xy[1], self.ylim + ego_xy[1]])
 
         box_bottom_left: np.ndarray = ego_xy - (np.array(size) / 2.0)
-
-        if self.config.frame_id == "map":
-            yaw: float = rotation_matrix_to_euler(ego2map[:3, :3])[2]
-        elif self.config.frame_id == "base_link":
-            yaw: float = 0.0
-        else:
-            raise ValueError(f"Unexpected frame_id: {self.config.frame_id}")
+        yaw: float = (
+            0.0
+            if self.config.frame_id == FrameID.BASE_LINK
+            else rotation_matrix_to_euler(ego2map[:3, :3])[2]
+        )
 
         transform: Affine2D = Affine2D().rotate_around(ego_xy[0], ego_xy[1], yaw) + axes.transData
         box: Rectangle = Rectangle(
@@ -400,12 +410,7 @@ class PerceptionVisualizer3D:
             if self.config.evaluation_task == EvaluationTask.TRACKING:
                 box_velocity: np.ndarray = np.array(object_.state.velocity)[:2]
                 # plot heading
-                if self.config.frame_id == "base_link":
-                    dx, dy = box_velocity
-                elif self.config.frame_id == "map":
-                    dx, dy = box_velocity
-                else:
-                    raise ValueError(f"Unexpected frame_id: {self.config.frame_id}")
+                dx, dy = box_velocity
 
                 arrow_ = axes.arrow(
                     x=box_center[0],

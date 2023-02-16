@@ -48,15 +48,15 @@ class PerceptionVisualizer2D:
         config (PerceptionEvaluationConfig)
     """
 
-    def __init__(self, config: PerceptionEvaluationConfig, **kwargs) -> None:
+    def __init__(
+        self,
+        config: PerceptionEvaluationConfig,
+        figsize: Tuple[int, int] = (600, 800),
+    ) -> None:
         assert config.evaluation_task.is_2d()
         self.__config: PerceptionEvaluationConfig = config
         self.__cmap: ColorMap = ColorMap(rgb=True)
-        self.__figsize: Tuple[float, float] = (
-            kwargs.get("width", 800) / 100.0,
-            kwargs.get("height", 600) / 100.0,
-        )
-
+        self.set_figsize(height=figsize[0], width=figsize[1])
         self.__figure, self.__axes = plt.subplots(figsize=self.__figsize)
         self.__animation_frames: List[List[plt.Artist]] = []
 
@@ -65,6 +65,7 @@ class PerceptionVisualizer2D:
         cls,
         result_root_directory: str,
         scenario_path: str,
+        camera_frame: str,
         **kwargs,
     ) -> PerceptionVisualizer2D:
         """Perception results made by logsim are reproduced from pickle file.
@@ -72,6 +73,7 @@ class PerceptionVisualizer2D:
         Args:
             result_root_directory (str): The root path to save result.
             scenario_path (str): The path of scenario file .yaml.
+            camera_frame (str): Frame name of camera, for example, CAM_FRONT.
         Returns:
             PerceptionPerformanceAnalyzer
         """
@@ -82,15 +84,10 @@ class PerceptionVisualizer2D:
 
         p_cfg: Dict[str, any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
         eval_cfg_dict: Dict[str, any] = p_cfg["evaluation_config_dict"]
-        eval_task_: str = eval_cfg_dict["evaluation_task"]
-        if eval_task_ in ("detection2d", "tracking2d", "classification2d"):
-            frame_id = "base_link"
-        else:
-            raise ValueError(f"Unexpected evaluation task: {eval_task_}")
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
-            frame_id=frame_id,
+            frame_id=camera_frame,
             merge_similar_labels=p_cfg.get("merge_similar_labels", False),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,

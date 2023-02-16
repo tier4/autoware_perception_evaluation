@@ -36,16 +36,16 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
 
 - Initialization
 
-  | Attributes           |                   type                    | Description                                        |
-  | :------------------- | :---------------------------------------: | :------------------------------------------------- |
-  | `frame_name`         |                   `str`                   | Name of frame                                      |
-  | `unix_time`          |                   `int`                   | Unix time of frame                                 |
-  | `frame_id`           |                   `str`                   | Frame ID of coords system which objects respect to |
-  | `target_labels`      |             `List[LabelType]`             | List of name of target labels                      |
-  | `object_results`     | `List[DynamicObjectWithPerceptionResult]` | List of pair of Estimation and ground truth(GT)    |
-  | `frame_ground_truth` |            `FrameGroundTruth`             | GT objects for one frame                           |
-  | `metrics_score`      |              `MetricsScore`               | Score of metrics result                            |
-  | `pass_fail_result`   |             `PassFailResult`              | Result of pass / fail                              |
+  | Attributes           |                   type                    | Description                                                  |
+  | :------------------- | :---------------------------------------: | :----------------------------------------------------------- |
+  | `frame_name`         |                   `str`                   | Name of frame                                                |
+  | `unix_time`          |                   `int`                   | Unix time of frame                                           |
+  | `frame_id`           |                 `FrameID`                 | Frame ID instance, where coords system which objects respect |
+  | `target_labels`      |             `List[LabelType]`             | List of name of target labels                                |
+  | `object_results`     | `List[DynamicObjectWithPerceptionResult]` | List of pair of Estimation and ground truth(GT)              |
+  | `frame_ground_truth` |            `FrameGroundTruth`             | GT objects for one frame                                     |
+  | `metrics_score`      |              `MetricsScore`               | Score of metrics result                                      |
+  | `pass_fail_result`   |             `PassFailResult`              | Result of pass / fail                                        |
 
 - Methods
 

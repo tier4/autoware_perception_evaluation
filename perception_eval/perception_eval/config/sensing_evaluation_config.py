@@ -30,14 +30,13 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
 
     Attributes:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (str): Frame ID, `base_link` or `map`.
+        frame_id (FrameID): FrameID instance, where objects are with respect.
         result_root_directory (str): Directory path to save result.
         log_directory (str): Directory Directory path to save log.
         visualization_directory (str): Directory path to save visualization result.
         label_converter (LabelConverter): LabelConverter instance.
         evaluation_task (EvaluationTask): EvaluationTask instance.
         label_prefix (str): Prefix of label type. Choose from [`autoware", `traffic_light`]. Defaults to autoware.
-        camera_type (Optional[str]): Camera name. Specify in 2D evaluation. Defaults to None.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
         target_labels (List[LabelType]): Target labels list.
         filtering_params (Dict[str, Any]): Filtering parameters.
@@ -45,7 +44,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
 
     Args:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (str): Frame ID, `base_link` or `map`.
+        frame_id (str): FrameID in string, where objects are with respect.
         merge_similar_labels (bool): Whether merge similar labels.
             If True,
                 - BUS, TRUCK, TRAILER -> CAR
@@ -66,19 +65,6 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         evaluation_config_dict: Dict[str, Dict[str, Any]],
         load_raw_data: bool = False,
     ):
-        """
-        Args:
-            dataset_paths (List[str]): The list of dataset paths.
-            frame_id (str): Frame ID, base_link or map.
-            merge_similar_labels (bool): Whether merge similar labels.
-                If True,
-                    - BUS, TRUCK, TRAILER -> CAR
-                    - MOTORBIKE, CYCLIST -> BICYCLE
-            result_root_directory (str): The directory path to save result.
-            evaluation_config_dict (Dict[str, Dict[str, Any]]): The dictionary of evaluation config for each task.
-                                          This has a key of evaluation task name which support in EvaluationTask class(ex. ["sensing"])
-            load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
-        """
         super().__init__(
             dataset_paths=dataset_paths,
             frame_id=frame_id,

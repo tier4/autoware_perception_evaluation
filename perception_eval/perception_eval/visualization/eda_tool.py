@@ -522,7 +522,6 @@ class EDAManager:
             # visualize fp with high confidence in estimated objects
             confidence_threshold_list: List[float] = [confidence_threshold] * len(target_labels)
             fp_results_with_high_confidence = filter_object_results(
-                frame_id="base_link",
                 object_results=tp_results,
                 target_labels=target_labels,
                 confidence_threshold_list=confidence_threshold_list,
