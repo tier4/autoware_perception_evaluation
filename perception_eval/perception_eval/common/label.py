@@ -129,7 +129,7 @@ class TrafficLightLabel(LabelBase):
     RED_RIGHT_STRAIGHT = "red_right_straight"
     RED_RIGHT_DIAGONAL = "red_right_diagonal"
     YELLOW_RIGHT = "yellow_right"
-    UNKNOwN = "unknown"
+    UNKNOWN = "unknown"
 
     @staticmethod
     def get_pairs() -> List[Tuple[TrafficLightLabel, str]]:
@@ -145,7 +145,7 @@ class TrafficLightLabel(LabelBase):
             (TrafficLightLabel.RED_RIGHT_STRAIGHT, "red_right_straight"),
             (TrafficLightLabel.RED_RIGHT_DIAGONAL, "red_right_diagonal"),
             (TrafficLightLabel.YELLOW_RIGHT, "yellow_right"),
-            (TrafficLightLabel.UNKNOwN, "unknown"),
+            (TrafficLightLabel.UNKNOWN, "unknown"),
         ]
         return pair_list
 
