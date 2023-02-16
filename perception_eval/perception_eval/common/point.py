@@ -115,8 +115,8 @@ def crop_pointcloud(
         flags_ *= pointcloud[:, 0] < (area[i][0] + (vt * (area[i + 1][0] - area[i][0])))
         cnt_arr_[flags_] += 1
 
+    xy_idx: np.ndarray = cnt_arr_ % 2 != 0 if inside else cnt_arr_ % 2 == 0
     if pointcloud.shape[1] < 3:
-        xy_idx: np.ndarray = cnt_arr_ % 2 != 0 if inside else cnt_arr_ % 2 == 0
         return pointcloud[xy_idx]
 
     z_min: float = min(area, key=(lambda x: x[2]))[2]

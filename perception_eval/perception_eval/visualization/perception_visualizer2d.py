@@ -46,17 +46,18 @@ class PerceptionVisualizer2D:
 
     Args:
         config (PerceptionEvaluationConfig)
+        figsize (Tuple[int, int]): Figure size, (width, height) order. Defaults to (800, 600).
     """
 
     def __init__(
         self,
         config: PerceptionEvaluationConfig,
-        figsize: Tuple[int, int] = (600, 800),
+        figsize: Tuple[int, int] = (800, 600),
     ) -> None:
         assert config.evaluation_task.is_2d()
         self.__config: PerceptionEvaluationConfig = config
         self.__cmap: ColorMap = ColorMap(rgb=True)
-        self.set_figsize(height=figsize[0], width=figsize[1])
+        self.__figsize = (figsize[0] / 100.0, figsize[1] / 100.0)
         self.__figure, self.__axes = plt.subplots(figsize=self.__figsize)
         self.__animation_frames: List[List[plt.Artist]] = []
 
@@ -139,15 +140,15 @@ class PerceptionVisualizer2D:
         if self.config.evaluation_task == EvaluationTask.TRACKING2D:
             self.__tracked_paths.clear()
 
-    def set_figsize(self, height: int, width: int) -> None:
+    def set_figsize(self, figsize: Tuple[int, int]) -> None:
         """Set figure size.
         Args:
-            height (int): The height of figure.
-            width (int): The width of figure.
+            figsize (Tuple[int, int]): Figure size, (width, height)
         """
-        self.__figure.set_figheight(height / 100.0)
-        self.__figure.set_figwidth(width / 100.0)
-        self.__figsize = (height / 100.0, width / 100.0)
+        width, height = figsize[0] / 100.0, figsize[1] / 100.0
+        self.__figure.set_figwidth(width)
+        self.__figure.set_figheight(height)
+        self.__figsize = (width, height)
 
     def visualize_frame(
         self,
@@ -179,7 +180,7 @@ class PerceptionVisualizer2D:
             axes.imshow(frame_result.frame_ground_truth.raw_data)
 
         frame_number: str = frame_result.frame_ground_truth.frame_name
-        axes.set_title(f"Frame: {frame_number} ({frame_result.frame_id})")
+        axes.set_title(f"Frame: {frame_number} ({self.config.frame_id.value})")
 
         frame_artists: List[Axes.ArtistList] = []
 
