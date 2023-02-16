@@ -31,6 +31,7 @@ import numpy as np
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.status import FrameID
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation import PerceptionFrameResult
@@ -103,7 +104,7 @@ class PerceptionVisualizer:
     def from_args(
         cls,
         visualization_directory_path: str,
-        frame_id: str,
+        frame_id: FrameID,
         evaluation_task: EvaluationTask,
         height: int = 480,
         width: int = 640,
@@ -312,10 +313,9 @@ class PerceptionVisualizer:
         artists: List[plt.Artist] = []
 
         ego_color: np.ndarray = self.__cmap.get_simple("black")
-        if self.config.frame_id == "base_link":
-            ego_xy: Tuple[float, float] = np.array((0.0, 0.0))
-        elif self.config.frame_id == "map":
-            ego_xy: np.ndarray = ego2map[:2, 3]
+        ego_xy: np.ndarray = (
+            np.array((0.0, 0.0)) if self.config.frame_id == FrameID.BASE_LINK else ego2map[:2, 3]
+        )
         box_width: float = size[0]
         box_height: float = size[1]
         scatter_ = axes.scatter(
@@ -331,13 +331,11 @@ class PerceptionVisualizer:
         plt.ylim([-self.config.ylim + ego_xy[1], self.config.ylim + ego_xy[1]])
 
         box_bottom_left: np.ndarray = ego_xy - (np.array(size) / 2.0)
-
-        if self.config.frame_id == "map":
-            yaw: float = rotation_matrix_to_euler(ego2map[:3, :3])[2]
-        elif self.config.frame_id == "base_link":
-            yaw: float = 0.0
-        else:
-            raise ValueError(f"Unexpected frame_id: {self.config.frame_id}")
+        yaw: float = (
+            0.0
+            if self.config.frame_id == FrameID.BASE_LINK
+            else rotation_matrix_to_euler(ego2map[:3, :3])[2]
+        )
 
         transform: Affine2D = Affine2D().rotate_around(ego_xy[0], ego_xy[1], yaw) + axes.transData
         box: Rectangle = Rectangle(
@@ -424,12 +422,7 @@ class PerceptionVisualizer:
             if self.config.evaluation_task == EvaluationTask.TRACKING:
                 box_velocity: np.ndarray = np.array(object_.state.velocity)[:2]
                 # plot heading
-                if self.config.frame_id == "base_link":
-                    dx, dy = box_velocity
-                elif self.config.frame_id == "map":
-                    dx, dy = box_velocity
-                else:
-                    raise ValueError(f"Unexpected frame_id: {self.config.frame_id}")
+                dx, dy = box_velocity
 
                 arrow_ = axes.arrow(
                     x=box_center[0],
@@ -582,7 +575,6 @@ class PerceptionVisualizer:
         """
         # filter object results
         filtered_estimated_objects: List[DynamicObjectWithPerceptionResult] = filter_object_results(
-            frame_id=self.config.frame_id,
             object_results=object_results,
             target_labels=self.config.target_labels,
             max_x_position_list=self.config.max_x_position_list,
@@ -594,7 +586,6 @@ class PerceptionVisualizer:
             ego2map=frame_ground_truth.ego2map,
         )
         filtered_ground_truth: List[DynamicObject] = filter_objects(
-            frame_id=self.config.frame_id,
             objects=frame_ground_truth.objects,
             is_gt=True,
             target_labels=self.config.target_labels,

@@ -88,6 +88,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             ground_truth_objects=ground_truth_objects,
             pointcloud=pointcloud,
             non_detection_areas=non_detection_areas,
+            ego2map=ground_truth_now_frame.ego2map,
         )
 
         result = SensingFrameResult(
@@ -120,7 +121,6 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             List[DynamicObject]: Filtered ground truth objects.
         """
         return filter_objects(
-            frame_id=self.frame_id,
             objects=frame_ground_truth.objects,
             is_gt=True,
             target_uuids=sensing_frame_config.target_uuids,
@@ -132,6 +132,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         ground_truth_objects: List[DynamicObject],
         pointcloud: np.ndarray,
         non_detection_areas: List[List[Tuple[float, float, float]]],
+        ego2map: Optional[np.ndarray] = None,
     ) -> List[np.ndarray]:
         """Crop pointcloud from (N, 3) to (M, 3) with the non-detection area.
 
@@ -139,6 +140,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             ground_truth_objects (List[DynamicObject]): Ground truth objects list.
             pointcloud (numpy.ndarray): Array of pointcloud, in shape (N, 3).
             non_detection_areas (List[List[Tuple[float, float, float]]]): List of 3D-polygon areas for non-detection.
+            ego2map (Optional[numpy.ndarray]):4x4 Transform matrix from base_link coordinate system to map coordinate system.
 
         Returns:
             cropped_pointcloud (List[numpy.ndarray]): List of cropped pointcloud array.
@@ -159,7 +161,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             outside_points: np.ndarray = points.copy()
             for ground_truth in ground_truth_objects:
                 bbox_scale: float = get_bbox_scale(
-                    distance=ground_truth.get_distance(),
+                    distance=ground_truth.get_distance(ego2map=ego2map),
                     box_scale_0m=box_scale_0m,
                     box_scale_100m=box_scale_100m,
                 )

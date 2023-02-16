@@ -66,6 +66,13 @@ class EvaluationTask(Enum):
     def is_2d(self) -> bool:
         return not self.is_3d()
 
+    @classmethod
+    def from_value(cls, name: str) -> EvaluationTask:
+        for _, v in cls.__members__.items():
+            if v == name:
+                return v
+        raise ValueError(f"Unexpected value: {name}")
+
 
 def set_task_lists(evaluation_tasks_str: List[str]) -> List[EvaluationTask]:
     """Convert str to EvaluationTask instances list.
