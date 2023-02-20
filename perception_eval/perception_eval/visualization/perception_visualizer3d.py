@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-import logging
+import io
 import os.path as osp
 from typing import Dict
 from typing import List
@@ -22,7 +22,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-from matplotlib.animation import ArtistAnimation
+import cv2
 from matplotlib.axes import Axes
 from matplotlib.patches import Patch
 from matplotlib.patches import Rectangle
@@ -37,6 +37,8 @@ from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.util.math import rotation_matrix_to_euler
 from perception_eval.visualization.color import ColorMap
+from PIL import Image
+from PIL.Image import Image as PILImage
 from pyquaternion import Quaternion
 from tqdm import tqdm
 import yaml
@@ -63,10 +65,8 @@ class PerceptionVisualizer3D:
         self.__cmap: ColorMap = ColorMap(rgb=True)
         self.__figsize = (figsize[0] / 100.0, figsize[1] / 100.0)
 
-        self.__figure, self.__axes = plt.subplots(
-            figsize=self.__figsize,
-        )
-        self.__animation_frames: List[List[plt.Artist]] = []
+        self.__figure, self.__axes = plt.subplots(figsize=self.__figsize)
+        self.__animation_frames: List[PILImage] = []
 
         max_x_position_list = config.filtering_params.get("max_x_position_list")
         max_y_position_list = config.filtering_params.get("max_y_position_list")
@@ -144,7 +144,7 @@ class PerceptionVisualizer3D:
     def visualize_all(
         self,
         frame_results: List[PerceptionFrameResult],
-        animation: bool = False,
+        filename: Optional[str] = None,
         cache_figure: bool = False,
     ) -> None:
         """Visualize all frames in BEV space.
@@ -165,9 +165,7 @@ class PerceptionVisualizer3D:
                 self.__axes.clear()
 
         # save animation as gif
-        if animation:
-            # self._save_animation(file_name)
-            logging.warning("animation is under construction")
+        self.__save_animation(filename)
         self.clear()
 
     def clear(self) -> None:
@@ -190,7 +188,6 @@ class PerceptionVisualizer3D:
     def visualize_frame(
         self,
         frame_result: PerceptionFrameResult,
-        file_name: Optional[str] = None,
         axes: Optional[Axes] = None,
     ) -> Axes:
         """Visualize a frame result in BEV space.
@@ -203,7 +200,6 @@ class PerceptionVisualizer3D:
 
         Args:
             frame_result (PerceptionFrameResult)
-            file_name (Optional[str]): The name of file. If not specified, saved by frame name. Defaults to None.
             axes (Optional[Axes]): The Axes instance. Defaults to None.
         """
         if axes is None:
@@ -214,18 +210,15 @@ class PerceptionVisualizer3D:
         axes.set_xlabel("x [m]")
         axes.set_ylabel("y [m]")
 
-        frame_artists: List[Axes.ArtistList] = []
-
         # Plot ego vehicle position
-        axes, artists = self._plot_ego(
+        axes = self._plot_ego(
             ego2map=frame_result.frame_ground_truth.ego2map,
             axes=axes,
         )
-        frame_artists += artists
 
         # Plot objects
         handles: List[Patch] = []
-        axes, artists = self.plot_objects(
+        axes = self.plot_objects(
             objects=frame_result.pass_fail_result.tp_objects,
             is_ground_truth=False,
             axes=axes,
@@ -233,10 +226,9 @@ class PerceptionVisualizer3D:
             color="blue",
             pointcloud=frame_result.frame_ground_truth.raw_data,
         )
-        frame_artists += artists
         handles.append(Patch(color="blue", label="TP est"))
 
-        axes, artists = self.plot_objects(
+        axes = self.plot_objects(
             objects=frame_result.pass_fail_result.tp_objects,
             is_ground_truth=True,
             axes=axes,
@@ -244,10 +236,9 @@ class PerceptionVisualizer3D:
             color="red",
             pointcloud=frame_result.frame_ground_truth.raw_data,
         )
-        frame_artists += artists
         handles.append(Patch(color="red", label="TP GT"))
 
-        axes, artists = self.plot_objects(
+        axes = self.plot_objects(
             objects=frame_result.pass_fail_result.fp_objects_result,
             is_ground_truth=False,
             axes=axes,
@@ -255,10 +246,9 @@ class PerceptionVisualizer3D:
             color="cyan",
             pointcloud=frame_result.frame_ground_truth.raw_data,
         )
-        frame_artists += artists
         handles.append(Patch(color="cyan", label="FP"))
 
-        axes, artists = self.plot_objects(
+        axes = self.plot_objects(
             objects=frame_result.pass_fail_result.fn_objects,
             is_ground_truth=True,
             axes=axes,
@@ -266,25 +256,21 @@ class PerceptionVisualizer3D:
             color="orange",
             pointcloud=frame_result.frame_ground_truth.raw_data,
         )
-        frame_artists += artists
         handles.append(Patch(color="orange", label="FN"))
 
-        legend = plt.legend(
+        plt.legend(
             handles=handles,
             bbox_to_anchor=(1.1, 1.1),
             loc="upper right",
             borderaxespad=0,
             markerscale=10.0,
         )
-        frame_artists.append(legend)
-        self.__animation_frames.append(frame_artists)
 
-        # save_figure:
-        if file_name is None:
-            file_name = frame_result.frame_ground_truth.frame_name
-        filepath: str = osp.join(self.config.visualization_directory, file_name)
-
-        plt.savefig(filepath + ".png")
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format="png")
+        buffer.seek(0)
+        frame = Image.open(buffer)
+        self.__animation_frames.append(frame)
 
         return axes
 
@@ -293,7 +279,7 @@ class PerceptionVisualizer3D:
         ego2map: np.ndarray,
         axes: Optional[Axes] = None,
         size: Tuple[float, float] = (5.0, 2.5),
-    ) -> Tuple[Axes, List[plt.Artist]]:
+    ) -> Axes:
         """Plot ego vehicle.
 
         Args:
@@ -303,12 +289,9 @@ class PerceptionVisualizer3D:
 
         Returns:
             axes (Axes): The Axes instance.
-            artists (List[plt.Artist]): The list of Artist instance.
         """
         if axes is None:
             axes: Axes = plt.subplot()
-
-        artists: List[plt.Artist] = []
 
         ego_color: np.ndarray = self.__cmap.get_simple("black")
         ego_xy: np.ndarray = (
@@ -338,7 +321,7 @@ class PerceptionVisualizer3D:
         )
         axes.add_patch(box)
 
-        return axes, artists
+        return axes
 
     def plot_objects(
         self,
@@ -348,14 +331,16 @@ class PerceptionVisualizer3D:
         label: Optional[str] = None,
         color: Optional[str] = None,
         pointcloud: Optional[np.ndarray] = None,
-    ) -> Tuple[Axes, List[plt.Artist]]:
+    ) -> Axes:
         """Plot objects in BEV space.
 
-        :                +------------------+
-        :   y            |                  |
-        :   ^          height               |
-        :   |            |                  |
-        :   o--> x      (xy)---- width -----+
+        ```
+                     +------------------+
+        y            |                  |
+        ^          height               |
+        |            |                  |
+        o--> x      (xy)---- width -----+
+        ```
 
         Args:
             objects (Union[List[DynamicObject], DynamicObjectWithPerceptionResult]): The list of object being visualized.
@@ -367,12 +352,9 @@ class PerceptionVisualizer3D:
 
         Returns:
             axes (Axes): The Axes instance.
-            artists (List[plt.Artist]): The list of Artist instance.
         """
         if axes is None:
             axes: Axes = plt.subplot()
-
-        artists: List[plt.Artist] = []
 
         color: str = "red" if color is None else color
         edge_color = self.__cmap.get_simple(color)
@@ -407,14 +389,13 @@ class PerceptionVisualizer3D:
                 transform=transform,
             )
             axes.add_patch(box)
-            artists.append(box)
 
             if self.config.evaluation_task == EvaluationTask.TRACKING:
                 box_velocity: np.ndarray = np.array(object_.state.velocity)[:2]
                 # plot heading
                 dx, dy = box_velocity
 
-                arrow_ = axes.arrow(
+                axes.arrow(
                     x=box_center[0],
                     y=box_center[1],
                     dx=dx,
@@ -423,14 +404,10 @@ class PerceptionVisualizer3D:
                     shape="full",
                     length_includes_head=True,
                 )
-                artists.append(arrow_)
 
             # tracked path
             if self.config.evaluation_task == EvaluationTask.TRACKING:
-                axes, tracking_artists = self._plot_tracked_path(
-                    object_, is_ground_truth, axes=axes
-                )
-                artists += tracking_artists
+                axes = self._plot_tracked_path(object_, is_ground_truth, axes=axes)
 
             # predicted path
             if self.config.evaluation_task == EvaluationTask.PREDICTION:
@@ -444,7 +421,7 @@ class PerceptionVisualizer3D:
 
         if pointcloud is not None and len(cropped_pointcloud) > 0:
             cropped_pointcloud = np.array(cropped_pointcloud)
-            scatter_ = axes.scatter(
+            axes.scatter(
                 x=cropped_pointcloud[:, 0],
                 y=cropped_pointcloud[:, 1],
                 marker=".",
@@ -452,16 +429,15 @@ class PerceptionVisualizer3D:
                 label=label,
                 s=0.5,
             )
-            artists.append(scatter_)
 
-        return axes, artists
+        return axes
 
     def _plot_tracked_path(
         self,
         dynamic_object: DynamicObject,
         is_ground_truth: bool,
         axes: Optional[Axes] = None,
-    ) -> Tuple[Axes, List[plt.Artist]]:
+    ) -> Axes:
         """Plot tracked paths for one object.
 
         Args:
@@ -471,12 +447,9 @@ class PerceptionVisualizer3D:
 
         Returns:
             axes (Axes): The Axes instance.
-            artists (List[plt.Artist]): The list of Artist instance.
         """
         if axes is None:
             axes: Axes = plt.subplot()
-
-        artists: List[plt.Artist] = []
 
         object_type_: str = ".gt_track" if is_ground_truth else ".est_track"
         object_label_: str = "." + dynamic_object.semantic_label.value
@@ -487,11 +460,9 @@ class PerceptionVisualizer3D:
             self.__tracked_paths[uuid_].append(dynamic_object.state.position[:2])
         color_: np.ndarray = self.__cmap.get(uuid_)
         paths_arr_: np.ndarray = np.array(self.__tracked_paths[uuid_])
-        plot_ = axes.plot(paths_arr_[:, 0], paths_arr_[:, 1], "o--", color=color_, markersize=1)
+        axes.plot(paths_arr_[:, 0], paths_arr_[:, 1], "o--", color=color_, markersize=1)
 
-        artists.append(plot_)
-
-        return axes, artists
+        return axes
 
     def _plot_predicted_path(
         self,
@@ -511,18 +482,22 @@ class PerceptionVisualizer3D:
         """
         pass
 
-    def _save_animation(self, file_name: Optional[str] = None):
-        """Save animation as gif.
+    def __save_animation(self, filename: Optional[str] = None) -> None:
+        """Save animation as mp4.
 
         Args:
-            file_name (str)
+            filename (Optional[str]): Video filename. If None, save as scene_result_3d.mp4. Defaults to None.
         """
-        if file_name is None:
-            file_name = "all"
-        filepath: str = osp.join(self.config.visualization_directory, file_name)
-        ani: ArtistAnimation = ArtistAnimation(
-            self.__figure,
-            self.__animation_frames,
-            interval=100,
-        )
-        ani.save(filepath + "_animation.gif", writer="pillow")
+        if filename is None:
+            filename = "scene_result_3d.mp4"
+
+        if not filename.endswith(".mp4"):
+            filename += ".mp4"
+
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        filepath = osp.join(self.config.visualization_directory, filename)
+        video = cv2.VideoWriter(filepath, fourcc, fps=10, frameSize=self.__animation_frames[0].size)
+        for frame in self.__animation_frames:
+            frame_ = np.array(frame.copy())
+            video.write(cv2.cvtColor(frame_, cv2.COLOR_RGB2BGR))
+        video.release()

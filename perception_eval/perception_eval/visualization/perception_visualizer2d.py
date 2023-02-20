@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-import logging
+import io
 import os.path as osp
 from typing import Dict
 from typing import List
@@ -22,7 +22,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-from matplotlib.animation import ArtistAnimation
+import cv2
 from matplotlib.axes import Axes
 from matplotlib.patches import Patch
 from matplotlib.patches import Rectangle
@@ -34,6 +34,8 @@ from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.visualization.color import ColorMap
+from PIL import Image
+from PIL.Image import Image as PILImage
 from tqdm import tqdm
 import yaml
 
@@ -59,7 +61,7 @@ class PerceptionVisualizer2D:
         self.__cmap: ColorMap = ColorMap(rgb=True)
         self.__figsize = (figsize[0] / 100.0, figsize[1] / 100.0)
         self.__figure, self.__axes = plt.subplots(figsize=self.__figsize)
-        self.__animation_frames: List[List[plt.Artist]] = []
+        self.__animation_frames: List[PILImage] = []
 
     @classmethod
     def from_scenario(
@@ -104,7 +106,7 @@ class PerceptionVisualizer2D:
     def visualize_all(
         self,
         frame_results: List[PerceptionFrameResult],
-        animation: bool = False,
+        filename: Optional[str] = None,
         cache_figure: bool = False,
     ) -> None:
         """Visualize all frames in BEV space.
@@ -118,7 +120,6 @@ class PerceptionVisualizer2D:
         if self.config.evaluation_task == EvaluationTask.TRACKING2D:
             self.__tracked_paths = {}
 
-        frame_result_: PerceptionFrameResult
         for frame_result_ in tqdm(frame_results, desc="Visualize results for each frame"):
             self.__axes: Axes = self.visualize_frame(
                 frame_result=frame_result_,
@@ -127,10 +128,7 @@ class PerceptionVisualizer2D:
             if cache_figure is False:
                 self.__axes.clear()
 
-        # save animation as gif
-        if animation:
-            # self._save_animation(file_name)
-            logging.warning("animation is under construction")
+        self.__save_animation(filename)
         self.clear()
 
     def clear(self) -> None:
@@ -153,7 +151,6 @@ class PerceptionVisualizer2D:
     def visualize_frame(
         self,
         frame_result: PerceptionFrameResult,
-        file_name: Optional[str] = None,
         axes: Optional[Axes] = None,
     ) -> Axes:
         """Visualize a frame result on image.
@@ -166,7 +163,6 @@ class PerceptionVisualizer2D:
 
         Args:
             frame_result (PerceptionFrameResult)
-            file_name (Optional[str]): The name of file. If not specified, saved by frame name. Defaults to None.
             axes (Optional[Axes]): The Axes instance. Defaults to None.
         """
         if axes is None:
@@ -182,62 +178,53 @@ class PerceptionVisualizer2D:
         frame_number: str = frame_result.frame_ground_truth.frame_name
         axes.set_title(f"Frame: {frame_number} ({self.config.frame_id.value})")
 
-        frame_artists: List[Axes.ArtistList] = []
-
         # Plot objects
         handles: List[Patch] = []
-        axes, artists = self.plot_objects(
+        axes = self.plot_objects(
             objects=frame_result.pass_fail_result.tp_objects,
             is_ground_truth=False,
             axes=axes,
             color="blue",
         )
-        frame_artists += artists
         handles.append(Patch(color="blue", label="TP est"))
 
-        axes, artists = self.plot_objects(
+        axes = self.plot_objects(
             objects=frame_result.pass_fail_result.tp_objects,
             is_ground_truth=True,
             axes=axes,
             color="red",
         )
-        frame_artists += artists
         handles.append(Patch(color="red", label="TP GT"))
 
-        axes, artists = self.plot_objects(
+        axes = self.plot_objects(
             objects=frame_result.pass_fail_result.fp_objects_result,
             is_ground_truth=False,
             axes=axes,
             color="cyan",
         )
-        frame_artists += artists
         handles.append(Patch(color="cyan", label="FP"))
 
-        axes, artists = self.plot_objects(
+        axes = self.plot_objects(
             objects=frame_result.pass_fail_result.fn_objects,
             is_ground_truth=True,
             axes=axes,
             color="orange",
         )
-        frame_artists += artists
         handles.append(Patch(color="orange", label="FN"))
 
-        legend = axes.legend(
+        axes.legend(
             handles=handles,
             bbox_to_anchor=(1.1, 1.1),
             loc="upper right",
             borderaxespad=0,
             markerscale=10.0,
         )
-        frame_artists.append(legend)
-        self.__animation_frames.append(frame_artists)
 
-        # save_figure:
-        if file_name is None:
-            file_name = frame_result.frame_ground_truth.frame_name
-        filepath: str = osp.join(self.config.visualization_directory, file_name)
-
-        plt.savefig(filepath + ".png")
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format="png")
+        buffer.seek(0)
+        frame = Image.open(buffer)
+        self.__animation_frames.append(frame)
 
         return axes
 
@@ -247,14 +234,16 @@ class PerceptionVisualizer2D:
         is_ground_truth: bool,
         axes: Optional[Axes] = None,
         color: Optional[str] = None,
-    ) -> Tuple[Axes, List[plt.Artist]]:
+    ) -> Axes:
         """Plot objects on image.
 
-        :                +------------------+
-        :   y            |                  |
-        :   ^          height               |
-        :   |            |                  |
-        :   o--> x      (xy)---- width -----+
+        ```
+                     +------------------+
+        y            |                  |
+        ^          height               |
+        |            |                  |
+        o--> x      (xy)---- width -----+
+        ```
 
         Args:
             objects (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): The list of object being visualized.
@@ -265,12 +254,10 @@ class PerceptionVisualizer2D:
 
         Returns:
             axes (Axes): The Axes instance.
-            artists (List[plt.Artist]): The list of Artist instance.
         """
         if axes is None:
             axes: Axes = plt.subplot()
 
-        artists: List[plt.Artist] = []
         color: str = "red" if color is None else color
         edge_color = self.__cmap.get_simple(color)
         object_text = "GT" if is_ground_truth else "Est"
@@ -297,23 +284,26 @@ class PerceptionVisualizer2D:
                 label=box_text,
             )
             axes.add_patch(box)
-            artists.append(box)
             axes.text(*box_bottom_left, s=box_text, fontsize="x-small", color=edge_color)
 
-        return axes, artists
+        return axes
 
-    def _save_animation(self, file_name: Optional[str] = None):
-        """Save animation as gif.
+    def __save_animation(self, filename: Optional[str] = None) -> None:
+        """Save animation as mp4.
 
         Args:
-            file_name (str)
+            filename (Optional[str]): Video filename. If None, save as scene_result_2d.mp4. Defaults to None.
         """
-        if file_name is None:
-            file_name = "all"
-        filepath: str = osp.join(self.config.visualization_directory, file_name)
-        ani: ArtistAnimation = ArtistAnimation(
-            self.__figure,
-            self.__animation_frames,
-            interval=100,
-        )
-        ani.save(filepath + "_animation.gif", writer="pillow")
+        if filename is None:
+            filename = "scene_result_2d.mp4"
+
+        if not filename.endswith(".mp4"):
+            filename += ".mp4"
+
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        filepath = osp.join(self.config.visualization_directory, filename)
+        video = cv2.VideoWriter(filepath, fourcc, fps=10, frameSize=self.__animation_frames[0].size)
+        for frame in self.__animation_frames:
+            frame_ = np.array(frame.copy())
+            video.write(cv2.cvtColor(frame_, cv2.COLOR_RGB2BGR))
+        video.release()

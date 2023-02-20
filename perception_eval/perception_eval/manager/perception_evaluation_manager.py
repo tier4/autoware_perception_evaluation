@@ -208,17 +208,12 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
 
         return scene_metrics_score
 
-    def visualize_all(self, animation: bool = False) -> None:
-        """[summary]
-        Visualize object result in BEV space for all frames.
-
-        Args:
-            animation (bool): Whether make animation. Defaults to True.
-        """
+    def visualize_all(self) -> None:
+        """Visualize object result in BEV space for all frames."""
         if self.visualizer is None:
             logging.warning("visualizer has not been initialized")
             return
-        self.visualizer.visualize_all(self.frame_results, animation=animation)
+        self.visualizer.visualize_all(self.frame_results)
 
     def visualize_frame(self, frame_index: int = -1) -> None:
         """[summary]
