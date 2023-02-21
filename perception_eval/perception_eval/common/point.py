@@ -82,7 +82,7 @@ def crop_pointcloud(
         Implement to support the case area min/max height is not constant.
 
     Args:
-        pointcloud (numpy.ndarray): The array of pointcloud, in shape (N, C)
+        pointcloud (numpy.ndarray): The array of pointcloud, in shape (N, C).
         area (List[Sequence[float]): The 3D-polygon area to be cropped.
         inside (bool): Whether output inside pointcloud. Defaults to True.
 
