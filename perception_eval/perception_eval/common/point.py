@@ -76,15 +76,14 @@ def crop_pointcloud(
     area: List[Sequence[float]],
     inside: bool = True,
 ) -> np.ndarray:
-    """Crop pointcloud from (N, C) to (M, C) with Crossing Number Algorithm.
-    If input pointcloud is 2D, crop with xy area.
+    """Crop pointcloud from (N, 3) to (M, 3) with Winding Number Algorithm.
 
     TODO:
         Implement to support the case area min/max height is not constant.
 
     Args:
         pointcloud (numpy.ndarray): The array of pointcloud, in shape (N, C)
-        area (List[Sequence[float]): The 3D-polygon area to be cropped
+        area (List[Sequence[float]): The 3D-polygon area to be cropped.
         inside (bool): Whether output inside pointcloud. Defaults to True.
 
     Returns:
@@ -100,22 +99,29 @@ def crop_pointcloud(
         )
 
     # crop with polygon in xy-plane
-    num_vertices = len(area)
+    num_vertices = len(area) // 2
     cnt_arr_: np.ndarray = np.zeros(pointcloud.shape[0], dtype=np.uint8)
-    for i in range(num_vertices // 2 - 1):
-        flags_ = ((area[i][1] <= pointcloud[:, 1]) * (area[i + 1][1] > pointcloud[:, 1])) + (
-            (area[i][1] > pointcloud[:, 1]) * (area[i + 1][1] <= pointcloud[:, 1])
+    for i in range(num_vertices):
+        next_idx: int = (i + 1) % num_vertices
+        incremental_flags = (area[i][1] <= pointcloud[:, 1]) * (
+            area[next_idx][1] > pointcloud[:, 1]
+        )
+        decremental_flags = (area[i][1] > pointcloud[:, 1]) * (
+            area[next_idx][1] <= pointcloud[:, 1]
         )
 
         if area[i + 1][1] != area[i][1]:
-            vt = (pointcloud[:, 1] - area[i][1]) / (area[i + 1][1] - area[i][1])
+            vt = (pointcloud[:, 1] - area[i][1]) / (area[next_idx][1] - area[i][1])
         else:
             vt = pointcloud[:, 0]
 
-        flags_ *= pointcloud[:, 0] < (area[i][0] + (vt * (area[i + 1][0] - area[i][0])))
-        cnt_arr_[flags_] += 1
+        valid_idx = pointcloud[:, 0] < (area[i][0] + (vt * (area[next_idx][0] - area[i][0])))
+        incremental_flags *= valid_idx
+        decremental_flags *= valid_idx
+        cnt_arr_[incremental_flags] += 1
+        cnt_arr_[decremental_flags] -= 1
 
-    xy_idx: np.ndarray = cnt_arr_ % 2 != 0 if inside else cnt_arr_ % 2 == 0
+    xy_idx: np.ndarray = 0 < cnt_arr_ if inside else cnt_arr_ <= 0
     if pointcloud.shape[1] < 3:
         return pointcloud[xy_idx]
 
@@ -126,6 +132,7 @@ def crop_pointcloud(
         if inside
         else ~((z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2]))
     )
+
     return pointcloud[xy_idx * z_idx]
 
 
