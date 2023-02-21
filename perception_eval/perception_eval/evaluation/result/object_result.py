@@ -248,7 +248,13 @@ def get_object_results(
     if not ground_truth_objects:
         return _get_fp_object_results(estimated_objects)
 
-    if isinstance(estimated_objects[0], DynamicObject2D) and estimated_objects[0].roi is None:
+    assert isinstance(
+        ground_truth_objects[0], type(estimated_objects[0])
+    ), f"Type of estimation and ground truth must be same, but got {type(estimated_objects[0])} and {type(ground_truth_objects[0])}"
+
+    if isinstance(estimated_objects[0], DynamicObject2D) and (
+        estimated_objects[0].roi is None or ground_truth_objects[0].roi is None
+    ):
         return _get_object_results_with_id(estimated_objects, ground_truth_objects)
 
     matching_method_module, maximize = _get_matching_module(matching_mode)

@@ -16,6 +16,8 @@ from abc import ABCMeta
 from abc import abstractmethod
 from math import pi
 
+import numpy as np
+from perception_eval.common.status import FrameID
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 
 
@@ -107,8 +109,10 @@ class TPMetricsAph(TPMetrics):
         if object_result.ground_truth_object is None:
             return 0.0
 
-        pd_heading: float = object_result.estimated_object.get_heading_bev()
-        gt_heading: float = object_result.ground_truth_object.get_heading_bev()
+        # TODO: add support of transformation for objects are w.r.t map.
+        ego2map = np.eye(4) if object_result.estimated_object.frame_id == FrameID.MAP else None
+        pd_heading: float = object_result.estimated_object.get_heading_bev(ego2map=ego2map)
+        gt_heading: float = object_result.ground_truth_object.get_heading_bev(ego2map=ego2map)
         diff_heading: float = abs(pd_heading - gt_heading)
 
         # Normalize heading error to [0, pi] (+pi and -pi are the same).

@@ -79,6 +79,7 @@ class AutowareLabel(LabelBase):
             (AutowareLabel.PEDESTRIAN, "pedestrian.police_officer"),
             (AutowareLabel.PEDESTRIAN, "pedestrian.stroller"),
             (AutowareLabel.PEDESTRIAN, "pedestrian.wheelchair"),
+            (AutowareLabel.PEDESTRIAN, "construction_worker"),
             (AutowareLabel.UNKNOWN, "animal"),
             (AutowareLabel.UNKNOWN, "unknown"),
             (AutowareLabel.UNKNOWN, "movable_object.barrier"),
