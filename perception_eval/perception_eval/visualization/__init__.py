@@ -16,8 +16,10 @@ from typing import Union
 
 from perception_eval.visualization.perception_visualizer2d import PerceptionVisualizer2D
 from perception_eval.visualization.perception_visualizer3d import PerceptionVisualizer3D
+from perception_eval.visualization.sensing_visualizer import SensingVisualizer
 
 # type aliases
 PerceptionVisualizerType = Union[PerceptionVisualizer2D, PerceptionVisualizer3D]
+VisualizerType = Union[PerceptionVisualizer2D, PerceptionVisualizer3D, SensingVisualizer]
 
-__all__ = ("PerceptionVisualizer2D", "PerceptionVisualizer3D")
+__all__ = ("PerceptionVisualizer2D", "PerceptionVisualizer3D", "SensingVisualizer")

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
+
 from typing import List
 from typing import Tuple
 
@@ -30,6 +30,7 @@ from perception_eval.evaluation.result.perception_frame_config import CriticalOb
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.visualization import PerceptionVisualizer2D
 from perception_eval.visualization import PerceptionVisualizer3D
+from perception_eval.visualization import PerceptionVisualizerType
 
 from ._evaluation_manager_base import _EvaluationMangerBase
 from ..evaluation.result.object_result import DynamicObjectWithPerceptionResult
@@ -57,7 +58,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
     ) -> None:
         super().__init__(evaluation_config=evaluation_config)
         self.frame_results: List[PerceptionFrameResult] = []
-        self.visualizer = (
+        self.__visualizer = (
             PerceptionVisualizer2D(self.evaluator_config)
             if self.evaluation_task.is_2d()
             else PerceptionVisualizer3D(self.evaluator_config)
@@ -70,6 +71,10 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
     @property
     def metrics_config(self):
         return self.evaluator_config.metrics_config
+
+    @property
+    def visualizer(self) -> PerceptionVisualizerType:
+        return self.__visualizer
 
     def add_frame_result(
         self,
@@ -207,22 +212,3 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             scene_metrics_score.evaluate_classification(all_frame_results, all_num_gt)
 
         return scene_metrics_score
-
-    def visualize_all(self) -> None:
-        """Visualize object result in BEV space for all frames."""
-        if self.visualizer is None:
-            logging.warning("visualizer has not been initialized")
-            return
-        self.visualizer.visualize_all(self.frame_results)
-
-    def visualize_frame(self, frame_index: int = -1) -> None:
-        """[summary]
-        Visualize object result in BEV space at specified frame.
-
-        Args:
-            frame_index (int): The index of frame to be visualized. Defaults to -1 (latest frame).
-        """
-        if self.visualizer is None:
-            logging.warning("visualizer has not been initialized")
-            return
-        self.visualizer.visualize_frame(self.frame_results[frame_index])

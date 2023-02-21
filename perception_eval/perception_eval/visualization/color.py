@@ -38,6 +38,7 @@ class ColorMap:
             "red": np.array((255, 0, 0)),
             "green": np.array((0, 255, 0)),
             "blue": np.array((0, 0, 255)),
+            "yellow": np.array((255, 215, 0)),
             "cyan": np.array((0, 255, 255)),
             "orange": np.array((255, 165, 0)),
             "black": np.array((0, 0, 0)),
