@@ -43,7 +43,7 @@ class PerceptionLSimMoc:
         if evaluation_task in ("detection2d", "tracking2d"):
             evaluation_config_dict = {
                 "evaluation_task": evaluation_task,
-                "center_distance_thresholds": [1.0, 2.0],
+                "center_distance_thresholds": [100, 200],
                 "iou_2d_thresholds": [0.5],
             }
         elif evaluation_task == "classification2d":
