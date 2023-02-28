@@ -6,6 +6,39 @@
 
 ## Release for main branch
 
+### v1.0.3
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/41>
+  - 【fix】オブジェクトマッチング時にGTのroiが`None`の場合のエラー回避
+- <https://github.com/tier4/autoware_perception_evaluation/pull/42>
+  - 【fix】ポリゴンに対する点群の内外判定アルゴリズムの修正
+- <https://github.com/tier4/autoware_perception_evaluation/pull/43>
+  - 【fix】Map座標系でのAPH計算時のRuntimeError回避
+- <https://github.com/tier4/autoware_perception_evaluation/pull/39>
+  - 【chore】perception_lsim2d.pyの更新
+- <https://github.com/tier4/autoware_perception_evaluation/pull/12>
+  - 【feat】`DynamicObject`に`FrameID`パラメータを追加
+- <https://github.com/tier4/autoware_perception_evaluation/pull/36>
+  - 【refactor】`FrameGroundTruth`が`raw_data`として`numpy.ndarray`を保持するように修正
+- <https://github.com/tier4/autoware_perception_evaluation/pull/33>
+  - 【docs】READMEの更新
+- <https://github.com/tier4/autoware_perception_evaluation/pull/32>
+  - 【fix】perception_lsim.pyでのパラメータ名の修正
+- <https://github.com/tier4/autoware_perception_evaluation/pull/30>
+  - 【feat】未対応ラベルの追加
+- <https://github.com/tier4/autoware_perception_evaluation/pull/31>
+  - 【chore】pre-commit hooksの更新
+- <https://github.com/tier4/autoware_perception_evaluation/pull/23>
+  - 【ci】Python3.10でのテストを追加
+- <https://github.com/tier4/autoware_perception_evaluation/pull/26>
+  - 【chore】pandas_profilingをpyproject.tomlに追加
+- <https://github.com/tier4/autoware_perception_evaluation/pull/15>
+  - 【feat】Sensing 2D評価機能の追加
+- <https://github.com/tier4/autoware_perception_evaluation/pull/10>
+  - 【feat】解析APIの機能追加
+- <https://github.com/tier4/autoware_perception_evaluation/pull/27>
+  - 【ci】CIでの環境をubuntu-20.04に固定
+
 ### v1.0.2
 
 - <https://github.com/tier4/autoware_perception_evaluation/pull/22>

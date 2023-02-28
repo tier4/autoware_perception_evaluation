@@ -101,7 +101,7 @@ class Map:
 
         str_: str = "\n"
         str_ += f"mAP: {self.map:.3f}"
-        str_ += ", mAPH: {self.maph:.3f} " if not self.is_detection_2d else " "
+        str_ += f", mAPH: {self.maph:.3f} " if not self.is_detection_2d else " "
         str_ += f"({self.matching_mode.value})\n"
         # Table
         str_ += "\n"
