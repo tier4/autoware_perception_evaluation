@@ -116,7 +116,6 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             "confidence",
             "uuid",
             "status",
-            "area",
             "frame",
             "scene",
         ]
@@ -315,33 +314,41 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
     def plot_num_object(
         self,
         show: bool = False,
-        bin: int = 1.0,
+        bins: int = 1.0,
         **kwargs,
     ) -> None:
         """Plot the number of objects per confidence.
 
         Args:
             show (bool): Whether show the plotted figure. Defaults to False.
-            bin (int): Bin of axis. Defaults to False.
+            bins (int): Bin of axis. Defaults to False.
         """
-        return super().plot_num_object(mode=PlotAxes.CONFIDENCE, show=show, bin=bin, **kwargs)
+        return super().plot_num_object(mode=PlotAxes.CONFIDENCE, show=show, bins=bins, **kwargs)
 
     def plot_error(
         self,
         columns: Union[str, List[str]],
         heatmap: bool = False,
         show: bool = False,
-        bin: int = 50,
+        bins: int = 50,
         **kwargs,
     ) -> None:
         if self.config.evaluation_task == EvaluationTask.CLASSIFICATION2D:
             raise RuntimeError("For classification 2D, `plot_error` is not supported.")
-        return super().plot_error(columns, PlotAxes.CONFIDENCE, heatmap, show, bin, **kwargs)
+        return super().plot_error(
+            columns=columns,
+            mode=PlotAxes.CONFIDENCE,
+            heatmap=heatmap,
+            show=show,
+            bins=bins,
+            **kwargs,
+        )
 
     def plot_ratio(
         self,
         status: Union[str, MatchingStatus],
         show: bool = False,
+        bins: float = 1.0,
         **kwargs,
     ) -> None:
         """Plot TP/FP/FN ratio per confidence.
@@ -350,7 +357,13 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             status (Union[str, MatchingStatus])
             show (bool): Whether show plot results. Defaults to None.
         """
-        return super().plot_tp_ratio(mode=PlotAxes.CONFIDENCE, show=show, **kwargs)
+        return super().plot_ratio(
+            status=status,
+            mode=PlotAxes.CONFIDENCE,
+            show=show,
+            bins=bins,
+            **kwargs,
+        )
 
     def box_plot(self, columns: Union[str, List[str]], show: bool = False, **kwargs) -> None:
         if isinstance(columns, str):

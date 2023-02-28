@@ -35,7 +35,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import pandas as pd
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
@@ -253,8 +253,7 @@ class PerceptionAnalyzerBase(ABC):
         df: Optional[pd.DataFrame] = None,
         **kwargs,
     ) -> int:
-        """[summary]
-        Returns number of matching status TP/FP/FN.
+        """Returns number of matching status TP/FP/FN.
 
         Args:
             status (Union[str, MatchingStatus]): Status.
@@ -378,7 +377,7 @@ class PerceptionAnalyzerBase(ABC):
         Returns:
             metrics_score (MetricsScore): The final metrics score.
         """
-        target_labels: List[AutowareLabel] = self.config.target_labels
+        target_labels: List[LabelType] = self.config.target_labels
         scene_results = {label: [[]] for label in target_labels}
         scene_num_gt = {label: 0 for label in target_labels}
         used_frame: List[int] = []
@@ -428,8 +427,7 @@ class PerceptionAnalyzerBase(ABC):
         return None, None
 
     def add(self, frame_results: List[PerceptionFrameResult]) -> pd.DataFrame:
-        """[summary]
-        Add frame results and update DataFrame.
+        """Add frame results and update DataFrame.
 
         Args:
             frame_results (List[PerceptionFrameResult]): List of frame results.
@@ -670,7 +668,7 @@ class PerceptionAnalyzerBase(ABC):
         self,
         mode: PlotAxes = PlotAxes.DISTANCE,
         show: bool = False,
-        bin: Optional[float] = None,
+        bins: Optional[float] = None,
         **kwargs,
     ) -> None:
         """Plot the number of objects for each time/distance range with histogram.
@@ -678,18 +676,11 @@ class PerceptionAnalyzerBase(ABC):
         Args:
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.DISTANCE (1-dimensional).
             show (bool): Whether show the plotted figure. Defaults to False.
-            bin (float): The interval of time/distance. If not specified, 0.1[s] for time and 0.5[m] for distance will be use.
+            bins (float): The interval of time/distance. If not specified, 0.1[s] for time and 0.5[m] for distance will be use.
                 Defaults to None.
             **kwargs: Specify if you want to plot for the specific conditions.
                 For example, label, area, frame or scene.
         """
-
-        def _get_min_value(value1: np.ndarray, value2: np.ndarray) -> float:
-            return min(value1[~np.isnan(value1)].min(), value2[~np.isnan(value2)].min())
-
-        def _get_max_value(value1: np.ndarray, value2: np.ndarray) -> float:
-            return max(value1[~np.isnan(value1)].max(), value2[~np.isnan(value2)].max())
-
         if len(kwargs) == 0:
             title = "Number of Objects @all"
             filename = "all"
@@ -722,9 +713,13 @@ class PerceptionAnalyzerBase(ABC):
         if mode.is_2d():
             min_value = 0 if mode == PlotAxes.CONFIDENCE else _get_min_value(gt_axes, est_axes)
             max_value = 100 if mode == PlotAxes.CONFIDENCE else _get_max_value(gt_axes, est_axes)
-            step = bin if bin else mode.get_bin()
-            bins = np.arange(min_value, max_value, step=step)
-            ax.hist([gt_axes, est_axes], bins=bins, label=["GT", "Estimation"], stacked=False)
+            step = bins if bins else mode.get_bins()
+            hist_bins = np.arange(min_value, max_value + step, step)
+            gt_hist, xaxis = np.histogram(gt_axes, bins=hist_bins)
+            est_hist, _ = np.histogram(est_axes, bins=hist_bins)
+            width = step if mode == PlotAxes.CONFIDENCE else 0.25 * ((max_value - min_value) / step)
+            ax.bar(xaxis[:-1] - 0.5 * width, gt_hist, width, label="GT")
+            ax.bar(xaxis[:-1] + 0.5 * width, est_hist, width, label="Estimation")
         else:
             ax.set_zlabel("Number of samples")
             gt_xaxes, gt_yaxes = gt_axes[:, ~np.isnan(gt_axes).any(0)]
@@ -733,14 +728,9 @@ class PerceptionAnalyzerBase(ABC):
             est_hist, est_x_edges, est_y_edges = np.histogram2d(est_xaxes, est_yaxes)
             gt_x, gt_y = np.meshgrid(gt_x_edges[:-1], gt_y_edges[:-1])
             est_x, est_y = np.meshgrid(est_x_edges[:-1], est_y_edges[:-1])
-            if bin is None:
-                dx, dy = mode.get_bin()
-            else:
-                if isinstance(bin, float):
-                    bin = (bin, bin)
-                elif not isinstance(bin, (list, tuple)) or len(bin) != 2:
-                    raise ValueError(f"bin for 3D plot must be 2-length, but got {bin}")
-                dx, dy = bin
+            if bins is not None and isinstance(bins, float):
+                bins = (bins, bins)
+            dx, dy = mode.get_bins() if bins is None else bins
             dx *= 0.5
             dy *= 0.5
             ax.bar3d(gt_x.ravel(), gt_y.ravel(), 0, dx, dy, gt_hist.ravel(), alpha=0.6)
@@ -749,6 +739,7 @@ class PerceptionAnalyzerBase(ABC):
         self.__post_process_figure(
             fig=fig,
             title=title,
+            legend=True,
             filename=f"num_object_{str(mode)}_{filename}",
             show=show,
         )
@@ -826,6 +817,7 @@ class PerceptionAnalyzerBase(ABC):
         self.__post_process_figure(
             fig=fig,
             title=f"State of {columns} @uuid:{uuid}",
+            legend=False,
             filename=f"state_{columns_str}_{uuid}_{str(mode)}",
             show=show,
         )
@@ -836,7 +828,7 @@ class PerceptionAnalyzerBase(ABC):
         mode: PlotAxes = PlotAxes.TIME,
         heatmap: bool = False,
         show: bool = False,
-        bin: int = 50,
+        bins: int = 50,
         **kwargs,
     ) -> None:
         """Plot states for each time/distance estimated and GT object in TP.
@@ -847,7 +839,7 @@ class PerceptionAnalyzerBase(ABC):
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             heatmap (bool): Whether overlay heatmap. Defaults to False.
             show (bool): Whether show the plotted figure. Defaults to False.
-            bin (int): Bin size to plot heatmap. Defaults to 50.
+            bins (int): Bin size to plot heatmap. Defaults to 50.
             **kwargs: Specify if you want to plot for the specific conditions.
                 For example, label, area, frame or scene.
         """
@@ -869,10 +861,10 @@ class PerceptionAnalyzerBase(ABC):
             if mode.is_2d():
                 xlabel: str = mode.xlabel
                 ylabel: str = f"err_{col}"
-                title: str = f"Error {ylabel} = F({xlabel})"
+                title: str = f"Error({col}) = F({xlabel})"
             else:
                 xlabel, ylabel = mode.get_label()
-                title: str = f"Error {col} = F({xlabel}, {ylabel})"
+                title: str = f"Error({col}) = F({xlabel}, {ylabel})"
             ax: Union[Axes, Axes3D] = fig.add_subplot(
                 1,
                 num_cols,
@@ -891,7 +883,7 @@ class PerceptionAnalyzerBase(ABC):
                 axes = axes[non_nan]
                 err = err[non_nan]
                 if heatmap:
-                    ax.hist2d(axes, err, bins=(bin, bin), cmap=cm.jet)
+                    ax.hist2d(axes, err, bins=(bins, bins), cmap=cm.jet)
                 else:
                     ax.scatter(axes, err)
             else:
@@ -912,6 +904,7 @@ class PerceptionAnalyzerBase(ABC):
         self.__post_process_figure(
             fig=fig,
             title=f"Errors@{columns}",
+            legend=False,
             filename=f"error_{columns_str}_{str(mode)}",
             show=show,
         )
@@ -943,6 +936,7 @@ class PerceptionAnalyzerBase(ABC):
         self.__post_process_figure(
             fig=fig,
             title=f"Box-plot of errors @{columns}",
+            legend=True,
             filename=f"box_plot_{columns_str}",
             show=show,
         )
@@ -952,73 +946,113 @@ class PerceptionAnalyzerBase(ABC):
         status: Union[str, MatchingStatus],
         mode: PlotAxes = PlotAxes.DISTANCE,
         show: bool = False,
-        bins: Optional[Union[float, Tuple[float, float]]] = None,
+        bins: Optional[float] = None,
+        plot_range: Optional[Tuple[float]] = None,
         **kwargs,
     ) -> None:
         """Plot TP/FP/FN ratio.
 
         Args:
+            status (Union[str, MatchingStatus]): Matching status, TP/FP/FN.
             mode (PlotAxes): PlotAxes instance.
             show (bool): Whether show the plotted figure. Defaults to False.
+            bins (Optional[float]): Plot binds. Defaults to None.
+            plot_range (Optional[Tuple[float, float]]): Range of plot. Defaults to None.
         """
+        if mode.is_3d():
+            raise NotImplementedError("3D plot is under construction.")
+
         gt_df = self.get_ground_truth(**kwargs)
         est_df = self.get_estimation(**kwargs)
-        gt_values = mode.get_axes(gt_df)
-        est_values = mode.get_axes(est_df)
-        num_labels: int = len(self.target_labels)
-        fig: Figure = plt.figure(figsize=(16, 8 * num_labels))
-        ax: Union[Axes, Axes3D] = fig.add_subplot(xlabel=mode.xlabel, ylabel="TP Ratio [%]")
+        gt_df = gt_df[gt_df["status"] != np.nan]
+        est_df = est_df[est_df["status"] != np.nan]
+        gt_values: np.ndarray = mode.get_axes(gt_df)
+        est_values: np.ndarray = mode.get_axes(est_df)
 
-        if mode.is_2d():
-            bins = mode.get_bin() if bins is None else bins
-            _, bins = np.histogram(gt_values, bins=bins)
+        xlabel: str = mode.xlabel
+        ylabel: str = f"{str(status)} ratio"
+        if plot_range is not None:
+            min_value, max_value = plot_range
         else:
-            x_bins, y_bins = mode.get_bin() if bins is None else bins
-            _, bins = np.histogram2d(gt_values[:, 0], gt_values[:, 1], bins=[x_bins, y_bins])
-            bins = np.array(bins).reshape(2, -1)
+            min_value = 0 if mode == PlotAxes.CONFIDENCE else _get_min_value(gt_values, est_values)
+            max_value = (
+                100 if mode == PlotAxes.CONFIDENCE else _get_max_value(gt_values, est_values)
+            )
+        step = bins if bins else mode.get_bins()
+        hist_bins = np.arange(min_value, max_value + step, step)
+        _, axis = np.histogram(est_values, bins=hist_bins)
 
-        axes = []
-        ratios = []
-        for target_label in enumerate(self.target_labels):
-            for i in range(len(bins) - 1):
-                est_idx = (bins[i] <= est_values) * (est_values <= bins[i + 1])
-                est_df_ = est_df[est_idx * (est_df["label"] == target_label)]
-                gt_idx = (bins[i] <= gt_values) * (gt_values <= bins[i + 1])
-                gt_df_ = gt_df[gt_idx * (gt_df["label"] == target_label)]
+        fig: Figure = plt.figure(figsize=(16, 8))
+        ax: Union[Axes, Axes3D] = fig.add_subplot(
+            xlabel=xlabel,
+            ylabel=ylabel,
+            title=f"{str(status)} ratio",
+            projection=mode.projection,
+        )
+
+        num_labels: int = len(self.all_labels)
+        offsets = np.arange(-num_labels, num_labels, step=2.0)
+        for n, target_label in enumerate(self.all_labels):
+            axes = []
+            ratios = []
+            for i in range(len(axis) - 1):
+                est_idx = (axis[i] <= est_values) * (est_values <= axis[i + 1])
+                est_df_ = est_df[est_idx]
+                gt_idx = (axis[i] <= gt_values) * (gt_values <= axis[i + 1])
+                gt_df_ = gt_df[gt_idx]
+                if target_label != "ALL":
+                    est_df_ = est_df_[est_df_["label"] == target_label]
+                    gt_df_ = gt_df_[gt_df_["label"] == target_label]
                 if len(est_df_) > 0 and len(gt_df_) > 0:
+                    num_gt: int = len(gt_df_)
                     if status == "TP":
-                        ratios.append(np.sum(est_df_["status"] == status) / len(gt_df_))
+                        ratios.append(np.sum(est_df_["status"] == status) / num_gt)
                     elif status == "FP":
-                        ratios.append(1 - (np.sum(est_df_["status"] == "TP") / len(gt_df_)))
+                        ratios.append(1 - (np.sum(est_df_["status"] == "TP") / num_gt))
                     elif status == "FN":
-                        ratios.append(np.sum(gt_df_["status"] == status) / len(gt_df_))
+                        ratios.append(np.sum(gt_df_["status"] == status) / num_gt)
                     else:
-                        continue
+                        raise ValueError(f"Unexpected status: {status}")
                 else:
                     ratios.append(0) if mode.is_2d() else ratios.append((0, 0))
-                axes.append((bins[i] + bins[i + 1]) * 0.5)
-        axes = np.array(axes)
-        ratios = np.array(ratios)
-
-        if mode.is_2d():
-            ax.bar(axes, ratios)
-        else:
-            # TODO
-            pass
+                axes.append((axis[i] + axis[i + 1]) * 0.5)
+            axes = np.array(axes)
+            # TODO: update not to exceed 1.0
+            ratios = np.clip(ratios, 0.0, 1.0)
+            width: float = 1.5
+            ax.bar(axes + offsets[n] * width * 0.5, ratios, width=width, label=target_label)
 
         self.__post_process_figure(
             fig=fig,
-            title="TP ratio",
-            filename=f"tp_{mode.value}",
+            title=f"{str(status)} ratio",
+            legend=True,
+            filename=f"{str(status).lower()}_ratio_{mode.value}",
             show=show,
         )
 
-    def __post_process_figure(self, fig: Figure, title: str, filename: str, show: bool) -> None:
+    def __post_process_figure(
+        self,
+        fig: Figure,
+        title: str,
+        legend: bool,
+        filename: str,
+        show: bool,
+    ) -> None:
+        """Post process of figure."""
         fig.suptitle(title)
-        fig.legend()
+        if legend:
+            fig.legend()
         fig.tight_layout()
         fig.savefig(osp.join(self.plot_directory, f"{filename}.png"))
         if show:
             plt.show()
         fig.clear()
         plt.close()
+
+
+def _get_min_value(value1: np.ndarray, value2: np.ndarray) -> float:
+    return min(value1[~np.isnan(value1)].min(), value2[~np.isnan(value2)].min())
+
+
+def _get_max_value(value1: np.ndarray, value2: np.ndarray) -> float:
+    return max(value1[~np.isnan(value1)].max(), value2[~np.isnan(value2)].max())

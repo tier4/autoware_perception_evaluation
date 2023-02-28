@@ -167,7 +167,7 @@ class PlotAxes(Enum):
         elif self == PlotAxes.POLAR:
             return "theta [rad]", "r [m]"
 
-    def get_bin(self) -> Union[float, Tuple[float, float]]:
+    def get_bins(self) -> Union[float, Tuple[float, float]]:
         """Returns default bins.
 
         Returns:
@@ -193,8 +193,7 @@ class PlotAxes(Enum):
             return (0.2, 10)
 
     def setup_axis(self, ax: plt.Axes, **kwargs) -> None:
-        """[summary]
-        Setup axis limits and grid interval to plt.Axes.
+        """Setup axis limits and grid interval to plt.Axes.
 
         Args:
             ax (plt.Axes)
@@ -230,8 +229,7 @@ def generate_area_points(
     max_x: float,
     max_y: float,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """[summary]
-    Generate (x,y) pairs of upper right and bottom left of each separate area.
+    """Generate (x,y) pairs of upper right and bottom left of each separate area.
     They are arranged in numerical order as shown in below.
 
     num_area_division:
@@ -285,8 +283,7 @@ def get_area_idx(
     bottom_lefts: np.ndarray,
     ego2map: Optional[np.ndarray] = None,
 ) -> Optional[int]:
-    """[summary]
-    Returns the index of area.
+    """Returns the index of area.
 
     Args:
         object_result (Union[DynamicObject, DynamicObjectWithPerceptionResult])
@@ -441,6 +438,9 @@ def get_metrics_info(metrics_score: MetricsScore) -> Dict[str, Any]:
             data[mota_mode].append(clear.results["MOTA"])
             data[motp_mode].append(clear.results["MOTP"])
             data[id_switch_mode].append(clear.results["id_switch"])
+
+    # prediction
+    # TODO
 
     # classification
     for classification_score in metrics_score.classification_scores:
