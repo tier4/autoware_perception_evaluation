@@ -218,11 +218,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             raise TypeError(f"Unexpected object type: {type(object_result)}")
 
         area: int = get_area_idx(
-            self.config.frame_id,
-            object_result,
-            self.upper_rights,
-            self.bottom_lefts,
-            ego2map,
+            object_result=object_result,
+            upper_rights=self.upper_rights,
+            bottom_lefts=self.bottom_lefts,
+            ego2map=ego2map,
         )
 
         if gt:
