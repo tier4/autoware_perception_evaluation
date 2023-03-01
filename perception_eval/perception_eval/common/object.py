@@ -21,40 +21,15 @@ from typing import Tuple
 
 import numpy as np
 from perception_eval.common.label import LabelType
+from perception_eval.common.state import ObjectPath
+from perception_eval.common.state import ObjectState
+from perception_eval.common.state import set_object_paths
+from perception_eval.common.state import set_object_states
 from perception_eval.common.status import FrameID
 from perception_eval.common.status import Visibility
 from perception_eval.util.math import rotation_matrix_to_euler
 from pyquaternion import Quaternion
 from shapely.geometry import Polygon
-
-
-class ObjectState:
-    """Object state class.
-
-    Attributes:
-        position (Tuple[float, float, float]): (center_x, center_y, center_z)[m].
-        orientation (Quaternion) : Quaternion instance.
-        size (Tuple[float, float, float]): Bounding box size, (wx, wy, wz)[m].
-        velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz)[m/s].
-
-    Args:
-        position (Tuple[float, float, float]): (center_x, center_y, center_z)[m].
-        orientation (Quaternion) : Quaternion instance.
-        size (Tuple[float, float, float]): Bounding box size, (wx, wy, wz)[m].
-        velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz)[m/s].
-    """
-
-    def __init__(
-        self,
-        position: Tuple[float, float, float],
-        orientation: Quaternion,
-        size: Tuple[float, float, float],
-        velocity: Optional[Tuple[float, float, float]],
-    ) -> None:
-        self.position: Tuple[float, float, float] = position
-        self.orientation: Quaternion = orientation
-        self.size: Tuple[float, float, float] = size
-        self.velocity: Optional[Tuple[float, float, float]] = velocity
 
 
 class DynamicObject:
@@ -77,8 +52,7 @@ class DynamicObject:
         self.tracked_path (Optional[List[ObjectState]]): List of the past states.
 
         # Prediction
-        predicted_confidence (Optional[float]): Prediction score.
-        predicted_path (Optional[List[ObjectState]]): List of the future states.
+        predicted_paths (Optional[List[ObjectPath]]): List of the future states.
 
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
 
@@ -98,17 +72,17 @@ class DynamicObject:
         tracked_orientations (Optional[List[Quaternion]]):
                 Sequence of quaternions for tracked object. Defaults to None.
         tracked_sizes (Optional[List[Tuple[float, float, float]]]):
-                The list of bounding box size for tracked object. Defaults to None.
-        tracked_twists (Optional[List[Tuple[float, float, float]]]):
-                The list of twist for tracked object. Defaults to None.
+                Sequence of bounding box sizes for tracked object. Defaults to None.
+        tracked_velocities (Optional[List[Tuple[float, float, float]]]):
+                Sequence of velocities for tracked object. Defaults to None.
         predicted_positions (Optional[List[Tuple[float, float, float]]]):
-                The list of position for predicted object. Defaults to None.
+                Sequence of positions for predicted object. Defaults to None.
         predicted_orientations (Optional[List[Quaternion]]):
-                The list of quaternion for predicted object. Defaults to None.
+                Sequence of quaternions for predicted object. Defaults to None.
         predicted_sizes (Optional[List[Tuple[float, float, float]]]):
-                The list of bounding box size for predicted object. Defaults to None.
-        predicted_twists (Optional[List[Tuple[float, float, float]]]):
-                The list of twist for predicted object. Defaults to None.
+                Sequence of bounding box sizes for predicted object. Defaults to None.
+        predicted_velocities (Optional[List[Tuple[float, float, float]]]):
+                Sequence of velocities for predicted object. Defaults to None.
         predicted_confidence (Optional[float]): Prediction score. Defaults to None.
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
     """
@@ -128,12 +102,12 @@ class DynamicObject:
         tracked_positions: Optional[List[Tuple[float, float, float]]] = None,
         tracked_orientations: Optional[List[Quaternion]] = None,
         tracked_sizes: Optional[List[Tuple[float, float, float]]] = None,
-        tracked_twists: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_positions: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_orientations: Optional[List[Quaternion]] = None,
-        predicted_sizes: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_twists: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_confidence: Optional[float] = None,
+        tracked_velocities: Optional[List[Tuple[float, float, float]]] = None,
+        predicted_positions: Optional[List[List[Tuple[float, float, float]]]] = None,
+        predicted_orientations: Optional[List[List[Quaternion]]] = None,
+        predicted_sizes: Optional[List[List[Tuple[float, float, float]]]] = None,
+        predicted_velocities: Optional[List[List[Tuple[float, float, float]]]] = None,
+        predicted_confidences: Optional[List[float]] = None,
         visibility: Optional[Visibility] = None,
     ) -> None:
         # detection
@@ -154,20 +128,20 @@ class DynamicObject:
 
         # tracking
         self.uuid: Optional[str] = uuid
-        self.tracked_path: Optional[List[ObjectState]] = DynamicObject._set_states(
+        self.tracked_path: Optional[List[ObjectState]] = set_object_states(
             positions=tracked_positions,
             orientations=tracked_orientations,
             sizes=tracked_sizes,
-            twists=tracked_twists,
+            velocities=tracked_velocities,
         )
 
         # prediction
-        self.predicted_confidence: Optional[float] = predicted_confidence
-        self.predicted_path: Optional[List[ObjectState]] = DynamicObject._set_states(
+        self.predicted_paths: Optional[List[ObjectPath]] = set_object_paths(
             positions=predicted_positions,
             orientations=predicted_orientations,
             sizes=predicted_sizes,
-            twists=predicted_twists,
+            velocities=predicted_velocities,
+            confidences=predicted_confidences,
         )
 
         self.visibility: Optional[Visibility] = visibility
@@ -293,8 +267,7 @@ class DynamicObject:
         return corners
 
     def get_footprint(self) -> Polygon:
-        """[summary]
-        Get footprint polygon from an object
+        """Get footprint polygon from an object
 
         Returns:
             Polygon: The footprint polygon of object. It consists of 4 corner 2d position of
@@ -341,9 +314,9 @@ class DynamicObject:
         """
         if other is None:
             return None
-        err_x: float = abs(other.state.position[0] - self.state.position[0])
-        err_y: float = abs(other.state.position[1] - self.state.position[1])
-        err_z: float = abs(other.state.position[2] - self.state.position[2])
+        err_x: float = other.state.position[0] - self.state.position[0]
+        err_y: float = other.state.position[1] - self.state.position[1]
+        err_z: float = other.state.position[2] - self.state.position[2]
         return (err_x, err_y, err_z)
 
     def get_heading_error(
@@ -395,11 +368,48 @@ class DynamicObject:
         if self.state.velocity is None or other.state.velocity is None:
             return None
 
-        err_vx: float = abs(other.state.velocity[0] - self.state.velocity[0])
-        err_vy: float = abs(other.state.velocity[1] - self.state.velocity[1])
-        err_vz: float = abs(other.state.velocity[2] - self.state.velocity[2])
+        err_vx: float = other.state.velocity[0] - self.state.velocity[0]
+        err_vy: float = other.state.velocity[1] - self.state.velocity[1]
+        err_vz: float = other.state.velocity[2] - self.state.velocity[2]
 
         return err_vx, err_vy, err_vz
+
+    def get_path_error(
+        self,
+        other: Optional[DynamicObject],
+        num_waypoints: Optional[int] = None,
+        padding: float = np.nan,
+    ) -> Optional[np.ndarray]:
+        """Returns errors of path as numpy.ndarray.
+
+        Args:
+            other (Optional[DynamicObject]): DynamicObject instance.
+            num_waypoints (optional[int]): Number of waypoints. Defaults to None.
+            padding (float): Padding value. Defaults to numpy.nan.
+
+        Returns:
+            numpy.ndarray: in shape (K, T, 3)
+        """
+        if other is None:
+            return None
+
+        self_paths: List[ObjectPath] = self.predicted_paths.copy()
+        other_paths: List[ObjectPath] = other.predicted_paths.copy()
+
+        path_errors: List[List[List[float]]] = []
+        for self_path, other_path in zip(self_paths, other_paths):
+            if self_path is None or other_path is None:
+                continue
+            num_waypoints_ = (
+                num_waypoints if num_waypoints else min(len(self_path), len(other_path))
+            )
+            self_path_, other_path_ = self_path[:num_waypoints_], other_path[:num_waypoints_]
+            err: List[Tuple[float, float, float]] = [
+                self_state.get_position_error(other_state)
+                for self_state, other_state in zip(self_path_, other_path_)
+            ]
+            path_errors.append(err)
+        return np.array(path_errors)
 
     def get_area_bev(self) -> float:
         """Get area of object BEV.
