@@ -18,7 +18,9 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
+from typing import Union
 
 from nuimages import NuImages
 import numpy as np
@@ -124,7 +126,6 @@ def _sample_to_frame(
     frame = dataset.FrameGroundTruth(
         unix_time=unix_time_,
         frame_name=frame_name,
-        frame_id=frame_id,
         objects=objects_,
         ego2map=ego2map,
         raw_data=raw_data,
@@ -358,7 +359,7 @@ def _get_prediction_data(
 def _sample_to_frame_2d(
     nusc: NuScenes,
     nuim: NuImages,
-    sample_token: str,
+    sample_token: Union[FrameID, Sequence[FrameID]],
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
     frame_id: FrameID,
@@ -384,18 +385,22 @@ def _sample_to_frame_2d(
     sample: Dict[str, Any] = nuim.get("sample", sample_token)
 
     unix_time: int = sample["timestamp"]
-    camera_type: str = frame_id.value.upper()
-    sample_data_token: str = nusc_sample["data"][camera_type]
+
+    frame_ids = [frame_id] if isinstance(frame_id, FrameID) else frame_id
+    sample_data_tokens: List[str] = []
+    frame_id_mapping: Dict[str, FrameID] = {}
+    raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
+    for frame_id_ in frame_ids:
+        camera_type: str = frame_id_.value.upper()
+        sample_data_token = nusc_sample["data"][camera_type]
+        frame_id_mapping[sample_data_token] = frame_id_
+        if load_raw_data:
+            img_path: str = nusc.get_sample_data_path(sample_data_token)
+            raw_data[str(frame_id_)] = np.array(Image.open(img_path), dtype=np.uint8)
 
     object_annotations: List[Dict[str, Any]] = [
-        ann for ann in nuim.object_ann if ann["sample_data_token"] == sample_data_token
+        ann for ann in nuim.object_ann if ann["sample_data_token"] in sample_data_tokens
     ]
-
-    if load_raw_data:
-        img_path: str = nusc.get_sample_data_path(sample_data_token)
-        raw_data = np.array(Image.open(img_path), dtype=np.uint8)
-    else:
-        raw_data = None
 
     objects_: List[DynamicObject2D] = []
     for ann in object_annotations:
@@ -427,7 +432,7 @@ def _sample_to_frame_2d(
 
         object_: DynamicObject2D = DynamicObject2D(
             unix_time=unix_time,
-            frame_id=frame_id,
+            frame_id=frame_id_mapping[ann["sample_data_token"]],
             semantic_score=1.0,
             semantic_label=semantic_label,
             roi=roi,
@@ -439,7 +444,6 @@ def _sample_to_frame_2d(
     frame = dataset.FrameGroundTruth(
         unix_time=unix_time,
         frame_name=frame_name,
-        frame_id=frame_id,
         objects=objects_,
         raw_data=raw_data,
     )

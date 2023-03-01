@@ -15,7 +15,9 @@
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Sequence
 from typing import Tuple
+from typing import Union
 
 from ._evaluation_config_base import _EvaluationConfigBase
 
@@ -30,7 +32,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
 
     Attributes:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (FrameID): FrameID instance, where objects are with respect.
+        frame_ids (List[FrameID]): List of FrameID instances, where objects are with respect.
         result_root_directory (str): Directory path to save result.
         log_directory (str): Directory Directory path to save log.
         visualization_directory (str): Directory path to save visualization result.
@@ -59,7 +61,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
     def __init__(
         self,
         dataset_paths: List[str],
-        frame_id: str,
+        frame_id: Union[str, Sequence[str]],
         merge_similar_labels: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Dict[str, Any]],
