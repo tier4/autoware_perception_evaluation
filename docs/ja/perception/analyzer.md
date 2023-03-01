@@ -1,6 +1,6 @@
-# [`<class> PerceptionPerformanceAnalyzer(...)`](../../../perception_eval/perception_eval/tool/perception_performance_analyzer.py)
+# [`<class> PerceptionAnalyzer3D(...)`](../../../perception_eval/perception_eval/tool/perception_analyzer3d.py)
 
-Perception の評価結果をもとに解析を行う．
+3D Perception の評価結果をもとに解析を行う．
 
 ## Perception 評価種別
 
@@ -43,23 +43,20 @@ driving_log_replayer を使用する際にはシナリオ(`.yaml`)から config 
 初期化方法には，1. `PerceptionEvaluationConfig`から，2. シナリオファイル(`.yaml`)からの 2 パターンがある．
 
 ```python
-from perception_eval.tool.perception_performance_analyzer import PerceptionPerformanceAnalyzer
+from perception_eval.tool import PerceptionAnalyzer3D
 
 
 # 1. with PerceptionEvaluationConfig
 # REQUIRED:
 #   - evaluation_config <PerceptionEvaluationConfig>
 
-analyzer = PerceptionPerformanceAnalyzer(evaluation_config)
+analyzer = PerceptionAnalyzer3D(evaluation_config)
 
 # 2. with scenario file (.yaml)
 # REQUIRED:
 #   - scenario_path <str>
 
-analyzer = PerceptionPerformanceAnalyzer.from_scenario(
-    result_root_directory,
-    scenario_path,
-)
+analyzer = PerceptionAnalyzer3D.from_scenario(result_root_directory, scenario_path)
 ```
 
 ### 2. Add frame results
@@ -89,7 +86,7 @@ analyzer.add_from_pkl(pickle_path)
 
 ### 3. Analyze
 
-`PerceptionPerformanceAnalyzer.analyze()`によって各領域に対する解析結果が算出される．N 番目に追加した scene についてのみの解析結果を求めるには，`analyzer.analyze(scene=N)`とすることで解析結果が得られる．
+`PerceptionAnalyzer3D.analyze()`によって各領域に対する解析結果が算出される．N 番目に追加した scene についてのみの解析結果を求めるには，`analyzer.analyze(scene=N)`とすることで解析結果が得られる．
 
 ```python
 >>> score_df, error_df = analyzer.analyze()
@@ -127,7 +124,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
            nn_plane  0.688891  0.893696  5.693175e-01  2.190708  0.020005
 ```
 
-## `<class> PerceptionPerformanceAnalyzer(...)`
+## `<class> PerceptionAnalyzer3D(...)`
 
 | Arguments           |             type             | Mandatory |                    Description                    |
 | :------------------ | :--------------------------: | :-------: | :-----------------------------------------------: |
@@ -185,7 +182,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 - `get()`では`*args`を指定することで指定した列を，`**kwargs`を指定することで指定した等号条件を満たす DataFrame を返す
 
 ```python
->>> analyzer = PerceptionPerformanceAnalyzer(...)
+>>> analyzer = PerceptionAnalyzer3D(...)
 
 # 例) ラベル名がtruckのxy, uuidの列を参照したい場合
 >>> analyzer.get("x", "y", "uuid", label="truck")
@@ -220,7 +217,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 |     0 | **ground_truth** |   `float`   | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `tuple[float]` | `tuple[float]` |  `str`  |   `float`    | `str`  |    `int`     |  `str`   | `int`  |  `int`  |  `int`  |
 |       | **estimation**   |
 
-- `PerceptionPerformanceAnalyzer.df`で参照できる．
+- `PerceptionAnalyzer3D.df`で参照できる．
 
 ```python
 >>> analyzer.df
@@ -399,7 +396,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 ## Known issues / Limitations
 
-- `PerceptionPerformanceAnalyzer()`は 3D 評価のみ対応
+- `PerceptionAnalyzer3D()`は 3D 評価のみ対応
   <img src="../../fig/perception/plot_num_object_by_distance.png" width=800>
 
 - `<func> box_plot(...) -> None`
@@ -447,20 +444,20 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
 - Returns input array of specified states and errors.
 
-| Arguments  |              type               | Mandatory | Description                                     |
-| :--------- | :-----------------------------: | :-------: | :---------------------------------------------- |
-| `analyzer` | `PerceptionPerformanceAnalyzer` |    Yes    | `PerceptionPerformanceAnalyzer` のインスタンス. |
-| `state`    |           `List[str]`           |    Yes    | 対象となる状態量名のリスト.                     |
-| `error`    |           `List[str]`           |    Yes    | 対象となる誤差名のリスト.                       |
+| Arguments  |          type          | Mandatory | Description                            |
+| :--------- | :--------------------: | :-------: | :------------------------------------- |
+| `analyzer` | `PerceptionAnalyzer3D` |    Yes    | `PerceptionAnalyzer3D` のインスタンス. |
+| `state`    |      `List[str]`       |    Yes    | 対象となる状態量名のリスト.            |
+| `error`    |      `List[str]`       |    Yes    | 対象となる誤差名のリスト.              |
 
 ### Example usage
 
 ```python
-from perception_eval.tool import PerceptionPerformanceAnalyzer, Gmm, load_sample
+from perception_eval.tool import PerceptionAnalyzer3D, Gmm, load_sample
 import numpy as np
 
-# PerceptionPerformanceAnalyzerの初期化
-analyzer = PerceptionPerformanceAnalyzer(...)
+# PerceptionAnalyzer3Dの初期化
+analyzer = PerceptionAnalyzer3D(...)
 
 # サンプルのロード, X: state, Y: error
 state = ["x", "y", "yaw", "vx", "xy"]

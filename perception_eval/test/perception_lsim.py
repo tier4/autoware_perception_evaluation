@@ -24,7 +24,7 @@ from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.manager import PerceptionEvaluationManager
-from perception_eval.tool import PerceptionPerformanceAnalyzer
+from perception_eval.tool import PerceptionAnalyzer3D
 from perception_eval.util.debug import format_class_for_log
 from perception_eval.util.debug import get_objects_with_difference
 from perception_eval.util.logger_config import configure_logger
@@ -226,7 +226,7 @@ if __name__ == "__main__":
     detection_lsim.evaluator.visualize_all()
 
     # Detection performance report
-    detection_analyzer = PerceptionPerformanceAnalyzer(detection_lsim.evaluator.evaluator_config)
+    detection_analyzer = PerceptionAnalyzer3D(detection_lsim.evaluator.evaluator_config)
     detection_analyzer.add(detection_lsim.evaluator.frame_results)
     score_df, error_df = detection_analyzer.analyze()
     if score_df is not None:
@@ -303,7 +303,7 @@ if __name__ == "__main__":
     tracking_lsim.evaluator.visualize_all()
 
     # Tracking performance report
-    tracking_analyzer = PerceptionPerformanceAnalyzer(tracking_lsim.evaluator.evaluator_config)
+    tracking_analyzer = PerceptionAnalyzer3D(tracking_lsim.evaluator.evaluator_config)
     tracking_analyzer.add(tracking_lsim.evaluator.frame_results)
     score_df, error_df = tracking_analyzer.analyze()
     if score_df is not None:
