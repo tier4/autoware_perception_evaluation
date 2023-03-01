@@ -34,7 +34,7 @@ class FrameID(Enum):
     CAM_BACK = "cam_back"
     CAM_BACK_LEFT = "cam_back_left"
     CAM_BACK_RIGHT = "cam_back_right"
-    CAM_TRAFFIC_LIGHT_NEAR = "cam_traffic_licht_near"
+    CAM_TRAFFIC_LIGHT_NEAR = "cam_traffic_light_near"
     CAM_TRAFFIC_LIGHT_FAR = "cam_traffic_light_far"
 
     def __eq__(self, __o: object) -> bool:
