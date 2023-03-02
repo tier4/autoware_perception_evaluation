@@ -34,9 +34,9 @@ class PassFailResult:
         frame_pass_fail_config (PerceptionPassFailConfig): Frame pass fail config.
         critical_ground_truth_objects (Optional[List[DynamicObject]]): Critical ground truth objects
             must be evaluated at current frame.
-        fn_objects (Optional[List[ObjectType]]): FN ground truth objects list.
-        fp_objects_result (Optional[List[DynamicObjectWithPerceptionResult]]): FP object results list.
-        tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP object results list.
+        fn_objects ([List[ObjectType]): FN ground truth objects list.
+        fp_objects_result (List[DynamicObjectWithPerceptionResult]): FP object results list.
+        tp_objects (List[DynamicObjectWithPerceptionResult]): TP object results list.
 
     Args:
         critical_object_filter_config (CriticalObjectFilterConfig): Critical object filter config.
@@ -58,10 +58,10 @@ class PassFailResult:
         self.frame_pass_fail_config: PerceptionPassFailConfig = frame_pass_fail_config
         self.ego2map: Optional[np.ndarray] = ego2map
 
-        self.critical_ground_truth_objects: Optional[List[ObjectType]] = None
-        self.fn_objects: Optional[List[ObjectType]] = None
-        self.fp_objects_result: Optional[List[DynamicObjectWithPerceptionResult]] = None
-        self.tp_objects: Optional[List[DynamicObjectWithPerceptionResult]] = None
+        self.critical_ground_truth_objects: List[ObjectType] = []
+        self.fn_objects: List[ObjectType] = []
+        self.fp_objects_result: List[DynamicObjectWithPerceptionResult] = []
+        self.tp_objects: List[DynamicObjectWithPerceptionResult] = []
 
     def evaluate(
         self,
@@ -81,20 +81,15 @@ class PassFailResult:
             ego2map=self.ego2map,
             **self.critical_object_filter_config.filtering_params,
         )
-        if self.critical_ground_truth_objects is not None:
-            self.tp_objects, self.fp_objects_result = self.get_tp_fp_objects_result(
-                object_results=object_results,
-                critical_ground_truth_objects=self.critical_ground_truth_objects,
-            )
-            self.fn_objects = get_fn_objects(
-                ground_truth_objects=self.critical_ground_truth_objects,
-                object_results=object_results,
-                tp_objects=self.tp_objects,
-            )
-        else:
-            self.fn_objects = None
-            self.tp_objects = None
-            self.fp_objects_result = None
+        self.tp_objects, self.fp_objects_result = self.get_tp_fp_objects_result(
+            object_results=object_results,
+            critical_ground_truth_objects=self.critical_ground_truth_objects,
+        )
+        self.fn_objects = get_fn_objects(
+            ground_truth_objects=self.critical_ground_truth_objects,
+            object_results=object_results,
+            tp_objects=self.tp_objects,
+        )
 
     def get_fail_object_num(self) -> int:
         """Get the number of fail objects.
