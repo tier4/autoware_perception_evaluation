@@ -219,19 +219,15 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
 
         Returns:
             score_df (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
-            error_df (Optional[pandas.DataFrame]): DataFrame of errors. For classification, returns confusion matrix.
+            confusion_matrix_df (Optional[pandas.DataFrame]): DataFrame of confusion matrix.
         """
         df: pd.DataFrame = self.get(**kwargs)
         if len(df) > 0:
             ratio_df = self.summarize_ratio(df=df)
-            error_df = (
-                self.get_confusion_matrix(df=df)
-                if self.config.evaluation_task == EvaluationTask.CLASSIFICATION2D
-                else self.summarize_error(df=df)
-            )
+            confusion_matrix_df = self.get_confusion_matrix(df=df)
             metrics_df = self.summarize_score(scene=kwargs.get("scene"), **kwargs)
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
-            return score_df, error_df
+            return score_df, confusion_matrix_df
 
         logging.warning("There is no DataFrame to be able to analyze.")
         return None, None

@@ -212,11 +212,11 @@ if __name__ == "__main__":
     # Detection performance report
     detection_analyzer = PerceptionAnalyzer2D(detection_lsim.evaluator.evaluator_config)
     detection_analyzer.add(detection_lsim.evaluator.frame_results)
-    score_df, error_df = detection_analyzer.analyze()
+    score_df, conf_mat_df = detection_analyzer.analyze()
     if score_df is not None:
         logging.info(score_df.to_string())
-    if error_df is not None:
-        logging.info(error_df.to_string())
+    if conf_mat_df is not None:
+        logging.info(conf_mat_df.to_string())
 
     # ========================================= Tracking =========================================
     print("=" * 50 + "Start Tracking 2D" + "=" * 50)
@@ -244,11 +244,11 @@ if __name__ == "__main__":
     # Tracking performance report
     tracking_analyzer = PerceptionAnalyzer2D(tracking_lsim.evaluator.evaluator_config)
     tracking_analyzer.add(tracking_lsim.evaluator.frame_results)
-    score_df, error_df = tracking_analyzer.analyze()
+    score_df, conf_mat_df = tracking_analyzer.analyze()
     if score_df is not None:
         logging.info(score_df.to_string())
-    if error_df is not None:
-        logging.info(error_df.to_string())
+    if conf_mat_df is not None:
+        logging.info(conf_mat_df.to_string())
 
     # ========================================= Classification =========================================
     print("=" * 50 + "Start Classification 2D" + "=" * 50)
