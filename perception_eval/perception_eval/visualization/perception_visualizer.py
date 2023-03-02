@@ -227,7 +227,7 @@ class PerceptionVisualizer:
         frame_artists += artists
 
         # set object
-        tp_objects, fp_objects, fn_objects = self._divide_objects(
+        tp_object_results, fp_object_results, fn_objects = self._divide_objects(
             frame_result.object_results,
             frame_result.frame_ground_truth,
             matching_mode=matching_mode,
@@ -236,7 +236,7 @@ class PerceptionVisualizer:
 
         # Plot objects
         axes, artists = self.plot_objects(
-            objects=tp_objects,
+            objects=tp_object_results,
             is_ground_truth=False,
             axes=axes,
             label="TP est",
@@ -245,7 +245,7 @@ class PerceptionVisualizer:
         frame_artists += artists
 
         axes, artists = self.plot_objects(
-            objects=tp_objects,
+            objects=tp_object_results,
             is_ground_truth=True,
             axes=axes,
             label="TP GT",
@@ -254,7 +254,7 @@ class PerceptionVisualizer:
         frame_artists += artists
 
         axes, artists = self.plot_objects(
-            objects=fp_objects,
+            objects=fp_object_results,
             is_ground_truth=False,
             axes=axes,
             label="FP",
@@ -548,8 +548,8 @@ class PerceptionVisualizer:
             matching_threshold_list (Optional[List[float]])
 
         Returns:
-            tp_objects (List[DynamicObjectWithPerceptionResult])
-            fp_objects (List[DynamicObjectWithPerceptionResult])
+            tp_object_results (List[DynamicObjectWithPerceptionResult])
+            fp_object_results (List[DynamicObjectWithPerceptionResult])
             fn_objects (List[DynamicObject])
         """
         # filter object results
@@ -577,7 +577,7 @@ class PerceptionVisualizer:
             ego2map=frame_ground_truth.ego2map,
         )
         # divide TP/FP objects
-        tp_objects, fp_objects = divide_tp_fp_objects(
+        tp_object_results, fp_object_results = divide_tp_fp_objects(
             object_results=filtered_estimated_objects,
             target_labels=self.config.target_labels,
             matching_mode=matching_mode,
@@ -586,6 +586,6 @@ class PerceptionVisualizer:
         fn_objects = get_fn_objects(
             ground_truth_objects=filtered_ground_truth,
             object_results=object_results,
-            tp_objects=tp_objects,
+            tp_object_results=tp_object_results,
         )
-        return tp_objects, fp_objects, fn_objects
+        return tp_object_results, fp_object_results, fn_objects
