@@ -125,10 +125,10 @@ def crop_pointcloud(
 
     if inside:
         xy_idx: np.ndarray = 0 < cnt_arr_
-        z_idx: np.ndarray = (z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2])
+        z_idx: np.ndarray = (z_min <= pointcloud[:, 2]) * (pointcloud[:, 2] <= z_max)
     else:
         xy_idx: np.ndarray = cnt_arr_ <= 0
-        z_idx: np.ndarray = ~((z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2]))
+        z_idx: np.ndarray = ~((pointcloud[:, 2] < z_min) * (z_max < pointcloud[:, 2]))
     return pointcloud[xy_idx * z_idx]
 
 
