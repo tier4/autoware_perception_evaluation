@@ -217,7 +217,7 @@ class SensingVisualizer:
         handles.append(Patch(color="red", label="Fail Detection"))
 
         for i, fail_pointcloud in enumerate(frame_result.pointcloud_failed_non_detection):
-            color = self.__cmap[i]
+            color = self.__cmap[i] / 255.0
             self.plot_pointcloud(pointcloud=fail_pointcloud, axes=axes, color=color)
             handles.append(Patch(color=color, label=f"Fail Non-detection@area{i}"))
 
@@ -337,12 +337,13 @@ class SensingVisualizer:
             axes.add_patch(box)
 
             if len(pointcloud) > 0:
-                axes.scatter(pointcloud[:, 0], pointcloud[:, 1], color=edge_color, s=0.5)
+                axes.scatter(pointcloud[:, 0], pointcloud[:, 1], c=edge_color, s=0.5)
             if nearest_point is not None:
+                color_ = self.__cmap.get_simple("blue")
                 axes.scatter(
                     nearest_point[0],
                     nearest_point[1],
-                    color="blue",
+                    c=color_,
                     s=0.5,
                     label="Nearest point",
                 )
@@ -372,7 +373,7 @@ class SensingVisualizer:
         if isinstance(color, str):
             color = self.__cmap.get_simple(color)
 
-        axes.scatter(pointcloud[:, 0], pointcloud[:, 1], color=color, s=0.5)
+        axes.scatter(pointcloud[:, 0], pointcloud[:, 1], c=color, s=0.5)
 
         return axes
 
