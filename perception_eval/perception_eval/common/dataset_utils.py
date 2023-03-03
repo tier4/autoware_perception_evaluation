@@ -28,6 +28,7 @@ from nuscenes.utils.data_classes import Box
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.label import LabelType
+from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.status import FrameID
@@ -414,7 +415,14 @@ def _sample_to_frame_2d(
             count_label_number=True,
         )
 
-        uuid: str = ann.get("instance_token")
+        if label_converter.label_type == TrafficLightLabel:
+            for instance_record in nusc.instance:
+                if instance_record["token"] == ann["instance_token"]:
+                    instance_name: str = instance_record["instance_name"]
+                    uuid: str = instance_name.split(":")[-1]
+        else:
+            uuid: str = ann["instance_token"]
+
         visibility = None
 
         object_: DynamicObject2D = DynamicObject2D(
