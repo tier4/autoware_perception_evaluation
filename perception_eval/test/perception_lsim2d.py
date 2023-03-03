@@ -157,6 +157,7 @@ if __name__ == "__main__":
         "--label_prefix",
         type=str,
         default="autoware",
+        choices=["autoware", "traffic_light"],
         help="Whether evaluate Traffic Light Recognition",
     )
     parser.add_argument(
