@@ -171,7 +171,7 @@ if __name__ == "__main__":
             "cam_back",
             "cam_back_left",
             "cam_back_right",
-            "cam_traffic_licht_near",
+            "cam_traffic_light_near",
             "cam_traffic_light_far",
         ],
         help="Name of camera data",
