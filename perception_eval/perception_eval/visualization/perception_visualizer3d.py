@@ -425,7 +425,7 @@ class PerceptionVisualizer3D:
                 x=cropped_pointcloud[:, 0],
                 y=cropped_pointcloud[:, 1],
                 marker=".",
-                color=edge_color,
+                c=[edge_color],
                 label=label,
                 s=0.5,
             )

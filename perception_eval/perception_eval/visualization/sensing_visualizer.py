@@ -282,7 +282,7 @@ class SensingVisualizer:
         self,
         objects: Union[List[DynamicObject], List[DynamicObjectWithSensingResult]],
         axes: Optional[Axes] = None,
-        color: Optional[str] = None,
+        color: Union[str, np.ndarray] = "red",
     ) -> Axes:
         """Plot objects in BEV space.
 
@@ -297,7 +297,7 @@ class SensingVisualizer:
         Args:
             objects (Union[List[DynamicObject], DynamicObjectWithSensingResult]): The list of object being visualized.
             axes (Optional[Axes]): The Axes instance. If not specified, new Axes is created. Defaults to None.
-            color (Optional[str]): The name of color, red/green/blue/yellow/cyan/black. Defaults to None.
+            color (Union[str, np.ndarray]): The name of color, red/green/blue/yellow/cyan/black. Defaults to None.
                 If not be specified, red is used.
 
         Returns:
@@ -306,8 +306,7 @@ class SensingVisualizer:
         if axes is None:
             axes: Axes = plt.subplot()
 
-        color: str = "red" if color is None else color
-        edge_color = self.__cmap.get_simple(color)
+        edge_color = self.__cmap.get_simple(color) if isinstance(color, str) else color
 
         for object_ in objects:
             if isinstance(object_, DynamicObjectWithSensingResult):
@@ -337,13 +336,13 @@ class SensingVisualizer:
             axes.add_patch(box)
 
             if len(pointcloud) > 0:
-                axes.scatter(pointcloud[:, 0], pointcloud[:, 1], c=edge_color, s=0.5)
+                axes.scatter(pointcloud[:, 0], pointcloud[:, 1], c=[edge_color], s=0.5)
             if nearest_point is not None:
                 color_ = self.__cmap.get_simple("blue")
                 axes.scatter(
                     nearest_point[0],
                     nearest_point[1],
-                    c=color_,
+                    c=[color_],
                     s=0.5,
                     label="Nearest point",
                 )
@@ -354,13 +353,13 @@ class SensingVisualizer:
         self,
         pointcloud: np.ndarray,
         axes: Optional[Axes] = None,
-        color: Optional[str] = None,
+        color: Union[str, np.ndarray] = "red",
     ) -> Axes:
         """Plot pointcloud.
 
         Args:
             axes (Optional[Axes]): Axes instance. If not specified new Axes is created. Defaults to None.
-            color (Optional[str]): Name of color. If not be specified, red is used. Defaults to None.
+            color (Union[str, np.ndarray]): Name of color. If not be specified, red is used. Defaults to None.
 
         Returns:
             axes (Axes): Axes instance.
@@ -368,12 +367,10 @@ class SensingVisualizer:
         if axes is None:
             axes: Axes = plt.subplot()
 
-        if color is None:
-            color: str = "red"
         if isinstance(color, str):
             color = self.__cmap.get_simple(color)
 
-        axes.scatter(pointcloud[:, 0], pointcloud[:, 1], c=color, s=0.5)
+        axes.scatter(pointcloud[:, 0], pointcloud[:, 1], c=[color], s=0.5)
 
         return axes
 
