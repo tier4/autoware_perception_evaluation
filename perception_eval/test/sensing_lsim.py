@@ -186,11 +186,7 @@ if __name__ == "__main__":
         ],
     ]
     num_frames = len(sensing_lsim.evaluator.ground_truth_frames)
-    pointcloud_frames = np.random.uniform(-100.0, 100.0, (num_frames, 10000, 3))
-    for ground_truth_frame, pointcloud in zip(
-        sensing_lsim.evaluator.ground_truth_frames,
-        pointcloud_frames,
-    ):
+    for ground_truth_frame in sensing_lsim.evaluator.ground_truth_frames:
         frame_result: SensingFrameResult = sensing_lsim.callback(
             ground_truth_frame.unix_time,
             ground_truth_frame.raw_data,
