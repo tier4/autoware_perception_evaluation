@@ -10,6 +10,7 @@
     "bbox",
     "bboxes",
     "bigendian",
+    "bincount",
     "borderaxespad",
     "boxplot",
     "categoryarray",
@@ -27,6 +28,7 @@
     "dtype",
     "EDA",
     "edgecolor",
+    "errstate",
     "figsize",
     "figwidth",
     "figheight",
@@ -36,6 +38,8 @@
     "HOTA",
     "isin",
     "IOUBEV",
+    "isin",
+    "keepdims",
     "Kotaro",
     "kwargs",
     "levelname",
@@ -99,6 +103,7 @@
     "yaxes",
     "yaxis",
     "ylabel",
-    "ylim"
+    "ylim",
+    "zlabel"
   ]
 }

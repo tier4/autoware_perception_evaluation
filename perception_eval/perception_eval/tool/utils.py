@@ -49,7 +49,7 @@ class MatchingStatus(Enum):
 
 
 class PlotAxes(Enum):
-    """[summary]
+    """Enum class for plot axes.
 
     2D plot:
         FRAME: X-axis is the number of frame.
@@ -59,9 +59,11 @@ class PlotAxes(Enum):
         Y: X-axis is y[m].
         VX: X-axis is vx[m/s].
         VY: X-axis is vy[m/s].
+        CONFIDENCE: X-axis is confidence in [0, 100][%].
     3D plot:
         POSITION: X-axis is x[m], y-axis is y[m].
         VELOCITY: X-axis is vx[m/s], y-axis is vy[m/s].
+        SIZE: X-axis is width[m], y-axis is height[m](2D) or length[m](3D).
         POLAR: X-axis is theta[rad], y-axis is r[m]
     """
 
@@ -72,6 +74,7 @@ class PlotAxes(Enum):
     Y = "y"
     VX = "vx"
     VY = "vy"
+    CONFIDENCE = "confidence"
     POSITION = "position"
     SIZE = "size"
     VELOCITY = "velocity"
@@ -92,8 +95,7 @@ class PlotAxes(Enum):
         return not self.is_3d()
 
     def get_axes(self, df: pd.DataFrame, **kwargs) -> np.ndarray:
-        """[summary]
-        Returns axes values for plot.
+        """Returns axes values for plot.
 
         Args:
             df (pandas.DataFrame): Source DataFrame.
@@ -118,10 +120,16 @@ class PlotAxes(Enum):
             axes: np.ndarray = np.array(df["vx"])
         elif self == PlotAxes.VY:
             axes: np.ndarray = np.array(df["vy"])
+        elif self == PlotAxes.CONFIDENCE:
+            axes: np.ndarray = np.array(df["confidence"]) * 100
         elif self == PlotAxes.POSITION:
             axes: np.ndarray = np.array(df[["x", "y"]]).reshape(2, -1)
         elif self == PlotAxes.SIZE:
-            axes: np.ndarray = np.array(df[["w", "l"]]).reshape(2, -1)
+            axes: np.ndarray = (
+                np.array(df[["width", "length"]]).reshape(2, -1)
+                if "length" in df.columns
+                else np.array(df[["width", "height"]]).reshape(2, -1)
+            )
         elif self == PlotAxes.VELOCITY:
             axes: np.ndarray = np.array(df[["vx", "vy"]]).reshape(2, -1)
         elif self == PlotAxes.POLAR:
@@ -135,8 +143,7 @@ class PlotAxes(Enum):
         return axes
 
     def get_label(self) -> Union[str, Tuple[str]]:
-        """[summary]
-        Returns label name for plot.
+        """Returns label name for plot.
 
         Returns:
             str: Name of label.
@@ -149,18 +156,19 @@ class PlotAxes(Enum):
             return str(self) + " [m]"
         elif self in (PlotAxes.VX, PlotAxes.VY):
             return str(self) + " [m/s]"
+        elif self == PlotAxes.CONFIDENCE:
+            return str(self) + " [%]"
         elif self == PlotAxes.POSITION:
             return "x [m]", "y [m]"
         elif self == PlotAxes.SIZE:
-            return "w [m]", "l [m]"
+            return "width [m]", "length [m]"
         elif self == PlotAxes.VELOCITY:
             return "vx [m/s]", "vy [m/s]"
         elif self == PlotAxes.POLAR:
             return "theta [rad]", "r [m]"
 
-    def get_bin(self) -> Union[float, Tuple[float, float]]:
-        """[summary]
-        Returns default bins.
+    def get_bins(self) -> Union[float, Tuple[float, float]]:
+        """Returns default bins.
 
         Returns:
             Union[float, Tuple[float, float]]
@@ -168,24 +176,39 @@ class PlotAxes(Enum):
         if self == PlotAxes.FRAME:
             return 1.0
         elif self == PlotAxes.TIME:
-            return 5.0
+            return 1.0
         elif self in (PlotAxes.DISTANCE, PlotAxes.X, PlotAxes.Y):
-            return 0.5
+            return 10
         elif self in (PlotAxes.VX, PlotAxes.VY):
             return 1.0
+        elif self == PlotAxes.CONFIDENCE:
+            return 1.0
         elif self == PlotAxes.POSITION:
-            return (0.5, 0.5)
+            return (10, 10)
         elif self == PlotAxes.SIZE:
-            return (1.0, 1.0)
+            return (5.0, 5.0)
         elif self == PlotAxes.VELOCITY:
             return (1.0, 1.0)
         elif self == PlotAxes.POLAR:
-            return (0.2, 0.5)
+            return (0.2, 10)
+
+    def setup_axis(self, ax: plt.Axes, **kwargs) -> None:
+        """Setup axis limits and grid interval to plt.Axes.
+
+        Args:
+            ax (plt.Axes)
+            **kwargs:
+                xlim (Union[float, Sequence]): If use sequence, (left, right) order.
+                ylim (Union[float, Sequence]): If use sequence, (left, right) order. Defaults to None.
+                grid_interval (float): Interval of grid. Defaults to None.
+        """
+        setup_axis(ax, **kwargs)
+        if self == PlotAxes.CONFIDENCE:
+            ax.set_xlim(-5, 105)
 
     @property
     def projection(self) -> Optional[str]:
-        """[summary]
-        Returns type of projection.
+        """Returns type of projection.
 
         Returns:
             Optional[str]: If 3D, returns "3d", otherwise returns None.
@@ -206,8 +229,7 @@ def generate_area_points(
     max_x: float,
     max_y: float,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """[summary]
-    Generate (x,y) pairs of upper right and bottom left of each separate area.
+    """Generate (x,y) pairs of upper right and bottom left of each separate area.
     They are arranged in numerical order as shown in below.
 
     num_area_division:
@@ -261,8 +283,7 @@ def get_area_idx(
     bottom_lefts: np.ndarray,
     ego2map: Optional[np.ndarray] = None,
 ) -> Optional[int]:
-    """[summary]
-    Returns the index of area.
+    """Returns the index of area.
 
     Args:
         object_result (Union[DynamicObject, DynamicObjectWithPerceptionResult])
@@ -363,6 +384,7 @@ def setup_axis(ax: plt.Axes, **kwargs) -> None:
             ylim (Union[float, Sequence]): If use sequence, (left, right) order. Defaults to None.
             grid_interval (float): Interval of grid. Defaults to None.
     """
+    ax.grid()
     if kwargs.get("xlim"):
         xlim: Union[float, Sequence] = kwargs.pop("xlim")
         if isinstance(xlim, float):
@@ -402,6 +424,7 @@ def get_metrics_info(metrics_score: MetricsScore) -> Dict[str, Any]:
             data[ap_mode].append(ap.ap)
             data[aph_mode].append(aph.ap)
 
+    # tracking
     for tracking_score in metrics_score.tracking_scores:
         mode: str = str(tracking_score.matching_mode)
         mota_mode: str = f"MOTA({mode})"
@@ -415,6 +438,22 @@ def get_metrics_info(metrics_score: MetricsScore) -> Dict[str, Any]:
             data[mota_mode].append(clear.results["MOTA"])
             data[motp_mode].append(clear.results["MOTP"])
             data[id_switch_mode].append(clear.results["id_switch"])
+
+    # prediction
+    # TODO
+
+    # classification
+    for classification_score in metrics_score.classification_scores:
+        accuracy, precision, recall, f1score = classification_score._summarize()
+        data["Accuracy"] = [accuracy]
+        data["Precision"] = [precision]
+        data["Recall"] = [recall]
+        data["F1score"] = [f1score]
+        for cls_acc in classification_score.accuracies:
+            data["Accuracy"].append(cls_acc.accuracy)
+            data["Precision"].append(cls_acc.precision)
+            data["Recall"].append(cls_acc.recall)
+            data["F1score"].append(cls_acc.f1score)
 
     return data
 
