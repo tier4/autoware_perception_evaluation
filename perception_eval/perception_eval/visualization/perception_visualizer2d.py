@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import io
 import os.path as osp
 from typing import Dict
 from typing import List
@@ -220,10 +219,9 @@ class PerceptionVisualizer2D:
             markerscale=10.0,
         )
 
-        buffer = io.BytesIO()
-        plt.savefig(buffer, format="png")
-        buffer.seek(0)
-        frame = Image.open(buffer)
+        filepath: str = osp.join(self.config.visualization_directory, f"{frame_number}.png")
+        plt.savefig(filepath, format="png")
+        frame = Image.open(filepath)
         self.__animation_frames.append(frame)
 
         return axes
