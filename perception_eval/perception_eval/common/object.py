@@ -448,9 +448,9 @@ class DynamicObject:
         lower_area = 0.5 * np.array(
             [
                 [scaled_bbox_size[0], scaled_bbox_size[1], 0.0],
-                [-self.state.size[0], self.state.size[1], 0.0],
-                [-self.state.size[0], -self.state.size[1], 0.0],
-                [self.state.size[0], -self.state.size[1], 0.0],
+                [-scaled_bbox_size[0], scaled_bbox_size[1], 0.0],
+                [-scaled_bbox_size[0], -scaled_bbox_size[1], 0.0],
+                [scaled_bbox_size[0], -scaled_bbox_size[1], 0.0],
             ]
         )
 
@@ -461,7 +461,7 @@ class DynamicObject:
         area: np.ndarray = np.concatenate([lower_area, upper_area])
         area[:, :2] = area[:, :2] + self.state.position[:2]
 
-        return crop_pointcloud(pointcloud.copy(), area.tolist(), inside=inside)
+        return crop_pointcloud(pointcloud, area.tolist(), inside=inside)
 
     def get_inside_pointcloud_num(
         self,
