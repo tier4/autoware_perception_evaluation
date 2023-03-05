@@ -28,7 +28,6 @@ from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 from matplotlib.transforms import Affine2D
 import numpy as np
-from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import SensingEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithSensingResult
@@ -151,8 +150,6 @@ class SensingVisualizer:
         """Clear properties at the enf of visualize all frame."""
         self.__axes.clear()
         self.__animation_frames.clear()
-        if self.config.evaluation_task == EvaluationTask.TRACKING:
-            self.__tracked_paths.clear()
 
     def set_figsize(self, figsize: Tuple[int, int]) -> None:
         """Set figure size.
