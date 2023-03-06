@@ -6,6 +6,11 @@
 
 ## Release for main branch
 
+### v1.0.5
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/58>
+  - 【fix】non-detection area のクロップ時にバウンディングボックス外をクロップするように修正
+
 ### v1.0.4
 
 - <https://github.com/tier4/autoware_perception_evaluation/pull/56>
