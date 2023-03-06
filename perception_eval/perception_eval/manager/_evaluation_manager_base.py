@@ -22,6 +22,7 @@ from perception_eval.common.dataset import get_now_frame
 from perception_eval.common.dataset import load_all_datasets
 from perception_eval.config import EvaluationConfigType
 from perception_eval.evaluation import FrameResultType
+from perception_eval.visualization import VisualizerType
 
 
 class _EvaluationMangerBase(ABC):
@@ -67,6 +68,11 @@ class _EvaluationMangerBase(ABC):
     def metrics_params(self):
         return self.evaluator_config.metrics_params
 
+    @property
+    @abstractmethod
+    def visualizer(self) -> VisualizerType:
+        ...
+
     @abstractmethod
     def add_frame_result(self) -> FrameResultType:
         """Add perception/sensing frame result to `self.frame_results`
@@ -104,3 +110,16 @@ class _EvaluationMangerBase(ABC):
             threshold_min_time=threshold_min_time,
         )
         return ground_truth_now_frame
+
+    def visualize_all(self) -> None:
+        """Visualize object result in BEV space for all frames."""
+        self.visualizer.visualize_all(self.frame_results)
+
+    def visualize_frame(self, frame_index: int = -1) -> None:
+        """[summary]
+        Visualize object result in BEV space at specified frame.
+
+        Args:
+            frame_index (int): The index of frame to be visualized. Defaults to -1 (latest frame).
+        """
+        self.visualizer.visualize_frame(self.frame_results[frame_index])

@@ -1,33 +1,36 @@
-# [`<class> PerceptionVisualizer(...)`](../../../perception_eval/perception_eval/visualization/perception_visualizer.py)
+# Visualize perception results
+
+- 3D visualization: `PerceptionVisualizer3D`
+- 2D visualization: `PerceptionVisualizer2D`
+
+## [`<class> PerceptionVisualizer3D(...)`](../../../perception_eval/perception_eval/visualization/perception_visualizer3d.py)
 
 - Visualization tool for perception result.
 
-## How to use
+### How to use
 
-### 1.Initialization
+#### 1.Initialization
 
-There are tree ways of initialization of `PerceptionVisualizer`, 1. Use `PerceptionVisualizationConfig` or 2. Use `PerceptionEvaluationConfig` or 3. Specify arguments directory.
+There are tree ways of initialization of `PerceptionVisualizer3D`, 1. Use `PerceptionEvaluationConfig` or 2. Specify scenario file path(.yaml).
 
 ```python
-from perception_eval.visualization.perception_visualizer import PerceptionVisualizer
-from perception_eval.visualization.perception_visualization_config import PerceptionVisualizationConfig
-from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
-
-# Pattern.1 : Load from PerceptionVisualizationConfig
-config = PerceptionVisualizationConfig(...)
-visualizer = PerceptionVisualizer(config)
+from perception_eval.visualization import PerceptionVisualizer3D
+from perception_eval.config import PerceptionEvaluationConfig
 
 
-# Pattern.2 : Load from PerceptionEvaluationConfig
+# Pattern.1 : Load from PerceptionEvaluationConfig
 config = PerceptionEvaluationConfig(...)
-visualizer = PerceptionVisualizer.from_eval_cfg(config)
+visualizer = PerceptionVisualizer3D.from_eval_cfg(config)
 
 
-# Pattern.3 : Load from arguments. These are same with PerceptionVisualizationConfig's
-visualizer = PerceptionVisualizer.from_args(...)
+# Pattern.2 : Load from scenario file.
+visualizer = PerceptionVisualizer3D.from_scenario(
+    result_root_directory: str,
+    scenario_filepath: str,
+)
 ```
 
-### 2. Visualization
+#### 2. Visualization
 
 - Visualize 1 frame
 
@@ -46,26 +49,50 @@ visualizer.visualize_frame(frame_result)
 visualizer.visualize_all(frame_results)
 ```
 
-Each visualized image will be saved in `visualization_directory_path` specified in `PerceptionVisualizationConfig`
+Each visualized image and video of whole scene will be saved in `visualization_directory_path`.
 
-### `<class> PerceptionVisualizationConfig(...)`
+## [`<class> PerceptionVisualizer2D(...)`](../../../perception_eval/perception_eval/visualization/perception_visualizer2d.py)
 
-| Arguments                      |         type          | Mandatory | Description                                                  |
-| :----------------------------- | :-------------------: | :-------: | :----------------------------------------------------------- |
-| `visualization_directory_path` |         `str`         |    Yes    | Directory path to save visualized images.                    |
-| `frame_id`                     |         `str`         |    Yes    | Frame ID.(`base_link` or `map`)                              |
-| `evaluation_task`              |   `EvaluationTask`    |    Yes    | Perception evaluation task.                                  |
-| `height`                       |         `int`         |    No     | Height of image.                                             |
-| `width`                        |         `int`         |    No     | width of image.                                              |
-| `target_labels`                | `List[AutowareLabel]` |    No     | List of target labels.                                       |
-| `max_x_position_list`          |     `List[float]`     |    No     | Maximum x position of evaluation area.                       |
-| `max_y_position_list`          |     `List[float]`     |    No     | Maximum y position of evaluation area.                       |
-| `max_distance_list`            |     `List[float]`     |    No     | Maximum distance of evaluation area.                         |
-| `min_distance_list`            |     `List[float]`     |    No     | Minimum distance of evaluation area.                         |
-| `min_point_numbers`            |      `List[int]`      |    No     | Minimum number of pointcloud included in bounding box of GT. |
-| `confidence_threshold_list`    |     `List[float]`     |    No     | Threshold list of estimation's confidence.                   |
-| `target_uuids`                 |      `List[str]`      |    No     | List of target GT's uuid.                                    |
+### How to use
 
-## Known issues / Limitations
+#### 1.Initialization
 
-- `PerceptionVisualizer()` only supports 3D evaluation.
+There are tree ways of initialization of `PerceptionVisualizer2D`, 1. Use `PerceptionEvaluationConfig` or 2. Specify scenario file path(.yaml).
+
+```python
+from perception_eval.visualization import PerceptionVisualizer2D
+from perception_eval.config import PerceptionEvaluationConfig
+
+
+# Pattern.1: Load from PerceptionEvaluationConfig
+config = PerceptionEvaluationConfig(...)
+visualizer = PerceptionVisualizer2D.from_eval_cfg(config)
+
+
+# Pattern.2 : Load from scenario file.
+visualizer = PerceptionVisualizer2D.from_scenario(
+    result_root_directory: str,
+    scenario_filepath: str,
+)
+```
+
+#### 2. Visualization
+
+- Visualize 1 frame
+
+```python
+# Visualize one frame to visualization_directory_path
+# REQUIRED: frame_result: PerceptionFrameResult
+visualizer.visualize_frame(frame_result)
+```
+
+- Visualize all frames (=scene)
+
+```python
+# Visualize all frames to visualization_directory_path
+# REQUIRED: frame_results: List[PerceptionFrameResult]
+
+visualizer.visualize_all(frame_results)
+```
+
+Each visualized image and video of whole scene will be saved in `visualization_directory_path`.

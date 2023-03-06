@@ -421,7 +421,7 @@ class DynamicObject:
     def crop_pointcloud(
         self,
         pointcloud: np.ndarray,
-        bbox_scale: float,
+        bbox_scale: float = 1.0,
         inside: bool = True,
     ) -> np.ndarray:
         """Returns pointcloud inside or outsize of own bounding box.

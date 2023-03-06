@@ -25,6 +25,7 @@ from perception_eval.evaluation import SensingFrameResult
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
 from perception_eval.util.math import get_bbox_scale
+from perception_eval.visualization import SensingVisualizer
 
 from ._evaluation_manager_base import _EvaluationMangerBase
 
@@ -47,6 +48,11 @@ class SensingEvaluationManager(_EvaluationMangerBase):
     ) -> None:
         super().__init__(evaluation_config)
         self.frame_results: List[SensingFrameResult] = []
+        self.__visualizer = SensingVisualizer(self.evaluator_config)
+
+    @property
+    def visualizer(self) -> SensingVisualizer:
+        return self.__visualizer
 
     def add_frame_result(
         self,

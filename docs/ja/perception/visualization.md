@@ -1,33 +1,36 @@
-# [`<class> PerceptionVisualizer(...)`](../../../perception_eval/perception_eval/visualization/perception_visualizer.py)
+# Perception 結果の可視化
 
-- Perception 結果の可視化ツール
+- 3D 評価: `PerceptionVisualizer3D`
+- 2D 評価: `PerceptionVisualizer2D`
 
-## How to use
+## [`<class> PerceptionVisualizer3D(...)`](../../../perception_eval/perception_eval/visualization/perception_visualizer3d.py)
 
-### 1.Initialization
+- 3D Perception 結果の可視化ツール
 
-`PerceptionVisualizer`の初期化方法には，1.`PerceptionVisualizationConfig`を使用，2.`PerceptionEvaluationConfig`を使用，3. 直接引数を指定の 3 パターンある．
+### How to use
+
+#### 1.Initialization
+
+`PerceptionVisualizer3D`の初期化方法には，1.`PerceptionEvaluationConfig`を使用，2. シナリオファイル(.yaml)を使用の 2 パターンある．
 
 ```python
-from perception_eval.visualization.perception_visualizer import PerceptionVisualizer
-from perception_eval.visualization.perception_visualization_config import PerceptionVisualizationConfig
-from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
-
-# Pattern.1 : Load from PerceptionVisualizationConfig
-config = PerceptionVisualizationConfig(...)
-visualizer = PerceptionVisualizer(config)
+from perception_eval.visualization import PerceptionVisualizer3D
+from perception_eval.config import PerceptionEvaluationConfig
 
 
-# Pattern.2 : Load from PerceptionEvaluationConfig
+# Pattern.1 : Load from PerceptionEvaluationConfig
 config = PerceptionEvaluationConfig(...)
-visualizer = PerceptionVisualizer.from_eval_cfg(config)
+visualizer = PerceptionVisualizer3D(config)
 
 
-# Pattern.3 : Load from arguments. These are same with PerceptionVisualizationConfig's
-visualizer = PerceptionVisualizer.from_args(...)
+# Pattern.2 : Load from scenario file
+visualizer = PerceptionVisualizer3D.from_scenario(
+    result_root_directory: str,
+    scenario_file_path: str,
+)
 ```
 
-### 2. Visualization
+#### 2. Visualization
 
 - Visualize 1 frame
 
@@ -46,26 +49,53 @@ visualizer.visualize_frame(frame_result)
 visualizer.visualize_all(frame_results)
 ```
 
-`PerceptionVisualizationConfig`に指定した，`visualization_directory_path`に各フレームの可視化画像が保存される．
+`visualization_directory_path`に各フレームの可視化画像と全フレーム分のが保存される．
 
-### `<class> PerceptionVisualizationConfig(...)`
+## [`<class> PerceptionVisualizer2D(...)`](../../../perception_eval/perception_eval/visualization/perception_visualizer2d.py)
 
-| Arguments                      |         type          | Mandatory | Description                             |
-| :----------------------------- | :-------------------: | :-------: | :-------------------------------------- |
-| `visualization_directory_path` |         `str`         |    Yes    | 可視化結果の保存ディレクトリのパス      |
-| `frame_id`                     |         `str`         |    Yes    | Frame ID (`base_link` or `map`)         |
-| `evaluation_task`              |   `EvaluationTask`    |    Yes    | Perception 評価タスク                   |
-| `height`                       |         `int`         |    No     | 可視化画像の height                     |
-| `width`                        |         `int`         |    No     | 可視化画像の width                      |
-| `target_labels`                | `List[AutowareLabel]` |    No     | 評価対象ラベル                          |
-| `max_x_position_list`          |     `List[float]`     |    No     | 評価対象領域の最大 x 位置               |
-| `max_y_position_list`          |     `List[float]`     |    No     | 評価対象領域の最大 y 位置               |
-| `max_distance_list`            |     `List[float]`     |    No     | 評価対象領域の最大距離                  |
-| `min_distance_list`            |     `List[float]`     |    No     | 評価対象領域の最小距離                  |
-| `min_point_numbers`            |      `List[int]`      |    No     | 評価対象オブジェクト box 内の最小点群数 |
-| `confidence_threshold_list`    |     `List[float]`     |    No     | 評価対象オブジェクトの confidence 閾値  |
-| `target_uuids`                 |      `List[str]`      |    No     | 評価対象オブジェクトの GT の uuid       |
+- 2D Perception 結果の可視化ツール
 
-## Known issues / Limitations
+### How to use
 
-- `PerceptionVisualizer()`は 3D 評価のみ対応．
+#### 1.Initialization
+
+`PerceptionVisualizer2D`の初期化方法には，1.`PerceptionEvaluationConfig`を使用，2. シナリオファイル(.yaml)を使用の 2 パターンある．
+
+```python
+from perception_eval.visualization import PerceptionVisualizer2D
+from perception_eval.config import PerceptionEvaluationConfig
+
+
+# Pattern.1 : Load from PerceptionEvaluationConfig
+config = PerceptionEvaluationConfig(...)
+visualizer = PerceptionVisualizer2D(config)
+
+
+# Pattern.2 : Load from scenario file
+visualizer = PerceptionVisualizer2D.from_scenario(
+    result_root_directory: str,
+    scenario_file_path: str,
+
+)
+```
+
+#### 2. Visualization
+
+- Visualize 1 frame
+
+```python
+# Visualize one frame to visualization_directory_path
+# REQUIRED: frame_result: PerceptionFrameResult
+visualizer.visualize_frame(frame_result)
+```
+
+- Visualize all frames (=scene)
+
+```python
+# Visualize all frames to visualization_directory_path
+# REQUIRED: frame_results: List[PerceptionFrameResult]
+
+visualizer.visualize_all(frame_results)
+```
+
+`visualization_directory_path`に各フレームの可視化画像と全フレーム分のが保存される．
