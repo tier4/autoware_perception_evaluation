@@ -122,18 +122,21 @@ def crop_pointcloud(
         cnt_arr_[decremental_flags] -= 1
 
     xy_idx: np.ndarray = 0 < cnt_arr_ if inside else cnt_arr_ <= 0
+
     if pointcloud.shape[1] < 3:
         return pointcloud[xy_idx]
 
     z_min: float = min(area, key=(lambda x: x[2]))[2]
     z_max: float = max(area, key=(lambda x: x[2]))[2]
-    z_idx: np.ndarray = (
-        (z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2])
-        if inside
-        else ~((z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2]))
-    )
 
-    return pointcloud[xy_idx * z_idx]
+    if inside:
+        z_idx: np.ndarray = np.bitwise_and((z_min <= pointcloud[:, 2]), (pointcloud[:, 2] <= z_max))
+        idx: np.ndarray = np.bitwise_and(xy_idx, z_idx)
+    else:
+        z_idx: np.ndarray = np.bitwise_or((pointcloud[:, 2] < z_min), (z_max < pointcloud[:, 2]))
+        idx = np.bitwise_or(xy_idx, z_idx)
+
+    return pointcloud[idx]
 
 
 def polygon_to_list(polygon: Polygon):

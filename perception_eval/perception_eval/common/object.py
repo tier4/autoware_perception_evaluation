@@ -21,6 +21,7 @@ from typing import Tuple
 
 import numpy as np
 from perception_eval.common.label import LabelType
+from perception_eval.common.point import crop_pointcloud
 from perception_eval.common.status import FrameID
 from perception_eval.common.status import Visibility
 from perception_eval.util.math import rotation_matrix_to_euler
@@ -436,7 +437,7 @@ class DynamicObject:
         Returns:
             numpy.ndarray: Pointcloud array inside or outside box.
         """
-        scaled_bbox_size_object_coords: np.ndarray = np.array(
+        scaled_bbox_size: np.ndarray = np.array(
             [
                 bbox_scale * self.state.size[1],
                 bbox_scale * self.state.size[0],
@@ -444,18 +445,23 @@ class DynamicObject:
             ]
         )
 
-        # Convert pointcloud coordinates from ego pose to relative to object
-        pointcloud_object_coords: np.ndarray = pointcloud[:, :3] - self.state.position
+        lower_area = 0.5 * np.array(
+            [
+                [scaled_bbox_size[0], scaled_bbox_size[1], 0.0],
+                [-scaled_bbox_size[0], scaled_bbox_size[1], 0.0],
+                [-scaled_bbox_size[0], -scaled_bbox_size[1], 0.0],
+                [scaled_bbox_size[0], -scaled_bbox_size[1], 0.0],
+            ]
+        )
 
-        # Calculate the indices of pointcloud in bounding box
-        inside_idx: np.ndarray = (
-            (pointcloud_object_coords >= -0.5 * scaled_bbox_size_object_coords)
-            * (pointcloud_object_coords <= 0.5 * scaled_bbox_size_object_coords)
-        ).all(axis=1)
+        lower_area: np.ndarray = np.matmul(lower_area, self.state.orientation.rotation_matrix)
 
-        if inside:
-            return pointcloud[inside_idx]
-        return pointcloud[~inside_idx]
+        upper_area: np.ndarray = lower_area.copy()
+        upper_area[:, 2] = scaled_bbox_size[2] * 2.0
+        area: np.ndarray = np.concatenate([lower_area, upper_area])
+        area[:, :2] = area[:, :2] + self.state.position[:2]
+
+        return crop_pointcloud(pointcloud, area.tolist(), inside=inside)
 
     def get_inside_pointcloud_num(
         self,
