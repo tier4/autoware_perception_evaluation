@@ -78,17 +78,17 @@ class SensingEvaluationManager(_EvaluationMangerBase):
                 **self.metrics_params,
             )
 
-        ground_truth_objects: List[DynamicObject] = self._filter_objects(
-            ground_truth_now_frame,
-            sensing_frame_config,
-        )
-
         # Crop pointcloud for non-detection area
         pointcloud_for_non_detection: np.ndarray = self.crop_pointcloud(
-            ground_truth_objects=ground_truth_objects,
+            ground_truth_objects=ground_truth_now_frame.objects,
             pointcloud=pointcloud,
             non_detection_areas=non_detection_areas,
             ego2map=ground_truth_now_frame.ego2map,
+        )
+
+        ground_truth_objects: List[DynamicObject] = self._filter_objects(
+            ground_truth_now_frame,
+            sensing_frame_config,
         )
 
         result = SensingFrameResult(
