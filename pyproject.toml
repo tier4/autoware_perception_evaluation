@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "perception_eval"
-version = "1.0.4"
+version = "1.0.5"
 description = ""
 authors = ["Satoshi Tanaka <satoshi.tanaka@tier4.jp>", "Kotaro Uetake <kotaro.uetake@tier4.jp>", "Shunsuke Miura <shunsuke.miura@tier4.jp>", "Shintaro Tomie <shinrato.tomie@tier4.jp>"]
 license = "Apache-2.0"

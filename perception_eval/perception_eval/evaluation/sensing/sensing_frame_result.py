@@ -156,6 +156,7 @@ class SensingFrameResult:
                 point_non_detection = crop_pointcloud(
                     point_non_detection,
                     object_area_,
+                    inside=False,
                 )
             if len(point_non_detection) != 0:
                 self.pointcloud_failed_non_detection.append(point_non_detection)
