@@ -6,38 +6,51 @@
 
 ## Release for main branch
 
+### v1.0.4
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/56>
+  - 【fix】バウンディングボックスによる点群のクロップ関数の修正，評価時に non-detection area の全アノテーションボックスに対する点群を除去
+- <https://github.com/tier4/autoware_perception_evaluation/pull/54>
+  - 【fix】traffic light ラベル使用時の uuid のロードを instance name から Lane ID を読み込むように修正
+- <https://github.com/tier4/autoware_perception_evaluation/pull/38>
+  - 【feat】2D 評価用の解析ツールの追加
+- <https://github.com/tier4/autoware_perception_evaluation/pull/49>
+  - 【fix】タイポ修正
+- <https://github.com/tier4/autoware_perception_evaluation/pull/45>
+  - 【fix】f 文字列の修正
+
 ### v1.0.3
 
 - <https://github.com/tier4/autoware_perception_evaluation/pull/41>
-  - 【fix】オブジェクトマッチング時にGTのroiが`None`の場合のエラー回避
+  - 【fix】オブジェクトマッチング時に GT の roi が`None`の場合のエラー回避
 - <https://github.com/tier4/autoware_perception_evaluation/pull/42>
   - 【fix】ポリゴンに対する点群の内外判定アルゴリズムの修正
 - <https://github.com/tier4/autoware_perception_evaluation/pull/43>
-  - 【fix】Map座標系でのAPH計算時のRuntimeError回避
+  - 【fix】Map 座標系での APH 計算時の RuntimeError 回避
 - <https://github.com/tier4/autoware_perception_evaluation/pull/39>
-  - 【chore】perception_lsim2d.pyの更新
+  - 【chore】perception_lsim2d.py の更新
 - <https://github.com/tier4/autoware_perception_evaluation/pull/12>
   - 【feat】`DynamicObject`に`FrameID`パラメータを追加
 - <https://github.com/tier4/autoware_perception_evaluation/pull/36>
   - 【refactor】`FrameGroundTruth`が`raw_data`として`numpy.ndarray`を保持するように修正
 - <https://github.com/tier4/autoware_perception_evaluation/pull/33>
-  - 【docs】READMEの更新
+  - 【docs】README の更新
 - <https://github.com/tier4/autoware_perception_evaluation/pull/32>
-  - 【fix】perception_lsim.pyでのパラメータ名の修正
+  - 【fix】perception_lsim.py でのパラメータ名の修正
 - <https://github.com/tier4/autoware_perception_evaluation/pull/30>
   - 【feat】未対応ラベルの追加
 - <https://github.com/tier4/autoware_perception_evaluation/pull/31>
-  - 【chore】pre-commit hooksの更新
+  - 【chore】pre-commit hooks の更新
 - <https://github.com/tier4/autoware_perception_evaluation/pull/23>
-  - 【ci】Python3.10でのテストを追加
+  - 【ci】Python3.10 でのテストを追加
 - <https://github.com/tier4/autoware_perception_evaluation/pull/26>
-  - 【chore】pandas_profilingをpyproject.tomlに追加
+  - 【chore】pandas_profiling を pyproject.toml に追加
 - <https://github.com/tier4/autoware_perception_evaluation/pull/15>
-  - 【feat】Sensing 2D評価機能の追加
+  - 【feat】Sensing 2D 評価機能の追加
 - <https://github.com/tier4/autoware_perception_evaluation/pull/10>
-  - 【feat】解析APIの機能追加
+  - 【feat】解析 API の機能追加
 - <https://github.com/tier4/autoware_perception_evaluation/pull/27>
-  - 【ci】CIでの環境をubuntu-20.04に固定
+  - 【ci】CI での環境を ubuntu-20.04 に固定
 
 ### v1.0.2
 
