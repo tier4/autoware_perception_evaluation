@@ -114,16 +114,15 @@ class DynamicObjectWithPerceptionResult:
             bool: If label is correct and satisfy matching threshold, return True
         """
         # Whether is matching to ground truth
-        matching: MatchingMethod = self.get_matching(matching_mode)
+        matching: Optional[MatchingMethod] = self.get_matching(matching_mode)
+        if matching is None:
+            return self.is_label_correct
         is_matching_: bool = matching.is_better_than(matching_threshold)
         # Whether both label is true and matching is true
         is_correct: bool = self.is_label_correct and is_matching_
         return is_correct
 
-    def get_matching(
-        self,
-        matching_mode: MatchingMode,
-    ) -> MatchingMethod:
+    def get_matching(self, matching_mode: MatchingMode) -> Optional[MatchingMethod]:
         """Get MatchingMethod instance with corresponding MatchingMode.
 
         Args:
@@ -133,7 +132,7 @@ class DynamicObjectWithPerceptionResult:
             NotImplementedError: When unexpected MatchingMode is input.
 
         Returns:
-            MatchingMethod: Corresponding MatchingMethods instance.
+            Optional[MatchingMethod]: Corresponding MatchingMethods instance.
         """
         if matching_mode == MatchingMode.CENTERDISTANCE:
             return self.center_distance
