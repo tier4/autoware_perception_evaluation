@@ -448,7 +448,7 @@ class PerceptionAnalyzerBase(ABC):
             ] = frame.frame_ground_truth.ego2map
 
             tp_df = self.format2df(
-                frame.pass_fail_result.tp_objects,
+                frame.pass_fail_result.tp_object_results,
                 status=MatchingStatus.TP,
                 start=start,
                 frame_num=int(frame.frame_name),
@@ -459,7 +459,7 @@ class PerceptionAnalyzerBase(ABC):
                 concat.append(tp_df)
 
             fp_df = self.format2df(
-                frame.pass_fail_result.fp_objects_result,
+                frame.pass_fail_result.fp_object_results,
                 status=MatchingStatus.FP,
                 start=start,
                 frame_num=int(frame.frame_name),

@@ -49,16 +49,16 @@
 
 - Attributes
 
-  | Attributes           |                   type                    | Description                              |
-  | :------------------- | :---------------------------------------: | :--------------------------------------- |
-  | `frame_name`         |                   `str`                   | フレーム名                               |
-  | `unix_time`          |                   `int`                   | フレームの UNIX Time                     |
-  | `frame_id`           |                 `FrameID`                 | オブジェクト座標系 FrameIDのインスタンス |
-  | `target_labels`      |             `List[LabelType]`             | 評価対象ラベル                           |
-  | `object_results`     | `List[DynamicObjectWithPerceptionResult]` | 推定オブジェクトと GT オブジェクトのペア |
-  | `frame_ground_truth` |            `FrameGroundTruth`             | 1 フレーム分の GT オブジェクト           |
-  | `metrics_score`      |              `MetricsScore`               | メトリクス評価結果                       |
-  | `pass_fail_result`   |             `PassFailResult`              | Pass/Fail 結果                           |
+  | Attributes           |                   type                    | Description                               |
+  | :------------------- | :---------------------------------------: | :---------------------------------------- |
+  | `frame_name`         |                   `str`                   | フレーム名                                |
+  | `unix_time`          |                   `int`                   | フレームの UNIX Time                      |
+  | `frame_id`           |                 `FrameID`                 | オブジェクト座標系 FrameID のインスタンス |
+  | `target_labels`      |             `List[LabelType]`             | 評価対象ラベル                            |
+  | `object_results`     | `List[DynamicObjectWithPerceptionResult]` | 推定オブジェクトと GT オブジェクトのペア  |
+  | `frame_ground_truth` |            `FrameGroundTruth`             | 1 フレーム分の GT オブジェクト            |
+  | `metrics_score`      |              `MetricsScore`               | メトリクス評価結果                        |
+  | `pass_fail_result`   |             `PassFailResult`              | Pass/Fail 結果                            |
 
 - Methods
 
@@ -68,8 +68,8 @@
 
 - metrics_score (MetricsScore): Metrics 評価
 - pass_fail_result (PassFailResult): Use case 評価の結果
-  - tp_objects (List[DynamicObjectWithPerceptionResult]): Use case 評価で TP (True Positive) の ObjectResult
-  - fp_objects (List[DynamicObjectWithPerceptionResult]): Use case 評価で FP (False Positive) の ObjectResult
+  - tp_object_results (List[DynamicObjectWithPerceptionResult]): Use case 評価で TP (True Positive) の ObjectResult
+  - fp_object_results (List[DynamicObjectWithPerceptionResult]): Use case 評価で FP (False Positive) の ObjectResult
   - fn_objects (List[ObjectType]): Use case 評価で FN (False Negative) の DynamicObject
 
 ```yaml
@@ -119,12 +119,12 @@
                                                         'target_uuids': None},
                       'ego2map': ' --- length of element 4 ---,',
                       'fn_objects': ' --- length of element 17 ---,',
-                      'fp_objects_result': ' --- length of element 17 ---,',
+                      'fp_object_results': ' --- length of element 17 ---,',
                       'frame_id': 'map',
                       'frame_pass_fail_config': {'confidence_threshold_list': None,
                                                  'matching_threshold_list': ' --- length of element 4 ---,',
                                                  'target_labels': ' --- length of element 4 ---,'},
-                      'tp_objects': ' --- length of element 22 ---,'},
+                      'tp_object_results': ' --- length of element 22 ---,'},
  'target_labels': ' --- length of element 4 ---,',
  'unix_time': 1624164470849887}
 ```

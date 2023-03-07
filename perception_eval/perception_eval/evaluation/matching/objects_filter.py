@@ -236,8 +236,8 @@ def divide_tp_fp_objects(
         List[DynamicObjectWithPerceptionResult]]: FP object results.
     """
 
-    tp_objects: List[DynamicObjectWithPerceptionResult] = []
-    fp_objects: List[DynamicObjectWithPerceptionResult] = []
+    tp_object_results: List[DynamicObjectWithPerceptionResult] = []
+    fp_object_results: List[DynamicObjectWithPerceptionResult] = []
     for object_result in object_results:
         matching_threshold_: Optional[float] = get_label_threshold(
             semantic_label=object_result.estimated_object.semantic_label,
@@ -268,16 +268,16 @@ def divide_tp_fp_objects(
             is_correct = is_correct and is_confidence
 
         if is_correct:
-            tp_objects.append(object_result)
+            tp_object_results.append(object_result)
         else:
-            fp_objects.append(object_result)
-    return tp_objects, fp_objects
+            fp_object_results.append(object_result)
+    return tp_object_results, fp_object_results
 
 
 def get_fn_objects(
     ground_truth_objects: List[ObjectType],
-    object_results: Optional[List[DynamicObjectWithPerceptionResult]],
-    tp_objects: Optional[List[DynamicObjectWithPerceptionResult]],
+    object_results: List[DynamicObjectWithPerceptionResult],
+    tp_object_results: List[DynamicObjectWithPerceptionResult],
 ) -> List[ObjectType]:
     """Get FN (False Negative) objects from ground truth objects by using object result.
 
@@ -286,21 +286,17 @@ def get_fn_objects(
     Args:
         ground_truth_objects (List[ObjectType]): Ground truth objects list.
         object_results (Optional[List[DynamicObjectWithPerceptionResult]]): Object results list.
-        tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results list in object results.
+        tp_object_results (Optional[List[DynamicObjectWithPerceptionResult]]): TP results list in object results.
 
     Returns:
         List[ObjectType]: FN (False Negative) objects list.
     """
-
-    if object_results is None:
-        return ground_truth_objects
-
     fn_objects: List[ObjectType] = []
     for ground_truth_object in ground_truth_objects:
         is_fn_object: bool = _is_fn_object(
             ground_truth_object=ground_truth_object,
             object_results=object_results,
-            tp_objects=tp_objects,
+            tp_object_results=tp_object_results,
         )
         if is_fn_object:
             fn_objects.append(ground_truth_object)
@@ -310,21 +306,23 @@ def get_fn_objects(
 def _is_fn_object(
     ground_truth_object: ObjectType,
     object_results: List[DynamicObjectWithPerceptionResult],
-    tp_objects: List[DynamicObjectWithPerceptionResult],
+    tp_object_results: List[DynamicObjectWithPerceptionResult],
 ) -> bool:
     """Judge whether ground truth object is FN (False Negative) object.
 
     Args:
         ground_truth_object (ObjectType): Ground truth object.
         object_results (List[DynamicObjectWithPerceptionResult]): object results list.
-        tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results list in object results.
+        tp_object_results (List[DynamicObjectWithPerceptionResult]): TP results list in object results.
 
     Returns:
         bool: Whether ground truth object is FN (False Negative) object.
     """
-
     for object_result in object_results:
-        if ground_truth_object == object_result.ground_truth_object and object_result in tp_objects:
+        if (
+            ground_truth_object == object_result.ground_truth_object
+            and object_result in tp_object_results
+        ):
             return False
     return True
 

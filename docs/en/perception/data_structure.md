@@ -55,8 +55,8 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
 
 - metrics_score (MetricsScore): Score of metrics result
 - pass_fail_result (PassFailResult): Result of usecase evaluation
-  - tp_objects (List[DynamicObjectWithPerceptionResult]): TP results in usecase evaluation
-  - fp_objects (List[DynamicObjectWithPerceptionResult]): TP results in usecase evaluation
+  - tp_object_results (List[DynamicObjectWithPerceptionResult]): TP results in usecase evaluation
+  - fp_object_results (List[DynamicObjectWithPerceptionResult]): FP results in usecase evaluation
   - fn_objects (List[ObjectType]): FN objects in usecase evaluation
 
 ```yaml
@@ -106,12 +106,12 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
                                                         'target_uuids': None},
                       'ego2map': ' --- length of element 4 ---,',
                       'fn_objects': ' --- length of element 17 ---,',
-                      'fp_objects_result': ' --- length of element 17 ---,',
+                      'fp_object_results': ' --- length of element 17 ---,',
                       'frame_id': 'map',
                       'frame_pass_fail_config': {'confidence_threshold_list': None,
                                                  'matching_threshold_list': ' --- length of element 4 ---,',
                                                  'target_labels': ' --- length of element 4 ---,'},
-                      'tp_objects': ' --- length of element 22 ---,'},
+                      'tp_object_results': ' --- length of element 22 ---,'},
  'target_labels': ' --- length of element 4 ---,',
  'unix_time': 1624164470849887}
 ```
