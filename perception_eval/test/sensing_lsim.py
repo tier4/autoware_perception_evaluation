@@ -54,7 +54,7 @@ class SensingLSimMoc:
             merge_similar_labels=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
-            load_raw_data=False,
+            load_raw_data=True,
         )
 
         _ = configure_logger(
@@ -174,26 +174,22 @@ if __name__ == "__main__":
     non_detection_areas: List[List[Tuple[float, float, float]]] = [
         [
             # lower plane
-            (1.0, 1.0, 0.5),
-            (100.0, 1.0, 0.5),
-            (100.0, -1.0, 0.5),
-            (1.0, -1.0, 0.5),
+            (10.0, 1.5, 0.0),
+            (10, -1.5, 0.0),
+            (0.0, -1.5, 0.0),
+            (0.0, 1.5, 0.0),
             # upper plane
-            (1.0, 1.0, 2.0),
-            (100.0, 1.0, 2.0),
-            (100.0, -1.0, 2.0),
-            (1.0, -1.0, 2.0),
+            (10.0, 1.5, 4.0),
+            (10, -1.5, 4.0),
+            (0.0, -1.5, 4.0),
+            (0.0, 1.5, 4.0),
         ],
     ]
     num_frames = len(sensing_lsim.evaluator.ground_truth_frames)
-    pointcloud_frames = np.random.uniform(-100.0, 100.0, (num_frames, 1000, 3))
-    for ground_truth_frame, pointcloud in zip(
-        sensing_lsim.evaluator.ground_truth_frames,
-        pointcloud_frames,
-    ):
+    for ground_truth_frame in sensing_lsim.evaluator.ground_truth_frames:
         frame_result: SensingFrameResult = sensing_lsim.callback(
             ground_truth_frame.unix_time,
-            pointcloud,
+            ground_truth_frame.raw_data,
             non_detection_areas,
         )
 
@@ -211,6 +207,10 @@ if __name__ == "__main__":
         "Failed to be Non-detected pointcloud example (frame_results[0]): "
         f"{len(sensing_lsim.evaluator.frame_results[0].pointcloud_failed_non_detection)}"
     )
+
+    # Visualize all frame results
+    logging.info("Start visualizing sensing results")
+    sensing_lsim.evaluator.visualize_all()
 
     # Clean up tmpdir
     if args.use_tmpdir:

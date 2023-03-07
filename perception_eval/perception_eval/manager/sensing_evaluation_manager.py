@@ -25,6 +25,7 @@ from perception_eval.evaluation import SensingFrameResult
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
 from perception_eval.util.math import get_bbox_scale
+from perception_eval.visualization import SensingVisualizer
 
 from ._evaluation_manager_base import _EvaluationMangerBase
 
@@ -47,6 +48,11 @@ class SensingEvaluationManager(_EvaluationMangerBase):
     ) -> None:
         super().__init__(evaluation_config)
         self.frame_results: List[SensingFrameResult] = []
+        self.__visualizer = SensingVisualizer(self.evaluator_config)
+
+    @property
+    def visualizer(self) -> SensingVisualizer:
+        return self.__visualizer
 
     def add_frame_result(
         self,
@@ -78,17 +84,17 @@ class SensingEvaluationManager(_EvaluationMangerBase):
                 **self.metrics_params,
             )
 
-        ground_truth_objects: List[DynamicObject] = self._filter_objects(
-            ground_truth_now_frame,
-            sensing_frame_config,
-        )
-
         # Crop pointcloud for non-detection area
         pointcloud_for_non_detection: np.ndarray = self.crop_pointcloud(
-            ground_truth_objects=ground_truth_objects,
+            ground_truth_objects=ground_truth_now_frame.objects,
             pointcloud=pointcloud,
             non_detection_areas=non_detection_areas,
             ego2map=ground_truth_now_frame.ego2map,
+        )
+
+        ground_truth_objects: List[DynamicObject] = self._filter_objects(
+            ground_truth_now_frame,
+            sensing_frame_config,
         )
 
         result = SensingFrameResult(
