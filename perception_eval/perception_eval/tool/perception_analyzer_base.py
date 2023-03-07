@@ -342,6 +342,29 @@ class PerceptionAnalyzerBase(ABC):
 
         return df
 
+    def get_pair_results(
+        self,
+        df: Optional[pd.DataFrame] = None,
+    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Returns paired results, which means both the row of GT and estimation valid values.
+
+        Args:
+            df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
+
+        Returns:
+            pandas.DataFrame: GT DataFrame.
+            pandas.DataFrame: Estimation DataFrame.
+        """
+        if df is None:
+            df = self.df
+
+        gt_df = df.xs("ground_truth", level=1)
+        est_df = df.xs("estimation", level=1)
+        valid_idx = np.bitwise_and(~gt_df["status"].isnull(), ~est_df["status"].isnull())
+        gt_df = gt_df[valid_idx]
+        est_df = est_df[valid_idx]
+        return gt_df, est_df
+
     def get_scenes(self, df: Optional[pd.DataFrame] = None, **kwargs) -> np.ndarray:
         """Returns numpy array of unique scenes.
         Args:

@@ -93,6 +93,8 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         p_cfg: Dict[str, Any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
         eval_cfg_dict: Dict[str, Any] = p_cfg["evaluation_config_dict"]
 
+        label_prefix: str = "traffic_light" if "traffic_light" in camera_frame else "autoware"
+
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id=camera_frame,
@@ -100,6 +102,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
             load_raw_data=False,
+            label_prefix=label_prefix,
         )
 
         return cls(evaluation_config)
@@ -287,18 +290,13 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         Returns:
             pd.DataFrame: Confusion matrix.
         """
-        if df is None:
-            df = self.df
+        gt_df, est_df = self.get_pair_results(df)
 
-        est_indices: np.ndarray = (
-            self.get_estimation(df=df)["label"]
-            .apply(lambda label: self.target_labels.index(label))
-            .to_numpy()
-        )
         gt_indices: np.ndarray = (
-            self.get_ground_truth(df=df)["label"]
-            .apply(lambda label: self.target_labels.index(label))
-            .to_numpy()
+            gt_df["label"].apply(lambda label: self.target_labels.index(label)).to_numpy()
+        )
+        est_indices: np.ndarray = (
+            est_df["label"].apply(lambda label: self.target_labels.index(label)).to_numpy()
         )
 
         num_classes = len(self.target_labels)
