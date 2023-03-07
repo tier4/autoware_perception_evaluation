@@ -218,7 +218,7 @@ class PerceptionVisualizer3D:
         # Plot objects
         handles: List[Patch] = []
         axes = self.plot_objects(
-            objects=frame_result.pass_fail_result.tp_objects,
+            objects=frame_result.pass_fail_result.tp_object_results,
             is_ground_truth=False,
             axes=axes,
             label="TP est",
@@ -228,7 +228,7 @@ class PerceptionVisualizer3D:
         handles.append(Patch(color="blue", label="TP est"))
 
         axes = self.plot_objects(
-            objects=frame_result.pass_fail_result.tp_objects,
+            objects=frame_result.pass_fail_result.tp_object_results,
             is_ground_truth=True,
             axes=axes,
             label="TP GT",
@@ -238,7 +238,7 @@ class PerceptionVisualizer3D:
         handles.append(Patch(color="red", label="TP GT"))
 
         axes = self.plot_objects(
-            objects=frame_result.pass_fail_result.fp_objects_result,
+            objects=frame_result.pass_fail_result.fp_object_results,
             is_ground_truth=False,
             axes=axes,
             label="FP",

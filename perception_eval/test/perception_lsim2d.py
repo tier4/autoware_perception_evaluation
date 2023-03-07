@@ -139,8 +139,8 @@ class PerceptionLSimMoc:
         Frameごとの可視化
         """
         logging.info(
-            f"{len(frame_result.pass_fail_result.tp_objects)} TP objects, "
-            f"{len(frame_result.pass_fail_result.fp_objects_result)} FP objects, "
+            f"{len(frame_result.pass_fail_result.tp_object_results)} TP objects, "
+            f"{len(frame_result.pass_fail_result.fp_object_results)} FP objects, "
             f"{len(frame_result.pass_fail_result.fn_objects)} FN objects",
         )
 
