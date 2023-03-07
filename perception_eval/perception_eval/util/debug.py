@@ -19,6 +19,7 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
+from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
 from pyquaternion.quaternion import Quaternion
 
@@ -122,8 +123,7 @@ def get_objects_with_difference(
     is_confidence_with_distance: Optional[bool] = None,
     ego2map: Optional[np.ndarray] = None,
 ) -> List[DynamicObject]:
-    """[summary]
-    Get objects with distance and yaw difference for test.
+    """Get objects with distance and yaw difference for test.
 
     Args:
         ground_truth_objects (List[DynamicObject]):
@@ -187,4 +187,38 @@ def get_objects_with_difference(
         )
 
         output_objects.append(test_object_)
+    return output_objects
+
+
+def get_objects_with_difference2d(
+    objects: List[DynamicObject2D],
+    translate: Tuple[int, int],
+) -> List[DynamicObject2D]:
+    """Returns translated 2D objects.
+
+    Args:
+        objects (List[DynamicObject2D])
+        translate (Tuple[int, int]): Translation vector [tx, ty][px].
+
+    Returns:
+        List[DynamicObject2D]: List of translated objects.
+    """
+    output_objects: List[DynamicObject2D] = []
+    for object_ in objects:
+        offset_: Tuple[int, int] = (
+            object_.roi.offset[0] + translate[0],
+            object_.roi.offset[1] + translate[1],
+        )
+
+        output_objects.append(
+            DynamicObject2D(
+                unix_time=object_.unix_time,
+                frame_id=object_.frame_id,
+                semantic_score=object_.semantic_score,
+                semantic_label=object_.semantic_label,
+                roi=(*offset_, *object_.roi.size),
+                uuid=object_.uuid,
+                visibility=object_.visibility,
+            )
+        )
     return output_objects

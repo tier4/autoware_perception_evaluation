@@ -34,16 +34,16 @@ class MatchingMode(Enum):
     """[summary]
     The mode enum for matching algorithm.
 
-    CENTERDISTANCE: center distance in 3d
+    CENTERDISTANCE: center distance, for 3d use meter[m], 2d use pixel[px].
     IOU2D : IoU (Intersection over Union) in BEV (Bird Eye View) for 3D objects, pixel for 2D objects.
     IOU3D : IoU (Intersection over Union) in 3D
     PLANEDISTANCE: The plane distance
     """
 
-    CENTERDISTANCE = "Center Distance [m]"
+    CENTERDISTANCE = "Center Distance"
     IOU2D = "IoU 2D"
     IOU3D = "IoU 3D"
-    PLANEDISTANCE = "Plane Distance [m]"
+    PLANEDISTANCE = "Plane Distance"
 
     def __str__(self) -> str:
         return self.value
