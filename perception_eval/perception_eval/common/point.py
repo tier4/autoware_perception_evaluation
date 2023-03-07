@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from typing import List
+from typing import Sequence
 from typing import Tuple
 
 import numpy as np
@@ -72,7 +73,7 @@ def to_bev(point_1: np.ndarray) -> np.ndarray:
 
 def crop_pointcloud(
     pointcloud: np.ndarray,
-    area: List[Tuple[float, float, float]],
+    area: List[Sequence[float]],
     inside: bool = True,
 ) -> np.ndarray:
     """Crop pointcloud from (N, 3) to (M, 3) with Winding Number Algorithm.
@@ -81,12 +82,12 @@ def crop_pointcloud(
         Implement to support the case area min/max height is not constant.
 
     Args:
-        pointcloud (numpy.ndarray): The array of pointcloud, in shape (N, 3)
-        area (List[Tuple[float, float, float]]): The 3D-polygon area to be cropped.
+        pointcloud (numpy.ndarray): The array of pointcloud, in shape (N, C).
+        area (List[Sequence[float]): The 3D-polygon area to be cropped.
         inside (bool): Whether output inside pointcloud. Defaults to True.
 
     Returns:
-        numpy.ndarray: The  of cropped pointcloud, in shape (M, 3)
+        numpy.ndarray: The  of cropped pointcloud, in shape (M, C)
     """
     if pointcloud.ndim != 2 or pointcloud.shape[1] < 2:
         raise RuntimeError(
@@ -96,9 +97,6 @@ def crop_pointcloud(
         raise RuntimeError(
             f"The area must be a 3D-polygon, it needs the edges more than 6, but got {len(area)}."
         )
-
-    z_min: float = min(area, key=(lambda x: x[2]))[2]
-    z_max: float = max(area, key=(lambda x: x[2]))[2]
 
     # crop with polygon in xy-plane
     num_vertices = len(area) // 2
@@ -123,13 +121,22 @@ def crop_pointcloud(
         cnt_arr_[incremental_flags] += 1
         cnt_arr_[decremental_flags] -= 1
 
+    xy_idx: np.ndarray = 0 < cnt_arr_ if inside else cnt_arr_ <= 0
+
+    if pointcloud.shape[1] < 3:
+        return pointcloud[xy_idx]
+
+    z_min: float = min(area, key=(lambda x: x[2]))[2]
+    z_max: float = max(area, key=(lambda x: x[2]))[2]
+
     if inside:
-        xy_idx: np.ndarray = 0 < cnt_arr_
-        z_idx: np.ndarray = (z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2])
+        z_idx: np.ndarray = np.bitwise_and((z_min <= pointcloud[:, 2]), (pointcloud[:, 2] <= z_max))
+        idx: np.ndarray = np.bitwise_and(xy_idx, z_idx)
     else:
-        xy_idx: np.ndarray = cnt_arr_ <= 0
-        z_idx: np.ndarray = ~((z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2]))
-    return pointcloud[xy_idx * z_idx]
+        z_idx: np.ndarray = np.bitwise_or((pointcloud[:, 2] < z_min), (z_max < pointcloud[:, 2]))
+        idx = np.bitwise_or(xy_idx, z_idx)
+
+    return pointcloud[idx]
 
 
 def polygon_to_list(polygon: Polygon):
