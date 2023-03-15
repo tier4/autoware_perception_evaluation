@@ -110,7 +110,11 @@ class _EvaluationConfigBase(ABC):
             os.makedirs(self.visualization_directory)
 
         # Labels
-        self.label_converter = LabelConverter(merge_similar_labels, label_prefix)
+        self.label_converter = LabelConverter(
+            self.evaluation_task,
+            merge_similar_labels,
+            label_prefix,
+        )
 
     @property
     def support_tasks(self) -> List[str]:

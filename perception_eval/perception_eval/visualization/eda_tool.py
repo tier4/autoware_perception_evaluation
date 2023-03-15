@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pandas_profiling as pdp
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
@@ -416,6 +417,7 @@ class EDAManager:
         xylim_dict: Dict[str, List[float]],
         width_lim_dict: Dict[str, List[float]],
         length_lim_dict: Dict[str, List[float]],
+        evaluation_task: EvaluationTask,
         merge_similar_labels: bool = False,
         label_prefix: str = "autoware",
         show: bool = False,
@@ -442,6 +444,7 @@ class EDAManager:
         self.width_lim_dict = width_lim_dict
         self.length_lim_dict = length_lim_dict
         self.label_converter = LabelConverter(
+            evaluation_task=evaluation_task,
             merge_similar_labels=merge_similar_labels,
             label_prefix=label_prefix,
         )

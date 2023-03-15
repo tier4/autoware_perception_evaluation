@@ -20,6 +20,7 @@ from typing import Dict
 from typing import List
 from typing import Union
 
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.status import FrameID
@@ -420,6 +421,7 @@ class TestEDAManager:
         xylim_dict,
         width_lim_dict,
         length_lim_dict,
+        evaluation_task=EvaluationTask.DETECTION,
         merge_similar_labels=False,
         show=False,
     )
