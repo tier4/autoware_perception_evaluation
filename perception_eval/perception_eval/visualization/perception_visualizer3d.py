@@ -205,7 +205,7 @@ class PerceptionVisualizer3D:
             axes: Axes = plt.subplot()
 
         frame_number: str = frame_result.frame_ground_truth.frame_name
-        axes.set_title(f"Frame: {frame_number} ({self.config.frame_id.value})")
+        axes.set_title(f"Frame: {frame_number} ({self.config.frame_ids[0].value})")
         axes.set_xlabel("x [m]")
         axes.set_ylabel("y [m]")
 
@@ -213,6 +213,10 @@ class PerceptionVisualizer3D:
         axes = self._plot_ego(
             ego2map=frame_result.frame_ground_truth.ego2map,
             axes=axes,
+        )
+
+        pointcloud: Optional[np.ndarray] = (
+            frame_result.frame_ground_truth.raw_data["lidar"] if self.config.load_raw_data else None
         )
 
         # Plot objects
@@ -223,7 +227,7 @@ class PerceptionVisualizer3D:
             axes=axes,
             label="TP est",
             color="blue",
-            pointcloud=frame_result.frame_ground_truth.raw_data,
+            pointcloud=pointcloud,
         )
         handles.append(Patch(color="blue", label="TP est"))
 
@@ -233,7 +237,7 @@ class PerceptionVisualizer3D:
             axes=axes,
             label="TP GT",
             color="red",
-            pointcloud=frame_result.frame_ground_truth.raw_data,
+            pointcloud=pointcloud,
         )
         handles.append(Patch(color="red", label="TP GT"))
 
@@ -243,7 +247,7 @@ class PerceptionVisualizer3D:
             axes=axes,
             label="FP",
             color="cyan",
-            pointcloud=frame_result.frame_ground_truth.raw_data,
+            pointcloud=pointcloud,
         )
         handles.append(Patch(color="cyan", label="FP"))
 
@@ -253,7 +257,7 @@ class PerceptionVisualizer3D:
             axes=axes,
             label="FN",
             color="orange",
-            pointcloud=frame_result.frame_ground_truth.raw_data,
+            pointcloud=pointcloud,
         )
         handles.append(Patch(color="orange", label="FN"))
 
@@ -293,7 +297,9 @@ class PerceptionVisualizer3D:
 
         ego_color: np.ndarray = self.__cmap.get_simple("black")
         ego_xy: np.ndarray = (
-            np.array((0.0, 0.0)) if self.config.frame_id == FrameID.BASE_LINK else ego2map[:2, 3]
+            np.array((0.0, 0.0))
+            if self.config.frame_ids[0] == FrameID.BASE_LINK
+            else ego2map[:2, 3]
         )
         box_width: float = size[0]
         box_height: float = size[1]
@@ -304,7 +310,7 @@ class PerceptionVisualizer3D:
         box_bottom_left: np.ndarray = ego_xy - (np.array(size) / 2.0)
         yaw: float = (
             0.0
-            if self.config.frame_id == FrameID.BASE_LINK
+            if self.config.frame_ids[0] == FrameID.BASE_LINK
             else rotation_matrix_to_euler(ego2map[:3, :3])[2]
         )
 

@@ -88,13 +88,11 @@ def _sample_to_frame(
     lidar_path, object_boxes, ego2map = _get_sample_boxes(nusc, frame_data, frame_id)
 
     # pointcloud
+    raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
     if load_raw_data:
         assert lidar_path.endswith(".bin"), f"Error: Unsupported filetype {lidar_path}"
         pointcloud: np.ndarray = np.fromfile(lidar_path, dtype=np.float32)
-        raw_data = pointcloud.reshape(-1, 5)[:, :4]
-
-    else:
-        raw_data = None
+        raw_data["lidar"] = pointcloud.reshape(-1, 5)[:, :4]
 
     objects_: List[DynamicObject] = []
 
@@ -362,7 +360,7 @@ def _sample_to_frame_2d(
     sample_token: Union[FrameID, Sequence[FrameID]],
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
-    frame_id: FrameID,
+    frame_ids: List[FrameID],
     frame_name: str,
     load_raw_data: bool,
 ) -> dataset.FrameGroundTruth:
@@ -374,7 +372,7 @@ def _sample_to_frame_2d(
         sample_token (str): Sample token.
         evaluation_task (EvaluationTask): 2D evaluation Task.
         label_converter (LabelConverter): LabelConverter instance.
-        frame_id (FrameID): FrameID instance, where 2D objects are with respect, related to CAM_**.
+        frame_ids (List[FrameID]): List of FrameID instances, where 2D objects are with respect, related to CAM_**.
         frame_name (str): Name of frame.
         load_raw_data (bool): The flag to load image data.
 
@@ -386,17 +384,23 @@ def _sample_to_frame_2d(
 
     unix_time: int = sample["timestamp"]
 
-    frame_ids = [frame_id] if isinstance(frame_id, FrameID) else frame_id
     sample_data_tokens: List[str] = []
     frame_id_mapping: Dict[str, FrameID] = {}
-    raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
     for frame_id_ in frame_ids:
         camera_type: str = frame_id_.value.upper()
         sample_data_token = nusc_sample["data"][camera_type]
+        sample_data_tokens.append(sample_data_token)
         frame_id_mapping[sample_data_token] = frame_id_
-        if load_raw_data:
-            img_path: str = nusc.get_sample_data_path(sample_data_token)
-            raw_data[str(frame_id_)] = np.array(Image.open(img_path), dtype=np.uint8)
+
+    raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
+    if load_raw_data:
+        for sensor_name in nusc_sample["data"]:
+            if label_converter.label_type == TrafficLightLabel and "TRAFFIC_LIGHT" in sensor_name:
+                img_path: str = nusc.get_sample_data_path(sensor_name)
+                raw_data[sensor_name.lower()] = np.array(Image.open(img_path), dtype=np.uint8)
+            elif "CAM" in sensor_name and "TRAFFIC_LIGHT" not in sensor_name:
+                img_path: str = nusc.get_sample_data_path(sensor_name)
+                raw_data[sensor_name.lower()] = np.array(Image.open(img_path), dtype=np.uint8)
 
     object_annotations: List[Dict[str, Any]] = [
         ann for ann in nuim.object_ann if ann["sample_data_token"] in sample_data_tokens

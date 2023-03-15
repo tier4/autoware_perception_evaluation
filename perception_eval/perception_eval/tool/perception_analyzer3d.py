@@ -231,7 +231,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             else:
                 gt_vx, gt_vy = None, None
 
-            if self.config.frame_id == "map":
+            if self.config.frame_ids[0] == "map":
                 src: np.ndarray = get_pose_transform_matrix(
                     position=gt.state.position,
                     rotation=gt.state.orientation.rotation_matrix,
@@ -278,7 +278,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             else:
                 est_vx, est_vy = None, None
 
-            if self.config.frame_id == "map":
+            if self.config.frame_ids[0] == "map":
                 src: np.ndarray = get_pose_transform_matrix(
                     position=estimation.state.position,
                     rotation=estimation.state.orientation.rotation_matrix,

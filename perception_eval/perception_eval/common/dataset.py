@@ -14,6 +14,7 @@
 
 import logging
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Sequence
@@ -55,7 +56,7 @@ class FrameGroundTruth:
         objects (List[DynamicObject]): Objects data.
         ego2map (Optional[np.ndarray]): The array of 4x4 matrix.
             Transform position with respect to vehicle coord system to map one.
-        raw_data (Optional[numpy.ndarray]): Raw data for each sensor modality.
+        raw_data (Optional[Dict[str, numpy.ndarray]]): Raw data for each sensor modality.
     """
 
     def __init__(
@@ -64,13 +65,13 @@ class FrameGroundTruth:
         frame_name: str,
         objects: List[DynamicObject],
         ego2map: Optional[np.ndarray] = None,
-        raw_data: Optional[np.ndarray] = None,
+        raw_data: Optional[Dict[str, np.ndarray]] = None,
     ) -> None:
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
         self.objects: List[ObjectType] = objects
         self.ego2map: Optional[np.ndarray] = ego2map
-        self.raw_data: Optional[np.ndarray] = raw_data
+        self.raw_data: Optional[Dict[str, np.ndarray]] = raw_data
 
 
 def load_all_datasets(
@@ -105,6 +106,13 @@ def load_all_datasets(
         f"config: load_raw_data: {load_raw_data}, evaluation_task: {evaluation_task}, frame_id: {frame_id}"
     )
 
+    if isinstance(frame_id, FrameID):
+        frame_ids: List[FrameID] = [frame_id]
+    elif isinstance(frame_id, (list, tuple)):
+        frame_ids = list(frame_id)
+    else:
+        raise TypeError(f"Unexpected frame id type: {type(frame_id)}")
+
     all_datasets: List[FrameGroundTruth] = []
 
     for dataset_path in dataset_paths:
@@ -112,7 +120,7 @@ def load_all_datasets(
             dataset_path=dataset_path,
             evaluation_task=evaluation_task,
             label_converter=label_converter,
-            frame_id=frame_id,
+            frame_ids=frame_ids,
             load_raw_data=load_raw_data,
         )
     logging.info("Finish loading dataset\n" + _get_str_objects_number_info(label_converter))
@@ -123,7 +131,7 @@ def _load_dataset(
     dataset_path: str,
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
-    frame_id: Union[FrameID, Sequence[FrameID]],
+    frame_ids: List[FrameID],
     load_raw_data: bool,
 ) -> List[FrameGroundTruth]:
     """
@@ -132,7 +140,7 @@ def _load_dataset(
         dataset_path (str): The root path to dataset.
         evaluation_tasks (EvaluationTask): The evaluation task.
         label_converter (LabelConverter): LabelConvertor instance.
-        frame_id (Union[FrameID, Sequence[FrameID]]): FrameID instance, where objects are with respect.
+        frame_ids (List[FrameID]): FrameID instance, where objects are with respect.
         load_raw_data (bool): Whether load pointcloud/image data.
 
     Reference
@@ -167,23 +175,21 @@ def _load_dataset(
                 sample_token=sample_token,
                 evaluation_task=evaluation_task,
                 label_converter=label_converter,
-                frame_id=frame_id,
+                frame_ids=frame_ids,
                 frame_name=str(n),
                 load_raw_data=load_raw_data,
             )
         else:
-            if isinstance(frame_id, (list, tuple)):
-                assert (
-                    len(frame_id) == 1
-                ), f"For 3D evaluation, only one Frame ID must be specified, but got {frame_id}"
-                frame_id = frame_id[0]
+            assert (
+                len(frame_ids) == 1
+            ), f"For 3D evaluation, only one Frame ID must be specified, but got {frame_ids}"
             frame = _sample_to_frame(
                 nusc=nusc,
                 helper=helper,
                 sample_token=sample_token,
                 evaluation_task=evaluation_task,
                 label_converter=label_converter,
-                frame_id=frame_id,
+                frame_id=frame_ids[0],
                 frame_name=str(n),
                 load_raw_data=load_raw_data,
             )

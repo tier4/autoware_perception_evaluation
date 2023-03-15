@@ -23,11 +23,15 @@ from typing import Union
 
 import cv2
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 from perception_eval.common.evaluation_task import EvaluationTask
+from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
@@ -37,6 +41,8 @@ from PIL import Image
 from PIL.Image import Image as PILImage
 from tqdm import tqdm
 import yaml
+
+AxesArray = npt.ArrayLike[npt.DTypeLike[Axes]]
 
 
 class PerceptionVisualizer2D:
@@ -59,8 +65,9 @@ class PerceptionVisualizer2D:
         self.__config: PerceptionEvaluationConfig = config
         self.__cmap: ColorMap = ColorMap(rgb=True)
         self.__figsize = (figsize[0] / 100.0, figsize[1] / 100.0)
-        self.__figure, self.__axes = plt.subplots(figsize=self.__figsize)
         self.__animation_frames: List[PILImage] = []
+
+        self.__figure, self.__axes = self.init_figure()
 
     @classmethod
     def from_scenario(
@@ -98,6 +105,30 @@ class PerceptionVisualizer2D:
 
         return cls(evaluation_config, **kwargs)
 
+    def init_figure(self) -> Tuple[Figure, AxesArray]:
+        """Initialize figure and axes."""
+
+        self.label_type: Union[
+            AutowareLabel, TrafficLightLabel
+        ] = self.__config.label_converter.label_type
+
+        if isinstance(self.label_type, TrafficLightLabel):
+            self.camera_names: List[str] = ["cam_traffic_light_near", "cam_traffic_light_far"]
+            fig, axes = plt.subplots(1, 2, figsize=self.__figsize, tight_layout=True)
+        elif isinstance(self.label_type, AutowareLabel):
+            self.camera_names: List[str] = [
+                "cam_front_left",
+                "cam_front",
+                "cam_front_right",
+                "cam_back_left",
+                "cam_back",
+                "cam_back_right",
+            ]
+            fig, axes = plt.subplots(2, 3, figsize=self.__figsize, tight_layout=True)
+        else:
+            raise TypeError(f"Unexpected label type: {self.label_type}")
+        return fig, axes
+
     @property
     def config(self) -> PerceptionEvaluationConfig:
         return self.__config
@@ -120,7 +151,7 @@ class PerceptionVisualizer2D:
             self.__tracked_paths = {}
 
         for frame_result_ in tqdm(frame_results, desc="Visualize results for each frame"):
-            self.__axes: Axes = self.visualize_frame(
+            self.__axes: AxesArray = self.visualize_frame(
                 frame_result=frame_result_,
                 axes=self.__axes,
             )
@@ -147,11 +178,20 @@ class PerceptionVisualizer2D:
         self.__figure.set_figheight(height)
         self.__figsize = (width, height)
 
+    def __get_axes_idx(self, key: str) -> Tuple[int, int]:
+        i: int = self.camera_names.index(key)
+        row, col = (
+            (0, i)
+            if isinstance(self.label_type, TrafficLightLabel)
+            else (i // 3, i - (3 * (i // 3))),
+        )
+        return row, col
+
     def visualize_frame(
         self,
         frame_result: PerceptionFrameResult,
-        axes: Optional[Axes] = None,
-    ) -> Axes:
+        axes: Optional[AxesArray] = None,
+    ) -> AxesArray:
         """Visualize a frame result on image.
 
         Color:
@@ -165,17 +205,25 @@ class PerceptionVisualizer2D:
             axes (Optional[Axes]): The Axes instance. Defaults to None.
         """
         if axes is None:
-            axes: Axes = plt.subplot()
-
-        axes.set_axis_off()
+            fig, axes = self.init_figure()
 
         if frame_result.frame_ground_truth.raw_data is None:
             raise RuntimeError("`raw_data`: must be loaded.")
         else:
-            axes.imshow(frame_result.frame_ground_truth.raw_data)
+            for i, camera_name in enumerate(self.camera_names):
+                img: np.ndarray = frame_result.frame_ground_truth.raw_data[camera_name]
+                row, col = (
+                    (0, i)
+                    if isinstance(self.label_type, TrafficLightLabel)
+                    else (i // 3, i - (3 * (i // 3))),
+                )
+                axes[row, col].imshow(img)
+                axes[row, col].set_axis_off()
 
         frame_number: str = frame_result.frame_ground_truth.frame_name
-        axes.set_title(f"Frame: {frame_number} ({self.config.frame_id.value})")
+        axes.title(
+            f"Frame: {frame_number} ({[frame_id.value for frame_id in self.config.frame_ids]})"
+        )
 
         # Plot objects
         handles: List[Patch] = []
@@ -211,7 +259,7 @@ class PerceptionVisualizer2D:
         )
         handles.append(Patch(color="orange", label="FN"))
 
-        axes.legend(
+        plt.legend(
             handles=handles,
             bbox_to_anchor=(1.1, 1.1),
             loc="upper right",
@@ -230,9 +278,9 @@ class PerceptionVisualizer2D:
         self,
         objects: List[Union[DynamicObject2D, DynamicObjectWithPerceptionResult]],
         is_ground_truth: bool,
-        axes: Optional[Axes] = None,
+        axes: Optional[AxesArray] = None,
         color: Optional[str] = None,
-    ) -> Axes:
+    ) -> AxesArray:
         """Plot objects on image.
 
         ```
@@ -254,7 +302,7 @@ class PerceptionVisualizer2D:
             axes (Axes): The Axes instance.
         """
         if axes is None:
-            axes: Axes = plt.subplot()
+            _, axes = self.init_figure()
 
         color: str = "red" if color is None else color
         edge_color = self.__cmap.get_simple(color)
@@ -281,8 +329,9 @@ class PerceptionVisualizer2D:
                 fill=False,
                 label=box_text,
             )
-            axes.add_patch(box)
-            axes.text(*box_bottom_left, s=box_text, fontsize="x-small", color=edge_color)
+            row, col = self.__get_axes_idx(object_.frame_id.value)
+            axes[row, col].add_patch(box)
+            axes[row, col].text(*box_bottom_left, s=box_text, fontsize="x-small", color=edge_color)
 
         return axes
 
