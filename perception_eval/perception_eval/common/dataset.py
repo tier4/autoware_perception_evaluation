@@ -97,8 +97,9 @@ def load_all_datasets(
         List[FrameGroundTruth]: FrameGroundTruth instance list.
 
     Examples:
-        >>> converter = LabelConverter(False, "autoware")
-        >>> load_all_datasets(["./data"], EvaluationTask.DETECTION, converter, "base_link")
+        >>> evaluation_task = EvaluationTask.DETECTION
+        >>> converter = LabelConverter(evaluation_task, False, "autoware")
+        >>> load_all_datasets(["./data"], evaluation_task, converter, "base_link")
         [<perception_eval.common.dataset.FrameGroundTruth object at 0x7f66040c36a0>, ...]
     """
     logging.info(f"Start to load dataset {dataset_paths}")

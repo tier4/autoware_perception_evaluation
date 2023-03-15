@@ -22,6 +22,8 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
+from perception_eval.common.evaluation_task import EvaluationTask
+
 
 class LabelBase(Enum):
     def __str__(self) -> str:
@@ -119,6 +121,10 @@ class AutowareLabel(LabelBase):
 
 
 class TrafficLightLabel(LabelBase):
+    # except of classification
+    TRAFFIC_LIGHT = "traffic_light"
+
+    # classification
     GREEN = "green"
     RED = "red"
     YELLOW = "yellow"
@@ -130,24 +136,43 @@ class TrafficLightLabel(LabelBase):
     RED_RIGHT_STRAIGHT = "red_right_straight"
     RED_RIGHT_DIAGONAL = "red_right_diagonal"
     YELLOW_RIGHT = "yellow_right"
+
+    # unknown is used in both detection and classification
     UNKNOWN = "unknown"
 
     @staticmethod
-    def get_pairs() -> List[Tuple[TrafficLightLabel, str]]:
-        pair_list: List[Tuple[TrafficLightLabel, str]] = [
-            (TrafficLightLabel.GREEN, "green"),
-            (TrafficLightLabel.RED, "red"),
-            (TrafficLightLabel.YELLOW, "yellow"),
-            (TrafficLightLabel.RED_STRAIGHT, "red_straight"),
-            (TrafficLightLabel.RED_LEFT, "red_left"),
-            (TrafficLightLabel.RED_LEFT_STRAIGHT, "red_left_straight"),
-            (TrafficLightLabel.RED_LEFT_DIAGONAL, "red_left_diagonal"),
-            (TrafficLightLabel.RED_RIGHT, "red_right"),
-            (TrafficLightLabel.RED_RIGHT_STRAIGHT, "red_right_straight"),
-            (TrafficLightLabel.RED_RIGHT_DIAGONAL, "red_right_diagonal"),
-            (TrafficLightLabel.YELLOW_RIGHT, "yellow_right"),
-            (TrafficLightLabel.UNKNOWN, "unknown"),
-        ]
+    def get_pairs(evaluation_task: EvaluationTask) -> List[Tuple[TrafficLightLabel, str]]:
+        if evaluation_task == EvaluationTask.CLASSIFICATION2D:
+            pair_list: List[Tuple[TrafficLightLabel, str]] = [
+                (TrafficLightLabel.GREEN, "green"),
+                (TrafficLightLabel.RED, "red"),
+                (TrafficLightLabel.YELLOW, "yellow"),
+                (TrafficLightLabel.RED_STRAIGHT, "red_straight"),
+                (TrafficLightLabel.RED_LEFT, "red_left"),
+                (TrafficLightLabel.RED_LEFT_STRAIGHT, "red_left_straight"),
+                (TrafficLightLabel.RED_LEFT_DIAGONAL, "red_left_diagonal"),
+                (TrafficLightLabel.RED_RIGHT, "red_right"),
+                (TrafficLightLabel.RED_RIGHT_STRAIGHT, "red_right_straight"),
+                (TrafficLightLabel.RED_RIGHT_DIAGONAL, "red_right_diagonal"),
+                (TrafficLightLabel.YELLOW_RIGHT, "yellow_right"),
+                (TrafficLightLabel.UNKNOWN, "unknown"),
+            ]
+        else:
+            pair_list: List[Tuple[TrafficLightLabel, str]] = [
+                (TrafficLightLabel.TRAFFIC_LIGHT, "traffic_light"),
+                (TrafficLightLabel.TRAFFIC_LIGHT, "green"),
+                (TrafficLightLabel.TRAFFIC_LIGHT, "red"),
+                (TrafficLightLabel.TRAFFIC_LIGHT, "yellow"),
+                (TrafficLightLabel.TRAFFIC_LIGHT, "red_straight"),
+                (TrafficLightLabel.TRAFFIC_LIGHT, "red_left"),
+                (TrafficLightLabel.TRAFFIC_LIGHT, "red_left_straight"),
+                (TrafficLightLabel.TRAFFIC_LIGHT, "red_left_diagonal"),
+                (TrafficLightLabel.TRAFFIC_LIGHT, "red_right"),
+                (TrafficLightLabel.TRAFFIC_LIGHT, "red_right_straight"),
+                (TrafficLightLabel.TRAFFIC_LIGHT, "red_right_diagonal"),
+                (TrafficLightLabel.TRAFFIC_LIGHT, "yellow_right"),
+                (TrafficLightLabel.UNKNOWN, "unknown"),
+            ]
         return pair_list
 
 
@@ -174,10 +199,12 @@ class LabelConverter:
     """A class to convert string label name to LabelType instance.
 
     Attributes:
-        self.labels (List[LabelInfo]): The list of label to convert.
-        self.label_type (LabelType): This is determined by `label_prefix`.
+        evaluation_task (EvaluationTask): EvaluationTask instance.
+        labels (List[LabelInfo]): The list of label to convert.
+        label_type (LabelType): This is determined by `label_prefix`.
 
     Args:
+        evaluation_task (EvaluationTask): EvaluationTask instance.
         merge_similar_labels (bool): Whether merge similar labels.
             If True,
                 - BUS, TRUCK, TRAILER -> CAR
@@ -189,7 +216,19 @@ class LabelConverter:
         ValueError: When unexpected prefix is specified.
     """
 
-    def __init__(self, merge_similar_labels: bool, label_prefix: str = "autoware") -> None:
+    def __init__(
+        self,
+        evaluation_task: Union[str, EvaluationTask],
+        merge_similar_labels: bool,
+        label_prefix: str = "autoware",
+    ) -> None:
+
+        self.evaluation_task: EvaluationTask = (
+            evaluation_task
+            if isinstance(evaluation_task, EvaluationTask)
+            else EvaluationTask.from_value(evaluation_task)
+        )
+
         if label_prefix == "autoware":
             self.label_type = AutowareLabel
             pair_list: List[Tuple[AutowareLabel, str]] = AutowareLabel.get_pairs(
@@ -197,7 +236,9 @@ class LabelConverter:
             )
         elif label_prefix == "traffic_light":
             self.label_type = TrafficLightLabel
-            pair_list: List[Tuple[TrafficLightLabel, str]] = TrafficLightLabel.get_pairs()
+            pair_list: List[Tuple[TrafficLightLabel, str]] = TrafficLightLabel.get_pairs(
+                evaluation_task=evaluation_task
+            )
         elif label_prefix in ("blinker", "brake_lamp"):
             raise NotImplementedError(f"{label_prefix} is under construction.")
         else:
@@ -223,7 +264,7 @@ class LabelConverter:
             LabelType: Converted label.
 
         Examples:
-            >>> converter = LabelConverter(False, "autoware")
+            >>> converter = LabelConverter(EvaluationTask.DETECTION, False, "autoware")
             >>> converter.convert_label("car")
             <AutowareLabel.CAR: 'car'>
         """
