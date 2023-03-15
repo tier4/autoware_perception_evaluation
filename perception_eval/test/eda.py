@@ -101,10 +101,15 @@ def get_all_ground_truths(dataset_paths: List[str]) -> List[DynamicObject]:
         all_ground_truths (List[DynamicObject]): all ground truth objects
 
     """
+    evaluation_task = EvaluationTask.DETECTION
     frame_results: List[FrameGroundTruth] = load_all_datasets(
         dataset_paths,
-        evaluation_task=EvaluationTask.DETECTION,
-        label_converter=LabelConverter(merge_similar_labels=False),
+        evaluation_task=evaluation_task,
+        label_converter=LabelConverter(
+            evaluation_task,
+            merge_similar_labels=False,
+            label_prefix="autoware",
+        ),
         frame_id=FrameID.BASE_LINK,
     )
     all_ground_truths: List[DynamicObject] = []
