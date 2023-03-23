@@ -6,6 +6,31 @@
 
 ## Release for main branch
 
+### v1.0.6
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/60>
+
+  - 【feat】traffic_lightのTrafficLightLabelクラスへの追加
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/50>
+
+  - 【feat】2D Analyzerの追加
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/51>
+
+  - 【refactor】PassFailResultのメンバ変数名の修正
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/55>
+
+  - 【fix】2D評価時にROIを指定しない場合にMatching Thresholdを指定した場合のバグの解消
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/46>
+
+  - 【fix】CenterDistance閾値の単位の[m]の削除
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/37>
+  - 【feat】2D perceptionおよびsensing可視化機能の追加3D perception可視化機能の更新
+
 ### v1.0.5
 
 - <https://github.com/tier4/autoware_perception_evaluation/pull/58>
