@@ -191,7 +191,7 @@ class PerceptionVisualizer2D:
         row, col = (
             (0, i)
             if isinstance(self.label_type, TrafficLightLabel)
-            else (i // 3, i - (3 * (i // 3))),
+            else (i // 3, i - (3 * (i // 3)))
         )
         return row, col
 
