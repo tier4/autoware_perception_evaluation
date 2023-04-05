@@ -394,12 +394,11 @@ def _sample_to_frame_2d(
 
     raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
     if load_raw_data:
-        for sensor_name in nusc_sample["data"]:
-            if label_converter.label_type == TrafficLightLabel and "TRAFFIC_LIGHT" in sensor_name:
-                img_path: str = nusc.get_sample_data_path(sensor_name)
-                raw_data[sensor_name.lower()] = np.array(Image.open(img_path), dtype=np.uint8)
-            elif "CAM" in sensor_name and "TRAFFIC_LIGHT" not in sensor_name:
-                img_path: str = nusc.get_sample_data_path(sensor_name)
+        for sensor_name, sample_data_token in nusc_sample["data"].items():
+            if (
+                label_converter.label_type == TrafficLightLabel and "TRAFFIC_LIGHT" in sensor_name
+            ) or ("CAM" in sensor_name and "TRAFFIC_LIGHT" not in sensor_name):
+                img_path: str = nusc.get_sample_data_path(sample_data_token)
                 raw_data[sensor_name.lower()] = np.array(Image.open(img_path), dtype=np.uint8)
 
     object_annotations: List[Dict[str, Any]] = [

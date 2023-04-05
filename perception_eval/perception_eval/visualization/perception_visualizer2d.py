@@ -22,13 +22,11 @@ from typing import Tuple
 from typing import Union
 
 import cv2
-from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import TrafficLightLabel
@@ -41,8 +39,6 @@ from PIL import Image
 from PIL.Image import Image as PILImage
 from tqdm import tqdm
 import yaml
-
-AxesArray = npt.ArrayLike[npt.DTypeLike[Axes]]
 
 
 class PerceptionVisualizer2D:
@@ -105,17 +101,22 @@ class PerceptionVisualizer2D:
 
         return cls(evaluation_config, **kwargs)
 
-    def init_figure(self) -> Tuple[Figure, AxesArray]:
-        """Initialize figure and axes."""
+    def init_figure(self) -> Tuple[Figure, np.ndarray]:
+        """Initialize figure and axes.
+
+        Returns:
+            Figure: Figure instance.
+            numpy.ndarray: NDArray of multiple Axes instances.
+        """
 
         self.label_type: Union[
             AutowareLabel, TrafficLightLabel
         ] = self.__config.label_converter.label_type
 
-        if isinstance(self.label_type, TrafficLightLabel):
+        if self.label_type == TrafficLightLabel:
             self.camera_names: List[str] = ["cam_traffic_light_near", "cam_traffic_light_far"]
             fig, axes = plt.subplots(1, 2, figsize=self.__figsize, tight_layout=True)
-        elif isinstance(self.label_type, AutowareLabel):
+        elif self.label_type == AutowareLabel:
             self.camera_names: List[str] = [
                 "cam_front_left",
                 "cam_front",
@@ -151,22 +152,29 @@ class PerceptionVisualizer2D:
             self.__tracked_paths = {}
 
         for frame_result_ in tqdm(frame_results, desc="Visualize results for each frame"):
-            self.__axes: AxesArray = self.visualize_frame(
+            self.__axes: np.ndarray = self.visualize_frame(
                 frame_result=frame_result_,
                 axes=self.__axes,
             )
             if cache_figure is False:
-                self.__axes.clear()
+                self.__clear_axes()
 
         self.__save_animation(filename)
         self.clear()
 
     def clear(self) -> None:
         """Clear properties at the enf of visualize all frame."""
-        self.__axes.clear()
+        self.__clear_axes()
         self.__animation_frames.clear()
         if self.config.evaluation_task == EvaluationTask.TRACKING2D:
             self.__tracked_paths.clear()
+
+    def __clear_axes(self) -> None:
+        """Clear each Axes instance."""
+        num_rows, num_cols = self.__axes.shape
+        for i in range(num_rows):
+            for j in range(num_cols):
+                self.__axes[i, j].clear()
 
     def set_figsize(self, figsize: Tuple[int, int]) -> None:
         """Set figure size.
@@ -190,8 +198,8 @@ class PerceptionVisualizer2D:
     def visualize_frame(
         self,
         frame_result: PerceptionFrameResult,
-        axes: Optional[AxesArray] = None,
-    ) -> AxesArray:
+        axes: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
         """Visualize a frame result on image.
 
         Color:
@@ -202,26 +210,31 @@ class PerceptionVisualizer2D:
 
         Args:
             frame_result (PerceptionFrameResult)
-            axes (Optional[Axes]): The Axes instance. Defaults to None.
+            axes (Optional[numpy.ndarray]): Axes instances. Defaults to None.
+
+        Returns:
+            numpy.ndarray: Numpy array of Axes instances.
         """
         if axes is None:
-            fig, axes = self.init_figure()
+            _, axes = self.init_figure()
 
         if frame_result.frame_ground_truth.raw_data is None:
             raise RuntimeError("`raw_data`: must be loaded.")
         else:
             for i, camera_name in enumerate(self.camera_names):
+                if frame_result.frame_ground_truth.raw_data.get(camera_name) is None:
+                    continue
                 img: np.ndarray = frame_result.frame_ground_truth.raw_data[camera_name]
                 row, col = (
                     (0, i)
                     if isinstance(self.label_type, TrafficLightLabel)
-                    else (i // 3, i - (3 * (i // 3))),
+                    else (i // 3, i - (3 * (i // 3)))
                 )
                 axes[row, col].imshow(img)
                 axes[row, col].set_axis_off()
 
         frame_number: str = frame_result.frame_ground_truth.frame_name
-        axes.title(
+        plt.title(
             f"Frame: {frame_number} ({[frame_id.value for frame_id in self.config.frame_ids]})"
         )
 
@@ -278,9 +291,9 @@ class PerceptionVisualizer2D:
         self,
         objects: List[Union[DynamicObject2D, DynamicObjectWithPerceptionResult]],
         is_ground_truth: bool,
-        axes: Optional[AxesArray] = None,
+        axes: Optional[np.ndarray] = None,
         color: Optional[str] = None,
-    ) -> AxesArray:
+    ) -> np.ndarray:
         """Plot objects on image.
 
         ```
@@ -294,8 +307,8 @@ class PerceptionVisualizer2D:
         Args:
             objects (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): The list of object being visualized.
             is_ground_truth (bool): Whether ground truth object is.
-            axes (Optional[Axes]): The Axes instance. If not specified, new Axes is created. Defaults to None.
-            color (Optional[str]): The name of color, red/green/blue/yellow/cyan/black. Defaults to None.
+            axes (Optional[Axes]): Axes instances. If not specified, new Axes is created. Defaults to None.
+            color (Optional[str]): Name of color, red/green/blue/yellow/cyan/black. Defaults to None.
                 If not be specified, red is used.
 
         Returns:
