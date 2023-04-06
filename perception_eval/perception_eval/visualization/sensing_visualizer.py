@@ -182,7 +182,7 @@ class SensingVisualizer:
             axes: Axes = plt.subplot()
 
         frame_number: str = frame_result.frame_name
-        axes.set_title(f"Frame: {frame_number} ({self.config.frame_id.value})")
+        axes.set_title(f"Frame: {frame_number} ({self.config.frame_ids[0].value})")
         axes.set_xlabel("x [m]")
         axes.set_ylabel("y [m]")
 

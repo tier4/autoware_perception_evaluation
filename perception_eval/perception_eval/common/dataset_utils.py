@@ -92,6 +92,7 @@ def _sample_to_frame(
     if load_raw_data:
         assert lidar_path.endswith(".bin"), f"Error: Unsupported filetype {lidar_path}"
         pointcloud: np.ndarray = np.fromfile(lidar_path, dtype=np.float32)
+        # The Other modalities would be used, (e.g. radar)
         raw_data["lidar"] = pointcloud.reshape(-1, 5)[:, :4]
 
     objects_: List[DynamicObject] = []
