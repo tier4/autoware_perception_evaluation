@@ -110,6 +110,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
     @property
     def columns(self) -> List[str]:
         return [
+            "frame_id",
             "timestamp",
             "x",
             "y",
@@ -171,6 +172,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
                 gt_width, gt_height = None, None
 
             gt_ret = dict(
+                frame_id=gt.frame_id.value,
                 timestamp=gt.unix_time,
                 x=gt_x_offset,
                 y=gt_y_offset,
@@ -195,6 +197,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
                 est_width, est_height = None, None
 
             est_ret = dict(
+                frame_id=estimation.frame_id,
                 timestamp=estimation.unix_time,
                 x=est_x_offset,
                 y=est_y_offset,
