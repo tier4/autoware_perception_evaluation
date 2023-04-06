@@ -102,9 +102,6 @@ def load_all_datasets(
         [<perception_eval.common.dataset.FrameGroundTruth object at 0x7f66040c36a0>, ...]
     """
     logging.info(f"Start to load dataset {dataset_paths}")
-    logging.info(
-        f"config: load_raw_data: {load_raw_data}, evaluation_task: {evaluation_task}, frame_id: {frame_id}"
-    )
 
     if isinstance(frame_id, FrameID):
         frame_ids: List[FrameID] = [frame_id]
@@ -112,6 +109,11 @@ def load_all_datasets(
         frame_ids = list(frame_id)
     else:
         raise TypeError(f"Unexpected frame id type: {type(frame_id)}")
+
+    logging.info(
+        f"config: load_raw_data: {load_raw_data}, evaluation_task: {evaluation_task}, "
+        f"frame_id: {[fr.value for fr in frame_ids]}"
+    )
 
     all_datasets: List[FrameGroundTruth] = []
 
