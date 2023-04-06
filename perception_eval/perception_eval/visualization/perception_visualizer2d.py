@@ -45,10 +45,10 @@ class PerceptionVisualizer2D:
     """The class to visualize perception results in BEV space.
 
     Attributes:
-        config (PerceptionEvaluationConfig)
+        config (PerceptionEvaluationConfig): Evaluation config.
 
     Args:
-        config (PerceptionEvaluationConfig)
+        config (PerceptionEvaluationConfig): Evaluation config.
         figsize (Tuple[int, int]): Figure size, (width, height) order. Defaults to (800, 600).
     """
 
@@ -78,9 +78,9 @@ class PerceptionVisualizer2D:
         Args:
             result_root_directory (str): The root path to save result.
             scenario_path (str): The path of scenario file .yaml.
-            camera_frame (str): Frame name of camera, for example, CAM_FRONT.
+            camera_frame (str): Frame name of camera, for example, CAM_FRONT or cam_front.
         Returns:
-            PerceptionPerformanceAnalyzer
+            PerceptionVisualizer2D: Visualizer instance.
         """
 
         # Load scenario file
@@ -114,18 +114,18 @@ class PerceptionVisualizer2D:
         ] = self.__config.label_converter.label_type
 
         if self.label_type == TrafficLightLabel:
-            self.camera_names: List[str] = ["cam_traffic_light_near", "cam_traffic_light_far"]
-            fig, axes = plt.subplots(1, 2, figsize=self.__figsize, tight_layout=True)
+            self.camera_names: Tuple[str] = ("cam_traffic_light_near", "cam_traffic_light_far")
+            fig, axes = plt.subplots(1, 2, figsize=self.__figsize, gridspec_kw=dict(wspace=0))
         elif self.label_type == AutowareLabel:
-            self.camera_names: List[str] = [
+            self.camera_names: Tuple[str] = (
                 "cam_front_left",
                 "cam_front",
                 "cam_front_right",
                 "cam_back_left",
                 "cam_back",
                 "cam_back_right",
-            ]
-            fig, axes = plt.subplots(2, 3, figsize=self.__figsize, tight_layout=True)
+            )
+            fig, axes = plt.subplots(2, 3, figsize=self.__figsize, gridspec_kw=dict(wspace=0))
         else:
             raise TypeError(f"Unexpected label type: {self.label_type}")
         return fig, axes
@@ -171,15 +171,19 @@ class PerceptionVisualizer2D:
 
     def __clear_axes(self) -> None:
         """Clear each Axes instance."""
-        num_rows, num_cols = self.__axes.shape
-        for i in range(num_rows):
-            for j in range(num_cols):
-                self.__axes[i, j].clear()
+        if self.label_type == TrafficLightLabel:
+            for i in range(len(self.__axes)):
+                self.__axes[i].clear()
+        else:
+            num_rows, num_cols = self.__axes.shape
+            for i in range(num_rows):
+                for j in range(num_cols):
+                    self.__axes[i, j].clear()
 
     def set_figsize(self, figsize: Tuple[int, int]) -> None:
         """Set figure size.
         Args:
-            figsize (Tuple[int, int]): Figure size, (width, height)
+            figsize (Tuple[int, int]): Figure size, (width, height).
         """
         width, height = figsize[0] / 100.0, figsize[1] / 100.0
         self.__figure.set_figwidth(width)
@@ -188,11 +192,7 @@ class PerceptionVisualizer2D:
 
     def __get_axes_idx(self, key: str) -> Tuple[int, int]:
         i: int = self.camera_names.index(key)
-        row, col = (
-            (0, i)
-            if isinstance(self.label_type, TrafficLightLabel)
-            else (i // 3, i - (3 * (i // 3)))
-        )
+        row, col = (0, i) if self.label_type == TrafficLightLabel else (i // 3, i - (3 * (i // 3)))
         return row, col
 
     def visualize_frame(
@@ -216,27 +216,29 @@ class PerceptionVisualizer2D:
             numpy.ndarray: Numpy array of Axes instances.
         """
         if axes is None:
-            _, axes = self.init_figure()
+            axes = self.__axes
 
         if frame_result.frame_ground_truth.raw_data is None:
             raise RuntimeError("`raw_data`: must be loaded.")
         else:
             for i, camera_name in enumerate(self.camera_names):
-                if frame_result.frame_ground_truth.raw_data.get(camera_name) is None:
-                    continue
-                img: np.ndarray = frame_result.frame_ground_truth.raw_data[camera_name]
-                row, col = (
-                    (0, i)
-                    if isinstance(self.label_type, TrafficLightLabel)
-                    else (i // 3, i - (3 * (i // 3)))
+                img: Optional[np.ndarray] = frame_result.frame_ground_truth.raw_data.get(
+                    camera_name
                 )
-                axes[row, col].imshow(img)
-                axes[row, col].set_axis_off()
+                if self.label_type == TrafficLightLabel:
+                    if img is not None:
+                        axes[i].imshow(img)
+                    axes[i].set_axis_off()
+                    axes[i].set_title(f"{camera_name}")
+                else:
+                    row, col = (i // 3, i - (3 * (i // 3)))
+                    if img is not None:
+                        axes[row, col].imshow(img)
+                    axes[row, col].set_axis_off()
+                    axes[row, col].set_title(f"{camera_name}")
 
         frame_number: str = frame_result.frame_ground_truth.frame_name
-        plt.title(
-            f"Frame: {frame_number} ({[frame_id.value for frame_id in self.config.frame_ids]})"
-        )
+        self.__figure.suptitle(f"Frame: {frame_number}")
 
         # Plot objects
         handles: List[Patch] = []
@@ -272,14 +274,16 @@ class PerceptionVisualizer2D:
         )
         handles.append(Patch(color="orange", label="FN"))
 
-        plt.legend(
+        self.__figure.legend(
             handles=handles,
-            bbox_to_anchor=(1.1, 1.1),
-            loc="upper right",
+            bbox_to_anchor=(1.0, 1.1),
+            loc="lower right",
+            ncol=4,
             borderaxespad=0,
             markerscale=10.0,
         )
 
+        self.__figure.tight_layout()
         filepath: str = osp.join(self.config.visualization_directory, f"{frame_number}.png")
         plt.savefig(filepath, format="png")
         frame = Image.open(filepath)
@@ -343,8 +347,14 @@ class PerceptionVisualizer2D:
                 label=box_text,
             )
             row, col = self.__get_axes_idx(object_.frame_id.value)
-            axes[row, col].add_patch(box)
-            axes[row, col].text(*box_bottom_left, s=box_text, fontsize="x-small", color=edge_color)
+            if self.label_type == TrafficLightLabel:
+                axes[col].add_patch(box)
+                axes[col].text(*box_bottom_left, s=box_text, fontsize="x-small", color=edge_color)
+            else:
+                axes[row, col].add_patch(box)
+                axes[row, col].text(
+                    *box_bottom_left, s=box_text, fontsize="x-small", color=edge_color
+                )
 
         return axes
 
