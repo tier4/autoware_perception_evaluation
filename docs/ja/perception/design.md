@@ -49,15 +49,15 @@ json_result = json.dump(dict_result)
 
 - `PerceptionEvaluationConfig`の引数は以下
 
-  | Arguments                |       type       | Description                                                                                                                      |
-  | :----------------------- | :--------------: | :------------------------------------------------------------------------------------------------------------------------------- |
-  | `dataset_path`           |   `List[str]`    | データセットパス(List[]で指定するが複数データ対応については TBD)                                                                 |
-  | `frame_id`               |      `str`       | オブジェクトが従う FrameIDの文字列.                                                                                              |
-  | `merge_similar_labels`   |      `bool`      | 類似ラベルをマージするかの flag[参考](label.md)                                                                                  |
-  | `result_root_directory`  |      `str`       | 評価結果，ログ，可視化結果等を保存するディレクトリのパス                                                                         |
-  | `evaluation_config_dict` | `Dict[str, Any]` | 評価パラメータ                                                                                                                   |
-  | `label_prefix`           |      `str`       | ラベルのプレフィックス. `autoware` の場合, `AutowareLabel`がロードされ，`traffic_light`の場合，`TrafficLightLabel`がロードされる |
-  | `load_raw_data`          |      `bool`      | データセットから点群/画像データをロードするか                                                                                    |
+  | Arguments                |            type             | Description                                                                                                                      |
+  | :----------------------- | :-------------------------: | :------------------------------------------------------------------------------------------------------------------------------- |
+  | `dataset_path`           |         `List[str]`         | データセットパス(List[]で指定するが複数データ対応については TBD)                                                                 |
+  | `frame_id`               | `Union[str, Sequence[str]]` | オブジェクトが従う FrameIDの文字列.                                                                                              |
+  | `merge_similar_labels`   |           `bool`            | 類似ラベルをマージするかの flag[参考](label.md)                                                                                  |
+  | `result_root_directory`  |            `str`            | 評価結果，ログ，可視化結果等を保存するディレクトリのパス                                                                         |
+  | `evaluation_config_dict` |      `Dict[str, Any]`       | 評価パラメータ                                                                                                                   |
+  | `label_prefix`           |            `str`            | ラベルのプレフィックス. `autoware` の場合, `AutowareLabel`がロードされ，`traffic_light`の場合，`TrafficLightLabel`がロードされる |
+  | `load_raw_data`          |           `bool`            | データセットから点群/画像データをロードするか                                                                                    |
 
 ##### `evaluation_config_dict`
 

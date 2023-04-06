@@ -84,7 +84,7 @@ pass_fail_config = PerceptionPassFailConfig(...)
 
 for frame in datasets:
     unix_time = frame.unix_time
-    pointcloud: numpy.ndarray = frame.raw_data
+    pointcloud: numpy.ndarray = frame.raw_data["lidar"]
     outputs = model(pointcloud)
     # create a list of estimated objects with your model's outputs
     estimated_objects = [DynamicObject(unix_time=unix_time, ...) for out in outputs]

@@ -49,17 +49,16 @@
 | :----------- | :-----------------------: | :------------------------------------------------------------------------------------------------------ |
 | `unix_time`  |           `int`           | Unix time.                                                                                              |
 | `frame_name` |           `str`           | Name of frame.                                                                                          |
-| `frame_id`   |         `FrameID`         | FrameID instance, where objects are with respect.                                                       |
 | `objects`    |    `List[ObjectType]`     | List of ground truth objects.                                                                           |
 | `ego2map`    | `Optional[numpy.ndarray]` | 4x4 matrix to transform objects with respect to base_link coordinate system map one. (Defaults to None) |
 | `raw_data`   | `Optional[numpy.ndarray]` | Array of pointcloud/image. (Defaults to None)                                                           |
 
 ### [`<func> load_all_datasets(...) -> List[FrameGroundTruth]`](../../perception_eval/perception_eval/common/dataset.py)
 
-| Argument          |       type       | Description                                       |
-| :---------------- | :--------------: | :------------------------------------------------ |
-| `dataset_paths`   |   `List[str]`    | List of dataset path(s).                          |
-| `evaluation_task` | `EvaluationTask` | Name of evaluation task.                          |
-| `label_converter` | `LabelConverter` | LabelConverter instance.                          |
-| `frame_id`        |    `FrameID`     | FrameID instance, where objects are with respect. |
-| `load_raw_data`   |      `bool`      | Whether load pointcloud/image. (Default: False)   |
+| Argument          |                type                 | Description                                       |
+| :---------------- | :---------------------------------: | :------------------------------------------------ |
+| `dataset_paths`   |             `List[str]`             | List of dataset path(s).                          |
+| `evaluation_task` |          `EvaluationTask`           | Name of evaluation task.                          |
+| `label_converter` |          `LabelConverter`           | LabelConverter instance.                          |
+| `frame_id`        | `Union[FrameID, Sequence[FrameID]]` | FrameID instance, where objects are with respect. |
+| `load_raw_data`   |               `bool`                | Whether load pointcloud/image. (Default: False)   |

@@ -55,7 +55,6 @@
 | :----------- | :-----------------------: | :----------------------------------------------------------------------------- |
 | `unix_time`  |           `int`           | Unix time.                                                                     |
 | `frame_name` |           `str`           | フレーム名.                                                                    |
-| `frame_id`   |         `FrameID`         | オブジェクトが従う FrameID インスタンス．                                      |
 | `objects`    |    `List[ObjectType]`     | GT オブジェクトのリスト.                                                       |
 | `ego2map`    | `Optional[numpy.ndarray]` | オブジェクトの座標系を base_link から map に変換する 4x4 行列. (Default: None) |
 | `raw_data`   | `Optional[numpy.ndarray]` | 点群または画像. (Default: None)                                                |
@@ -64,10 +63,10 @@
 
 データセットをロードする関数．
 
-| Argument          |       type       | Description                                     |
-| :---------------- | :--------------: | :---------------------------------------------- |
-| `dataset_paths`   |   `List[str]`    | データセットのパス.                             |
-| `evaluation_task` | `EvaluationTask` | 評価タスク名.                                   |
-| `label_converter` | `LabelConverter` | LabelConverter のインスタンス.                  |
-| `frame_id`        |    `FrameID`     | オブジェクトが従う FrameID インスタンス．       |
-| `load_raw_data`   |      `bool`      | 点群/画像をロードするかどうか. (Default: False) |
+| Argument          |                type                 | Description                                     |
+| :---------------- | :---------------------------------: | :---------------------------------------------- |
+| `dataset_paths`   |             `List[str]`             | データセットのパス.                             |
+| `evaluation_task` |          `EvaluationTask`           | 評価タスク名.                                   |
+| `label_converter` |          `LabelConverter`           | LabelConverter のインスタンス.                  |
+| `frame_id`        | `Union[FrameID, Sequence[FrameID]]` | オブジェクトが従う FrameID インスタンス．       |
+| `load_raw_data`   |               `bool`                | 点群/画像をロードするかどうか. (Default: False) |
