@@ -26,6 +26,7 @@ from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
 from nuscenes.utils.data_classes import Box
 from perception_eval.common.evaluation_task import EvaluationTask
+from perception_eval.common.label import Label
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import TrafficLightLabel
@@ -107,6 +108,10 @@ def _sample_to_frame(
             visibility_info: Dict[str, Any] = nusc.get("visibility", visibility_token)
             visibility: Visibility = Visibility.from_value(visibility_info["level"])
 
+        attribute_tokens: List[str] = sample_annotation_["attribute_tokens"]
+        attributes: List[str] = [nusc.get("attribute", token)["name"] for token in attribute_tokens]
+        semantic_label = label_converter.convert_label(object_box.name, attributes)
+
         object_: DynamicObject = _convert_nuscenes_box_to_dynamic_object(
             nusc=nusc,
             helper=helper,
@@ -114,7 +119,7 @@ def _sample_to_frame(
             object_box=object_box,
             unix_time=unix_time_,
             evaluation_task=evaluation_task,
-            label_converter=label_converter,
+            semantic_label=semantic_label,
             instance_token=instance_token_,
             sample_token=sample_token,
             visibility=visibility,
@@ -139,7 +144,7 @@ def _convert_nuscenes_box_to_dynamic_object(
     object_box: Box,
     unix_time: int,
     evaluation_task: EvaluationTask,
-    label_converter: LabelConverter,
+    semantic_label: Label,
     instance_token: str,
     sample_token: str,
     visibility: Optional[Visibility] = None,
@@ -154,7 +159,7 @@ def _convert_nuscenes_box_to_dynamic_object(
         object_box (Box): Annotation data from nuscenes dataset defined by Box.
         unix_time (int): The unix time [us].
         evaluation_task (EvaluationTask): Evaluation task.
-        label_converter (LabelConverter): LabelConverter instance.
+        semantic_label (Label): Label instance.
         instance_token (str): Instance token.
         sample_token (str): Sample token, used to get past/future record.
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
@@ -167,10 +172,6 @@ def _convert_nuscenes_box_to_dynamic_object(
     orientation_: Quaternion = object_box.orientation
     size_: Tuple[float, float, float] = tuple(object_box.wlh.tolist())  # type: ignore
     semantic_score_: float = 1.0
-    semantic_label_: LabelType = label_converter.convert_label(
-        label=object_box.name,
-        count_label_number=True,
-    )
 
     sample_annotation_: dict = nusc.get("sample_annotation", object_box.token)
     pointcloud_num_: int = sample_annotation_["num_lidar_pts"]
@@ -209,7 +210,7 @@ def _convert_nuscenes_box_to_dynamic_object(
         size=size_,
         velocity=velocity_,
         semantic_score=semantic_score_,
-        semantic_label=semantic_label_,
+        semantic_label=semantic_label,
         pointcloud_num=pointcloud_num_,
         uuid=instance_token,
         tracked_positions=tracked_positions,
@@ -410,10 +411,9 @@ def _sample_to_frame_2d(
             roi = None
 
         category_info: Dict[str, Any] = nuim.get("category", ann["category_token"])
-        semantic_label: LabelType = label_converter.convert_label(
-            label=category_info["name"],
-            count_label_number=True,
-        )
+        attribute_tokens: List[str] = ann["attribute_tokens"]
+        attributes: List[str] = [nuim.get("attribute", token)["name"] for token in attribute_tokens]
+        semantic_label: LabelType = label_converter.convert_label(category_info["name"], attributes)
 
         if label_converter.label_type == TrafficLightLabel:
             for instance_record in nusc.instance:

@@ -20,7 +20,7 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
-from perception_eval.common.label import LabelType
+from perception_eval.common.label import Label
 from perception_eval.common.point import crop_pointcloud
 from perception_eval.common.status import FrameID
 from perception_eval.common.status import Visibility
@@ -68,7 +68,7 @@ class DynamicObject:
         # Detection
         state (ObjectState): State of object.
         semantic_score (float): Detection score in [0.0, 1.0].
-        semantic_label (LabelType): Object label
+        semantic_label (Label): Object label.
 
         # Use case object evaluation for detection
         pointcloud_num (Optional[int]): Pointcloud number inside of bounding box.
@@ -90,8 +90,8 @@ class DynamicObject:
         orientation (Quaternion) : Quaternion instance.
         size (Tuple[float, float, float]): Bounding box size, (wx, wy, wz)[m].
         velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz)[m/s].
-        semantic_score (float): [description]
-        semantic_label (LabelType): [description]
+        semantic_score (float): Detection score in [0.0, 1.0].
+        semantic_label (Label): Object label.
         pointcloud_num (Optional[int]): Number of points inside of bounding box. Defaults to None.
         uuid (Optional[str]): Unique ID. Defaults to None.
         tracked_positions (Optional[List[Tuple[float, float, float]]]):
@@ -123,7 +123,7 @@ class DynamicObject:
         size: Tuple[float, float, float],
         velocity: Optional[Tuple[float, float, float]],
         semantic_score: float,
-        semantic_label: LabelType,
+        semantic_label: Label,
         pointcloud_num: Optional[int] = None,
         uuid: Optional[str] = None,
         tracked_positions: Optional[List[Tuple[float, float, float]]] = None,
@@ -147,7 +147,7 @@ class DynamicObject:
             velocity=velocity,
         )
         self.semantic_score: float = semantic_score
-        self.semantic_label: LabelType = semantic_label
+        self.semantic_label: Label = semantic_label
 
         # for detection label for case evaluation
         # pointcloud number inside bounding box

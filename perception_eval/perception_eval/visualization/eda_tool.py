@@ -87,7 +87,7 @@ class EDAVisualizer:
         if isinstance(objects[0], DynamicObject):
             self.is_gt = True
 
-            names = np.stack([gt_object.semantic_label.value for gt_object in objects])
+            names = np.stack([gt_object.semantic_label.label.value for gt_object in objects])
             xyz = np.stack([gt_object.state.position for gt_object in objects])
             wlh = np.stack([gt_object.state.size for gt_object in objects])
             pcd_nums = np.stack([gt_object.pointcloud_num for gt_object in objects])
@@ -111,7 +111,7 @@ class EDAVisualizer:
 
             names = np.stack(
                 [
-                    estimated_object.estimated_object.semantic_label.value
+                    estimated_object.estimated_object.semantic_label.label.value
                     for estimated_object in objects
                 ]
             )
@@ -447,6 +447,7 @@ class EDAManager:
             evaluation_task=evaluation_task,
             merge_similar_labels=merge_similar_labels,
             label_prefix=label_prefix,
+            count_label_number=True,
         )
         self.show = show
 
@@ -503,9 +504,9 @@ class EDAManager:
             confidence_threshold (float):
                     confidence threshold for visualization
         """
-        target_labels: List[LabelType] = []
-        for name in self.class_names:
-            target_labels.append(self.label_converter.convert_label(name))
+        target_labels: List[LabelType] = [
+            self.label_converter.convert_name(name) for name in self.class_names
+        ]
         # visualize tp, fp in estimated objects
         tp_results, fp_results = divide_tp_fp_objects(
             object_results,
