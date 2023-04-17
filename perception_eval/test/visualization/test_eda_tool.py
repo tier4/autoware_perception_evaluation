@@ -22,6 +22,7 @@ from typing import Union
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import Label
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.status import FrameID
 from perception_eval.evaluation.matching.object_matching import MatchingMode
@@ -59,7 +60,7 @@ class TestEDAVisualizer:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 1.0, 1.0),
             semantic_score=0.9,
-            semantic_label=AutowareLabel.PEDESTRIAN,
+            semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16),
         ),
@@ -302,7 +303,7 @@ class TestEDAManager:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 1.0, 1.0),
             semantic_score=0.9,
-            semantic_label=AutowareLabel.PEDESTRIAN,
+            semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16),
         ),
@@ -323,7 +324,7 @@ class TestEDAManager:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(2.0, 4.0, 2.0),
             semantic_score=0.9,
-            semantic_label=AutowareLabel.CAR,
+            semantic_label=Label(AutowareLabel.CAR, "car", []),
             velocity=(1.0, 1.0, 1.0),
             pointcloud_num=10,
             uuid=token_hex(16),
@@ -335,7 +336,7 @@ class TestEDAManager:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(2.0, 4.0, 2.0),
             semantic_score=0.9,
-            semantic_label=AutowareLabel.CAR,
+            semantic_label=Label(AutowareLabel.CAR, "car", []),
             velocity=(1.0, 1.0, 1.0),
             pointcloud_num=10,
             uuid=token_hex(16),
@@ -347,7 +348,7 @@ class TestEDAManager:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 2.0, 1.0),
             semantic_score=0.9,
-            semantic_label=AutowareLabel.BICYCLE,
+            semantic_label=Label(AutowareLabel.BICYCLE, "bicycle", []),
             velocity=(1.0, 1.0, 1.0),
             pointcloud_num=10,
             uuid=token_hex(16),
@@ -359,7 +360,7 @@ class TestEDAManager:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 2.0, 1.0),
             semantic_score=0.9,
-            semantic_label=AutowareLabel.BICYCLE,
+            semantic_label=Label(AutowareLabel.BICYCLE, "bicycle", []),
             velocity=(1.0, 1.0, 1.0),
             pointcloud_num=10,
             uuid=token_hex(16),
@@ -371,7 +372,7 @@ class TestEDAManager:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 1.0, 1.0),
             semantic_score=0.9,
-            semantic_label=AutowareLabel.PEDESTRIAN,
+            semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
             pointcloud_num=10,
             uuid=token_hex(16),
@@ -383,7 +384,7 @@ class TestEDAManager:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             size=(1.0, 1.0, 1.0),
             semantic_score=0.9,
-            semantic_label=AutowareLabel.PEDESTRIAN,
+            semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
             pointcloud_num=10,
             uuid=token_hex(16),
