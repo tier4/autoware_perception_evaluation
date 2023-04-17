@@ -53,10 +53,13 @@ class PerceptionLSimMoc:
             raise ValueError(f"Unexpected evaluation task: {evaluation_task}")
 
         # If target_labels = None, all labels will be evaluated.
-        evaluation_config_dict["target_labels"] = (
-            ["green", "red", "yellow", "unknown"]
-            if label_prefix == "traffic_light"
-            else ["car", "bicycle", "pedestrian", "motorbike"]
+        evaluation_config_dict.update(
+            dict(
+                target_labels=["green", "red", "yellow", "unknown"]
+                if label_prefix == "traffic_light"
+                else ["car", "bicycle", "pedestrian", "motorbike"],
+                ignore_attributes=["cycle_state.without_rider"],
+            )
         )
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(

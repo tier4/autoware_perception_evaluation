@@ -41,6 +41,7 @@ class PerceptionLSimMoc:
             "evaluation_task": evaluation_task,
             # ラベル，max x/y，マッチング閾値 (detection/tracking/predictionで共通)
             "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+            "ignore_attributes": ["cycle_state.without_rider"],
             # max x/y position or max/min distanceの指定が必要
             # # max x/y position
             "max_x_position": 102.4,

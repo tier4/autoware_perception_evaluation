@@ -109,7 +109,12 @@ class Label:
         Returns:
             bool: Indicates whether input self.name contains input attribute.
         """
+        assert isinstance(key, str), f"Expected type is str, but got {type(key)}"
         return key in self.name or key in self.attributes
+
+    def contains_any(self, keys: List[str]) -> bool:
+        assert isinstance(keys, (list, tuple)), f"Expected type is sequence, but got {type(keys)}"
+        return any([self.contains(key) for key in keys])
 
     def __eq__(self, other: Label) -> bool:
         return self.label == other.label
