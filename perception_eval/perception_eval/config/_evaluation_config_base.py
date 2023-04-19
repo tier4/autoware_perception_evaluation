@@ -101,10 +101,8 @@ class _EvaluationConfigBase(ABC):
             if isinstance(frame_id, str)
             else [FrameID.from_value(f) for f in frame_id]
         )
-        if self.evaluation_task.is_3d():
-            assert (
-                len(self.frame_ids) == 1
-            ), f"For 3D task, FrameID must be 1, but got {len(self.frame_ids)}"
+        if self.evaluation_task.is_3d() and len(self.frame_ids) != 1:
+            raise ValueError(f"For 3D task, FrameID must be 1, but got {len(self.frame_ids)}")
 
         self.merge_similar_labels: bool = merge_similar_labels
         self.label_prefix: str = label_prefix
