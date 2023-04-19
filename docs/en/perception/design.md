@@ -62,6 +62,7 @@
     | Arguments              |    type     |     Mandatory      | Description                                                                                                     |
     | :--------------------- | :---------: | :----------------: | :-------------------------------------------------------------------------------------------------------------- |
     | `target_labels`        | `List[str]` |         No         | List of name of target labels. If None, all labels will be evaluated.                                           |
+    | `ignore_attributes`    | `List[str]` |         No         | List of original name or attribute of labels to be filtered out. If None, all labels will be evaluated.         |
     | `max_x_position`       |   `float`   |         \*         | Maximum x position of area to be evaluated (Only 3D)                                                            |
     | `max_y_position`       |   `float`   |         \*         | Maximum y position of area to be evaluated (Only 3D)                                                            |
     | `max_distance`         |   `float`   |         \*         | Maximum distance from `base_link` of ego to be evaluated (Only 3D)                                              |
