@@ -58,7 +58,9 @@ class PerceptionLSimMoc:
                 target_labels=["green", "red", "yellow", "unknown"]
                 if label_prefix == "traffic_light"
                 else ["car", "bicycle", "pedestrian", "motorbike"],
-                ignore_attributes=["cycle_state.without_rider"],
+                ignore_attributes=["cycle_state.without_rider"]
+                if label_prefix == "autoware"
+                else None,
             )
         )
 
@@ -101,6 +103,9 @@ class PerceptionLSimMoc:
             if self.label_prefix == "traffic_light"
             else ["car", "bicycle", "pedestrian", "motorbike"]
         )
+        ignore_attributes = (
+            ["cycle_state.without_rider"] if self.label_prefix == "autoware" else None
+        )
         matching_threshold_list = (
             None if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5]
         )
@@ -109,6 +114,7 @@ class PerceptionLSimMoc:
         critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=target_labels,
+            ignore_attributes=ignore_attributes,
         )
         # Pass fail を決めるパラメータ
         frame_pass_fail_config: PerceptionPassFailConfig = PerceptionPassFailConfig(

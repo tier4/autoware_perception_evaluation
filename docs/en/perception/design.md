@@ -213,6 +213,7 @@
 | :-------------------------- | :--------------------------: | :-------------: | :-------------------------------------------------------------------------------------------------------------- |
 | `evaluator_config`          | `PerceptionEvaluationConfig` |       Yes       | Configuration settings which `PerceptionEvaluationManager` has                                                  |
 | `target_labels`             |         `List[str]`          |       No        | List of name of target labels                                                                                   |
+| `ignore_attributes`         |         `List[str]`          |       No        | List of original name or attribute of labels to be filtered out.                                                |
 | `max_x_position_list`       |        `List[float]`         |       \*        | Maximum x position of area to be evaluated (Only 3D)                                                            |
 | `max_y_position_list`       |        `List[float]`         |       \*        | Maximum y position of area to be evaluated (Only 3D)                                                            |
 | `max_distance_list`         |        `List[float]`         |       \*        | Maximum distance from `base_link` of ego to be evaluated (Only 3D)                                              |
