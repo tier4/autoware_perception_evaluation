@@ -46,7 +46,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
 
     Args:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (str): FrameID in string, where objects are with respect.
+        frame_id (Union[str, Sequence[str]]): FrameID(s) in string, where objects are with respect.
         merge_similar_labels (bool): Whether merge similar labels.
             If True,
                 - BUS, TRUCK, TRAILER -> CAR
