@@ -273,15 +273,9 @@ def get_object_results(
             break
 
         est_idx, gt_idx = (
-            np.unravel_index(
-                np.nanargmax(score_table),
-                score_table.shape,
-            )
+            np.unravel_index(np.nanargmax(score_table), score_table.shape)
             if maximize
-            else np.unravel_index(
-                np.nanargmin(score_table),
-                score_table.shape,
-            )
+            else np.unravel_index(np.nanargmin(score_table), score_table.shape)
         )
 
         # remove corresponding estimated and GT objects
@@ -329,6 +323,7 @@ def _get_object_results_with_id(
             if (
                 est_object.uuid == gt_object.uuid
                 and est_object.semantic_label == gt_object.semantic_label
+                and est_object.frame_id == gt_object.frame_id
             ):
                 object_results.append(
                     DynamicObjectWithPerceptionResult(
@@ -417,7 +412,10 @@ def _get_score_table(
     score_table: np.ndarray = np.full((num_row, num_col), np.nan)
     for i, estimated_object_ in enumerate(estimated_objects):
         for j, ground_truth_object_ in enumerate(ground_truth_objects):
-            if estimated_object_.semantic_label == ground_truth_object_.semantic_label:
+            if (
+                estimated_object_.semantic_label == ground_truth_object_.semantic_label
+                and estimated_object_.frame_id == ground_truth_object_.frame_id
+            ):
                 matching_method: MatchingMethod = matching_method_module(
                     estimated_object=estimated_object_,
                     ground_truth_object=ground_truth_object_,

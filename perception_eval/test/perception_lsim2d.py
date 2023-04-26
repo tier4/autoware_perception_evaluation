@@ -16,6 +16,7 @@ import argparse
 import logging
 import tempfile
 from typing import List
+from typing import Union
 
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.config import PerceptionEvaluationConfig
@@ -36,7 +37,7 @@ class PerceptionLSimMoc:
         evaluation_task: str,
         result_root_directory: str,
         label_prefix: str,
-        camera_type: str,
+        camera_type: Union[str, List[str]],
     ):
         self.evaluation_task = evaluation_task
         self.label_prefix = label_prefix
@@ -173,6 +174,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-c",
         "--camera_type",
+        nargs="+",
         type=str.lower,
         default="cam_front",
         choices=[
@@ -207,10 +209,12 @@ if __name__ == "__main__":
     )
 
     for ground_truth_frame in detection_lsim.evaluator.ground_truth_frames:
-        objects_with_difference = get_objects_with_difference2d(
-            ground_truth_frame.objects,
-            translate=(50, 20),
-        )
+        # objects_with_difference = get_objects_with_difference2d(
+        #     ground_truth_frame.objects,
+        #     translate=(50, 20),
+        # )
+        objects_with_difference = ground_truth_frame.objects
+
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
             objects_with_difference.pop(0)

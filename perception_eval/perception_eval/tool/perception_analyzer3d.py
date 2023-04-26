@@ -128,6 +128,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
     @property
     def columns(self) -> List[str]:
         return [
+            "frame_id",
             "timestamp",
             "x",
             "y",
@@ -233,7 +234,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             else:
                 gt_vx, gt_vy = None, None
 
-            if self.config.frame_id == "map":
+            if self.config.frame_ids[0] == "map":
                 src: np.ndarray = get_pose_transform_matrix(
                     position=gt.state.position,
                     rotation=gt.state.orientation.rotation_matrix,
@@ -250,6 +251,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             gt_w, gt_l, gt_h = gt.state.size
 
             gt_ret = dict(
+                frame_id=gt.frame_id.value,
                 timestamp=gt.unix_time,
                 x=gt_x,
                 y=gt_y,
@@ -282,7 +284,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             else:
                 est_vx, est_vy = None, None
 
-            if self.config.frame_id == "map":
+            if self.config.frame_ids[0] == "map":
                 src: np.ndarray = get_pose_transform_matrix(
                     position=estimation.state.position,
                     rotation=estimation.state.orientation.rotation_matrix,
@@ -302,6 +304,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             est_w, est_l, est_h = estimation.state.size
 
             est_ret = dict(
+                frame_id=estimation.frame_id.value,
                 timestamp=estimation.unix_time,
                 x=est_x,
                 y=est_y,

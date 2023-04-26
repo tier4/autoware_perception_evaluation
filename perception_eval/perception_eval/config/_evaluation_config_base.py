@@ -20,7 +20,9 @@ import os.path as osp
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Sequence
 from typing import Tuple
+from typing import Union
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.evaluation_task import set_task
@@ -38,7 +40,7 @@ class _EvaluationConfigBase(ABC):
 
     Attributes:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (FrameID): FrameID instance, where objects are with respect.
+        frame_ids (List[FrameID]): List of FrameID instances, where objects are with respect.
         result_root_directory (str): Directory path to save result.
         log_directory (str): Directory Directory path to save log.
         visualization_directory (str): Directory path to save visualization result.
@@ -62,7 +64,7 @@ class _EvaluationConfigBase(ABC):
 
     Args:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (str): FrameID in string, where objects are with respect.
+        frame_id (Union[str, Sequence[str]]): FrameID(s) in string, where objects are with respect.
         merge_similar_labels (bool): Whether merge similar labels.
             If True,
                 - BUS, TRUCK, TRAILER -> CAR
@@ -79,7 +81,7 @@ class _EvaluationConfigBase(ABC):
     def __init__(
         self,
         dataset_paths: List[str],
-        frame_id: str,
+        frame_id: Union[str, Sequence[str]],
         merge_similar_labels: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
@@ -94,7 +96,14 @@ class _EvaluationConfigBase(ABC):
         # dataset
         self.dataset_paths: List[str] = dataset_paths
 
-        self.frame_id: FrameID = FrameID.from_value(frame_id)
+        self.frame_ids: List[FrameID] = (
+            [FrameID.from_value(frame_id)]
+            if isinstance(frame_id, str)
+            else [FrameID.from_value(f) for f in frame_id]
+        )
+        if self.evaluation_task.is_3d() and len(self.frame_ids) != 1:
+            raise ValueError(f"For 3D task, FrameID must be 1, but got {len(self.frame_ids)}")
+
         self.merge_similar_labels: bool = merge_similar_labels
         self.label_prefix: str = label_prefix
         self.load_raw_data: bool = load_raw_data

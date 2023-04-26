@@ -18,7 +18,9 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
+from typing import Union
 
 from nuimages import NuImages
 import numpy as np
@@ -87,13 +89,12 @@ def _sample_to_frame(
     lidar_path, object_boxes, ego2map = _get_sample_boxes(nusc, frame_data, frame_id)
 
     # pointcloud
+    raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
     if load_raw_data:
         assert lidar_path.endswith(".bin"), f"Error: Unsupported filetype {lidar_path}"
         pointcloud: np.ndarray = np.fromfile(lidar_path, dtype=np.float32)
-        raw_data = pointcloud.reshape(-1, 5)[:, :4]
-
-    else:
-        raw_data = None
+        # The Other modalities would be used, (e.g. radar)
+        raw_data["lidar"] = pointcloud.reshape(-1, 5)[:, :4]
 
     objects_: List[DynamicObject] = []
 
@@ -129,7 +130,6 @@ def _sample_to_frame(
     frame = dataset.FrameGroundTruth(
         unix_time=unix_time_,
         frame_name=frame_name,
-        frame_id=frame_id,
         objects=objects_,
         ego2map=ego2map,
         raw_data=raw_data,
@@ -359,10 +359,10 @@ def _get_prediction_data(
 def _sample_to_frame_2d(
     nusc: NuScenes,
     nuim: NuImages,
-    sample_token: str,
+    sample_token: Union[FrameID, Sequence[FrameID]],
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
-    frame_id: FrameID,
+    frame_ids: List[FrameID],
     frame_name: str,
     load_raw_data: bool,
 ) -> dataset.FrameGroundTruth:
@@ -374,7 +374,7 @@ def _sample_to_frame_2d(
         sample_token (str): Sample token.
         evaluation_task (EvaluationTask): 2D evaluation Task.
         label_converter (LabelConverter): LabelConverter instance.
-        frame_id (FrameID): FrameID instance, where 2D objects are with respect, related to CAM_**.
+        frame_ids (List[FrameID]): List of FrameID instances, where 2D objects are with respect, related to CAM_**.
         frame_name (str): Name of frame.
         load_raw_data (bool): The flag to load image data.
 
@@ -385,18 +385,27 @@ def _sample_to_frame_2d(
     sample: Dict[str, Any] = nuim.get("sample", sample_token)
 
     unix_time: int = sample["timestamp"]
-    camera_type: str = frame_id.value.upper()
-    sample_data_token: str = nusc_sample["data"][camera_type]
+
+    sample_data_tokens: List[str] = []
+    frame_id_mapping: Dict[str, FrameID] = {}
+    for frame_id_ in frame_ids:
+        camera_type: str = frame_id_.value.upper()
+        sample_data_token = nusc_sample["data"][camera_type]
+        sample_data_tokens.append(sample_data_token)
+        frame_id_mapping[sample_data_token] = frame_id_
+
+    raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
+    if load_raw_data:
+        for sensor_name, sample_data_token in nusc_sample["data"].items():
+            if (
+                label_converter.label_type == TrafficLightLabel and "TRAFFIC_LIGHT" in sensor_name
+            ) or ("CAM" in sensor_name and "TRAFFIC_LIGHT" not in sensor_name):
+                img_path: str = nusc.get_sample_data_path(sample_data_token)
+                raw_data[sensor_name.lower()] = np.array(Image.open(img_path), dtype=np.uint8)
 
     object_annotations: List[Dict[str, Any]] = [
-        ann for ann in nuim.object_ann if ann["sample_data_token"] == sample_data_token
+        ann for ann in nuim.object_ann if ann["sample_data_token"] in sample_data_tokens
     ]
-
-    if load_raw_data:
-        img_path: str = nusc.get_sample_data_path(sample_data_token)
-        raw_data = np.array(Image.open(img_path), dtype=np.uint8)
-    else:
-        raw_data = None
 
     objects_: List[DynamicObject2D] = []
     for ann in object_annotations:
@@ -427,7 +436,7 @@ def _sample_to_frame_2d(
 
         object_: DynamicObject2D = DynamicObject2D(
             unix_time=unix_time,
-            frame_id=frame_id,
+            frame_id=frame_id_mapping[ann["sample_data_token"]],
             semantic_score=1.0,
             semantic_label=semantic_label,
             roi=roi,
@@ -439,7 +448,6 @@ def _sample_to_frame_2d(
     frame = dataset.FrameGroundTruth(
         unix_time=unix_time,
         frame_name=frame_name,
-        frame_id=frame_id,
         objects=objects_,
         raw_data=raw_data,
     )

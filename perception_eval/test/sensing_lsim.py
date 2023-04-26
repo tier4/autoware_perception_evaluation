@@ -189,7 +189,7 @@ if __name__ == "__main__":
     for ground_truth_frame in sensing_lsim.evaluator.ground_truth_frames:
         frame_result: SensingFrameResult = sensing_lsim.callback(
             ground_truth_frame.unix_time,
-            ground_truth_frame.raw_data,
+            ground_truth_frame.raw_data["lidar"],
             non_detection_areas,
         )
 

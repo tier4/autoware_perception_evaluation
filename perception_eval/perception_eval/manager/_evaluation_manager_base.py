@@ -48,7 +48,7 @@ class _EvaluationMangerBase(ABC):
             dataset_paths=self.evaluator_config.dataset_paths,
             evaluation_task=self.evaluator_config.evaluation_task,
             label_converter=self.evaluator_config.label_converter,
-            frame_id=self.evaluator_config.frame_id,
+            frame_id=self.evaluator_config.frame_ids,
             load_raw_data=self.evaluator_config.load_raw_data,
         )
 
@@ -57,8 +57,8 @@ class _EvaluationMangerBase(ABC):
         return self.evaluator_config.evaluation_task
 
     @property
-    def frame_id(self):
-        return self.evaluator_config.frame_id
+    def frame_ids(self):
+        return self.evaluator_config.frame_ids
 
     @property
     def filtering_params(self):

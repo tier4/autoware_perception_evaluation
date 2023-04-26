@@ -49,16 +49,15 @@
 
 - Attributes
 
-  | Attributes           |                   type                    | Description                               |
-  | :------------------- | :---------------------------------------: | :---------------------------------------- |
-  | `frame_name`         |                   `str`                   | フレーム名                                |
-  | `unix_time`          |                   `int`                   | フレームの UNIX Time                      |
-  | `frame_id`           |                 `FrameID`                 | オブジェクト座標系 FrameID のインスタンス |
-  | `target_labels`      |             `List[LabelType]`             | 評価対象ラベル                            |
-  | `object_results`     | `List[DynamicObjectWithPerceptionResult]` | 推定オブジェクトと GT オブジェクトのペア  |
-  | `frame_ground_truth` |            `FrameGroundTruth`             | 1 フレーム分の GT オブジェクト            |
-  | `metrics_score`      |              `MetricsScore`               | メトリクス評価結果                        |
-  | `pass_fail_result`   |             `PassFailResult`              | Pass/Fail 結果                            |
+  | Attributes           |                   type                    | Description                              |
+  | :------------------- | :---------------------------------------: | :--------------------------------------- |
+  | `frame_name`         |                   `str`                   | フレーム名                               |
+  | `unix_time`          |                   `int`                   | フレームの UNIX Time                     |
+  | `target_labels`      |             `List[LabelType]`             | 評価対象ラベル                           |
+  | `object_results`     | `List[DynamicObjectWithPerceptionResult]` | 推定オブジェクトと GT オブジェクトのペア |
+  | `frame_ground_truth` |            `FrameGroundTruth`             | 1 フレーム分の GT オブジェクト           |
+  | `metrics_score`      |              `MetricsScore`               | メトリクス評価結果                       |
+  | `pass_fail_result`   |             `PassFailResult`              | Pass/Fail 結果                           |
 
 - Methods
 
@@ -75,16 +74,14 @@
 ```yaml
 [2022-08-10 10:38:11,341] [INFO] [perception_lsim.py:258 <module>] Frame result example (frame_results[0]):
 {'frame_ground_truth': {'ego2map': ' --- length of element 4 ---,',
-                        'frame_id': 'map',
                         'frame_name': '0',
                         'objects': ' --- length of element 89 ---,',
                         'pointcloud': None,
                         'unix_time': 1624164470849887},
- 'frame_id': 'map',
  'frame_name': '0',
  'metrics_score': {'detection_config': {'center_distance_thresholds': ' --- length of element 2 ---,',
                                         'iou_3d_thresholds': [' --- length of element 4 ---,'],
-                                        'iou_bev_thresholds': [' --- length of element 4 ---,'],
+                                        'iou_2d_thresholds': [' --- length of element 4 ---,'],
                                         'plane_distance_thresholds': ' --- length of element 2 ---,',
                                         'target_labels': ' --- length of element 4 ---,'},
                    'maps': ' --- length of element 6 ---,',
@@ -92,7 +89,7 @@
                    'prediction_scores': [],
                    'tracking_config': {'center_distance_thresholds': ' --- length of element 2 ---,',
                                        'iou_3d_thresholds': [' --- length of element 4 ---,'],
-                                       'iou_bev_thresholds': [' --- length of element 4 ---,'],
+                                       'iou_2d_thresholds': [' --- length of element 4 ---,'],
                                        'plane_distance_thresholds': ' --- length of element 2 ---,',
                                        'target_labels': ' --- length of element 4 ---,'},
                    'tracking_scores': ' --- length of element 6 ---,'},
@@ -120,7 +117,6 @@
                       'ego2map': ' --- length of element 4 ---,',
                       'fn_objects': ' --- length of element 17 ---,',
                       'fp_object_results': ' --- length of element 17 ---,',
-                      'frame_id': 'map',
                       'frame_pass_fail_config': {'confidence_threshold_list': None,
                                                  'matching_threshold_list': ' --- length of element 4 ---,',
                                                  'target_labels': ' --- length of element 4 ---,'},
@@ -202,7 +198,7 @@ object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(est
                          'unix_time': 1624164470849887,
                          'uuid': '912ae043cbc5a6ad4950f5ac0e94778e'},
  'iou_3d': {'mode': 'MatchingMode.IOU3D', 'value': 0.24986054835978477},
- 'iou_bev': {'mode': 'MatchingMode.IOUBEV', 'value': 0.2878950915821158},
+ 'iou_2d': {'mode': 'MatchingMode.IOU2D', 'value': 0.2878950915821158},
  'is_label_correct': True,
  'plane_distance': {'estimated_nn_plane': [[13.02303048243653, -27.805782945059786, 0.4205253823079967],
                                            [12.151479338961119, -28.537310518275785, 0.40291816982528683]],
