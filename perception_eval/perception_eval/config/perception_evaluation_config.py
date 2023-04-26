@@ -185,9 +185,11 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             confidence_threshold_list = None
 
         target_uuids: Optional[List[str]] = e_cfg.get("target_uuids")
+        ignore_attributes: Optional[List[str]] = e_cfg.get("ignore_attributes")
 
         f_params: Dict[str, Any] = {
             "target_labels": target_labels,
+            "ignore_attributes": ignore_attributes,
             "max_x_position_list": max_x_position_list,
             "max_y_position_list": max_y_position_list,
             "max_distance_list": max_distance_list,

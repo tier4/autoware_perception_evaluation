@@ -53,6 +53,7 @@ class CriticalObjectFilterConfig:
         self,
         evaluator_config,  #: PerceptionEvaluationConfig,
         target_labels: List[str],
+        ignore_attributes: Optional[List[str]] = None,
         max_x_position_list: Optional[List[float]] = None,
         max_y_position_list: Optional[List[float]] = None,
         max_distance_list: Optional[List[float]] = None,
@@ -84,6 +85,7 @@ class CriticalObjectFilterConfig:
             target_labels,
             evaluator_config.label_converter,
         )
+        self.ignore_attributes: Optional[List[str]] = ignore_attributes
         if max_x_position_list and max_y_position_list:
             self.max_x_position_list: List[float] = check_thresholds(
                 max_x_position_list,
@@ -134,6 +136,7 @@ class CriticalObjectFilterConfig:
 
         self.filtering_params: Dict[str, Any] = {
             "target_labels": self.target_labels,
+            "ignore_attributes": self.ignore_attributes,
             "max_x_position_list": self.max_x_position_list,
             "max_y_position_list": self.max_y_position_list,
             "max_distance_list": self.max_distance_list,

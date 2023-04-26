@@ -78,7 +78,8 @@ json_result = json.dump(dict_result)
 
     | Arguments              |    type     |       Mandatory       | Description                                                                                                                 |
     | :--------------------- | :---------: | :-------------------: | :-------------------------------------------------------------------------------------------------------------------------- |
-    | `target_labels`        | `List[str]` |          No           | 評価対象ラベル名．非指定の場合，全ラベルを対象に評価が実行される．                                                          |
+    | `target_labels`        | `List[str]` |          No           | 評価対象ラベル名．未指定の場合，全ラベルを対象に評価が実行される。                                                          |
+    | `ignore_attributes`    | `List[str]` |          No           | 評価対象外となるラベル名のキーワードもしくはアトリビュート。未指定の場合、全ラベルを対象に評価が実行される。                |
     | `max_x_position`       |   `float`   |          \*           | 評価対象 object の最大 x 位置 (3D のみ)                                                                                     |
     | `max_y_position`       |   `float`   |          \*           | 評価対象 object の最大 y 位置 (3D のみ)                                                                                     |
     | `max_distance`         |   `float`   |          \*           | 評価対象 object の base_link からの最大距離 (3D のみ)                                                                       |
@@ -226,6 +227,7 @@ json_result = json.dump(dict_result)
 | :-------------------------- | :--------------------------: | :-------------: | :-------------------------------------------------------------------------------------------------------------------------- |
 | `evaluator_config`          | `PerceptionEvaluationConfig` |       Yes       | `PerceptionEvaluationManager`の持つ config                                                                                  |
 | `target_labels`             |         `List[str]`          |       Yes       | 評価対象ラベル名                                                                                                            |
+| `ignore_attributes`         |         `List[str]`          |       No        | 評価対象外となるラベル名のキーワードもしくはアトリビュート。                                                                |
 | `max_x_position_list`       |        `List[float]`         |       \*        | 評価対象 object の最大 x 位置 (3D のみ)                                                                                     |
 | `max_y_position_list`       |        `List[float]`         |       \*        | 評価対象 object の最大 y 位置 (3D のみ)                                                                                     |
 | `max_distance_list`         |        `List[float]`         |       \*        | 評価対象 object の base_link からの最大距離 (3D のみ)                                                                       |

@@ -114,6 +114,7 @@ class _EvaluationConfigBase(ABC):
             self.evaluation_task,
             merge_similar_labels,
             label_prefix,
+            count_label_number=True,
         )
 
     @property

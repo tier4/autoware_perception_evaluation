@@ -198,8 +198,8 @@ def _get_str_objects_number_info(
         str: string.
     """
     str_: str = ""
-    for label in label_converter.labels:
-        str_ += f"{label.label} (-> {label.label}): {label.num} \n"
+    for label_info in label_converter.label_infos:
+        str_ += f"{label_info.label} (-> {label_info.label}): {label_info.num} \n"
     return str_
 
 

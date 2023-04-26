@@ -20,6 +20,7 @@ from typing import Union
 
 import numpy as np
 from perception_eval.common import ObjectType
+from perception_eval.common.label import Label
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.status import FrameID
@@ -32,6 +33,7 @@ from perception_eval.evaluation.matching import MatchingMode
 def filter_object_results(
     object_results: List[DynamicObjectWithPerceptionResult],
     target_labels: Optional[List[LabelType]] = None,
+    ignore_attributes: Optional[List[str]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
     max_distance_list: Optional[List[float]] = None,
@@ -51,9 +53,10 @@ def filter_object_results(
 
     Args:
         object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
-        target_labels Optional[List[LabelType]]): Filter target list of labels.
+        target_labels (Optional[List[LabelType]]): Filter target list of labels.
             Keep all `object_results` that both of their `estimated_object` and `ground_truth_object`
             have same label in this list. Defaults to None.
+        ignore_attributes (Optional[List[str]]): List of attributes to be ignored. Defaults to None.
         max_x_position_list (Optional[List[float]]): Thresholds list of maximum x-axis position from ego vehicle.
             Keep all `object_results` that their each x position are in [`-max_x_position`, `max_x_position`]
             for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
@@ -101,6 +104,7 @@ def filter_object_results(
             is_target = is_target and _is_target_object(
                 dynamic_object=object_result.ground_truth_object,
                 target_labels=target_labels,
+                ignore_attributes=ignore_attributes,
                 max_x_position_list=max_x_position_list,
                 max_y_position_list=max_y_position_list,
                 max_distance_list=max_distance_list,
@@ -121,7 +125,8 @@ def filter_object_results(
 def filter_objects(
     objects: List[ObjectType],
     is_gt: bool,
-    target_labels: Optional[List[LabelType]] = None,
+    target_labels: Optional[List[Label]] = None,
+    ignore_attributes: Optional[List[str]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
     max_distance_list: Optional[List[float]] = None,
@@ -139,8 +144,9 @@ def filter_objects(
     Args:
         objects (List[ObjectType]: The objects you want to filter.
         is_gt (bool): Flag if input object is ground truth.
-        target_labels Optional[List[LabelType]]): Filter target list of labels.
+        target_labels Optional[List[Label]]): Filter target list of labels.
             Keep all `objects` that have same label in this list. Defaults to None.
+        attributes_ignore (Optional[List[str]]): List of attributes to be ignored. Defaults to None.
         max_x_position_list (Optional[List[float]]): Thresholds list of maximum x-axis position from ego vehicle.
             Keep all `objects` that their each x position are in [`-max_x_position`, `max_x_position`].
             Defaults to None.
@@ -176,6 +182,7 @@ def filter_objects(
             is_target: bool = _is_target_object(
                 dynamic_object=object_,
                 target_labels=target_labels,
+                ignore_attributes=ignore_attributes,
                 max_x_position_list=max_x_position_list,
                 max_y_position_list=max_y_position_list,
                 max_distance_list=max_distance_list,
@@ -202,7 +209,7 @@ def filter_objects(
 
 def divide_tp_fp_objects(
     object_results: List[DynamicObjectWithPerceptionResult],
-    target_labels: Optional[List[LabelType]],
+    target_labels: Optional[List[Label]],
     matching_mode: Optional[MatchingMode] = None,
     matching_threshold_list: Optional[List[float]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
@@ -219,7 +226,7 @@ def divide_tp_fp_objects(
 
     Args:
         object_results (List[DynamicObjectWithPerceptionResult]): The object results you want to filter
-        target_labels Optional[List[AutowareLabel]]): Target labels list.
+        target_labels Optional[List[Label]]): Target labels list.
             Get threshold value from `matching_threshold_list` at corresponding label index.
         matching_mode (Optional[MatchingMode]): MatchingMode instance.
             When `matching_threshold_list=None`, this is not have to be specified. Defaults to None.
@@ -330,6 +337,7 @@ def _is_fn_object(
 def _is_target_object(
     dynamic_object: ObjectType,
     target_labels: Optional[List[LabelType]] = None,
+    ignore_attributes: Optional[List[str]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
     max_distance_list: Optional[List[float]] = None,
@@ -347,6 +355,7 @@ def _is_target_object(
         dynamic_object (ObjectType): The dynamic object
         target_labels Optional[List[LabelType]]): Target labels list.
             Keep all `dynamic_object` that have same labels in this list. Defaults to None.
+        ignore_attributes (Optional[List[str]]): List of attributes to be ignored. Defaults to None.
         max_x_position_list (Optional[List[float]]): Thresholds list of maximum x-axis position from ego vehicle.
             Keep all `dynamic_object` that their each x position are in [`-max_x_position`, `max_x_position`].
             Defaults to None.
@@ -380,7 +389,10 @@ def _is_target_object(
     is_target: bool = True
 
     if target_labels is not None:
-        is_target = is_target and dynamic_object.semantic_label in target_labels
+        is_target = is_target and dynamic_object.semantic_label.label in target_labels
+
+    if ignore_attributes is not None:
+        is_target = is_target and not dynamic_object.semantic_label.contains_any(ignore_attributes)
 
     if is_target and confidence_threshold_list is not None:
         confidence_threshold = label_threshold.get_label_threshold(confidence_threshold_list)
@@ -446,9 +458,9 @@ def divide_objects(
 
     for obj in objects:
         if isinstance(obj, DynamicObjectWithPerceptionResult):
-            label: LabelType = obj.estimated_object.semantic_label
+            label: LabelType = obj.estimated_object.semantic_label.label
         else:
-            label: LabelType = obj.semantic_label
+            label: LabelType = obj.semantic_label.label
 
         if label not in ret.keys():
             ret[label] = [obj]
@@ -480,9 +492,9 @@ def divide_objects_to_num(
 
     for obj in objects:
         if isinstance(obj, DynamicObjectWithPerceptionResult):
-            label: LabelType = obj.estimated_object.semantic_label
+            label: LabelType = obj.estimated_object.semantic_label.label
         else:
-            label: LabelType = obj.semantic_label
+            label: LabelType = obj.semantic_label.label
 
         if label not in ret.keys():
             ret[label] = 1

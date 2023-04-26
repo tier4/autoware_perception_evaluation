@@ -41,6 +41,7 @@ class PerceptionLSimMoc:
             "evaluation_task": evaluation_task,
             # ラベル，max x/y，マッチング閾値 (detection/tracking/predictionで共通)
             "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+            "ignore_attributes": ["cycle_state.without_rider"],
             # max x/y position or max/min distanceの指定が必要
             # # max x/y position
             "max_x_position": 102.4,
@@ -102,6 +103,7 @@ class PerceptionLSimMoc:
         critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
+            ignore_attributes=["cycle_state.without_rider"],
             max_x_position_list=[30.0, 30.0, 30.0, 30.0],
             max_y_position_list=[30.0, 30.0, 30.0, 30.0],
         )

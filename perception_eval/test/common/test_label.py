@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import List
+from typing import Tuple
+
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import LabelConverter
+from perception_eval.common.label import LabelType
 from perception_eval.common.label import TrafficLightLabel
 import pytest
 
@@ -106,11 +110,17 @@ traffic_light_non_classification_pairs = [
         ),
     ],
 )
-def test_label_converter(evaluation_task, merge_similar_labels, label_prefix, label_pairs):
+def test_label_converter(
+    evaluation_task,
+    merge_similar_labels,
+    label_prefix,
+    label_pairs: List[Tuple[LabelType, str]],
+):
     label_converter = LabelConverter(
         evaluation_task=evaluation_task,
         merge_similar_labels=merge_similar_labels,
         label_prefix=label_prefix,
+        count_label_number=True,
     )
-    for autoware_label, label in label_pairs:
-        assert autoware_label == label_converter.convert_label(label)
+    for autoware_label, name in label_pairs:
+        assert autoware_label == label_converter.convert_name(name)

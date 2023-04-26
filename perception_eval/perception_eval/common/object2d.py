@@ -19,7 +19,7 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
-from perception_eval.common.label import LabelType
+from perception_eval.common.label import Label
 from perception_eval.common.status import FrameID
 from perception_eval.common.status import Visibility
 from shapely.geometry import Polygon
@@ -110,7 +110,7 @@ class DynamicObject2D:
         unix_time (int): Unix time[us].
         frame_id (FrameID): FrameID instance, where 2D objects are with respect, related to CAM_**.
         semantic_score (float): Object's confidence [0, 1].
-        semantic_label (LabelType): Object's Label.
+        semantic_label (Label): Object's Label.
         roi (Optional[Roi]): ROI in image. For classification, None is OK. Defaults to None.
         uuid (Optional[str]): Unique ID. For traffic light objects, set lane ID. Defaults to None.
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
@@ -119,7 +119,7 @@ class DynamicObject2D:
         unix_time (int): Unix time[us].
         frame_id (FrameID): FrameID instance, where 2D objects are with respect, related to CAM_**.
         semantic_score (float): Object's confidence [0, 1].
-        semantic_label (LabelType): Object's Label.
+        semantic_label (Label): Object's Label.
         roi (Optional[Tuple[int, int, int, int]]): (xmin, ymin, width, height) of ROI.
             For classification, None is OK. Defaults to None.
         uuid (Optional[str]): Unique ID. For traffic light objects, set lane ID. Defaults to None.
@@ -131,7 +131,7 @@ class DynamicObject2D:
         unix_time: int,
         frame_id: FrameID,
         semantic_score: float,
-        semantic_label: LabelType,
+        semantic_label: Label,
         roi: Optional[Tuple[int, int, int, int]] = None,
         uuid: Optional[str] = None,
         visibility: Optional[Visibility] = None,
@@ -140,7 +140,7 @@ class DynamicObject2D:
         self.unix_time: int = unix_time
         self.frame_id: FrameID = frame_id
         self.semantic_score: float = semantic_score
-        self.semantic_label: LabelType = semantic_label
+        self.semantic_label: Label = semantic_label
         self.roi: Optional[Roi] = Roi(roi) if roi is not None else None
         self.uuid: Optional[str] = uuid
         self.visibility: Optional[Visibility] = visibility
