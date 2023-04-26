@@ -25,16 +25,7 @@ from typing import Union
 from perception_eval.common.evaluation_task import EvaluationTask
 
 
-class LabelBase(Enum):
-    def __str__(self) -> str:
-        return self.value
-
-    @staticmethod
-    def get_pairs() -> List[Tuple[LabelBase, str]]:
-        raise NotImplementedError
-
-
-class AutowareLabel(LabelBase):
+class AutowareLabel(Enum):
     """[summary]
     Autoware label enum.
     See https://github.com/tier4/autoware_iv_msgs/blob/main/autoware_perception_msgs/msg/object_recognition/Semantic.msg
@@ -49,78 +40,11 @@ class AutowareLabel(LabelBase):
     PEDESTRIAN = "pedestrian"
     ANIMAL = "animal"
 
-    @staticmethod
-    def get_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel, str]]:
-        """[summary]
-        Set pairs of AutowareLabel and str as list.
-
-        Args:
-            merge_similar_labels (bool): Whether merge similar labels.
-                If True,
-                    - BUS, TRUCK, TRAILER -> CAR
-                    - MOTORBIKE, CYCLIST -> BICYCLE
-
-        Returns:
-            List[Tuple[AutowareLabel, str]]: The list of pair.
-        """
-        pair_list: List[Tuple[AutowareLabel, str]] = [
-            (AutowareLabel.BICYCLE, "bicycle"),
-            (AutowareLabel.BICYCLE, "vehicle.bicycle"),
-            (AutowareLabel.CAR, "car"),
-            (AutowareLabel.CAR, "vehicle.car"),
-            (AutowareLabel.CAR, "vehicle.construction"),
-            (AutowareLabel.CAR, "vehicle.emergency (ambulance & police)"),
-            (AutowareLabel.CAR, "vehicle.police"),
-            (AutowareLabel.CAR, "vehicle.fire"),
-            (AutowareLabel.CAR, "vehicle.ambulance"),
-            (AutowareLabel.PEDESTRIAN, "pedestrian"),
-            (AutowareLabel.PEDESTRIAN, "pedestrian.adult"),
-            (AutowareLabel.PEDESTRIAN, "pedestrian.child"),
-            (AutowareLabel.PEDESTRIAN, "pedestrian.construction_worker"),
-            (AutowareLabel.PEDESTRIAN, "pedestrian.personal_mobility"),
-            (AutowareLabel.PEDESTRIAN, "pedestrian.police_officer"),
-            (AutowareLabel.PEDESTRIAN, "pedestrian.stroller"),
-            (AutowareLabel.PEDESTRIAN, "pedestrian.wheelchair"),
-            (AutowareLabel.PEDESTRIAN, "construction_worker"),
-            (AutowareLabel.UNKNOWN, "animal"),
-            (AutowareLabel.UNKNOWN, "unknown"),
-            (AutowareLabel.UNKNOWN, "movable_object.barrier"),
-            (AutowareLabel.UNKNOWN, "movable_object.debris"),
-            (AutowareLabel.UNKNOWN, "movable_object.pushable_pullable"),
-            (AutowareLabel.UNKNOWN, "movable_object.trafficcone"),
-            (AutowareLabel.UNKNOWN, "movable_object.traffic_cone"),
-            (AutowareLabel.UNKNOWN, "static_object.bicycle rack"),
-            (AutowareLabel.UNKNOWN, "static_object.bollard"),
-            (AutowareLabel.UNKNOWN, "forklift"),
-        ]
-        if merge_similar_labels:
-            pair_list += [
-                (AutowareLabel.CAR, "bus"),
-                (AutowareLabel.CAR, "vehicle.bus (bendy & rigid)"),
-                (AutowareLabel.CAR, "vehicle.bus"),
-                (AutowareLabel.CAR, "truck"),
-                (AutowareLabel.CAR, "vehicle.truck"),
-                (AutowareLabel.CAR, "trailer"),
-                (AutowareLabel.CAR, "vehicle.trailer"),
-                (AutowareLabel.BICYCLE, "motorbike"),
-                (AutowareLabel.BICYCLE, "vehicle.motorcycle"),
-            ]
-        else:
-            pair_list += [
-                (AutowareLabel.BUS, "bus"),
-                (AutowareLabel.BUS, "vehicle.bus (bendy & rigid)"),
-                (AutowareLabel.BUS, "vehicle.bus"),
-                (AutowareLabel.TRUCK, "truck"),
-                (AutowareLabel.TRUCK, "vehicle.truck"),
-                (AutowareLabel.TRUCK, "trailer"),
-                (AutowareLabel.TRUCK, "vehicle.trailer"),
-                (AutowareLabel.MOTORBIKE, "motorbike"),
-                (AutowareLabel.MOTORBIKE, "vehicle.motorcycle"),
-            ]
-        return pair_list
+    def __str__(self) -> str:
+        return self.value
 
 
-class TrafficLightLabel(LabelBase):
+class TrafficLightLabel(Enum):
     # except of classification
     TRAFFIC_LIGHT = "traffic_light"
 
@@ -140,40 +64,8 @@ class TrafficLightLabel(LabelBase):
     # unknown is used in both detection and classification
     UNKNOWN = "unknown"
 
-    @staticmethod
-    def get_pairs(evaluation_task: EvaluationTask) -> List[Tuple[TrafficLightLabel, str]]:
-        if evaluation_task == EvaluationTask.CLASSIFICATION2D:
-            pair_list: List[Tuple[TrafficLightLabel, str]] = [
-                (TrafficLightLabel.GREEN, "green"),
-                (TrafficLightLabel.RED, "red"),
-                (TrafficLightLabel.YELLOW, "yellow"),
-                (TrafficLightLabel.RED_STRAIGHT, "red_straight"),
-                (TrafficLightLabel.RED_LEFT, "red_left"),
-                (TrafficLightLabel.RED_LEFT_STRAIGHT, "red_left_straight"),
-                (TrafficLightLabel.RED_LEFT_DIAGONAL, "red_left_diagonal"),
-                (TrafficLightLabel.RED_RIGHT, "red_right"),
-                (TrafficLightLabel.RED_RIGHT_STRAIGHT, "red_right_straight"),
-                (TrafficLightLabel.RED_RIGHT_DIAGONAL, "red_right_diagonal"),
-                (TrafficLightLabel.YELLOW_RIGHT, "yellow_right"),
-                (TrafficLightLabel.UNKNOWN, "unknown"),
-            ]
-        else:
-            pair_list: List[Tuple[TrafficLightLabel, str]] = [
-                (TrafficLightLabel.TRAFFIC_LIGHT, "traffic_light"),
-                (TrafficLightLabel.TRAFFIC_LIGHT, "green"),
-                (TrafficLightLabel.TRAFFIC_LIGHT, "red"),
-                (TrafficLightLabel.TRAFFIC_LIGHT, "yellow"),
-                (TrafficLightLabel.TRAFFIC_LIGHT, "red_straight"),
-                (TrafficLightLabel.TRAFFIC_LIGHT, "red_left"),
-                (TrafficLightLabel.TRAFFIC_LIGHT, "red_left_straight"),
-                (TrafficLightLabel.TRAFFIC_LIGHT, "red_left_diagonal"),
-                (TrafficLightLabel.TRAFFIC_LIGHT, "red_right"),
-                (TrafficLightLabel.TRAFFIC_LIGHT, "red_right_straight"),
-                (TrafficLightLabel.TRAFFIC_LIGHT, "red_right_diagonal"),
-                (TrafficLightLabel.TRAFFIC_LIGHT, "yellow_right"),
-                (TrafficLightLabel.UNKNOWN, "unknown"),
-            ]
-        return pair_list
+    def __str__(self) -> str:
+        return self.value
 
 
 LabelType = Union[AutowareLabel, TrafficLightLabel]
@@ -193,6 +85,39 @@ class LabelInfo:
     label: LabelType
     name: str
     num: int = 0
+
+
+class Label:
+    """
+    Args:
+        label (LabelType): LabelType instance.
+        name (str): Original label name.
+        attributes (List[str]): List of attributes. Defaults to [].
+    """
+
+    def __init__(self, label: LabelType, name: str, attributes: List[str] = []) -> None:
+        self.label: LabelType = label
+        self.name: str = name
+        self.attributes: List[str] = attributes
+
+    def contains(self, key: str) -> bool:
+        """Check whether self.name contains input attribute.
+
+        Args:
+            key (str): Target name or attribute.
+
+        Returns:
+            bool: Indicates whether input self.name contains input attribute.
+        """
+        assert isinstance(key, str), f"Expected type is str, but got {type(key)}"
+        return key in self.name or key in self.attributes
+
+    def contains_any(self, keys: List[str]) -> bool:
+        assert isinstance(keys, (list, tuple)), f"Expected type is sequence, but got {type(keys)}"
+        return any([self.contains(key) for key in keys])
+
+    def __eq__(self, other: Label) -> bool:
+        return self.label == other.label
 
 
 class LabelConverter:
@@ -220,7 +145,8 @@ class LabelConverter:
         self,
         evaluation_task: Union[str, EvaluationTask],
         merge_similar_labels: bool,
-        label_prefix: str = "autoware",
+        label_prefix: str,
+        count_label_number: bool = False,
     ) -> None:
 
         self.evaluation_task: EvaluationTask = (
@@ -228,32 +154,29 @@ class LabelConverter:
             if isinstance(evaluation_task, EvaluationTask)
             else EvaluationTask.from_value(evaluation_task)
         )
+        self.count_label_number: bool = count_label_number
 
         if label_prefix == "autoware":
             self.label_type = AutowareLabel
-            pair_list: List[Tuple[AutowareLabel, str]] = AutowareLabel.get_pairs(
-                merge_similar_labels=merge_similar_labels,
-            )
+            pair_list = _get_autoware_pairs(merge_similar_labels)
         elif label_prefix == "traffic_light":
             self.label_type = TrafficLightLabel
-            pair_list: List[Tuple[TrafficLightLabel, str]] = TrafficLightLabel.get_pairs(
-                evaluation_task=evaluation_task
-            )
+            pair_list = _get_traffic_light_paris(evaluation_task)
         elif label_prefix in ("blinker", "brake_lamp"):
             raise NotImplementedError(f"{label_prefix} is under construction.")
         else:
             raise ValueError(f"Unexpected `label_prefix`: {label_prefix}")
 
-        self.labels: List[LabelInfo] = [LabelInfo(label, name) for label, name in pair_list]
+        self.label_infos: List[LabelInfo] = [LabelInfo(label, name) for label, name in pair_list]
 
-        logging.debug(f"label {self.labels}")
+        logging.debug(f"label {self.label_infos}")
 
     def convert_label(
         self,
-        label: str,
-        count_label_number: bool = False,
-    ) -> LabelType:
-        """Convert to LabelType instance from label name in string.
+        name: str,
+        attributes: List[str] = [],
+    ) -> Label:
+        """Convert label name and attributes to Label instance.
 
         Args:
             label (str): Label name you want to convert to any LabelType object.
@@ -261,26 +184,150 @@ class LabelConverter:
                 Defaults to False.
 
         Returns:
-            LabelType: Converted label.
-
-        Examples:
-            >>> converter = LabelConverter(EvaluationTask.DETECTION, False, "autoware")
-            >>> converter.convert_label("car")
-            <AutowareLabel.CAR: 'car'>
+            Label: Converted label.
         """
-        return_label: Optional[LabelType] = None
-        for label_class in self.labels:
-            if label.lower() == label_class.name:
-                if count_label_number:
-                    label_class.num += 1
+        return_label: Optional[Label] = None
+        for label_info in self.label_infos:
+            if name.lower() == label_info.name:
+                if self.count_label_number:
+                    label_info.num += 1
                     if return_label is not None:
-                        logging.error(f"Label {label} is already converted to {return_label}.")
-                return_label = label_class.label
+                        logging.error(f"Label {name} is already converted to {return_label}.")
+                return_label = Label(label_info.label, name, attributes)
                 break
         if return_label is None:
-            logging.warning(f"Label {label} is not registered.")
+            logging.warning(f"Label {name} is not registered.")
+            return_label = Label(self.label_type.UNKNOWN, name, attributes)
+        return return_label
+
+    def convert_name(self, name: str) -> LabelType:
+        """Convert label name to LabelType instance.
+
+        Args:
+            label (str): Label name you want to convert to any LabelType object.
+            count_label_number (bool): Whether to count how many labels have been converted.
+                Defaults to False.
+
+        Returns:
+            Label: Converted label.
+        """
+        return_label: Optional[LabelType] = None
+        for label_info in self.label_infos:
+            if name.lower() == label_info.name:
+                if self.count_label_number:
+                    label_info.num += 1
+                return_label = label_info.label
+        if return_label is None:
+            logging.warning(f"Label {name} is not registered.")
             return_label = self.label_type.UNKNOWN
         return return_label
+
+
+def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel, str]]:
+    """[summary]
+    Set pairs of AutowareLabel and str as list.
+
+    Args:
+        merge_similar_labels (bool): Whether merge similar labels.
+            If True,
+                - BUS, TRUCK, TRAILER -> CAR
+                - MOTORBIKE, CYCLIST -> BICYCLE
+
+    Returns:
+        List[Tuple[AutowareLabel, str]]: The list of pair.
+    """
+    pair_list: List[Tuple[AutowareLabel, str]] = [
+        (AutowareLabel.BICYCLE, "bicycle"),
+        (AutowareLabel.BICYCLE, "vehicle.bicycle"),
+        (AutowareLabel.CAR, "car"),
+        (AutowareLabel.CAR, "vehicle.car"),
+        (AutowareLabel.CAR, "vehicle.construction"),
+        (AutowareLabel.CAR, "vehicle.emergency (ambulance & police)"),
+        (AutowareLabel.CAR, "vehicle.police"),
+        (AutowareLabel.CAR, "vehicle.fire"),
+        (AutowareLabel.CAR, "vehicle.ambulance"),
+        (AutowareLabel.PEDESTRIAN, "pedestrian"),
+        (AutowareLabel.PEDESTRIAN, "pedestrian.adult"),
+        (AutowareLabel.PEDESTRIAN, "pedestrian.child"),
+        (AutowareLabel.PEDESTRIAN, "pedestrian.construction_worker"),
+        (AutowareLabel.PEDESTRIAN, "pedestrian.personal_mobility"),
+        (AutowareLabel.PEDESTRIAN, "pedestrian.police_officer"),
+        (AutowareLabel.PEDESTRIAN, "pedestrian.stroller"),
+        (AutowareLabel.PEDESTRIAN, "pedestrian.wheelchair"),
+        (AutowareLabel.PEDESTRIAN, "construction_worker"),
+        (AutowareLabel.UNKNOWN, "animal"),
+        (AutowareLabel.UNKNOWN, "unknown"),
+        (AutowareLabel.UNKNOWN, "movable_object.barrier"),
+        (AutowareLabel.UNKNOWN, "movable_object.debris"),
+        (AutowareLabel.UNKNOWN, "movable_object.pushable_pullable"),
+        (AutowareLabel.UNKNOWN, "movable_object.trafficcone"),
+        (AutowareLabel.UNKNOWN, "movable_object.traffic_cone"),
+        (AutowareLabel.UNKNOWN, "static_object.bicycle rack"),
+        (AutowareLabel.UNKNOWN, "static_object.bollard"),
+        (AutowareLabel.UNKNOWN, "forklift"),
+    ]
+    if merge_similar_labels:
+        pair_list += [
+            (AutowareLabel.CAR, "bus"),
+            (AutowareLabel.CAR, "vehicle.bus (bendy & rigid)"),
+            (AutowareLabel.CAR, "vehicle.bus"),
+            (AutowareLabel.CAR, "truck"),
+            (AutowareLabel.CAR, "vehicle.truck"),
+            (AutowareLabel.CAR, "trailer"),
+            (AutowareLabel.CAR, "vehicle.trailer"),
+            (AutowareLabel.BICYCLE, "motorbike"),
+            (AutowareLabel.BICYCLE, "vehicle.motorcycle"),
+        ]
+    else:
+        pair_list += [
+            (AutowareLabel.BUS, "bus"),
+            (AutowareLabel.BUS, "vehicle.bus (bendy & rigid)"),
+            (AutowareLabel.BUS, "vehicle.bus"),
+            (AutowareLabel.TRUCK, "truck"),
+            (AutowareLabel.TRUCK, "vehicle.truck"),
+            (AutowareLabel.TRUCK, "trailer"),
+            (AutowareLabel.TRUCK, "vehicle.trailer"),
+            (AutowareLabel.MOTORBIKE, "motorbike"),
+            (AutowareLabel.MOTORBIKE, "vehicle.motorcycle"),
+        ]
+    return pair_list
+
+
+def _get_traffic_light_paris(
+    evaluation_task: EvaluationTask,
+) -> List[Tuple[TrafficLightLabel, str]]:
+    if evaluation_task == EvaluationTask.CLASSIFICATION2D:
+        pair_list: List[Tuple[TrafficLightLabel, str]] = [
+            (TrafficLightLabel.GREEN, "green"),
+            (TrafficLightLabel.RED, "red"),
+            (TrafficLightLabel.YELLOW, "yellow"),
+            (TrafficLightLabel.RED_STRAIGHT, "red_straight"),
+            (TrafficLightLabel.RED_LEFT, "red_left"),
+            (TrafficLightLabel.RED_LEFT_STRAIGHT, "red_left_straight"),
+            (TrafficLightLabel.RED_LEFT_DIAGONAL, "red_left_diagonal"),
+            (TrafficLightLabel.RED_RIGHT, "red_right"),
+            (TrafficLightLabel.RED_RIGHT_STRAIGHT, "red_right_straight"),
+            (TrafficLightLabel.RED_RIGHT_DIAGONAL, "red_right_diagonal"),
+            (TrafficLightLabel.YELLOW_RIGHT, "yellow_right"),
+            (TrafficLightLabel.UNKNOWN, "unknown"),
+        ]
+    else:
+        pair_list: List[Tuple[TrafficLightLabel, str]] = [
+            (TrafficLightLabel.TRAFFIC_LIGHT, "traffic_light"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "green"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "red"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "yellow"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "red_straight"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "red_left"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "red_left_straight"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "red_left_diagonal"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "red_right"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "red_right_straight"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "red_right_diagonal"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "yellow_right"),
+            (TrafficLightLabel.UNKNOWN, "unknown"),
+        ]
+    return pair_list
 
 
 def set_target_lists(
@@ -305,7 +352,4 @@ def set_target_lists(
     """
     if target_labels is None or len(target_labels) == 0:
         return [label for label in label_converter.label_type]
-    target_autoware_labels = []
-    for target_label in target_labels:
-        target_autoware_labels.append(label_converter.convert_label(target_label))
-    return target_autoware_labels
+    return [label_converter.convert_name(name) for name in target_labels]

@@ -456,7 +456,7 @@ class PerceptionVisualizer3D:
             axes: Axes = plt.subplot()
 
         object_type_: str = ".gt_track" if is_ground_truth else ".est_track"
-        object_label_: str = "." + dynamic_object.semantic_label.value
+        object_label_: str = "." + dynamic_object.semantic_label.label.value
         uuid_: str = dynamic_object.uuid + object_type_ + object_label_
         if uuid_ not in self.__tracked_paths.keys():
             self.__tracked_paths.update({uuid_: [dynamic_object.state.position[:2]]})

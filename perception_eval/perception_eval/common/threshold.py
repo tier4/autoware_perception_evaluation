@@ -16,6 +16,7 @@ from typing import List
 from typing import Optional
 from typing import Union
 
+from perception_eval.common.label import Label
 from perception_eval.common.label import LabelType
 
 
@@ -23,20 +24,20 @@ class LabelThreshold:
     """Label threshold interface for function `get_label_threshold`.
 
     Attributes:
-        semantic_label (LabelType): Target label.
-        target_labels (Optional[List[LabelType]]): Target labels list.
+        semantic_label (Label): Label instance.
+        target_labels (Optional[List[LabelType]]): List of LabeType instances.
 
     Args:
-        semantic_label (LabelType): Target label.
+        semantic_label (Label): Label instance.
         target_labels: (Optional[List[LabelType]]): Target labels list.
     """
 
     def __init__(
         self,
-        semantic_label: LabelType,
+        semantic_label: Label,
         target_labels: Optional[List[LabelType]],
     ) -> None:
-        self.semantic_label: LabelType = semantic_label
+        self.semantic_label: Label = semantic_label
         self.target_labels: Optional[List[LabelType]] = target_labels
 
     def get_label_threshold(
@@ -67,7 +68,7 @@ class LabelThreshold:
 
 
 def get_label_threshold(
-    semantic_label: LabelType,
+    semantic_label: Label,
     target_labels: Optional[List[LabelType]],
     threshold_list: Optional[List[float]],
 ) -> Optional[float]:
@@ -77,8 +78,8 @@ def get_label_threshold(
     and object.semantic_label is "PEDESTRIAN", then LabelThreshold return 0.2.
 
     Args:
-        semantic_label (LabelTypes): Target label.
-        target_labels: (Optional[List[LabelType]]): Label list.
+        semantic_label (Label): Label instance.
+        target_labels (Optional[List[LabelType]]): List of LabeType instances.
         threshold_list (Optional[List[float]]): Thresholds list.
 
     Returns:
@@ -94,8 +95,8 @@ def get_label_threshold(
     if threshold_list is None:
         return None
 
-    if semantic_label in target_labels:
-        label_index: int = target_labels.index(semantic_label)
+    if semantic_label.label in target_labels:
+        label_index: int = target_labels.index(semantic_label.label)
         label_threshold = threshold_list[label_index]
     return label_threshold
 

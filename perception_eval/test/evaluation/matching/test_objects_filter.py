@@ -21,6 +21,7 @@ import unittest
 
 import numpy as np
 from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import Label
 from perception_eval.common.object import DynamicObject
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects
@@ -227,7 +228,10 @@ class TestObjectsFilter(unittest.TestCase):
                 0.0,
                 np.array([(1, 1), (2, 2)]),
                 np.array([(0, None), (3, None)]),
-                {"0": AutowareLabel.UNKNOWN, "3": AutowareLabel.ANIMAL},
+                {
+                    "0": Label(AutowareLabel.UNKNOWN, "unknown", []),
+                    "3": Label(AutowareLabel.ANIMAL, "animal", []),
+                },
             ),
             # (3)
             # TP: (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2]), (Est[3], GT[3])
@@ -247,7 +251,7 @@ class TestObjectsFilter(unittest.TestCase):
                 1.5,
                 np.array([(0, 0), (1, 1), (3, 3)]),
                 np.array([(2, None)]),
-                {"2": AutowareLabel.UNKNOWN},
+                {"2": Label(AutowareLabel.UNKNOWN, "unknown", [])},
             ),
             # (5)
             # TP: (Est[2], GT[0]), (Est[1], GT[1]), (Est[3], GT[3])
@@ -257,7 +261,7 @@ class TestObjectsFilter(unittest.TestCase):
                 1.5,
                 np.array([(2, 0), (1, 1), (3, 3)]),
                 np.array([(0, None)]),
-                {"2": AutowareLabel.CAR},
+                {"2": Label(AutowareLabel.CAR, "car", [])},
             ),
             # (6)
             # TP:
@@ -421,7 +425,15 @@ class TestObjectsFilter(unittest.TestCase):
             # Given difference (0.0, 0.0), there are no fn.
             (0.0, 0.0, [], {}),
             # Given no diff_distance and 2 labels changed, 2 estimated_objects are fp.
-            (0.0, 0.0, [0, 3], {"0": AutowareLabel.UNKNOWN, "3": AutowareLabel.ANIMAL}),
+            (
+                0.0,
+                0.0,
+                [0, 3],
+                {
+                    "0": Label(AutowareLabel.UNKNOWN, "unknown", []),
+                    "3": Label(AutowareLabel.ANIMAL, "animal", []),
+                },
+            ),
             # TODO(Shin-kyoto): 以下のtestも通る必要あり．現在，ground truth一つに対しestimated objectが複数紐づくため通らなくなっている
             # Given no diff_distance and 2 labels changed, 2 estimated_objects are fp.
             # (0.0, 0.0, [0, 3], {'0' : AutowareLabel.CAR, '3' : AutowareLabel.ANIMAL}),
@@ -432,7 +444,7 @@ class TestObjectsFilter(unittest.TestCase):
             # Given difference (1.5, 0.0), there are no fn.
             (1.5, 0.0, [], {}),
             # Given difference (1.5, 0.0) and 1 labels changed, 1 estimated_objects are fp.
-            (1.5, 0.0, [1], {"1": AutowareLabel.UNKNOWN}),
+            (1.5, 0.0, [1], {"1": Label(AutowareLabel.UNKNOWN, "unknown", [])}),
             # Given difference (2.5, 0.0), all ground_truth_objects are fn
             (2.5, 0.0, [0, 1, 2, 3], {}),
             # Given difference (2.5, 2.5), all ground_truth_objects are fn
@@ -531,7 +543,7 @@ class TestObjectsFilter(unittest.TestCase):
             self.dummy_ground_truth_objects
         )
         for label, objects in objects_dict.items():
-            assert all([obj.semantic_label == label for obj in objects])
+            assert all([obj.semantic_label.label == label for obj in objects])
 
         objects_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
             estimated_objects=self.dummy_ground_truth_objects,
@@ -543,7 +555,7 @@ class TestObjectsFilter(unittest.TestCase):
         for label, object_results in object_results_dict.items():
             assert all(
                 [
-                    obj_result.estimated_object.semantic_label == label
+                    obj_result.estimated_object.semantic_label.label == label
                     for obj_result in object_results
                 ]
             )

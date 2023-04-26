@@ -337,7 +337,7 @@ class PerceptionVisualizer2D:
             if self.config.evaluation_task == EvaluationTask.TRACKING2D:
                 edge_color = self.__cmap.get(object_.uuid)
 
-            box_text = f"{object_text}: {str(object_.semantic_label)}"
+            box_text = f"{object_text}: {str(object_.semantic_label.label)}"
             box: Rectangle = Rectangle(
                 xy=box_bottom_left,
                 width=box_size[0],
