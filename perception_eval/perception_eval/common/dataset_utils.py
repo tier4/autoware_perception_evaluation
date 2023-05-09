@@ -458,6 +458,8 @@ def _sample_to_frame_2d(
     frame_id_mapping: Dict[str, FrameID] = {}
     for frame_id_ in frame_ids:
         camera_type: str = frame_id_.value.upper()
+        if nusc_sample["data"].get(camera_type) is None:
+            continue
         sample_data_token = nusc_sample["data"][camera_type]
         sample_data_tokens.append(sample_data_token)
         frame_id_mapping[sample_data_token] = frame_id_
@@ -493,6 +495,13 @@ def _sample_to_frame_2d(
         semantic_label: LabelType = label_converter.convert_label(category_info["name"], attributes)
 
         if label_converter.label_type == TrafficLightLabel:
+            # NOTE: Check whether Regulatory Element is used
+            # in scene.json => description: "TLR, regulatory_element"
+            scene_descriptions: List[str] = nusc.get("scene", sample["scene_token"])[
+                "description"
+            ].split(", ")
+            use_regulatory_element: bool = "regulatory_element" in scene_descriptions
+
             for instance_record in nusc.instance:
                 if instance_record["token"] == ann["instance_token"]:
                     instance_name: str = instance_record["instance_name"]
@@ -512,6 +521,7 @@ def _sample_to_frame_2d(
             visibility=visibility,
         )
         objects_.append(object_)
+    print(len(objects_))
 
     frame = dataset.FrameGroundTruth(
         unix_time=unix_time,
