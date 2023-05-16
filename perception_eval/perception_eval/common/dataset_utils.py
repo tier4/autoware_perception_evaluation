@@ -40,6 +40,7 @@ from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
 from PIL import Image
 from pyquaternion.quaternion import Quaternion
+import logging
 
 from . import dataset
 
@@ -455,14 +456,26 @@ def _sample_to_frame_2d(
     unix_time: int = sample["timestamp"]
 
     sample_data_tokens: List[str] = []
-    frame_id_mapping: Dict[str, FrameID] = {}
+    frame_id_mapping: Dict[str, FrameID] = {}    
     for frame_id_ in frame_ids:
-        camera_type: str = frame_id_.value.upper()
-        if nusc_sample["data"].get(camera_type) is None:
-            continue
-        sample_data_token = nusc_sample["data"][camera_type]
-        sample_data_tokens.append(sample_data_token)
-        frame_id_mapping[sample_data_token] = frame_id_
+        # TODO update
+        scene_descriptions: List[str] = nusc.get("scene", sample["scene_token"])[
+                "description"
+            ].split(", ")
+        if "regulatory_element" in scene_descriptions:
+            for camera_type in (FrameID.CAM_TRAFFIC_LIGHT_FAR.value.upper(), FrameID.CAM_TRAFFIC_LIGHT_NEAR.value.upper()):
+                if nusc_sample["data"].get(camera_type) is None:
+                    continue
+                sample_data_token = nusc_sample["data"][camera_type]
+                sample_data_tokens.append(sample_data_token)
+                frame_id_mapping[sample_data_token] = FrameID.TRAFFIC_LIGHT # frame_id_
+        else:
+            camera_type: str = frame_id_.value.upper()
+            if nusc_sample["data"].get(camera_type) is None:
+                continue
+            sample_data_token = nusc_sample["data"][camera_type]
+            sample_data_tokens.append(sample_data_token)
+            frame_id_mapping[sample_data_token] = frame_id_
 
     raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
     if load_raw_data:
@@ -497,10 +510,6 @@ def _sample_to_frame_2d(
         if label_converter.label_type == TrafficLightLabel:
             # NOTE: Check whether Regulatory Element is used
             # in scene.json => description: "TLR, regulatory_element"
-            scene_descriptions: List[str] = nusc.get("scene", sample["scene_token"])[
-                "description"
-            ].split(", ")
-            use_regulatory_element: bool = "regulatory_element" in scene_descriptions
 
             for instance_record in nusc.instance:
                 if instance_record["token"] == ann["instance_token"]:
@@ -510,6 +519,8 @@ def _sample_to_frame_2d(
             uuid: str = ann["instance_token"]
 
         visibility = None
+
+        logging.info(f"uuid: {uuid}")
 
         object_: DynamicObject2D = DynamicObject2D(
             unix_time=unix_time,
@@ -521,7 +532,6 @@ def _sample_to_frame_2d(
             visibility=visibility,
         )
         objects_.append(object_)
-    print(len(objects_))
 
     frame = dataset.FrameGroundTruth(
         unix_time=unix_time,

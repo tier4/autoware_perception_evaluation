@@ -27,6 +27,7 @@ from perception_eval.common import DynamicObject2D
 from perception_eval.common import ObjectType
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
+from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.evaluation.matching import CenterDistanceMatching
@@ -390,7 +391,7 @@ def _get_object_results_with_id(
                 ground_truth_objects_.remove(gt_object)
 
     # when there are rest of estimated objects, they all are FP.
-    if len(estimated_objects_) > 0:
+    if len(estimated_objects_) > 0 and not any([est.frame_id == FrameID.TRAFFIC_LIGHT for est in estimated_objects_]):
         object_results += _get_fp_object_results(estimated_objects_)
 
     return object_results
