@@ -6,6 +6,23 @@
 
 ## Release for main branch
 
+### v1.0.7
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/64>
+
+  - 【feat】複数カメラのFrameIDに対して評価を可能にする機能の追加
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/66>
+
+  - 【feat】オブジェクトのフィルタ時にオリジナルのラベル名もしくはアトリビュートでフィルタする機能の追加
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/67>
+
+  - 【chore】semantic-pull-requestの修正
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/63>
+  - 【fix】EDAツール内でのFP results のfilterバグの修正
+
 ### v1.0.6
 
 - <https://github.com/tier4/autoware_perception_evaluation/pull/60>
