@@ -450,6 +450,7 @@ def _sample_to_frame_2d(
         frame_name=frame_name,
         objects=objects_,
         raw_data=raw_data,
+        scene_token=nusc_sample["scene_token"],
     )
 
     return frame

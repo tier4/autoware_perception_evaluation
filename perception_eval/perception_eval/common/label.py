@@ -119,6 +119,9 @@ class Label:
     def __eq__(self, other: Label) -> bool:
         return self.label == other.label
 
+    def __hash__(self):
+        return hash(tuple((self.label, self.name, tuple(self.attributes))))
+
 
 class LabelConverter:
     """A class to convert string label name to LabelType instance.
