@@ -185,9 +185,9 @@ class EDAVisualizer:
 
         fig: Figure = make_subplots(rows=1, cols=len(ranges_xy), subplot_titles=subplot_titles)
 
+        visualize_df = self.visualize_df[self.visualize_df.name.isin(class_names)]
         for i, range_xy in enumerate(ranges_xy):
-            _df: pd.DataFrame = self.visualize_df[self.visualize_df.distance_2d < range_xy]
-
+            _df: pd.DataFrame = visualize_df[visualize_df.distance_2d < range_xy]
             fig.add_trace(
                 go.Histogram(
                     x=_df["name"], name=f"#objects: ~{range_xy}m", marker=dict(color="blue")
@@ -196,8 +196,11 @@ class EDAVisualizer:
                 col=i + 1,
             )
 
-        fig.update_yaxes(range=[0, len(self.visualize_df)])
-        fig.update_xaxes(categoryorder="array", categoryarray=class_names)
+        fig.update_yaxes(range=[0, len(visualize_df)])
+        filtered_classes = visualize_df.name.unique().tolist()
+        fig.update_xaxes(
+            categoryorder="array", categoryarray=sorted(filtered_classes, key=class_names.index)
+        )
         if self.show:
             fig.show()
 
