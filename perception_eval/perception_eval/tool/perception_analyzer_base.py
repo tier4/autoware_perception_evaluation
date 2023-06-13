@@ -19,7 +19,6 @@ from abc import abstractmethod
 import logging
 import os
 import os.path as osp
-import pickle
 from typing import Any
 from typing import Dict
 from typing import List
@@ -43,6 +42,7 @@ from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.metrics import MetricsScore
+from perception_eval.util.file import load_pkl
 from tqdm import tqdm
 
 from .utils import filter_df
@@ -521,8 +521,7 @@ class PerceptionAnalyzerBase(ABC):
         Returns:
             pandas.DataFrame
         """
-        with open(pickle_path, "rb") as pickle_file:
-            frame_results: List[PerceptionFrameResult] = pickle.load(pickle_file)
+        frame_results: List[PerceptionFrameResult] = load_pkl(pickle_path)
         return self.add(frame_results)
 
     def clear(self) -> None:

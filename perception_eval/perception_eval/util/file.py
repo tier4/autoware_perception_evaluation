@@ -13,7 +13,12 @@
 # limitations under the License.
 
 import os
+import pickle
+from typing import Any
 from typing import Tuple
+import warnings
+
+from perception_eval import __version__
 
 
 def divide_file_path(full_path: str) -> Tuple[str, str, str, str, str]:
@@ -39,3 +44,38 @@ def divide_file_path(full_path: str) -> Tuple[str, str, str, str, str]:
     basename_without_ext, extension = base_name.split(".", 1)
 
     return dir_name, base_name, subdir_name, basename_without_ext, extension
+
+
+def load_pkl(filepath: str) -> Any:
+    """Load pickle file.
+
+    NOTE:
+        Expecting serialized pickle data type is `dict`, which contains `version` information.
+        ```shell
+        data (dict)
+            - version (str)
+            - ... any data
+        ```
+        Returns data excluding version information.
+
+    Args:
+        filepath (str): Pickle file path.
+
+    Returns:
+        Any:
+    """
+    with open(filepath, "rb") as pickle_file:
+        data: Any = pickle.load(pickle_file)
+        if not isinstance(data, dict) or data.get("version") is None:
+            warnings.warn(
+                "[DEPRECATED FORMAT]: Expected serialized pkl format is `dict`, "
+                f"which contains `version` information, but got type: {type(data)}, version: {data.get('version')}."
+            )
+            return data
+        else:
+            version: str = data["version"]
+            if __version__.split(".")[1] != version.split(".")[1]:
+                raise ValueError(
+                    f"Minor version mismatch: perception_eval: {__version__}, pkl: {version}"
+                )
+            return data.pop("version")
