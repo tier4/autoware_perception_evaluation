@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 from typing import Dict
 from typing import List
@@ -40,7 +41,6 @@ from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
 from PIL import Image
 from pyquaternion.quaternion import Quaternion
-import logging
 
 from . import dataset
 
@@ -456,19 +456,22 @@ def _sample_to_frame_2d(
     unix_time: int = sample["timestamp"]
 
     sample_data_tokens: List[str] = []
-    frame_id_mapping: Dict[str, FrameID] = {}    
+    frame_id_mapping: Dict[str, FrameID] = {}
     for frame_id_ in frame_ids:
         # TODO update
         scene_descriptions: List[str] = nusc.get("scene", sample["scene_token"])[
-                "description"
-            ].split(", ")
+            "description"
+        ].split(", ")
         if "regulatory_element" in scene_descriptions:
-            for camera_type in (FrameID.CAM_TRAFFIC_LIGHT_FAR.value.upper(), FrameID.CAM_TRAFFIC_LIGHT_NEAR.value.upper()):
+            for camera_type in (
+                FrameID.CAM_TRAFFIC_LIGHT_FAR.value.upper(),
+                FrameID.CAM_TRAFFIC_LIGHT_NEAR.value.upper(),
+            ):
                 if nusc_sample["data"].get(camera_type) is None:
                     continue
                 sample_data_token = nusc_sample["data"][camera_type]
                 sample_data_tokens.append(sample_data_token)
-                frame_id_mapping[sample_data_token] = FrameID.TRAFFIC_LIGHT # frame_id_
+                frame_id_mapping[sample_data_token] = FrameID.TRAFFIC_LIGHT  # frame_id_
         else:
             camera_type: str = frame_id_.value.upper()
             if nusc_sample["data"].get(camera_type) is None:
@@ -520,7 +523,7 @@ def _sample_to_frame_2d(
 
         visibility = None
 
-        logging.info(f"uuid: {uuid}")
+        logging.debug(f"uuid: {uuid}")
 
         object_: DynamicObject2D = DynamicObject2D(
             unix_time=unix_time,

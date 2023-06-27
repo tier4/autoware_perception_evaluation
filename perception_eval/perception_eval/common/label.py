@@ -53,16 +53,25 @@ class TrafficLightLabel(Enum):
 
     # classification
     GREEN = "green"
-    RED = "red"
+    GREEN_STRAIGHT = "green_straight"
+    GREEN_LEFT = "green_left"
+    GREEN_RIGHT = "green_right"
     YELLOW = "yellow"
+    YELLOW_STRAIGHT = "yellow_straight"
+    YELLOW_LEFT = "yellow_left"
+    YELLOW_RIGHT = "yellow_right"
+    YELLOW_STRAIGHT_LEFT = "yellow_straight_left"
+    YELLOW_STRAIGHT_RIGHT = "yellow_straight_right"
+    YELLOW_STRAIGHT_LEFT_RIGHT = "yellow_straight_left_right"
+    RED = "red"
     RED_STRAIGHT = "red_straight"
     RED_LEFT = "red_left"
-    RED_LEFT_STRAIGHT = "red_left_straight"
-    RED_LEFT_DIAGONAL = "red_left_diagonal"
     RED_RIGHT = "red_right"
-    RED_RIGHT_STRAIGHT = "red_right_straight"
+    RED_STRAIGHT_LEFT = "red_straight_left"
+    RED_STRAIGHT_RIGHT = "red_straight_right"
+    RED_STRAIGHT_LEFT_RIGHT = "red_straight_left_right"
+    RED_LEFT_DIAGONAL = "red_left_diagonal"
     RED_RIGHT_DIAGONAL = "red_right_diagonal"
-    YELLOW_RIGHT = "yellow_right"
 
     # unknown is used in both detection and classification
     UNKNOWN = "unknown"
@@ -341,33 +350,52 @@ def _get_traffic_light_paris(
     if evaluation_task == EvaluationTask.CLASSIFICATION2D:
         pair_list: List[Tuple[TrafficLightLabel, str]] = [
             (TrafficLightLabel.GREEN, "green"),
-            (TrafficLightLabel.RED, "red"),
+            (TrafficLightLabel.GREEN_STRAIGHT, "green_straight"),
+            (TrafficLightLabel.GREEN_LEFT, "green_left"),
+            (TrafficLightLabel.GREEN_RIGHT, "green_right"),
             (TrafficLightLabel.YELLOW, "yellow"),
+            (TrafficLightLabel.YELLOW_STRAIGHT, "yellow_straight"),
+            (TrafficLightLabel.YELLOW_LEFT, "yellow_left"),
+            (TrafficLightLabel.YELLOW_RIGHT, "yellow_right"),
+            (TrafficLightLabel.YELLOW_STRAIGHT_LEFT, "yellow_straight_left"),
+            (TrafficLightLabel.YELLOW_STRAIGHT_LEFT_RIGHT, "yellow_straight_right"),
+            (TrafficLightLabel.RED, "red"),
             (TrafficLightLabel.RED_STRAIGHT, "red_straight"),
             (TrafficLightLabel.RED_LEFT, "red_left"),
-            (TrafficLightLabel.RED_LEFT_STRAIGHT, "red_left_straight"),
-            (TrafficLightLabel.RED_LEFT_DIAGONAL, "red_left_diagonal"),
             (TrafficLightLabel.RED_RIGHT, "red_right"),
-            (TrafficLightLabel.RED_RIGHT_STRAIGHT, "red_right_straight"),
+            (TrafficLightLabel.RED_STRAIGHT_LEFT, "red_straight_left"),
+            (TrafficLightLabel.RED_STRAIGHT_RIGHT, "red_straight_right"),
+            (TrafficLightLabel.RED_STRAIGHT_LEFT_RIGHT, "red_straight_left_right"),
             (TrafficLightLabel.RED_RIGHT_DIAGONAL, "red_right_diagonal"),
-            (TrafficLightLabel.YELLOW_RIGHT, "yellow_right"),
+            (TrafficLightLabel.RED_RIGHT_DIAGONAL, "red_rightdiagonal"),
+            (TrafficLightLabel.RED_LEFT_DIAGONAL, "red_left_diagonal"),
+            (TrafficLightLabel.RED_LEFT_DIAGONAL, "red_leftdiagonal"),
             (TrafficLightLabel.UNKNOWN, "unknown"),
             (TrafficLightLabel.FP, "false_positive"),
         ]
     else:
         pair_list: List[Tuple[TrafficLightLabel, str]] = [
-            (TrafficLightLabel.TRAFFIC_LIGHT, "traffic_light"),
             (TrafficLightLabel.TRAFFIC_LIGHT, "green"),
-            (TrafficLightLabel.TRAFFIC_LIGHT, "red"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "green_straight"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "green_left"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "green_right"),
             (TrafficLightLabel.TRAFFIC_LIGHT, "yellow"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "yellow_straight"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "yellow_left"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "yellow_right"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "yellow_straight_left"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "yellow_straight_right"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "red"),
             (TrafficLightLabel.TRAFFIC_LIGHT, "red_straight"),
             (TrafficLightLabel.TRAFFIC_LIGHT, "red_left"),
-            (TrafficLightLabel.TRAFFIC_LIGHT, "red_left_straight"),
-            (TrafficLightLabel.TRAFFIC_LIGHT, "red_left_diagonal"),
             (TrafficLightLabel.TRAFFIC_LIGHT, "red_right"),
-            (TrafficLightLabel.TRAFFIC_LIGHT, "red_right_straight"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "red_straight_left"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "red_straight_right"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "red_straight_left_right"),
             (TrafficLightLabel.TRAFFIC_LIGHT, "red_right_diagonal"),
-            (TrafficLightLabel.TRAFFIC_LIGHT, "yellow_right"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "red_rightdiagonal"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "red_left_diagonal"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "red_leftdiagonal"),
             (TrafficLightLabel.UNKNOWN, "unknown"),
             (TrafficLightLabel.FP, "false_positive"),
         ]
