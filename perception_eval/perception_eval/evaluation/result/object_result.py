@@ -25,6 +25,7 @@ from perception_eval.common import distance_objects_bev
 from perception_eval.common import DynamicObject
 from perception_eval.common import DynamicObject2D
 from perception_eval.common import ObjectType
+from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching import CenterDistanceMatching
 from perception_eval.evaluation.matching import IOU2dMatching
 from perception_eval.evaluation.matching import IOU3dMatching
@@ -322,7 +323,10 @@ def _get_object_results_with_id(
                 )
             if (
                 est_object.uuid == gt_object.uuid
-                and est_object.semantic_label == gt_object.semantic_label
+                and (
+                    est_object.semantic_label == gt_object.semantic_label
+                    or est_object.semantic_label == AutowareLabel.UNKNOWN
+                )
                 and est_object.frame_id == gt_object.frame_id
             ):
                 object_results.append(
@@ -414,8 +418,8 @@ def _get_score_table(
         for j, ground_truth_object_ in enumerate(ground_truth_objects):
             if (
                 estimated_object_.semantic_label == ground_truth_object_.semantic_label
-                and estimated_object_.frame_id == ground_truth_object_.frame_id
-            ):
+                or estimated_object_.semantic_label == AutowareLabel.UNKNOWN
+            ) and estimated_object_.frame_id == ground_truth_object_.frame_id:
                 matching_method: MatchingMethod = matching_method_module(
                     estimated_object=estimated_object_,
                     ground_truth_object=ground_truth_object_,
