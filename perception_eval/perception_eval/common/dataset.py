@@ -280,6 +280,8 @@ def get_now_frame(
         if diff_time < min_time:
             ground_truth_now_frame = ground_truth_frame
             min_time = diff_time
+        # if 0 < len(ground_truth_frame.objects) and (any([obj.uuid in ("10321", "179948") for obj in ground_truth_frame.objects]) and diff_time < threshold_min_time or ground_truth_frame.objects[0].uuid == "10321"):
+        #     logging.info(f"uuids: {[obj.uuid for obj in ground_truth_frame.objects]}, diff time: {diff_time / 1000}")
     if min_time > threshold_min_time:
         logging.info(
             f"Now frame is {ground_truth_now_frame.unix_time} and time difference \

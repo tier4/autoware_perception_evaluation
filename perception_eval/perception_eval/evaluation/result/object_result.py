@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -27,6 +28,7 @@ from perception_eval.common import DynamicObject2D
 from perception_eval.common import ObjectType
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
+from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
@@ -304,7 +306,15 @@ def get_object_results(
         ground_truth_objects[0], type(estimated_objects[0])
     ), f"Type of estimation and ground truth must be same, but got {type(estimated_objects[0])} and {type(ground_truth_objects[0])}"
 
-    if evaluation_task == EvaluationTask.CLASSIFICATION2D:
+    if (
+        isinstance(estimated_objects[0], DynamicObject2D)
+        and (estimated_objects[0].roi is None or ground_truth_objects[0].roi is None)
+        and isinstance(estimated_objects[0].semantic_label.label, TrafficLightLabel)
+    ):
+        return _get_object_results_for_tlr(estimated_objects, ground_truth_objects)
+    elif isinstance(estimated_objects[0], DynamicObject2D) and (
+        estimated_objects[0].roi is None or ground_truth_objects[0].roi is None
+    ):
         return _get_object_results_with_id(estimated_objects, ground_truth_objects)
 
     matching_method_module, maximize = _get_matching_module(matching_mode)
@@ -394,6 +404,42 @@ def _get_object_results_with_id(
     if len(estimated_objects_) > 0 and not any([est.frame_id == FrameID.TRAFFIC_LIGHT for est in estimated_objects_]):
         object_results += _get_fp_object_results(estimated_objects_)
 
+    return object_results
+
+
+def _get_object_results_for_tlr(
+    estimated_objects: List[DynamicObject2D],
+    ground_truth_objects: List[DynamicObject2D],
+) -> List[DynamicObjectWithPerceptionResult]:
+    """Returns the list of DynamicObjectWithPerceptionResult for TLR classification.
+
+    This function is used in 2D classification evaluation.
+
+    Args:
+        estimated_objects (List[DynamicObject2D]): Estimated objects list.
+        ground_truth_objects (List[DynamicObject2D]): Ground truth objects list.
+
+    Returns:
+        object_results (List[DynamicObjectWithPerceptionEvaluation]): Object results list.
+    """
+    object_results: List[DynamicObjectWithPerceptionResult] = []
+    estimated_objects_ = estimated_objects.copy()
+    ground_truth_objects_ = ground_truth_objects.copy()
+    for est_object in estimated_objects:
+        for gt_object in ground_truth_objects_:
+            if est_object.semantic_label == gt_object.semantic_label:
+                object_results.append(
+                    DynamicObjectWithPerceptionResult(
+                        estimated_object=est_object,
+                        ground_truth_object=gt_object,
+                    )
+                )
+                estimated_objects_.remove(est_object)
+                ground_truth_objects_.remove(gt_object)
+                logging.info(f"[OK] Est: {est_object.semantic_label.label}, GT: {gt_object.semantic_label.label}")
+    # when there are rest of a GT objects, one of the estimated objects is FP.
+    if 0 < len(ground_truth_objects_):
+        object_results += _get_fp_object_results([estimated_objects_[0]])
     return object_results
 
 
