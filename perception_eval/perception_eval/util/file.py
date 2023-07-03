@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from io import BufferedWriter
 import os
 import pickle
 from typing import Any
 from typing import Tuple
+from typing import Union
 import warnings
 
 from perception_eval import __version__
@@ -66,9 +68,9 @@ def load_pkl(filepath: str) -> Any:
     """
     with open(filepath, "rb") as pickle_file:
         data: Any = pickle.load(pickle_file)
-        if not isinstance(data, dict) or data.get("version") is None:
+        if not isinstance(data, dict) or data.get("version") is None or data.get("data") is None:
             warnings.warn(
-                "[DEPRECATED FORMAT]: Expected serialized pkl format is `dict`, "
+                "[DEPRECATED FORMAT]: Expected serialized pkl format is `dict['version': str, 'data': Any]`, "
                 f"which contains `version` information, but got type: {type(data)}, version: {data.get('version')}."
             )
             return data
@@ -76,6 +78,22 @@ def load_pkl(filepath: str) -> Any:
             version: str = data["version"]
             if __version__.split(".")[1] != version.split(".")[1]:
                 raise ValueError(
-                    f"Minor version mismatch: perception_eval: {__version__}, pkl: {version}"
+                    f"Minor version mismatch: using perception_eval: {__version__}, pkl: {version}"
                 )
-            return data.pop("version")
+            return data["data"]
+
+
+def dump_to_pkl(data: Any, file: Union[str, BufferedWriter]) -> None:
+    """Serialize input data to pickle format.
+    The serialized data is formatted with `{'version': str, 'data': Any}`.
+
+    Args:
+        data (Any): Input data.
+        file (Union[str, BufferWriter]): File path to save serialized pickle file or instance of `BufferWriter`.
+    """
+    dump_data = dict(version=__version__, data=data)
+    if isinstance(file, BufferedWriter):
+        pickle.dump(dump_data, file)
+    else:
+        with open(file, "wb") as f:
+            pickle.dump(dump_data, f)
