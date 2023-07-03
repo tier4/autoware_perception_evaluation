@@ -16,6 +16,7 @@ from io import BufferedWriter
 import os
 import pickle
 from typing import Any
+from typing import List
 from typing import Tuple
 from typing import Union
 import warnings
@@ -75,10 +76,12 @@ def load_pkl(filepath: str) -> Any:
             )
             return data
         else:
-            version: str = data["version"]
-            if __version__.split(".")[1] != version.split(".")[1]:
+            current_versions: List[str] = __version__.split(".")
+            saved_version_info: str = data["version"]
+            saved_versions: List[str] = saved_version_info.split(".")
+            if current_versions[0] != saved_versions[0] or current_versions[1] != saved_versions[1]:
                 raise ValueError(
-                    f"Minor version mismatch: using perception_eval: {__version__}, pkl: {version}"
+                    f"Minor version mismatch: using perception_eval: {__version__}, pkl: {saved_version_info}"
                 )
             return data["data"]
 
