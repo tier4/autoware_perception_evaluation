@@ -40,6 +40,9 @@ class AutowareLabel(Enum):
     PEDESTRIAN = "pedestrian"
     ANIMAL = "animal"
 
+    # for FP validation
+    FP = "fp"
+
     def __str__(self) -> str:
         return self.value
 
@@ -63,6 +66,9 @@ class TrafficLightLabel(Enum):
 
     # unknown is used in both detection and classification
     UNKNOWN = "unknown"
+
+    # for FP validation
+    FP = "fp"
 
     def __str__(self) -> str:
         return self.value
@@ -265,6 +271,7 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
         (AutowareLabel.UNKNOWN, "static_object.bicycle rack"),
         (AutowareLabel.UNKNOWN, "static_object.bollard"),
         (AutowareLabel.UNKNOWN, "forklift"),
+        (AutowareLabel.FP, "fp"),
     ]
     if merge_similar_labels:
         pair_list += [
@@ -310,6 +317,7 @@ def _get_traffic_light_paris(
             (TrafficLightLabel.RED_RIGHT_DIAGONAL, "red_right_diagonal"),
             (TrafficLightLabel.YELLOW_RIGHT, "yellow_right"),
             (TrafficLightLabel.UNKNOWN, "unknown"),
+            (TrafficLightLabel.FP, "fp"),
         ]
     else:
         pair_list: List[Tuple[TrafficLightLabel, str]] = [
@@ -326,6 +334,7 @@ def _get_traffic_light_paris(
             (TrafficLightLabel.TRAFFIC_LIGHT, "red_right_diagonal"),
             (TrafficLightLabel.TRAFFIC_LIGHT, "yellow_right"),
             (TrafficLightLabel.UNKNOWN, "unknown"),
+            (TrafficLightLabel.FP, "fp"),
         ]
     return pair_list
 
