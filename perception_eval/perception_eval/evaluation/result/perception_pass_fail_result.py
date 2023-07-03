@@ -39,6 +39,8 @@ class PassFailResult:
         tp_object_results (List[DynamicObjectWithPerceptionResult]): TP object results list.
 
     Args:
+        unix_time (int): UNIX timestamp.
+        frame_number (int): The Number of frame.
         critical_object_filter_config (CriticalObjectFilterConfig): Critical object filter config.
         frame_pass_fail_config (PerceptionPassFailConfig): Frame pass fail config.
         frame_id (str): `base_link` or `map`.
@@ -48,10 +50,15 @@ class PassFailResult:
 
     def __init__(
         self,
+        unix_time: int,
+        frame_number: int,
         critical_object_filter_config: CriticalObjectFilterConfig,
         frame_pass_fail_config: PerceptionPassFailConfig,
         ego2map: Optional[np.ndarray] = None,
     ) -> None:
+        self.unix_time: int = unix_time
+        self.frame_number: int = frame_number
+        # TODO(ktro2828): merge CriticalObjectFilterConfig and FramePassFailConfig into one
         self.critical_object_filter_config: CriticalObjectFilterConfig = (
             critical_object_filter_config
         )

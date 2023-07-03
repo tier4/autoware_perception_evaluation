@@ -62,7 +62,8 @@ class PerceptionFrameResult:
         frame_pass_fail_config: PerceptionPassFailConfig,
         unix_time: int,
         target_labels: List[LabelType],
-    ):
+    ) -> None:
+        # TODO(ktro2828): rename `frame_name` into `frame_number`
         # frame information
         self.frame_name: str = frame_ground_truth.frame_name
         self.unix_time: int = unix_time
@@ -77,6 +78,8 @@ class PerceptionFrameResult:
             used_frame=[int(self.frame_name)],
         )
         self.pass_fail_result: PassFailResult = PassFailResult(
+            unix_time=unix_time,
+            frame_number=frame_ground_truth.frame_name,
             critical_object_filter_config=critical_object_filter_config,
             frame_pass_fail_config=frame_pass_fail_config,
             ego2map=frame_ground_truth.ego2map,
@@ -102,6 +105,7 @@ class PerceptionFrameResult:
             self.frame_ground_truth.objects, self.target_labels
         )
 
+        # If evaluation task is FP validation, only evaluate pass/fail result.
         if self.metrics_score.detection_config is not None:
             self.metrics_score.evaluate_detection(object_results_dict, num_ground_truth_dict)
         if self.metrics_score.tracking_config is not None:
