@@ -37,6 +37,7 @@ import numpy as np
 import pandas as pd
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.schema import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation import PerceptionFrameResult
@@ -47,7 +48,6 @@ from tqdm import tqdm
 
 from .utils import filter_df
 from .utils import get_metrics_info
-from .utils import MatchingStatus
 from .utils import PlotAxes
 from .utils import setup_axis
 

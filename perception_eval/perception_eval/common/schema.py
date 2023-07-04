@@ -185,3 +185,18 @@ class SensorModality(Enum):
         for k, v in cls.__members__.items():
             if v == name:
                 return k
+
+
+class MatchingStatus(Enum):
+    TP = "TP"
+    FP = "FP"
+    FN = "FN"
+    TN = "TN"
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __eq__(self, other: Union[MatchingStatus, str]) -> bool:
+        if isinstance(other, str):
+            return self.value == other
+        return super().__eq__(other)

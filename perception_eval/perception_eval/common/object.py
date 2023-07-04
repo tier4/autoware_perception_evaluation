@@ -22,8 +22,8 @@ from typing import Tuple
 import numpy as np
 from perception_eval.common.label import Label
 from perception_eval.common.point import crop_pointcloud
-from perception_eval.common.status import FrameID
-from perception_eval.common.status import Visibility
+from perception_eval.common.schema import FrameID
+from perception_eval.common.schema import Visibility
 from perception_eval.util.math import rotation_matrix_to_euler
 from pyquaternion import Quaternion
 from shapely.geometry import Polygon

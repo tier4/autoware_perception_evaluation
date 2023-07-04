@@ -24,6 +24,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.schema import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.util.math import get_pose_transform_matrix
@@ -35,7 +36,6 @@ from .utils import extract_area_results
 from .utils import generate_area_points
 from .utils import get_area_idx
 from .utils import get_metrics_info
-from .utils import MatchingStatus
 from .utils import PlotAxes
 
 # TODO: Refactor plot methods

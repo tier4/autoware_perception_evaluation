@@ -23,7 +23,7 @@ from perception_eval.common import ObjectType
 from perception_eval.common.label import Label
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.status import FrameID
+from perception_eval.common.schema import FrameID
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.common.threshold import LabelThreshold
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult

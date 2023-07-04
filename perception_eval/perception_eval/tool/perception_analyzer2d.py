@@ -26,12 +26,12 @@ import numpy as np
 import pandas as pd
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object2d import DynamicObject2D
+from perception_eval.common.schema import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 import yaml
 
 from .perception_analyzer_base import PerceptionAnalyzerBase
-from .utils import MatchingStatus
 from .utils import PlotAxes
 
 
