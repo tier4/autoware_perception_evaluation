@@ -17,6 +17,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import warnings
 
 import numpy as np
 from perception_eval.common import ObjectType
@@ -24,6 +25,7 @@ from perception_eval.common.label import Label
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
+from perception_eval.common.schema import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.common.threshold import LabelThreshold
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
@@ -207,6 +209,107 @@ def filter_objects(
     return filtered_objects
 
 
+def get_positive_objects(
+    object_results: List[DynamicObjectWithPerceptionResult],
+    target_labels: Optional[List[Label]],
+    matching_mode: Optional[MatchingMode] = None,
+    matching_threshold_list: Optional[List[float]] = None,
+) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
+    """Returns TP (True Positive) and FP (False Positive) object results as `tuple`.
+
+    If an object result has better matching score than the matching threshold, it is TP, otherwise FP.
+
+    Args:
+        object_results (List[DynamicObjectWithPerceptionResult]): List of matched estimation and GT objects.
+        target_labels (Optional[List[Label]]): List of labels should be evaluated.
+        matching_mode (Optional[MatchingMode]): Matching policy,
+            i.e. center distance, plane distance, iou...
+        matching_threshold_list (Optional[List[float]]): List of matching thresholds,
+            each element corresponds to target label.
+
+    Returns:
+        tp_object_results (List[DynamicObjectWithPerceptionResult]): List of TP.
+        fp_object_results (List[DynamicObjectWithPerceptionResult]): List of FP.
+    """
+    tp_object_results: List[DynamicObjectWithPerceptionResult] = []
+    fp_object_results: List[DynamicObjectWithPerceptionResult] = []
+    for object_result in object_results:
+        matching_threshold: Optional[float] = get_label_threshold(
+            object_result.estimated_object.semantic_label,
+            target_labels,
+            matching_threshold_list,
+        )
+
+        est_status, gt_status = object_result.get_status(matching_mode, matching_threshold)
+
+        if est_status == MatchingStatus.FP:
+            if gt_status == MatchingStatus.TN:
+                fp_object_results.append(
+                    DynamicObjectWithPerceptionResult(
+                        object_result.estimated_object,
+                        None,
+                    )
+                )
+            else:
+                fp_object_results.append(object_result)
+        elif est_status == MatchingStatus.TP and gt_status == MatchingStatus.TP:
+            tp_object_results.append(object_result)
+
+    return tp_object_results, fp_object_results
+
+
+def get_negative_objects(
+    ground_truth_objects: List[DynamicObject],
+    object_results: List[DynamicObjectWithPerceptionResult],
+    target_labels: Optional[List[Label]],
+    matching_mode: Optional[MatchingMode] = None,
+    matching_threshold_list: Optional[List[float]] = None,
+) -> Tuple[List[DynamicObject], List[DynamicObject]]:
+    """Returns TN (True Negative) and FN (False Negative) objects as `tuple`.
+
+    If a ground truth object is contained in object results, it is TP or FP.
+    Otherwise, the label of ground truth is 'FP', which means this object should not estimated, it is TN.
+
+    Args:
+        ground_truth_objects (List[DynamicObject]): List of ground truth objects.
+        object_results (List[DynamicObjectWithPerceptionResult]): List of object results.
+
+    Returns:
+        tn_objects (List[DynamicObject]): List of TN.
+        fn_objects (List[DynamicObject]): List of FN.
+    """
+    tn_objects: List[DynamicObject] = []
+    fn_objects: List[DynamicObject] = []
+
+    matched_ground_truth_objects: List[DynamicObject] = [
+        result.ground_truth_object
+        for result in object_results
+        if result.ground_truth_object is not None
+    ]
+    for ground_truth_object in ground_truth_objects:
+        if ground_truth_object in matched_ground_truth_objects:
+            continue
+
+        # TODO: use class to check if label is FP
+        if ground_truth_object.semantic_label.name == "FP":
+            tn_objects.append(ground_truth_object)
+        else:
+            fn_objects.append(ground_truth_object)
+
+    for object_result in object_results:
+        matching_threshold: Optional[float] = get_label_threshold(
+            object_result.estimated_object.semantic_label,
+            target_labels,
+            matching_threshold_list,
+        )
+        _, gt_status = object_result.get_status(matching_mode, matching_threshold)
+
+        if gt_status == MatchingStatus.TN:
+            tn_objects.append(object_result.ground_truth_object)
+
+    return tn_objects, fn_objects
+
+
 def divide_tp_fp_objects(
     object_results: List[DynamicObjectWithPerceptionResult],
     target_labels: Optional[List[Label]],
@@ -242,6 +345,10 @@ def divide_tp_fp_objects(
         List[DynamicObjectWithPerceptionResult]]: TP object results.
         List[DynamicObjectWithPerceptionResult]]: FP object results.
     """
+    warnings.warn(
+        "`divide_tp_fp_objects()` is removed in next minor update, please use `get_positive_objects()`",
+        DeprecationWarning,
+    )
 
     tp_object_results: List[DynamicObjectWithPerceptionResult] = []
     fp_object_results: List[DynamicObjectWithPerceptionResult] = []
@@ -298,6 +405,11 @@ def get_fn_objects(
     Returns:
         List[ObjectType]: FN (False Negative) objects list.
     """
+    warnings.warn(
+        "`get_fn_objects()` is removed in next minor update, please use `get_negative_objects()`",
+        DeprecationWarning,
+    )
+
     fn_objects: List[ObjectType] = []
     for ground_truth_object in ground_truth_objects:
         is_fn_object: bool = _is_fn_object(
@@ -325,6 +437,10 @@ def _is_fn_object(
     Returns:
         bool: Whether ground truth object is FN (False Negative) object.
     """
+    warnings.warn(
+        "`_is_fn_object()` is removed in next minor update, please use `get_negative_objects()`",
+        DeprecationWarning,
+    )
     for object_result in object_results:
         if (
             ground_truth_object == object_result.ground_truth_object
