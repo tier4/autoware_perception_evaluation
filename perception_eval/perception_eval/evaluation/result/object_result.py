@@ -25,6 +25,7 @@ from perception_eval.common import distance_objects_bev
 from perception_eval.common import DynamicObject
 from perception_eval.common import DynamicObject2D
 from perception_eval.common import ObjectType
+from perception_eval.common.schema import MatchingStatus
 from perception_eval.evaluation.matching import CenterDistanceMatching
 from perception_eval.evaluation.matching import IOU2dMatching
 from perception_eval.evaluation.matching import IOU3dMatching
@@ -93,13 +94,40 @@ class DynamicObjectWithPerceptionResult:
             self.iou_3d = None
             self.plane_distance = None
 
+    def get_status(
+        self,
+        matching_mode: MatchingMode,
+        matching_threshold: float,
+    ) -> Tuple[MatchingStatus, Optional[MatchingStatus]]:
+        """Returns matching status both of estimation and GT as `tuple`.
+
+        Args:
+            matching_mode (MatchingMode): Matching policy.
+            matching_threshold (float): Matching threshold.
+
+        Returns:
+            Tuple[MatchingStatus, Optional[MatchingStatus]]: Matching status of estimation and GT.
+        """
+        if self.ground_truth_object is None:
+            return MatchingStatus.FP, None
+
+        if self.is_result_correct(matching_mode, matching_threshold):
+            return (MatchingStatus.TP, MatchingStatus.TP)
+        else:
+            # TODO(ktro2828): update not to use label name "FP"
+            return (
+                (MatchingStatus.FP, MatchingStatus.FP)
+                if self.ground_truth_object.semantic_label.name != "FP"
+                else (MatchingStatus.FP, MatchingStatus.TN),
+            )
+
     def is_result_correct(
         self,
         matching_mode: MatchingMode,
         matching_threshold: float,
     ) -> bool:
-        """[summary]
-        The function judging whether the result is target or not.
+        """The function judging whether the result is target or not.
+        Return `False`, if label of GT is "FP" and matching.
 
         Args:
             matching_mode (MatchingMode):
@@ -113,14 +141,22 @@ class DynamicObjectWithPerceptionResult:
         Returns:
             bool: If label is correct and satisfy matching threshold, return True
         """
+        if self.ground_truth_object is None:
+            return False
+
         # Whether is matching to ground truth
         matching: Optional[MatchingMethod] = self.get_matching(matching_mode)
         if matching is None:
             return self.is_label_correct
-        is_matching_: bool = matching.is_better_than(matching_threshold)
+
+        is_matching: bool = matching.is_better_than(matching_threshold)
         # Whether both label is true and matching is true
-        is_correct: bool = self.is_label_correct and is_matching_
-        return is_correct
+        # TODO(ktro2828): update not to use label name "FP"
+        return (
+            self.is_label_correct and is_matching
+            if self.ground_truth_object.semantic_label.name != "FP"
+            else not is_matching
+        )
 
     def get_matching(self, matching_mode: MatchingMode) -> Optional[MatchingMethod]:
         """Get MatchingMethod instance with corresponding MatchingMode.
