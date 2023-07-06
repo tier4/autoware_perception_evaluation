@@ -17,6 +17,8 @@ from __future__ import annotations
 from enum import Enum
 import logging
 from typing import Dict
+from typing import List
+from typing import Tuple
 from typing import Union
 
 from perception_eval.common.evaluation_task import EvaluationTask
@@ -200,3 +202,85 @@ class MatchingStatus(Enum):
         if isinstance(other, str):
             return self.value == other
         return super().__eq__(other)
+
+
+class StatusRate:
+    """Class to get rate of each matching status, TP/FP/TN/FN."""
+
+    def __init__(
+        self,
+        status: MatchingStatus,
+        status_frame_nums: List[int],
+        total_frame_nums: List[int],
+    ) -> None:
+        self.status = status
+        self.status_frame_nums = status_frame_nums
+        self.total_frame_nums = total_frame_nums
+
+    @property
+    def rate(self) -> float:
+        return self.__get_rate()
+
+    def __get_num_status_frames(self) -> int:
+        return len(self.status_frame_nums)
+
+    def __get_num_total_frames(self) -> int:
+        return len(self.total_frame_nums)
+
+    def __get_rate(self) -> float:
+        num_status_frames: int = self.__get_num_status_frames()
+        num_total_frames: int = self.__get_num_total_frames()
+        return (
+            num_status_frames / num_total_frames
+            if num_status_frames != 0.0 and num_total_frames != 0.0
+            else float("inf")
+        )
+
+
+StatusRates = Tuple[StatusRate, StatusRate, StatusRate, StatusRate]
+
+
+class GroundTruthStatus:
+    """Class for keeping and calculating status information of each matching status for one GT.
+
+    Args:
+        uuid (str): object uuid
+    """
+
+    def __init__(self, uuid: str) -> None:
+        self.uuid: str = uuid
+
+        self.total_frame_nums: List[int] = []
+        self.tp_frame_nums: List[int] = []
+        self.fp_frame_nums: List[int] = []
+        self.tn_frame_nums: List[int] = []
+        self.fn_frame_nums: List[int] = []
+
+    def add_status(self, frame_num: int, status: MatchingStatus) -> None:
+        self.total_frame_nums.append(frame_num)
+        if status == MatchingStatus.TP:
+            self.tp_frame_nums.append(frame_num)
+        elif status == MatchingStatus.FP:
+            self.fp_frame_nums.append(frame_num)
+        elif status == MatchingStatus.TN:
+            self.tn_frame_nums.append(frame_num)
+        elif status == MatchingStatus.FN:
+            self.fn_frame_nums.append(frame_num)
+        else:
+            raise ValueError(f"Unexpected status: {status}")
+
+    def get_status_rates(self) -> StatusRates:
+        """Returns frame rates for each status.
+
+        Returns:
+            StatusRates: Rates [TP, FP, TN, FN] order.
+        """
+        return (
+            StatusRate(MatchingStatus.TP, self.tp_frame_nums, self.total_frame_nums),
+            StatusRate(MatchingStatus.FP, self.fp_frame_nums, self.total_frame_nums),
+            StatusRate(MatchingStatus.TN, self.tn_frame_nums, self.total_frame_nums),
+            StatusRate(MatchingStatus.FN, self.fn_frame_nums, self.total_frame_nums),
+        )
+
+    def __eq__(self, uuid: str) -> bool:
+        return self.uuid == uuid

@@ -21,6 +21,8 @@ from typing import Optional
 from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import LabelType
+from perception_eval.common.schema import GroundTruthStatus
+from perception_eval.common.schema import MatchingStatus
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
@@ -130,3 +132,62 @@ class PerceptionFrameResult:
             object_results=self.object_results,
             ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
         )
+
+
+def get_object_status(frame_results: List[PerceptionFrameResult]) -> List[GroundTruthStatus]:
+    """Returns the number of TP/FP/TN/FN ratios per frame as tuple.
+
+    Args:
+        frame_results (List[PerceptionFrameResult]): List of frame results.
+
+    Returns:
+        List[GroundTruthStatus]: Sequence of matching status ratios for each GT.
+    """
+    status_infos: List[GroundTruthStatus] = []
+    for frame_result in frame_results:
+        frame_num: int = int(frame_result.frame_name)
+        # TP
+        for tp_object_result in frame_result.pass_fail_result.tp_object_results:
+            if tp_object_result.ground_truth_object.uuid not in status_infos:
+                tp_status = GroundTruthStatus(tp_object_result.ground_truth_object.uuid)
+                tp_status.add_status(MatchingStatus.TP, frame_num)
+                status_infos.append(tp_status)
+            else:
+                index = status_infos.index(tp_object_result.ground_truth_object.uuid)
+                tp_status = status_infos[index]
+                tp_status.add_status(MatchingStatus.TP, frame_num)
+        # FP
+        for fp_object_result in frame_result.pass_fail_result.fp_object_results:
+            if fp_object_result.ground_truth_object is None:
+                continue
+            if fp_object_result.ground_truth_object.uuid not in status_infos:
+                fp_status = GroundTruthStatus(tp_object_result.ground_truth_object.uuid)
+                fp_status.add_status(MatchingStatus.FP, frame_num)
+                status_infos.append(fp_status)
+            else:
+                index = status_infos.index(fp_object_result.ground_truth_object.uuid)
+                fp_status = status_infos[index]
+                fp_status.add_status(MatchingStatus.FP, frame_num)
+        # TN
+        for tn_object in frame_result.pass_fail_result.tn_objects:
+            if tn_object.uuid not in status_infos:
+                tn_status = GroundTruthStatus(tn_object.uuid)
+                tn_status.add_status(MatchingStatus.TN, frame_num)
+                status_infos.append(tn_status)
+            else:
+                index = status_infos.index(tn_object.uuid)
+                tn_status = status_infos[index]
+                tn_status.add_status(MatchingStatus.TN, frame_num)
+
+        # FN
+        for fn_object in frame_result.pass_fail_result.fn_objects:
+            if fn_object.uuid not in status_infos:
+                fn_status = GroundTruthStatus(fn_object.uuid)
+                fn_status.add_status(MatchingStatus.FN, frame_num)
+                status_infos.append(fn_status)
+            else:
+                index = status_infos.index(fn_object.uuid)
+                fn_status = status_infos[index]
+                fn_status.add_status(MatchingStatus.FN, frame_num)
+
+    return status_infos
