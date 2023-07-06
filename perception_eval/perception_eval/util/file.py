@@ -54,10 +54,10 @@ def load_pkl(filepath: str) -> Any:
 
     NOTE:
         Expecting serialized pickle data type is `dict`, which contains `version` information.
-        ```shell
-        data (dict)
-            - version (str)
-            - ... any data
+        ```python
+        deserialized_data (dict)
+            - "version" (str)
+            - "data" (Any)
         ```
         Returns data excluding version information.
 
@@ -65,14 +65,15 @@ def load_pkl(filepath: str) -> Any:
         filepath (str): Pickle file path.
 
     Returns:
-        Any:
+        Any: Any python objects stored in "data".
     """
     with open(filepath, "rb") as pickle_file:
         data: Any = pickle.load(pickle_file)
         if not isinstance(data, dict) or data.get("version") is None or data.get("data") is None:
             warnings.warn(
-                "[DEPRECATED FORMAT]: Expected serialized pkl format is `dict['version': str, 'data': Any]`, "
-                f"which contains `version` information, but got type: {type(data)}, version: {data.get('version')}."
+                "Expected serialized pkl format is `dict['version': str, 'data': Any]`, "
+                f"which contains `version` information, but got type: {type(data)}, version: {data.get('version')}.",
+                DeprecationWarning,
             )
             return data
         else:
@@ -81,7 +82,7 @@ def load_pkl(filepath: str) -> Any:
             saved_versions: List[str] = saved_version_info.split(".")
             if current_versions[0] != saved_versions[0] or current_versions[1] != saved_versions[1]:
                 raise ValueError(
-                    f"Minor version mismatch: using perception_eval: {__version__}, pkl: {saved_version_info}"
+                    f"Version mismatch: using perception_eval: {__version__}, pkl: {saved_version_info}"
                 )
             return data["data"]
 
