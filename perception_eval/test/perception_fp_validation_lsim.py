@@ -12,16 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import logging
+import tempfile
 from typing import List
-from typing import Optional
 
 from perception_eval.common import ObjectType
 from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.evaluation import get_object_status
 from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.manager import PerceptionEvaluationManager
+from perception_eval.util.debug import get_objects_with_difference
 from perception_eval.util.logger_config import configure_logger
 
 
@@ -29,10 +32,9 @@ class FPValidationLsimMoc:
     def __init__(self, dataset_paths: List[int], result_root_directory: str) -> None:
         evaluation_config_dict = {
             "evaluation_task": "fp_validation",
-            "target_labels": ["fp"],
+            "target_labels": ["car", "bicycle", "pedestrian", "motorbike", "fp"],
             "max_x_position": 102.4,
             "max_y_position": 102.4,
-            "min_point_numbers": [0],
         }
 
         evaluation_config = PerceptionEvaluationConfig(
@@ -41,6 +43,7 @@ class FPValidationLsimMoc:
             merge_similar_labels=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
+            label_prefix="autoware",
             load_raw_data=True,
         )
 
@@ -61,15 +64,15 @@ class FPValidationLsimMoc:
 
         critical_object_filter_config = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["fp"],
-            max_x_position_list=[100.0],
-            max_y_position_list=[100.0],
+            target_labels=["car", "bicycle", "pedestrian", "motorbike", "fp"],
+            max_x_position_list=[100.0, 100.0, 100.0, 100.0, 100.0],
+            max_y_position_list=[100.0, 100.0, 100.0, 100.0, 100.0],
         )
 
         frame_pass_fail_config = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["fp"],
-            matching_threshold_list=[2.0],
+            target_labels=["car", "bicycle", "pedestrian", "motorbike", "fp"],
+            matching_threshold_list=[2.0, 2.0, 2.0, 2.0, 2.0],
         )
 
         frame_result = self.evaluator.add_frame_result(
@@ -88,32 +91,49 @@ class FPValidationLsimMoc:
         logging.info(
             f"{len(frame_result.pass_fail_result.tp_object_results)} TP objects, "
             f"{len(frame_result.pass_fail_result.fp_object_results)} FP objects, "
+            f"{len(frame_result.pass_fail_result.tn_objects)} TN objects, "
             f"{len(frame_result.pass_fail_result.fn_objects)} FN objects",
         )
 
-        if len(frame_result.pass_fail_result.fp_object_results) < 0:
-            return
-
-        for fp_result in frame_result.pass_fail_result.fp_object_results:
-            est_uuid: str = fp_result.estimated_object.uuid
-            gt_uuid: Optional[str] = (
-                None
-                if fp_result.ground_truth_object is None
-                else fp_result.ground_truth_object.uuid
+    def display_status_rates(self) -> None:
+        status_infos = get_object_status(self.evaluator.frame_results)
+        for status_info in status_infos:
+            tp_rate, fp_rate, tn_rate, fn_rate = status_info.get_status_rates()
+            logging.info(
+                f"uuid: {status_info.uuid}, "
+                f"TP: {tp_rate.rate}, FP: {fp_rate.rate}, TN: {tn_rate.rate}, FN: {fn_rate.rate}",
             )
-            logging.info(f"Estimation: {est_uuid}, GT: {gt_uuid}")
 
-    def display_final_result(self) -> None:
-        """Display the number of FP result, the ratio of FP result for each object identified by uuid."""
 
-        object_fp_results = {}
-        for frame_result in self.evaluator.frame_results:
-            for fp_result in frame_result.pass_fail_result.fp_object_results:
-                fp_estimated_object = fp_result.estimated_object
-                est_uuid = fp_estimated_object.uuid
-                fp_ground_truth_object = fp_result.ground_truth_object
-                gt_uuid = None if fp_ground_truth_object is None else fp_ground_truth_object.uuid
-                pass
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("dataset_paths", nargs="+", type=str, help="The path(s) of dataset")
+    parser.add_argument(
+        "--use_tmpdir",
+        action="store_true",
+        help="Whether save results to temporal directory",
+    )
+    args = parser.parse_args()
 
-        for uuid, objects in object_fp_results.items():
-            pass
+    dataset_paths = args.dataset_paths
+    if args.use_tmpdir:
+        tmpdir = tempfile.TemporaryDirectory()
+        result_root_directory: str = tmpdir.name
+    else:
+        result_root_directory: str = "data/result/{TIME}/"
+
+    # ========================================= FP validation =========================================
+    print("=" * 50 + "Start FP validation" + "=" * 50)
+    fp_validation_lsim = FPValidationLsimMoc(dataset_paths, result_root_directory)
+
+    for ground_truth_frame in fp_validation_lsim.evaluator.ground_truth_frames:
+        objects_with_difference = get_objects_with_difference(
+            ground_truth_objects=ground_truth_frame.objects,
+            diff_distance=(1.0, 0.0, 0.2),
+            diff_yaw=0.2,
+            is_confidence_with_distance=True,
+            ego2map=ground_truth_frame.ego2map,
+        )
+        fp_validation_lsim.callback(ground_truth_frame.unix_time, objects_with_difference)
+
+    fp_validation_lsim.display_status_rates()
