@@ -54,7 +54,8 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         num_estimation (int): Number of estimations.
         num_tp (int): Number of TP results.
         num_fp (int): Number of FP results.
-        num_fn (int): Number of FN results.
+        num_tn (int): Number of TN GT objects.
+        num_fn (int): Number of FN GT objects.
 
     Args:
         evaluation_config (PerceptionEvaluationConfig): Config used in evaluation.
@@ -224,13 +225,13 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
 
     def analyze(self, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
         """[summary]
-        Analyze TP/FP/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
+        Analyze TP/FP/TN/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
 
         Args:
             **kwargs: Specify scene, frame, area or uuid.
 
         Returns:
-            score_df (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
+            score_df (Optional[pandas.DataFrame]): DataFrame of TP/FP/TN/FN ratios and metrics scores.
             confusion_matrix_df (Optional[pandas.DataFrame]): DataFrame of confusion matrix.
         """
         df: pd.DataFrame = self.get(**kwargs)
@@ -354,7 +355,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         bins: float = 1.0,
         **kwargs,
     ) -> None:
-        """Plot TP/FP/FN ratio per confidence.
+        """Plot TP/FP/TN/FN ratio per confidence.
 
         Args:
             status (Union[str, MatchingStatus])

@@ -59,16 +59,18 @@ class PerceptionAnalyzerBase(ABC):
         config (PerceptionEvaluationConfig): Configurations for evaluation parameters.
         target_labels (List[str]): Target labels list. (e.g. ["car", "pedestrian", "motorbike"]).
         all_labels (List[str]): Target labels list including "ALL". (e.g. ["ALL", "car", "pedestrian", "motorbike"]).
-        df (pandas.DataFrame)
-        plot_directory (str)
-        frame_results (Dict[str, List[PerceptionFrameResult]])
-        num_frame (int)
-        num_scene (int)
-        num_ground_truth (int)
-        num_estimation (int)
-        num_tp (int)
-        num_fp (int)
-        num_fn (int)
+        df (pandas.DataFrame): Data frame.
+        plot_directory (str): Directory path to save plot.
+        frame_results (Dict[str, List[PerceptionFrameResult]]):
+            Hashmap of frame results, which key is the number of scene and value is frame results.
+        num_frame (int): Number of frames.
+        num_scene (int): Number of scenes.
+        num_ground_truth (int): Number of GT objects.
+        num_estimation (int): Number of estimations.
+        num_tp (int): Number of TP results.
+        num_fp (int): Number of FP results.
+        num_tn (int): Number of TN GT objects.
+        num_fn (int): Number of FN GT objects.
 
     Args:
         evaluation_config (PerceptionEvaluationConfig): Config used in evaluation.
@@ -163,6 +165,10 @@ class PerceptionAnalyzerBase(ABC):
         return self.get_num_fp()
 
     @property
+    def num_tn(self) -> int:
+        return self.get_num_tn()
+
+    @property
     def num_fn(self) -> int:
         return self.get_num_fn()
 
@@ -253,7 +259,7 @@ class PerceptionAnalyzerBase(ABC):
         df: Optional[pd.DataFrame] = None,
         **kwargs,
     ) -> int:
-        """Returns number of matching status TP/FP/FN.
+        """Returns number of matching status TP/FP/TN/FN.
 
         Args:
             status (Union[str, MatchingStatus]): Status.
@@ -267,6 +273,8 @@ class PerceptionAnalyzerBase(ABC):
             return self.get_num_tp(df, **kwargs)
         elif status == MatchingStatus.FP:
             return self.get_num_fp(df, **kwargs)
+        elif status == MatchingStatus.TN:
+            return self.get_num_tn(df, **kwargs)
         elif status == MatchingStatus.FN:
             return self.get_num_fn(df, **kwargs)
         else:
@@ -293,6 +301,18 @@ class PerceptionAnalyzerBase(ABC):
         """
         df_ = self.get_estimation(df=df, **kwargs)
         return sum(df_["status"] == "FP")
+
+    def get_num_tn(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
+        """Returns the number of TN.
+        Args:
+            Args:
+            df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
+            **kwargs: Specify if you want to get the number of TN that their columns are specified value.
+        Returns:
+            inf: The number of TN.
+        """
+        df_ = self.get_ground_truth(df=df, **kwargs)
+        return sum(df_["status"] == "TN")
 
     def get_num_fn(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
         """Returns the number of FN.
@@ -492,6 +512,17 @@ class PerceptionAnalyzerBase(ABC):
                 start += len(fp_df) // 2
                 concat.append(fp_df)
 
+            tn_df = self.format2df(
+                frame.pass_fail_result.tn_objects,
+                status=MatchingStatus.TN,
+                start=start,
+                frame_num=int(frame.frame_name),
+                ego2map=frame.frame_ground_truth.ego2map,
+            )
+            if len(tn_df) > 0:
+                start += len(tn_df) // 2
+                concat.append(tn_df)
+
             fn_df = self.format2df(
                 frame.pass_fail_result.fn_objects,
                 status=MatchingStatus.FN,
@@ -591,6 +622,8 @@ class PerceptionAnalyzerBase(ABC):
     ) -> np.ndarray:
         """Calculate specified column's error for TP.
 
+        TODO: plot not only TP status, but also matched objects FP/TN.
+
         Args:
             column (Union[str, List[str]]): name of column
             df (pandas.DataFrame): Specify if you want use filtered DataFrame. Defaults to None.
@@ -662,8 +695,9 @@ class PerceptionAnalyzerBase(ABC):
             num_ground_truth: int = self.get_num_ground_truth(label=label)
             if num_ground_truth > 0:
                 data["TP"][i] = self.get_num_tp(label=label) / num_ground_truth
-                data["FN"][i] = self.get_num_fn(label=label) / num_ground_truth
                 data["FP"][i] = self.get_num_fp(label=label) / num_ground_truth
+                data["TN"][i] = self.get_num_tn(label=label) / num_ground_truth
+                data["FN"][i] = self.get_num_fn(label=label) / num_ground_truth
         return pd.DataFrame(data, index=self.all_labels)
 
     def summarize_score(self, scene: Optional[Union[int, List[int]]] = None) -> pd.DataFrame:
@@ -856,6 +890,8 @@ class PerceptionAnalyzerBase(ABC):
     ) -> None:
         """Plot states for each time/distance estimated and GT object in TP.
 
+        TODO: plot not only TP status, but also matched objects FP/TN.
+
         Args:
             columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
                 If you want plot multiple column for one image, use List[str].
@@ -973,10 +1009,10 @@ class PerceptionAnalyzerBase(ABC):
         plot_range: Optional[Tuple[float]] = None,
         **kwargs,
     ) -> None:
-        """Plot TP/FP/FN ratio.
+        """Plot TP/FP/TN/FN ratio.
 
         Args:
-            status (Union[str, MatchingStatus]): Matching status, TP/FP/FN.
+            status (Union[str, MatchingStatus]): Matching status, TP/FP/TN/FN.
             mode (PlotAxes): PlotAxes instance.
             show (bool): Whether show the plotted figure. Defaults to False.
             bins (Optional[float]): Plot binds. Defaults to None.
@@ -1032,6 +1068,8 @@ class PerceptionAnalyzerBase(ABC):
                         ratios.append(np.sum(est_df_["status"] == status) / num_gt)
                     elif status == "FP":
                         ratios.append(1 - (np.sum(est_df_["status"] == "TP") / num_gt))
+                    elif status == "TN":
+                        ratios.append(np.sum(gt_df["status"] == status) / num_gt)
                     elif status == "FN":
                         ratios.append(np.sum(gt_df_["status"] == status) / num_gt)
                     else:

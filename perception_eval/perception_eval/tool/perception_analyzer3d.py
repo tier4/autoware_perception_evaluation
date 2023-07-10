@@ -48,21 +48,26 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         config (PerceptionEvaluationConfig): Configurations for evaluation parameters.
         target_labels (List[str]): Target labels list. (e.g. ["car", "pedestrian", "motorbike"]).
         all_labels (List[str]): Target labels list including "ALL". (e.g. ["ALL", "car", "pedestrian", "motorbike"]).
-        num_area_division (int): Number
-        upper_rights (numpy.ndarray)
-        bottom_lefts (numpy.ndarray)
-        columns (List[str])
-        state_columns (List[str])
-        df (pandas.DataFrame)
-        plot_directory (str)
-        frame_results (Dict[str, List[PerceptionFrameResult]])
-        num_frame (int)
-        num_scene (int)
-        num_ground_truth (int)
-        num_estimation (int)
-        num_tp (int)
-        num_fp (int)
-        num_fn (int)
+        num_area_division (int): Number of area separations.
+        upper_rights (numpy.ndarray): Upper right points of each separated area.
+        bottom_lefts (numpy.ndarray): Bottom left points of each separated area.
+        columns (List[str]): List of columns in `df`.
+            `["frame_id", "timestamp", "x", "y", "width", "length", "height", "yaw", "vx", "vy", "nn_point1", "nn_point2",\
+                "label", "label_name", "attributes", "confidence", "uuid", \
+                "num_points", "status", "area", "frame", "scene"]`.
+        state_columns (List[str]): List of state columns in `df`.
+            `["x", "y", "width", "length", "height", "yaw", "vx", "vy", "nn_point1", "nn_point2"]`.
+        plot_directory (str): Directory path to save plot.
+        frame_results (Dict[str, List[PerceptionFrameResult]]):
+            Hashmap of frame results, which key is the number of scene and value is frame results.
+        num_frame (int): Number of frames.
+        num_scene (int): Number of scenes.
+        num_ground_truth (int): Number of GT objects.
+        num_estimation (int): Number of estimations.
+        num_tp (int): Number of TP results.
+        num_fp (int): Number of FP results.
+        num_tn (int): Number of TN GT objects.
+        num_fn (int): Number of FN GT objects.
 
     Args:
         evaluation_config (PerceptionEvaluationConfig): Config used in evaluation.
@@ -426,14 +431,14 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         show: bool = False,
         **kwargs,
     ) -> None:
-        """Plot states for each time/distance estimated and GT object in TP.
+        """Plot states for each time/distance estimated and GT object.
 
         Args:
             uuid (str): Target object's uuid.
             columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "vx", "vy"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
-            status (Optional[int]): Target status TP/FP/FN. If not specified, plot all status. Defaults to None.
+            status (Optional[int]): Target status TP/FP/TN/FN. If not specified, plot all status. Defaults to None.
             show (bool): Whether show the plotted figure. Defaults to False.
             **kwargs
         """
