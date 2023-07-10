@@ -18,6 +18,8 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import Iterable
+
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -82,6 +84,12 @@ def with_result_objects_to_df(objects: List[DynamicObjectWithPerceptionResult]) 
     confidences = np.stack(
         [estimated_object.estimated_object.semantic_score for estimated_object in objects]
     )
+    gt_ids = [
+        estimated_object.ground_truth_object.uuid
+        if estimated_object.ground_truth_object is not None
+        else None
+        for estimated_object in objects
+    ]
 
     df: pd.DataFrame = pd.DataFrame(
         dict(
@@ -95,7 +103,7 @@ def with_result_objects_to_df(objects: List[DynamicObjectWithPerceptionResult]) 
             num_points=pcd_nums,
             center_distance=center_distances,
             confidence=confidences,
-            gt_id=[estimated_object.ground_truth_object.uuid for estimated_object in objects],
+            gt_id=gt_ids,
         )
     )
     df["distance_2d"] = np.sqrt((df["x"]) ** 2 + (df["y"]) ** 2)
@@ -486,12 +494,229 @@ class EDAVisualizer:
             report.to_file(self.save_dir + "/" + file_name + f"_{class_name}.html")
 
 
+class EDAResultsComparisonVisualizerDfs:
+    def __init__(
+        self,
+        df_objects_1: pd.DataFrame,
+        df_objects_2: pd.DataFrame,
+        df_gt: pd.DataFrame,
+        save_dir: str,
+        show: bool = False,
+        objects_1_source_name: str = "results from first model",
+        objects_2_source_name: str = "results from second model",
+        visualized_results_name: str = "some kind of results, e.g. false negatives",
+        show_gt=True,
+    ):
+        self.objects_1_source_name = objects_1_source_name
+        self.objects_2_source_name = objects_2_source_name
+        self.visualized_results_name = visualized_results_name
+        self.show = show
+        self.df_objects_1 = df_objects_1
+        self.df_objects_2 = df_objects_2
+        self.df_gt = df_gt
+        self.save_dir = save_dir
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir, exist_ok=True)
+        self.show_gt = show_gt
+
+    def get_subplots(self, class_names: List[str]) -> None:
+        """[summary]
+        Get subplots
+
+        Args:
+            class_names (List[str]):
+                    names of class you want to visualize.
+
+        Return:
+            axes (numpy.ndarray):
+                    axes of subplots
+        """
+        col_size = len(class_names)
+        fig, axes = plt.subplots(col_size, 1, figsize=(16, 6 * col_size))
+        axes = axes.flatten()
+        return axes
+
+# todo:numbers over hists
+    def hist_object_count_for_each_distance_comparison(
+        self, class_names: List[str], ranges_xy: List[Union[int, float]] = [125, 100, 75, 50, 25]
+    ) -> None:
+        """[summary]
+        Show histogram of number of objects that are less than the certain distance in x-y plane.
+        Distance is specified by ranges_xy.
+
+        Args:
+            class_names (List[str]):
+                    names of class you want to visualize.
+            ranges_xy (List[Union[int, float]]):
+                    distances in x-y plane.
+        """
+        ranges_xy = ranges_xy + [0]
+
+        subplot_titles: List[str] = []
+        for i, _ in enumerate(ranges_xy[:-1]):
+            subplot_titles.append(f"<{ranges_xy[i+1]}m, {ranges_xy[i]}m)")
+
+        fig: Figure = make_subplots(rows=1, cols=len(ranges_xy) - 1, subplot_titles=subplot_titles)
+
+        visualize_df_1 = self.df_objects_1[self.df_objects_1.semantic_label.isin(class_names)]
+        visualize_df_2 = self.df_objects_2[self.df_objects_2.semantic_label.isin(class_names)]
+        df_gt = self.df_gt[self.df_gt.semantic_label.isin(class_names)]
+        max_bar_height = 0
+        for i, _ in enumerate(ranges_xy[:-1]):
+            visualize_df_filt_1: pd.DataFrame = visualize_df_1[
+                (visualize_df_1.distance >= ranges_xy[i + 1])
+                & (visualize_df_1.distance < ranges_xy[i])
+            ]
+            visualize_df_filt_2: pd.DataFrame = visualize_df_2[
+                (visualize_df_2.distance >= ranges_xy[i + 1])
+                & (visualize_df_2.distance < ranges_xy[i])
+            ]
+            if self.show_gt:
+                df_gt_filt = df_gt[
+                    (df_gt.distance >= ranges_xy[i + 1]) & (df_gt.distance < ranges_xy[i])
+                ]
+                fig.add_trace(
+                    go.Histogram(
+                        x=df_gt_filt.semantic_label,
+                        name=f"gt <{ranges_xy[i+1]}m, {ranges_xy[i]}m)",
+                        marker=dict(color="yellowgreen"),
+                    ),
+                    row=1,
+                    col=i + 1,
+                )
+            class_names_1 = sorted(
+                visualize_df_filt_1.semantic_label.unique().tolist(), key=class_names.index
+            )
+            class_names_2 = sorted(
+                visualize_df_filt_2.semantic_label.unique().tolist(), key=class_names.index
+            )
+
+            # # todo: map class names to colors, not working correctly
+            # colors_1 = [class_color_mapping[cn] for cn in class_names_1]
+            # colors_2 = [class_color_mapping[cn] for cn in class_names_2]
+
+            fig.add_trace(
+                go.Histogram(
+                    x=visualize_df_filt_1.semantic_label,
+                    name=f"{self.objects_1_source_name} <{ranges_xy[i+1]}m, {ranges_xy[i]}m)",
+                    marker=dict(color="blue"),
+                ),
+                row=1,
+                col=i + 1,
+            )
+            fig.add_trace(
+                go.Histogram(
+                    x=visualize_df_filt_2.semantic_label,
+                    name=f"{self.objects_2_source_name} <{ranges_xy[i+1]}m, {ranges_xy[i]}m)",
+                    marker=dict(color="orange"),
+                ),
+                row=1,
+                col=i + 1,
+            )
+
+            # # todo ValueError: max() arg is an empty sequence for fp all sscenes
+            if self.show_gt:
+                curr_max_bar_height = (
+                    max(df_gt_filt.semantic_label.value_counts()) if len(df_gt_filt) > 0 else 0
+                )
+            else:
+                max_bar_height_1 = (
+                    max(visualize_df_filt_1.semantic_label.value_counts())
+                    if len(visualize_df_filt_1) > 0
+                    else 0
+                )
+                max_bar_height_2 = (
+                    max(visualize_df_filt_2.semantic_label.value_counts())
+                    if len(visualize_df_filt_2) > 0
+                    else 0
+                )
+                curr_max_bar_height = max(max_bar_height_1, max_bar_height_2)
+            max_bar_height = (
+                curr_max_bar_height if curr_max_bar_height > max_bar_height else max_bar_height
+            )
+        # todo:check if ok
+        filtered_classes_1 = visualize_df_1.semantic_label.unique().tolist()
+        filtered_classes_2 = visualize_df_2.semantic_label.unique().tolist()
+        filtered_classes = list(set(filtered_classes_1 + filtered_classes_2))
+        # fig.update_xaxes(autorange="reversed") #didnt work
+        fig.update_xaxes(
+            categoryorder="array", categoryarray=sorted(filtered_classes, key=class_names.index)
+        )
+        fig.update_yaxes(range=(0, 1.1 * max_bar_height))
+
+        # todo put these into legend also
+        fig.update_layout(
+            title="<b>Number of objects in various 2d distance ranges</b>"
+            + f"<br>Compared: <b>{self.objects_1_source_name}</b> vs <b>{self.objects_2_source_name}</b>"
+            + f"<br>Objects used for comparison: <b>{self.visualized_results_name}</b>",
+            font=dict(size=7),  # title size
+        )
+        fig.update_annotations(font_size=9)  # ranges description size over each hist
+        if self.show:
+            fig.show()
+
+        fig.write_html(self.save_dir + "/hist_object_count_for_each_distance.html")
+
+    def hist2d_object_center_xy_for_each_class(
+        self,
+        class_names: List[str],
+        xlim_dict: Dict[str, List[float]] = None,
+        ylim_dict: Dict[str, List[float]] = None,
+    ) -> None:
+        """[summary]
+        Show 2d-histogram of x and y in each class.
+
+        Args:
+            class_names (List[str]):
+                    names of class you want to visualize.
+            xlim_dict, ylim_dict (Dict[str, List[float]]):
+                    xlim, ylim for each class
+                    e.g. xlim_dict['car'] is [xmin, xmax] for car
+
+        """
+
+        axes = self.get_subplots(class_names)
+
+        for cls_i, class_name in enumerate(class_names):
+            # _df_cls = self.visualize_df[self.visualize_df.name == class_name]
+            visualize_df_1 = self.df_objects_1[self.df_objects_1.semantic_label.isin(class_names)]
+            visualize_df_2 = self.df_objects_2[self.df_objects_2.semantic_label.isin(class_names)]
+            df_gt = self.df_gt[self.df_gt.semantic_label.isin(class_names)]
+            if len(visualize_df_1) > 0:
+                x_mean_1, x_std_1 = visualize_df_1.x.mean(), visualize_df_1.x.std()
+                y_mean_1, y_std_1 = visualize_df_1.y.mean(), visualize_df_1.y.std()
+                z_mean_1, z_std_1 = visualize_df_1.z.mean(), visualize_df_1.z.std()
+
+                hist = axes[cls_i].hist2d(
+                    visualize_df_1.x, visualize_df_1.y, bins=50, norm=mpl.colors.LogNorm()
+                )
+                axes[cls_i].plot(
+                    x_mean_1, y_mean_1, marker="x", color="r", markersize=10, markeredgewidth=3
+                )
+                axes[cls_i].set_title(
+                    f"{class_name}: (x, y, z)=({x_mean_1:.2f}±{x_std_1:.2f}, {y_mean_1:.2f}±{y_std_1:.2f}, {z_mean_1:.2f}±{z_std_1:.2f})"
+                )
+                axes[cls_i].set_xlabel("x [m] ")
+                axes[cls_i].set_ylabel("y [m] ")
+                if xlim_dict:
+                    axes[cls_i].set_xlim(xlim_dict[class_name][0], xlim_dict[class_name][1])
+                if ylim_dict:
+                    axes[cls_i].set_ylim(ylim_dict[class_name][0], ylim_dict[class_name][1])
+                plt.colorbar(hist[3], ax=axes[cls_i])
+
+        plt.savefig(self.save_dir + "/hist2d_object_center_xy_for_each_class.svg")
+
+
 class EDAResultsComparisonVisualizer:
     def __init__(
         self,
-        objects_1,
-        objects_2,
-        gt_objects,
+        objects_1: Union[
+            Iterable[List[DynamicObjectWithPerceptionResult]], Iterable[List[DynamicObject]]
+        ],
+        objects_2: Union[
+            Iterable[List[DynamicObjectWithPerceptionResult]], Iterable[List[DynamicObject]]
+        ],
+        gt_objects: Iterable[List[DynamicObject]],
         save_dir: str,
         show: bool = False,
         objects_1_source_name: str = "results from first model",
@@ -533,6 +758,7 @@ class EDAResultsComparisonVisualizer:
         axes = axes.flatten()
         return axes
 
+    
     # todo:numbers over hists
     def hist_object_count_for_each_distance_comparison(
         self, class_names: List[str], ranges_xy: List[Union[int, float]] = [125, 100, 75, 50, 25]
@@ -765,6 +991,34 @@ class EDAManager:
         ]
         self.show = show
         self.results = []
+        self.dfs = []
+
+
+    #todo:refactor
+    def set_dfs(self, dfs: List[pd.DataFrame]) -> None:
+        for result_data in dfs:
+            df_fp = result_data["fp_objects"]
+            with_gt = df_fp["x"].notnull()
+            result_data["fp_objects_with_gt"] = df_fp[with_gt]
+            result_data["fp_objects_without_gt"] = df_fp[~with_gt]
+            # in fp_objects_without_gt if a column with "est_" prefix exists put it in column without the prefix and remove the column with the prefix
+            # for col in result_data["fp_objects_without_gt"].columns:
+            #     if col.startswith("est_"):
+            #         result_data["fp_objects_without_gt"][col[4:]] = result_data["fp_objects_without_gt"][col]
+            #         result_data["fp_objects_without_gt"].drop(columns=[col], inplace=True)
+
+        self.dfs = dfs
+
+    #set_results for lists of objects
+    def set_results(self, results: List[Dict[str, List[DynamicObjectWithPerceptionResult]]]) -> None:
+        # split to fps with and without gt
+        for result_data in results:
+            fp_objects = result_data["fp_objects"]
+            fp_objects_with_gt = [obj for obj in fp_objects if obj.ground_truth_object is not None]
+            fp_objects_without_gt = [obj for obj in fp_objects if obj.ground_truth_object is None]
+            result_data["fp_objects_with_gt"] = fp_objects_with_gt
+            result_data["fp_objects_without_gt"] = fp_objects_without_gt
+        self.results = results
 
     def visualize_ground_truth_objects(
         self, ground_truth_object_dict: Dict[str, List[DynamicObject]]
@@ -849,9 +1103,9 @@ class EDAManager:
         self,
     ) -> None:
         # todo check if calculated
-        self.visualize(self.results[0]["tp_results"], "tp_results")
-        self.visualize(self.results[0]["fp_results"], "fp_results")
-        self.visualize(self.results[0]["fn_results"], "fn_results")
+        self.visualize(self.results[0]["tp_objects"], visualized_results_name="tp_results")
+        self.visualize(self.results[0]["fp_objects"], visualized_results_name="fp_results")
+        self.visualize(self.results[0]["fn_objects"], visualized_results_name="fn_results")
 
     def visualize(
         self,
@@ -882,49 +1136,145 @@ class EDAManager:
             length_lim_dict=self.length_lim_dict,
         )
 
-    def visualize_all_evaluated_results_comparison(
-        self,
-        ground_truth_objects: List[DynamicObject],
-    ):
-        # todo check if calculated
-        objects_source_name_1, tp_results_1, fp_results_1, fn_gts_1 = (
+    def visualize_all_evaluated_results_comparison(self, to_vis=["tps", "fps", "fns"]):
+        # todo check if self.results calculated or set
+        # we assume same gt objects from both results
+        if type(to_vis) == str:
+            to_vis = [to_vis]
+
+        ground_truth_objects, objects_source_name_1, tp_objects_1, fp_objects_1, fp_with_gt_objects_1, fp_without_gt_objects_1, fn_gts_1 = (
+            self.results[0]["gt_objects"],
             self.results[0]["objects_source_name"],
-            self.results[0]["tp_results"],
-            self.results[0]["fp_results"],
-            self.results[0]["fn_results"],
+            self.results[0]["tp_objects"],
+            self.results[0]["fp_objects"],
+            self.results[0]["fp_objects_with_gt"],
+            self.results[0]["fp_objects_without_gt"],
+            self.results[0]["fn_objects"],
         )
-        objects_source_name_2, tp_results_2, fp_results_2, fn_gts_2 = (
+        objects_source_name_2, tp_objects_2, fp_objects_2, fp_with_gt_objects_2, fp_without_gt_objects_2, fn_gts_2 = (
             self.results[1]["objects_source_name"],
-            self.results[1]["tp_results"],
-            self.results[1]["fp_results"],
-            self.results[1]["fn_results"],
+            self.results[1]["tp_objects"],
+            self.results[1]["fp_objects"],
+            self.results[1]["fp_objects_with_gt"],
+            self.results[1]["fp_objects_without_gt"],
+            self.results[1]["fn_objects"],
         )
 
-        self.visualize_evaluated_results_comparison(
-            objects_source_name_1,
-            objects_source_name_2,
-            tp_results_1,
-            tp_results_2,
-            ground_truth_objects,
-            visualized_results_name="tps",
+        if "tps" in to_vis:
+            self.visualize_evaluated_results_comparison(
+                objects_source_name_1,
+                objects_source_name_2,
+                tp_objects_1,
+                tp_objects_2,
+                ground_truth_objects,
+                visualized_results_name="tps",
+            )
+        if "fps" in to_vis:
+            self.visualize_evaluated_results_comparison(
+                objects_source_name_1,
+                objects_source_name_2,
+                fp_objects_1,
+                fp_objects_2,
+                ground_truth_objects,
+                visualized_results_name="fps_all",
+                show_gt=False,
+            )
+            self.visualize_evaluated_results_comparison(
+                objects_source_name_1,
+                objects_source_name_2,
+                fp_with_gt_objects_1,
+                fp_with_gt_objects_2,
+                ground_truth_objects,
+                visualized_results_name="fps_with_gt",
+                show_gt=False,
+            )
+            self.visualize_evaluated_results_comparison(
+                objects_source_name_1,
+                objects_source_name_2,
+                fp_without_gt_objects_1,
+                fp_without_gt_objects_2,
+                ground_truth_objects,
+                visualized_results_name="fps_without_gt",
+                show_gt=False,
+            )
+        if "fns" in to_vis:
+            self.visualize_evaluated_results_comparison(
+                objects_source_name_1,
+                objects_source_name_2,
+                fn_gts_1,
+                fn_gts_2,
+                ground_truth_objects,
+                visualized_results_name="fn_gts",
+            )
+
+    def visualize_all_evaluated_results_comparison_dfs(self, to_vis=["tps", "fps", "fns"]):
+        # todo check if self.results calculated or set
+        # we assume same gt objects from both results
+        if type(to_vis) == str:
+            to_vis = [to_vis]
+        df_gt, objects_source_name_1, df_tp_1, df_fp_1, df_fp_with_gt_1, df_fp_without_gt_1, df_fn_1 = (
+            self.dfs[0]["gt_objects"],
+            self.dfs[0]["objects_source_name"],
+            self.dfs[0]["tp_objects"],
+            self.dfs[0]["fp_objects"],
+            self.dfs[0]["fp_objects_with_gt"],
+            self.dfs[0]["fp_objects_without_gt"],
+            self.dfs[0]["fn_objects"],
         )
-        self.visualize_evaluated_results_comparison(
-            objects_source_name_1,
-            objects_source_name_2,
-            fp_results_1,
-            fp_results_2,
-            ground_truth_objects,
-            visualized_results_name="fps",
-            show_gt=False,
+        objects_source_name_2, df_tp_2, df_fp_2, df_fp_with_gt_2, df_fp_without_gt_2, df_fn_2 = (
+            self.dfs[1]["objects_source_name"],
+            self.dfs[1]["tp_objects"],
+            self.dfs[1]["fp_objects"],
+            self.dfs[1]["fp_objects_with_gt"],
+            self.dfs[1]["fp_objects_without_gt"],
+            self.dfs[1]["fn_objects"],
         )
-        self.visualize_evaluated_results_comparison(
-            objects_source_name_1,
-            objects_source_name_2,
-            fn_gts_1,
-            fn_gts_2,
-            ground_truth_objects,
-            visualized_results_name="fn_gts",
-        )
+        if "tps" in to_vis:
+            self.visualize_evaluated_results_comparison_dfs(
+                objects_source_name_1,
+                objects_source_name_2,
+                df_tp_1,
+                df_tp_2,
+                df_gt,
+                visualized_results_name="tps",
+            )
+        if "fps" in to_vis:
+            self.visualize_evaluated_results_comparison_dfs(
+                objects_source_name_1,
+                objects_source_name_2,
+                df_fp_1,
+                df_fp_2,
+                df_gt,
+                visualized_results_name="fps_all",
+                show_gt=False,
+            )
+            self.visualize_evaluated_results_comparison_dfs(
+                objects_source_name_1,
+                objects_source_name_2,
+                df_fp_with_gt_1,
+                df_fp_with_gt_2,
+                df_gt,
+                visualized_results_name="fps_with_gt",
+                show_gt=False,
+            )
+            self.visualize_evaluated_results_comparison_dfs(
+                objects_source_name_1,
+                objects_source_name_2,
+                df_fp_without_gt_1,
+                df_fp_without_gt_2,
+                df_gt,
+                visualized_results_name="fps_without_gt",
+                show_gt=False,
+            )
+        if "fns" in to_vis:
+            self.visualize_evaluated_results_comparison_dfs(
+                objects_source_name_1,
+                objects_source_name_2,
+                df_fn_1,
+                df_fn_2,
+                df_gt,
+                visualized_results_name="fn_gts",
+            )
 
     def visualize_evaluated_results_comparison(
         self,
@@ -947,18 +1297,56 @@ class EDAManager:
             visualized_results_name,
             show_gt,
         )
-        for cn in self.class_names:
-            eda_results_comparison_visualizer.hist_object_count_for_each_distance_comparison(
-                [cn], ranges_xy=self.ranges_xy
-            )
+
+        # for cn in self.class_names:
+        #     eda_results_comparison_visualizer.hist_object_count_for_each_distance_comparison(
+        #         [cn], ranges_xy=self.ranges_xy
+        #     )
 
         eda_results_comparison_visualizer.hist_object_count_for_each_distance_comparison(
             self.class_names, ranges_xy=self.ranges_xy
         )
 
-        eda_results_comparison_visualizer.hist2d_object_center_xy_for_each_class(
-            self.class_names, self.xylim_dict, self.xylim_dict
+        # # makes separate plot for each class
+        # eda_results_comparison_visualizer.hist2d_object_center_xy_for_each_class(
+        #     self.class_names, self.xylim_dict, self.xylim_dict
+        # )
+
+    def visualize_evaluated_results_comparison_dfs(
+        self,
+        objects_source_name_1: str,
+        objects_source_name_2: str,
+        df_1,
+        df_2,
+        df_gt,
+        visualized_results_name,
+        show_gt=True,
+    ):
+        eda_results_comparison_visualizer = EDAResultsComparisonVisualizerDfs(
+            df_1,
+            df_2,
+            df_gt,
+            f"{self.root_path}/{visualized_results_name}",
+            self.show,
+            objects_source_name_1,
+            objects_source_name_2,
+            visualized_results_name,
+            show_gt,
         )
+
+        # for cn in self.class_names:
+        #     eda_results_comparison_visualizer.hist_object_count_for_each_distance_comparison(
+        #         [cn], ranges_xy=self.ranges_xy
+        #     )
+
+        eda_results_comparison_visualizer.hist_object_count_for_each_distance_comparison(
+            self.class_names, ranges_xy=self.ranges_xy
+        )
+
+        # # makes separate plot for each class
+        # eda_results_comparison_visualizer.hist2d_object_center_xy_for_each_class(
+        #     self.class_names, self.xylim_dict, self.xylim_dict
+        # )
 
     def report_rates(
         self,
