@@ -68,11 +68,26 @@ def load_pkl(filepath: str) -> Any:
         Any: Any python objects stored in "data".
     """
     with open(filepath, "rb") as pickle_file:
-        data: Any = pickle.load(pickle_file)
-        if not isinstance(data, dict) or data.get("version") is None or data.get("data") is None:
+        try:
+            data: Any = pickle.load(pickle_file)
+        except Exception as e:
+            print(e)
+            raise ValueError(
+                "[NOTICE]: Version of `perception_eval` in pickle is too old, "
+                f"current version is {__version__}."
+            )
+
+        if not isinstance(data, dict):
             warnings.warn(
                 "Expected serialized pkl format is `dict['version': str, 'data': Any]`, "
-                f"which contains `version` information, but got type: {type(data)}, version: {data.get('version')}.",
+                f"which contains `version` information, but got type: {type(data)}",
+                DeprecationWarning,
+            )
+            return data
+        elif isinstance(data, dict) and data.get("version") is None or data.get("data") is None:
+            warnings.warn(
+                "Expected serialized pkl format is `dict['version': str, 'data': Any]`, "
+                f"which contains `version` information, but got keys: {list(data.keys())}",
                 DeprecationWarning,
             )
             return data
