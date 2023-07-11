@@ -220,7 +220,10 @@ class DynamicObjectWithPerceptionResult:
             bool: Whether label is correct
         """
         if self.ground_truth_object:
-            return self.estimated_object.semantic_label == self.ground_truth_object.semantic_label
+            return (
+                self.estimated_object.semantic_label == self.ground_truth_object.semantic_label
+                or self.estimated_object.semantic_label.label == AutowareLabel.UNKNOWN
+            )
         else:
             return False
 
@@ -323,10 +326,7 @@ def _get_object_results_with_id(
                 )
             if (
                 est_object.uuid == gt_object.uuid
-                and (
-                    est_object.semantic_label == gt_object.semantic_label
-                    or est_object.semantic_label == AutowareLabel.UNKNOWN
-                )
+                and est_object.semantic_label == gt_object.semantic_label
                 and est_object.frame_id == gt_object.frame_id
             ):
                 object_results.append(
@@ -418,7 +418,7 @@ def _get_score_table(
         for j, ground_truth_object_ in enumerate(ground_truth_objects):
             if (
                 estimated_object_.semantic_label == ground_truth_object_.semantic_label
-                or estimated_object_.semantic_label == AutowareLabel.UNKNOWN
+                or estimated_object_.semantic_label.label == AutowareLabel.UNKNOWN
             ) and estimated_object_.frame_id == ground_truth_object_.frame_id:
                 matching_method: MatchingMethod = matching_method_module(
                     estimated_object=estimated_object_,

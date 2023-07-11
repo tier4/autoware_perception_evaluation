@@ -28,12 +28,10 @@ class ShapeType(Enum):
     """Type of shape.
 
     BOUNDING_BOX
-    CYLINDER
     POLYGON
     """
 
     BOUNDING_BOX = "bounding_box"
-    CYLINDER = "cylinder"
     POLYGON = "polygon"
 
     @classmethod
@@ -41,7 +39,7 @@ class ShapeType(Enum):
         """Returns ShapeType instance from string.
 
         Args:
-            name (str): ShapeTYpe name in string.
+            name (str): ShapeType name in string.
 
         Returns:
             ShapeType: ShapeType instance.
@@ -58,34 +56,34 @@ class ShapeType(Enum):
                 return k
         raise ValueError(f"Unexpected name: {name}, choose from {list(cls.__members__.keys())}")
 
+    def __str__(self) -> str:
+        return self.value
+
+    def __eq__(self, other: Union[str, ShapeType]) -> bool:
+        return self.value == other if isinstance(other, str) else super().__eq__(other)
+
 
 class Shape:
-    """Shape class.
-
-    NOTE: Footprint of cylinder is rectangle.
+    """Class for object's shape.
 
     Attributes:
         type (ShapeType): Type of shape.
         size (Tuple[float, float, float]): Size of bbox, (width, length, height) order.
             - BOUNDING_BOX:
                 (width, length, height)
-            - CYLINDER:
-                (diameter, 0.0, height)
             - POLYGON:
                 (0.0, 0.0, height)
         footprint (Optional[Polygon]): When shape is BOUNDING_BOX, it is allowed to be None.
             Footprint should be with respect to each object's coordinate system.
 
     Args:
-        shape_type (Union[str, ShapeType]): Type of shape, BOUNDING_BOX, CYLINDER or POLYGON.
+        shape_type (Union[str, ShapeType]): Type of shape, BOUNDING_BOX or POLYGON.
         size (Tuple[float, float, float]): Size of bbox, (width, length, height) order.
             - BOUNDING_BOX:
                 (width, length, height)
-            - CYLINDER:
-                (diameter, 0.0, height)
             - POLYGON:
                 (0.0, 0.0, height)
-        footprint (Optional[Polygon]): When shape type is BOUNDING_BOX or CYLINDER, this needs not to be set.
+        footprint (Optional[Polygon]): When shape type is BOUNDING_BOX, this does not need to be set.
             However, when POLYGON, this must be set. Defaults to None.
             Footprint should be with respect to each object's coordinate system.
     """
@@ -99,30 +97,35 @@ class Shape:
         if isinstance(shape_type, str):
             shape_type = ShapeType.from_value(shape_type)
 
-        if shape_type == ShapeType.POLYGON and footprint is None:
-            raise RuntimeError("For POLYGON shape objects, footprint must be set")
-
         self.type: ShapeType = shape_type
-        self.size = (size[0], size[0], size[2]) if shape_type == ShapeType.CYLINDER else size
-        self.footprint: Optional[Polygon] = footprint if footprint else self.get_footprint()
+        self.size: Tuple[float, float, float] = size
+        self.footprint: Optional[Polygon] = (
+            footprint if footprint else self.__calculate_corners(shape_type, size)
+        )
 
-    def get_footprint(self) -> Polygon:
-        """Calculate footprint for type of BOUNDING_BOX or CYLINDER with respect to each object's coordinate system.
+    @staticmethod
+    def __calculate_corners(shape_type: ShapeType, size: Tuple[float, float, float]) -> Polygon:
+        """Calculate footprint for type of BOUNDING_BOX with respect to each object's coordinate system.
+        This method is only called if input shape type is `BOUNDING_BOX` to set footprint from .
+
+        Args:
+            shape_type (ShapeType): Shape type of target shape.
+            size (Tuple[float, float, float]): (width, length, height).
 
         Returns:
-            footprint (Polygon): Object's footprint.
+            corner_polygon (Polygon): Object's corners as polygon.
         """
-        if self.type == ShapeType.POLYGON:
-            raise RuntimeError("Expected BOUNDING_BOX or CYLINDER")
+        if shape_type != ShapeType.BOUNDING_BOX:
+            raise ValueError(f"Expected BOUNDING_BOX, but got {shape_type}")
 
         corners: List[np.ndarray] = [
-            np.array([self.size[1], self.size[0], 0.0]) / 2.0,
-            np.array([-self.size[1], self.size[0], 0.0]) / 2.0,
-            np.array([-self.size[1], -self.size[0], 0.0]) / 2.0,
-            np.array([self.size[1], -self.size[0], 0.0]) / 2.0,
+            np.array([size[1], size[0], 0.0]) / 2.0,
+            np.array([-size[1], size[0], 0.0]) / 2.0,
+            np.array([-size[1], -size[0], 0.0]) / 2.0,
+            np.array([size[1], -size[0], 0.0]) / 2.0,
         ]
 
-        footprint: Polygon = Polygon(
+        corner_polygon: Polygon = Polygon(
             [
                 corners[0],
                 corners[1],
@@ -132,4 +135,4 @@ class Shape:
             ]
         )
 
-        return footprint
+        return corner_polygon

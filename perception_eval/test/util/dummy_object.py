@@ -109,7 +109,7 @@ def make_dummy_data(
             frame_id=frame_id,
             position=(-1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            shape=Shape(shape_type=ShapeType.CYLINDER, size=(1.0, 0.0, 1.0)),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),

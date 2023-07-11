@@ -37,9 +37,7 @@ from perception_eval.util.debug import get_objects_with_difference
 
 class TestObjectsFilter(unittest.TestCase):
     def setUp(self):
-        self.dummy_estimated_objects: List[DynamicObject] = []
-        self.dummy_ground_truth_objects: List[DynamicObject] = []
-        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
+        _, self.dummy_ground_truth_objects = make_dummy_data()
 
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
@@ -92,15 +90,13 @@ class TestObjectsFilter(unittest.TestCase):
         ]
         for n, (diff_distance, ans_pair_indices) in enumerate(patterns):
             with self.subTest(f"Test filtered_object_results: {n + 1}"):
-                diff_distance_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+                estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-                    estimated_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 filtered_object_results = filter_object_results(
@@ -117,12 +113,10 @@ class TestObjectsFilter(unittest.TestCase):
                 for i, object_result_ in enumerate(filtered_object_results):
                     self.assertIn(
                         object_result_.estimated_object,
-                        diff_distance_dummy_ground_truth_objects,
+                        estimated_objects,
                         f"Unexpected estimated object at {i}",
                     )
-                    est_idx: int = diff_distance_dummy_ground_truth_objects.index(
-                        object_result_.estimated_object
-                    )
+                    est_idx: int = estimated_objects.index(object_result_.estimated_object)
                     gt_idx: int = ans_pair_indices[ans_pair_indices[:, 0] == est_idx][0, 1]
                     self.assertEqual(
                         object_result_.ground_truth_object,
@@ -158,9 +152,7 @@ class TestObjectsFilter(unittest.TestCase):
         ]
         for n, (diff_distance, ans_idx, point_number_dict) in enumerate(patterns):
             with self.subTest(f"Test filter_objects: {n + 1}"):
-                diff_distance_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+                ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(-diff_distance, 0.0, 0.0),
                     diff_yaw=0,
@@ -168,12 +160,10 @@ class TestObjectsFilter(unittest.TestCase):
 
                 # make dummy data with different point cloud numbers
                 for idx, pointcloud_num in point_number_dict.items():
-                    diff_distance_dummy_ground_truth_objects[
-                        int(idx)
-                    ].pointcloud_num = pointcloud_num
+                    ground_truth_objects[int(idx)].pointcloud_num = pointcloud_num
 
                 filtered_objects = filter_objects(
-                    objects=diff_distance_dummy_ground_truth_objects,
+                    objects=ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
@@ -182,11 +172,7 @@ class TestObjectsFilter(unittest.TestCase):
                     min_distance_list=self.min_pos_distance_list,
                     min_point_numbers=self.min_point_numbers,
                 )
-                ans_objects = [
-                    x
-                    for idx, x in enumerate(diff_distance_dummy_ground_truth_objects)
-                    if idx in ans_idx
-                ]
+                ans_objects = [x for idx, x in enumerate(ground_truth_objects) if idx in ans_idx]
                 self.assertEqual(filtered_objects, ans_objects)
 
     def test_divide_tp_fp_objects(self):
@@ -226,8 +212,8 @@ class TestObjectsFilter(unittest.TestCase):
             # Given no diff_distance and 2 labels changed, 2 estimated_objects are tp.
             (
                 0.0,
-                np.array([(1, 1), (2, 2)]),
-                np.array([(0, None), (3, None)]),
+                np.array([(0, 0), (1, 1), (2, 2)]),
+                np.array([(3, None)]),
                 {
                     "0": Label(AutowareLabel.UNKNOWN, "unknown", []),
                     "3": Label(AutowareLabel.ANIMAL, "animal", []),
@@ -249,8 +235,8 @@ class TestObjectsFilter(unittest.TestCase):
             # Given 1.5 diff_distance for one axis and 1 labels changed, 3 estimated_objects are tp.
             (
                 1.5,
-                np.array([(0, 0), (1, 1), (3, 3)]),
-                np.array([(2, None)]),
+                np.array([(2, 0), (1, 1), (3, 3)]),
+                np.array([(0, None)]),
                 {"2": Label(AutowareLabel.UNKNOWN, "unknown", [])},
             ),
             # (5)
@@ -283,10 +269,7 @@ class TestObjectsFilter(unittest.TestCase):
             label_change_dict,
         ) in enumerate(patterns):
             with self.subTest(f"Test divide_tp_fp_objects: {n + 1}"):
-
-                diff_distance_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+                estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
@@ -294,10 +277,10 @@ class TestObjectsFilter(unittest.TestCase):
 
                 # make dummy data with different label
                 for idx, label in label_change_dict.items():
-                    diff_distance_dummy_ground_truth_objects[int(idx)].semantic_label = label
+                    estimated_objects[int(idx)].semantic_label = label
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-                    estimated_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 tp_results, fp_results = divide_tp_fp_objects(
@@ -307,32 +290,38 @@ class TestObjectsFilter(unittest.TestCase):
                     self.matching_threshold_list,
                     self.confidence_threshold_list,
                 )
-                self.assertEqual(len(tp_results), len(ans_tp_pair_idx))
+                # TP
+                self.assertEqual(
+                    len(tp_results),
+                    len(ans_tp_pair_idx),
+                    f"Number of elements are not same, out: {len(tp_results)}, ans: {len(ans_fp_pair_idx)}",
+                )
                 for i, tp_result_ in enumerate(tp_results):
                     self.assertIn(
                         tp_result_.estimated_object,
-                        diff_distance_dummy_ground_truth_objects,
+                        estimated_objects,
                         f"TP estimated objects[{i}]",
                     )
-                    est_idx: int = diff_distance_dummy_ground_truth_objects.index(
-                        tp_result_.estimated_object,
-                    )
+                    est_idx: int = estimated_objects.index(tp_result_.estimated_object)
                     gt_idx: int = ans_tp_pair_idx[ans_tp_pair_idx[:, 0] == est_idx][0, 1]
                     self.assertEqual(
                         tp_result_.ground_truth_object,
                         self.dummy_ground_truth_objects[gt_idx],
                     )
 
-                self.assertEqual(len(fp_results), len(ans_fp_pair_idx))
+                # FP
+                self.assertEqual(
+                    len(fp_results),
+                    len(ans_fp_pair_idx),
+                    f"Number of elements are not same, out: {len(fp_results)}, ans: {len(ans_fp_pair_idx)}",
+                )
                 for j, fp_result_ in enumerate(fp_results):
                     self.assertIn(
                         fp_result_.estimated_object,
-                        diff_distance_dummy_ground_truth_objects,
+                        estimated_objects,
                         f"FP estimated objects[{j}]",
                     )
-                    est_idx: int = diff_distance_dummy_ground_truth_objects.index(
-                        fp_result_.estimated_object,
-                    )
+                    est_idx: int = estimated_objects.index(fp_result_.estimated_object)
                     gt_idx: Optional[int] = ans_fp_pair_idx[ans_fp_pair_idx[:, 0] == est_idx][0, 1]
                     if gt_idx is None:
                         self.assertIsNone(
@@ -376,15 +365,13 @@ class TestObjectsFilter(unittest.TestCase):
 
         for n, (x_diff, y_diff, ans_fn_idx) in enumerate(patterns):
             with self.subTest(f"Test get_fn_objects: {n + 1}"):
-                diff_distance_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+                estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(x_diff, y_diff, 0.0),
                     diff_yaw=0,
                 )
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-                    estimated_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
 
@@ -428,7 +415,7 @@ class TestObjectsFilter(unittest.TestCase):
             (
                 0.0,
                 0.0,
-                [0, 3],
+                [3],
                 {
                     "0": Label(AutowareLabel.UNKNOWN, "unknown", []),
                     "3": Label(AutowareLabel.ANIMAL, "animal", []),
@@ -444,7 +431,7 @@ class TestObjectsFilter(unittest.TestCase):
             # Given difference (1.5, 0.0), there are no fn.
             (1.5, 0.0, [], {}),
             # Given difference (1.5, 0.0) and 1 labels changed, 1 estimated_objects are fp.
-            (1.5, 0.0, [1], {"1": Label(AutowareLabel.UNKNOWN, "unknown", [])}),
+            (1.5, 0.0, [], {"1": Label(AutowareLabel.UNKNOWN, "unknown", [])}),
             # Given difference (2.5, 0.0), all ground_truth_objects are fn
             (2.5, 0.0, [0, 1, 2, 3], {}),
             # Given difference (2.5, 2.5), all ground_truth_objects are fn
@@ -452,10 +439,8 @@ class TestObjectsFilter(unittest.TestCase):
         ]
 
         for n, (x_diff, y_diff, ans_fn_idx, label_change_dict) in enumerate(patterns):
-            with self.subTest(f"Test get_fn_objects: {n + 1}"):
-                diff_distance_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+            with self.subTest(f"Test get_fn_objects_for_different_label: {n + 1}"):
+                estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(x_diff, y_diff, 0.0),
                     diff_yaw=0,
@@ -463,10 +448,10 @@ class TestObjectsFilter(unittest.TestCase):
 
                 # make dummy data with different label
                 for idx, label in label_change_dict.items():
-                    diff_distance_dummy_ground_truth_objects[int(idx)].semantic_label = label
+                    estimated_objects[int(idx)].semantic_label = label
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-                    estimated_objects=diff_distance_dummy_ground_truth_objects,
+                    estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 tp_results, _ = divide_tp_fp_objects(
