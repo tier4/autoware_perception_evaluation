@@ -15,6 +15,7 @@
 from typing import List
 from typing import Optional
 from typing import Tuple
+import warnings
 
 import numpy as np
 from perception_eval.common import ObjectType
@@ -106,12 +107,32 @@ class PassFailResult:
             self.frame_pass_fail_config.matching_threshold_list,
         )
 
+    def get_num_success(self) -> int:
+        """Returns the number of success.
+
+        Returns:
+            int: Number of success.
+        """
+        return len(self.tp_object_results) + len(self.tn_objects)
+
+    def get_num_fail(self) -> int:
+        """Returns the number of fail.
+
+        Returns:
+            int: Number of fail.
+        """
+        return len(self.fp_object_results) + len(self.fn_objects)
+
     def get_fail_object_num(self) -> int:
         """Get the number of fail objects.
 
         Returns:
             int: Number of fail objects.
         """
+        warnings.warn(
+            "`get_fail_object_num()` is removed in next minor update, please use `get_num_fail()`",
+            DeprecationWarning,
+        )
         return len(self.fn_objects) + len(self.fp_object_results)
 
     def __get_positive_object_results(
@@ -130,7 +151,6 @@ class PassFailResult:
             List[DynamicObjectWithPerceptionResult]: TP object results.
             List[DynamicObjectWithPerceptionResult]: FP object results.
         """
-        fp_object_results: List[DynamicObjectWithPerceptionResult] = []
         tp_object_results, fp_object_results = get_positive_objects(
             object_results=object_results,
             target_labels=self.frame_pass_fail_config.target_labels,
@@ -141,8 +161,14 @@ class PassFailResult:
         )
 
         # filter by critical_ground_truth_objects
-        fp_critical_object_results: List[DynamicObjectWithPerceptionResult] = []
-        for fp_object_result in fp_object_results:
-            if fp_object_result.ground_truth_object in critical_ground_truth_objects:
-                fp_critical_object_results.append(fp_object_result)
-        return tp_object_results, fp_critical_object_results
+        tp_critical_results: List[DynamicObjectWithPerceptionResult] = [
+            tp_result
+            for tp_result in tp_object_results
+            if tp_result.ground_truth_object in critical_ground_truth_objects
+        ]
+        fp_critical_results: List[DynamicObjectWithPerceptionResult] = [
+            fp_result
+            for fp_result in fp_object_results
+            if fp_result.ground_truth_object in critical_ground_truth_objects
+        ]
+        return tp_critical_results, fp_critical_results

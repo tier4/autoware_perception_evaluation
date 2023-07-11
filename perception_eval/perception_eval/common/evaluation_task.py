@@ -30,7 +30,6 @@ class EvaluationTask(Enum):
     - PREDICTION
     - SENSING
 
-
     # 2D
     - DETECTION2D
     - TRACKING2D

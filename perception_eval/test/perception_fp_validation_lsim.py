@@ -101,7 +101,10 @@ class FPValidationLsimMoc:
             tp_rate, fp_rate, tn_rate, fn_rate = status_info.get_status_rates()
             logging.info(
                 f"uuid: {status_info.uuid}, "
-                f"TP: {tp_rate.rate}, FP: {fp_rate.rate}, TN: {tn_rate.rate}, FN: {fn_rate.rate}",
+                f"TP: {tp_rate.rate}, "
+                f"FP: {fp_rate.rate}, "
+                f"TN: {tn_rate.rate}, "
+                f"FN: {fn_rate.rate}",
             )
 
 
