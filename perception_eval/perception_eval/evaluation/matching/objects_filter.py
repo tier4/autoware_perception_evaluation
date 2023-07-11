@@ -211,7 +211,7 @@ def filter_objects(
 
 def get_positive_objects(
     object_results: List[DynamicObjectWithPerceptionResult],
-    target_labels: Optional[List[Label]],
+    target_labels: List[Label],
     matching_mode: Optional[MatchingMode] = None,
     matching_threshold_list: Optional[List[float]] = None,
 ) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
@@ -222,8 +222,7 @@ def get_positive_objects(
     Args:
         object_results (List[DynamicObjectWithPerceptionResult]): List of matched estimation and GT objects.
         target_labels (Optional[List[Label]]): List of labels should be evaluated.
-        matching_mode (Optional[MatchingMode]): Matching policy,
-            i.e. center distance, plane distance, iou...
+        matching_mode (Optional[MatchingMode]): Matching policy, i.e. center or plane distance, iou.
         matching_threshold_list (Optional[List[float]]): List of matching thresholds,
             each element corresponds to target label.
 
@@ -261,7 +260,7 @@ def get_positive_objects(
 def get_negative_objects(
     ground_truth_objects: List[DynamicObject],
     object_results: List[DynamicObjectWithPerceptionResult],
-    target_labels: Optional[List[Label]],
+    target_labels: List[Label],
     matching_mode: Optional[MatchingMode] = None,
     matching_threshold_list: Optional[List[float]] = None,
 ) -> Tuple[List[DynamicObject], List[DynamicObject]]:
@@ -273,6 +272,10 @@ def get_negative_objects(
     Args:
         ground_truth_objects (List[DynamicObject]): List of ground truth objects.
         object_results (List[DynamicObjectWithPerceptionResult]): List of object results.
+        target_labels (Optional[List[Label]]): List of labels should be evaluated.
+        matching_mode (Optional[MatchingMode]): Matching policy, i.e. center or plane distance, iou.
+        matching_threshold_list (Optional[List[float]]): List of matching thresholds,
+            each element corresponds to target label.
 
     Returns:
         tn_objects (List[DynamicObject]): List of TN.
@@ -281,21 +284,7 @@ def get_negative_objects(
     tn_objects: List[DynamicObject] = []
     fn_objects: List[DynamicObject] = []
 
-    matched_ground_truth_objects: List[DynamicObject] = [
-        result.ground_truth_object
-        for result in object_results
-        if result.ground_truth_object is not None
-    ]
-    for ground_truth_object in ground_truth_objects:
-        if ground_truth_object in matched_ground_truth_objects:
-            continue
-
-        # TODO: use class to check if label is FP
-        if ground_truth_object.semantic_label.name == "FP":
-            tn_objects.append(ground_truth_object)
-        else:
-            fn_objects.append(ground_truth_object)
-
+    non_fn_candidates: List[ObjectType] = []
     for object_result in object_results:
         matching_threshold: Optional[float] = get_label_threshold(
             object_result.estimated_object.semantic_label,
@@ -306,6 +295,15 @@ def get_negative_objects(
 
         if gt_status == MatchingStatus.TN:
             tn_objects.append(object_result.ground_truth_object)
+        elif gt_status in (MatchingStatus.FP, MatchingStatus.FN):  # TODO: only for FP or FN
+            fn_objects.append(object_result.ground_truth_object)
+
+        if gt_status is not None or gt_status == MatchingStatus.TP:
+            non_fn_candidates.append(object_result.ground_truth_object)
+
+    for ground_truth_object in ground_truth_objects:
+        if ground_truth_object not in non_fn_candidates:
+            fn_objects.append(ground_truth_object)
 
     return tn_objects, fn_objects
 
