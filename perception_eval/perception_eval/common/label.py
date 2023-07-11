@@ -122,6 +122,9 @@ class Label:
         assert isinstance(keys, (list, tuple)), f"Expected type is sequence, but got {type(keys)}"
         return any([self.contains(key) for key in keys])
 
+    def is_fp_label(self) -> bool:
+        return self.label in (AutowareLabel.FP, TrafficLightLabel.FP)
+
     def __eq__(self, other: Label) -> bool:
         return self.label == other.label
 
@@ -154,7 +157,6 @@ class LabelConverter:
         label_prefix: str,
         count_label_number: bool = False,
     ) -> None:
-
         self.evaluation_task: EvaluationTask = (
             evaluation_task
             if isinstance(evaluation_task, EvaluationTask)

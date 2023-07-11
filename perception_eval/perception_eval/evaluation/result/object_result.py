@@ -109,16 +109,15 @@ class DynamicObjectWithPerceptionResult:
             Tuple[MatchingStatus, Optional[MatchingStatus]]: Matching status of estimation and GT.
         """
         if self.ground_truth_object is None:
-            return MatchingStatus.FP, None
+            return (MatchingStatus.FP, None)
 
         if self.is_result_correct(matching_mode, matching_threshold):
             return (MatchingStatus.TP, MatchingStatus.TP)
         else:
-            # TODO(ktro2828): update not to use label name "FP"
             return (
-                (MatchingStatus.FP, MatchingStatus.FP)
-                if self.ground_truth_object.semantic_label.name != "FP"
-                else (MatchingStatus.FP, MatchingStatus.TN),
+                (MatchingStatus.FP, MatchingStatus.TN)
+                if self.ground_truth_object.semantic_label.is_fp_label()
+                else (MatchingStatus.FP, MatchingStatus.FP)
             )
 
     def is_result_correct(
@@ -151,10 +150,9 @@ class DynamicObjectWithPerceptionResult:
 
         is_matching: bool = matching.is_better_than(matching_threshold)
         # Whether both label is true and matching is true
-        # TODO(ktro2828): update not to use label name "FP"
         return (
             self.is_label_correct and is_matching
-            if self.ground_truth_object.semantic_label.name != "FP"
+            if not self.ground_truth_object.semantic_label.is_fp_label()
             else not is_matching
         )
 
