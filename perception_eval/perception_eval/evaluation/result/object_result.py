@@ -25,7 +25,7 @@ from perception_eval.common import distance_objects_bev
 from perception_eval.common import DynamicObject
 from perception_eval.common import DynamicObject2D
 from perception_eval.common import ObjectType
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import CommonLabel
 from perception_eval.evaluation.matching import CenterDistanceMatching
 from perception_eval.evaluation.matching import IOU2dMatching
 from perception_eval.evaluation.matching import IOU3dMatching
@@ -99,8 +99,7 @@ class DynamicObjectWithPerceptionResult:
         matching_mode: MatchingMode,
         matching_threshold: float,
     ) -> bool:
-        """[summary]
-        The function judging whether the result is target or not.
+        """The function judging whether the result is target or not.
 
         Args:
             matching_mode (MatchingMode):
@@ -116,12 +115,12 @@ class DynamicObjectWithPerceptionResult:
         """
         # Whether is matching to ground truth
         matching: Optional[MatchingMethod] = self.get_matching(matching_mode)
-        if matching is None:
-            return self.is_label_correct
-        is_matching_: bool = matching.is_better_than(matching_threshold)
-        # Whether both label is true and matching is true
-        is_correct: bool = self.is_label_correct and is_matching_
-        return is_correct
+
+        return (
+            self.is_label_correct
+            if matching is None
+            else matching.is_better_than(matching_threshold)
+        )
 
     def get_matching(self, matching_mode: MatchingMode) -> Optional[MatchingMethod]:
         """Get MatchingMethod instance with corresponding MatchingMode.
@@ -220,10 +219,7 @@ class DynamicObjectWithPerceptionResult:
             bool: Whether label is correct
         """
         if self.ground_truth_object:
-            return (
-                self.estimated_object.semantic_label == self.ground_truth_object.semantic_label
-                or self.estimated_object.semantic_label.label == AutowareLabel.UNKNOWN
-            )
+            return self.estimated_object.semantic_label == self.ground_truth_object.semantic_label
         else:
             return False
 
@@ -414,15 +410,17 @@ def _get_score_table(
     num_row: int = len(estimated_objects)
     num_col: int = len(ground_truth_objects)
     score_table: np.ndarray = np.full((num_row, num_col), np.nan)
-    for i, estimated_object_ in enumerate(estimated_objects):
-        for j, ground_truth_object_ in enumerate(ground_truth_objects):
+    for i, est_obj in enumerate(estimated_objects):
+        for j, gt_obj in enumerate(ground_truth_objects):
             if (
-                estimated_object_.semantic_label == ground_truth_object_.semantic_label
-                or estimated_object_.semantic_label.label == AutowareLabel.UNKNOWN
-            ) and estimated_object_.frame_id == ground_truth_object_.frame_id:
+                est_obj.semantic_label == gt_obj.semantic_label
+                or any(
+                    label == CommonLabel.UNKNOWN
+                    for label in (est_obj.semantic_label.label, gt_obj.semantic_label.label)
+                )
+            ) and est_obj.frame_id == gt_obj.frame_id:
                 matching_method: MatchingMethod = matching_method_module(
-                    estimated_object=estimated_object_,
-                    ground_truth_object=ground_truth_object_,
+                    estimated_object=est_obj, ground_truth_object=gt_obj
                 )
                 score_table[i, j] = matching_method.value
     return score_table

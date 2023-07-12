@@ -68,6 +68,19 @@ class TrafficLightLabel(Enum):
         return self.value
 
 
+class CommonLabel(Enum):
+    UNKNOWN = (AutowareLabel.UNKNOWN, TrafficLightLabel.UNKNOWN)
+
+    def __eq__(self, label: LabelType) -> bool:
+        return label in self.value
+
+    def __str__(self) -> str:
+        if self == CommonLabel.UNKNOWN:
+            return "unknown"
+        else:
+            raise ValueError(f"Unexpected element: {self}")
+
+
 LabelType = Union[AutowareLabel, TrafficLightLabel]
 
 

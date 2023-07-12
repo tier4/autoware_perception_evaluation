@@ -246,8 +246,14 @@ def divide_tp_fp_objects(
     tp_object_results: List[DynamicObjectWithPerceptionResult] = []
     fp_object_results: List[DynamicObjectWithPerceptionResult] = []
     for object_result in object_results:
+        if object_result.ground_truth_object is None:
+            fp_object_results.append(object_result)
+            continue
+
+        # in case of matching (Est, GT) = (unknown, except of unknown)
+        # use GT label
         matching_threshold_: Optional[float] = get_label_threshold(
-            semantic_label=object_result.estimated_object.semantic_label,
+            semantic_label=object_result.ground_truth_object.semantic_label,
             target_labels=target_labels,
             threshold_list=matching_threshold_list,
         )
@@ -457,10 +463,11 @@ def divide_objects(
         ret: Dict[LabelType, List[ObjectType]] = {}
 
     for obj in objects:
-        if isinstance(obj, DynamicObjectWithPerceptionResult):
-            label: LabelType = obj.estimated_object.semantic_label.label
-        else:
-            label: LabelType = obj.semantic_label.label
+        label: LabelType = (
+            obj.estimated_object.semantic_label.label
+            if isinstance(obj, DynamicObjectWithPerceptionResult)
+            else obj.semantic_label.label
+        )
 
         if label not in ret.keys():
             ret[label] = [obj]
