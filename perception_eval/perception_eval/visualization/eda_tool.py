@@ -561,19 +561,21 @@ class EDAResultsComparisonVisualizerDfs:
         visualize_df_1 = self.df_objects_1[self.df_objects_1.semantic_label.isin(class_names)]
         visualize_df_2 = self.df_objects_2[self.df_objects_2.semantic_label.isin(class_names)]
         df_gt = self.df_gt[self.df_gt.semantic_label.isin(class_names)]
+        print(len(visualize_df_1), len(visualize_df_2), len(df_gt))
         max_bar_height = 0
         for i, _ in enumerate(ranges_xy[:-1]):
             visualize_df_filt_1: pd.DataFrame = visualize_df_1[
-                (visualize_df_1.distance >= ranges_xy[i + 1])
-                & (visualize_df_1.distance < ranges_xy[i])
+                (visualize_df_1.distance_2d >= ranges_xy[i + 1])
+                & (visualize_df_1.distance_2d < ranges_xy[i])
             ]
             visualize_df_filt_2: pd.DataFrame = visualize_df_2[
-                (visualize_df_2.distance >= ranges_xy[i + 1])
-                & (visualize_df_2.distance < ranges_xy[i])
+                (visualize_df_2.distance_2d >= ranges_xy[i + 1])
+                & (visualize_df_2.distance_2d < ranges_xy[i])
             ]
+            print(_, len(visualize_df_filt_1), len(visualize_df_filt_2))
             if self.show_gt:
                 df_gt_filt = df_gt[
-                    (df_gt.distance >= ranges_xy[i + 1]) & (df_gt.distance < ranges_xy[i])
+                    (df_gt.distance_2d >= ranges_xy[i + 1]) & (df_gt.distance_2d < ranges_xy[i])
                 ]
                 fig.add_trace(
                     go.Histogram(
@@ -991,23 +993,37 @@ class EDAManager:
         ]
         self.show = show
         self.results = []
-        self.dfs = []
+        self.result_dicts = []
 
 
     #todo:refactor
-    def set_dfs(self, dfs: List[pd.DataFrame]) -> None:
-        for result_data in dfs:
-            df_fp = result_data["fp_objects"]
-            with_gt = df_fp["x"].notnull()
-            result_data["fp_objects_with_gt"] = df_fp[with_gt]
-            result_data["fp_objects_without_gt"] = df_fp[~with_gt]
+    def set_result_dicts(self, result_dicts: List[Dict]) -> None:
+        # for result_data in result_dicts:
+        #     df_fp = result_data["fp_objects"]
+        #     with_gt = df_fp["x"].notnull()
+        #     result_data["fp_objects_with_gt"] = df_fp[with_gt]
+        #     result_data["fp_objects_without_gt"] = df_fp[~with_gt]
             # in fp_objects_without_gt if a column with "est_" prefix exists put it in column without the prefix and remove the column with the prefix
             # for col in result_data["fp_objects_without_gt"].columns:
             #     if col.startswith("est_"):
             #         result_data["fp_objects_without_gt"][col[4:]] = result_data["fp_objects_without_gt"][col]
             #         result_data["fp_objects_without_gt"].drop(columns=[col], inplace=True)
-
-        self.dfs = dfs
+        #for fp and tp dicts replace columns starting with est_ to columns without prefix, rename columns without prefix (those that have their counterpart with prefix) to have prefix gt_
+        for result_data in result_dicts:
+            for col in result_data["fp_objects_without_gt"].columns:
+                if col.startswith("est_"):
+                    result_data["fp_objects_without_gt"][col[4:]] = result_data["fp_objects_without_gt"][col]
+                    result_data["fp_objects_without_gt"].drop(columns=[col], inplace=True)
+            for col in result_data["fp_objects_with_gt"].columns:
+                if col.startswith("est_"):
+                    result_data["fp_objects_with_gt"][col[4:]] = result_data["fp_objects_with_gt"][col]
+                    result_data["fp_objects_with_gt"].drop(columns=[col], inplace=True)
+            for col in result_data["tp_objects"].columns:
+                if col.startswith("est_"):
+                    result_data["tp_objects"][col[4:]] = result_data["tp_objects"][col]
+                    result_data["tp_objects"].drop(columns=[col], inplace=True)
+            
+        self.result_dicts = result_dicts
 
     #set_results for lists of objects
     def set_results(self, results: List[Dict[str, List[DynamicObjectWithPerceptionResult]]]) -> None:
@@ -1210,71 +1226,23 @@ class EDAManager:
     def visualize_all_evaluated_results_comparison_dfs(self, to_vis=["tps", "fps", "fns"]):
         # todo check if self.results calculated or set
         # we assume same gt objects from both results
+        #todoL to vis doesnt work now
         if type(to_vis) == str:
             to_vis = [to_vis]
-        df_gt, objects_source_name_1, df_tp_1, df_fp_1, df_fp_with_gt_1, df_fp_without_gt_1, df_fn_1 = (
-            self.dfs[0]["gt_objects"],
-            self.dfs[0]["objects_source_name"],
-            self.dfs[0]["tp_objects"],
-            self.dfs[0]["fp_objects"],
-            self.dfs[0]["fp_objects_with_gt"],
-            self.dfs[0]["fp_objects_without_gt"],
-            self.dfs[0]["fn_objects"],
-        )
-        objects_source_name_2, df_tp_2, df_fp_2, df_fp_with_gt_2, df_fp_without_gt_2, df_fn_2 = (
-            self.dfs[1]["objects_source_name"],
-            self.dfs[1]["tp_objects"],
-            self.dfs[1]["fp_objects"],
-            self.dfs[1]["fp_objects_with_gt"],
-            self.dfs[1]["fp_objects_without_gt"],
-            self.dfs[1]["fn_objects"],
-        )
-        if "tps" in to_vis:
-            self.visualize_evaluated_results_comparison_dfs(
-                objects_source_name_1,
-                objects_source_name_2,
-                df_tp_1,
-                df_tp_2,
-                df_gt,
-                visualized_results_name="tps",
-            )
-        if "fps" in to_vis:
-            self.visualize_evaluated_results_comparison_dfs(
-                objects_source_name_1,
-                objects_source_name_2,
-                df_fp_1,
-                df_fp_2,
-                df_gt,
-                visualized_results_name="fps_all",
-                show_gt=False,
-            )
-            self.visualize_evaluated_results_comparison_dfs(
-                objects_source_name_1,
-                objects_source_name_2,
-                df_fp_with_gt_1,
-                df_fp_with_gt_2,
-                df_gt,
-                visualized_results_name="fps_with_gt",
-                show_gt=False,
-            )
-            self.visualize_evaluated_results_comparison_dfs(
-                objects_source_name_1,
-                objects_source_name_2,
-                df_fp_without_gt_1,
-                df_fp_without_gt_2,
-                df_gt,
-                visualized_results_name="fps_without_gt",
-                show_gt=False,
-            )
-        if "fns" in to_vis:
-            self.visualize_evaluated_results_comparison_dfs(
-                objects_source_name_1,
-                objects_source_name_2,
-                df_fn_1,
-                df_fn_2,
-                df_gt,
-                visualized_results_name="fn_gts",
-            )
+
+        #todo: refactor result to class namedtuple or sth
+        for name in self.result_dicts[0]:
+            if name != "source_name":
+                source_name_1 = self.result_dicts[0]["source_name"]
+                source_name_2 = self.result_dicts[1]["source_name"]
+                df_1 = self.result_dicts[0][name]
+                df_2 = self.result_dicts[1][name]
+                df_gt = self.result_dicts[0]["gt_dfs"] #separately somehow?
+                show_gt = True
+                if "fp" in name:
+                    show_gt = False
+                if name != "gt_dfs":
+                    self.visualize_evaluated_results_comparison_dfs(source_name_1, source_name_2, df_1, df_2, df_gt, name, show_gt)
 
     def visualize_evaluated_results_comparison(
         self,
