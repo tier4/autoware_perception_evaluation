@@ -75,6 +75,7 @@ def with_result_objects_to_df(objects: List[DynamicObjectWithPerceptionResult]) 
         [estimated_object.estimated_object.state.position for estimated_object in objects]
     )
     wlh = np.stack([estimated_object.estimated_object.state.size for estimated_object in objects])
+    #todo: pcd_nums for estimated objects is always none (?)
     pcd_nums = np.stack(
         [estimated_object.estimated_object.pointcloud_num for estimated_object in objects]
     )
@@ -636,14 +637,11 @@ class EDAResultsComparisonVisualizerDfs:
             max_bar_height = (
                 curr_max_bar_height if curr_max_bar_height > max_bar_height else max_bar_height
             )
-        # todo:check if ok
-        filtered_classes_1 = visualize_df_1.semantic_label.unique().tolist()
-        filtered_classes_2 = visualize_df_2.semantic_label.unique().tolist()
-        filtered_classes = list(set(filtered_classes_1 + filtered_classes_2))
-        # fig.update_xaxes(autorange="reversed") #didnt work
-        fig.update_xaxes(
-            categoryorder="array", categoryarray=sorted(filtered_classes, key=class_names.index)
-        )
+            filtered_classes_1 = visualize_df_filt_1.semantic_label.unique().tolist()
+            filtered_classes_2 = visualize_df_filt_2.semantic_label.unique().tolist()
+            filtered_classes = list(set(filtered_classes_1 + filtered_classes_2))
+            fig.update_xaxes(categoryorder="array", categoryarray=sorted(filtered_classes, key=class_names.index), row=1, col=i + 1)
+
         fig.update_yaxes(range=(0, 1.1 * max_bar_height))
 
         # todo put these into legend also
@@ -998,31 +996,6 @@ class EDAManager:
 
     #todo:refactor
     def set_result_dicts(self, result_dicts: List[Dict]) -> None:
-        # for result_data in result_dicts:
-        #     df_fp = result_data["fp_objects"]
-        #     with_gt = df_fp["x"].notnull()
-        #     result_data["fp_objects_with_gt"] = df_fp[with_gt]
-        #     result_data["fp_objects_without_gt"] = df_fp[~with_gt]
-            # in fp_objects_without_gt if a column with "est_" prefix exists put it in column without the prefix and remove the column with the prefix
-            # for col in result_data["fp_objects_without_gt"].columns:
-            #     if col.startswith("est_"):
-            #         result_data["fp_objects_without_gt"][col[4:]] = result_data["fp_objects_without_gt"][col]
-            #         result_data["fp_objects_without_gt"].drop(columns=[col], inplace=True)
-        #for fp and tp dicts replace columns starting with est_ to columns without prefix, rename columns without prefix (those that have their counterpart with prefix) to have prefix gt_
-        for result_data in result_dicts:
-            for col in result_data["fp_objects_without_gt"].columns:
-                if col.startswith("est_"):
-                    result_data["fp_objects_without_gt"][col[4:]] = result_data["fp_objects_without_gt"][col]
-                    result_data["fp_objects_without_gt"].drop(columns=[col], inplace=True)
-            for col in result_data["fp_objects_with_gt"].columns:
-                if col.startswith("est_"):
-                    result_data["fp_objects_with_gt"][col[4:]] = result_data["fp_objects_with_gt"][col]
-                    result_data["fp_objects_with_gt"].drop(columns=[col], inplace=True)
-            for col in result_data["tp_objects"].columns:
-                if col.startswith("est_"):
-                    result_data["tp_objects"][col[4:]] = result_data["tp_objects"][col]
-                    result_data["tp_objects"].drop(columns=[col], inplace=True)
-            
         self.result_dicts = result_dicts
 
     #set_results for lists of objects
@@ -1130,7 +1103,7 @@ class EDAManager:
     ) -> None:
         """[summary]
         visualize objects
-
+            
         Args:
             objects (Union[List[DynamicObject], List[DynamicObjectWithPerceptionResult]]):
                     estimated objects(List[DynamicObject]) or ground truth objects(List[DynamicObjectWithPerceptionResult]]) which you want to visualize
@@ -1237,11 +1210,11 @@ class EDAManager:
                 source_name_2 = self.result_dicts[1]["source_name"]
                 df_1 = self.result_dicts[0][name]
                 df_2 = self.result_dicts[1][name]
-                df_gt = self.result_dicts[0]["gt_dfs"] #separately somehow?
+                df_gt = self.result_dicts[0]["GT_dfs"] #separately somehow?
                 show_gt = True
-                if "fp" in name:
+                if "FP" in name:
                     show_gt = False
-                if name != "gt_dfs":
+                if name != "GT_dfs":
                     self.visualize_evaluated_results_comparison_dfs(source_name_1, source_name_2, df_1, df_2, df_gt, name, show_gt)
 
     def visualize_evaluated_results_comparison(
