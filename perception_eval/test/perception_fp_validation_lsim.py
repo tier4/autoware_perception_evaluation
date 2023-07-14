@@ -35,6 +35,7 @@ class FPValidationLsimMoc:
             "target_labels": ["car", "bicycle", "pedestrian", "motorbike", "fp"],
             "max_x_position": 102.4,
             "max_y_position": 102.4,
+            "max_matchable_radii": [5.0, 3.0, 3.0, 3.0, 4.0],
         }
 
         evaluation_config = PerceptionEvaluationConfig(
@@ -60,7 +61,7 @@ class FPValidationLsimMoc:
 
         # Ideally, critical GT should be obtained in each frame.
         # In this mock, set it as a copy of `ground_truth_now_frame`.
-        ros_critical_ground_truth_objects = ground_truth_now_frame
+        ros_critical_ground_truth_objects = ground_truth_now_frame.objects
 
         critical_object_filter_config = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
@@ -100,11 +101,11 @@ class FPValidationLsimMoc:
         for status_info in status_infos:
             tp_rate, fp_rate, tn_rate, fn_rate = status_info.get_status_rates()
             logging.info(
-                f"uuid: {status_info.uuid}, "
-                f"TP: {tp_rate.rate}, "
-                f"FP: {fp_rate.rate}, "
-                f"TN: {tn_rate.rate}, "
-                f"FN: {fn_rate.rate}",
+                f"uuid: {status_info.uuid:0.3f}, "
+                f"TP: {tp_rate.rate:0.3f}, "
+                f"FP: {fp_rate.rate:0.3f}, "
+                f"TN: {tn_rate.rate:0.3f}, "
+                f"FN: {fn_rate.rate:0.3f}",
             )
 
 

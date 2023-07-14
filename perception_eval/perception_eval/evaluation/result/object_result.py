@@ -25,7 +25,9 @@ from perception_eval.common import distance_objects_bev
 from perception_eval.common import DynamicObject
 from perception_eval.common import DynamicObject2D
 from perception_eval.common import ObjectType
+from perception_eval.common.label import LabelType
 from perception_eval.common.schema import MatchingStatus
+from perception_eval.common.threshold import get_label_threshold
 from perception_eval.evaluation.matching import CenterDistanceMatching
 from perception_eval.evaluation.matching import IOU2dMatching
 from perception_eval.evaluation.matching import IOU3dMatching
@@ -261,7 +263,9 @@ class DynamicObjectWithPerceptionResult:
 def get_object_results(
     estimated_objects: List[ObjectType],
     ground_truth_objects: List[ObjectType],
+    target_labels: Optional[List[LabelType]] = None,
     matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
+    matchable_thresholds: Optional[List[float]] = None,
 ) -> List[DynamicObjectWithPerceptionResult]:
     """Returns list of DynamicObjectWithPerceptionResult.
 
@@ -269,6 +273,7 @@ def get_object_results(
         estimated_objects (List[ObjectType]): Estimated objects list.
         ground_truth_objects (List[ObjectType]): Ground truth objects list.
         matching_mode (MatchingMode): MatchingMode instance.
+        matchable_thresholds (Optional[List[float]]): Thresholds to be
 
     Returns:
         object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
@@ -295,6 +300,8 @@ def get_object_results(
         estimated_objects,
         ground_truth_objects,
         matching_method_module,
+        target_labels,
+        matchable_thresholds,
     )
 
     # assign correspond GT to estimated objects
@@ -429,6 +436,8 @@ def _get_score_table(
     estimated_objects: List[ObjectType],
     ground_truth_objects: List[ObjectType],
     matching_method_module: Callable,
+    target_labels: Optional[List[LabelType]],
+    matchable_thresholds: Optional[List[float]],
 ) -> np.ndarray:
     """Returns score table, in shape (num_estimation, num_ground_truth).
 
@@ -436,6 +445,8 @@ def _get_score_table(
         estimated_objects (List[ObjectType]): Estimated objects list.
         ground_truth_objects (List[ObjectType]): Ground truth objects list.
         matching_method_module (Callable): MatchingMethod instance.
+        target_labels (Optional[List[LabelType]]): Target labels to be evaluated.
+        matching_thresholds (Optional[List[float]]): List of thresholds
 
     Returns:
         score_table (numpy.ndarray): in shape (num_estimation, num_ground_truth).
@@ -454,5 +465,14 @@ def _get_score_table(
                     estimated_object=estimated_object_,
                     ground_truth_object=ground_truth_object_,
                 )
-                score_table[i, j] = matching_method.value
+
+                threshold = get_label_threshold(
+                    ground_truth_object_.semantic_label, target_labels, matchable_thresholds
+                )
+
+                if threshold is None or (
+                    threshold is not None and matching_method.is_better_than(threshold)
+                ):
+                    score_table[i, j] = matching_method.value
+
     return score_table

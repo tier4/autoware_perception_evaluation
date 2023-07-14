@@ -44,6 +44,8 @@ def filter_object_results(
     confidence_threshold_list: Optional[List[float]] = None,
     target_uuids: Optional[str] = None,
     ego2map: Optional[np.ndarray] = None,
+    *args,
+    **kwargs,
 ) -> List[DynamicObjectWithPerceptionResult]:
     """Filter DynamicObjectWithPerceptionResult considering both estimated and ground truth objects.
 
@@ -137,6 +139,8 @@ def filter_objects(
     confidence_threshold_list: Optional[List[float]] = None,
     target_uuids: Optional[List[str]] = None,
     ego2map: Optional[np.ndarray] = None,
+    *args,
+    **kwargs,
 ) -> List[ObjectType]:
     """Filter DynamicObject considering ground truth objects.
 

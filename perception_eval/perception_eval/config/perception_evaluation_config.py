@@ -24,6 +24,7 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.threshold import check_thresholds
+from perception_eval.common.threshold import set_thresholds
 from perception_eval.common.threshold import ThresholdsError
 from perception_eval.evaluation.metrics import MetricsScoreConfig
 
@@ -70,9 +71,11 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         "detection2d",
         "tracking2d",
         "classification2d",
+        "fp_validation2d",
         "detection",
         "tracking",
         "prediction",
+        "fp_validation",
     ]
 
     def __init__(
@@ -168,6 +171,12 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         else:
             raise RuntimeError("Either max x/y position or max/min distance should be specified")
 
+        max_matchable_radii: Optional[List[float]] = e_cfg.get("max_matchable_radii")
+        if max_matchable_radii is not None:
+            max_matchable_radii: List[float] = set_thresholds(
+                max_matchable_radii, len(target_labels)
+            )
+
         min_point_numbers: Optional[List[int]] = e_cfg.get("min_point_numbers")
         if min_point_numbers is not None:
             min_point_numbers: List[int] = check_thresholds(
@@ -196,6 +205,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             "max_y_position_list": max_y_position_list,
             "max_distance_list": max_distance_list,
             "min_distance_list": min_distance_list,
+            "max_matchable_radii": max_matchable_radii,
             "min_point_numbers": min_point_numbers,
             "confidence_threshold_list": confidence_threshold_list,
             "target_uuids": target_uuids,
