@@ -256,7 +256,7 @@ class GroundTruthStatus:
         self.tn_frame_nums: List[int] = []
         self.fn_frame_nums: List[int] = []
 
-    def add_status(self, frame_num: int, status: MatchingStatus) -> None:
+    def add_status(self, status: MatchingStatus, frame_num: int) -> None:
         self.total_frame_nums.append(frame_num)
         if status == MatchingStatus.TP:
             self.tp_frame_nums.append(frame_num)

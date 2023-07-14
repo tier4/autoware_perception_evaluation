@@ -100,12 +100,20 @@ class FPValidationLsimMoc:
         status_infos = get_object_status(self.evaluator.frame_results)
         for status_info in status_infos:
             tp_rate, fp_rate, tn_rate, fn_rate = status_info.get_status_rates()
+            # display
             logging.info(
-                f"uuid: {status_info.uuid:0.3f}, "
+                f"uuid: {status_info.uuid}, "
+                # display TP/FP/TN/FN rates per frames
                 f"TP: {tp_rate.rate:0.3f}, "
                 f"FP: {fp_rate.rate:0.3f}, "
                 f"TN: {tn_rate.rate:0.3f}, "
-                f"FN: {fn_rate.rate:0.3f}",
+                f"FN: {fn_rate.rate:0.3f}\n"
+                # display total or TP/FP/TN/FN frame numbers
+                f"Total: {status_info.total_frame_nums}, "
+                f"TP: {status_info.tp_frame_nums}, "
+                f"FP: {status_info.fp_frame_nums}, "
+                f"TN: {status_info.tn_frame_nums}, "
+                f"FN: {status_info.fn_frame_nums}",
             )
 
 
