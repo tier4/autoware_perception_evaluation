@@ -92,10 +92,10 @@ class PerceptionLSimMoc:
         ground_truth_now_frame = self.evaluator.get_ground_truth_now_frame(unix_time)
 
         # [Option] ROS側でやる（Map情報・Planning結果を用いる）UC評価objectを選別
-        # ros_critical_ground_truth_objects : List[DynamicObject] = custom_critical_object_filter(
+        # critical_ground_truth_objects : List[DynamicObject] = custom_critical_object_filter(
         #   ground_truth_now_frame.objects
         # )
-        ros_critical_ground_truth_objects = ground_truth_now_frame.objects
+        critical_ground_truth_objects = ground_truth_now_frame.objects
 
         # 1 frameの評価
         ignore_attributes = (
@@ -117,8 +117,8 @@ class PerceptionLSimMoc:
             unix_time=unix_time,
             ground_truth_now_frame=ground_truth_now_frame,
             estimated_objects=estimated_objects,
-            ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
             frame_config=frame_config,
+            critical_ground_truth_objects=critical_ground_truth_objects,
         )
         self.visualize(frame_result)
 

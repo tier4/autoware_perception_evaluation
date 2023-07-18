@@ -81,12 +81,12 @@ class PerceptionFrameResult:
 
     def evaluate_frame(
         self,
-        ros_critical_ground_truth_objects: List[ObjectType],
+        critical_ground_truth_objects: List[ObjectType],
         previous_result: Optional[PerceptionFrameResult] = None,
     ) -> None:
         """Evaluate a frame from the pair of estimated objects and ground truth objects
         Args:
-            ros_critical_ground_truth_objects (List[ObjectType]): The list of Ground truth objects filtered by ROS node.
+            critical_ground_truth_objects (List[ObjectType]): The list of Ground truth objects filtered by ROS node.
             previous_result (Optional[PerceptionFrameResult]): The previous frame result. If None, set it as empty list []. Defaults to None.
         """
         # Divide objects by label to dict
@@ -120,5 +120,5 @@ class PerceptionFrameResult:
 
         self.pass_fail_result.evaluate(
             object_results=self.object_results,
-            ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
+            critical_ground_truth_objects=critical_ground_truth_objects,
         )

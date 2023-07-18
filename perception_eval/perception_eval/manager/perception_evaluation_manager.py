@@ -14,11 +14,13 @@
 
 
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import LabelType
+from perception_eval.common.threshold import set_thresholds
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import PerceptionFrameConfig
 from perception_eval.evaluation import PerceptionFrameResult
@@ -80,8 +82,8 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         unix_time: int,
         ground_truth_now_frame: FrameGroundTruth,
         estimated_objects: List[ObjectType],
-        ros_critical_ground_truth_objects: List[ObjectType],
-        frame_config: PerceptionFrameConfig,
+        frame_config: Optional[PerceptionFrameConfig] = None,
+        critical_ground_truth_objects: Optional[List[ObjectType]] = None,
     ) -> PerceptionFrameResult:
         """Get perception result at current frame.
 
@@ -95,10 +97,9 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             ground_truth_now_frame (FrameGroundTruth): FrameGroundTruth instance that has the closest
                 timestamp with `unix_time`.
             estimated_objects (List[ObjectType]): Estimated objects list.
-            ros_critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects filtered by ROS
-                node to evaluate pass fail result.
             frame_config (PerceptionFrameConfig): Parameter config to evaluate pass/fail.
                 This allows to specify target ground truth objects dynamically.
+            critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects filtered node to evaluate pass fail result.
 
         Returns:
             PerceptionFrameResult: Evaluation result.
@@ -117,14 +118,20 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             target_labels=self.target_labels,
         )
 
+        if frame_config is None:
+            frame_config = __get_frame_config(self.evaluator_config)
+
+        if critical_ground_truth_objects is None:
+            critical_ground_truth_objects = ground_truth_now_frame.objects
+
         if len(self.frame_results) > 0:
             result.evaluate_frame(
-                ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
+                critical_ground_truth_objects=critical_ground_truth_objects,
                 previous_result=self.frame_results[-1],
             )
         else:
             result.evaluate_frame(
-                ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
+                critical_ground_truth_objects=critical_ground_truth_objects,
             )
 
         self.frame_results.append(result)
@@ -208,3 +215,33 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             scene_metrics_score.evaluate_classification(all_frame_results, all_num_gt)
 
         return scene_metrics_score
+
+
+def __get_frame_config(eval_cfg: PerceptionEvaluationConfig) -> PerceptionFrameConfig:
+    """Returns frame config from `PerceptionEvaluationConfig`.
+
+    Args:
+        eval_cfg (PerceptionEvaluationConfig): Evaluation config for scene.
+
+    Returns:
+        PerceptionFrameConfig: Frame config.
+    """
+    if eval_cfg.evaluation_task.is_3d():
+        matching_thresholds = eval_cfg.metrics_params["plane_distance_threshold"]
+    elif eval_cfg.evaluation_task.is_2d():
+        matching_thresholds = eval_cfg.metrics_params["iou2d_thresholds"]
+    else:
+        matching_thresholds: Optional[List[float]] = None
+
+    matching_threshold_list = (
+        set_thresholds(matching_thresholds, len(eval_cfg.target_labels))[0]
+        if matching_thresholds is not None
+        else None
+    )
+
+    return PerceptionFrameConfig(
+        eval_cfg.evaluation_task,
+        eval_cfg.target_labels,
+        matching_threshold_list=matching_threshold_list,
+        **eval_cfg.filtering_params,
+    )

@@ -60,7 +60,6 @@ Basically, most parts of the codes are same with [test/perception_lsim.py](perce
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.manager import PerceptionEvaluationManager
 from perception_eval.common.object import DynamicObject
-from perception_eval.evaluation import PerceptionFrameConfig
 
 # REQUIRED:
 #   dataset_path: str
@@ -78,8 +77,6 @@ evaluation_config = PerceptionEvaluationConfig(
 # initialize Evaluation Manager
 evaluator = PerceptionEvaluationManager(evaluation_config=evaluation_config)
 
-frame_config = PerceptionFrameConfig(...)
-
 for frame in datasets:
     unix_time = frame.unix_time
     pointcloud: numpy.ndarray = frame.raw_data["lidar"]
@@ -91,8 +88,6 @@ for frame in datasets:
         unix_time=unix_time,
         ground_truth_now_frame=frame,
         estimated_objects=estimated_objects,
-        ros_critical_ground_truth_objects=frame.objects,
-        frame_config=frame_config,
     )
 
 scene_score = evaluator.get_scene_result()

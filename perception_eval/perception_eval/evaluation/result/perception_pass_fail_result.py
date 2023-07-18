@@ -60,17 +60,17 @@ class PassFailResult:
     def evaluate(
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
-        ros_critical_ground_truth_objects: List[ObjectType],
+        critical_ground_truth_objects: List[ObjectType],
     ) -> None:
         """Evaluate object results' pass fail.
 
         Args:
             object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
-            ros_critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects
+            critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects
                 must be evaluated at current frame.
         """
         self.critical_ground_truth_objects = filter_objects(
-            objects=ros_critical_ground_truth_objects,
+            objects=critical_ground_truth_objects,
             is_gt=True,
             ego2map=self.ego2map,
             **self.frame_config.filtering_params,
