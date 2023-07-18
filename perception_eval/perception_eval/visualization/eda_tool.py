@@ -537,6 +537,22 @@ class EDAResultsComparisonVisualizerDfs:
         axes = axes.flatten()
         return axes
 
+    def get_subplots_2(self, class_names: List[str], n_cols=1) -> None:
+        """[summary]
+        Get subplots
+
+        Args:
+            class_names (List[str]):
+                    names of class you want to visualize.
+
+        Return:
+            axes (numpy.ndarray):
+                    axes of subplots
+        """
+        col_size = len(class_names)
+        fig, axes = plt.subplots(col_size, n_cols, figsize=(16, 6 * col_size))
+        return axes
+        
 # todo:numbers over hists
     def hist_object_count_for_each_distance_comparison(
         self, class_names: List[str], ranges_xy: List[Union[int, float]] = [125, 100, 75, 50, 25]
@@ -562,7 +578,7 @@ class EDAResultsComparisonVisualizerDfs:
         visualize_df_1 = self.df_objects_1[self.df_objects_1.semantic_label.isin(class_names)]
         visualize_df_2 = self.df_objects_2[self.df_objects_2.semantic_label.isin(class_names)]
         df_gt = self.df_gt[self.df_gt.semantic_label.isin(class_names)]
-        print(len(visualize_df_1), len(visualize_df_2), len(df_gt))
+        # print(len(visualize_df_1), len(visualize_df_2), len(df_gt))
         max_bar_height = 0
         for i, _ in enumerate(ranges_xy[:-1]):
             visualize_df_filt_1: pd.DataFrame = visualize_df_1[
@@ -573,7 +589,7 @@ class EDAResultsComparisonVisualizerDfs:
                 (visualize_df_2.distance_2d >= ranges_xy[i + 1])
                 & (visualize_df_2.distance_2d < ranges_xy[i])
             ]
-            print(_, len(visualize_df_filt_1), len(visualize_df_filt_2))
+            # print(_, len(visualize_df_filt_1), len(visualize_df_filt_2))
             if self.show_gt:
                 df_gt_filt = df_gt[
                     (df_gt.distance_2d >= ranges_xy[i + 1]) & (df_gt.distance_2d < ranges_xy[i])
@@ -640,6 +656,9 @@ class EDAResultsComparisonVisualizerDfs:
             filtered_classes_1 = visualize_df_filt_1.semantic_label.unique().tolist()
             filtered_classes_2 = visualize_df_filt_2.semantic_label.unique().tolist()
             filtered_classes = list(set(filtered_classes_1 + filtered_classes_2))
+            if self.show_gt:
+                filtered_classes_gt = df_gt_filt.semantic_label.unique().tolist()
+                filtered_classes = list(set(filtered_classes + filtered_classes_gt))
             fig.update_xaxes(categoryorder="array", categoryarray=sorted(filtered_classes, key=class_names.index), row=1, col=i + 1)
 
         fig.update_yaxes(range=(0, 1.1 * max_bar_height))
@@ -674,37 +693,102 @@ class EDAResultsComparisonVisualizerDfs:
                     e.g. xlim_dict['car'] is [xmin, xmax] for car
 
         """
+        def get_result_id(row, bin_size):
+            if not pd.isna(row["gt_instance_token"]):
+                return row["gt_instance_token"]
+            else:
+                # create location id for row based on x, y and bin_size
+                # e.g. x = 25.5, y = -37.2, bin_size = 1 -> id = 25_-38
+                # todo: distance threshold instead of bin
+                x = row["x"]
+                y = row["y"]
+                x_id = int(x // bin_size)
+                y_id = int(y // bin_size)
+                return f"{x_id}, {y_id}" #todo add semantic label if no filtering beforehand
 
-        axes = self.get_subplots(class_names)
+        axes = self.get_subplots_2(class_names, n_cols=2)
+
 
         for cls_i, class_name in enumerate(class_names):
             # _df_cls = self.visualize_df[self.visualize_df.name == class_name]
-            visualize_df_1 = self.df_objects_1[self.df_objects_1.semantic_label.isin(class_names)]
-            visualize_df_2 = self.df_objects_2[self.df_objects_2.semantic_label.isin(class_names)]
-            df_gt = self.df_gt[self.df_gt.semantic_label.isin(class_names)]
-            if len(visualize_df_1) > 0:
-                x_mean_1, x_std_1 = visualize_df_1.x.mean(), visualize_df_1.x.std()
-                y_mean_1, y_std_1 = visualize_df_1.y.mean(), visualize_df_1.y.std()
-                z_mean_1, z_std_1 = visualize_df_1.z.mean(), visualize_df_1.z.std()
+            visualize_df_1 = self.df_objects_1[self.df_objects_1.semantic_label == class_name]
+            visualize_df_2 = self.df_objects_2[self.df_objects_2.semantic_label == class_name]
+            # df_gt = self.df_gt[self.df_gt.semantic_label == class_name]
 
-                hist = axes[cls_i].hist2d(
-                    visualize_df_1.x, visualize_df_1.y, bins=50, norm=mpl.colors.LogNorm()
+            # visualize_df_1 = self.df_objects_1
+            # visualize_df_2 = self.df_objects_2
+
+            if len(visualize_df_1) > 0 or len(visualize_df_2) > 0:
+                x_mean_1, x_std_1 = 10, 10 #visualize_df_1.x.mean(), visualize_df_1.x.std()
+                y_mean_1, y_std_1 = 10, 10 #visualize_df_1.y.mean(), visualize_df_1.y.std()
+                z_mean_1, z_std_1 = 10, 10 #visualize_df_1.z.mean(), visualize_df_1.z.std()
+
+                # if there is gt_instance token create new column in both dfs with sample_token and gt_instance_token
+                # if there is no gt_instance token create new column in both dfs with sample_token and bin_id (kind of location on plot). bin_id is calculated based on x, y bin_size
+                visualize_df_1['result_id'] = visualize_df_1.apply(lambda row: get_result_id(row, bin_size=1), axis=1)
+                visualize_df_2['result_id'] = visualize_df_2.apply(lambda row: get_result_id(row, bin_size=1), axis=1)
+
+                # # create df from visualize_df_1 and visualize_df_2 with rows where sample_token and gt_instance_token is different in visualize_df_1 and visualize_df_2
+                df_diff = pd.merge(
+                    visualize_df_1,
+                    visualize_df_2,
+                    how="outer",
+                    indicator=True,
+                    on=["sample_token", "result_id"],
                 )
-                axes[cls_i].plot(
+                # drop if in both
+                df_diff = df_diff[df_diff._merge != "both"]
+                for col in df_diff.columns:
+                    if col.endswith('_x'):
+                        new_col = col[:-2]
+                        df_diff[new_col] = df_diff[col].combine_first(df_diff[new_col + '_y'])
+                        df_diff = df_diff.drop(columns=[col, new_col + '_y'])                                      
+
+                df_diff_l = df_diff[df_diff._merge == "left_only"]
+                df_diff_r = df_diff[df_diff._merge == "right_only"]
+                
+                vis_num_bins = 100
+
+    # only in first model
+                hist = axes[cls_i, 0].hist2d(
+                    df_diff_l.x, df_diff_l.y, bins=vis_num_bins, norm=mpl.colors.LogNorm()
+                )
+
+                axes[cls_i, 0].plot(
                     x_mean_1, y_mean_1, marker="x", color="r", markersize=10, markeredgewidth=3
                 )
-                axes[cls_i].set_title(
+                axes[cls_i, 0].set_title(
                     f"{class_name}: (x, y, z)=({x_mean_1:.2f}±{x_std_1:.2f}, {y_mean_1:.2f}±{y_std_1:.2f}, {z_mean_1:.2f}±{z_std_1:.2f})"
                 )
-                axes[cls_i].set_xlabel("x [m] ")
-                axes[cls_i].set_ylabel("y [m] ")
+                axes[cls_i, 0].set_xlabel("x [m] ") 
+                axes[cls_i, 0].set_ylabel("y [m] ")
                 if xlim_dict:
-                    axes[cls_i].set_xlim(xlim_dict[class_name][0], xlim_dict[class_name][1])
+                    axes[cls_i, 0].set_xlim(xlim_dict[class_name][0], xlim_dict[class_name][1])
                 if ylim_dict:
-                    axes[cls_i].set_ylim(ylim_dict[class_name][0], ylim_dict[class_name][1])
-                plt.colorbar(hist[3], ax=axes[cls_i])
+                    axes[cls_i, 0].set_ylim(ylim_dict[class_name][0], ylim_dict[class_name][1])
+                # plt.colorbar(hist[3], ax=axes[cls_i, 0])
 
-        plt.savefig(self.save_dir + "/hist2d_object_center_xy_for_each_class.svg")
+    # only in second model
+                hist = axes[cls_i, 1].hist2d(
+                    df_diff_r.x, df_diff_r.y, bins=vis_num_bins, norm=mpl.colors.LogNorm()
+                )
+
+                axes[cls_i, 1].plot(
+                    x_mean_1, y_mean_1, marker="x", color="r", markersize=10, markeredgewidth=3
+                )
+                axes[cls_i, 1].set_title(
+                    f"{class_name}: (x, y, z)=({x_mean_1:.2f}±{x_std_1:.2f}, {y_mean_1:.2f}±{y_std_1:.2f}, {z_mean_1:.2f}±{z_std_1:.2f})"
+                )
+                axes[cls_i, 1].set_xlabel("x [m] ")
+                axes[cls_i, 1].set_ylabel("y [m] ")
+                if xlim_dict:
+                    axes[cls_i, 1].set_xlim(xlim_dict[class_name][0], xlim_dict[class_name][1])
+                if ylim_dict:
+                    axes[cls_i, 1].set_ylim(ylim_dict[class_name][0], ylim_dict[class_name][1])
+                # plt.colorbar(hist[3], ax=axes[cls_i, 1])
+
+#         plt.savefig(self.save_dir + "/hist2d_object_center_xy_for_each_class.svg")
+        return df_diff, visualize_df_1, visualize_df_2, axes
 
 
 class EDAResultsComparisonVisualizer:
@@ -910,12 +994,15 @@ class EDAResultsComparisonVisualizer:
                 y_mean_1, y_std_1 = visualize_df_1.y.mean(), visualize_df_1.y.std()
                 z_mean_1, z_std_1 = visualize_df_1.z.mean(), visualize_df_1.z.std()
 
+                
                 hist = axes[cls_i].hist2d(
                     visualize_df_1.x, visualize_df_1.y, bins=50, norm=mpl.colors.LogNorm()
                 )
-                axes[cls_i].plot(
-                    x_mean_1, y_mean_1, marker="x", color="r", markersize=10, markeredgewidth=3
-                )
+
+
+                # axes[cls_i].plot(
+                #     x_mean_1, y_mean_1, marker="x", color="r", markersize=10, markeredgewidth=3
+                # )
                 axes[cls_i].set_title(
                     f"{class_name}: (x, y, z)=({x_mean_1:.2f}±{x_std_1:.2f}, {y_mean_1:.2f}±{y_std_1:.2f}, {z_mean_1:.2f}±{z_std_1:.2f})"
                 )
@@ -1215,7 +1302,7 @@ class EDAManager:
                 if "FP" in name:
                     show_gt = False
                 if name != "GT_dfs":
-                    self.visualize_evaluated_results_comparison_dfs(source_name_1, source_name_2, df_1, df_2, df_gt, name, show_gt)
+                    return self.visualize_evaluated_results_comparison_dfs(source_name_1, source_name_2, df_1, df_2, df_gt, name, show_gt)
 
     def visualize_evaluated_results_comparison(
         self,
@@ -1239,19 +1326,19 @@ class EDAManager:
             show_gt,
         )
 
-        # for cn in self.class_names:
-        #     eda_results_comparison_visualizer.hist_object_count_for_each_distance_comparison(
-        #         [cn], ranges_xy=self.ranges_xy
-        #     )
+        for cn in self.class_names:
+            eda_results_comparison_visualizer.hist_object_count_for_each_distance_comparison(
+                [cn], ranges_xy=self.ranges_xy
+            )
 
-        eda_results_comparison_visualizer.hist_object_count_for_each_distance_comparison(
-            self.class_names, ranges_xy=self.ranges_xy
-        )
-
-        # # makes separate plot for each class
-        # eda_results_comparison_visualizer.hist2d_object_center_xy_for_each_class(
-        #     self.class_names, self.xylim_dict, self.xylim_dict
+        # eda_results_comparison_visualizer.hist_object_count_for_each_distance_comparison(
+        #     self.class_names, ranges_xy=self.ranges_xy
         # )
+
+        # # # makes separate plot for each class
+        return eda_results_comparison_visualizer.hist2d_object_center_xy_for_each_class(
+            self.class_names, self.xylim_dict, self.xylim_dict
+        )
 
     def visualize_evaluated_results_comparison_dfs(
         self,
@@ -1280,14 +1367,14 @@ class EDAManager:
         #         [cn], ranges_xy=self.ranges_xy
         #     )
 
-        eda_results_comparison_visualizer.hist_object_count_for_each_distance_comparison(
-            self.class_names, ranges_xy=self.ranges_xy
-        )
-
-        # # makes separate plot for each class
-        # eda_results_comparison_visualizer.hist2d_object_center_xy_for_each_class(
-        #     self.class_names, self.xylim_dict, self.xylim_dict
+        # eda_results_comparison_visualizer.hist_object_count_for_each_distance_comparison(
+        #     self.class_names, ranges_xy=self.ranges_xy
         # )
+
+        # makes separate plot for each class
+        return eda_results_comparison_visualizer.hist2d_object_center_xy_for_each_class(
+            self.class_names, self.xylim_dict, self.xylim_dict
+        )
 
     def report_rates(
         self,
