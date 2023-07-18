@@ -46,7 +46,8 @@ class PerceptionFrameResult:
         object_results (List[DynamicObjectWithPerceptionResult]): The list of object result.
         frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
         metrics_config (MetricsScoreConfig): Metrics config class.
-        frame_config (FrameConfig): Critical object filter config.
+        frame_config (PerceptionFrameConfig): Parameter config to evaluate pass/fail.
+                This allows to specify target ground truth objects dynamically.
         unix_time (int): The unix time for frame [us]
         target_labels (List[AutowareLabel]): The list of target label.
     """
@@ -83,8 +84,7 @@ class PerceptionFrameResult:
         ros_critical_ground_truth_objects: List[ObjectType],
         previous_result: Optional[PerceptionFrameResult] = None,
     ) -> None:
-        """[summary]
-        Evaluate a frame from the pair of estimated objects and ground truth objects
+        """Evaluate a frame from the pair of estimated objects and ground truth objects
         Args:
             ros_critical_ground_truth_objects (List[ObjectType]): The list of Ground truth objects filtered by ROS node.
             previous_result (Optional[PerceptionFrameResult]): The previous frame result. If None, set it as empty list []. Defaults to None.

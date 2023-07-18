@@ -60,8 +60,7 @@ Basically, most parts of the codes are same with [test/perception_lsim.py](perce
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.manager import PerceptionEvaluationManager
 from perception_eval.common.object import DynamicObject
-from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
-from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from perception_eval.evaluation import PerceptionFrameConfig
 
 # REQUIRED:
 #   dataset_path: str
@@ -79,8 +78,7 @@ evaluation_config = PerceptionEvaluationConfig(
 # initialize Evaluation Manager
 evaluator = PerceptionEvaluationManager(evaluation_config=evaluation_config)
 
-critical_object_filter_config = CriticalObjectFilterConfig(...)
-pass_fail_config = PerceptionPassFailConfig(...)
+frame_config = PerceptionFrameConfig(...)
 
 for frame in datasets:
     unix_time = frame.unix_time
@@ -94,8 +92,7 @@ for frame in datasets:
         ground_truth_now_frame=frame,
         estimated_objects=estimated_objects,
         ros_critical_ground_truth_objects=frame.objects,
-        critical_object_filter_config=critical_object_filter_config,
-        frame_pass_fail_config=pass_fail_config,
+        frame_config=frame_config,
     )
 
 scene_score = evaluator.get_scene_result()

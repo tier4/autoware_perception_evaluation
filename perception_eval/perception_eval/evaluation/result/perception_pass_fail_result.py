@@ -29,7 +29,8 @@ from perception_eval.evaluation.matching.objects_filter import get_fn_objects
 class PassFailResult:
     """
     Attributes:
-        frame_config (PerceptionFrameConfig): Critical object filter config.
+        frame_config (PerceptionFrameConfig): Parameter config to evaluate pass/fail.
+                This allows to specify target ground truth objects dynamically.
         critical_ground_truth_objects (Optional[List[DynamicObject]]): Critical ground truth objects
             must be evaluated at current frame.
         fn_objects ([List[ObjectType]): FN ground truth objects list.
@@ -37,8 +38,8 @@ class PassFailResult:
         tp_object_results (List[DynamicObjectWithPerceptionResult]): TP object results list.
 
     Args:
-        frame_config (PerceptionFrameConfig): Critical object filter config.
-        frame_id (str): `base_link` or `map`.
+        frame_config (PerceptionFrameConfig): Parameter config to evaluate pass/fail.
+                This allows to specify target ground truth objects dynamically.
         ego2map (Optional[numpy.ndarray]): Array of 4x4 matrix to transform coordinates from ego to map.
             Defaults to None.
     """

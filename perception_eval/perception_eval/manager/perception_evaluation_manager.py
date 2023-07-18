@@ -97,7 +97,8 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             estimated_objects (List[ObjectType]): Estimated objects list.
             ros_critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects filtered by ROS
                 node to evaluate pass fail result.
-            frame_config (PerceptionFrameConfig):Parameter config to evaluate pass/fail.
+            frame_config (PerceptionFrameConfig): Parameter config to evaluate pass/fail.
+                This allows to specify target ground truth objects dynamically.
 
         Returns:
             PerceptionFrameResult: Evaluation result.

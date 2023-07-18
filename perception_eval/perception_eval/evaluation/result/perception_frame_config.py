@@ -25,11 +25,12 @@ from perception_eval.common.threshold import check_thresholds
 
 
 class PerceptionFrameConfig:
-    """Config class to filter evaluation target dynamically at each frame.
+    """Class of parameter config to evaluate pass/fail.
+    This allows to specify target ground truth objects dynamically.
 
     Attributes:
         self.evaluation_task (EvaluationTask): Evaluation task.
-        self.target_labels (List[LabelType]): Target list
+        self.target_labels (List[LabelType]): List of target labels.
         self.max_x_position_list (Optional[List[float]]):
             Maximum x position threshold list for each label. Defaults to None.
         self.max_y_position_list (Optional[List[float]]):
@@ -48,7 +49,9 @@ class PerceptionFrameConfig:
             For 2D evaluation, IOU2D, for 3D evaluation, PLANEDISTANCE will be used.
 
     Args:
+        evaluation_task (EvaluationTask): Evaluation task.
         target_labels (List[LabelType]): The list of target label.
+        ignore_attributes (Optional[List[str]]): List of attributes to be ignored. Defaults to None.
         max_x_position_list (Optional[List[float]]):
             Maximum x position threshold list for each label. Defaults to None.
         max_y_position_list (Optional[List[float]]):
@@ -62,6 +65,8 @@ class PerceptionFrameConfig:
         confidence_threshold_list (Optional[List[float]]):
             The list of confidence threshold for each label. Defaults to None.
         target_uuids (Optional[List[str]]): The list of target uuid. Defaults to None.
+        matching_threshold_list (Optional[List[float]]): List of matching thresholds. Defaults to None.
+            For 2D evaluation, IOU2D, for 3D evaluation, PLANEDISTANCE will be used.
     """
 
     def __init__(
