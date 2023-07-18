@@ -19,10 +19,9 @@ from typing import List
 
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.evaluation import PerceptionFrameConfig
 from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.metrics import MetricsScore
-from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
-from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.manager import PerceptionEvaluationManager
 from perception_eval.tool import PerceptionAnalyzer3D
 from perception_eval.util.debug import format_class_for_log
@@ -100,17 +99,12 @@ class PerceptionLSimMoc:
         # 1 frameの評価
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam
-        critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
-            evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
+        frame_config = PerceptionFrameConfig(
+            evaluation_task=self.evaluator.evaluation_task,
+            target_labels=self.evaluator.target_labels,
             ignore_attributes=["cycle_state.without_rider"],
             max_x_position_list=[30.0, 30.0, 30.0, 30.0],
             max_y_position_list=[30.0, 30.0, 30.0, 30.0],
-        )
-        # Pass fail を決めるパラメータ
-        frame_pass_fail_config: PerceptionPassFailConfig = PerceptionPassFailConfig(
-            evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
             matching_threshold_list=[2.0, 2.0, 2.0, 2.0],
         )
 
@@ -119,8 +113,7 @@ class PerceptionLSimMoc:
             ground_truth_now_frame=ground_truth_now_frame,
             estimated_objects=estimated_objects,
             ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
-            critical_object_filter_config=critical_object_filter_config,
-            frame_pass_fail_config=frame_pass_fail_config,
+            frame_config=frame_config,
         )
         self.visualize(frame_result)
 

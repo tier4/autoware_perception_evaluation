@@ -15,10 +15,13 @@
 from typing import Union
 
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.result.perception_frame_config import PerceptionFrameConfig
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
+from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
 from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
 from perception_eval.evaluation.sensing.sensing_result import DynamicObjectWithSensingResult
 
 # type aliases
 ObjectResultType = Union[DynamicObjectWithPerceptionResult, DynamicObjectWithSensingResult]
 FrameResultType = Union[PerceptionFrameResult, SensingFrameResult]
+FrameConfigType = Union[PerceptionFrameConfig, SensingFrameConfig]

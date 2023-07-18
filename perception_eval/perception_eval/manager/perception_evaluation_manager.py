@@ -20,14 +20,13 @@ from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import LabelType
 from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.evaluation import PerceptionFrameConfig
 from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics import MetricsScore
-from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
-from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.visualization import PerceptionVisualizer2D
 from perception_eval.visualization import PerceptionVisualizer3D
 from perception_eval.visualization import PerceptionVisualizerType
@@ -82,15 +81,13 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         ground_truth_now_frame: FrameGroundTruth,
         estimated_objects: List[ObjectType],
         ros_critical_ground_truth_objects: List[ObjectType],
-        critical_object_filter_config: CriticalObjectFilterConfig,
-        frame_pass_fail_config: PerceptionPassFailConfig,
+        frame_config: PerceptionFrameConfig,
     ) -> PerceptionFrameResult:
         """Get perception result at current frame.
 
         Evaluated result is appended to `self.frame_results`.
 
         TODO:
-        - Arrange `CriticalObjectFilterConfig` and `PerceptionPassFailConfig` to `PerceptionFrameConfig`.
         - Allow input `PerceptionFrameConfig` and `ros_critical_ground_truth_objects` are None.
 
         Args:
@@ -100,8 +97,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             estimated_objects (List[ObjectType]): Estimated objects list.
             ros_critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects filtered by ROS
                 node to evaluate pass fail result.
-            critical_object_filter_config (CriticalObjectFilterConfig): Parameter config to filter objects.
-            frame_pass_fail_config (PerceptionPassFailConfig):Parameter config to evaluate pass/fail.
+            frame_config (PerceptionFrameConfig):Parameter config to evaluate pass/fail.
 
         Returns:
             PerceptionFrameResult: Evaluation result.
@@ -115,8 +111,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             object_results=object_results,
             frame_ground_truth=ground_truth_now_frame,
             metrics_config=self.metrics_config,
-            critical_object_filter_config=critical_object_filter_config,
-            frame_pass_fail_config=frame_pass_fail_config,
+            frame_config=frame_config,
             unix_time=unix_time,
             target_labels=self.target_labels,
         )

@@ -21,9 +21,9 @@ from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import crop_pointcloud
 from perception_eval.config import SensingEvaluationConfig
+from perception_eval.evaluation import SensingFrameConfig
 from perception_eval.evaluation import SensingFrameResult
 from perception_eval.evaluation.matching.objects_filter import filter_objects
-from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
 from perception_eval.util.math import get_bbox_scale
 from perception_eval.visualization import SensingVisualizer
 

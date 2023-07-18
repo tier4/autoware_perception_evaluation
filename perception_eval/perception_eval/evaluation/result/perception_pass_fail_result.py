@@ -19,19 +19,17 @@ from typing import Tuple
 import numpy as np
 from perception_eval.common import ObjectType
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation import PerceptionFrameConfig
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_tp_fp_objects
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.matching.objects_filter import get_fn_objects
-from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
-from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 
 
 class PassFailResult:
-    """[summary]
+    """
     Attributes:
-        critical_object_filter_config (CriticalObjectFilterConfig): Critical object filter config.
-        frame_pass_fail_config (PerceptionPassFailConfig): Frame pass fail config.
+        frame_config (PerceptionFrameConfig): Critical object filter config.
         critical_ground_truth_objects (Optional[List[DynamicObject]]): Critical ground truth objects
             must be evaluated at current frame.
         fn_objects ([List[ObjectType]): FN ground truth objects list.
@@ -39,8 +37,7 @@ class PassFailResult:
         tp_object_results (List[DynamicObjectWithPerceptionResult]): TP object results list.
 
     Args:
-        critical_object_filter_config (CriticalObjectFilterConfig): Critical object filter config.
-        frame_pass_fail_config (PerceptionPassFailConfig): Frame pass fail config.
+        frame_config (PerceptionFrameConfig): Critical object filter config.
         frame_id (str): `base_link` or `map`.
         ego2map (Optional[numpy.ndarray]): Array of 4x4 matrix to transform coordinates from ego to map.
             Defaults to None.
@@ -48,14 +45,10 @@ class PassFailResult:
 
     def __init__(
         self,
-        critical_object_filter_config: CriticalObjectFilterConfig,
-        frame_pass_fail_config: PerceptionPassFailConfig,
+        frame_config: PerceptionFrameConfig,
         ego2map: Optional[np.ndarray] = None,
     ) -> None:
-        self.critical_object_filter_config: CriticalObjectFilterConfig = (
-            critical_object_filter_config
-        )
-        self.frame_pass_fail_config: PerceptionPassFailConfig = frame_pass_fail_config
+        self.frame_config = frame_config
         self.ego2map: Optional[np.ndarray] = ego2map
 
         self.critical_ground_truth_objects: List[ObjectType] = []
@@ -79,7 +72,7 @@ class PassFailResult:
             objects=ros_critical_ground_truth_objects,
             is_gt=True,
             ego2map=self.ego2map,
-            **self.critical_object_filter_config.filtering_params,
+            **self.frame_config.filtering_params,
         )
         self.tp_object_results, self.fp_object_results = self.get_tp_fp_object_results(
             object_results=object_results,
@@ -118,11 +111,11 @@ class PassFailResult:
         fp_object_results: List[DynamicObjectWithPerceptionResult] = []
         tp_object_results, fp_object_results = divide_tp_fp_objects(
             object_results=object_results,
-            target_labels=self.frame_pass_fail_config.target_labels,
+            target_labels=self.frame_config.target_labels,
             matching_mode=MatchingMode.IOU2D
-            if self.frame_pass_fail_config.evaluation_task.is_2d()
+            if self.frame_config.evaluation_task.is_2d()
             else MatchingMode.PLANEDISTANCE,
-            matching_threshold_list=self.frame_pass_fail_config.matching_threshold_list,
+            matching_threshold_list=self.frame_config.matching_threshold_list,
         )
 
         # filter by critical_ground_truth_objects

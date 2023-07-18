@@ -22,12 +22,11 @@ from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation import PerceptionFrameConfig
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.metrics import MetricsScoreConfig
-from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
-from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.evaluation.result.perception_pass_fail_result import PassFailResult
 
 
@@ -47,8 +46,7 @@ class PerceptionFrameResult:
         object_results (List[DynamicObjectWithPerceptionResult]): The list of object result.
         frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
         metrics_config (MetricsScoreConfig): Metrics config class.
-        critical_object_filter_config (CriticalObjectFilterConfig): Critical object filter config.
-        frame_pass_fail_config (PerceptionPassFailConfig): Frame pass fail config.
+        frame_config (FrameConfig): Critical object filter config.
         unix_time (int): The unix time for frame [us]
         target_labels (List[AutowareLabel]): The list of target label.
     """
@@ -58,8 +56,7 @@ class PerceptionFrameResult:
         object_results: List[DynamicObjectWithPerceptionResult],
         frame_ground_truth: FrameGroundTruth,
         metrics_config: MetricsScoreConfig,
-        critical_object_filter_config: CriticalObjectFilterConfig,
-        frame_pass_fail_config: PerceptionPassFailConfig,
+        frame_config: PerceptionFrameConfig,
         unix_time: int,
         target_labels: List[LabelType],
     ):
@@ -77,8 +74,7 @@ class PerceptionFrameResult:
             used_frame=[int(self.frame_name)],
         )
         self.pass_fail_result: PassFailResult = PassFailResult(
-            critical_object_filter_config=critical_object_filter_config,
-            frame_pass_fail_config=frame_pass_fail_config,
+            frame_config=frame_config,
             ego2map=frame_ground_truth.ego2map,
         )
 
