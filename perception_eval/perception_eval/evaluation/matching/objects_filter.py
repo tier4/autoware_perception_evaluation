@@ -307,7 +307,10 @@ def get_negative_objects(
 
     for ground_truth_object in ground_truth_objects:
         if ground_truth_object not in non_fn_candidates:
-            fn_objects.append(ground_truth_object)
+            if ground_truth_object.semantic_label.is_fp_label():
+                tn_objects.append(ground_truth_object)
+            else:
+                fn_objects.append(ground_truth_object)
 
     return tn_objects, fn_objects
 

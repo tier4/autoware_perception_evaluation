@@ -66,7 +66,10 @@ class TestEDAVisualizer:
         ),
     )
 
+    evaluation_task: EvaluationTask = EvaluationTask.DETECTION
+
     object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        evaluation_task=evaluation_task,
         estimated_objects=dummy_estimated_objects,
         ground_truth_objects=dummy_ground_truth_objects,
     )
@@ -391,7 +394,10 @@ class TestEDAManager:
         ),
     ]
 
+    evaluation_task: EvaluationTask = EvaluationTask.DETECTION
+
     object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        evaluation_task=evaluation_task,
         estimated_objects=dummy_estimated_objects,
         ground_truth_objects=dummy_ground_truth_objects,
     )
@@ -422,7 +428,7 @@ class TestEDAManager:
         xylim_dict,
         width_lim_dict,
         length_lim_dict,
-        evaluation_task=EvaluationTask.DETECTION,
+        evaluation_task=evaluation_task,
         merge_similar_labels=False,
         show=False,
     )

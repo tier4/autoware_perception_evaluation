@@ -19,7 +19,8 @@ from typing import Optional
 from typing import Tuple
 import unittest
 
-from perception_eval.common.object import DynamicObject
+from perception_eval.common import DynamicObject
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.object_result import get_object_results
 from perception_eval.util.debug import get_objects_with_difference
@@ -30,6 +31,7 @@ class TestObjectResult(unittest.TestCase):
         self.dummy_estimated_objects: List[DynamicObject] = []
         self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
+        self.evaluation_task: EvaluationTask = EvaluationTask.DETECTION
 
     def test_get_object_results(self):
         """[summary]
@@ -71,6 +73,7 @@ class TestObjectResult(unittest.TestCase):
                 )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=ground_truth_objects,
                 )
