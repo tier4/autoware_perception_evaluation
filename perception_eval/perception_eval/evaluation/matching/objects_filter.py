@@ -500,6 +500,9 @@ def _is_target_object(
     Returns:
         bool: If the object is filter target, return True
     """
+    if dynamic_object.semantic_label.is_fp_label():
+        return True
+
     label_threshold = LabelThreshold(
         semantic_label=dynamic_object.semantic_label,
         target_labels=target_labels,

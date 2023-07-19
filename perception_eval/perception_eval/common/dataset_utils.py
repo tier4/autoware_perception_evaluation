@@ -113,6 +113,11 @@ def _sample_to_frame(
         attributes: List[str] = [nusc.get("attribute", token)["name"] for token in attribute_tokens]
         semantic_label = label_converter.convert_label(object_box.name, attributes)
 
+        if evaluation_task.is_fp_validation() and semantic_label.is_fp_label() is False:
+            raise ValueError(
+                f"Unexpected GT label for {evaluation_task.value}, got {semantic_label.label}"
+            )
+
         object_: DynamicObject = _convert_nuscenes_box_to_dynamic_object(
             nusc=nusc,
             helper=helper,

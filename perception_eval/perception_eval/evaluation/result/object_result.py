@@ -459,8 +459,8 @@ def _get_score_table(
         for j, ground_truth_object_ in enumerate(ground_truth_objects):
             if (
                 estimated_object_.semantic_label == ground_truth_object_.semantic_label
-                and estimated_object_.frame_id == ground_truth_object_.frame_id
-            ):
+                or ground_truth_object_.semantic_label.is_fp_label()
+            ) and estimated_object_.frame_id == ground_truth_object_.frame_id:
                 matching_method: MatchingMethod = matching_method_module(
                     estimated_object=estimated_object_,
                     ground_truth_object=ground_truth_object_,

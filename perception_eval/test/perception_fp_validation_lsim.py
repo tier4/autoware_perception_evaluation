@@ -18,6 +18,7 @@ import tempfile
 from typing import List
 
 from perception_eval.common import ObjectType
+from perception_eval.common.label import AutowareLabel
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import get_object_status
 from perception_eval.evaluation import PerceptionFrameResult
@@ -32,10 +33,10 @@ class FPValidationLsimMoc:
     def __init__(self, dataset_paths: List[int], result_root_directory: str) -> None:
         evaluation_config_dict = {
             "evaluation_task": "fp_validation",
-            "target_labels": ["car", "bicycle", "pedestrian", "motorbike", "fp"],
+            "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
             "max_x_position": 102.4,
             "max_y_position": 102.4,
-            "max_matchable_radii": [5.0, 3.0, 3.0, 3.0, 4.0],
+            "max_matchable_radii": [5.0, 3.0, 3.0, 3.0],
         }
 
         evaluation_config = PerceptionEvaluationConfig(
@@ -65,15 +66,15 @@ class FPValidationLsimMoc:
 
         critical_object_filter_config = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike", "fp"],
-            max_x_position_list=[100.0, 100.0, 100.0, 100.0, 100.0],
-            max_y_position_list=[100.0, 100.0, 100.0, 100.0, 100.0],
+            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
+            max_x_position_list=[100.0, 100.0, 100.0, 100.0],
+            max_y_position_list=[100.0, 100.0, 100.0, 100.0],
         )
 
         frame_pass_fail_config = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike", "fp"],
-            matching_threshold_list=[2.0, 2.0, 2.0, 2.0, 2.0],
+            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
+            matching_threshold_list=[2.0, 2.0, 2.0, 2.0],
         )
 
         frame_result = self.evaluator.add_frame_result(
@@ -139,13 +140,22 @@ if __name__ == "__main__":
     fp_validation_lsim = FPValidationLsimMoc(dataset_paths, result_root_directory)
 
     for ground_truth_frame in fp_validation_lsim.evaluator.ground_truth_frames:
+        # Because FP label is contained in GT, updates them to the other labels
         objects_with_difference = get_objects_with_difference(
             ground_truth_objects=ground_truth_frame.objects,
             diff_distance=(1.0, 0.0, 0.2),
             diff_yaw=0.2,
             is_confidence_with_distance=True,
             ego2map=ground_truth_frame.ego2map,
+            label_candidates=[
+                AutowareLabel.CAR,
+                AutowareLabel.BICYCLE,
+                AutowareLabel.PEDESTRIAN,
+                AutowareLabel.MOTORBIKE,
+            ],
         )
+        if len(objects_with_difference) > 0:
+            objects_with_difference.pop(0)
         fp_validation_lsim.callback(ground_truth_frame.unix_time, objects_with_difference)
 
     fp_validation_lsim.display_status_rates()
