@@ -161,7 +161,7 @@ def get_object_status(frame_results: List[PerceptionFrameResult]) -> List[Ground
             if fp_object_result.ground_truth_object is None:
                 continue
             if fp_object_result.ground_truth_object.uuid not in status_infos:
-                fp_status = GroundTruthStatus(tp_object_result.ground_truth_object.uuid)
+                fp_status = GroundTruthStatus(fp_object_result.ground_truth_object.uuid)
                 fp_status.add_status(MatchingStatus.FP, frame_num)
                 status_infos.append(fp_status)
             else:
