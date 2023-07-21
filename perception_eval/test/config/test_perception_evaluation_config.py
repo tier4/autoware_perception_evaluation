@@ -18,7 +18,6 @@ from typing import List
 from typing import Tuple
 import unittest
 
-from perception_eval.common.label import LabelParam
 from perception_eval.config import PerceptionEvaluationConfig
 
 
@@ -39,13 +38,11 @@ class TestPerceptionEvaluationConfig(unittest.TestCase):
             "plane_distance_thresholds": [2.0, 3.0],
             "iou_bev_thresholds": [0.5],
             "iou_3d_thresholds": [0.5],
+            "min_point_numbers": [0, 0, 0, 0],
+            "label_prefix": "autoware",
+            "merge_similar_labels": False,
+            "allow_matching_unknown": True,
         }
-        label_param = LabelParam(
-            allow_matching_unknown=True,  # A flag if allow to matching unknown and the other labels
-            merge_similar_labels=False,  # A flag if merge similar labels ... e.g. bus -> car
-            label_prefix="autoware",  # Prefix of label name ... ("autoware", "traffic_light")
-            count_label_number=True,  # A flag if count the number of each label as debug
-        )
         # patterns: (frame_id, evaluation_task)
         patterns: List[Tuple(str, Dict[str, Any])] = [
             ("map", {"evaluation_task": "foo"}),
@@ -62,5 +59,4 @@ class TestPerceptionEvaluationConfig(unittest.TestCase):
                         frame_id=frame_id,
                         result_root_directory="/tmp",
                         evaluation_config_dict=evaluation_config_dict,
-                        label_param=label_param,
                     )

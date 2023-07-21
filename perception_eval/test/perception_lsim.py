@@ -17,7 +17,6 @@ import logging
 import tempfile
 from typing import List
 
-from perception_eval.common.label import LabelParam
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import PerceptionFrameResult
@@ -64,21 +63,17 @@ class PerceptionLSimMoc:
             "iou_2d_thresholds": [0.5],
             "iou_3d_thresholds": [0.5],
             "min_point_numbers": [0, 0, 0, 0],
+            # label parameters
+            "label_prefix": "autoware",
+            "merge_similar_labels": False,
+            "allow_matching_unknown": True,
         }
-
-        label_param = LabelParam(
-            label_prefix="autoware",  # Prefix of label name ... ("autoware", "traffic_light")
-            merge_similar_labels=False,  # A flag if merge similar labels ... e.g. bus -> car
-            allow_matching_unknown=True,  # A flag if allow to matching unknown and the other labels
-            count_label_number=True,  # A flag if count the number of each label as debug
-        )
 
         evaluation_config = PerceptionEvaluationConfig(
             dataset_paths=dataset_paths,
             frame_id="base_link" if evaluation_task == "detection" else "map",
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
-            label_param=label_param,
             load_raw_data=True,
         )
 

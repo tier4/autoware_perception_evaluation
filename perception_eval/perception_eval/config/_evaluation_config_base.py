@@ -27,7 +27,6 @@ from typing import Union
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.evaluation_task import set_task
 from perception_eval.common.label import LabelConverter
-from perception_eval.common.label import LabelParam
 from perception_eval.common.status import FrameID
 
 
@@ -47,7 +46,6 @@ class _EvaluationConfigBase(ABC):
         visualization_directory (str): Directory path to save visualization result.
         label_converter (LabelConverter): LabelConverter instance.
         evaluation_task (EvaluationTask): EvaluationTask instance.
-        label_prefix (str): Prefix of label type. Choose from [`autoware", `traffic_light`]. Defaults to autoware.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
         target_labels (List[LabelType]): Target labels list.
 
@@ -85,13 +83,23 @@ class _EvaluationConfigBase(ABC):
         frame_id: Union[str, Sequence[str]],
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
-        label_param: LabelParam,
         load_raw_data: bool = False,
     ) -> None:
         super().__init__()
         # Check tasks are supported
         self.evaluation_task: EvaluationTask = self._check_tasks(evaluation_config_dict)
         self.evaluation_config_dict: Dict[str, Any] = evaluation_config_dict
+
+        # Labels
+        self.label_params = self._extract_label_params(evaluation_config_dict)
+        self.label_converter = LabelConverter(
+            self.evaluation_task,
+            self.label_params["merge_similar_labels"],
+            self.label_params["label_prefix"],
+            self.label_params["count_label_number"],
+        )
+
+        self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)
 
         # dataset
         self.dataset_paths: List[str] = dataset_paths
@@ -104,7 +112,6 @@ class _EvaluationConfigBase(ABC):
         if self.evaluation_task.is_3d() and len(self.frame_ids) != 1:
             raise ValueError(f"For 3D task, FrameID must be 1, but got {len(self.frame_ids)}")
 
-        self.label_param: LabelParam = label_param
         self.load_raw_data: bool = load_raw_data
 
         # directory
@@ -116,14 +123,6 @@ class _EvaluationConfigBase(ABC):
             os.makedirs(self.log_directory)
         if not osp.exists(self.visualization_directory):
             os.makedirs(self.visualization_directory)
-
-        # Labels
-        self.label_converter = LabelConverter(
-            self.evaluation_task,
-            self.label_param.merge_similar_labels,
-            self.label_param.label_prefix,
-            count_label_number=True,
-        )
 
     @property
     def support_tasks(self) -> List[str]:
@@ -148,6 +147,11 @@ class _EvaluationConfigBase(ABC):
         # evaluation task
         evaluation_task: EvaluationTask = set_task(task)
         return evaluation_task
+
+    @staticmethod
+    @abstractmethod
+    def _extract_label_params(evaluation_config_dict: Dict[str, Any]) -> Dict[str, Any]:
+        pass
 
     @abstractmethod
     def _extract_params(

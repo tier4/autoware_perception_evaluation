@@ -166,11 +166,13 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             ego2map=frame_ground_truth.ego2map,
             **self.filtering_params,
         )
+
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
             estimated_objects=estimated_objects,
             ground_truth_objects=frame_ground_truth.objects,
-            allow_matching_unknown=self.evaluator_config.label_param.allow_matching_unknown,
+            allow_matching_unknown=self.evaluator_config.label_params["allow_matching_unknown"],
         )
+
         if self.evaluator_config.filtering_params.get("target_uuids"):
             object_results = filter_object_results(
                 object_results=object_results,

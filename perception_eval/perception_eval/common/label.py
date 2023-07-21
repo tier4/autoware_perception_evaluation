@@ -25,14 +25,6 @@ from typing import Union
 from perception_eval.common.evaluation_task import EvaluationTask
 
 
-@dataclass
-class LabelParam:
-    label_prefix: str
-    merge_similar_labels: bool = False
-    allow_matching_unknown: bool = True
-    count_label_number: bool = True
-
-
 class AutowareLabel(Enum):
     """[summary]
     Autoware label enum.

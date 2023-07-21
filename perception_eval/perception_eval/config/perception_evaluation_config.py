@@ -21,7 +21,6 @@ from typing import Tuple
 from typing import Union
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import LabelParam
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.threshold import check_thresholds
@@ -82,7 +81,6 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         frame_id: Union[str, Sequence[str]],
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
-        label_param: LabelParam,
         load_raw_data: bool = False,
     ) -> None:
         super().__init__(
@@ -90,15 +88,24 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             frame_id=frame_id,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
-            label_param=label_param,
             load_raw_data=load_raw_data,
         )
-        self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)
 
         self.metrics_config: MetricsScoreConfig = MetricsScoreConfig(
             self.evaluation_task,
             **self.metrics_params,
         )
+
+    @staticmethod
+    def _extract_label_params(evaluation_config_dict: Dict[str, Any]) -> Dict[str, Any]:
+        e_cfg = evaluation_config_dict.copy()
+        l_params: Dict[str, Any] = {
+            "label_prefix": e_cfg["label_prefix"],
+            "merge_similar_labels": e_cfg["merge_similar_labels"],
+            "allow_matching_unknown": e_cfg["allow_matching_unknown"],
+            "count_label_number": e_cfg.get("count_label_number", True),
+        }
+        return l_params
 
     def _extract_params(
         self,
@@ -110,8 +117,9 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             evaluation_config_dict (Dict[str, Any]): Dict that items are evaluation config for each task.
 
         Returns:
-            f_params (Dict[str, Any]): Parameters for filtering objects.
-            m_params (Dict[str, Any]): Parameters for metrics config.
+            f_params (Dict[str, Any]): Parameters for filtering.
+            m_params (Dict[str, Any]): Parameters for metrics.
+            l_params (Dict[str, Any]): Parameters for label.
         """
         e_cfg = evaluation_config_dict.copy()
 

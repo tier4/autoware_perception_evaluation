@@ -21,7 +21,6 @@ from typing import Tuple
 
 import numpy as np
 from perception_eval.common.dataset import FrameGroundTruth
-from perception_eval.common.label import LabelParam
 from perception_eval.config import SensingEvaluationConfig
 from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
 from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
@@ -48,19 +47,15 @@ class SensingLSimMoc:
             "box_scale_0m": 1.0,
             "box_scale_100m": 1.0,
             "min_points_threshold": 1,
+            # label parameters
+            "label_prefix": "autoware",
         }
-
-        label_param = LabelParam(
-            label_prefix="autoware",  # Prefix of label name ... ("autoware", "traffic_light")
-            count_label_number=True,  # A flag if count the number of each label as debug
-        )
 
         evaluation_config: SensingEvaluationConfig = SensingEvaluationConfig(
             dataset_paths=dataset_paths,
             frame_id="base_link",
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
-            label_param=label_param,
             load_raw_data=True,
         )
 

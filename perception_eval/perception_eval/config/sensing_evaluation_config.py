@@ -19,8 +19,6 @@ from typing import Sequence
 from typing import Tuple
 from typing import Union
 
-from perception_eval.common.label import LabelParam
-
 from ._evaluation_config_base import _EvaluationConfigBase
 
 
@@ -66,7 +64,6 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         frame_id: Union[str, Sequence[str]],
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Dict[str, Any]],
-        label_param: LabelParam,
         load_raw_data: bool = False,
     ) -> None:
         super().__init__(
@@ -74,10 +71,19 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
             frame_id=frame_id,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
-            label_param=label_param,
             load_raw_data=load_raw_data,
         )
-        self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)
+
+    @staticmethod
+    def _extract_label_params(evaluation_config_dict: Dict[str, Any]) -> Dict[str, Any]:
+        e_cfg: Dict[str, Any] = evaluation_config_dict.copy()
+        l_params: Dict[str, Any] = {
+            "label_prefix": e_cfg.get("label_prefix", "autoware"),
+            "merge_similar_labels": e_cfg.get("merge_similar_labels", False),
+            "allow_matching_unknown": True,
+            "count_label_number": e_cfg.get("count_label_number", True),
+        }
+        return l_params
 
     def _extract_params(
         self,
@@ -97,4 +103,5 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
             "box_scale_100m": e_cfg.get("box_scale_100m", 1.0),
             "min_points_threshold": e_cfg.get("min_points_threshold", 1),
         }
+
         return f_params, m_params

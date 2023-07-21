@@ -18,7 +18,6 @@ import tempfile
 from typing import List
 from typing import Union
 
-from perception_eval.common.label import LabelParam
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import PerceptionFrameResult
@@ -65,12 +64,13 @@ class PerceptionLSimMoc:
                 else None,
             )
         )
-
-        label_param = LabelParam(
-            allow_matching_unknown=True,  # A flag if allow to matching unknown and the other labels
-            merge_similar_labels=False,  # A flag if merge similar labels ... e.g. bus -> car
-            label_prefix="autoware",  # Prefix of label name ... ("autoware", "traffic_light")
-            count_label_number=True,  # A flag if count the number of each label as debug
+        evaluation_config_dict.update(
+            dict(
+                allow_matching_unknown=True,
+                merge_similar_labels=False,
+                label_prefix="autoware",
+                count_label_number=True,
+            )
         )
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
@@ -78,7 +78,6 @@ class PerceptionLSimMoc:
             frame_id=camera_type,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
-            label_param=label_param,
             load_raw_data=True,
         )
 
