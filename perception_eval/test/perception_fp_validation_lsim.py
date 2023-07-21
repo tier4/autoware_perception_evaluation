@@ -143,8 +143,8 @@ if __name__ == "__main__":
         # Because FP label is contained in GT, updates them to the other labels
         objects_with_difference = get_objects_with_difference(
             ground_truth_objects=ground_truth_frame.objects,
-            diff_distance=(0.0, 0.0, 0.0),
-            diff_yaw=0.0,
+            diff_distance=(1.0, 0.0, 0.2),
+            diff_yaw=0.2,
             is_confidence_with_distance=True,
             ego2map=ground_truth_frame.ego2map,
             label_candidates=[
@@ -154,8 +154,8 @@ if __name__ == "__main__":
                 AutowareLabel.MOTORBIKE,
             ],
         )
-        # if len(objects_with_difference) > 0:
-        #     objects_with_difference.pop(0)
+        if len(objects_with_difference) > 0:
+            objects_with_difference.pop(0)
         fp_validation_lsim.callback(ground_truth_frame.unix_time, objects_with_difference)
 
     fp_validation_lsim.display_status_rates()

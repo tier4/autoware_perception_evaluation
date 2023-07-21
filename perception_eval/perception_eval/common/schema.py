@@ -275,6 +275,14 @@ StatusRates = Tuple[StatusRate, StatusRate, StatusRate, StatusRate]
 class GroundTruthStatus:
     """Class for keeping and calculating status information of each matching status for one GT.
 
+    Attributes:
+        uuid (str): UUID of ground truth object.
+        total_frame_nums (List[int]): List of frame numbers, which GT is evaluated.
+        tp_frame_nums (List[int]): List of frame numbers, which GT is evaluated as TP.
+        fp_frame_nums (List[int]): List of frame numbers, which GT is evaluated as FP.
+        tn_frame_nums (List[int]): List of frame numbers, which GT is evaluated as TN.
+        fn_frame_nums (List[int]): List of frame numbers, which GT is evaluated as FN.
+
     Args:
         uuid (str): object uuid
     """
