@@ -18,7 +18,8 @@ from typing import List
 from typing import Tuple
 import unittest
 
-from perception_eval.config.sensing_evaluation_config import SensingEvaluationConfig
+from perception_eval.common.label import LabelParam
+from perception_eval.config import SensingEvaluationConfig
 
 
 class TestSensingEvaluationConfig(unittest.TestCase):
@@ -31,6 +32,10 @@ class TestSensingEvaluationConfig(unittest.TestCase):
             "box_scale_100m": 1.0,
             "min_points_threshold": 1,
         }
+        label_param = LabelParam(
+            label_prefix="autoware",  # Prefix of label name ... ("autoware", "traffic_light")
+            count_label_number=True,  # A flag if count the number of each label as debug
+        )
         # patterns: (frame_id, evaluation_task)
         patterns: List[Tuple(str, Dict[str, Any])] = [
             ("map", {"evaluation_task": "foo"}),
@@ -44,7 +49,7 @@ class TestSensingEvaluationConfig(unittest.TestCase):
                     _ = SensingEvaluationConfig(
                         dataset_paths="/tmp/path",
                         frame_id=frame_id,
-                        merge_similar_labels=False,
                         result_root_directory="/tmp/path",
                         evaluation_config_dict=evaluation_config_dict,
+                        label_param=label_param,
                     )

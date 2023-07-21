@@ -18,6 +18,7 @@ import tempfile
 from typing import List
 from typing import Union
 
+from perception_eval.common.label import LabelParam
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import PerceptionFrameResult
@@ -65,14 +66,20 @@ class PerceptionLSimMoc:
             )
         )
 
+        label_param = LabelParam(
+            allow_matching_unknown=True,  # A flag if allow to matching unknown and the other labels
+            merge_similar_labels=False,  # A flag if merge similar labels ... e.g. bus -> car
+            label_prefix="autoware",  # Prefix of label name ... ("autoware", "traffic_light")
+            count_label_number=True,  # A flag if count the number of each label as debug
+        )
+
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=dataset_paths,
             frame_id=camera_type,
-            merge_similar_labels=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
+            label_param=label_param,
             load_raw_data=True,
-            label_prefix=label_prefix,
         )
 
         _ = configure_logger(
@@ -88,7 +95,6 @@ class PerceptionLSimMoc:
         unix_time: int,
         estimated_objects: List[DynamicObject2D],
     ) -> None:
-
         # 現frameに対応するGround truthを取得
         ground_truth_now_frame = self.evaluator.get_ground_truth_now_frame(unix_time)
 

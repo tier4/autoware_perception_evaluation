@@ -27,6 +27,7 @@ from typing import Union
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.evaluation_task import set_task
 from perception_eval.common.label import LabelConverter
+from perception_eval.common.label import LabelParam
 from perception_eval.common.status import FrameID
 
 
@@ -82,10 +83,9 @@ class _EvaluationConfigBase(ABC):
         self,
         dataset_paths: List[str],
         frame_id: Union[str, Sequence[str]],
-        merge_similar_labels: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
-        label_prefix: str = "autoware",
+        label_param: LabelParam,
         load_raw_data: bool = False,
     ) -> None:
         super().__init__()
@@ -104,8 +104,7 @@ class _EvaluationConfigBase(ABC):
         if self.evaluation_task.is_3d() and len(self.frame_ids) != 1:
             raise ValueError(f"For 3D task, FrameID must be 1, but got {len(self.frame_ids)}")
 
-        self.merge_similar_labels: bool = merge_similar_labels
-        self.label_prefix: str = label_prefix
+        self.label_param: LabelParam = label_param
         self.load_raw_data: bool = load_raw_data
 
         # directory
@@ -121,8 +120,8 @@ class _EvaluationConfigBase(ABC):
         # Labels
         self.label_converter = LabelConverter(
             self.evaluation_task,
-            merge_similar_labels,
-            label_prefix,
+            self.label_param.merge_similar_labels,
+            self.label_param.label_prefix,
             count_label_number=True,
         )
 

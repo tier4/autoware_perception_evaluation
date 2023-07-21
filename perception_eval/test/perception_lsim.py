@@ -17,6 +17,7 @@ import logging
 import tempfile
 from typing import List
 
+from perception_eval.common.label import LabelParam
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import PerceptionFrameResult
@@ -65,12 +66,19 @@ class PerceptionLSimMoc:
             "min_point_numbers": [0, 0, 0, 0],
         }
 
-        evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
+        label_param = LabelParam(
+            label_prefix="autoware",  # Prefix of label name ... ("autoware", "traffic_light")
+            merge_similar_labels=False,  # A flag if merge similar labels ... e.g. bus -> car
+            allow_matching_unknown=True,  # A flag if allow to matching unknown and the other labels
+            count_label_number=True,  # A flag if count the number of each label as debug
+        )
+
+        evaluation_config = PerceptionEvaluationConfig(
             dataset_paths=dataset_paths,
             frame_id="base_link" if evaluation_task == "detection" else "map",
-            merge_similar_labels=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
+            label_param=label_param,
             load_raw_data=True,
         )
 
@@ -87,7 +95,6 @@ class PerceptionLSimMoc:
         unix_time: int,
         estimated_objects: List[DynamicObject],
     ) -> None:
-
         # 現frameに対応するGround truthを取得
         ground_truth_now_frame = self.evaluator.get_ground_truth_now_frame(unix_time)
 

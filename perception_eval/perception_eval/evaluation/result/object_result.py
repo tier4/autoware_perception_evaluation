@@ -227,6 +227,7 @@ class DynamicObjectWithPerceptionResult:
 def get_object_results(
     estimated_objects: List[ObjectType],
     ground_truth_objects: List[ObjectType],
+    allow_matching_unknown: bool = True,
     matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
 ) -> List[DynamicObjectWithPerceptionResult]:
     """Returns list of DynamicObjectWithPerceptionResult.
@@ -260,6 +261,7 @@ def get_object_results(
     score_table: np.ndarray = _get_score_table(
         estimated_objects,
         ground_truth_objects,
+        allow_matching_unknown,
         matching_method_module,
     )
 
@@ -394,6 +396,7 @@ def _get_matching_module(matching_mode: MatchingMode) -> Tuple[Callable, bool]:
 def _get_score_table(
     estimated_objects: List[ObjectType],
     ground_truth_objects: List[ObjectType],
+    allow_matching_unknown: bool,
     matching_method_module: Callable,
 ) -> np.ndarray:
     """Returns score table, in shape (num_estimation, num_ground_truth).
@@ -401,6 +404,7 @@ def _get_score_table(
     Args:
         estimated_objects (List[ObjectType]): Estimated objects list.
         ground_truth_objects (List[ObjectType]): Ground truth objects list.
+        allow_matching_unknown (bool): Indicates whether allow to match with unknown label.
         matching_method_module (Callable): MatchingMethod instance.
 
     Returns:
@@ -412,13 +416,17 @@ def _get_score_table(
     score_table: np.ndarray = np.full((num_row, num_col), np.nan)
     for i, est_obj in enumerate(estimated_objects):
         for j, gt_obj in enumerate(ground_truth_objects):
-            if (
-                est_obj.semantic_label == gt_obj.semantic_label
-                or any(
-                    label == CommonLabel.UNKNOWN
-                    for label in (est_obj.semantic_label.label, gt_obj.semantic_label.label)
+            if allow_matching_unknown:
+                is_label_ok = est_obj.semantic_label == gt_obj.semantic_label or any(
+                    [
+                        label == CommonLabel.UNKNOWN
+                        for label in (est_obj.semantic_label.label, gt_obj.semantic_label.label)
+                    ]
                 )
-            ) and est_obj.frame_id == gt_obj.frame_id:
+            else:
+                is_label_ok: bool = est_obj.semantic_label == gt_obj.semantic_label
+
+            if is_label_ok and est_obj.frame_id == gt_obj.frame_id:
                 matching_method: MatchingMethod = matching_method_module(
                     estimated_object=est_obj, ground_truth_object=gt_obj
                 )

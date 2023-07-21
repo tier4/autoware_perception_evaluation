@@ -19,6 +19,8 @@ from typing import Sequence
 from typing import Tuple
 from typing import Union
 
+from perception_eval.common.label import LabelParam
+
 from ._evaluation_config_base import _EvaluationConfigBase
 
 
@@ -62,17 +64,17 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         self,
         dataset_paths: List[str],
         frame_id: Union[str, Sequence[str]],
-        merge_similar_labels: bool,
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Dict[str, Any]],
+        label_param: LabelParam,
         load_raw_data: bool = False,
-    ):
+    ) -> None:
         super().__init__(
             dataset_paths=dataset_paths,
             frame_id=frame_id,
-            merge_similar_labels=merge_similar_labels,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
+            label_param=label_param,
             load_raw_data=load_raw_data,
         )
         self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)
