@@ -288,7 +288,7 @@ def get_negative_objects(
     tn_objects: List[DynamicObject] = []
     fn_objects: List[DynamicObject] = []
 
-    non_fn_candidates: List[ObjectType] = []
+    non_candidates: List[ObjectType] = []
     for object_result in object_results:
         matching_threshold: Optional[float] = get_label_threshold(
             object_result.estimated_object.semantic_label,
@@ -299,18 +299,20 @@ def get_negative_objects(
 
         if gt_status == MatchingStatus.TN:
             tn_objects.append(object_result.ground_truth_object)
-        elif gt_status in (MatchingStatus.FP, MatchingStatus.FN):  # TODO: only for FP or FN
+        elif gt_status == MatchingStatus.FN:
             fn_objects.append(object_result.ground_truth_object)
 
-        if gt_status is not None or gt_status == MatchingStatus.TP:
-            non_fn_candidates.append(object_result.ground_truth_object)
+        if gt_status is not None:
+            non_candidates.append(object_result.ground_truth_object)
 
     for ground_truth_object in ground_truth_objects:
-        if ground_truth_object not in non_fn_candidates:
-            if ground_truth_object.semantic_label.is_fp_label():
-                tn_objects.append(ground_truth_object)
-            else:
-                fn_objects.append(ground_truth_object)
+        if ground_truth_object in non_candidates:
+            continue
+
+        if ground_truth_object.semantic_label.is_fp_label():
+            tn_objects.append(ground_truth_object)
+        else:
+            fn_objects.append(ground_truth_object)
 
     return tn_objects, fn_objects
 

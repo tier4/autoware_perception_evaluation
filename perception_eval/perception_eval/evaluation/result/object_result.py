@@ -121,12 +121,11 @@ class DynamicObjectWithPerceptionResult:
                 else (MatchingStatus.TP, MatchingStatus.TP)
             )
         else:
-            return (MatchingStatus.FP, MatchingStatus.FP)
-            # return (
-            #     (MatchingStatus.FP, MatchingStatus.TN)
-            #     if self.ground_truth_object.semantic_label.is_fp_label()
-            #     else (MatchingStatus.FP, MatchingStatus.FP)
-            # )
+            return (
+                (MatchingStatus.FP, MatchingStatus.FP)
+                if self.ground_truth_object.semantic_label.is_fp_label()
+                else (MatchingStatus.FP, MatchingStatus.FN)
+            )
 
     def is_result_correct(
         self,

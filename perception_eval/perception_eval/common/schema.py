@@ -203,6 +203,38 @@ class MatchingStatus(Enum):
             return self.value == other
         return super().__eq__(other)
 
+    def is_positive(self) -> bool:
+        """Indicates whether current status is TP or FP.
+
+        Returns:
+            bool: Returns `True` if status is TP or FP.
+        """
+        return self in (MatchingStatus.TP, MatchingStatus.FP)
+
+    def is_negative(self) -> bool:
+        """Indicates whether current status is TN or FN.
+
+        Returns:
+            bool: Returns `True` if status is TN or FN.
+        """
+        return self in (MatchingStatus.TN, MatchingStatus.FN)
+
+    def is_true(self) -> bool:
+        """Indicates whether current status is TP or TN.
+
+        Returns:
+            bool: Returns `True` if status is TP or FN.
+        """
+        return self in (MatchingStatus.TP, MatchingStatus.TN)
+
+    def is_false(self) -> bool:
+        """Indicates whether current status is FP or FN.
+
+        Returns:
+            bool: Returns `True` if status is FP or FN.
+        """
+        return self in (MatchingStatus.FP, MatchingStatus.FN)
+
 
 class StatusRate:
     """Class to get rate of each matching status, TP/FP/TN/FN."""
