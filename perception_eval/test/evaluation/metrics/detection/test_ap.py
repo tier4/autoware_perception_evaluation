@@ -557,9 +557,9 @@ class TestAp(unittest.TestCase):
         test patterns:
             Check if ap and aph are almost correct.
         """
-        # ap and aph is 0.0 since no MOTORBIKE in the estimated_objects
-        ans_ap: float = 0.0
-        ans_aph: float = 0.0
+        # ap and aph is nan since no MOTORBIKE in the estimated_objects
+        ans_ap: float = float("inf")
+        ans_aph: float = float("inf")
 
         # Filter objects
         dummy_estimated_objects = filter_objects(

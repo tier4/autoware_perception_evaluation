@@ -102,8 +102,11 @@ class Ap:
         precision_list, recall_list = self.get_precision_recall_list()
 
         # AP
-        self.ap: float = self._calculate_ap(precision_list, recall_list)
-
+        self.ap: float = (
+            self._calculate_ap(precision_list, recall_list)
+            if 0 < len(all_object_results)
+            else float("inf")
+        )
         # average and standard deviation
         self.matching_average: Optional[float] = None
         self.matching_standard_deviation: Optional[float] = None
@@ -240,7 +243,7 @@ class Ap:
 
         # When result num is 0
         if len(object_results) == 0:
-            if self.num_ground_truth != 0:
+            if self.num_ground_truth == 0:
                 logger.debug("The size of object_results is 0")
                 return [], []
             else:

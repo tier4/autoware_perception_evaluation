@@ -218,8 +218,9 @@ class TestMap(unittest.TestCase):
         test patterns:
             Check if map and maph are almost correct.
         """
-        ans_map: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
-        ans_maph: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
+        # PEDESTRIAN and MOTORBIKE is not included -> each AP is `inf` and skipped in mAP computation.
+        ans_map: float = (1.0 + 1.0) / 2.0
+        ans_maph: float = (1.0 + 1.0) / 2.0
 
         # Filter objects
         dummy_estimated_objects = filter_objects(
@@ -434,8 +435,9 @@ class TestMap(unittest.TestCase):
         test patterns:
             Check if map and maph are almost correct.
         """
-        ans_map: float = (1.0 + 0.0 + 0.0 + 0.0) / 4.0
-        ans_maph: float = (1.0 + 0.0 + 0.0 + 0.0) / 4.0
+        # PEDESTRIAN and MOTORBIKE is not included -> each AP is `inf` and skipped in mAP computation.
+        ans_map: float = (1.0 + 0.0) / 2.0
+        ans_maph: float = (1.0 + 0.0) / 2.0
 
         # Filter objects
         dummy_estimated_objects = filter_objects(
@@ -646,8 +648,9 @@ class TestMap(unittest.TestCase):
         test patterns:
             Check if map and maph are almost correct.
         """
-        ans_map: float = (1.0 + 0.0 + 0.0 + 0.0) / 4.0
-        ans_maph: float = (1.0 + 0.0 + 0.0 + 0.0) / 4.0
+        # PEDESTRIAN and MOTORBIKE is not included -> each AP is `inf` and skipped in mAP computation.
+        ans_map: float = (1.0 + 0.0) / 2.0
+        ans_maph: float = (1.0 + 0.0) / 2.0
 
         # Filter objects
         dummy_estimated_objects = filter_objects(
@@ -885,8 +888,9 @@ class TestMap(unittest.TestCase):
         #   ap and aph: 0.0
         # MOTORBIKE: not estimated
         #   ap and aph: 0.0
-        ans_map: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
-        ans_maph: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
+        # PEDESTRIAN and MOTORBIKE is not included -> each AP is `inf` and skipped in mAP computation.
+        ans_map: float = (1.0 + 1.0) / 2.0
+        ans_maph: float = (1.0 + 1.0) / 2.0
 
         # Filter objects
         dummy_estimated_objects = filter_objects(
