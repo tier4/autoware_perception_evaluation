@@ -21,8 +21,8 @@ from typing import Optional
 from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import LabelType
-from perception_eval.common.schema import GroundTruthStatus
-from perception_eval.common.schema import MatchingStatus
+from perception_eval.common.status import GroundTruthStatus
+from perception_eval.common.status import MatchingStatus
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num

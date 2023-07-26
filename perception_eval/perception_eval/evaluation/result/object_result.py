@@ -27,7 +27,7 @@ from perception_eval.common import DynamicObject2D
 from perception_eval.common import ObjectType
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
-from perception_eval.common.schema import MatchingStatus
+from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.evaluation.matching import CenterDistanceMatching
 from perception_eval.evaluation.matching import IOU2dMatching

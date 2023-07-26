@@ -37,7 +37,7 @@ import numpy as np
 import pandas as pd
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.schema import MatchingStatus
+from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation import PerceptionFrameResult
