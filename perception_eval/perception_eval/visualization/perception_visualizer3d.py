@@ -110,7 +110,6 @@ class PerceptionVisualizer3D:
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id="base_link" if eval_cfg_dict["evaluation_task"] == "detection" else "map",
-            merge_similar_labels=p_cfg.get("merge_similar_labels", False),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
             load_raw_data=False,
