@@ -425,7 +425,11 @@ def _is_target_object(
             min_distance = label_threshold.get_label_threshold(min_distance_list)
             is_target = is_target and bev_distance_ > min_distance
 
-        if is_target and min_point_numbers is not None:
+        if (
+            is_target
+            and min_point_numbers is not None
+            and dynamic_object.pointcloud_num is not None
+        ):
             min_point_number = label_threshold.get_label_threshold(min_point_numbers)
             is_target = is_target and dynamic_object.pointcloud_num >= min_point_number
 
