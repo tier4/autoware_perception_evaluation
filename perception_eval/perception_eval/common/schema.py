@@ -324,3 +324,37 @@ class GroundTruthStatus:
 
     def __eq__(self, uuid: str) -> bool:
         return self.uuid == uuid
+
+
+def get_scene_rates(status_list: List[GroundTruthStatus]) -> Tuple[float, float, float, float]:
+    """Returns TP/FP/TN/FN rates from all `GroundTruthStatus`.
+
+    If `status_list` is empty, returns sequence of `float("inf")`.
+
+    Args:
+        status_list (List[GroundTruthStatus]): All GT status.
+
+    Returns:
+        Tuple[float, float, float, float]: Sequence of rates, (TP, FP, TN, FN) order.
+    """
+    num_total_frame: int = 0
+    num_tp_frame: int = 0
+    num_fp_frame: int = 0
+    num_tn_frame: int = 0
+    num_fn_frame: int = 0
+    for status in status_list:
+        num_total_frame += len(status.total_frame_nums)
+        num_tp_frame += len(status.tp_frame_nums)
+        num_fp_frame += len(status.fp_frame_nums)
+        num_tn_frame += len(status.tn_frame_nums)
+        num_fn_frame += len(status.fn_frame_nums)
+
+    if num_total_frame == 0:
+        return float("inf"), float("inf"), float("inf"), float("inf")
+    else:
+        return (
+            num_tp_frame / num_total_frame,
+            num_fp_frame / num_total_frame,
+            num_tn_frame / num_total_frame,
+            num_fn_frame / num_total_frame,
+        )

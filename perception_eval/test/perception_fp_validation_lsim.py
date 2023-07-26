@@ -19,6 +19,7 @@ from typing import List
 
 from perception_eval.common import ObjectType
 from perception_eval.common.label import AutowareLabel
+from perception_eval.common.schema import get_scene_rates
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import get_object_status
 from perception_eval.evaluation import PerceptionFrameResult
@@ -98,8 +99,8 @@ class FPValidationLsimMoc:
         )
 
     def display_status_rates(self) -> None:
-        status_infos = get_object_status(self.evaluator.frame_results)
-        for status_info in status_infos:
+        status_list = get_object_status(self.evaluator.frame_results)
+        for status_info in status_list:
             tp_rate, fp_rate, tn_rate, fn_rate = status_info.get_status_rates()
             # display
             logging.info(
@@ -116,6 +117,15 @@ class FPValidationLsimMoc:
                 f"TN: {status_info.tn_frame_nums}, "
                 f"FN: {status_info.fn_frame_nums}",
             )
+
+        scene_tp_rate, scene_fp_rate, scene_tn_rate, scene_fn_rate = get_scene_rates(status_list)
+        logging.info(
+            "[scene]"
+            f"TP: {scene_tp_rate}, "
+            f"FP: {scene_fp_rate}, "
+            f"TN: {scene_tn_rate}, "
+            f"FN: {scene_fn_rate}"
+        )
 
 
 if __name__ == "__main__":
