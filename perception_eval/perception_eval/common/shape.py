@@ -100,7 +100,7 @@ class Shape:
         self.type: ShapeType = shape_type
         self.size: Tuple[float, float, float] = size
         self.footprint: Optional[Polygon] = (
-            footprint if shape_type == Shape.POLYGON else self.__calculate_corners(shape_type, size)
+            footprint if footprint else self.__calculate_corners(shape_type, size)
         )
 
     @staticmethod
