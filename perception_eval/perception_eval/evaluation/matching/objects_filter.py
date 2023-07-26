@@ -20,6 +20,7 @@ from typing import Union
 
 import numpy as np
 from perception_eval.common import ObjectType
+from perception_eval.common.label import CommonLabel
 from perception_eval.common.label import Label
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
@@ -92,6 +93,7 @@ def filter_object_results(
     for object_result in object_results:
         is_target: bool = _is_target_object(
             dynamic_object=object_result.estimated_object,
+            is_gt=False,
             target_labels=target_labels,
             max_x_position_list=max_x_position_list,
             max_y_position_list=max_y_position_list,
@@ -103,6 +105,7 @@ def filter_object_results(
         if is_target and object_result.ground_truth_object:
             is_target = is_target and _is_target_object(
                 dynamic_object=object_result.ground_truth_object,
+                is_gt=True,
                 target_labels=target_labels,
                 ignore_attributes=ignore_attributes,
                 max_x_position_list=max_x_position_list,
@@ -178,30 +181,20 @@ def filter_objects(
 
     filtered_objects: List[DynamicObject] = []
     for object_ in objects:
-        if is_gt:
-            is_target: bool = _is_target_object(
-                dynamic_object=object_,
-                target_labels=target_labels,
-                ignore_attributes=ignore_attributes,
-                max_x_position_list=max_x_position_list,
-                max_y_position_list=max_y_position_list,
-                max_distance_list=max_distance_list,
-                min_distance_list=min_distance_list,
-                min_point_numbers=min_point_numbers,
-                target_uuids=target_uuids,
-                ego2map=ego2map,
-            )
-        else:
-            is_target: bool = _is_target_object(
-                dynamic_object=object_,
-                target_labels=target_labels,
-                max_x_position_list=max_x_position_list,
-                max_y_position_list=max_y_position_list,
-                max_distance_list=max_distance_list,
-                min_distance_list=min_distance_list,
-                confidence_threshold_list=confidence_threshold_list,
-                ego2map=ego2map,
-            )
+        is_target: bool = _is_target_object(
+            dynamic_object=object_,
+            is_gt=is_gt,
+            target_labels=target_labels,
+            ignore_attributes=ignore_attributes,
+            max_x_position_list=max_x_position_list,
+            max_y_position_list=max_y_position_list,
+            max_distance_list=max_distance_list,
+            min_distance_list=min_distance_list,
+            min_point_numbers=min_point_numbers,
+            target_uuids=target_uuids,
+            confidence_threshold_list=confidence_threshold_list,
+            ego2map=ego2map,
+        )
         if is_target:
             filtered_objects.append(object_)
     return filtered_objects
@@ -342,6 +335,7 @@ def _is_fn_object(
 
 def _is_target_object(
     dynamic_object: ObjectType,
+    is_gt: bool,
     target_labels: Optional[List[LabelType]] = None,
     ignore_attributes: Optional[List[str]] = None,
     max_x_position_list: Optional[List[float]] = None,
@@ -359,6 +353,7 @@ def _is_target_object(
 
     Args:
         dynamic_object (ObjectType): The dynamic object
+        is_gt (bool): Whether input object is GT or not.
         target_labels Optional[List[LabelType]]): Target labels list.
             Keep all `dynamic_object` that have same labels in this list. Defaults to None.
         ignore_attributes (Optional[List[str]]): List of attributes to be ignored. Defaults to None.
@@ -394,7 +389,9 @@ def _is_target_object(
     )
     is_target: bool = True
 
-    if target_labels is not None:
+    if target_labels is not None and (
+        is_gt or dynamic_object.semantic_label.label != CommonLabel.UNKNOWN
+    ):
         is_target = is_target and dynamic_object.semantic_label.label in target_labels
 
     if ignore_attributes is not None:
@@ -432,7 +429,7 @@ def _is_target_object(
             min_point_number = label_threshold.get_label_threshold(min_point_numbers)
             is_target = is_target and dynamic_object.pointcloud_num >= min_point_number
 
-    if is_target and target_uuids is not None:
+    if is_target and target_uuids is not None and is_gt:
         assert isinstance(target_uuids, list)
         assert all([isinstance(uuid, str) for uuid in target_uuids])
         is_target = is_target and dynamic_object.uuid in target_uuids
