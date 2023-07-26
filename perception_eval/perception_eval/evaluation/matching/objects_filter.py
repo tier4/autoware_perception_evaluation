@@ -383,15 +383,16 @@ def _is_target_object(
     Returns:
         bool: If the object is filter target, return True
     """
+    if dynamic_object.semantic_label.label == CommonLabel.UNKNOWN and is_gt is False:
+        return True
+
     label_threshold = LabelThreshold(
         semantic_label=dynamic_object.semantic_label,
         target_labels=target_labels,
     )
     is_target: bool = True
 
-    if target_labels is not None and (
-        is_gt or dynamic_object.semantic_label.label != CommonLabel.UNKNOWN
-    ):
+    if target_labels:
         is_target = is_target and dynamic_object.semantic_label.label in target_labels
 
     if ignore_attributes is not None:
@@ -425,11 +426,7 @@ def _is_target_object(
             min_distance = label_threshold.get_label_threshold(min_distance_list)
             is_target = is_target and bev_distance_ > min_distance
 
-        if (
-            is_target
-            and min_point_numbers is not None
-            and dynamic_object.pointcloud_num is not None
-        ):
+        if is_target and min_point_numbers is not None and is_gt:
             min_point_number = label_threshold.get_label_threshold(min_point_numbers)
             is_target = is_target and dynamic_object.pointcloud_num >= min_point_number
 
