@@ -116,7 +116,9 @@ class Shape:
             corner_polygon (Polygon): Object's corners as polygon.
         """
         if shape_type != ShapeType.BOUNDING_BOX:
-            raise ValueError(f"Expected BOUNDING_BOX, but got {shape_type}")
+            raise ValueError(
+                f"Expected BOUNDING_BOX, but got {shape_type}, which should have footprint."
+            )
 
         corners: List[np.ndarray] = [
             np.array([size[1], size[0], 0.0]) / 2.0,
