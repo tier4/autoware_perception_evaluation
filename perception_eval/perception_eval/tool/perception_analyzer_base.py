@@ -278,7 +278,7 @@ class PerceptionAnalyzerBase(ABC):
         elif status == MatchingStatus.FN:
             return self.get_num_fn(df, **kwargs)
         else:
-            raise ValueError(f"Expected status is TP/FP/FN, but got {status}")
+            raise ValueError(f"Expected status is TP/FP/TN/FN, but got {status}")
 
     def get_num_tp(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
         """Returns the number of TP.

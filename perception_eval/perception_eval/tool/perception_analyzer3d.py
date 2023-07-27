@@ -208,14 +208,17 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             gt_point1, gt_point2 = object_result.plane_distance.ground_truth_nn_plane
             est_point1, est_point2 = object_result.plane_distance.estimated_nn_plane
         elif isinstance(object_result, DynamicObject):
-            if status == MatchingStatus.FN:
-                gt: DynamicObject = object_result
-                estimation = None
-            elif status == MatchingStatus.FP:
+            if status == MatchingStatus.FP:
                 estimation: DynamicObject = object_result
                 gt = None
+            elif status == MatchingStatus.TN:
+                estimation = None
+                gt: DynamicObject = object_result
+            elif status == MatchingStatus.FN:
+                estimation = None
+                gt: DynamicObject = object_result
             else:
-                raise ValueError("For DynamicObject status must be in FP or FN, but got {status}")
+                raise ValueError(f"For DynamicObject status must be in FP/TN/FN, but got {status}")
             gt_point1, gt_point2 = None, None
             est_point1, est_point2 = None, None
         elif object_result is None:

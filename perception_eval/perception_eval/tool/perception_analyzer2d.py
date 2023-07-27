@@ -153,12 +153,15 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             gt: Optional[DynamicObject2D] = object_result.ground_truth_object
             estimation: DynamicObject2D = object_result.estimated_object
         elif isinstance(object_result, DynamicObject2D):
-            if status == MatchingStatus.FN:
-                gt: DynamicObject2D = object_result
-                estimation = None
-            elif status == MatchingStatus.FP:
+            if status == MatchingStatus.FP:
                 estimation: DynamicObject2D = object_result
                 gt = None
+            elif status == MatchingStatus.TN:
+                estimation = None
+                gt: DynamicObject2D = object_result
+            elif status == MatchingStatus.FN:
+                estimation = None
+                gt: DynamicObject2D = object_result
             else:
                 raise ValueError("For DynamicObject status must be in FP or FN, but got {status}")
         elif object_result is None:
