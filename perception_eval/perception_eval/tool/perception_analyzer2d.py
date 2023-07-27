@@ -309,18 +309,22 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         """
         gt_df, est_df = self.get_pair_results(df)
 
+        target_labels: List[str] = self.target_labels.copy()
+        if self.config.label_params["allow_matching_unknown"] and "unknown" not in target_labels:
+            target_labels.append("unknown")
+
         gt_indices: np.ndarray = (
-            gt_df["label"].apply(lambda label: self.target_labels.index(label)).to_numpy()
+            gt_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
         )
         est_indices: np.ndarray = (
-            est_df["label"].apply(lambda label: self.target_labels.index(label)).to_numpy()
+            est_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
         )
 
-        num_classes = len(self.target_labels)
+        num_classes = len(target_labels)
         indices = num_classes * gt_indices + est_indices
         matrix: np.ndarray = np.bincount(indices, minlength=num_classes**2)
         matrix = matrix.reshape(num_classes, num_classes)
-        return pd.DataFrame(data=matrix, index=self.target_labels, columns=self.target_labels)
+        return pd.DataFrame(data=matrix, index=target_labels, columns=target_labels)
 
     def plot_num_object(
         self,

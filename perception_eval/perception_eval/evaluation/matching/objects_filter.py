@@ -176,10 +176,9 @@ def filter_objects(
             This is only needed when `frame_id=map`. Defaults to None.
 
     Returns:
-        List[Union[DynamicObject, Object2DBase]]: Filtered objects.
+        List[ObjectType]: Filtered objects.
     """
-
-    filtered_objects: List[DynamicObject] = []
+    filtered_objects: List[ObjectType] = []
     for object_ in objects:
         is_target: bool = _is_target_object(
             dynamic_object=object_,
@@ -383,8 +382,19 @@ def _is_target_object(
     Returns:
         bool: If the object is filter target, return True
     """
-    if dynamic_object.semantic_label.label == CommonLabel.UNKNOWN and is_gt is False:
-        return True
+    # For estimated objected, skip filtering out if it has unknown label
+    is_unknown_estimation: bool = (
+        dynamic_object.semantic_label.label == CommonLabel.UNKNOWN and is_gt is False
+    )
+
+    # Whether unknown is contained in target labels
+    is_contained_unknown: bool = (
+        any([label == CommonLabel.UNKNOWN for label in target_labels])
+        if target_labels is not None
+        else False
+    )
+
+    use_unknown_threshold: bool = is_unknown_estimation and not is_contained_unknown
 
     label_threshold = LabelThreshold(
         semantic_label=dynamic_object.semantic_label,
@@ -393,13 +403,25 @@ def _is_target_object(
     is_target: bool = True
 
     if target_labels:
-        is_target = is_target and dynamic_object.semantic_label.label in target_labels
+        is_target = (
+            is_target and True
+            if use_unknown_threshold
+            else is_target and dynamic_object.semantic_label.label in target_labels
+        )
 
     if ignore_attributes is not None:
-        is_target = is_target and not dynamic_object.semantic_label.contains_any(ignore_attributes)
+        is_target = (
+            is_target and True
+            if use_unknown_threshold
+            else is_target and not dynamic_object.semantic_label.contains_any(ignore_attributes)
+        )
 
     if is_target and confidence_threshold_list is not None:
-        confidence_threshold = label_threshold.get_label_threshold(confidence_threshold_list)
+        confidence_threshold = (
+            0.0
+            if use_unknown_threshold
+            else label_threshold.get_label_threshold(confidence_threshold_list)
+        )
         is_target = is_target and dynamic_object.semantic_score > confidence_threshold
 
     if isinstance(dynamic_object, DynamicObject):
@@ -411,23 +433,43 @@ def _is_target_object(
         bev_distance_: float = dynamic_object.get_distance_bev(ego2map)
 
         if is_target and max_x_position_list is not None:
-            max_x_position = label_threshold.get_label_threshold(max_x_position_list)
+            max_x_position = (
+                max_x_position_list[0]
+                if use_unknown_threshold
+                else label_threshold.get_label_threshold(max_x_position_list)
+            )
             is_target = is_target and abs(position_[0]) < max_x_position
 
         if is_target and max_y_position_list is not None:
-            max_y_position = label_threshold.get_label_threshold(max_y_position_list)
+            max_y_position = (
+                max_y_position_list[0]
+                if use_unknown_threshold
+                else label_threshold.get_label_threshold(max_y_position_list)
+            )
             is_target = is_target and abs(position_[1]) < max_y_position
 
         if is_target and max_distance_list is not None:
-            max_distance = label_threshold.get_label_threshold(max_distance_list)
+            max_distance = (
+                max_distance_list[0]
+                if use_unknown_threshold
+                else label_threshold.get_label_threshold(max_distance_list)
+            )
             is_target = is_target and bev_distance_ < max_distance
 
         if is_target and min_distance_list is not None:
-            min_distance = label_threshold.get_label_threshold(min_distance_list)
+            min_distance = (
+                min_distance_list[0]
+                if use_unknown_threshold
+                else label_threshold.get_label_threshold(min_distance_list)
+            )
             is_target = is_target and bev_distance_ > min_distance
 
         if is_target and min_point_numbers is not None and is_gt:
-            min_point_number = label_threshold.get_label_threshold(min_point_numbers)
+            min_point_number = (
+                0
+                if use_unknown_threshold
+                else label_threshold.get_label_threshold(min_point_numbers)
+            )
             is_target = is_target and dynamic_object.pointcloud_num >= min_point_number
 
     if is_target and target_uuids is not None and is_gt:
@@ -467,6 +509,15 @@ def divide_objects(
             else obj.semantic_label.label
         )
 
+        if target_labels is not None and label not in target_labels:
+            if (
+                isinstance(obj, DynamicObjectWithPerceptionResult)
+                and obj.ground_truth_object is not None
+            ):
+                label = obj.ground_truth_object.semantic_label.label
+            else:
+                continue
+
         if label not in ret.keys():
             ret[label] = [obj]
         else:
@@ -500,6 +551,15 @@ def divide_objects_to_num(
             label: LabelType = obj.estimated_object.semantic_label.label
         else:
             label: LabelType = obj.semantic_label.label
+
+        if target_labels is not None and label not in target_labels:
+            if (
+                isinstance(obj, DynamicObjectWithPerceptionResult)
+                and obj.ground_truth_object is not None
+            ):
+                label = obj.ground_truth_object.semantic_label.label
+            else:
+                continue
 
         if label not in ret.keys():
             ret[label] = 1
