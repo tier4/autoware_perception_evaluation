@@ -225,9 +225,10 @@ if __name__ == "__main__":
         f"{format_class_for_log(detection_final_metric_score.maps[0], 100)}",
     )
 
-    # Visualize all frame results.
-    logging.info("Start visualizing detection results")
-    detection_lsim.evaluator.visualize_all()
+    if detection_lsim.evaluator.evaluator_config.load_raw_data:
+        # Visualize all frame results.
+        logging.info("Start visualizing detection results")
+        detection_lsim.evaluator.visualize_all()
 
     # Detection performance report
     detection_analyzer = PerceptionAnalyzer3D(detection_lsim.evaluator.evaluator_config)
@@ -255,8 +256,8 @@ if __name__ == "__main__":
     for ground_truth_frame in tracking_lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference(
             ground_truth_objects=ground_truth_frame.objects,
-            diff_distance=(2.3, 0.0, 0.2),
-            diff_yaw=0.2,
+            diff_distance=(0.0, 0.0, 0.0),
+            diff_yaw=0.0,
             is_confidence_with_distance=True,
             ego2map=ground_truth_frame.ego2map,
         )
@@ -302,9 +303,10 @@ if __name__ == "__main__":
         f"{format_class_for_log(tracking_final_metric_score.tracking_scores[0], 100)}"
     )
 
-    # Visualize all frame results
-    logging.info("Start visualizing tracking results")
-    tracking_lsim.evaluator.visualize_all()
+    if tracking_lsim.evaluator.evaluator_config.load_raw_data:
+        # Visualize all frame results
+        logging.info("Start visualizing tracking results")
+        tracking_lsim.evaluator.visualize_all()
 
     # Tracking performance report
     tracking_analyzer = PerceptionAnalyzer3D(tracking_lsim.evaluator.evaluator_config)

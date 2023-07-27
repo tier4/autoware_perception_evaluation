@@ -233,7 +233,8 @@ if __name__ == "__main__":
 
     # Visualize all frame results.
     logging.info("Start visualizing detection results")
-    detection_lsim.evaluator.visualize_all()
+    if detection_lsim.evaluator.evaluator_config.load_raw_data:
+        detection_lsim.evaluator.visualize_all()
 
     # Detection performance report
     detection_analyzer = PerceptionAnalyzer2D(detection_lsim.evaluator.evaluator_config)
@@ -269,7 +270,8 @@ if __name__ == "__main__":
 
     # final result
     tracking_final_metric_score = tracking_lsim.get_final_result()
-    tracking_lsim.evaluator.visualize_all()
+    if tracking_lsim.evaluator.evaluator_config.load_raw_data:
+        tracking_lsim.evaluator.visualize_all()
 
     # Tracking performance report
     tracking_analyzer = PerceptionAnalyzer2D(tracking_lsim.evaluator.evaluator_config)
@@ -291,7 +293,7 @@ if __name__ == "__main__":
     )
 
     for ground_truth_frame in classification_lsim.evaluator.ground_truth_frames:
-        objects_with_difference = ground_truth_frame.objects
+        objects_with_difference = get_objects_with_difference2d(ground_truth_frame.objects)
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
             objects_with_difference.pop(0)
