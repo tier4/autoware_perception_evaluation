@@ -244,11 +244,15 @@ def divide_tp_fp_objects(
 
         # in case of matching (Est, GT) = (unknown, except of unknown)
         # use GT label
-        matching_threshold_: Optional[float] = get_label_threshold(
-            semantic_label=object_result.ground_truth_object.semantic_label,
+        matching_threshold_ = get_label_threshold(
+            semantic_label=object_result.ground_truth_object.semantic_label
+            if object_result.ground_truth_object is not None
+            else object_result.estimated_object.semantic_label,
             target_labels=target_labels,
             threshold_list=matching_threshold_list,
         )
+        if matching_threshold_ is None:
+            continue
 
         # matching threshold
         is_correct: bool = True

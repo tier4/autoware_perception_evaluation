@@ -179,6 +179,9 @@ class CLEAR(_TrackingMetricsBase):
                 target_labels=self.target_labels,
                 threshold_list=self.matching_threshold_list,
             )
+            if matching_threshold_ is None:
+                continue
+
             is_same_match: bool = False
             is_id_switched: bool = False
             for prev_obj_result in prev_object_results:

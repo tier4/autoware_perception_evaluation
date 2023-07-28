@@ -266,6 +266,8 @@ class Ap:
                 target_labels=self.target_labels,
                 threshold_list=self.matching_threshold_list,
             )
+            if matching_threshold_ is None:
+                continue
             is_result_correct = obj_result.is_result_correct(
                 matching_mode=self.matching_mode,
                 matching_threshold=matching_threshold_,
