@@ -58,7 +58,7 @@ class FPValidationLsimMoc:
 
         self.evaluator = PerceptionEvaluationManager(evaluation_config)
 
-    def callback(self, unix_time: int, estimated_objects: ObjectType) -> None:
+    def callback(self, unix_time: int, estimated_objects: List[ObjectType]) -> None:
         ground_truth_now_frame = self.evaluator.get_ground_truth_now_frame(unix_time)
 
         # Ideally, critical GT should be obtained in each frame.
