@@ -24,7 +24,6 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.threshold import check_thresholds
-from perception_eval.common.threshold import set_thresholds
 from perception_eval.common.threshold import ThresholdsError
 from perception_eval.evaluation.metrics import MetricsScoreConfig
 
@@ -171,11 +170,21 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         else:
             raise RuntimeError("Either max x/y position or max/min distance should be specified")
 
-        max_matchable_radii: Optional[List[float]] = e_cfg.get("max_matchable_radii")
+        max_matchable_radii: Optional[Union[float, List[float]]] = e_cfg.get("max_matchable_radii")
         if max_matchable_radii is not None:
-            max_matchable_radii: List[float] = set_thresholds(
-                max_matchable_radii, len(target_labels)
-            )
+            if isinstance(max_matchable_radii, (tuple, list)):
+                assert all(
+                    isinstance(r, float) for r in max_matchable_radii
+                ), "All elements of max_matchable_radii should be float."
+                assert len(target_labels) == len(max_matchable_radii), (
+                    f"Length of max_matchable_radii must be same as target_labels, "
+                    f"but got max_matchable_radii: {len(max_matchable_radii)}, target_labels: {len(target_labels)}"
+                )
+            else:
+                assert isinstance(
+                    max_matchable_radii, float
+                ), f"When max_matchable_radii is single value, it must be float but got {type(max_matchable_radii)}"
+                max_matchable_radii = [max_matchable_radii] * len(target_labels)
 
         min_point_numbers: Optional[List[int]] = e_cfg.get("min_point_numbers")
         if min_point_numbers is not None:
