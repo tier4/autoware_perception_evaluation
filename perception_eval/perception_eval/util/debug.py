@@ -126,7 +126,7 @@ def get_objects_with_difference(
     diff_distance: Tuple[float, float, float] = (0.0, 0.0, 0.0),
     diff_yaw: float = 0.0,
     is_confidence_with_distance: Optional[bool] = None,
-    label_to_unknown_rate: float = 0.5,
+    label_to_unknown_rate: float = 1.0,
     ego2map: Optional[np.ndarray] = None,
 ) -> List[DynamicObject]:
     """Get objects with distance and yaw difference for test.
@@ -211,7 +211,7 @@ def get_objects_with_difference(
 def get_objects_with_difference2d(
     objects: List[DynamicObject2D],
     translate: Tuple[int, int] = None,
-    label_to_unknown_rate: float = 0.5,
+    label_to_unknown_rate: float = 1.0,
 ) -> List[DynamicObject2D]:
     """Returns translated 2D objects.
 

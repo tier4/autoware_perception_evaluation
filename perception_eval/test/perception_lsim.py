@@ -187,6 +187,7 @@ if __name__ == "__main__":
             diff_distance=(1.0, 0.0, 0.2),
             diff_yaw=0.2,
             is_confidence_with_distance=True,
+            label_to_unknown_rate=0.5,
             ego2map=ground_truth_frame.ego2map,
         )
         # To avoid case of there is no object
@@ -259,6 +260,7 @@ if __name__ == "__main__":
             diff_distance=(0.0, 0.0, 0.0),
             diff_yaw=0.0,
             is_confidence_with_distance=True,
+            label_to_unknown_rate=0.5,
             ego2map=ground_truth_frame.ego2map,
         )
         # To avoid case of there is no object

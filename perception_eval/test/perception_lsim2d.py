@@ -218,7 +218,9 @@ if __name__ == "__main__":
         #     ground_truth_frame.objects,
         #     translate=(50, 20),
         # )
-        objects_with_difference = ground_truth_frame.objects
+        objects_with_difference = get_objects_with_difference2d(
+            ground_truth_frame.objects, translate=(50, 50), label_to_unknown_rate=0.5
+        )
 
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
@@ -257,8 +259,7 @@ if __name__ == "__main__":
 
     for ground_truth_frame in tracking_lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference2d(
-            ground_truth_frame.objects,
-            translate=(50, 50),
+            ground_truth_frame.objects, translate=(50, 50), label_to_unknown_rate=0.5
         )
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
@@ -293,7 +294,9 @@ if __name__ == "__main__":
     )
 
     for ground_truth_frame in classification_lsim.evaluator.ground_truth_frames:
-        objects_with_difference = get_objects_with_difference2d(ground_truth_frame.objects)
+        objects_with_difference = get_objects_with_difference2d(
+            ground_truth_frame.objects, label_to_unknown_rate=0.5
+        )
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
             objects_with_difference.pop(0)
