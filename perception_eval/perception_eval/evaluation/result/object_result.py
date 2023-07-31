@@ -401,7 +401,9 @@ def _get_object_results_with_id(
                 ground_truth_objects_.remove(gt_object)
 
     # when there are rest of estimated objects, they all are FP.
-    if len(estimated_objects_) > 0 and not any([est.frame_id == FrameID.TRAFFIC_LIGHT for est in estimated_objects_]):
+    if len(estimated_objects_) > 0 and not any(
+        [est.frame_id == FrameID.TRAFFIC_LIGHT for est in estimated_objects_]
+    ):
         object_results += _get_fp_object_results(estimated_objects_)
 
     return object_results
@@ -436,7 +438,9 @@ def _get_object_results_for_tlr(
                 )
                 estimated_objects_.remove(est_object)
                 ground_truth_objects_.remove(gt_object)
-                logging.info(f"[OK] Est: {est_object.semantic_label.label}, GT: {gt_object.semantic_label.label}")
+                logging.info(
+                    f"[OK] Est: {est_object.semantic_label.label}, GT: {gt_object.semantic_label.label}"
+                )
     # when there are rest of a GT objects, one of the estimated objects is FP.
     if 0 < len(ground_truth_objects_):
         object_results += _get_fp_object_results([estimated_objects_[0]])

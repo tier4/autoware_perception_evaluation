@@ -1,7 +1,9 @@
 import argparse
 import json
-import cv2
 import os.path as osp
+
+import cv2
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -29,14 +31,35 @@ def main():
         filename = sample_data["filename"]
         img = cv2.imread(osp.join(args.data, filename))
         for fp_result in fail_info.get("fp", []):
-            img = cv2.putText(img, text=f"[FP-Est]: {fp_result['est']}", org=(30, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, color=(255, 255, 255))
-            img = cv2.putText(img, text=f"[FP-GT]: {fp_result['gt']}", org=(50, 50), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, color=(0, 0, 255))
+            img = cv2.putText(
+                img,
+                text=f"[FP-Est]: {fp_result['est']}",
+                org=(30, 30),
+                fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                fontScale=1.0,
+                color=(255, 255, 255),
+            )
+            img = cv2.putText(
+                img,
+                text=f"[FP-GT]: {fp_result['gt']}",
+                org=(50, 50),
+                fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                fontScale=1.0,
+                color=(0, 0, 255),
+            )
 
         for fn_result in fail_info.get("fn", []):
-            img = cv2.putText(img, text=f"[FN-GT]: {fn_result['gt']}", org=(100, 100), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, color=(0, 0, 255))
+            img = cv2.putText(
+                img,
+                text=f"[FN-GT]: {fn_result['gt']}",
+                org=(100, 100),
+                fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                fontScale=1.0,
+                color=(0, 0, 255),
+            )
 
         cv2.imshow("img", img)
-        key =cv2.waitKey(0)
+        key = cv2.waitKey(0)
         cv2.destroyAllWindows()
 
         if key == 27:
