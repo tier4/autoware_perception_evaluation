@@ -2,7 +2,7 @@ import logging
 from typing import Dict
 from typing import List
 from typing import Optional
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # noqa
 
 import numpy as np
 
@@ -26,7 +26,7 @@ class TrafficLightLoader:
                 if traffic_light_way:
                     self.traffic_light_ways |= traffic_light_way
             elif child.tag == "relation":
-                ids = int(child.attrib["id"])
+                # ids = int(child.attrib["id"])
                 element = extract_traffic_light_regulatory_element(child)
                 if element:
                     self.traffic_light_regulatory_elements |= element
@@ -46,7 +46,7 @@ class TrafficLightLoader:
             if id == regulatory_element_id:
                 logging.info(f"id:{id}, refers:{refers}")
                 for ref_id in refers:
-                    if not ref_id in self.traffic_light_positions.keys():
+                    if ref_id not in self.traffic_light_positions.keys():
                         continue
                     try:
                         traffic_light_position = self.traffic_light_positions[ref_id]
@@ -61,24 +61,24 @@ class TrafficLightLoader:
         return distance
 
 
-""" utils for maploader program"""
+""" utils for map-loader program"""
 
 
 def extract_node(child):
     x, y, z = 0, 0, 0
     for tag in child:
-        if tag.attrib['k'] == 'local_x':
-            x = tag.attrib['v']
-        elif tag.attrib['k'] == 'local_y':
-            y = tag.attrib['v']
-        elif tag.attrib['k'] == 'ele':
-            z = tag.attrib['v']
+        if tag.attrib["k"] == "local_x":
+            x = tag.attrib["v"]
+        elif tag.attrib["k"] == "local_y":
+            y = tag.attrib["v"]
+        elif tag.attrib["k"] == "ele":
+            z = tag.attrib["v"]
     return child.attrib["id"], float(x), float(y), float(z)
 
 
 def extract_traffic_light_way(child):
     refs = []
-    tags = {}
+    # tags = {}
     for tag in child:
         if tag.tag == "nd":
             refs.append(tag.attrib["ref"])
