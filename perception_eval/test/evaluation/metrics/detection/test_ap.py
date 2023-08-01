@@ -24,9 +24,10 @@ from typing import Tuple
 import unittest
 
 import numpy as np
+from perception_eval.common import DynamicObject
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
-from perception_eval.common.object import DynamicObject
-from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.detection.ap import Ap
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
@@ -142,9 +143,8 @@ class TestAp(unittest.TestCase):
         self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
-        self.target_labels: List[AutowareLabel] = [
-            AutowareLabel.CAR,
-        ]
+        self.evaluation_task: EvaluationTask = EvaluationTask.DETECTION
+        self.target_labels: List[AutowareLabel] = [AutowareLabel.CAR]
         self.max_x_position_list: List[float] = [100.0]
         self.max_y_position_list: List[float] = [100.0]
         self.min_point_numbers: List[int] = [0]
@@ -241,6 +241,7 @@ class TestAp(unittest.TestCase):
                 )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_trans_estimated_objects,
                     ground_truth_objects=diff_trans_ground_truth_objects,
                 )
@@ -514,6 +515,7 @@ class TestAp(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_estimated_objects,
                     ground_truth_objects=diff_yaw_ground_truth_objects,
                 )
@@ -574,6 +576,7 @@ class TestAp(unittest.TestCase):
         )
 
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )
@@ -689,6 +692,7 @@ class TestAp(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_trans_estimated_objects,
                     ground_truth_objects=diff_trans_ground_truth_objects,
                 )
@@ -803,6 +807,7 @@ class TestAp(unittest.TestCase):
                 )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=ground_truth_objects,
                 )
@@ -866,6 +871,7 @@ class TestAp(unittest.TestCase):
             min_point_numbers=self.min_point_numbers,
         )
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )
@@ -935,6 +941,7 @@ class TestAp(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
@@ -1020,6 +1027,7 @@ class TestAp(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
@@ -1079,6 +1087,7 @@ class TestAp(unittest.TestCase):
         )
 
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )
@@ -1152,6 +1161,7 @@ class TestAp(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
@@ -1232,6 +1242,7 @@ class TestAp(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
@@ -1294,6 +1305,7 @@ class TestAp(unittest.TestCase):
         )
 
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )

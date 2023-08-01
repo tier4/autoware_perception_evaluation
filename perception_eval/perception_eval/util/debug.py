@@ -14,11 +14,14 @@
 
 from enum import Enum
 import pprint
+import random
 from typing import List
 from typing import Optional
 from typing import Tuple
 
 import numpy as np
+from perception_eval.common.label import Label
+from perception_eval.common.label import LabelType
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
 from pyquaternion.quaternion import Quaternion
@@ -122,6 +125,7 @@ def get_objects_with_difference(
     diff_yaw: float = 0.0,
     is_confidence_with_distance: Optional[bool] = None,
     ego2map: Optional[np.ndarray] = None,
+    label_candidates: Optional[List[LabelType]] = None,
 ) -> List[DynamicObject]:
     """Get objects with distance and yaw difference for test.
 
@@ -173,6 +177,12 @@ def get_objects_with_difference(
             radians=object_.state.orientation.radians + diff_yaw,
         )
 
+        if label_candidates is not None:
+            label: LabelType = random.choice(label_candidates)
+            semantic_label = Label(label, label.value)
+        else:
+            semantic_label = object_.semantic_label
+
         test_object_: DynamicObject = DynamicObject(
             unix_time=object_.unix_time,
             frame_id=object_.frame_id,
@@ -181,7 +191,7 @@ def get_objects_with_difference(
             size=object_.state.size,
             velocity=object_.state.velocity,
             semantic_score=semantic_score,
-            semantic_label=object_.semantic_label,
+            semantic_label=semantic_label,
             pointcloud_num=object_.pointcloud_num,
             uuid=object_.uuid,
         )
@@ -193,6 +203,7 @@ def get_objects_with_difference(
 def get_objects_with_difference2d(
     objects: List[DynamicObject2D],
     translate: Tuple[int, int],
+    label_candidates: Optional[List[LabelType]] = None,
 ) -> List[DynamicObject2D]:
     """Returns translated 2D objects.
 
@@ -210,12 +221,18 @@ def get_objects_with_difference2d(
             object_.roi.offset[1] + translate[1],
         )
 
+        if label_candidates is not None:
+            label: LabelType = random.choice(label_candidates)
+            semantic_label = Label(label, label.value)
+        else:
+            semantic_label = object_.semantic_label
+
         output_objects.append(
             DynamicObject2D(
                 unix_time=object_.unix_time,
                 frame_id=object_.frame_id,
                 semantic_score=object_.semantic_score,
-                semantic_label=object_.semantic_label,
+                semantic_label=semantic_label,
                 roi=(*offset_, *object_.roi.size),
                 uuid=object_.uuid,
                 visibility=object_.visibility,

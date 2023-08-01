@@ -16,6 +16,7 @@ from test.util.dummy_object import make_dummy_data2d
 from typing import List
 import unittest
 
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
@@ -31,6 +32,7 @@ class TestClassificationMetricsScore(unittest.TestCase):
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data2d(
             use_roi=False
         )
+        self.evaluation_task: EvaluationTask = EvaluationTask.CLASSIFICATION2D
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
             AutowareLabel.BICYCLE,
@@ -62,6 +64,7 @@ class TestClassificationMetricsScore(unittest.TestCase):
             target_labels=self.target_labels,
         )
         object_results = get_object_results(
+            evaluation_task=self.evaluation_task,
             estimated_objects=estimated_objects,
             ground_truth_objects=ground_truth_objects,
         )

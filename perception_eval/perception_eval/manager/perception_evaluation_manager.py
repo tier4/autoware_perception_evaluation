@@ -167,8 +167,11 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             **self.filtering_params,
         )
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            evaluation_task=self.evaluation_task,
             estimated_objects=estimated_objects,
             ground_truth_objects=frame_ground_truth.objects,
+            target_labels=self.target_labels,
+            matchable_thresholds=self.filtering_params["max_matchable_radii"],
         )
         if self.evaluator_config.filtering_params.get("target_uuids"):
             object_results = filter_object_results(

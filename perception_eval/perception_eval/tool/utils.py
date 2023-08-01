@@ -28,24 +28,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.status import FrameID
+from perception_eval.common.schema import FrameID
 from perception_eval.evaluation.metrics.metrics import MetricsScore
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
-
-
-class MatchingStatus(Enum):
-    TP = "TP"
-    FP = "FP"
-    FN = "FN"
-
-    def __str__(self) -> str:
-        return self.value
-
-    def __eq__(self, other: Union[MatchingStatus, str]) -> bool:
-        if isinstance(other, str):
-            return self.value == other
-        return super().__eq__(other)
 
 
 class PlotAxes(Enum):

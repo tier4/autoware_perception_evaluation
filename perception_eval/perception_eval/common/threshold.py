@@ -124,8 +124,11 @@ def set_thresholds(
     """
     assert len(thresholds) > 0, "The list of thresholds must be set, but got 0."
 
+    if isinstance(thresholds[0], (int, float)) and len(thresholds) == target_objects_num:
+        return thresholds
+
     thresholds_list: List[List[float]] = []
-    if isinstance(thresholds[0], (int, float)):
+    if isinstance(thresholds[0], (int, float)) and len(thresholds) != target_objects_num:
         for element in thresholds:
             thresholds_list.append([element] * target_objects_num)
     elif isinstance(thresholds[0], list):
@@ -168,7 +171,8 @@ def check_thresholds(
     if len(thresholds) != len(target_labels):
         raise exception(
             "Error: Threshold is not proper! "
-            + "The length of the thresholds' list is not same with target labels' one.",
+            "The number of elements both thresholds and labels must be same, "
+            f"but got thresholds: {len(thresholds)}, labels: {len(target_labels)}",
         )
     return thresholds
 
@@ -197,10 +201,11 @@ def check_thresholds_list(
         >>> check_thresholds_list(thresholds_list, target_labels)
         [[1.0, 1.0], [2.0, 2.0]]
     """
-    for thresholds in thresholds_list:
+    for i, thresholds in enumerate(thresholds_list):
         if len(thresholds) != 0 and len(thresholds) != len(target_labels):
             raise exception(
                 "Error: Metrics threshold is not proper! "
-                + "The length of the thresholds' list is not same as target labels' one.",
+                "The number of each elements in thresholds list must be same with the number of labels, "
+                f"but got thresholds[{i}]: {len(thresholds)}, labels: {len(target_labels)}"
             )
     return thresholds_list
