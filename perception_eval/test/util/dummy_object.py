@@ -20,9 +20,9 @@ from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import Label
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.schema import FrameID
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
-from perception_eval.common.status import FrameID
 from pyquaternion.quaternion import Quaternion
 
 

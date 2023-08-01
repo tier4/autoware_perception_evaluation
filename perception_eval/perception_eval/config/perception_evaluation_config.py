@@ -70,9 +70,11 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         "detection2d",
         "tracking2d",
         "classification2d",
+        "fp_validation2d",
         "detection",
         "tracking",
         "prediction",
+        "fp_validation",
     ]
 
     def __init__(
@@ -175,6 +177,22 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         else:
             raise RuntimeError("Either max x/y position or max/min distance should be specified")
 
+        max_matchable_radii: Optional[Union[float, List[float]]] = e_cfg.get("max_matchable_radii")
+        if max_matchable_radii is not None:
+            if isinstance(max_matchable_radii, (tuple, list)):
+                assert all(
+                    isinstance(r, float) for r in max_matchable_radii
+                ), "All elements of max_matchable_radii should be float."
+                assert len(target_labels) == len(max_matchable_radii), (
+                    f"Length of max_matchable_radii must be same as target_labels, "
+                    f"but got max_matchable_radii: {len(max_matchable_radii)}, target_labels: {len(target_labels)}"
+                )
+            else:
+                assert isinstance(
+                    max_matchable_radii, float
+                ), f"When max_matchable_radii is single value, it must be float but got {type(max_matchable_radii)}"
+                max_matchable_radii = [max_matchable_radii] * len(target_labels)
+
         min_point_numbers: Optional[List[int]] = e_cfg.get("min_point_numbers")
         if min_point_numbers is not None:
             min_point_numbers: List[int] = check_thresholds(
@@ -203,6 +221,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             "max_y_position_list": max_y_position_list,
             "max_distance_list": max_distance_list,
             "min_distance_list": min_distance_list,
+            "max_matchable_radii": max_matchable_radii,
             "min_point_numbers": min_point_numbers,
             "confidence_threshold_list": confidence_threshold_list,
             "target_uuids": target_uuids,

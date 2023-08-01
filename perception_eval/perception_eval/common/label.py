@@ -40,6 +40,9 @@ class AutowareLabel(Enum):
     PEDESTRIAN = "pedestrian"
     ANIMAL = "animal"
 
+    # for FP validation
+    FP = "false_positive"
+
     def __str__(self) -> str:
         return self.value
 
@@ -63,6 +66,9 @@ class TrafficLightLabel(Enum):
 
     # unknown is used in both detection and classification
     UNKNOWN = "unknown"
+
+    # for FP validation
+    FP = "false_positive"
 
     def __str__(self) -> str:
         return self.value
@@ -128,6 +134,9 @@ class Label:
     def contains_any(self, keys: List[str]) -> bool:
         assert isinstance(keys, (list, tuple)), f"Expected type is sequence, but got {type(keys)}"
         return any([self.contains(key) for key in keys])
+
+    def is_fp_label(self) -> bool:
+        return self.label in (AutowareLabel.FP, TrafficLightLabel.FP)
 
     def __eq__(self, other: Label) -> bool:
         return self.label == other.label
@@ -277,6 +286,7 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
         (AutowareLabel.UNKNOWN, "static_object.bicycle rack"),
         (AutowareLabel.UNKNOWN, "static_object.bollard"),
         (AutowareLabel.UNKNOWN, "forklift"),
+        (AutowareLabel.FP, "false_positive"),
     ]
     if merge_similar_labels:
         pair_list += [
@@ -322,6 +332,7 @@ def _get_traffic_light_paris(
             (TrafficLightLabel.RED_RIGHT_DIAGONAL, "red_right_diagonal"),
             (TrafficLightLabel.YELLOW_RIGHT, "yellow_right"),
             (TrafficLightLabel.UNKNOWN, "unknown"),
+            (TrafficLightLabel.FP, "false_positive"),
         ]
     else:
         pair_list: List[Tuple[TrafficLightLabel, str]] = [
@@ -338,6 +349,7 @@ def _get_traffic_light_paris(
             (TrafficLightLabel.TRAFFIC_LIGHT, "red_right_diagonal"),
             (TrafficLightLabel.TRAFFIC_LIGHT, "yellow_right"),
             (TrafficLightLabel.UNKNOWN, "unknown"),
+            (TrafficLightLabel.FP, "false_positive"),
         ]
     return pair_list
 

@@ -27,7 +27,7 @@ from typing import Union
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.evaluation_task import set_task
 from perception_eval.common.label import LabelConverter
-from perception_eval.common.status import FrameID
+from perception_eval.common.schema import FrameID
 
 
 class _EvaluationConfigBase(ABC):

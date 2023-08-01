@@ -208,6 +208,7 @@ class PerceptionVisualizer2D:
             TP estimated    : Blue
             TP GT           : Red
             FP              : Cyan
+            TN              : Purple
             FN              : Orange
 
         Args:
@@ -267,6 +268,14 @@ class PerceptionVisualizer2D:
             color="cyan",
         )
         handles.append(Patch(color="cyan", label="FP"))
+
+        axes = self.plot_objects(
+            objects=frame_result.pass_fail_result.tn_objects,
+            is_ground_truth=True,
+            axes=axes,
+            color="purple",
+        )
+        handles.append(Patch(color="purple", label="TN"))
 
         axes = self.plot_objects(
             objects=frame_result.pass_fail_result.fn_objects,

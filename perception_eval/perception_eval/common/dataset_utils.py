@@ -34,10 +34,10 @@ from perception_eval.common.label import LabelType
 from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.schema import FrameID
+from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
-from perception_eval.common.status import FrameID
-from perception_eval.common.status import Visibility
 from PIL import Image
 from pyquaternion.quaternion import Quaternion
 
@@ -114,6 +114,11 @@ def _sample_to_frame(
         attribute_tokens: List[str] = sample_annotation_["attribute_tokens"]
         attributes: List[str] = [nusc.get("attribute", token)["name"] for token in attribute_tokens]
         semantic_label = label_converter.convert_label(object_box.name, attributes)
+
+        if evaluation_task.is_fp_validation() and semantic_label.is_fp_label() is False:
+            raise ValueError(
+                f"Unexpected GT label for {evaluation_task.value}, got {semantic_label.label}"
+            )
 
         object_: DynamicObject = _convert_nuscenes_box_to_dynamic_object(
             nusc=nusc,

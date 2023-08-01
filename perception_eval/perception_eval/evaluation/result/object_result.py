@@ -25,7 +25,11 @@ from perception_eval.common import distance_objects_bev
 from perception_eval.common import DynamicObject
 from perception_eval.common import DynamicObject2D
 from perception_eval.common import ObjectType
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import CommonLabel
+from perception_eval.common.label import LabelType
+from perception_eval.common.status import MatchingStatus
+from perception_eval.common.threshold import get_label_threshold
 from perception_eval.evaluation.matching import CenterDistanceMatching
 from perception_eval.evaluation.matching import IOU2dMatching
 from perception_eval.evaluation.matching import IOU3dMatching
@@ -94,12 +98,43 @@ class DynamicObjectWithPerceptionResult:
             self.iou_3d = None
             self.plane_distance = None
 
+    def get_status(
+        self,
+        matching_mode: MatchingMode,
+        matching_threshold: Optional[float],
+    ) -> Tuple[MatchingStatus, Optional[MatchingStatus]]:
+        """Returns matching status both of estimation and GT as `tuple`.
+
+        Args:
+            matching_mode (MatchingMode): Matching policy.
+            matching_threshold (float): Matching threshold.
+
+        Returns:
+            Tuple[MatchingStatus, Optional[MatchingStatus]]: Matching status of estimation and GT.
+        """
+        if self.ground_truth_object is None:
+            return (MatchingStatus.FP, None)
+
+        if self.is_result_correct(matching_mode, matching_threshold):
+            return (
+                (MatchingStatus.FP, MatchingStatus.TN)
+                if self.ground_truth_object.semantic_label.is_fp_label()
+                else (MatchingStatus.TP, MatchingStatus.TP)
+            )
+        else:
+            return (
+                (MatchingStatus.FP, MatchingStatus.FP)
+                if self.ground_truth_object.semantic_label.is_fp_label()
+                else (MatchingStatus.FP, MatchingStatus.FN)
+            )
+
     def is_result_correct(
         self,
         matching_mode: MatchingMode,
-        matching_threshold: float,
+        matching_threshold: Optional[float],
     ) -> bool:
         """The function judging whether the result is target or not.
+        Return `False`, if label of GT is "FP" and matching.
 
         Args:
             matching_mode (MatchingMode):
@@ -113,13 +148,23 @@ class DynamicObjectWithPerceptionResult:
         Returns:
             bool: If label is correct and satisfy matching threshold, return True
         """
+        if self.ground_truth_object is None:
+            return False
+
+        if matching_threshold is None:
+            return self.is_label_correct
+
         # Whether is matching to ground truth
         matching: Optional[MatchingMethod] = self.get_matching(matching_mode)
+        if matching is None:
+            return self.is_label_correct
 
+        is_matching: bool = matching.is_better_than(matching_threshold)
+        # Whether both label is true and matching is true
         return (
-            self.is_label_correct
-            if matching is None
-            else matching.is_better_than(matching_threshold)
+            not is_matching
+            if self.ground_truth_object.semantic_label.is_fp_label()
+            else is_matching
         )
 
     def get_matching(self, matching_mode: MatchingMode) -> Optional[MatchingMethod]:
@@ -225,17 +270,28 @@ class DynamicObjectWithPerceptionResult:
 
 
 def get_object_results(
+    evaluation_task: EvaluationTask,
     estimated_objects: List[ObjectType],
     ground_truth_objects: List[ObjectType],
+    target_labels: Optional[List[LabelType]] = None,
     allow_matching_unknown: bool = True,
     matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
+    matchable_thresholds: Optional[List[float]] = None,
 ) -> List[DynamicObjectWithPerceptionResult]:
     """Returns list of DynamicObjectWithPerceptionResult.
 
+    For classification, matching objects their uuid.
+    Otherwise, matching them depending on their center distance by default.
+
+    In case of FP validation, estimated objects, which have no matching GT, will be ignored.
+    Otherwise, they all are FP.
+
     Args:
+        evaluation_task (EvaluationTask): Evaluation task.
         estimated_objects (List[ObjectType]): Estimated objects list.
         ground_truth_objects (List[ObjectType]): Ground truth objects list.
         matching_mode (MatchingMode): MatchingMode instance.
+        matchable_thresholds (Optional[List[float]]): Thresholds to be
 
     Returns:
         object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
@@ -244,17 +300,15 @@ def get_object_results(
     if not estimated_objects:
         return []
 
-    # There is no GT (= all FP)
-    if not ground_truth_objects:
+    # There is no GT and not FP validation (= all FP)
+    if not ground_truth_objects and evaluation_task.is_fp_validation() is False:
         return _get_fp_object_results(estimated_objects)
 
     assert isinstance(
         ground_truth_objects[0], type(estimated_objects[0])
     ), f"Type of estimation and ground truth must be same, but got {type(estimated_objects[0])} and {type(ground_truth_objects[0])}"
 
-    if isinstance(estimated_objects[0], DynamicObject2D) and (
-        estimated_objects[0].roi is None or ground_truth_objects[0].roi is None
-    ):
+    if evaluation_task == EvaluationTask.CLASSIFICATION2D:
         return _get_object_results_with_id(estimated_objects, ground_truth_objects)
 
     matching_method_module, maximize = _get_matching_module(matching_mode)
@@ -263,12 +317,14 @@ def get_object_results(
         ground_truth_objects,
         allow_matching_unknown,
         matching_method_module,
+        target_labels,
+        matchable_thresholds,
     )
 
     # assign correspond GT to estimated objects
     object_results: List[DynamicObjectWithPerceptionResult] = []
-    estimated_objects_: List[DynamicObject] = estimated_objects.copy()
-    ground_truth_objects_: List[DynamicObject] = ground_truth_objects.copy()
+    estimated_objects_: List[ObjectType] = estimated_objects.copy()
+    ground_truth_objects_: List[ObjectType] = ground_truth_objects.copy()
     num_estimation: int = score_table.shape[0]
     for _ in range(num_estimation):
         if np.isnan(score_table).all():
@@ -281,18 +337,20 @@ def get_object_results(
         )
 
         # remove corresponding estimated and GT objects
-        est_obj_: DynamicObject = estimated_objects_.pop(est_idx)
-        gt_obj_: DynamicObject = ground_truth_objects_.pop(gt_idx)
+        est_obj_: ObjectType = estimated_objects_.pop(est_idx)
+        gt_obj_: ObjectType = ground_truth_objects_.pop(gt_idx)
         score_table = np.delete(score_table, obj=est_idx, axis=0)
         score_table = np.delete(score_table, obj=gt_idx, axis=1)
-        object_result_: DynamicObjectWithPerceptionResult = DynamicObjectWithPerceptionResult(
+        object_result_ = DynamicObjectWithPerceptionResult(
             estimated_object=est_obj_,
             ground_truth_object=gt_obj_,
         )
         object_results.append(object_result_)
 
+    # In case of evaluation task is not FP validation,
     # when there are rest of estimated objects, they all are FP.
-    if len(estimated_objects_) > 0:
+    # Otherwise, they all are ignored
+    if len(estimated_objects_) > 0 and evaluation_task.is_fp_validation() is False:
         object_results += _get_fp_object_results(estimated_objects_)
 
     return object_results
@@ -398,6 +456,8 @@ def _get_score_table(
     ground_truth_objects: List[ObjectType],
     allow_matching_unknown: bool,
     matching_method_module: Callable,
+    target_labels: Optional[List[LabelType]],
+    matchable_thresholds: Optional[List[float]],
 ) -> np.ndarray:
     """Returns score table, in shape (num_estimation, num_ground_truth).
 
@@ -406,6 +466,8 @@ def _get_score_table(
         ground_truth_objects (List[ObjectType]): Ground truth objects list.
         allow_matching_unknown (bool): Indicates whether allow to match with unknown label.
         matching_method_module (Callable): MatchingMethod instance.
+        target_labels (Optional[List[LabelType]]): Target labels to be evaluated.
+        matching_thresholds (Optional[List[float]]): List of thresholds
 
     Returns:
         score_table (numpy.ndarray): in shape (num_estimation, num_ground_truth).
@@ -416,19 +478,31 @@ def _get_score_table(
     score_table: np.ndarray = np.full((num_row, num_col), np.nan)
     for i, est_obj in enumerate(estimated_objects):
         for j, gt_obj in enumerate(ground_truth_objects):
-            if allow_matching_unknown:
-                is_label_ok = est_obj.semantic_label == gt_obj.semantic_label or any(
-                    [
-                        label == CommonLabel.UNKNOWN
-                        for label in (est_obj.semantic_label.label, gt_obj.semantic_label.label)
-                    ]
+            is_label_ok: bool = False
+            if gt_obj.semantic_label.is_fp_label():
+                is_label_ok = True
+            elif allow_matching_unknown:
+                is_label_ok = (
+                    est_obj.semantic_label == gt_obj.semantic_label
+                    or est_obj.semantic_label.label == CommonLabel.UNKNOWN
                 )
             else:
-                is_label_ok: bool = est_obj.semantic_label == gt_obj.semantic_label
+                is_label_ok = est_obj.semantic_label == gt_obj.semantic_label
 
-            if is_label_ok and est_obj.frame_id == gt_obj.frame_id:
+            is_same_frame_id: bool = est_obj.frame_id == gt_obj.frame_id
+
+            if is_label_ok and is_same_frame_id:
+                threshold: Optional[float] = get_label_threshold(
+                    gt_obj.semantic_label, target_labels, matchable_thresholds
+                )
+
                 matching_method: MatchingMethod = matching_method_module(
                     estimated_object=est_obj, ground_truth_object=gt_obj
                 )
-                score_table[i, j] = matching_method.value
+
+                if threshold is None or (
+                    threshold is not None and matching_method.is_better_than(threshold)
+                ):
+                    score_table[i, j] = matching_method.value
+
     return score_table

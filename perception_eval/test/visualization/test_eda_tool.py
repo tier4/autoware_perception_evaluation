@@ -24,9 +24,9 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import Label
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.schema import FrameID
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
-from perception_eval.common.status import FrameID
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.object_result import get_object_results
@@ -68,7 +68,10 @@ class TestEDAVisualizer:
         ),
     )
 
+    evaluation_task: EvaluationTask = EvaluationTask.DETECTION
+
     object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        evaluation_task=evaluation_task,
         estimated_objects=dummy_estimated_objects,
         ground_truth_objects=dummy_ground_truth_objects,
     )
@@ -393,7 +396,10 @@ class TestEDAManager:
         ),
     ]
 
+    evaluation_task: EvaluationTask = EvaluationTask.DETECTION
+
     object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        evaluation_task=evaluation_task,
         estimated_objects=dummy_estimated_objects,
         ground_truth_objects=dummy_ground_truth_objects,
     )
@@ -424,7 +430,7 @@ class TestEDAManager:
         xylim_dict,
         width_lim_dict,
         length_lim_dict,
-        evaluation_task=EvaluationTask.DETECTION,
+        evaluation_task=evaluation_task,
         merge_similar_labels=False,
         show=False,
     )

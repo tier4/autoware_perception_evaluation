@@ -22,6 +22,7 @@ from typing import Tuple
 import numpy as np
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import Label
+from perception_eval.common.label import LabelType
 from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
@@ -128,6 +129,7 @@ def get_objects_with_difference(
     is_confidence_with_distance: Optional[bool] = None,
     label_to_unknown_rate: float = 1.0,
     ego2map: Optional[np.ndarray] = None,
+    label_candidates: Optional[List[LabelType]] = None,
 ) -> List[DynamicObject]:
     """Get objects with distance and yaw difference for test.
 
@@ -188,6 +190,9 @@ def get_objects_with_difference(
             elif isinstance(object_.semantic_label.label, TrafficLightLabel):
                 label = TrafficLightLabel.UNKNOWN
             semantic_label = Label(label, "unknown")
+        if label_candidates is not None:
+            label: LabelType = random.choice(label_candidates)
+            semantic_label = Label(label, label.value)
         else:
             semantic_label = object_.semantic_label
 
@@ -212,6 +217,7 @@ def get_objects_with_difference2d(
     objects: List[DynamicObject2D],
     translate: Tuple[int, int] = None,
     label_to_unknown_rate: float = 1.0,
+    label_candidates: Optional[List[LabelType]] = None,
 ) -> List[DynamicObject2D]:
     """Returns translated 2D objects.
 
@@ -240,6 +246,12 @@ def get_objects_with_difference2d(
             elif isinstance(object_.semantic_label.label, TrafficLightLabel):
                 label = TrafficLightLabel.UNKNOWN
             semantic_label = Label(label, "unknown")
+        else:
+            semantic_label = object_.semantic_label
+
+        if label_candidates is not None:
+            label: LabelType = random.choice(label_candidates)
+            semantic_label = Label(label, label.value)
         else:
             semantic_label = object_.semantic_label
 

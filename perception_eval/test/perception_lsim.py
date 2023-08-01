@@ -131,14 +131,17 @@ class PerceptionLSimMoc:
         処理の最後に評価結果を出す
         """
 
-        # use case fail object num
-        number_use_case_fail_object: int = 0
-        for frame_results in self.evaluator.frame_results:
-            number_use_case_fail_object += frame_results.pass_fail_result.get_fail_object_num()
-        logging.info(f"final use case fail object: {number_use_case_fail_object}")
-        final_metric_score = self.evaluator.get_scene_result()
+        # number of fails for critical objects
+        num_critical_fail: int = sum(
+            map(
+                lambda frame_result: frame_result.pass_fail_result.get_num_fail(),
+                self.evaluator.frame_results,
+            )
+        )
+        logging.info(f"Number of fails for critical objects: {num_critical_fail}")
 
-        # final result
+        # scene metrics score
+        final_metric_score = self.evaluator.get_scene_result()
         logging.info(f"final metrics result {final_metric_score}")
         return final_metric_score
 

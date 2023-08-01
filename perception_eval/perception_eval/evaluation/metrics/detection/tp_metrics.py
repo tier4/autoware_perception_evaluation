@@ -17,7 +17,7 @@ from abc import abstractmethod
 from math import pi
 
 import numpy as np
-from perception_eval.common.status import FrameID
+from perception_eval.common.schema import FrameID
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 
 
