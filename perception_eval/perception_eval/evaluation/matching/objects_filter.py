@@ -241,11 +241,6 @@ def get_positive_objects(
             threshold_list=matching_threshold_list,
         )
 
-        assert matching_threshold is not None, (
-            f"GT label of {object_result.ground_truth_object.semantic_label.label} "
-            f"must be contained in target labels: {target_labels}"
-        )
-
         est_status, gt_status = object_result.get_status(matching_mode, matching_threshold)
 
         if est_status == MatchingStatus.FP:
