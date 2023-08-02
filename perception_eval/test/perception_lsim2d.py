@@ -68,7 +68,7 @@ class PerceptionLSimMoc:
             dict(
                 allow_matching_unknown=True,
                 merge_similar_labels=False,
-                label_prefix="autoware",
+                label_prefix=self.label_prefix,
                 count_label_number=True,
             )
         )
