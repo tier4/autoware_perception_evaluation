@@ -37,10 +37,9 @@ class FPValidationLsimMoc:
             "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
             "max_x_position": 102.4,
             "max_y_position": 102.4,
-            "max_matchable_radii": [5.0],
+            "max_matchable_radii": [5.0, 3.0, 3.0, 3.0],
             "merge_similar_labels": False,
             "label_prefix": "autoware",
-            "load_raw_data": True,
             "allow_matching_unknown": True,
         }
 
@@ -49,6 +48,7 @@ class FPValidationLsimMoc:
             frame_id="base_link",
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
+            load_raw_data=True,
         )
 
         configure_logger(

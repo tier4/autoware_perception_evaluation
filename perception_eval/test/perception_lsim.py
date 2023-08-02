@@ -57,12 +57,16 @@ class PerceptionLSimMoc:
             "center_distance_thresholds": [
                 [1.0, 1.0, 1.0, 1.0],
                 [2.0, 2.0, 2.0, 2.0],
-            ],
+            ],  # = [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]]
             # objectごとに同じparamの場合はこのような指定が可能
-            "plane_distance_thresholds": [2.0, 3.0],
-            "iou_2d_thresholds": [0.5],
-            "iou_3d_thresholds": [0.5],
+            "plane_distance_thresholds": [
+                2.0,
+                3.0,
+            ],  # = [[2.0, 2.0, 2.0, 2.0], [3.0, 3.0, 3.0, 3.0]]
+            "iou_2d_thresholds": [0.5, 0.5, 0.5, 0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
+            "iou_3d_thresholds": [0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
             "min_point_numbers": [0, 0, 0, 0],
+            "max_matchable_radii": 5.0,  # = [5.0, 5.0, 5.0, 5.0]
             # label parameters
             "label_prefix": "autoware",
             "merge_similar_labels": False,
@@ -260,7 +264,7 @@ if __name__ == "__main__":
     for ground_truth_frame in tracking_lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference(
             ground_truth_objects=ground_truth_frame.objects,
-            diff_distance=(0.0, 0.0, 0.0),
+            diff_distance=(1.0, 0.0, 0.0),
             diff_yaw=0.0,
             is_confidence_with_distance=True,
             label_to_unknown_rate=0.5,

@@ -55,13 +55,8 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
     Args:
         dataset_paths (List[str]): Dataset paths list.
         frame_id (Union[str, Sequence[str]]): FrameID(s) in string, where objects are with respect.
-        merge_similar_labels (bool): Whether merge similar labels.
-            If True,
-                - BUS, TRUCK, TRAILER -> CAR
-                - MOTORBIKE, CYCLIST -> BICYCLE
         result_root_directory (str): Directory path to save result.
         evaluation_config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
-        label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
     """
 
@@ -102,8 +97,8 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         e_cfg = evaluation_config_dict.copy()
         l_params: Dict[str, Any] = {
             "label_prefix": e_cfg["label_prefix"],
-            "merge_similar_labels": e_cfg["merge_similar_labels"],
-            "allow_matching_unknown": e_cfg["allow_matching_unknown"],
+            "merge_similar_labels": e_cfg.get("merge_similar_labels", False),
+            "allow_matching_unknown": e_cfg.get("allow_matching_unknown", False),
             "count_label_number": e_cfg.get("count_label_number", True),
         }
         return l_params

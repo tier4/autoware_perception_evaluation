@@ -45,8 +45,11 @@ class PerceptionLSimMoc:
         if evaluation_task in ("detection2d", "tracking2d"):
             evaluation_config_dict = {
                 "evaluation_task": evaluation_task,
-                "center_distance_thresholds": [100, 200],
-                "iou_2d_thresholds": [0.5],
+                "center_distance_thresholds": [
+                    100,
+                    200,
+                ],  # = [[100, 100, 100, 100], [200, 200, 200, 200]]
+                "iou_2d_thresholds": [0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
             }
         elif evaluation_task == "classification2d":
             evaluation_config_dict = {"evaluation_task": evaluation_task}
@@ -222,10 +225,6 @@ if __name__ == "__main__":
     )
 
     for ground_truth_frame in detection_lsim.evaluator.ground_truth_frames:
-        # objects_with_difference = get_objects_with_difference2d(
-        #     ground_truth_frame.objects,
-        #     translate=(50, 20),
-        # )
         objects_with_difference = get_objects_with_difference2d(
             ground_truth_frame.objects, translate=(50, 50), label_to_unknown_rate=0.5
         )

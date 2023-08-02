@@ -47,8 +47,6 @@ class SensingLSimMoc:
             "box_scale_0m": 1.0,
             "box_scale_100m": 1.0,
             "min_points_threshold": 1,
-            # label parameters
-            "label_prefix": "autoware",
         }
 
         evaluation_config: SensingEvaluationConfig = SensingEvaluationConfig(
