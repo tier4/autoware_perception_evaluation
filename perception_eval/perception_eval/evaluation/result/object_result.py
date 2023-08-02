@@ -26,7 +26,6 @@ from perception_eval.common import DynamicObject
 from perception_eval.common import DynamicObject2D
 from perception_eval.common import ObjectType
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import CommonLabel
 from perception_eval.common.label import LabelType
 from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
@@ -118,13 +117,13 @@ class DynamicObjectWithPerceptionResult:
         if self.is_result_correct(matching_mode, matching_threshold):
             return (
                 (MatchingStatus.FP, MatchingStatus.TN)
-                if self.ground_truth_object.semantic_label.is_fp_label()
+                if self.ground_truth_object.semantic_label.is_fp()
                 else (MatchingStatus.TP, MatchingStatus.TP)
             )
         else:
             return (
                 (MatchingStatus.FP, MatchingStatus.FP)
-                if self.ground_truth_object.semantic_label.is_fp_label()
+                if self.ground_truth_object.semantic_label.is_fp()
                 else (MatchingStatus.FP, MatchingStatus.FN)
             )
 
@@ -161,11 +160,7 @@ class DynamicObjectWithPerceptionResult:
 
         is_matching: bool = matching.is_better_than(matching_threshold)
         # Whether both label is true and matching is true
-        return (
-            not is_matching
-            if self.ground_truth_object.semantic_label.is_fp_label()
-            else is_matching
-        )
+        return not is_matching if self.ground_truth_object.semantic_label.is_fp() else is_matching
 
     def get_matching(self, matching_mode: MatchingMode) -> Optional[MatchingMethod]:
         """Get MatchingMethod instance with corresponding MatchingMode.
@@ -479,12 +474,12 @@ def _get_score_table(
     for i, est_obj in enumerate(estimated_objects):
         for j, gt_obj in enumerate(ground_truth_objects):
             is_label_ok: bool = False
-            if gt_obj.semantic_label.is_fp_label():
+            if gt_obj.semantic_label.is_fp():
                 is_label_ok = True
             elif allow_matching_unknown:
                 is_label_ok = (
                     est_obj.semantic_label == gt_obj.semantic_label
-                    or est_obj.semantic_label.label == CommonLabel.UNKNOWN
+                    or est_obj.semantic_label.is_unknown()
                 )
             else:
                 is_label_ok = est_obj.semantic_label == gt_obj.semantic_label

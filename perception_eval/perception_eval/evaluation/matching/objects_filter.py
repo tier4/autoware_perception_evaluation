@@ -309,7 +309,7 @@ def get_negative_objects(
         if ground_truth_object in non_candidates:
             continue
 
-        if ground_truth_object.semantic_label.is_fp_label():
+        if ground_truth_object.semantic_label.is_fp():
             tn_objects.append(ground_truth_object)
         else:
             fn_objects.append(ground_truth_object)
@@ -513,13 +513,11 @@ def _is_target_object(
     Returns:
         bool: If the object is filter target, return True
     """
-    if dynamic_object.semantic_label.is_fp_label():
+    if dynamic_object.semantic_label.is_fp():
         return True
 
     # For estimated objected, skip filtering out if it has unknown label
-    is_unknown_estimation: bool = (
-        dynamic_object.semantic_label.label == CommonLabel.UNKNOWN and is_gt is False
-    )
+    is_unknown_estimation: bool = dynamic_object.semantic_label.is_unknown() and is_gt is False
 
     # Whether unknown is contained in target labels
     is_contained_unknown: bool = (
