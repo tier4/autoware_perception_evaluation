@@ -23,8 +23,7 @@ from typing import Union
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
-from perception_eval.common.threshold import check_thresholds
-from perception_eval.common.threshold import ThresholdsError
+from perception_eval.common.threshold import set_thresholds
 from perception_eval.evaluation.metrics import MetricsScoreConfig
 
 from ._evaluation_config_base import _EvaluationConfigBase
@@ -137,36 +136,15 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         max_distance: Optional[float] = e_cfg.get("max_distance")
         min_distance: Optional[float] = e_cfg.get("min_distance")
 
+        num_elements: int = len(target_labels)
         if max_x_position and max_y_position:
-            max_x_position_list: List[float] = [max_x_position] * len(target_labels)
-            max_y_position_list: List[float] = [max_y_position] * len(target_labels)
-
-            max_x_position_list = check_thresholds(
-                max_x_position_list,
-                target_labels,
-                ThresholdsError,
-            )
-            max_y_position_list: List[float] = check_thresholds(
-                max_y_position_list,
-                target_labels,
-                ThresholdsError,
-            )
+            max_x_position_list: List[float] = set_thresholds(max_x_position, num_elements, False)
+            max_y_position_list: List[float] = set_thresholds(max_y_position, num_elements, False)
             max_distance_list = None
             min_distance_list = None
         elif max_distance and min_distance:
-            max_distance_list: List[float] = [max_distance] * len(target_labels)
+            max_distance_list: List[float] = set_thresholds(max_distance, num_elements, False)
             min_distance_list: List[float] = [min_distance] * len(target_labels)
-
-            max_distance_list = check_thresholds(
-                max_distance_list,
-                target_labels,
-                ThresholdsError,
-            )
-            min_distance_list = check_thresholds(
-                min_distance_list,
-                target_labels,
-                ThresholdsError,
-            )
             max_x_position_list = None
             max_y_position_list = None
         elif self.evaluation_task.is_2d():
@@ -179,35 +157,22 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
 
         max_matchable_radii: Optional[Union[float, List[float]]] = e_cfg.get("max_matchable_radii")
         if max_matchable_radii is not None:
-            if isinstance(max_matchable_radii, (tuple, list)):
-                assert all(
-                    isinstance(r, float) for r in max_matchable_radii
-                ), "All elements of max_matchable_radii should be float."
-                assert len(target_labels) == len(max_matchable_radii), (
-                    f"Length of max_matchable_radii must be same as target_labels, "
-                    f"but got max_matchable_radii: {len(max_matchable_radii)}, target_labels: {len(target_labels)}"
-                )
-            else:
-                assert isinstance(
-                    max_matchable_radii, float
-                ), f"When max_matchable_radii is single value, it must be float but got {type(max_matchable_radii)}"
-                max_matchable_radii = [max_matchable_radii] * len(target_labels)
+            max_matchable_radii: List[float] = set_thresholds(
+                max_matchable_radii, num_elements, False
+            )
 
         min_point_numbers: Optional[List[int]] = e_cfg.get("min_point_numbers")
         if min_point_numbers is not None:
-            min_point_numbers: List[int] = check_thresholds(
-                min_point_numbers,
-                target_labels,
-                ThresholdsError,
-            )
+            min_point_numbers: List[int] = set_thresholds(min_point_numbers, num_elements, False)
 
         if self.evaluation_task == EvaluationTask.DETECTION and min_point_numbers is None:
             raise RuntimeError("In detection task, min point numbers must be specified")
 
         conf_thresh: Optional[float] = e_cfg.get("confidence_threshold")
         if conf_thresh is not None:
-            confidence_threshold_list: List[float] = [conf_thresh] * len(target_labels)
-            confidence_threshold_list = check_thresholds(confidence_threshold_list, target_labels)
+            confidence_threshold_list: List[float] = set_thresholds(
+                conf_thresh, num_elements, False
+            )
         else:
             confidence_threshold_list = None
 
