@@ -122,7 +122,6 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id="base_link" if eval_cfg_dict["evaluation_task"] == "detection" else "map",
-            merge_similar_labels=p_cfg.get("merge_similar_labels", False),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
             load_raw_data=False,
@@ -371,7 +370,15 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         all_data = {}
         for label in self.all_labels:
             data = {}
-            df_ = df if label == "ALL" else df[df["label"] == label]
+            if label == "ALL":
+                df_ = df
+            else:
+                tp_gt_df = self.get_ground_truth(status="TP", label=label)
+                tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
+                if len(tp_index) == 0:
+                    logging.warning("There is no TP object. Could not calculate error.")
+                    return pd.DataFrame()
+                df_ = self.df.loc[tp_index]
 
             data["x"] = _summarize("x", df_)
             data["y"] = _summarize("y", df_)

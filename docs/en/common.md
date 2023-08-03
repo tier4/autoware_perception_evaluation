@@ -4,28 +4,28 @@
 
 - Evaluation task: `DETECTION`, `TRACKING`, `PREDICTION`, `SENSING`
 
-| Argument                 |                type                | Description                                                            |
-| :----------------------- | :--------------------------------: | :--------------------------------------------------------------------- |
-| `unix_time`              |               `int`                | Unix time .                                                            |
-| `frame_id`               |             `FrameID`              | FrameID instance, where 3D objects are with respect, BASE_LINK or MAP. |
-| `position`               |    `Tuple[float, float, float]`    | Position (x, y, z).                                                    |
-| `orientation`            |            `Quaternion`            | Quaternion (w, x, y, z).                                               |
-| `size`                   |    `Tuple[float, float, float]`    | Size of box (width, length, depth).                                    |
-| `velocity`               |    `Tuple[float, float, float]`    | Velocity (vx, vy, vz).                                                 |
-| `semantic_score`         |              `float`               | Object's confidence [0, 1].                                            |
-| `semantic_label`         |          `AutowareLabel`           | Label name.                                                            |
-| `pointcloud`             |          `numpy.ndarray`           | Pointcloud array.                                                      |
-| `uuid`                   |               `str`                | Object's unique uuid.                                                  |
-| `tracked_positions`      | `List[Tuple[float, float, float]]` | List of tracked positions.                                             |
-| `tracked_orientations`   |            `Quaternion`            | List of tracked sizes.                                                 |
-| `tracked_sizes`          | `List[Tuple[float, float, float]]` | List of tracked sizes.                                                 |
-| `tracked_twists`         | `List[Tuple[float, float, float]]` | List of tracked velocities.                                            |
-| `predicted_positions`    | `List[Tuple[float, float, float]]` | List of predicted positions.                                           |
-| `predicted_orientations` |            `Quaternion`            | List of predicted orientations.                                        |
-| `predicted_sizes`        | `List[Tuple[float, float, float]]` | List of predicted sizes.                                               |
-| `predicted_twists`       | `List[Tuple[float, float, float]]` | List of predicted velocities.                                          |
-| `predicted_confidence`   |              `float`               | List of predicted confidence.                                          |
-| `visibility`             |       `Optional[Visibility]`       | Visibility status.                                                     |
+| Argument                 |                type                | Description                                                                |
+| :----------------------- | :--------------------------------: | :------------------------------------------------------------------------- |
+| `unix_time`              |               `int`                | Unix time .                                                                |
+| `frame_id`               |             `FrameID`              | FrameID instance, where 3D objects are with respect, BASE_LINK or MAP.     |
+| `position`               |    `Tuple[float, float, float]`    | Position (x, y, z).                                                        |
+| `orientation`            |            `Quaternion`            | Quaternion (w, x, y, z).                                                   |
+| `shape`                  |              `Shape`               | Shape instance that contains box size information, (width, length, depth). |
+| `velocity`               |    `Tuple[float, float, float]`    | Velocity (vx, vy, vz).                                                     |
+| `semantic_score`         |              `float`               | Object's confidence [0, 1].                                                |
+| `semantic_label`         |          `AutowareLabel`           | Label name.                                                                |
+| `pointcloud`             |          `numpy.ndarray`           | Pointcloud array.                                                          |
+| `uuid`                   |               `str`                | Object's unique uuid.                                                      |
+| `tracked_positions`      | `List[Tuple[float, float, float]]` | List of tracked positions.                                                 |
+| `tracked_orientations`   |            `Quaternion`            | List of tracked sizes.                                                     |
+| `tracked_sizes`          | `List[Tuple[float, float, float]]` | List of tracked sizes.                                                     |
+| `tracked_twists`         | `List[Tuple[float, float, float]]` | List of tracked velocities.                                                |
+| `predicted_positions`    | `List[Tuple[float, float, float]]` | List of predicted positions.                                               |
+| `predicted_orientations` |            `Quaternion`            | List of predicted orientations.                                            |
+| `predicted_sizes`        | `List[Tuple[float, float, float]]` | List of predicted sizes.                                                   |
+| `predicted_twists`       | `List[Tuple[float, float, float]]` | List of predicted velocities.                                              |
+| `predicted_confidence`   |              `float`               | List of predicted confidence.                                              |
+| `visibility`             |       `Optional[Visibility]`       | Visibility status.                                                         |
 
 ## [`<class> DynamicObject2D(...)`](../../perception_eval/perception_eval/common/object2d.py)
 

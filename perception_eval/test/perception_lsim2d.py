@@ -45,8 +45,11 @@ class PerceptionLSimMoc:
         if evaluation_task in ("detection2d", "tracking2d"):
             evaluation_config_dict = {
                 "evaluation_task": evaluation_task,
-                "center_distance_thresholds": [100, 200],
-                "iou_2d_thresholds": [0.5],
+                "center_distance_thresholds": [
+                    100,
+                    200,
+                ],  # = [[100, 100, 100, 100], [200, 200, 200, 200]]
+                "iou_2d_thresholds": [0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
             }
         elif evaluation_task == "classification2d":
             evaluation_config_dict = {"evaluation_task": evaluation_task}
@@ -64,15 +67,21 @@ class PerceptionLSimMoc:
                 else None,
             )
         )
+        evaluation_config_dict.update(
+            dict(
+                allow_matching_unknown=True,
+                merge_similar_labels=False,
+                label_prefix=self.label_prefix,
+                count_label_number=True,
+            )
+        )
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=dataset_paths,
             frame_id=camera_type,
-            merge_similar_labels=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
             load_raw_data=True,
-            label_prefix=label_prefix,
         )
 
         _ = configure_logger(
@@ -216,11 +225,9 @@ if __name__ == "__main__":
     )
 
     for ground_truth_frame in detection_lsim.evaluator.ground_truth_frames:
-        # objects_with_difference = get_objects_with_difference2d(
-        #     ground_truth_frame.objects,
-        #     translate=(50, 20),
-        # )
-        objects_with_difference = ground_truth_frame.objects
+        objects_with_difference = get_objects_with_difference2d(
+            ground_truth_frame.objects, translate=(50, 50), label_to_unknown_rate=0.5
+        )
 
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
@@ -235,7 +242,8 @@ if __name__ == "__main__":
 
     # Visualize all frame results.
     logging.info("Start visualizing detection results")
-    detection_lsim.evaluator.visualize_all()
+    if detection_lsim.evaluator.evaluator_config.load_raw_data:
+        detection_lsim.evaluator.visualize_all()
 
     # Detection performance report
     detection_analyzer = PerceptionAnalyzer2D(detection_lsim.evaluator.evaluator_config)
@@ -258,8 +266,7 @@ if __name__ == "__main__":
 
     for ground_truth_frame in tracking_lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference2d(
-            ground_truth_frame.objects,
-            translate=(50, 50),
+            ground_truth_frame.objects, translate=(50, 50), label_to_unknown_rate=0.5
         )
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
@@ -271,7 +278,8 @@ if __name__ == "__main__":
 
     # final result
     tracking_final_metric_score = tracking_lsim.get_final_result()
-    tracking_lsim.evaluator.visualize_all()
+    if tracking_lsim.evaluator.evaluator_config.load_raw_data:
+        tracking_lsim.evaluator.visualize_all()
 
     # Tracking performance report
     tracking_analyzer = PerceptionAnalyzer2D(tracking_lsim.evaluator.evaluator_config)
@@ -293,7 +301,9 @@ if __name__ == "__main__":
     )
 
     for ground_truth_frame in classification_lsim.evaluator.ground_truth_frames:
-        objects_with_difference = ground_truth_frame.objects
+        objects_with_difference = get_objects_with_difference2d(
+            ground_truth_frame.objects, label_to_unknown_rate=0.5
+        )
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
             objects_with_difference.pop(0)

@@ -25,6 +25,8 @@ from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import Label
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
+from perception_eval.common.shape import Shape
+from perception_eval.common.shape import ShapeType
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.object_result import get_object_results
@@ -58,7 +60,7 @@ class TestEDAVisualizer:
             frame_id=FrameID.BASE_LINK,
             position=(-1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 1.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
@@ -304,7 +306,7 @@ class TestEDAManager:
             frame_id=FrameID.BASE_LINK,
             position=(-1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 1.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
@@ -325,7 +327,7 @@ class TestEDAManager:
             frame_id=FrameID.BASE_LINK,
             position=(-1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(2.0, 4.0, 2.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(2.0, 4.0, 2.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.CAR, "car", []),
             velocity=(1.0, 1.0, 1.0),
@@ -337,7 +339,7 @@ class TestEDAManager:
             frame_id=FrameID.BASE_LINK,
             position=(1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(2.0, 4.0, 2.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(2.0, 4.0, 2.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.CAR, "car", []),
             velocity=(1.0, 1.0, 1.0),
@@ -349,7 +351,7 @@ class TestEDAManager:
             frame_id=FrameID.BASE_LINK,
             position=(1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 2.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 2.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.BICYCLE, "bicycle", []),
             velocity=(1.0, 1.0, 1.0),
@@ -361,7 +363,7 @@ class TestEDAManager:
             frame_id=FrameID.BASE_LINK,
             position=(-1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 2.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 2.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.BICYCLE, "bicycle", []),
             velocity=(1.0, 1.0, 1.0),
@@ -373,7 +375,7 @@ class TestEDAManager:
             frame_id=FrameID.BASE_LINK,
             position=(-1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 1.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
@@ -385,7 +387,7 @@ class TestEDAManager:
             frame_id=FrameID.BASE_LINK,
             position=(1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 1.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),

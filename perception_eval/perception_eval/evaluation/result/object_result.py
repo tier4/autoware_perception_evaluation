@@ -100,7 +100,7 @@ class DynamicObjectWithPerceptionResult:
     def get_status(
         self,
         matching_mode: MatchingMode,
-        matching_threshold: float,
+        matching_threshold: Optional[float],
     ) -> Tuple[MatchingStatus, Optional[MatchingStatus]]:
         """Returns matching status both of estimation and GT as `tuple`.
 
@@ -117,20 +117,20 @@ class DynamicObjectWithPerceptionResult:
         if self.is_result_correct(matching_mode, matching_threshold):
             return (
                 (MatchingStatus.FP, MatchingStatus.TN)
-                if self.ground_truth_object.semantic_label.is_fp_label()
+                if self.ground_truth_object.semantic_label.is_fp()
                 else (MatchingStatus.TP, MatchingStatus.TP)
             )
         else:
             return (
                 (MatchingStatus.FP, MatchingStatus.FP)
-                if self.ground_truth_object.semantic_label.is_fp_label()
+                if self.ground_truth_object.semantic_label.is_fp()
                 else (MatchingStatus.FP, MatchingStatus.FN)
             )
 
     def is_result_correct(
         self,
         matching_mode: MatchingMode,
-        matching_threshold: float,
+        matching_threshold: Optional[float],
     ) -> bool:
         """The function judging whether the result is target or not.
         Return `False`, if label of GT is "FP" and matching.
@@ -150,6 +150,9 @@ class DynamicObjectWithPerceptionResult:
         if self.ground_truth_object is None:
             return False
 
+        if matching_threshold is None:
+            return self.is_label_correct
+
         # Whether is matching to ground truth
         matching: Optional[MatchingMethod] = self.get_matching(matching_mode)
         if matching is None:
@@ -157,11 +160,7 @@ class DynamicObjectWithPerceptionResult:
 
         is_matching: bool = matching.is_better_than(matching_threshold)
         # Whether both label is true and matching is true
-        return (
-            not is_matching
-            if self.ground_truth_object.semantic_label.is_fp_label()
-            else self.is_label_correct and is_matching
-        )
+        return not is_matching if self.ground_truth_object.semantic_label.is_fp() else is_matching
 
     def get_matching(self, matching_mode: MatchingMode) -> Optional[MatchingMethod]:
         """Get MatchingMethod instance with corresponding MatchingMode.
@@ -270,6 +269,7 @@ def get_object_results(
     estimated_objects: List[ObjectType],
     ground_truth_objects: List[ObjectType],
     target_labels: Optional[List[LabelType]] = None,
+    allow_matching_unknown: bool = True,
     matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
     matchable_thresholds: Optional[List[float]] = None,
 ) -> List[DynamicObjectWithPerceptionResult]:
@@ -295,7 +295,7 @@ def get_object_results(
     if not estimated_objects:
         return []
 
-    # There is no GT (= all FP)
+    # There is no GT and not FP validation (= all FP)
     if not ground_truth_objects and evaluation_task.is_fp_validation() is False:
         return _get_fp_object_results(estimated_objects)
 
@@ -310,6 +310,7 @@ def get_object_results(
     score_table: np.ndarray = _get_score_table(
         estimated_objects,
         ground_truth_objects,
+        allow_matching_unknown,
         matching_method_module,
         target_labels,
         matchable_thresholds,
@@ -448,6 +449,7 @@ def _get_matching_module(matching_mode: MatchingMode) -> Tuple[Callable, bool]:
 def _get_score_table(
     estimated_objects: List[ObjectType],
     ground_truth_objects: List[ObjectType],
+    allow_matching_unknown: bool,
     matching_method_module: Callable,
     target_labels: Optional[List[LabelType]],
     matchable_thresholds: Optional[List[float]],
@@ -457,6 +459,7 @@ def _get_score_table(
     Args:
         estimated_objects (List[ObjectType]): Estimated objects list.
         ground_truth_objects (List[ObjectType]): Ground truth objects list.
+        allow_matching_unknown (bool): Indicates whether allow to match with unknown label.
         matching_method_module (Callable): MatchingMethod instance.
         target_labels (Optional[List[LabelType]]): Target labels to be evaluated.
         matching_thresholds (Optional[List[float]]): List of thresholds
@@ -468,19 +471,28 @@ def _get_score_table(
     num_row: int = len(estimated_objects)
     num_col: int = len(ground_truth_objects)
     score_table: np.ndarray = np.full((num_row, num_col), np.nan)
-    for i, estimated_object_ in enumerate(estimated_objects):
-        for j, ground_truth_object_ in enumerate(ground_truth_objects):
-            if (
-                estimated_object_.semantic_label == ground_truth_object_.semantic_label
-                or ground_truth_object_.semantic_label.is_fp_label()
-            ) and estimated_object_.frame_id == ground_truth_object_.frame_id:
-                matching_method: MatchingMethod = matching_method_module(
-                    estimated_object=estimated_object_,
-                    ground_truth_object=ground_truth_object_,
+    for i, est_obj in enumerate(estimated_objects):
+        for j, gt_obj in enumerate(ground_truth_objects):
+            is_label_ok: bool = False
+            if gt_obj.semantic_label.is_fp():
+                is_label_ok = True
+            elif allow_matching_unknown:
+                is_label_ok = (
+                    est_obj.semantic_label == gt_obj.semantic_label
+                    or est_obj.semantic_label.is_unknown()
+                )
+            else:
+                is_label_ok = est_obj.semantic_label == gt_obj.semantic_label
+
+            is_same_frame_id: bool = est_obj.frame_id == gt_obj.frame_id
+
+            if is_label_ok and is_same_frame_id:
+                threshold: Optional[float] = get_label_threshold(
+                    gt_obj.semantic_label, target_labels, matchable_thresholds
                 )
 
-                threshold = get_label_threshold(
-                    ground_truth_object_.semantic_label, target_labels, matchable_thresholds
+                matching_method: MatchingMethod = matching_method_module(
+                    estimated_object=est_obj, ground_truth_object=gt_obj
                 )
 
                 if threshold is None or (

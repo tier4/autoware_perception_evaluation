@@ -49,15 +49,13 @@ json_result = json.dump(dict_result)
 
 - `PerceptionEvaluationConfig`の引数は以下
 
-  | Arguments                |            type             | Description                                                                                                                      |
-  | :----------------------- | :-------------------------: | :------------------------------------------------------------------------------------------------------------------------------- |
-  | `dataset_path`           |         `List[str]`         | データセットパス(List[]で指定するが複数データ対応については TBD)                                                                 |
-  | `frame_id`               | `Union[str, Sequence[str]]` | オブジェクトが従う FrameIDの文字列.                                                                                              |
-  | `merge_similar_labels`   |           `bool`            | 類似ラベルをマージするかの flag[参考](label.md)                                                                                  |
-  | `result_root_directory`  |            `str`            | 評価結果，ログ，可視化結果等を保存するディレクトリのパス                                                                         |
-  | `evaluation_config_dict` |      `Dict[str, Any]`       | 評価パラメータ                                                                                                                   |
-  | `label_prefix`           |            `str`            | ラベルのプレフィックス. `autoware` の場合, `AutowareLabel`がロードされ，`traffic_light`の場合，`TrafficLightLabel`がロードされる |
-  | `load_raw_data`          |           `bool`            | データセットから点群/画像データをロードするか                                                                                    |
+  | Arguments                |            type             | Description                                                      |
+  | :----------------------- | :-------------------------: | :--------------------------------------------------------------- |
+  | `dataset_path`           |         `List[str]`         | データセットパス(List[]で指定するが複数データ対応については TBD) |
+  | `frame_id`               | `Union[str, Sequence[str]]` | オブジェクトが従う FrameIDの文字列.                              |
+  | `result_root_directory`  |            `str`            | 評価結果，ログ，可視化結果等を保存するディレクトリのパス         |
+  | `evaluation_config_dict` |      `Dict[str, Any]`       | 評価パラメータ                                                   |
+  | `load_raw_data`          |           `bool`            | データセットから点群/画像データをロードするか                    |
 
 ##### `evaluation_config_dict`
 
@@ -70,25 +68,35 @@ json_result = json.dump(dict_result)
   }
   ```
 
-- 各評価パラメータは，**1.オブジェクトのフィルタ用の閾値**，**2.TP/FP/FN 判定用の閾値**の 2 種類に分類される．
+- 各評価パラメータは，**1.オブジェクトのフィルタ用の閾値**, **2.ラベル設定用のパラメータ**, **3.TP/FP/FN 判定用の閾値**の 3 種類に分類される．
 
   なお，
 
   - **1. `DynamicObjectWithPerceptionResult`生成時のオブジェクトのフィルタ用の閾値**
 
-    | Arguments              |    type     |       Mandatory       | Description                                                                                                                 |
-    | :--------------------- | :---------: | :-------------------: | :-------------------------------------------------------------------------------------------------------------------------- |
-    | `target_labels`        | `List[str]` |          No           | 評価対象ラベル名．未指定の場合，全ラベルを対象に評価が実行される。                                                          |
-    | `ignore_attributes`    | `List[str]` |          No           | 評価対象外となるラベル名のキーワードもしくはアトリビュート。未指定の場合、全ラベルを対象に評価が実行される。                |
-    | `max_x_position`       |   `float`   |          \*           | 評価対象 object の最大 x 位置 (3D のみ)                                                                                     |
-    | `max_y_position`       |   `float`   |          \*           | 評価対象 object の最大 y 位置 (3D のみ)                                                                                     |
-    | `max_distance`         |   `float`   |          \*           | 評価対象 object の base_link からの最大距離 (3D のみ)                                                                       |
-    | `min_distance`         |   `float`   |          \*           | 評価対象 object の base_link からの最小距離 (3D のみ)                                                                       |
-    | `min_point_numbers`    | `List[int]` | No (Yes in Detection) | ground truth object における，bbox 内の最小点群数．`min_point_numbers=0` の場合は，全 ground truth object を評価．(3D のみ) |
-    | `confidence_threshold` |   `float`   |          No           | 評価対象の estimated object の confidence の閾値                                                                            |
-    | `target_uuids`         | `List[str]` |          No           | 特定の ground truth のみに対して評価を行いたい場合，対象とする ground truth の UUID を指定する                              |
+    | Arguments              |     type      |       Mandatory       | Description                                                                                                                 |
+    | :--------------------- | :-----------: | :-------------------: | :-------------------------------------------------------------------------------------------------------------------------- |
+    | `target_labels`        |  `List[str]`  |          No           | 評価対象ラベル名．未指定の場合，全ラベルを対象に評価が実行される。                                                          |
+    | `ignore_attributes`    |  `List[str]`  |          No           | 評価対象外となるラベル名のキーワードもしくはアトリビュート。未指定の場合、全ラベルを対象に評価が実行される。                |
+    | `max_x_position`       |    `float`    |          \*           | 評価対象 object の最大 x 位置 (3D のみ)                                                                                     |
+    | `max_y_position`       |    `float`    |          \*           | 評価対象 object の最大 y 位置 (3D のみ)                                                                                     |
+    | `max_distance`         |    `float`    |          \*           | 評価対象 object の base_link からの最大距離 (3D のみ)                                                                       |
+    | `min_distance`         |    `float`    |          \*           | 評価対象 object の base_link からの最小距離 (3D のみ)                                                                       |
+    | `max_matchable_radii`  | `List[float]` |          No           | マッチング時に許容する最大距離 (Defaults: `None`)                                                                           |
+    | `min_point_numbers`    |  `List[int]`  | No (Yes in Detection) | ground truth object における，bbox 内の最小点群数．`min_point_numbers=0` の場合は，全 ground truth object を評価．(3D のみ) |
+    | `confidence_threshold` |    `float`    |          No           | 評価対象の estimated object の confidence の閾値                                                                            |
+    | `target_uuids`         |  `List[str]`  |          No           | 特定の ground truth のみに対して評価を行いたい場合，対象とする ground truth の UUID を指定する                              |
 
     \* **max_x/y_position**，**max/min_distance**についてはどちらか片方のみ指定する必要がある．
+
+  - **3. ラベル設定用のパラメータ**
+
+    | Arguments                |  type  | Mandatory | Description                                                         |
+    | :----------------------- | :----: | :-------: | :------------------------------------------------------------------ |
+    | `label_prefix`           | `str`  |    Yes    | 使用ラベル種類("autoware", "traffic_light")                         |
+    | `merge_similar_labels`   | `bool` |    No     | 類似ラベルをマージするか(Default: `False`)                          |
+    | `allow_matching_unknown` | `bool` |    No     | unknownラベル予測と正解物体とのマージを許容するか(Default: `False`) |
+    | `count_label_number`     | `bool` |    No     | ロードされた各ラベルの数を数えるか(Default: `True`)                 |
 
   - **2. メトリクス評価時の `DynamicObjectWithPerceptionResult`の TP/FP/FN 判定用の閾値**
 
@@ -107,9 +115,13 @@ json_result = json.dump(dict_result)
   evaluation_config_dict = {
     "evaluation_task": "foo",  # <-- fooを指定
     "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+    "ignore_attributes": [],
     "max_x_position": 102.4,
     "max_y_position": 102.4,
     "min_point_numbers": [0, 0, 0, 0],
+    "label_prefix": "autoware",
+    "merge_similar_labels": False,
+    "allow_matching_unknown": True,
     "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
     "plane_distance_thresholds": [2.0, 3.0],
     "iou_2d_thresholds": [0.5],
@@ -131,11 +143,16 @@ json_result = json.dump(dict_result)
     evaluation_config_dict = {
       "evaluation_task": "detection",
       "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+      "ignore_attributes": [],
       "max_x_position": 102.4,
       "max_y_position": 102.4,
       "max_distance": 100.0,
       "min_distance": 10.0,
       "min_point_numbers": [0, 0, 0, 0],
+      "label_prefix": "autoware",
+      "label_prefix": "autoware",
+      "merge_similar_labels": False,
+      "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],
@@ -154,11 +171,15 @@ json_result = json.dump(dict_result)
     evaluation_config_dict = {
       "evaluation_task": "detection",
       "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+      "ignore_attributes": [],
       # "max_x_position": 102.4,  # <-- それぞれコメントアウト
       # "max_y_position": 102.4,
       # "max_distance": 100.0,
       # "min_distance": 10.0,
       "min_point_numbers": [0, 0, 0, 0],
+      "label_prefix": "autoware",
+      "merge_similar_labels": False,
+      "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],
@@ -177,9 +198,13 @@ json_result = json.dump(dict_result)
     evaluation_config_dict = {
       "evaluation_task": "detection",  # <-- detectionを指定
       "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+      "ignore_attributes": [],
       "max_x_position": 102.4,
       "max_y_position": 102.4,
       # "min_point_numbers": [0, 0, 0, 0],  # <-- min_point_numbersをコメントアウト
+      "label_prefix": "autoware",
+      "merge_similar_labels": False,
+      "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],
@@ -200,8 +225,13 @@ json_result = json.dump(dict_result)
     evaluation_config_dict = {
       "evaluation_task": "detection",
       "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+      "ignore_attributes": [],
       "max_x_position": 102.4,
       "max_y_position": 102.4,
+      "min_point_numbers": [0, 0, 0, 0],
+      "label_prefix": "autoware",
+      "merge_similar_labels": False,
+      "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],

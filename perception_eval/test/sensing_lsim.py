@@ -48,10 +48,10 @@ class SensingLSimMoc:
             "box_scale_100m": 1.0,
             "min_points_threshold": 1,
         }
+
         evaluation_config: SensingEvaluationConfig = SensingEvaluationConfig(
             dataset_paths=dataset_paths,
             frame_id="base_link",
-            merge_similar_labels=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
             load_raw_data=True,

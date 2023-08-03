@@ -18,7 +18,7 @@ from typing import List
 from typing import Tuple
 import unittest
 
-from perception_eval.config.sensing_evaluation_config import SensingEvaluationConfig
+from perception_eval.config import SensingEvaluationConfig
 
 
 class TestSensingEvaluationConfig(unittest.TestCase):
@@ -30,6 +30,7 @@ class TestSensingEvaluationConfig(unittest.TestCase):
             "box_scale_0m": 1.0,
             "box_scale_100m": 1.0,
             "min_points_threshold": 1,
+            "label_prefix": "autoware",
         }
         # patterns: (frame_id, evaluation_task)
         patterns: List[Tuple(str, Dict[str, Any])] = [
@@ -44,7 +45,6 @@ class TestSensingEvaluationConfig(unittest.TestCase):
                     _ = SensingEvaluationConfig(
                         dataset_paths="/tmp/path",
                         frame_id=frame_id,
-                        merge_similar_labels=False,
                         result_root_directory="/tmp/path",
                         evaluation_config_dict=evaluation_config_dict,
                     )

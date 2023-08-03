@@ -38,15 +38,16 @@ class FPValidationLsimMoc:
             "max_x_position": 102.4,
             "max_y_position": 102.4,
             "max_matchable_radii": [5.0, 3.0, 3.0, 3.0],
+            "merge_similar_labels": False,
+            "label_prefix": "autoware",
+            "allow_matching_unknown": True,
         }
 
         evaluation_config = PerceptionEvaluationConfig(
             dataset_paths=dataset_paths,
             frame_id="base_link",
-            merge_similar_labels=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
-            label_prefix="autoware",
             load_raw_data=True,
         )
 

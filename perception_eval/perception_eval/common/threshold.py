@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from numbers import Real
 from typing import List
 from typing import Optional
 from typing import Union
@@ -102,19 +103,21 @@ def get_label_threshold(
 
 
 def set_thresholds(
-    thresholds: Union[List[List[float]], List[float]],
+    thresholds: Union[Real, List[Real], List[List[Real]]],
     target_objects_num: int,
-) -> List[List[float]]:
+    nest: bool,
+) -> Union[List[Real], List[List[Real]]]:
     """Returns thresholds list.
 
-    If the threshold is List[float], convert to List[List[float]].
+    If the threshold is `List[Real]`, convert to `List[List[Real]]`.
 
     Args:
-        thresholds (Union[List[List[float]], List[float]]): Thresholds to be formatted.
+        thresholds (Union[List[List[Real]], List[Real]]): Thresholds to be formatted.
         target_objects_num (int): The number of targets.
+        nest (bool): Whether to return nested list.
 
     Returns:
-        List[List[float]]: Thresholds list.
+        List[List[Real]]: Thresholds list.
 
     Examples:
         >>> set_thresholds([1.0, 2.0], 3)
@@ -122,90 +125,174 @@ def set_thresholds(
         >>> set_thresholds([[1.0, 2.0], [3.0, 4.0]] 2)
         [[1.0, 2.0], [3.0, 4.0]]
     """
-    assert len(thresholds) > 0, "The list of thresholds must be set, but got 0."
-
-    if isinstance(thresholds[0], (int, float)) and len(thresholds) == target_objects_num:
-        return thresholds
-
-    thresholds_list: List[List[float]] = []
-    if isinstance(thresholds[0], (int, float)) and len(thresholds) != target_objects_num:
-        for element in thresholds:
-            thresholds_list.append([element] * target_objects_num)
-    elif isinstance(thresholds[0], list):
-        assert len(thresholds) * target_objects_num == sum(
-            [len(e) for e in thresholds]
-        ), f"Invalid input: thresholds: {thresholds}, target_object_num: {target_objects_num}"
-        thresholds_list = thresholds  # type: ignore
+    if nest:
+        output: List[List[Real]] = __get_nested_thresholds(thresholds, target_objects_num)
+        return check_nested_thresholds(output, target_objects_num)
     else:
-        raise ThresholdsError(f"Unexpected type: {type(thresholds[0])}")
-    return thresholds_list
+        output: List[Real] = __get_thresholds(thresholds, target_objects_num)
+        return check_thresholds(output, target_objects_num)
 
 
-class ThresholdsError(Exception):
+def __get_thresholds(threshold: Union[Real, List[Real]], num_elements: int) -> List[Real]:
+    """Returns a list of thresholds.
+
+    Args:
+        thresholds (Union[Real, List[Real])
+        num_elements (int): The number of elements.
+
+    Returns:
+        List[List[float]]: Thresholds list.
+
+    Raises:
+        ThresholdError
+
+    Examples:
+        >>> get_thresholds(1.0, 3)
+        [1.0, 1.0, 1.0]
+        >>> get_thresholds([1.0], 3)
+        [1.0, 1.0, 1.0]
+        >>> get_thresholds([1.0, 2.0, 3.0], 3)
+        [1.0, 2.0, 3.0]
+        # Error cases
+        >>> get_thresholds([], 2)
+        ThresholdsError: Empty list is invalid
+        >>> get_threshold([1.0, [2.0]], 2)
+        ThresholdsError: Type of all elements must be float, but got [1.0, [2.0]]
+        >>> get_threshold([1.0, 2.0], 3)
+    """
+    if isinstance(threshold, Real):
+        return [threshold] * num_elements
+
+    if len(threshold) == 0:
+        raise ThresholdError("Empty list is invalid")
+    elif any([not isinstance(t, Real) for t in threshold]):
+        raise ThresholdError(f"Type of all elements must be Real number, but got {threshold}")
+    elif len(threshold) != 1 and num_elements != len(threshold):
+        raise ThresholdError(
+            f"Number of list elements must be {num_elements} or 1, but got {len(threshold)}"
+        )
+
+    return threshold * num_elements if len(threshold) == 1 else threshold
+
+
+def __get_nested_thresholds(
+    threshold: Union[Real, List[Real], List[List[Real]]],
+    num_elements: int,
+) -> List[List[Real]]:
+    """Returns a nested list of thresholds.
+
+    Args:
+        thresholds (Union[Real, List[Real], List[List[Real]]])
+        num_elements (int): The number of elements.
+
+    Returns:
+        List[List[Real]]: Nested thresholds list.
+
+    Raises:
+        ThresholdError
+
+    Examples:
+        >>> get_nested_thresholds(1.0, 3)
+        [[1.0, 1.0, 1.0]]
+        >>> get_nested_thresholds([1.0, 2.0], 3)
+        [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0]]
+        >>> get_nested_thresholds([[1.0, 2.0], [3.0, 4.0]] 2)
+        [[1.0, 2.0], [3.0, 4.0]]
+        >>> get_nested_thresholds([[2.0], [3.0, 4.0]] 2)
+        [[2.0, 2.0], [3.0, 4.0]]
+        # Error cases
+        >>> get_nested_thresholds([], 3)
+        ThresholdsError: Empty list is invalid
+        >>> get_nested_thresholds([1.0, [2.0]], 3)
+        ThresholdsError: Type of all elements must be same, but got [1.0, [2.0]]
+        >>> get_nested_thresholds([[1.0, 2.0, 3.0]], 2)
+        ThresholdsError: For nested list, expected the number of each element is 2 or 1, but got [[1.0, 2.0, 3.0]]
+    """
+    if isinstance(threshold, Real):
+        return [[threshold] * num_elements]
+
+    if len(threshold) == 0:
+        raise ThresholdError("Empty list is invalid")
+
+    if isinstance(threshold[0], Real):
+        if any([not isinstance(t, Real) for t in threshold]):
+            raise ThresholdError(f"Type of all elements must be same, but got {threshold}")
+        return (
+            [[t] * num_elements for t in threshold]
+            if len(threshold) != num_elements
+            else [threshold]
+        )
+    else:
+        if any([not isinstance(t, list) for t in threshold]):
+            raise ThresholdError(f"Type of all elements must be same but got {threshold}")
+        elif any([len(t) != num_elements and len(t) != 1 for t in threshold]):
+            raise ThresholdError(
+                f"For nested list, expected the number of each element is {num_elements} or 1, "
+                f"but got {threshold}"
+            )
+        threshold_list: List[List[Real]] = []
+        for t in threshold:
+            if len(t) == 1:
+                threshold_list.append(t * num_elements)
+            else:
+                threshold_list.append(t)
+        return threshold_list
+
+
+class ThresholdError(Exception):
     def __init__(self, message) -> None:
         super().__init__(message)
 
 
-def check_thresholds(
-    thresholds: List[float],
-    target_labels: List[LabelType],
-    exception: Exception = ThresholdsError,
-) -> List[float]:
+def check_thresholds(thresholds: List[Real], num_elements: int) -> List[Real]:
     """Check whether threshold's shape is valid.
 
     Args:
-        thresholds (Optional[List[float]]): Thresholds list.
-        target_labels (List[LabelType]): Target labels.
-        exception (Exception): The exception class. Defaults to ThresholdError.
+        thresholds (List[Real]): Thresholds list.
+        num_elements (int)
 
     Raises:
-        Exception: In case of length of thresholds and labels are not same.
+        ThresholdError
 
     Returns:
-        List[Optional[List[float]]]: Thresholds list.
+        List[Optional[List[Real]]]: Thresholds list.
 
     Examples:
-        >>> check_thresholds([1.0, 2.0], [AutowareLabel.CAR, AutowareLabel.PEDESTRIAN])
+        >>> check_thresholds([1.0, 2.0], 2)
         >>> [1.0, 2.0]
     """
-    if len(thresholds) != len(target_labels):
-        raise exception(
-            "Error: Threshold is not proper! "
-            "The number of elements both thresholds and labels must be same, "
-            f"but got thresholds: {len(thresholds)}, labels: {len(target_labels)}",
+    if any([not isinstance(t, Real) for t in thresholds]):
+        raise ThresholdError(f"Type of all elements must be Real number, but got {thresholds}")
+    elif len(thresholds) != num_elements:
+        raise ThresholdError(
+            f"Expected the number of elements is {num_elements}, " f"but got {len(thresholds)}",
         )
     return thresholds
 
 
-def check_thresholds_list(
-    thresholds_list: List[List[float]],
-    target_labels: List[LabelType],
-    exception: Exception = ThresholdsError,
-) -> List[List[float]]:
+def check_nested_thresholds(thresholds: List[List[Real]], num_elements: int) -> List[List[Real]]:
     """Check whether threshold's shape is valid.
 
     Args:
-        thresholds_list (List[List[float]]): Thresholds list.
-        target_labels (List[LabelType]): Target labels.
-        exception (Exception): The exception class. Defaults ThresholdError.
+        thresholds (List[List[float]]): Thresholds list.
+        num_threshold (int): Target number of elements.
 
     Raises:
-        Exception: Error for metrics thresholds.
+        ThresholdError
 
     Returns:
         List[List[float]]: Thresholds list.
 
     Examples:
-        >>> thresholds_list = [[1.0, 1.0], [2.0, 2.0]]
-        >>> target_labels = [AutowareLabel.CAR, AutowareLabel.PEDESTRIAN]
-        >>> check_thresholds_list(thresholds_list, target_labels)
+        >>> thresholds = [[1.0, 1.0], [2.0, 2.0], [3.0, 3.0]]
+        >>> num_elements = 2
+        >>> check_nested_thresholds(thresholds_list, num_elements)
         [[1.0, 1.0], [2.0, 2.0]]
     """
-    for i, thresholds in enumerate(thresholds_list):
-        if len(thresholds) != 0 and len(thresholds) != len(target_labels):
-            raise exception(
-                "Error: Metrics threshold is not proper! "
-                "The number of each elements in thresholds list must be same with the number of labels, "
-                f"but got thresholds[{i}]: {len(thresholds)}, labels: {len(target_labels)}"
-            )
-    return thresholds_list
+    if any([not isinstance(t, list) for t in thresholds]):
+        raise ThresholdError(f"Type of all elements must be list, but got {thresholds}")
+    elif any([len(t) == 0 or len(t) != num_elements for t in thresholds]):
+        raise ThresholdError(
+            f"Expected the number of each element is {num_elements}, but got {thresholds}"
+        )
+    return thresholds

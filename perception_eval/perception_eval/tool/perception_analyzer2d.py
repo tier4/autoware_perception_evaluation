@@ -94,16 +94,16 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         p_cfg: Dict[str, Any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
         eval_cfg_dict: Dict[str, Any] = p_cfg["evaluation_config_dict"]
 
-        label_prefix: str = "traffic_light" if "traffic_light" in camera_frame else "autoware"
+        eval_cfg_dict["label_prefix"] = (
+            "traffic_light" if "traffic_light" in camera_frame else "autoware"
+        )
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id=camera_frame,
-            merge_similar_labels=p_cfg.get("merge_similar_labels", False),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
             load_raw_data=False,
-            label_prefix=label_prefix,
         )
 
         return cls(evaluation_config)
@@ -279,7 +279,15 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         all_data: Dict[str, Dict[str, any]] = {}
         for label in self.all_labels:
             data = {}
-            df_ = df if label == "ALL" else df[df["label"] == label]
+            if label == "ALL":
+                df_ = df
+            else:
+                tp_gt_df = self.get_ground_truth(status="TP", label=label)
+                tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
+                if len(tp_index) == 0:
+                    logging.warning("There is no TP object. Could not calculate error.")
+                    return pd.DataFrame()
+                df_ = self.df.loc[tp_index]
 
             data["x"] = _summarize("x", df_)
             data["y"] = _summarize("y", df_)
@@ -305,18 +313,22 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         """
         gt_df, est_df = self.get_pair_results(df)
 
+        target_labels: List[str] = self.target_labels.copy()
+        if self.config.label_params["allow_matching_unknown"] and "unknown" not in target_labels:
+            target_labels.append("unknown")
+
         gt_indices: np.ndarray = (
-            gt_df["label"].apply(lambda label: self.target_labels.index(label)).to_numpy()
+            gt_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
         )
         est_indices: np.ndarray = (
-            est_df["label"].apply(lambda label: self.target_labels.index(label)).to_numpy()
+            est_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
         )
 
-        num_classes = len(self.target_labels)
+        num_classes = len(target_labels)
         indices = num_classes * gt_indices + est_indices
         matrix: np.ndarray = np.bincount(indices, minlength=num_classes**2)
         matrix = matrix.reshape(num_classes, num_classes)
-        return pd.DataFrame(data=matrix, index=self.target_labels, columns=self.target_labels)
+        return pd.DataFrame(data=matrix, index=target_labels, columns=target_labels)
 
     def plot_num_object(
         self,

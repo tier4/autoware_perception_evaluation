@@ -74,18 +74,33 @@ class TrafficLightLabel(Enum):
         return self.value
 
 
+class CommonLabel(Enum):
+    UNKNOWN = (AutowareLabel.UNKNOWN, TrafficLightLabel.UNKNOWN)
+    FP = (AutowareLabel.FP, TrafficLightLabel.FP)
+
+    def __eq__(self, label: LabelType) -> bool:
+        return label in self.value
+
+    def __str__(self) -> str:
+        if self == CommonLabel.UNKNOWN:
+            return "unknown"
+        elif self == CommonLabel.FP:
+            return "false_positive"
+        else:
+            raise ValueError(f"Unexpected element: {self}")
+
+
 LabelType = Union[AutowareLabel, TrafficLightLabel]
 
 
 @dataclass
 class LabelInfo:
-    """[summary]
-    Label data class
+    """Label data class.
 
     Attributes:
-        self.autoware_label (AutowareLabel): Corresponded Autoware label
-        label (str): Label before converted
-        num (int): The number of a label
+        label (LabelType): Corresponding label.
+        name (str): Label before converted.
+        num (int): The number of each label.
     """
 
     label: LabelType
@@ -95,6 +110,11 @@ class LabelInfo:
 
 class Label:
     """
+    Attributes:
+        label (LabelType): Corresponding label.
+        name (str): Label before converted.
+        attributes (List[str]): List of attributes. Defaults to [].
+
     Args:
         label (LabelType): LabelType instance.
         name (str): Original label name.
@@ -122,8 +142,21 @@ class Label:
         assert isinstance(keys, (list, tuple)), f"Expected type is sequence, but got {type(keys)}"
         return any([self.contains(key) for key in keys])
 
-    def is_fp_label(self) -> bool:
-        return self.label in (AutowareLabel.FP, TrafficLightLabel.FP)
+    def is_fp(self) -> bool:
+        """Returns `True`, if myself is `false_positive` label.
+
+        Returns:
+            bool: Whether myself is `false_positive`.
+        """
+        return self.label == CommonLabel.FP
+
+    def is_unknown(self) -> bool:
+        """Returns `True`, if myself is `unknown` label.
+
+        Returns:
+            bool: Whether myself is `unknown`.
+        """
+        return self.label == CommonLabel.UNKNOWN
 
     def __eq__(self, other: Label) -> bool:
         return self.label == other.label

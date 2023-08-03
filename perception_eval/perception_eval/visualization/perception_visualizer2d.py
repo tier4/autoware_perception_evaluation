@@ -89,11 +89,13 @@ class PerceptionVisualizer2D:
 
         p_cfg: Dict[str, any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
         eval_cfg_dict: Dict[str, any] = p_cfg["evaluation_config_dict"]
+        eval_cfg_dict["label_prefix"] = (
+            "traffic_light" if "traffic_light" in camera_frame else "autoware"
+        )
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id=camera_frame,
-            merge_similar_labels=p_cfg.get("merge_similar_labels", False),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
             load_raw_data=False,

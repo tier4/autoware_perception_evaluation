@@ -21,6 +21,8 @@ from perception_eval.common.label import Label
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
+from perception_eval.common.shape import Shape
+from perception_eval.common.shape import ShapeType
 from pyquaternion.quaternion import Quaternion
 
 
@@ -48,7 +50,7 @@ def make_dummy_data(
             frame_id=frame_id,
             position=(1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.5, 1.5, 1.5),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.5, 1.5, 1.5)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.CAR, "car", []),
             velocity=(1.0, 1.0, 1.0),
@@ -59,7 +61,7 @@ def make_dummy_data(
             frame_id=frame_id,
             position=(1.0, -1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(0.5, 0.5, 0.5),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(0.5, 0.5, 0.5)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.BICYCLE, "bicycle", []),
             velocity=(1.0, 1.0, 1.0),
@@ -70,7 +72,7 @@ def make_dummy_data(
             frame_id=frame_id,
             position=(-1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 1.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.CAR, "car", []),
             velocity=(1.0, 1.0, 1.0),
@@ -83,7 +85,7 @@ def make_dummy_data(
             frame_id=frame_id,
             position=(1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 1.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.CAR, "car", []),
             velocity=(1.0, 1.0, 1.0),
@@ -95,7 +97,7 @@ def make_dummy_data(
             frame_id=frame_id,
             position=(1.0, -1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 1.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.BICYCLE, "bicycle", []),
             velocity=(1.0, 1.0, 1.0),
@@ -107,7 +109,7 @@ def make_dummy_data(
             frame_id=frame_id,
             position=(-1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 1.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
@@ -119,7 +121,7 @@ def make_dummy_data(
             frame_id=frame_id,
             position=(-1.0, -1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 1.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.MOTORBIKE, "motorbike", []),
             velocity=(1.0, 1.0, 1.0),
