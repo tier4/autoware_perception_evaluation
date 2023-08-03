@@ -89,11 +89,13 @@ class PerceptionVisualizer2D:
 
         p_cfg: Dict[str, any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
         eval_cfg_dict: Dict[str, any] = p_cfg["evaluation_config_dict"]
+        eval_cfg_dict["label_prefix"] = (
+            "traffic_light" if "traffic_light" in camera_frame else "autoware"
+        )
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id=camera_frame,
-            merge_similar_labels=p_cfg.get("merge_similar_labels", False),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
             load_raw_data=False,
@@ -206,6 +208,7 @@ class PerceptionVisualizer2D:
             TP estimated    : Blue
             TP GT           : Red
             FP              : Cyan
+            TN              : Purple
             FN              : Orange
 
         Args:
@@ -265,6 +268,14 @@ class PerceptionVisualizer2D:
             color="cyan",
         )
         handles.append(Patch(color="cyan", label="FP"))
+
+        axes = self.plot_objects(
+            objects=frame_result.pass_fail_result.tn_objects,
+            is_ground_truth=True,
+            axes=axes,
+            color="purple",
+        )
+        handles.append(Patch(color="purple", label="TN"))
 
         axes = self.plot_objects(
             objects=frame_result.pass_fail_result.fn_objects,

@@ -16,7 +16,7 @@ from typing import Optional
 
 import numpy as np
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.status import Visibility
+from perception_eval.common.schema import Visibility
 
 
 class DynamicObjectWithSensingResult:

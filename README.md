@@ -70,7 +70,6 @@ from perception_eval.evaluation.result.perception_frame_config import Perception
 evaluation_config = PerceptionEvaluationConfig(
     dataset_paths=[dataset_path],
     frame_id="base_link",
-    merge_similar_labels=False,
     result_root_directory="./data/result",
     evaluation_config_dict={"evaluation_task": "detection",...},
     load_raw_data=True,

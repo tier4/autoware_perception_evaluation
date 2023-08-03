@@ -23,7 +23,7 @@ from perception_eval.common.dataset import load_all_datasets
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.status import FrameID
+from perception_eval.common.schema import FrameID
 from perception_eval.visualization.eda_tool import EDAVisualizer
 
 
