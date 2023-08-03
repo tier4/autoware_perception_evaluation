@@ -57,18 +57,25 @@ class PerceptionLSimMoc:
             "center_distance_thresholds": [
                 [1.0, 1.0, 1.0, 1.0],
                 [2.0, 2.0, 2.0, 2.0],
-            ],
+            ],  # = [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]]
             # objectごとに同じparamの場合はこのような指定が可能
-            "plane_distance_thresholds": [2.0, 3.0],
-            "iou_2d_thresholds": [0.5],
-            "iou_3d_thresholds": [0.5],
+            "plane_distance_thresholds": [
+                2.0,
+                3.0,
+            ],  # = [[2.0, 2.0, 2.0, 2.0], [3.0, 3.0, 3.0, 3.0]]
+            "iou_2d_thresholds": [0.5, 0.5, 0.5, 0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
+            "iou_3d_thresholds": [0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
             "min_point_numbers": [0, 0, 0, 0],
+            "max_matchable_radii": 5.0,  # = [5.0, 5.0, 5.0, 5.0]
+            # label parameters
+            "label_prefix": "autoware",
+            "merge_similar_labels": False,
+            "allow_matching_unknown": True,
         }
 
-        evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
+        evaluation_config = PerceptionEvaluationConfig(
             dataset_paths=dataset_paths,
             frame_id="base_link" if evaluation_task == "detection" else "map",
-            merge_similar_labels=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
             load_raw_data=True,
@@ -87,7 +94,6 @@ class PerceptionLSimMoc:
         unix_time: int,
         estimated_objects: List[DynamicObject],
     ) -> None:
-
         # 現frameに対応するGround truthを取得
         ground_truth_now_frame = self.evaluator.get_ground_truth_now_frame(unix_time)
 
@@ -129,14 +135,17 @@ class PerceptionLSimMoc:
         処理の最後に評価結果を出す
         """
 
-        # use case fail object num
-        number_use_case_fail_object: int = 0
-        for frame_results in self.evaluator.frame_results:
-            number_use_case_fail_object += frame_results.pass_fail_result.get_fail_object_num()
-        logging.info(f"final use case fail object: {number_use_case_fail_object}")
-        final_metric_score = self.evaluator.get_scene_result()
+        # number of fails for critical objects
+        num_critical_fail: int = sum(
+            map(
+                lambda frame_result: frame_result.pass_fail_result.get_num_fail(),
+                self.evaluator.frame_results,
+            )
+        )
+        logging.info(f"Number of fails for critical objects: {num_critical_fail}")
 
-        # final result
+        # scene metrics score
+        final_metric_score = self.evaluator.get_scene_result()
         logging.info(f"final metrics result {final_metric_score}")
         return final_metric_score
 
@@ -185,6 +194,7 @@ if __name__ == "__main__":
             diff_distance=(1.0, 0.0, 0.2),
             diff_yaw=0.2,
             is_confidence_with_distance=True,
+            label_to_unknown_rate=0.5,
             ego2map=ground_truth_frame.ego2map,
         )
         # To avoid case of there is no object
@@ -223,9 +233,10 @@ if __name__ == "__main__":
         f"{format_class_for_log(detection_final_metric_score.maps[0], 100)}",
     )
 
-    # Visualize all frame results.
-    logging.info("Start visualizing detection results")
-    detection_lsim.evaluator.visualize_all()
+    if detection_lsim.evaluator.evaluator_config.load_raw_data:
+        # Visualize all frame results.
+        logging.info("Start visualizing detection results")
+        detection_lsim.evaluator.visualize_all()
 
     # Detection performance report
     detection_analyzer = PerceptionAnalyzer3D(detection_lsim.evaluator.evaluator_config)
@@ -253,9 +264,10 @@ if __name__ == "__main__":
     for ground_truth_frame in tracking_lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference(
             ground_truth_objects=ground_truth_frame.objects,
-            diff_distance=(2.3, 0.0, 0.2),
-            diff_yaw=0.2,
+            diff_distance=(1.0, 0.0, 0.0),
+            diff_yaw=0.0,
             is_confidence_with_distance=True,
+            label_to_unknown_rate=0.5,
             ego2map=ground_truth_frame.ego2map,
         )
         # To avoid case of there is no object
@@ -300,9 +312,10 @@ if __name__ == "__main__":
         f"{format_class_for_log(tracking_final_metric_score.tracking_scores[0], 100)}"
     )
 
-    # Visualize all frame results
-    logging.info("Start visualizing tracking results")
-    tracking_lsim.evaluator.visualize_all()
+    if tracking_lsim.evaluator.evaluator_config.load_raw_data:
+        # Visualize all frame results
+        logging.info("Start visualizing tracking results")
+        tracking_lsim.evaluator.visualize_all()
 
     # Tracking performance report
     tracking_analyzer = PerceptionAnalyzer3D(tracking_lsim.evaluator.evaluator_config)

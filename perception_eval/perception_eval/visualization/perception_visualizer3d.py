@@ -30,7 +30,7 @@ from matplotlib.transforms import Affine2D
 import numpy as np
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.status import FrameID
+from perception_eval.common.schema import FrameID
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation import PerceptionFrameResult
@@ -110,7 +110,6 @@ class PerceptionVisualizer3D:
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id="base_link" if eval_cfg_dict["evaluation_task"] == "detection" else "map",
-            merge_similar_labels=p_cfg.get("merge_similar_labels", False),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
             load_raw_data=False,
@@ -195,6 +194,7 @@ class PerceptionVisualizer3D:
             TP estimated    : Blue
             TP GT           : Red
             FP              : Cyan
+            TN              : Purple
             FN              : Orange
 
         Args:
@@ -250,6 +250,16 @@ class PerceptionVisualizer3D:
             pointcloud=pointcloud,
         )
         handles.append(Patch(color="cyan", label="FP"))
+
+        axes = self.plot_objects(
+            objects=frame_result.pass_fail_result.tn_objects,
+            is_ground_truth=True,
+            axes=axes,
+            label="TN",
+            color="purple",
+            pointcloud=pointcloud,
+        )
+        handles.append(Patch(color="purple", label="TN"))
 
         axes = self.plot_objects(
             objects=frame_result.pass_fail_result.fn_objects,

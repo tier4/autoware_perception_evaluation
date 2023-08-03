@@ -93,7 +93,6 @@ class SensingVisualizer:
         evaluation_config: SensingEvaluationConfig = SensingEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id="base_link",
-            merge_similar_labels=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
             load_raw_data=False,

@@ -26,12 +26,12 @@ import numpy as np
 import pandas as pd
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object2d import DynamicObject2D
+from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 import yaml
 
 from .perception_analyzer_base import PerceptionAnalyzerBase
-from .utils import MatchingStatus
 from .utils import PlotAxes
 
 
@@ -54,7 +54,8 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         num_estimation (int): Number of estimations.
         num_tp (int): Number of TP results.
         num_fp (int): Number of FP results.
-        num_fn (int): Number of FN results.
+        num_tn (int): Number of TN GT objects.
+        num_fn (int): Number of FN GT objects.
 
     Args:
         evaluation_config (PerceptionEvaluationConfig): Config used in evaluation.
@@ -93,16 +94,16 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         p_cfg: Dict[str, Any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
         eval_cfg_dict: Dict[str, Any] = p_cfg["evaluation_config_dict"]
 
-        label_prefix: str = "traffic_light" if "traffic_light" in camera_frame else "autoware"
+        eval_cfg_dict["label_prefix"] = (
+            "traffic_light" if "traffic_light" in camera_frame else "autoware"
+        )
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id=camera_frame,
-            merge_similar_labels=p_cfg.get("merge_similar_labels", False),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
             load_raw_data=False,
-            label_prefix=label_prefix,
         )
 
         return cls(evaluation_config)
@@ -152,12 +153,15 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             gt: Optional[DynamicObject2D] = object_result.ground_truth_object
             estimation: DynamicObject2D = object_result.estimated_object
         elif isinstance(object_result, DynamicObject2D):
-            if status == MatchingStatus.FN:
-                gt: DynamicObject2D = object_result
-                estimation = None
-            elif status == MatchingStatus.FP:
+            if status == MatchingStatus.FP:
                 estimation: DynamicObject2D = object_result
                 gt = None
+            elif status == MatchingStatus.TN:
+                estimation = None
+                gt: DynamicObject2D = object_result
+            elif status == MatchingStatus.FN:
+                estimation = None
+                gt: DynamicObject2D = object_result
             else:
                 raise ValueError("For DynamicObject status must be in FP or FN, but got {status}")
         elif object_result is None:
@@ -224,13 +228,13 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
 
     def analyze(self, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
         """[summary]
-        Analyze TP/FP/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
+        Analyze TP/FP/TN/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
 
         Args:
             **kwargs: Specify scene, frame, area or uuid.
 
         Returns:
-            score_df (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
+            score_df (Optional[pandas.DataFrame]): DataFrame of TP/FP/TN/FN ratios and metrics scores.
             confusion_matrix_df (Optional[pandas.DataFrame]): DataFrame of confusion matrix.
         """
         df: pd.DataFrame = self.get(**kwargs)
@@ -275,7 +279,15 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         all_data: Dict[str, Dict[str, any]] = {}
         for label in self.all_labels:
             data = {}
-            df_ = df if label == "ALL" else df[df["label"] == label]
+            if label == "ALL":
+                df_ = df
+            else:
+                tp_gt_df = self.get_ground_truth(status="TP", label=label)
+                tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
+                if len(tp_index) == 0:
+                    logging.warning("There is no TP object. Could not calculate error.")
+                    return pd.DataFrame()
+                df_ = self.df.loc[tp_index]
 
             data["x"] = _summarize("x", df_)
             data["y"] = _summarize("y", df_)
@@ -301,18 +313,22 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         """
         gt_df, est_df = self.get_pair_results(df)
 
+        target_labels: List[str] = self.target_labels.copy()
+        if self.config.label_params["allow_matching_unknown"] and "unknown" not in target_labels:
+            target_labels.append("unknown")
+
         gt_indices: np.ndarray = (
-            gt_df["label"].apply(lambda label: self.target_labels.index(label)).to_numpy()
+            gt_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
         )
         est_indices: np.ndarray = (
-            est_df["label"].apply(lambda label: self.target_labels.index(label)).to_numpy()
+            est_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
         )
 
-        num_classes = len(self.target_labels)
+        num_classes = len(target_labels)
         indices = num_classes * gt_indices + est_indices
         matrix: np.ndarray = np.bincount(indices, minlength=num_classes**2)
         matrix = matrix.reshape(num_classes, num_classes)
-        return pd.DataFrame(data=matrix, index=self.target_labels, columns=self.target_labels)
+        return pd.DataFrame(data=matrix, index=target_labels, columns=target_labels)
 
     def plot_num_object(
         self,
@@ -354,7 +370,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         bins: float = 1.0,
         **kwargs,
     ) -> None:
-        """Plot TP/FP/FN ratio per confidence.
+        """Plot TP/FP/TN/FN ratio per confidence.
 
         Args:
             status (Union[str, MatchingStatus])
