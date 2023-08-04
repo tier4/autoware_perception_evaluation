@@ -319,7 +319,7 @@ def get_negative_objects(
 
 def divide_tp_fp_objects(
     object_results: List[DynamicObjectWithPerceptionResult],
-    target_labels: Optional[List[Label]],
+    target_labels: Optional[List[LabelType]],
     matching_mode: Optional[MatchingMode] = None,
     matching_threshold_list: Optional[List[float]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
