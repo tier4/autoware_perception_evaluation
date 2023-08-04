@@ -2,9 +2,39 @@
 
 - 上ほど新しい
 
-## Now development for develop branch -> v1.0.x
+## Now development for develop branch -> v1.1.x
 
 ## Release for main branch
+
+### v1.1.0
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/70>
+
+  - 【fix】`divide_tp_fp_objects`のtype hintingの修正
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/81>
+
+  - 【chore】update dependency
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/83>
+
+  - 【chore】update dependency
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/7>
+
+  - 【feat】unknownオブジェクトを評価する機能の追加
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/78>
+
+  - 【feat】FP再評価の機能を追加
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/84>
+
+  - 【chore】poetry.lockの更新
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/79>
+
+  - 【fix】mAP計算時にGTが0のクラス分の計算をしないように修正
 
 ### v1.0.7
 
