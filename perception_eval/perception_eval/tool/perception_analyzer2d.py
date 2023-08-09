@@ -71,14 +71,12 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         cls,
         result_root_directory: str,
         scenario_path: str,
-        camera_frame: str,
     ) -> PerceptionAnalyzer2D:
         """Perception results made by logsim are reproduced from pickle file.
 
         Args:
             result_root_directory (str): The root path to save result.
             scenario_path (str): The path of scenario file .yaml.
-            camera_frame (str): Name of camera frame. (e.g CAM_FRONT, CAM_RIGHT).
 
         Returns:
             PerceptionAnalyzer2D: PerceptionAnalyzer2D instance.
@@ -95,12 +93,13 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         eval_cfg_dict: Dict[str, Any] = p_cfg["evaluation_config_dict"]
 
         eval_cfg_dict["label_prefix"] = (
-            "traffic_light" if "traffic_light" in camera_frame else "autoware"
+            "traffic_light" if eval_cfg_dict["UseCaseName"] == "traffic_light" else "autoware"
         )
+        camera_types: Dict[str, int] = scenario_obj["Evaluation"]["Conditions"]["TargetCameras"]
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
-            frame_id=camera_frame,
+            frame_id=list(camera_types.keys()),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
             load_raw_data=False,
