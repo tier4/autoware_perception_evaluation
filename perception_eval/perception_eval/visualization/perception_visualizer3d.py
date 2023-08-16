@@ -407,10 +407,11 @@ class PerceptionVisualizer3D:
             )
             axes.add_patch(box)
 
-            if self.config.evaluation_task == EvaluationTask.TRACKING:
-                box_velocity: np.ndarray = np.array(object_.state.velocity)[:2]
-                # plot heading
-                dx, dy = box_velocity
+            if object_.state.velocity is not None:
+                vx, vy = object_.state.velocity[:2]
+                v: float = np.linalg.norm((vx, vy))
+                dx = 3.0 * vx / v * np.cos(yaw) if v != 0.0 else 0.0
+                dy = 3.0 * vx / v * np.sin(yaw) if v != 0.0 else 0.0
 
                 axes.arrow(
                     x=box_center[0],
