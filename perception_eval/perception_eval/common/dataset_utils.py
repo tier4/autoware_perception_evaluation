@@ -338,7 +338,7 @@ def _get_box_velocity(
         max_time_diff *= 2
 
     # If time_diff is too big, don't return an estimate.
-    return tuple((pos_diff / time_diff).tolist()) if max_time_diff <= time_diff else None
+    return tuple((pos_diff / time_diff).tolist()) if time_diff <= max_time_diff else None
 
 
 def _get_tracking_data(
