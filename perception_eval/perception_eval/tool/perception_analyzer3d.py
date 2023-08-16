@@ -240,7 +240,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             if gt.state.velocity is not None:
                 gt_vx, gt_vy = gt.state.velocity[:2]
             else:
-                gt_vx, gt_vy = None, None
+                gt_vx, gt_vy = np.nan, np.nan
 
             if self.config.frame_ids[0] == "map":
                 src: np.ndarray = get_pose_transform_matrix(
@@ -287,7 +287,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             if estimation.state.velocity is not None:
                 est_vx, est_vy = estimation.state.velocity[:2]
             else:
-                est_vx, est_vy = None, None
+                est_vx, est_vy = np.nan, np.nan
 
             if self.config.frame_ids[0] == "map":
                 src: np.ndarray = get_pose_transform_matrix(
@@ -321,7 +321,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 attributes=estimation.semantic_label.attributes,
                 confidence=estimation.semantic_score,
                 uuid=estimation.uuid,
-                num_points=None,
+                num_points=np.nan,
                 status=status,
                 area=area,
                 frame=frame_num,
