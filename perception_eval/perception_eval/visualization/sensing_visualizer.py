@@ -90,6 +90,8 @@ class SensingVisualizer:
         s_cfg: Dict[str, any] = scenario_obj["Evaluation"]["SensingEvaluationConfig"]
         eval_cfg_dict: Dict[str, any] = s_cfg["evaluation_config_dict"]
 
+        eval_cfg_dict["label_prefix"] = "autoware"
+
         evaluation_config: SensingEvaluationConfig = SensingEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id="base_link",

@@ -96,6 +96,7 @@ class PerceptionVisualizer3D:
         Args:
             result_root_directory (str): The root path to save result.
             scenario_path (str): The path of scenario file .yaml.
+
         Returns:
             PerceptionVisualizer3D
         """
@@ -106,6 +107,8 @@ class PerceptionVisualizer3D:
 
         p_cfg: Dict[str, any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
         eval_cfg_dict: Dict[str, any] = p_cfg["evaluation_config_dict"]
+
+        eval_cfg_dict["label_prefix"] = "autoware"
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
