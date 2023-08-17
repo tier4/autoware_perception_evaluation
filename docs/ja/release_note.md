@@ -6,6 +6,16 @@
 
 ## Release for main branch
 
+### v1.1.1
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/88>
+
+  - 【fix】速度座標系の修正
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/87>
+
+  - 【feat】`PerceptionAnalyzer`、`PerceptionVisualizer`の`from_scenario()`メソッドの更新
+
 ### v1.1.0
 
 - <https://github.com/tier4/autoware_perception_evaluation/pull/70>
