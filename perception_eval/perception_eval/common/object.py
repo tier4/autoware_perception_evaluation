@@ -53,12 +53,12 @@ class ObjectState:
         position: Tuple[float, float, float],
         orientation: Quaternion,
         shape: Shape,
-        velocity: Tuple[float, float, float],
+        velocity: Optional[Tuple[float, float, float]],
     ) -> None:
         self.position: Tuple[float, float, float] = position
         self.orientation: Quaternion = orientation
         self.shape: Shape = shape
-        self.velocity: Tuple[float, float, float] = velocity
+        self.velocity: Optional[Tuple[float, float, float]] = velocity
 
     @property
     def shape_type(self) -> ShapeType:
@@ -136,7 +136,7 @@ class DynamicObject:
         position: Tuple[float, float, float],
         orientation: Quaternion,
         shape: Shape,
-        velocity: Tuple[float, float, float],
+        velocity: Optional[Tuple[float, float, float]],
         semantic_score: float,
         semantic_label: Label,
         pointcloud_num: Optional[int] = None,

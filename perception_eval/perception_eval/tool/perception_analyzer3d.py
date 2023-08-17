@@ -237,11 +237,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         )
 
         if gt:
-            if gt.state.velocity:
+            if gt.state.velocity is not None:
                 gt_vx, gt_vy = gt.state.velocity[:2]
-                gt_vel = np.array([gt_vx, gt_vy, 0])
             else:
-                gt_vx, gt_vy = None, None
+                gt_vx, gt_vy = np.nan, np.nan
 
             if self.config.frame_ids[0] == "map":
                 src: np.ndarray = get_pose_transform_matrix(
@@ -251,8 +250,6 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 dst: np.ndarray = np.linalg.inv(ego2map).dot(src)
                 gt_x, gt_y = dst[:2, 3]
                 gt_yaw = rotation_matrix_to_euler(dst[:3, :3])[-1].item()
-                if gt.state.velocity:
-                    gt_vx, gt_vy = np.linalg.inv(ego2map[:3, :3]).dot(gt_vel)[:2]
             else:
                 gt_x, gt_y = gt.state.position[:2]
                 gt_yaw = gt.state.orientation.yaw_pitch_roll[0]
@@ -287,11 +284,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             gt_ret = {k: None for k in self.keys()}
 
         if estimation:
-            if estimation.state.velocity:
+            if estimation.state.velocity is not None:
                 est_vx, est_vy = estimation.state.velocity[:2]
-                est_vel = np.array([est_vx, est_vy, 0.0])
             else:
-                est_vx, est_vy = None, None
+                est_vx, est_vy = np.nan, np.nan
 
             if self.config.frame_ids[0] == "map":
                 src: np.ndarray = get_pose_transform_matrix(
@@ -301,14 +297,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 dst: np.ndarray = np.linalg.inv(ego2map).dot(src)
                 est_x, est_y = dst[:2, 3]
                 est_yaw = rotation_matrix_to_euler(dst[:3, :3])[-1].item()
-                if estimation.state.velocity:
-                    est_vx, est_vy = dst[:3, :3].dot(est_vel)[:2]
             else:
                 est_x, est_y = estimation.state.position[:2]
                 est_yaw = estimation.state.orientation.yaw_pitch_roll[0]
-                if estimation.state.velocity:
-                    est_rot = estimation.state.orientation.rotation_matrix
-                    est_vx, est_vy = np.linalg.inv(est_rot).dot(est_vel)[:2]
 
             est_w, est_l, est_h = estimation.state.size
 
@@ -330,7 +321,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 attributes=estimation.semantic_label.attributes,
                 confidence=estimation.semantic_score,
                 uuid=estimation.uuid,
-                num_points=None,
+                num_points=np.nan,
                 status=status,
                 area=area,
                 frame=frame_num,
