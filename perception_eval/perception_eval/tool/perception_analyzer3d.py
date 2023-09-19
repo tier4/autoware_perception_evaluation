@@ -346,10 +346,15 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             _column: Union[str, List[str]],
             _df: Optional[pd.DataFrame] = None,
         ) -> Dict[str, float]:
+            if len(_df) == 0:
+                logging.warning(f"The array of errors is empty for column: {_column}")
+                return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan)
+
             err: np.ndarray = self.calculate_error(_column, _df, remove_nan=True)
             if len(err) == 0:
                 logging.warning(f"The array of errors is empty for column: {_column}")
                 return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan)
+
             err_avg = np.average(err)
             err_rms = np.sqrt(np.square(err).mean())
             err_std = np.std(err)
@@ -369,9 +374,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 tp_gt_df = self.get_ground_truth(status="TP", label=label)
                 tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
                 if len(tp_index) == 0:
-                    logging.warning("There is no TP object. Could not calculate error.")
-                    return pd.DataFrame()
-                df_ = self.df.loc[tp_index]
+                    logging.warning(f"There is no TP object for {label}.")
+                    df_ = pd.DataFrame()
+                else:
+                    df_ = self.df.loc[tp_index]
 
             data["x"] = _summarize("x", df_)
             data["y"] = _summarize("y", df_)
