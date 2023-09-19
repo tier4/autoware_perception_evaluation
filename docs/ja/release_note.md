@@ -6,6 +6,16 @@
 
 ## Release for main branch
 
+### v1.1.2
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/91>
+
+  - 【ci】`Python3.7.11`で`Poetry1.6.1`以降が使えないため、`Poetry1.5.1`に固定
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/90>
+
+  - 【fix】`PerceptionAnalyzer`での誤差計算時にTPが無いラベルが一つでもあれば空の`pd.DataFrame`を返すバグの修正
+
 ### v1.1.1
 
 - <https://github.com/tier4/autoware_perception_evaluation/pull/88>
