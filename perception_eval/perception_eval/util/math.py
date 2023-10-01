@@ -129,3 +129,16 @@ def get_velocity_transform_matrix(position: Sequence, rotation: np.ndarray) -> n
     ret[3:, 3:] = rotation
     ret[3:, :3] = np.matmul(get_skew_matrix(position), rotation)
     return ret
+
+
+def get_angle_error(x1: np.ndarray, x2: np.ndarray) -> np.ndarray:
+    """Returns the angle error from target angles(=`x2`) to source angles(=`x1`) with direction in [-pi, pi].
+
+    Args:
+        x1 (np.ndarray): Array of source angles [rad].
+        x2 (np.ndarray): Array of target angles [rad].
+
+    Returns:
+        np.ndarray: Errors.
+    """
+    return np.arctan2(np.sin(x1 - x2), np.cos(x1 - x2))
