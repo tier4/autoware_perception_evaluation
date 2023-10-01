@@ -46,6 +46,7 @@ from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.metrics import MetricsScore
+from perception_eval.util.math import get_angle_error
 from tqdm import tqdm
 
 from .utils import get_metrics_info
@@ -684,14 +685,13 @@ class PerceptionAnalyzerBase(ABC):
             df_arr: np.ndarray = np.array(df_[column])
         gt_vals = df_arr[::2]
         est_vals = df_arr[1::2]
-        err: np.ndarray = gt_vals - est_vals
+
+        err: np.ndarray = (
+            get_angle_error(est_vals, gt_vals) if column == "yaw" else gt_vals - est_vals
+        )
+
         if remove_nan:
             err = err[~np.isnan(err)]
-
-        if column == "yaw":
-            # Clip err from [-2pi, 2pi] to [-pi, pi]
-            err[err > np.pi] = -2 * np.pi + err[err > np.pi]
-            err[err < -np.pi] = 2 * np.pi + err[err < -np.pi]
 
         return err
 

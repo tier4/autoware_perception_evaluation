@@ -14,6 +14,7 @@
 
 import numpy as np
 from perception_eval.util.math import _is_rotation_matrix
+from perception_eval.util.math import get_angle_error
 from perception_eval.util.math import rotation_matrix_to_euler
 import pytest
 
@@ -35,3 +36,15 @@ def test_is_rotation_matrix():
     Check whether returns correct flag.
     """
     assert _is_rotation_matrix(np.eye(3))
+
+
+def test_get_angle_error():
+    """Check whether to returns correct errors."""
+
+    sources = np.deg2rad([90, -90, 10, -10, 120, -120])
+    targets = np.deg2rad([-90, 90, -10, 10, -120, 120])
+
+    expected = np.deg2rad([180, -180, 20, -20, -120, 120])
+    answers = get_angle_error(sources, targets)
+
+    assert np.allclose(answers, expected)

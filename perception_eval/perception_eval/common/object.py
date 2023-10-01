@@ -27,6 +27,7 @@ from perception_eval.common.schema import FrameID
 from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
+from perception_eval.util.math import get_angle_error
 from perception_eval.util.math import rotation_matrix_to_euler
 from pyquaternion import Quaternion
 from shapely.geometry import Polygon
@@ -355,19 +356,11 @@ class DynamicObject:
         if other is None:
             return None
 
-        def _clip(err: float) -> float:
-            """Clip [-2pi, 2pi] to [0, pi]"""
-            if err < 0:
-                err += -np.pi * (err // np.pi)
-            elif err > np.pi:
-                err -= 2 * np.pi
-            return err
-
         yaw1, pitch1, roll1 = self.state.orientation.yaw_pitch_roll
         yaw2, pitch2, roll2 = other.state.orientation.yaw_pitch_roll
-        err_x: float = _clip(roll2 - roll1)
-        err_y: float = _clip(pitch2 - pitch1)
-        err_z: float = _clip(yaw2 - yaw1)
+        err_x: float = get_angle_error(roll1, roll2)
+        err_y: float = get_angle_error(pitch1, pitch2)
+        err_z: float = get_angle_error(yaw1, yaw2)
 
         return (err_x, err_y, err_z)
 
