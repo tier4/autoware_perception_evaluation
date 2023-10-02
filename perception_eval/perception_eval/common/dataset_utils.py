@@ -27,6 +27,9 @@ import numpy as np
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
 from nuscenes.utils.data_classes import Box
+from PIL import Image
+from pyquaternion.quaternion import Quaternion
+
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import Label
 from perception_eval.common.label import LabelConverter
@@ -38,8 +41,6 @@ from perception_eval.common.schema import FrameID
 from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
-from PIL import Image
-from pyquaternion.quaternion import Quaternion
 
 from . import dataset
 
@@ -175,9 +176,12 @@ def _convert_nuscenes_box_to_dynamic_object(
     Returns:
         DynamicObject: Converted dynamic object class
     """
-    position_: Tuple[float, float, float] = tuple(object_box.center.tolist())  # type: ignore
+    position_: Tuple[float, float, float] = tuple(object_box.center.astype(np.float64).tolist())
     orientation_: Quaternion = object_box.orientation
-    shape_: Shape = Shape(shape_type=ShapeType.BOUNDING_BOX, size=tuple(object_box.wlh.tolist()))
+    shape_: Shape = Shape(
+        shape_type=ShapeType.BOUNDING_BOX,
+        size=tuple(object_box.wlh.astype(np.float64).tolist()),
+    )
     semantic_score_: float = 1.0
 
     sample_annotation_: dict = nusc.get("sample_annotation", object_box.token)
@@ -262,7 +266,7 @@ def _get_sample_boxes(
         raise ValueError(f"Expected frame_id base_link or map, but got {frame_id}")
 
     # Get a sensor2map transform matrix
-    vehicle2map = np.eye(4)
+    vehicle2map = np.eye(4, dtype=np.float64)
     vehicle_pose = nusc.get("ego_pose", frame_data["ego_pose_token"])
     vehicle2map[:3, :3] = Quaternion(vehicle_pose["rotation"]).rotation_matrix
     vehicle2map[:3, 3] = vehicle_pose["translation"]
@@ -317,11 +321,11 @@ def _get_box_velocity(
     else:
         last = current
 
-    pos_last = np.array(last["translation"])
-    pos_first = np.array(first["translation"])
+    pos_last = np.array(last["translation"], dtype=np.float64)
+    pos_first = np.array(first["translation"], dtype=np.float64)
     pos_diff = pos_last - pos_first
 
-    object2map = np.eye(4)
+    object2map = np.eye(4, dtype=np.float64)
     object2map[:3, :3] = Quaternion(first["rotation"]).rotation_matrix
     object2map[3, :3] = first["translation"]
 
@@ -384,9 +388,11 @@ def _get_tracking_data(
     past_shapes: List[Shape] = []
     past_velocities: List[Tuple[float, float, float]] = []
     for record_ in past_records_:
-        past_positions.append(tuple(record_["translation"]))
+        translation: Tuple[float, float, float] = (float(t) for t in record_["translation"])
+        past_positions.append(translation)
         past_orientations.append(Quaternion(record_["rotation"]))
-        past_shapes.append(Shape(shape_type=ShapeType.BOUNDING_BOX, size=record_["size"]))
+        size: Tuple[float, float, float] = (float(s) for s in record_["size"])
+        past_shapes.append(Shape(shape_type=ShapeType.BOUNDING_BOX, size=size))
         past_velocities.append(nusc.box_velocity(record_["token"]))
 
     return past_positions, past_orientations, past_shapes, past_velocities
