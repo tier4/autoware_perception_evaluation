@@ -6,6 +6,12 @@
 
 ## Release for main branch
 
+### v1.1.3
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/94>
+
+  - 【fix】整数値が入っている場合に対処するため`float`にキャスト
+
 ### v1.1.2
 
 - <https://github.com/tier4/autoware_perception_evaluation/pull/91>
