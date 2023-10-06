@@ -29,9 +29,7 @@ class TestClassificationMetricsScore(unittest.TestCase):
     """The class to test ClassificationMetricsScore."""
 
     def setUp(self) -> None:
-        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data2d(
-            use_roi=False
-        )
+        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data2d(use_roi=False)
         self.evaluation_task: EvaluationTask = EvaluationTask.CLASSIFICATION2D
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,

@@ -110,26 +110,13 @@ class EDAVisualizer:
             self.is_gt = False
 
             names = np.stack(
-                [
-                    estimated_object.estimated_object.semantic_label.label.value
-                    for estimated_object in objects
-                ]
+                [estimated_object.estimated_object.semantic_label.label.value for estimated_object in objects]
             )
-            xyz = np.stack(
-                [estimated_object.estimated_object.state.position for estimated_object in objects]
-            )
-            wlh = np.stack(
-                [estimated_object.estimated_object.state.size for estimated_object in objects]
-            )
-            pcd_nums = np.stack(
-                [estimated_object.estimated_object.pointcloud_num for estimated_object in objects]
-            )
-            center_distances = np.stack(
-                [estimated_object.center_distance.value for estimated_object in objects]
-            )
-            confidences = np.stack(
-                [estimated_object.estimated_object.semantic_score for estimated_object in objects]
-            )
+            xyz = np.stack([estimated_object.estimated_object.state.position for estimated_object in objects])
+            wlh = np.stack([estimated_object.estimated_object.state.size for estimated_object in objects])
+            pcd_nums = np.stack([estimated_object.estimated_object.pointcloud_num for estimated_object in objects])
+            center_distances = np.stack([estimated_object.center_distance.value for estimated_object in objects])
+            confidences = np.stack([estimated_object.estimated_object.semantic_score for estimated_object in objects])
 
             df: pd.DataFrame = pd.DataFrame(
                 dict(
@@ -166,9 +153,7 @@ class EDAVisualizer:
         axes = axes.flatten()
         return axes
 
-    def hist_object_count_for_each_distance(
-        self, class_names: List[str], ranges_xy: List[Union[int, float]]
-    ) -> None:
+    def hist_object_count_for_each_distance(self, class_names: List[str], ranges_xy: List[Union[int, float]]) -> None:
         """[summary]
         Show histogram of number of objects that are less than the certain distance in x-y plane.
         Distance is specified by ranges_xy.
@@ -189,9 +174,7 @@ class EDAVisualizer:
             _df: pd.DataFrame = self.visualize_df[self.visualize_df.distance_2d < range_xy]
 
             fig.add_trace(
-                go.Histogram(
-                    x=_df["name"], name=f"#objects: ~{range_xy}m", marker=dict(color="blue")
-                ),
+                go.Histogram(x=_df["name"], name=f"#objects: ~{range_xy}m", marker=dict(color="blue")),
                 row=1,
                 col=i + 1,
             )
@@ -227,7 +210,6 @@ class EDAVisualizer:
         )
 
         for cls_i, class_name in enumerate(class_names):
-
             _df_cls = self.visualize_df[self.visualize_df.name == class_name]
 
             dist2d = np.linalg.norm(np.stack((_df_cls.x, _df_cls.y), axis=1), axis=1)
@@ -235,9 +217,7 @@ class EDAVisualizer:
             if y_range is None:
                 y_range = [0, len(dist2d) / 40]
 
-            layout = go.Histogram(
-                x=dist2d, name=f"{class_name}: #objects={len(_df_cls):,}", nbinsx=400
-            )
+            layout = go.Histogram(x=dist2d, name=f"{class_name}: #objects={len(_df_cls):,}", nbinsx=400)
             fig.add_trace(layout, row=1, col=cls_i + 1)
 
             fig.layout[f"xaxis{cls_i+1}"].title = "distance(xy plane) [m]"
@@ -276,22 +256,16 @@ class EDAVisualizer:
                 h_mean, h_std = _df_cls.h.mean(), _df_cls.h.std()
 
                 hist = axes[cls_i].hist2d(_df_cls.w, _df_cls.l, bins=50, norm=mpl.colors.LogNorm())
-                axes[cls_i].plot(
-                    w_mean, l_mean, marker="x", color="r", markersize=10, markeredgewidth=3
-                )
+                axes[cls_i].plot(w_mean, l_mean, marker="x", color="r", markersize=10, markeredgewidth=3)
                 axes[cls_i].set_title(
                     f"{class_name}: (w, l, h)=({w_mean:.2f}±{w_std:.2f}, {l_mean:.2f}±{l_std:.2f}, {h_mean:.2f}±{h_std:.2f})"
                 )
                 axes[cls_i].set_xlabel("width")
                 axes[cls_i].set_ylabel("length")
                 if width_lim_dict:
-                    axes[cls_i].set_xlim(
-                        width_lim_dict[class_name][0], width_lim_dict[class_name][1]
-                    )
+                    axes[cls_i].set_xlim(width_lim_dict[class_name][0], width_lim_dict[class_name][1])
                 if length_lim_dict:
-                    axes[cls_i].set_ylim(
-                        length_lim_dict[class_name][0], length_lim_dict[class_name][1]
-                    )
+                    axes[cls_i].set_ylim(length_lim_dict[class_name][0], length_lim_dict[class_name][1])
                 plt.colorbar(hist[3], ax=axes[cls_i])
 
         plt.savefig(self.save_dir + "/hist2d_object_wl_for_each_class.svg")
@@ -324,9 +298,7 @@ class EDAVisualizer:
                 z_mean, z_std = _df_cls.z.mean(), _df_cls.z.std()
 
                 hist = axes[cls_i].hist2d(_df_cls.x, _df_cls.y, bins=50, norm=mpl.colors.LogNorm())
-                axes[cls_i].plot(
-                    x_mean, y_mean, marker="x", color="r", markersize=10, markeredgewidth=3
-                )
+                axes[cls_i].plot(x_mean, y_mean, marker="x", color="r", markersize=10, markeredgewidth=3)
                 axes[cls_i].set_title(
                     f"{class_name}: (x, y, z)=({x_mean:.2f}±{x_std:.2f}, {y_mean:.2f}±{y_std:.2f}, {z_mean:.2f}±{z_std:.2f})"
                 )
@@ -340,9 +312,7 @@ class EDAVisualizer:
 
         plt.savefig(self.save_dir + "/hist2d_object_center_xy_for_each_class.svg")
 
-    def hist2d_object_num_points_for_each_class(
-        self, class_names: List[str], max_pts: int = 500
-    ) -> None:
+    def hist2d_object_num_points_for_each_class(self, class_names: List[str], max_pts: int = 500) -> None:
         """[summary]
         Show 2d-histogram of number of point clouds in each class.
         Ground truth objects only have the number of point cloud in bbox, so this method works only for ground truth objects.
@@ -451,9 +421,7 @@ class EDAManager:
         )
         self.show = show
 
-    def visualize_ground_truth_objects(
-        self, ground_truth_object_dict: Dict[str, List[DynamicObject]]
-    ) -> None:
+    def visualize_ground_truth_objects(self, ground_truth_object_dict: Dict[str, List[DynamicObject]]) -> None:
         """[summary]
         visualize ground truth objects
 
@@ -504,9 +472,7 @@ class EDAManager:
             confidence_threshold (float):
                     confidence threshold for visualization
         """
-        target_labels: List[LabelType] = [
-            self.label_converter.convert_name(name) for name in self.class_names
-        ]
+        target_labels: List[LabelType] = [self.label_converter.convert_name(name) for name in self.class_names]
         # visualize tp, fp in estimated objects
         tp_results, fp_results = divide_tp_fp_objects(
             object_results,
@@ -537,9 +503,7 @@ class EDAManager:
             )
 
         # visualize fn in ground truth objects
-        fn_gts: List[DynamicObject] = get_fn_objects(
-            ground_truth_objects, object_results, tp_results
-        )
+        fn_gts: List[DynamicObject] = get_fn_objects(ground_truth_objects, object_results, tp_results)
         if len(fn_gts) == 0:
             logger.info("No FN ground truths, so no graphs are generated for FN.")
         else:

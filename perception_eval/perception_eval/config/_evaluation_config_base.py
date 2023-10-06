@@ -100,9 +100,7 @@ class _EvaluationConfigBase(ABC):
         self.dataset_paths: List[str] = dataset_paths
 
         self.frame_ids: List[FrameID] = (
-            [FrameID.from_value(frame_id)]
-            if isinstance(frame_id, str)
-            else [FrameID.from_value(f) for f in frame_id]
+            [FrameID.from_value(frame_id)] if isinstance(frame_id, str) else [FrameID.from_value(f) for f in frame_id]
         )
         if self.evaluation_task.is_3d() and len(self.frame_ids) != 1:
             raise ValueError(f"For 3D task, FrameID must be 1, but got {len(self.frame_ids)}")

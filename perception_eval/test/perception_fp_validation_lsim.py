@@ -121,11 +121,7 @@ class FPValidationLsimMoc:
 
         scene_tp_rate, scene_fp_rate, scene_tn_rate, scene_fn_rate = get_scene_rates(status_list)
         logging.info(
-            "[scene]"
-            f"TP: {scene_tp_rate}, "
-            f"FP: {scene_fp_rate}, "
-            f"TN: {scene_tn_rate}, "
-            f"FN: {scene_fn_rate}"
+            "[scene]" f"TP: {scene_tp_rate}, " f"FP: {scene_fp_rate}, " f"TN: {scene_tn_rate}, " f"FN: {scene_fn_rate}"
         )
 
 

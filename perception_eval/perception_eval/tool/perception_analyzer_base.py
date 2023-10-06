@@ -486,9 +486,7 @@ class PerceptionAnalyzerBase(ABC):
             if len(self) > 0:
                 concat.append(self.df)
 
-            self.__ego2maps[str(self.num_scene)][
-                str(frame.frame_name)
-            ] = frame.frame_ground_truth.ego2map
+            self.__ego2maps[str(self.num_scene)][str(frame.frame_name)] = frame.frame_ground_truth.ego2map
 
             tp_df = self.format2df(
                 frame.pass_fail_result.tp_object_results,
@@ -686,9 +684,7 @@ class PerceptionAnalyzerBase(ABC):
         if df is None:
             df = self.df
 
-        data: Dict[str, List[float]] = {
-            str(s): [0.0] * len(self.all_labels) for s in MatchingStatus
-        }
+        data: Dict[str, List[float]] = {str(s): [0.0] * len(self.all_labels) for s in MatchingStatus}
         for i, label in enumerate(self.all_labels):
             if label == "ALL":
                 label = None
@@ -1034,9 +1030,7 @@ class PerceptionAnalyzerBase(ABC):
             min_value, max_value = plot_range
         else:
             min_value = 0 if mode == PlotAxes.CONFIDENCE else _get_min_value(gt_values, est_values)
-            max_value = (
-                100 if mode == PlotAxes.CONFIDENCE else _get_max_value(gt_values, est_values)
-            )
+            max_value = 100 if mode == PlotAxes.CONFIDENCE else _get_max_value(gt_values, est_values)
         step = bins if bins else mode.get_bins()
         hist_bins = np.arange(min_value, max_value + step, step)
         _, axis = np.histogram(est_values, bins=hist_bins)

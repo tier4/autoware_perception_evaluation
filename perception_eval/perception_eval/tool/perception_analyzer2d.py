@@ -321,12 +321,8 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         if self.config.label_params["allow_matching_unknown"] and "unknown" not in target_labels:
             target_labels.append("unknown")
 
-        gt_indices: np.ndarray = (
-            gt_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
-        )
-        est_indices: np.ndarray = (
-            est_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
-        )
+        gt_indices: np.ndarray = gt_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
+        est_indices: np.ndarray = est_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
 
         num_classes = len(target_labels)
         indices = num_classes * gt_indices + est_indices

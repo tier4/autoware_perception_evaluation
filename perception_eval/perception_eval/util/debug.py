@@ -116,9 +116,7 @@ def format_dict_for_log(
     Returns:
         (str) formatted str
     """
-    formatted_str: str = (
-        "\n" + pprint.pformat(dict, indent=1, width=120, depth=None, compact=True) + "\n"
-    )
+    formatted_str: str = "\n" + pprint.pformat(dict, indent=1, width=120, depth=None, compact=True) + "\n"
     return formatted_str
 
 

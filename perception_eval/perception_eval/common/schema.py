@@ -81,9 +81,7 @@ class FrameID(Enum):
             task = EvaluationTask.from_value(task)
 
         if task.is_2d():
-            raise ValueError(
-                "For 2D task, FrameID must be initialized explicitly, or use `FrameID.from_value(name)`."
-            )
+            raise ValueError("For 2D task, FrameID must be initialized explicitly, or use `FrameID.from_value(name)`.")
 
         if task in (EvaluationTask.DETECTION, EvaluationTask.SENSING):
             return FrameID.BASE_LINK
@@ -120,9 +118,7 @@ class Visibility(Enum):
         elif name == "v80-100":
             return Visibility.FULL
         else:
-            logging.warning(
-                f"level: {name} is not supported, Visibility.UNAVAILABLE will be assigned."
-            )
+            logging.warning(f"level: {name} is not supported, Visibility.UNAVAILABLE will be assigned.")
             return Visibility.UNAVAILABLE
 
     def __eq__(self, __o: object) -> bool:

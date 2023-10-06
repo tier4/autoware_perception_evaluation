@@ -116,9 +116,7 @@ def _sample_to_frame(
         semantic_label = label_converter.convert_label(object_box.name, attributes)
 
         if evaluation_task.is_fp_validation() and semantic_label.is_fp() is False:
-            raise ValueError(
-                f"Unexpected GT label for {evaluation_task.value}, got {semantic_label.label}"
-            )
+            raise ValueError(f"Unexpected GT label for {evaluation_task.value}, got {semantic_label.label}")
 
         object_: DynamicObject = _convert_nuscenes_box_to_dynamic_object(
             nusc=nusc,
@@ -328,9 +326,7 @@ def _get_box_velocity(
     object2map[:3, :3] = Quaternion(first["rotation"]).rotation_matrix
     object2map[3, :3] = first["translation"]
 
-    pos_diff: np.ndarray = np.linalg.inv(object2map).dot(
-        (pos_diff[0], pos_diff[1], pos_diff[2], 1.0)
-    )[:3]
+    pos_diff: np.ndarray = np.linalg.inv(object2map).dot((pos_diff[0], pos_diff[1], pos_diff[2], 1.0))[:3]
 
     time_last: float = 1e-6 * nusc.get("sample", last["sample_token"])["timestamp"]
     time_first: float = 1e-6 * nusc.get("sample", first["sample_token"])["timestamp"]
@@ -469,9 +465,9 @@ def _sample_to_frame_2d(
     raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
     if load_raw_data:
         for sensor_name, sample_data_token in nusc_sample["data"].items():
-            if (
-                label_converter.label_type == TrafficLightLabel and "TRAFFIC_LIGHT" in sensor_name
-            ) or ("CAM" in sensor_name and "TRAFFIC_LIGHT" not in sensor_name):
+            if (label_converter.label_type == TrafficLightLabel and "TRAFFIC_LIGHT" in sensor_name) or (
+                "CAM" in sensor_name and "TRAFFIC_LIGHT" not in sensor_name
+            ):
                 img_path: str = nusc.get_sample_data_path(sample_data_token)
                 raw_data[sensor_name.lower()] = np.array(Image.open(img_path), dtype=np.uint8)
 

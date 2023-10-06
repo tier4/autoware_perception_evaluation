@@ -89,9 +89,7 @@ class Map:
 
         # calculate mAP & mAPH
         self.map: float = sum(valid_aps) / len(valid_aps) if 0 < len(valid_aps) else float("inf")
-        self.maph: float = (
-            sum(valid_aphs) / len(valid_aphs) if 0 < len(valid_aphs) else float("inf")
-        )
+        self.maph: float = sum(valid_aphs) / len(valid_aphs) if 0 < len(valid_aphs) else float("inf")
 
     def __str__(self) -> str:
         """__str__ method

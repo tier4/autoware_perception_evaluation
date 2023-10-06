@@ -21,9 +21,7 @@ def CustomTextFormatter():
     """[summary]
     Custom Formatter
     """
-    return logging.Formatter(
-        "[%(asctime)s] [%(levelname)s] [%(filename)s:%(lineno)d %(funcName)s] %(message)s"
-    )
+    return logging.Formatter("[%(asctime)s] [%(levelname)s] [%(filename)s:%(lineno)d %(funcName)s] %(message)s")
 
 
 class SensitiveWordFilter(logging.Filter):

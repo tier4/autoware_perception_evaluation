@@ -84,9 +84,7 @@ class TestObjectResult(unittest.TestCase):
                         estimated_objects,
                         f"Unexpected estimated object at {i}",
                     )
-                    estimated_object_index: int = estimated_objects.index(
-                        object_result_.estimated_object
-                    )
+                    estimated_object_index: int = estimated_objects.index(object_result_.estimated_object)
                     gt_idx = ans_pair_index[estimated_object_index][1]
                     if gt_idx is not None:
                         self.assertEqual(
