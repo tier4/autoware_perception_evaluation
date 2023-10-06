@@ -122,9 +122,7 @@ class TestCLEAR(unittest.TestCase):
     def setUp(self) -> None:
         self.dummy_estimated_objects: List[DynamicObject] = []
         self.dummy_ground_truth_objects: List[DynamicObject] = []
-        self.dummy_unique_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data(
-            use_unique_id=True
-        )
+        self.dummy_unique_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data(use_unique_id=True)
         self.dummy_estimated_objects, _ = make_dummy_data(use_unique_id=False)
 
         self.evaluation_task: EvaluationTask = EvaluationTask.TRACKING
@@ -157,9 +155,7 @@ class TestCLEAR(unittest.TestCase):
                         (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
         """
         # patterns: (prev_diff_trans, cur_diff_trans, target_label, use_unique_id, ans_clear)
-        patterns: List[
-            Tuple[Optional[DiffTranslation], DiffTranslation, AutowareLabel, AnswerCLEAR]
-        ] = [
+        patterns: List[Tuple[Optional[DiffTranslation], DiffTranslation, AutowareLabel, AnswerCLEAR]] = [
             # ========== Test unique ID association ==========
             # (1). Est: 2, GT: 1
             # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])

@@ -251,9 +251,7 @@ class TestObjectsFilter(unittest.TestCase):
             ),
         ]
 
-        for n, (diff_distance, expect_tp_indices, expect_fp_indices, label_changes) in enumerate(
-            patterns
-        ):
+        for n, (diff_distance, expect_tp_indices, expect_fp_indices, label_changes) in enumerate(patterns):
             with self.subTest(f"Test `get_positive_objects()`: {n + 1}"):
                 estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
@@ -298,9 +296,7 @@ class TestObjectsFilter(unittest.TestCase):
                 )
                 for fp_result in fp_results:
                     fp_est_idx: int = estimated_objects.index(fp_result.estimated_object)
-                    fp_gt_idx: Optional[int] = expect_fp_indices[
-                        expect_fp_indices[:, 0] == fp_est_idx
-                    ][0, 1]
+                    fp_gt_idx: Optional[int] = expect_fp_indices[expect_fp_indices[:, 0] == fp_est_idx][0, 1]
                     if fp_gt_idx is None:
                         self.assertIsNone(fp_result.ground_truth_object)
                     else:
@@ -333,14 +329,10 @@ class TestObjectsFilter(unittest.TestCase):
             with self.subTest(f"Test `get_negative_objects()`: {n+1}"):
                 # expect TN/FN objects
                 expect_tn_objects = [
-                    obj
-                    for idx, obj in enumerate(self.dummy_ground_truth_objects)
-                    if idx in expect_tn_indices
+                    obj for idx, obj in enumerate(self.dummy_ground_truth_objects) if idx in expect_tn_indices
                 ]
                 expect_fn_objects = [
-                    obj
-                    for idx, obj in enumerate(self.dummy_ground_truth_objects)
-                    if idx in expect_fn_indices
+                    obj for idx, obj in enumerate(self.dummy_ground_truth_objects) if idx in expect_fn_indices
                 ]
 
                 estimated_objects: List[DynamicObject] = get_objects_with_difference(
@@ -589,9 +581,7 @@ class TestObjectsFilter(unittest.TestCase):
                     tp_results,
                 )
 
-                ans_fn_objects = [
-                    x for idx, x in enumerate(self.dummy_ground_truth_objects) if idx in ans_fn_idx
-                ]
+                ans_fn_objects = [x for idx, x in enumerate(self.dummy_ground_truth_objects) if idx in ans_fn_idx]
                 self.assertEqual(fn_objects, ans_fn_objects)
 
     def test_get_fn_objects_for_different_label(self):
@@ -668,9 +658,7 @@ class TestObjectsFilter(unittest.TestCase):
                     tp_results,
                 )
 
-                ans_fn_objects = [
-                    x for idx, x in enumerate(self.dummy_ground_truth_objects) if idx in ans_fn_idx
-                ]
+                ans_fn_objects = [x for idx, x in enumerate(self.dummy_ground_truth_objects) if idx in ans_fn_idx]
                 self.assertEqual(fn_objects, ans_fn_objects)
 
     def test_filter_object_results_by_confidence(self):
@@ -726,9 +714,7 @@ class TestObjectsFilter(unittest.TestCase):
 
         test patterns:
         """
-        objects_dict: Dict[AutowareLabel, List[DynamicObject]] = divide_objects(
-            self.dummy_ground_truth_objects
-        )
+        objects_dict: Dict[AutowareLabel, List[DynamicObject]] = divide_objects(self.dummy_ground_truth_objects)
         for label, objects in objects_dict.items():
             assert all([obj.semantic_label.label == label for obj in objects])
 
@@ -737,16 +723,11 @@ class TestObjectsFilter(unittest.TestCase):
             estimated_objects=self.dummy_ground_truth_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,
         )
-        object_results_dict: Dict[
-            AutowareLabel, List[DynamicObjectWithPerceptionResult]
-        ] = divide_objects(objects_results)
+        object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+            objects_results
+        )
         for label, object_results in object_results_dict.items():
-            assert all(
-                [
-                    obj_result.estimated_object.semantic_label.label == label
-                    for obj_result in object_results
-                ]
-            )
+            assert all([obj_result.estimated_object.semantic_label.label == label for obj_result in object_results])
 
     def test_divide_objects_to_num(self):
         """[summary]

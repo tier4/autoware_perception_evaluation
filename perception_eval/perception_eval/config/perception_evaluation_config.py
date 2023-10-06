@@ -152,9 +152,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
 
         max_matchable_radii: Optional[Union[float, List[float]]] = e_cfg.get("max_matchable_radii")
         if max_matchable_radii is not None:
-            max_matchable_radii: List[float] = set_thresholds(
-                max_matchable_radii, num_elements, False
-            )
+            max_matchable_radii: List[float] = set_thresholds(max_matchable_radii, num_elements, False)
 
         min_point_numbers: Optional[List[int]] = e_cfg.get("min_point_numbers")
         if min_point_numbers is not None:
@@ -165,9 +163,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
 
         conf_thresh: Optional[float] = e_cfg.get("confidence_threshold")
         if conf_thresh is not None:
-            confidence_threshold_list: List[float] = set_thresholds(
-                conf_thresh, num_elements, False
-            )
+            confidence_threshold_list: List[float] = set_thresholds(conf_thresh, num_elements, False)
         else:
             confidence_threshold_list = None
 

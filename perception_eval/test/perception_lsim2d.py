@@ -62,9 +62,7 @@ class PerceptionLSimMoc:
                 target_labels=["green", "red", "yellow", "unknown"]
                 if label_prefix == "traffic_light"
                 else ["car", "bicycle", "pedestrian", "motorbike"],
-                ignore_attributes=["cycle_state.without_rider"]
-                if label_prefix == "autoware"
-                else None,
+                ignore_attributes=["cycle_state.without_rider"] if label_prefix == "autoware" else None,
             )
         )
         evaluation_config_dict.update(
@@ -112,12 +110,8 @@ class PerceptionLSimMoc:
             if self.label_prefix == "traffic_light"
             else ["car", "bicycle", "pedestrian", "motorbike"]
         )
-        ignore_attributes = (
-            ["cycle_state.without_rider"] if self.label_prefix == "autoware" else None
-        )
-        matching_threshold_list = (
-            None if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5]
-        )
+        ignore_attributes = ["cycle_state.without_rider"] if self.label_prefix == "autoware" else None
+        matching_threshold_list = None if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5]
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam
         critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
@@ -301,9 +295,7 @@ if __name__ == "__main__":
     )
 
     for ground_truth_frame in classification_lsim.evaluator.ground_truth_frames:
-        objects_with_difference = get_objects_with_difference2d(
-            ground_truth_frame.objects, label_to_unknown_rate=0.5
-        )
+        objects_with_difference = get_objects_with_difference2d(ground_truth_frame.objects, label_to_unknown_rate=0.5)
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
             objects_with_difference.pop(0)

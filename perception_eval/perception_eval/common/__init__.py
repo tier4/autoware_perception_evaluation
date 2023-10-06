@@ -33,9 +33,7 @@ def distance_objects(object_1: ObjectType, object_2: ObjectType) -> float:
     Returns: float: The center distance between object_1 and object_2.
     """
     if type(object_1) != type(object_2):
-        raise TypeError(
-            f"objects' type must be same, but got {type(object_1) and {type(object_2)}}"
-        )
+        raise TypeError(f"objects' type must be same, but got {type(object_1) and {type(object_2)}}")
 
     if isinstance(object_1, DynamicObject):
         return distance_points(object_1.state.position, object_2.state.position)

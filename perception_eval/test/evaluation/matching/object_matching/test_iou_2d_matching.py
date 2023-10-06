@@ -44,9 +44,7 @@ class TestIou2dMatching(unittest.TestCase):
         patterns: List[Tuple[float, float]] = [(0.0, 1.0), (0.5, 0.5), (1.0, 0.0)]
         for diff_distance, ans_area_intersection in patterns:
             with self.subTest("Test get_area_intersection."):
-                diff_distance_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
@@ -54,9 +52,7 @@ class TestIou2dMatching(unittest.TestCase):
                 for estimated_object, ground_truth_object in zip(
                     diff_distance_dummy_ground_truth_objects, self.dummy_ground_truth_objects
                 ):
-                    area_intersection = _get_area_intersection(
-                        estimated_object, ground_truth_object
-                    )
+                    area_intersection = _get_area_intersection(estimated_object, ground_truth_object)
                     self.assertAlmostEqual(area_intersection, ans_area_intersection)
 
     def test_get_iou_bev_matching(self):

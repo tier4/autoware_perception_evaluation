@@ -489,9 +489,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             columns: List[str] = [columns]
         if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
             raise ValueError(f"{columns} is unsupported for plot")
-        return super().plot_error(
-            columns=columns, mode=mode, heatmap=heatmap, show=show, bins=bins, **kwargs
-        )
+        return super().plot_error(columns=columns, mode=mode, heatmap=heatmap, show=show, bins=bins, **kwargs)
 
     def box_plot(
         self,

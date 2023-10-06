@@ -56,9 +56,7 @@ class TestPlaneDistanceMatching(unittest.TestCase):
         )
         for diff_distance, ans_plane_distance_list in patterns:
             with self.subTest("Test get_uc_plane_distance."):
-                diff_distance_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=fixed_dummy_ground_truth_objects,
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,

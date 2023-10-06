@@ -256,9 +256,7 @@ def generate_area_points(
         upper_rights: np.ndarray = np.stack([r_xx, r_yy], axis=-1).reshape(-1, 2)
         bottom_lefts: np.ndarray = np.stack([l_xx, l_yy], axis=-1).reshape(-1, 2)
     else:
-        raise ValueError(
-            f"The number of area division must be 1, 3 or 9, but got {num_area_division}"
-        )
+        raise ValueError(f"The number of area division must be 1, 3 or 9, but got {num_area_division}")
 
     return upper_rights, bottom_lefts
 
