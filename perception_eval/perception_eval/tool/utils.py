@@ -16,22 +16,20 @@ from __future__ import annotations
 
 from copy import deepcopy
 from enum import Enum
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Sequence
-from typing import Tuple
-from typing import Union
+from typing import TYPE_CHECKING, Any, Sequence
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
-from perception_eval.evaluation.metrics.metrics import MetricsScore
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
+
+if TYPE_CHECKING:
+    import matplotlib.pyplot as plt
+
+    from perception_eval.evaluation.metrics.metrics import MetricsScore
+    from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
 
 
 class PlotAxes(Enum):
@@ -69,7 +67,7 @@ class PlotAxes(Enum):
     def __str__(self) -> str:
         return self.value
 
-    def __eq__(self, other: Union[PlotAxes, str]) -> bool:
+    def __eq__(self, other: PlotAxes | str) -> bool:
         if isinstance(other, str):
             return self.value == other
         return super().__eq__(other)
@@ -84,10 +82,13 @@ class PlotAxes(Enum):
         """Returns axes values for plot.
 
         Args:
+        ----
             df (pandas.DataFrame): Source DataFrame.
 
         Returns:
-            numpy.ndarray: Array of axes values. For 2D plot, returns in shape (N,). For 3D plot, returns in shape (2, N)
+        -------
+            numpy.ndarray: Array of axes values. For 2D plot, returns in shape (N,).
+                For 3D plot, returns in shape (2, N).
         """
         if self == PlotAxes.FRAME:
             axes = np.array(df["frame"], dtype=np.uint32)
@@ -124,14 +125,16 @@ class PlotAxes(Enum):
             thetas[thetas > np.pi] = thetas[thetas > np.pi] - 2.0 * np.pi
             axes: np.ndarray = np.stack([thetas, distances], axis=0)
         else:
-            raise TypeError(f"Unexpected mode: {self}")
+            msg = f"Unexpected mode: {self}"
+            raise TypeError(msg)
 
         return axes
 
-    def get_label(self) -> Union[str, Tuple[str]]:
+    def get_label(self) -> str | tuple[str]:
         """Returns label name for plot.
 
         Returns:
+        -------
             str: Name of label.
         """
         if self == PlotAxes.FRAME:
@@ -152,11 +155,13 @@ class PlotAxes(Enum):
             return "vx [m/s]", "vy [m/s]"
         elif self == PlotAxes.POLAR:
             return "theta [rad]", "r [m]"
+        return None
 
-    def get_bins(self) -> Union[float, Tuple[float, float]]:
+    def get_bins(self) -> float | tuple[float, float]:
         """Returns default bins.
 
         Returns:
+        -------
             Union[float, Tuple[float, float]]
         """
         if self == PlotAxes.FRAME:
@@ -177,11 +182,13 @@ class PlotAxes(Enum):
             return (1.0, 1.0)
         elif self == PlotAxes.POLAR:
             return (0.2, 10)
+        return None
 
     def setup_axis(self, ax: plt.Axes, **kwargs) -> None:
         """Setup axis limits and grid interval to plt.Axes.
 
         Args:
+        ----
             ax (plt.Axes)
             **kwargs:
                 xlim (Union[float, Sequence]): If use sequence, (left, right) order.
@@ -193,10 +200,11 @@ class PlotAxes(Enum):
             ax.set_xlim(-5, 105)
 
     @property
-    def projection(self) -> Optional[str]:
+    def projection(self) -> str | None:
         """Returns type of projection.
 
         Returns:
+        -------
             Optional[str]: If 3D, returns "3d", otherwise returns None.
         """
         return "3d" if self.is_3d() else None
@@ -214,7 +222,7 @@ def generate_area_points(
     num_area_division: int,
     max_x: float,
     max_y: float,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Generate (x,y) pairs of upper right and bottom left of each separate area.
     They are arranged in numerical order as shown in below.
 
@@ -228,11 +236,13 @@ def generate_area_points(
                     +--------+          +--------+          +--------+
 
     Args:
+    ----
         num_area_division (int)
         max_x (float)
         max_y (float)
 
     Returns:
+    -------
         upper_rights (np.ndarray)
         bottom_lefts (np.ndarray)
     """
@@ -256,26 +266,29 @@ def generate_area_points(
         upper_rights: np.ndarray = np.stack([r_xx, r_yy], axis=-1).reshape(-1, 2)
         bottom_lefts: np.ndarray = np.stack([l_xx, l_yy], axis=-1).reshape(-1, 2)
     else:
-        raise ValueError(f"The number of area division must be 1, 3 or 9, but got {num_area_division}")
+        msg = f"The number of area division must be 1, 3 or 9, but got {num_area_division}"
+        raise ValueError(msg)
 
     return upper_rights, bottom_lefts
 
 
 def get_area_idx(
-    object_result: Union[DynamicObject, DynamicObjectWithPerceptionResult],
+    object_result: DynamicObject | DynamicObjectWithPerceptionResult,
     upper_rights: np.ndarray,
     bottom_lefts: np.ndarray,
-    ego2map: Optional[np.ndarray] = None,
-) -> Optional[int]:
+    ego2map: np.ndarray | None = None,
+) -> int | None:
     """Returns the index of area.
 
     Args:
+    ----
         object_result (Union[DynamicObject, DynamicObjectWithPerceptionResult])
         upper_rights (np.ndarray): in shape (N, 2), N is number of area division.
         bottom_lefts (np.ndarray): in shape (N, 2), N is number of area division.
         ego2map (Optional[np.ndarray]): in shape (4, 4)
 
     Returns:
+    -------
         area_idx (Optional[int]): If the position is out of range, returns None.
     """
     if isinstance(object_result, DynamicObject):
@@ -285,17 +298,20 @@ def get_area_idx(
         frame_id: FrameID = object_result.estimated_object.frame_id
         obj_xyz: np.ndarray = np.array(object_result.estimated_object.state.position)
     else:
-        raise TypeError(f"Unexpected object type: {type(object_result)}")
+        msg = f"Unexpected object type: {type(object_result)}"
+        raise TypeError(msg)
 
     if frame_id == FrameID.MAP:
         if ego2map is None:
-            raise RuntimeError("When frame id is map, ego2map must be specified.")
+            msg = "When frame id is map, ego2map must be specified."
+            raise RuntimeError(msg)
         obj_xyz: np.ndarray = np.append(obj_xyz, 1.0)
         obj_xy = np.linalg.inv(ego2map).dot(obj_xyz)[:2]
     elif frame_id == "base_link":
         obj_xy = obj_xyz[:2]
     else:
-        raise ValueError(f"Unexpected frame_id: {frame_id}")
+        msg = f"Unexpected frame_id: {frame_id}"
+        raise ValueError(msg)
 
     is_x_inside: np.ndarray = (obj_xy[0] < upper_rights[:, 0]) * (obj_xy[0] > bottom_lefts[:, 0])
     is_y_inside: np.ndarray = (obj_xy[1] > upper_rights[:, 1]) * (obj_xy[1] < bottom_lefts[:, 1])
@@ -306,30 +322,34 @@ def get_area_idx(
 
 
 def extract_area_results(
-    frame_results: List[PerceptionFrameResult],
-    area: Union[int, List[int]],
+    frame_results: list[PerceptionFrameResult],
+    area: int | list[int],
     upper_rights: np.ndarray,
     bottom_lefts: np.ndarray,
-) -> List[PerceptionFrameResult]:
+) -> list[PerceptionFrameResult]:
     """[summary]
     Extract object results and ground truth of PerceptionFrameResult in area.
+
     Args:
+    ----
         frame_results (List[PerceptionFrameResult])
         area (Union[int, List[int]])
         upper_rights (np.ndarray)
         bottom_lefts (np.ndarray)
+
     Returns:
-        List[PerceptionFrameResult]
+    -------
+        List[PerceptionFrameResult].
     """
-    out_frame_results: List[PerceptionFrameResult] = deepcopy(frame_results)
+    out_frame_results: list[PerceptionFrameResult] = deepcopy(frame_results)
     if isinstance(area, int):
         area = [area]
 
     for frame_result in out_frame_results:
-        out_object_results: List[DynamicObjectWithPerceptionResult] = []
-        out_ground_truths: List[DynamicObject] = []
+        out_object_results: list[DynamicObjectWithPerceptionResult] = []
+        out_ground_truths: list[DynamicObject] = []
         frame_id: str = frame_result.frame_ground_truth.frame_id
-        ego2map: Optional[np.ndarray] = frame_result.frame_ground_truth.ego2map
+        ego2map: np.ndarray | None = frame_result.frame_ground_truth.ego2map
         for object_result in frame_result.object_results:
             object_result_area: int = get_area_idx(
                 frame_id,
@@ -362,6 +382,7 @@ def setup_axis(ax: plt.Axes, **kwargs) -> None:
     Setup axis limits and grid interval to plt.Axes.
 
     Args:
+    ----
         ax (plt.Axes)
         **kwargs:
             xlim (Union[float, Sequence]): If use sequence, (left, right) order.
@@ -370,13 +391,13 @@ def setup_axis(ax: plt.Axes, **kwargs) -> None:
     """
     ax.grid()
     if kwargs.get("xlim"):
-        xlim: Union[float, Sequence] = kwargs.pop("xlim")
+        xlim: float | Sequence = kwargs.pop("xlim")
         if isinstance(xlim, float):
             ax.set_xlim(-xlim, xlim)
         elif isinstance(xlim, (list, tuple)):
             ax.set_xlim(xlim[0], xlim[1])
     if kwargs.get("ylim"):
-        ylim: Union[float, Sequence] = kwargs.pop("ylim")
+        ylim: float | Sequence = kwargs.pop("ylim")
         if isinstance(ylim, float):
             ax.set_ylim(-ylim, ylim)
         elif isinstance(ylim, (list, tuple)):
@@ -386,17 +407,19 @@ def setup_axis(ax: plt.Axes, **kwargs) -> None:
         ax.grid(lw=kwargs.pop("grid_interval"))
 
 
-def get_metrics_info(metrics_score: MetricsScore) -> Dict[str, Any]:
+def get_metrics_info(metrics_score: MetricsScore) -> dict[str, Any]:
     """[summary]
     Returns metrics score information as dict.
 
     Args:
+    ----
         metrics_score (MetricsScore): Calculated metrics score.
 
     Returns:
+    -------
         data (Dict[str, Any]):
     """
-    data: Dict[str, List[float]] = {}
+    data: dict[str, list[float]] = {}
     # detection
     for map in metrics_score.maps:
         mode: str = str(map.matching_mode)
@@ -447,14 +470,16 @@ def get_aligned_timestamp(df: pd.DataFrame) -> np.ndarray:
     Returns timestamp aligned to minimum timestamp for each scene.
 
     Args:
+    ----
         df (pandas.DataFrame): Input DataFrame.
 
     Returns:
+    -------
         numpy.ndarray: in shape (N,)
     """
     scenes: np.ndarray = pd.unique(df["scene"])
     scenes = scenes[~np.isnan(scenes)]
-    scene_axes: List[np.ndarray] = []
+    scene_axes: list[np.ndarray] = []
     for scene in scenes:
         df_ = df[df["scene"] == scene]
         axes_ = np.array(df_["timestamp"], dtype=np.uint64) / 1e6
@@ -467,11 +492,13 @@ def filter_df(df: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     Filter DataFrame with args and kwargs.
 
     Args:
+    ----
         df (pandas.DataFrame): Source DataFrame.
         *args
         **kwargs
 
     Returns:
+    -------
         df_ (pandas.DataFrame): Filtered DataFrame.
     """
     df_ = df
@@ -479,10 +506,7 @@ def filter_df(df: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     for key, item in kwargs.items():
         if item is None:
             continue
-        if isinstance(item, (list, tuple)):
-            df_ = df_[df_[key].isin(item)]
-        else:
-            df_ = df_[df_[key] == item]
+        df_ = df_[df_[key].isin(item)] if isinstance(item, (list, tuple)) else df_[df_[key] == item]
 
     if args:
         df_ = df_[list(args)]

@@ -15,32 +15,30 @@
 from __future__ import annotations
 
 import os.path as osp
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
+from typing import TYPE_CHECKING
 
 import cv2
-from matplotlib.axes import Axes
-from matplotlib.patches import Patch
-from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
-from matplotlib.transforms import Affine2D
 import numpy as np
+import yaml
+from matplotlib.patches import Patch, Rectangle
+from matplotlib.transforms import Affine2D
+from PIL import Image
+from tqdm import tqdm
+
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation import PerceptionFrameResult
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult, PerceptionFrameResult
 from perception_eval.util.math import rotation_matrix_to_euler
 from perception_eval.visualization.color import ColorMap
-from PIL import Image
-from PIL.Image import Image as PILImage
-from pyquaternion import Quaternion
-from tqdm import tqdm
-import yaml
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+    from PIL.Image import Image as PILImage
+    from pyquaternion import Quaternion
+
+    from perception_eval.common.object import DynamicObject
 
 
 class PerceptionVisualizer3D:
@@ -50,6 +48,7 @@ class PerceptionVisualizer3D:
         config (PerceptionVisualizationConfig)
 
     Args:
+    ----
         config (PerceptionVisualizationConfig)
         figsize (Tuple[int, int]): Figure size, (width, height) order. Defaults to (800, 600).
     """
@@ -57,7 +56,7 @@ class PerceptionVisualizer3D:
     def __init__(
         self,
         config: PerceptionEvaluationConfig,
-        figsize: Tuple[int, int] = (800, 600),
+        figsize: tuple[int, int] = (800, 600),
     ) -> None:
         assert config.evaluation_task.is_3d()
         self.__config: PerceptionEvaluationConfig = config
@@ -65,7 +64,7 @@ class PerceptionVisualizer3D:
         self.__figsize = (figsize[0] / 100.0, figsize[1] / 100.0)
 
         self.__figure, self.__axes = plt.subplots(figsize=self.__figsize)
-        self.__animation_frames: List[PILImage] = []
+        self.__animation_frames: list[PILImage] = []
 
         max_x_position_list = config.filtering_params.get("max_x_position_list")
         max_y_position_list = config.filtering_params.get("max_y_position_list")
@@ -82,7 +81,7 @@ class PerceptionVisualizer3D:
 
         if self.config.evaluation_task == EvaluationTask.TRACKING2D:
             # Each tracked path is specified by uuid.gt/est_track.label
-            self.__tracked_paths: Dict[str, List[Tuple[float, float]]] = {}
+            self.__tracked_paths: dict[str, list[tuple[float, float]]] = {}
 
     @classmethod
     def from_scenario(
@@ -94,19 +93,20 @@ class PerceptionVisualizer3D:
         """Perception results made by logsim are reproduced from pickle file.
 
         Args:
+        ----
             result_root_directory (str): The root path to save result.
             scenario_path (str): The path of scenario file .yaml.
 
         Returns:
+        -------
             PerceptionVisualizer3D
         """
-
         # Load scenario file
-        with open(scenario_path, "r") as scenario_file:
-            scenario_obj: Optional[Dict[str, any]] = yaml.safe_load(scenario_file)
+        with open(scenario_path) as scenario_file:
+            scenario_obj: dict[str, any] | None = yaml.safe_load(scenario_file)
 
-        p_cfg: Dict[str, any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
-        eval_cfg_dict: Dict[str, any] = p_cfg["evaluation_config_dict"]
+        p_cfg: dict[str, any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
+        eval_cfg_dict: dict[str, any] = p_cfg["evaluation_config_dict"]
 
         eval_cfg_dict["label_prefix"] = "autoware"
 
@@ -136,6 +136,7 @@ class PerceptionVisualizer3D:
         """Set xy-axes limit.
 
         Args:
+        ----
             xlim (float): Limit of x-axis.
             ylim (float): Limit of y-axis.
         """
@@ -144,13 +145,14 @@ class PerceptionVisualizer3D:
 
     def visualize_all(
         self,
-        frame_results: List[PerceptionFrameResult],
-        filename: Optional[str] = None,
+        frame_results: list[PerceptionFrameResult],
+        filename: str | None = None,
         cache_figure: bool = False,
     ) -> None:
         """Visualize all frames in BEV space.
 
         Args:
+        ----
             frame_results (List[PerceptionFrameResult]): The list of PerceptionFrameResult.
             save_html (bool): Wether save image as html. Defaults to False.
             animation (bool): Whether create animation as gif. Defaults to False.
@@ -176,9 +178,11 @@ class PerceptionVisualizer3D:
         if self.config.evaluation_task == EvaluationTask.TRACKING:
             self.__tracked_paths.clear()
 
-    def set_figsize(self, figsize: Tuple[int, int]) -> None:
+    def set_figsize(self, figsize: tuple[int, int]) -> None:
         """Set figure size.
+
         Args:
+        ----
             figsize (Tuple[int, int]): Figure size, (width, height) order.
         """
         width, height = figsize[0] / 100.0, figsize[1] / 100.0
@@ -189,7 +193,7 @@ class PerceptionVisualizer3D:
     def visualize_frame(
         self,
         frame_result: PerceptionFrameResult,
-        axes: Optional[Axes] = None,
+        axes: Axes | None = None,
     ) -> Axes:
         """Visualize a frame result in BEV space.
 
@@ -201,6 +205,7 @@ class PerceptionVisualizer3D:
             FN              : Orange
 
         Args:
+        ----
             frame_result (PerceptionFrameResult)
             axes (Optional[Axes]): The Axes instance. Defaults to None.
         """
@@ -218,12 +223,12 @@ class PerceptionVisualizer3D:
             axes=axes,
         )
 
-        pointcloud: Optional[np.ndarray] = (
+        pointcloud: np.ndarray | None = (
             frame_result.frame_ground_truth.raw_data["lidar"] if self.config.load_raw_data else None
         )
 
         # Plot objects
-        handles: List[Patch] = []
+        handles: list[Patch] = []
         axes = self.plot_objects(
             objects=frame_result.pass_fail_result.tp_object_results,
             is_ground_truth=False,
@@ -292,17 +297,19 @@ class PerceptionVisualizer3D:
     def _plot_ego(
         self,
         ego2map: np.ndarray,
-        axes: Optional[Axes] = None,
-        size: Tuple[float, float] = (5.0, 2.5),
+        axes: Axes | None = None,
+        size: tuple[float, float] = (5.0, 2.5),
     ) -> Axes:
         """Plot ego vehicle.
 
         Args:
+        ----
             ego2map (np.ndarray): The 4x4 array of transform matrix from ego coords system to map coords system.
             axes (Axes): The Axes instance.
             size (Tuple[float, float]): The size of box, (length, width). Defaults to (5.0, 2.5).
 
         Returns:
+        -------
             axes (Axes): The Axes instance.
         """
         if axes is None:
@@ -336,12 +343,12 @@ class PerceptionVisualizer3D:
 
     def plot_objects(
         self,
-        objects: Union[List[DynamicObject], List[DynamicObjectWithPerceptionResult]],
+        objects: list[DynamicObject] | list[DynamicObjectWithPerceptionResult],
         is_ground_truth: bool,
-        axes: Optional[Axes] = None,
-        label: Optional[str] = None,
-        color: Optional[str] = None,
-        pointcloud: Optional[np.ndarray] = None,
+        axes: Axes | None = None,
+        label: str | None = None,
+        color: str | None = None,
+        pointcloud: np.ndarray | None = None,
     ) -> Axes:
         """Plot objects in BEV space.
 
@@ -354,7 +361,9 @@ class PerceptionVisualizer3D:
         ```
 
         Args:
-            objects (Union[List[DynamicObject], DynamicObjectWithPerceptionResult]): The list of object being visualized.
+        ----
+            objects (Union[List[DynamicObject], DynamicObjectWithPerceptionResult])
+                The list of object being visualized.
             is_ground_truth (bool): Whether ground truth object is.
             axes (Optional[Axes]): The Axes instance. If not specified, new Axes is created. Defaults to None.
             label (str): The label of object type, e.g. TP/FP/FP. Defaults to None.
@@ -362,6 +371,7 @@ class PerceptionVisualizer3D:
                 If not be specified, red is used.
 
         Returns:
+        -------
             axes (Axes): The Axes instance.
         """
         if axes is None:
@@ -446,16 +456,18 @@ class PerceptionVisualizer3D:
         self,
         dynamic_object: DynamicObject,
         is_ground_truth: bool,
-        axes: Optional[Axes] = None,
+        axes: Axes | None = None,
     ) -> Axes:
         """Plot tracked paths for one object.
 
         Args:
+        ----
             dynamic_objects (List[DynamicObject]): The list of object being visualized.
             is_ground_truth (bool): Whether ground truth object is.
             axes (Axes): The Axes instance. If not specified, new Axes is created. Defaults to None.
 
         Returns:
+        -------
             axes (Axes): The Axes instance.
         """
         if axes is None:
@@ -464,7 +476,7 @@ class PerceptionVisualizer3D:
         object_type_: str = ".gt_track" if is_ground_truth else ".est_track"
         object_label_: str = "." + dynamic_object.semantic_label.label.value
         uuid_: str = dynamic_object.uuid + object_type_ + object_label_
-        if uuid_ not in self.__tracked_paths.keys():
+        if uuid_ not in self.__tracked_paths:
             self.__tracked_paths.update({uuid_: [dynamic_object.state.position[:2]]})
         else:
             self.__tracked_paths[uuid_].append(dynamic_object.state.position[:2])
@@ -476,26 +488,28 @@ class PerceptionVisualizer3D:
 
     def _plot_predicted_path(
         self,
-        dynamic_objects: List[DynamicObject],
+        dynamic_objects: list[DynamicObject],
         is_ground_truth: bool,
-        axes: Optional[Axes] = None,
+        axes: Axes | None = None,
     ) -> Axes:
         """Plot predicted paths for one object.
 
         Args:
+        ----
             dynamic_objects (List[DynamicObject]): The list of object being visualized.
             is_ground_truth (bool): Whether ground truth object is.
             axes (Axes): The Axes instance.
 
         Returns:
+        -------
             axes (Axes): The Axes instance.
         """
-        pass
 
-    def __save_animation(self, filename: Optional[str] = None) -> None:
+    def __save_animation(self, filename: str | None = None) -> None:
         """Save animation as mp4.
 
         Args:
+        ----
             filename (Optional[str]): Video filename. If None, save as scene_result_3d.mp4. Defaults to None.
         """
         if filename is None:

@@ -12,15 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
-from typing import List
-from typing import Optional
+from typing import Any, List, Optional
 
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetrics
-from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
+from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetrics, TPMetricsAp
 
 from ._metrics_base import _TrackingMetricsBase
 
@@ -30,9 +27,11 @@ class HOTA(_TrackingMetricsBase):
     HOTA metrics class that has HOTA, LocA, DetA and AssA as sub metrics.
 
     Attributes:
+    ----------
         self.target_labels (List[LabelType]): The list of target label.
         self.matching_mode (MatchingMode): The target matching mode.
-        self.metrics_field (Optional[List[str]]): The list of target metrics name. If not specified, set default supported metrics.
+        self.metrics_field (Optional[List[str]]): The list of target metrics name.
+            If not specified, set default supported metrics.
         self.ground_truth_objects_num (int): The number of ground truth.
         self.tp_metrics (TPMetrics): The way of calculating TP value.
         self.support_metrics (List[str]): The list of supported metrics name.
@@ -58,6 +57,7 @@ class HOTA(_TrackingMetricsBase):
             If evaluate all frames, index 0 is empty list.
 
         Args:
+        ----
             object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results for each frames.
             num_ground_truth (int): The number of ground truth.
             target_labels (List[LabelType]): The list of target labels.
@@ -97,17 +97,19 @@ class HOTA(_TrackingMetricsBase):
         cur_object_results: List[DynamicObjectWithPerceptionResult],
         prev_object_results: List[DynamicObjectWithPerceptionResult],
     ) -> Any:
-        """Calculate TP/FP and TPA/FPA
+        """Calculate TP/FP and TPA/FPA.
 
         Args:
+        ----
             cur_object_results
             prev_object_results (List[DynamicObjectWithPerceptionResult])
             prev_object_results (List[DynamicObjectWithPerceptionResult])
             matching_threshold (float)
+
         Returns:
+        -------
             tp_list (List[float])
             fp_list (List[float])
             tpa_list (List[float])
             fpa_list (List[float])
         """
-        pass

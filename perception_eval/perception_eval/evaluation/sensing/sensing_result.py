@@ -15,6 +15,7 @@
 from typing import Optional
 
 import numpy as np
+
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import Visibility
 
@@ -24,6 +25,7 @@ class DynamicObjectWithSensingResult:
     The class to evaluate sensing result for dynamic object.
 
     Attributes:
+    ----------
         self.ground_truth_object (DynamicObject): The target DynamicObject.
         self.inside_pointcloud (numpy.ndarray): The array of pointcloud in bounding box.
         self.inside_pointcloud_num (int): The number of pointcloud in bounding box.
@@ -39,8 +41,10 @@ class DynamicObjectWithSensingResult:
         scale_factor: float,
         min_points_threshold: int,
     ) -> None:
-        """[summary]
+        """[summary].
+
         Args:
+        ----
             ground_truth_object (DynamicObject): Ground truth object.
             pointcloud (numpy.ndarray): Array of pointcloud after removing ground.
             scale_factor (float): Scale factor for bounding box.
@@ -63,6 +67,7 @@ class DynamicObjectWithSensingResult:
         Returns the nearest point from base_link. The pointcloud must be base_link coords.
 
         Returns:
+        -------
             Optional[np.ndarray]: The nearest point included in the object's bbox, in shape (3,).
                 If there is no point in bbox, returns None.
         """

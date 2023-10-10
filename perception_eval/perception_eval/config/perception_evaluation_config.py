@@ -12,17 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Sequence
-from typing import Tuple
-from typing import Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import LabelType
-from perception_eval.common.label import set_target_lists
+from perception_eval.common.label import LabelType, set_target_lists
 from perception_eval.common.threshold import set_thresholds
 from perception_eval.evaluation.metrics import MetricsScoreConfig
 
@@ -38,6 +31,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         └── visualization_directory/
 
     Attributes:
+    ----------
         dataset_paths (List[str]): Dataset paths list.
         frame_ids (List[FrameID]): List of FrameID instance, where objects are with respect.
         result_root_directory (str): Directory path to save result.
@@ -53,6 +47,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         metrics_config (MetricsScoreConfig): MetricsScoreConfig instance.
 
     Args:
+    ----
         dataset_paths (List[str]): Dataset paths list.
         frame_id (Union[str, Sequence[str]]): FrameID(s) in string, where objects are with respect.
         result_root_directory (str): Directory path to save result.
@@ -110,9 +105,11 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         """Extract and divide parameters from evaluation_config_dict into filtering and metrics parameters.
 
         Args:
+        ----
             evaluation_config_dict (Dict[str, Any]): Dict that items are evaluation config for each task.
 
         Returns:
+        -------
             f_params (Dict[str, Any]): Parameters for filtering.
             m_params (Dict[str, Any]): Parameters for metrics.
             l_params (Dict[str, Any]): Parameters for label.
@@ -148,7 +145,8 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             max_distance_list = None
             min_distance_list = None
         else:
-            raise RuntimeError("Either max x/y position or max/min distance should be specified")
+            msg = "Either max x/y position or max/min distance should be specified"
+            raise RuntimeError(msg)
 
         max_matchable_radii: Optional[Union[float, List[float]]] = e_cfg.get("max_matchable_radii")
         if max_matchable_radii is not None:
@@ -159,7 +157,8 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             min_point_numbers: List[int] = set_thresholds(min_point_numbers, num_elements, False)
 
         if self.evaluation_task == EvaluationTask.DETECTION and min_point_numbers is None:
-            raise RuntimeError("In detection task, min point numbers must be specified")
+            msg = "In detection task, min point numbers must be specified"
+            raise RuntimeError(msg)
 
         conf_thresh: Optional[float] = e_cfg.get("confidence_threshold")
         if conf_thresh is not None:

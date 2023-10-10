@@ -15,33 +15,34 @@
 from __future__ import annotations
 
 import math
-from typing import List
-from typing import Optional
-from typing import Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
-from perception_eval.common.label import Label
-from perception_eval.common.point import crop_pointcloud
-from perception_eval.common.point import polygon_to_list
-from perception_eval.common.schema import FrameID
-from perception_eval.common.schema import Visibility
-from perception_eval.common.shape import Shape
-from perception_eval.common.shape import ShapeType
-from perception_eval.util.math import rotation_matrix_to_euler
-from pyquaternion import Quaternion
 from shapely.geometry import Polygon
+
+from perception_eval.common.point import crop_pointcloud, polygon_to_list
+from perception_eval.common.schema import FrameID, Visibility
+from perception_eval.util.math import rotation_matrix_to_euler
+
+if TYPE_CHECKING:
+    from pyquaternion import Quaternion
+
+    from perception_eval.common.label import Label
+    from perception_eval.common.shape import Shape, ShapeType
 
 
 class ObjectState:
     """Object state class.
 
     Attributes:
+    ----------
         position (Tuple[float, float, float]): (center_x, center_y, center_z)[m].
         orientation (Quaternion) : Quaternion instance.
         size (Tuple[float, float, float]): Bounding box size, (wx, wy, wz)[m].
         velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz)[m/s].
 
     Args:
+    ----
         position (Tuple[float, float, float]): (center_x, center_y, center_z)[m].
         orientation (Quaternion) : Quaternion instance.
         shape (Shape): Shape instance.
@@ -50,22 +51,22 @@ class ObjectState:
 
     def __init__(
         self,
-        position: Tuple[float, float, float],
+        position: tuple[float, float, float],
         orientation: Quaternion,
         shape: Shape,
-        velocity: Optional[Tuple[float, float, float]],
+        velocity: tuple[float, float, float] | None,
     ) -> None:
-        self.position: Tuple[float, float, float] = position
+        self.position: tuple[float, float, float] = position
         self.orientation: Quaternion = orientation
         self.shape: Shape = shape
-        self.velocity: Optional[Tuple[float, float, float]] = velocity
+        self.velocity: tuple[float, float, float] | None = velocity
 
     @property
     def shape_type(self) -> ShapeType:
         return self.shape.type
 
     @property
-    def size(self) -> Tuple[float, float, float]:
+    def size(self) -> tuple[float, float, float]:
         return self.shape.size
 
     @property
@@ -77,6 +78,7 @@ class DynamicObject:
     """Dynamic object class for 3D object.
 
     Attributes:
+    ----------
         unix_time (int) : Unix time [us].
         frame_id (FrameID): FrameID instance, where 3D objects are with respect, BASE_LINK or MAP.
 
@@ -99,6 +101,7 @@ class DynamicObject:
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
 
     Args:
+    ----
         unix_time (int): Unix time [us].
         frame_id (FrameID): FrameID instance, where 3D objects are with respect, BASE_LINK or MAP.
         position (Tuple[float, float, float]): (center_x, center_y, center_z)[m].
@@ -133,24 +136,24 @@ class DynamicObject:
         self,
         unix_time: int,
         frame_id: FrameID,
-        position: Tuple[float, float, float],
+        position: tuple[float, float, float],
         orientation: Quaternion,
         shape: Shape,
-        velocity: Optional[Tuple[float, float, float]],
+        velocity: tuple[float, float, float] | None,
         semantic_score: float,
         semantic_label: Label,
-        pointcloud_num: Optional[int] = None,
-        uuid: Optional[str] = None,
-        tracked_positions: Optional[List[Tuple[float, float, float]]] = None,
-        tracked_orientations: Optional[List[Quaternion]] = None,
-        tracked_shapes: Optional[List[Shape]] = None,
-        tracked_twists: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_positions: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_orientations: Optional[List[Quaternion]] = None,
-        predicted_shapes: Optional[List[Shape]] = None,
-        predicted_twists: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_confidence: Optional[float] = None,
-        visibility: Optional[Visibility] = None,
+        pointcloud_num: int | None = None,
+        uuid: str | None = None,
+        tracked_positions: list[tuple[float, float, float]] | None = None,
+        tracked_orientations: list[Quaternion] | None = None,
+        tracked_shapes: list[Shape] | None = None,
+        tracked_twists: list[tuple[float, float, float]] | None = None,
+        predicted_positions: list[tuple[float, float, float]] | None = None,
+        predicted_orientations: list[Quaternion] | None = None,
+        predicted_shapes: list[Shape] | None = None,
+        predicted_twists: list[tuple[float, float, float]] | None = None,
+        predicted_confidence: float | None = None,
+        visibility: Visibility | None = None,
     ) -> None:
         # detection
         self.unix_time: int = unix_time
@@ -166,11 +169,11 @@ class DynamicObject:
 
         # for detection label for case evaluation
         # pointcloud number inside bounding box
-        self.pointcloud_num: Optional[int] = pointcloud_num
+        self.pointcloud_num: int | None = pointcloud_num
 
         # tracking
-        self.uuid: Optional[str] = uuid
-        self.tracked_path: Optional[List[ObjectState]] = self._set_states(
+        self.uuid: str | None = uuid
+        self.tracked_path: list[ObjectState] | None = self._set_states(
             positions=tracked_positions,
             orientations=tracked_orientations,
             shapes=tracked_shapes,
@@ -178,26 +181,28 @@ class DynamicObject:
         )
 
         # prediction
-        self.predicted_confidence: Optional[float] = predicted_confidence
-        self.predicted_path: Optional[List[ObjectState]] = self._set_states(
+        self.predicted_confidence: float | None = predicted_confidence
+        self.predicted_path: list[ObjectState] | None = self._set_states(
             positions=predicted_positions,
             orientations=predicted_orientations,
             shapes=predicted_shapes,
             twists=predicted_twists,
         )
 
-        self.visibility: Optional[Visibility] = visibility
+        self.visibility: Visibility | None = visibility
 
-    def __eq__(self, other: Optional[DynamicObject]) -> bool:
+    def __eq__(self, other: DynamicObject | None) -> bool:
         """Check if other equals this object.
 
         If other is not None and does NOT has attributes unix_time, semantic_label, state.position, state.orientation
         it causes error.
 
         Args:
+        ----
             other (Optional[DynamicObject]): Another object.
 
         Returns:
+        -------
             bool
         """
         if other is None:
@@ -207,60 +212,68 @@ class DynamicObject:
             eq = eq and self.unix_time == other.unix_time
             eq = eq and self.semantic_label == other.semantic_label  # type: ignore
             eq = eq and self.state.position == other.state.position  # type: ignore
-            eq = eq and self.state.orientation == other.state.orientation  # type: ignore
-            return eq
+            return eq and self.state.orientation == other.state.orientation  # type: ignore
 
-    def get_distance(self, ego2map: Optional[np.ndarray] = None) -> float:
+    def get_distance(self, ego2map: np.ndarray | None = None) -> float:
         """Get the 3d distance to the object from ego vehicle in bird eye view.
 
         Args:
+        ----
             ego2map (Optional[numpy.ndarray]):4x4 Transform matrix
                 from base_link coordinate system to map coordinate system.
 
         Returns:
+        -------
             float: The 3d distance to the object from ego vehicle in bird eye view.
         """
         if self.frame_id == FrameID.BASE_LINK:
             return np.linalg.norm(self.state.position)
 
         if ego2map is None:
-            raise RuntimeError("For objects with respect to map coordinate system, ego2map must be specified.")
+            msg = "For objects with respect to map coordinate system, ego2map must be specified."
+            raise RuntimeError(msg)
 
         pos_arr: np.ndarray = np.append(self.state.position, 1.0)
         return np.linalg.norm(np.linalg.inv(ego2map).dot(pos_arr)[:3])
 
-    def get_distance_bev(self, ego2map: Optional[np.ndarray] = None) -> float:
+    def get_distance_bev(self, ego2map: np.ndarray | None = None) -> float:
         """Get the 2d distance to the object from ego vehicle in bird eye view.
 
         Args:
+        ----
             ego2map (Optional[numpy.ndarray]):4x4 Transform matrix
                 from base_link coordinate system to map coordinate system.
 
         Returns:
+        -------
             float: The 2d distance to the object from ego vehicle in bird eye view.
         """
         if self.frame_id == FrameID.BASE_LINK:
             return math.hypot(self.state.position[0], self.state.position[1])
 
         if ego2map is None:
-            raise RuntimeError("For objects with respect to map coordinate system, ego2map must be specified.")
+            msg = "For objects with respect to map coordinate system, ego2map must be specified."
+            raise RuntimeError(msg)
 
         pos_arr: np.ndarray = np.append(self.state.position, 1.0)
         return np.linalg.norm(np.linalg.inv(ego2map).dot(pos_arr)[:2])
 
-    def get_heading_bev(self, ego2map: Optional[np.ndarray] = None) -> float:
+    def get_heading_bev(self, ego2map: np.ndarray | None = None) -> float:
         """Get the object heading from ego vehicle in bird eye view.
 
         Args:
+        ----
             ego2map (Optional[numpy.ndarray]):4x4 Transform matrix.
                 from base_link coordinate system to map coordinate system.
 
         Returns:
+        -------
             float: The heading (radian)
         """
         if self.frame_id == FrameID.MAP:
             if ego2map is None:
-                raise RuntimeError("For objects with respect to map coordinate system, ego2map must be specified.")
+                msg = "For objects with respect to map coordinate system, ego2map must be specified."
+                raise RuntimeError(msg)
             src: np.ndarray = np.eye(4, 4)
             src[:3, :3] = self.state.orientation.rotation_matrix
             src[:3, 3] = self.state.position
@@ -270,16 +283,17 @@ class DynamicObject:
             rots: float = self.state.orientation.radians
         trans_rots: float = -rots - math.pi / 2
         trans_rots = float(np.where(trans_rots > math.pi, trans_rots - 2 * math.pi, trans_rots))
-        trans_rots = float(np.where(trans_rots < -math.pi, trans_rots + 2 * math.pi, trans_rots))
-        return trans_rots
+        return float(np.where(trans_rots < -math.pi, trans_rots + 2 * math.pi, trans_rots))
 
     def get_corners(self, scale: float = 1.0) -> np.ndarray:
         """Get the bounding box corners.
 
         Args:
+        ----
             scale (float): Scale factor to scale the corners. Defaults to 1.0.
 
         Returns:
+        -------
             corners (numpy.ndarray): Objects corners array.
         """
         # NOTE: This is with respect to base_link or map coordinate system.
@@ -292,21 +306,24 @@ class DynamicObject:
         lower: np.ndarray = footprint.copy()
         upper[:, 2] = self.state.position[2] + (self.state.size[2] / 2)
         lower[:, 2] = self.state.position[2] - (self.state.size[2] / 2)
-        corners = np.vstack((upper, lower))
-        return corners
+        return np.vstack((upper, lower))
 
     def get_footprint(self, scale: float = 1.0) -> Polygon:
         """[summary]
         Get footprint polygon from an object with respect ot base_link or map coordinate system.
 
         Args:
+        ----
             scale (float): Scale factor for footprint. Defaults to 1.0.
 
         Returns:
+        -------
             Polygon: The footprint polygon of object with respect to base_link or map coordinate system.
                 It consists of 4 corner 2d position of the object and  start and end points are same point.
                 ((x0, y0, 0), (x1, y1, 0), (x2, y2, 0), (x3, y3, 0), (x0, y0, 0))
+
         Notes:
+        -----
             center_position: (xc, yc)
             vector_center_to_corners[0]: (x0 - xc, y0 - yc)
         """
@@ -314,22 +331,23 @@ class DynamicObject:
         footprint: np.ndarray = np.array(polygon_to_list(self.state.footprint))
         # Translate to (0, 0, 0) and scale
         footprint = footprint * scale
-        rotated_footprint: List[Tuple[float, float, float]] = []
+        rotated_footprint: list[tuple[float, float, float]] = []
         for point in footprint:
             rotate_point: np.ndarray = self.state.orientation.rotate(point)
             rotate_point[:2] = rotate_point[:2] + self.state.position[:2]
             rotated_footprint.append(rotate_point.tolist())
-        poly: List[List[float]] = [f for f in rotated_footprint]
+        poly: list[list[float]] = list(rotated_footprint)
         poly.append(rotated_footprint[0])
         return Polygon(poly)
 
     def get_position_error(
         self,
-        other: Optional[DynamicObject],
-    ) -> Optional[Tuple[float, float, float]]:
+        other: DynamicObject | None,
+    ) -> tuple[float, float, float] | None:
         """Get the position error between myself and other. If other is None, returns None.
 
         Returns:
+        -------
             err_x (float): x-axis position error[m].
             err_y (float): y-axis position error[m].
             err_z (float): z-axis position error[m].
@@ -343,11 +361,12 @@ class DynamicObject:
 
     def get_heading_error(
         self,
-        other: Optional[DynamicObject],
-    ) -> Optional[Tuple[float, float, float]]:
+        other: DynamicObject | None,
+    ) -> tuple[float, float, float] | None:
         """Get the heading error between myself and other. If other is None, returns None.
 
         Returns:
+        -------
             err_x (float): Roll error[rad], in [-pi, pi].
             err_y (float): Pitch error[rad], in [-pi, pi].
             err_z (float): Yaw error[rad], in [-pi, pi].
@@ -356,7 +375,7 @@ class DynamicObject:
             return None
 
         def _clip(err: float) -> float:
-            """Clip [-2pi, 2pi] to [0, pi]"""
+            """Clip [-2pi, 2pi] to [0, pi]."""
             if err < 0:
                 err += -np.pi * (err // np.pi)
             elif err > np.pi:
@@ -373,13 +392,14 @@ class DynamicObject:
 
     def get_velocity_error(
         self,
-        other: Optional[DynamicObject],
-    ) -> Optional[Tuple[float, float, float]]:
+        other: DynamicObject | None,
+    ) -> tuple[float, float, float] | None:
         """Get the velocity error between myself and other.
 
         If other is None, returns None. Also, velocity of myself or other is None, returns None too.
 
         Returns:
+        -------
             err_vx (float): x-axis velocity error[m/s].
             err_vy (float): y-axis velocity error[m/s].
             err_vz (float): z-axis velocity error[m/s].
@@ -400,6 +420,7 @@ class DynamicObject:
         """Get area of object BEV.
 
         Returns:
+        -------
             float: Area of footprint.
         """
         return self.state.footprint.area
@@ -408,6 +429,7 @@ class DynamicObject:
         """Get volume of bounding box.
 
         Returns:
+        -------
             float: Box volume.
         """
         return self.get_area_bev() * self.state.size[2]
@@ -424,11 +446,13 @@ class DynamicObject:
         Otherwise, returns pointcloud array outside of box.
 
         Args:
+        ----
             pointcloud (np.ndarray): The Array of pointcloud, in shape (N, 3).
             bbox_scale (float): Scale factor for bounding box. Defaults to 1.0.
             inside (bool): Whether crop inside pointcloud or outside. Defaults to True.
 
         Returns:
+        -------
             numpy.ndarray: Pointcloud array inside or outside box.
         """
         corners: np.ndarray = self.get_corners(scale=bbox_scale)
@@ -442,10 +466,12 @@ class DynamicObject:
         """Calculate the number of pointcloud inside of own bounding box.
 
         Args:
+        ----
             pointcloud (np.ndarray): The Array of pointcloud, in shape (N, 3).
             bbox_scale (float): Scale factor for bounding box. Defaults to 1.0.
 
         Returns:
+        -------
             int: Number of points inside of the own box.
         """
         inside_pointcloud: np.ndarray = self.crop_pointcloud(pointcloud, bbox_scale)
@@ -455,10 +481,12 @@ class DynamicObject:
         """Evaluate whether any input points inside of own bounding box.
 
         Args:
+        ----
             pointcloud (numpy.ndarray): Pointcloud array.
             bbox_scale (float): Scale factor for bounding box size.
 
         Returns:
+        -------
             bool: Return True if any points exist.
         """
         num_inside: int = self.get_inside_pointcloud_num(pointcloud, bbox_scale)
@@ -466,32 +494,34 @@ class DynamicObject:
 
     @staticmethod
     def _set_states(
-        positions: Optional[List[Tuple[float, float, float]]] = None,
-        orientations: Optional[List[Quaternion]] = None,
-        shapes: List[Shape] = None,
-        twists: Optional[List[Tuple[float, float, float]]] = None,
-    ) -> Optional[List[ObjectState]]:
+        positions: list[tuple[float, float, float]] | None = None,
+        orientations: list[Quaternion] | None = None,
+        shapes: list[Shape] | None = None,
+        twists: list[tuple[float, float, float]] | None = None,
+    ) -> list[ObjectState] | None:
         """Set object state from positions, orientations, sizes, and twists.
 
         Args:
+        ----
             positions (Optional[List[Tuple[float, float, float]]]): Sequence of positions. Defaults to None.
             orientations (Optional[List[Quaternion]], optional): Sequence of orientations. Defaults to None.
             sizes (Optional[List[Tuple[float, float, float]]]): Sequence of boxes sizes. Defaults to None.
             twists (Optional[List[Tuple[float, float, float]]]): Sequence of velocities. Defaults to None.
 
         Returns:
+        -------
             Optional[List[ObjectState]]: The list of ObjectState
         """
         if positions is None or orientations is None:
             return None
 
         if len(positions) != len(orientations):
+            msg = f"Length of positions and orientations must be same, but got {len(positions)} and {len(orientations)}"
             raise RuntimeError(
-                "Length of positions and orientations must be same, "
-                f"but got {len(positions)} and {len(orientations)}"
+                msg,
             )
 
-        states: List[ObjectState] = []
+        states: list[ObjectState] = []
         for i, (position, orientation) in enumerate(zip(positions, orientations)):
             shape = shapes[i] if shapes else None
             velocity = twists[i] if twists else None
@@ -501,6 +531,6 @@ class DynamicObject:
                     orientation=orientation,
                     shape=shape,
                     velocity=velocity,
-                )
+                ),
             )
         return states

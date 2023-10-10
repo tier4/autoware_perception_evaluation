@@ -12,13 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import ABC
-from abc import abstractmethod
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Tuple
 
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
@@ -30,14 +25,17 @@ class _TrackingMetricsBase(ABC):
     """Abstract base class for tracking metrics.
 
     Attributes:
+    ----------
         num_ground_truth (int): Number of ground truths.
         target_labels (List[LabelType]): Target labels list.
         matching_mode (MatchingMode): MatchingMode instance.
         matching_threshold_list (List[float]): Thresholds list for matching.
-        metrics_field (Optional[List[str]]): Filed name of target metrics. If it is not specified, default supported metrics are used.
+        metrics_field (Optional[List[str]]): Filed name of target metrics.
+            If it is not specified, default supported metrics are used.
         support_metrics (List[str]): List of supported metrics names.
 
     Args:
+    ----
         num_ground_truth (int): Number of ground truths.
         target_labels (List[LabelType]): Target labels list.
         matching_mode (MatchingMode): MatchingMode instance.
@@ -90,19 +88,23 @@ class _TrackingMetricsBase(ABC):
         If `metrics_field=None`, returns default supported metrics.
 
         Args:
+        ----
             metrics_field (Optional[List[str]]): The list of executing metrics field.
 
         Returns:
+        -------
             metrics_field (List[str])
 
         Raises:
+        ------
             ValueError: If input metrics field is unsupported.
         """
         if metrics_field is None:
             return self.support_metrics
 
         if set(metrics_field) > set(self.support_metrics):
-            raise ValueError(f"Unsupported metrics: {set(metrics_field) - set(self.support_metrics)}")
+            msg = f"Unsupported metrics: {set(metrics_field) - set(self.support_metrics)}"
+            raise ValueError(msg)
 
         return metrics_field
 
@@ -138,13 +140,16 @@ class _TrackingMetricsBase(ABC):
         """Calculate precision recall.
 
         Args:
+        ----
             tp_list (List[float]): TP results list.
             ground_truth_objects_num (int): Number of ground truths.
 
         Returns:
+        -------
             Tuple[List[float], List[float]]: tp_list and fp_list
 
         Examples:
+        --------
             >>> tp_list = [1, 1, 2, 3]
             >>> ground_truth_num = 4
             >>> precision_list, recall_list = self.get_precision_recall(tp_list, ground_truth_num)
@@ -166,9 +171,10 @@ class _TrackingMetricsBase(ABC):
         return precisions_list, recalls_list
 
     def __str__(self) -> str:
-        """__str__ method
+        """__str__ method.
 
         Returns:
+        -------
             str: Formatted string.
         """
         str_: str = "\n"

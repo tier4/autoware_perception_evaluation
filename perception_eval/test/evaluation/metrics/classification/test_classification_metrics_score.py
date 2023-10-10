@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import unittest
 from test.util.dummy_object import make_dummy_data2d
 from typing import List
-import unittest
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
-from perception_eval.evaluation.matching.objects_filter import divide_objects
-from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
-from perception_eval.evaluation.matching.objects_filter import filter_objects
+from perception_eval.evaluation.matching.objects_filter import divide_objects, divide_objects_to_num, filter_objects
 from perception_eval.evaluation.metrics.classification import ClassificationMetricsScore
 from perception_eval.evaluation.result.object_result import get_object_results
 

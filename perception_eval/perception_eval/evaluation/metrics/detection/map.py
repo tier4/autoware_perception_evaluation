@@ -12,26 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict
-from typing import List
+from typing import Dict, List
 
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.ap import Ap
-from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
-from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
+from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp, TPMetricsAph
 
 
 class Map:
     """mAP metrics score class.
 
     Attributes:
+    ----------
         map_config (MapConfig): The config for mAP calculation.
         aps (List[Ap]): The list of AP (Average Precision) for each label.
         map (float): mAP value.
 
     Args:
+    ----
         object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results
         target_labels (List[LabelType]): Target labels to evaluate mAP
         matching_mode (MatchingMode): Matching mode like distance between the center of
@@ -88,16 +88,16 @@ class Map:
         valid_aphs: List[float] = [aph.ap for aph in self.aphs if aph.ap != float("inf")]
 
         # calculate mAP & mAPH
-        self.map: float = sum(valid_aps) / len(valid_aps) if 0 < len(valid_aps) else float("inf")
-        self.maph: float = sum(valid_aphs) / len(valid_aphs) if 0 < len(valid_aphs) else float("inf")
+        self.map: float = sum(valid_aps) / len(valid_aps) if len(valid_aps) > 0 else float("inf")
+        self.maph: float = sum(valid_aphs) / len(valid_aphs) if len(valid_aphs) > 0 else float("inf")
 
     def __str__(self) -> str:
-        """__str__ method
+        """__str__ method.
 
         Returns:
+        -------
             str: Formatted string.
         """
-
         str_: str = "\n"
         str_ += f"mAP: {self.map:.3f}"
         str_ += f", mAPH: {self.maph:.3f} " if not self.is_detection_2d else " "

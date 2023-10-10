@@ -13,15 +13,12 @@
 # limitations under the License.
 
 import math
-from typing import List
-from typing import Tuple
 import unittest
+from typing import List, Tuple
 
 import numpy as np
-from perception_eval.common.point import crop_pointcloud
-from perception_eval.common.point import distance_points
-from perception_eval.common.point import distance_points_bev
-from perception_eval.common.point import to_bev
+
+from perception_eval.common.point import crop_pointcloud, distance_points, distance_points_bev, to_bev
 
 
 class TestPoint(unittest.TestCase):
@@ -36,7 +33,6 @@ class TestPoint(unittest.TestCase):
             Test if the 3d distance between point_1 and point_2 is
             almost equal to ans_distance.
         """
-        # patterns: (point_1, point_2, ans_distance)
         patterns: List[Tuple[np.ndarray, np.ndarray, float]] = [
             (np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0)), 0.0),
             (np.array((0.0, 0.0, 0.0)), np.array((1.0, 1.0, 1.0)), math.sqrt(3 * 1.0**2)),
@@ -57,7 +53,6 @@ class TestPoint(unittest.TestCase):
             Test if the 2d distance between point_1 and point_2 is
             almost equal to ans_distance.
         """
-        # patterns: (point_1, point_2, ans_distance)
         patterns: List[Tuple[np.ndarray, np.ndarray, float]] = [
             (np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0)), 0.0),
             (np.array((0.0, 0.0, 0.0)), np.array((1.0, 1.0, 1.0)), math.sqrt(2 * 1.0**2)),
@@ -72,12 +67,11 @@ class TestPoint(unittest.TestCase):
 
     def test_to_bev(self):
         """[summary]
-        Test (x, y, z) -> (x, y)
+        Test (x, y, z) -> (x, y).
 
         test patterns:
             Test if 3d point_1 is converted to 2d point_1 (=ans_point).
         """
-        # patterns: (point_1,  ans_point)
         patterns: List[Tuple[np.ndarray, np.ndarray]] = [
             (np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0))),
             (np.array((1.0, 0.0, 1.0)), np.array((1.0, 0.0))),
@@ -86,16 +80,15 @@ class TestPoint(unittest.TestCase):
         for point_1, ans_point in patterns:
             with self.subTest("Test to_bev"):
                 point = to_bev(point_1)
-                self.assertEqual(point.tolist(), ans_point.tolist())
+                assert point.tolist() == ans_point.tolist()
 
     def test_crop_pointcloud(self):
         """[summary]
-        Test crop pointcloud (N, 3) -> (M, 3)
+        Test crop pointcloud (N, 3) -> (M, 3).
 
         test parameter
             Test if 3d in_point is same as cropped ans_point
         """
-        # patterns: (in_points, area, ans_points)
         patterns: List[Tuple[np.ndarray, List[Tuple[float, float]], np.ndarray]] = [
             (
                 # in_points
@@ -105,7 +98,7 @@ class TestPoint(unittest.TestCase):
                         (0.05, 0.05, 0.05),
                         (0.1, 0.1, 0.1),
                         (0.3, 0.3, 0.3),
-                    )
+                    ),
                 ),
                 # area
                 [
@@ -124,7 +117,7 @@ class TestPoint(unittest.TestCase):
                         (0.0, 0.0, 0.0),
                         (0.05, 0.05, 0.05),
                         (0.1, 0.1, 0.1),
-                    )
+                    ),
                 ),
             ),
             (
@@ -135,7 +128,7 @@ class TestPoint(unittest.TestCase):
                         (0.1, 0.1, 0.1),
                         (0.3, 0.3, 0.3),
                         (-0.1, 0.08, 0.1),
-                    )
+                    ),
                 ),
                 # area
                 [
@@ -162,7 +155,7 @@ class TestPoint(unittest.TestCase):
                         (2.5, 3.0, 0.5),
                         (0.3, 0.3, 0.3),
                         (-0.1, 0.08, 0.1),
-                    )
+                    ),
                 ),
                 # area
                 [
@@ -196,7 +189,7 @@ class TestPoint(unittest.TestCase):
         for in_points, area, ans_points in patterns:
             with self.subTest("Test crop_pointcloud"):
                 out_points = crop_pointcloud(in_points, area)
-                self.assertEqual(out_points.tolist(), ans_points.tolist())
+                assert out_points.tolist() == ans_points.tolist()
 
 
 if __name__ == "__main__":

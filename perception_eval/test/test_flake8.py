@@ -24,8 +24,8 @@ except ImportError as err:
     reason = str(err)
 
 
-@pytest.mark.flake8
-@pytest.mark.linter
+@pytest.mark.flake8()
+@pytest.mark.linter()
 @pytest.mark.skipif(no_ament, reason=reason)
 def test_flake8():
     rc, errors = main_with_errors(argv=[])

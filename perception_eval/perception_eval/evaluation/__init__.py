@@ -15,8 +15,10 @@
 from typing import Union
 
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.perception_frame_result import get_object_status  # noqa
-from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
+from perception_eval.evaluation.result.perception_frame_result import (
+    PerceptionFrameResult,
+    get_object_status,  # noqa
+)
 from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
 from perception_eval.evaluation.sensing.sensing_result import DynamicObjectWithSensingResult
 

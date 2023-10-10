@@ -14,23 +14,24 @@
 
 from __future__ import annotations
 
-from typing import Dict
-from typing import List
-from typing import Tuple
-
-from perception_eval.common.label import LabelType
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from typing import TYPE_CHECKING
 
 from .accuracy import ClassificationAccuracy
+
+if TYPE_CHECKING:
+    from perception_eval.common.label import LabelType
+    from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 
 
 class ClassificationMetricsScore:
     """Metrics score class for classification evaluation.
 
     Attributes:
+    ----------
         self.accuracies (List[ClassificationAccuracy]): List of ClassificationAccuracy instances.
 
     Args:
+    ----
         object_results_dict (Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]]):
             Dict that are list of DynamicObjectWithPerceptionResult mapped by their labels.
         num_ground_truth_dict (Dict[LabelType, int]): Dict that are number of DynamicObjectWithPerceptionResult
@@ -40,11 +41,11 @@ class ClassificationMetricsScore:
 
     def __init__(
         self,
-        object_results_dict: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
-        num_ground_truth_dict: Dict[LabelType, int],
-        target_labels: List[LabelType],
+        object_results_dict: dict[LabelType, list[list[DynamicObjectWithPerceptionResult]]],
+        num_ground_truth_dict: dict[LabelType, int],
+        target_labels: list[LabelType],
     ) -> None:
-        self.accuracies: List[ClassificationAccuracy] = []
+        self.accuracies: list[ClassificationAccuracy] = []
         for target_label in target_labels:
             object_results = object_results_dict[target_label]
             num_ground_truth = num_ground_truth_dict[target_label]
@@ -56,10 +57,11 @@ class ClassificationMetricsScore:
             )
             self.accuracies.append(acc_)
 
-    def _summarize(self) -> Tuple[float, float, float, float]:
+    def _summarize(self) -> tuple[float, float, float, float]:
         """Summarize all ClassificationAccuracy.
 
         Returns:
+        -------
             accuracy (float): Accuracy score. When `num_est+num_gt-num_tp=0`, this is float('inf').
             precision (float): Precision score. When `num_gt+num_fp=0`, this is float('inf').
             recall (float): Recall score. When `num_gt=0`, this is float('inf').
@@ -81,9 +83,10 @@ class ClassificationMetricsScore:
         return accuracy, precision, recall, f1score
 
     def __str__(self) -> str:
-        """__str__ method
+        """__str__ method.
 
         Returns:
+        -------
             str: Formatted string.
         """
         str_: str = "\n"

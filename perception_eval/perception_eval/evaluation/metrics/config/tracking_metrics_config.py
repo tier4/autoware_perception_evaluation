@@ -24,6 +24,7 @@ class TrackingMetricsConfig(_MetricsConfigBase):
     """Configuration class for tracking evaluation metrics.
 
     Attributes:
+    ----------
         evaluation_task (EvaluationTask.TRACKING)
         target_labels (List[LabelType]): Target labels list.
         center_distance_thresholds (List[float]): Thresholds list of center distance matching.
@@ -32,6 +33,7 @@ class TrackingMetricsConfig(_MetricsConfigBase):
         iou_3d_thresholds (List[float]): Thresholds list of 3d iou matching.
 
     Args:
+    ----
         target_labels (List[LabelType]): Target labels list.
         center_distance_thresholds (List[float]): Thresholds list of center distance matching.
         plane_distance_thresholds (List[float]): Threshold list of plane distance matching.

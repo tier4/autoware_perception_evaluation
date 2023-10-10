@@ -12,22 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import ABC
-from abc import abstractmethod
-from enum import Enum
 import math
-from typing import Callable
-from typing import List
-from typing import Optional
-from typing import Tuple
+from abc import ABC, abstractmethod
+from enum import Enum
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
-from perception_eval.common import distance_objects
-from perception_eval.common import distance_points_bev
-from perception_eval.common import ObjectType
+from perception_eval.common import ObjectType, distance_objects, distance_points_bev
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.point import get_point_left_right
-from perception_eval.common.point import polygon_to_list
-from shapely.geometry import Polygon
+from perception_eval.common.point import get_point_left_right, polygon_to_list
+
+if TYPE_CHECKING:
+    from shapely.geometry import Polygon
 
 
 class MatchingMode(Enum):
@@ -53,14 +48,17 @@ class MatchingMethod(ABC):
     """A base class for matching method class.
 
     Attributes:
+    ----------
         mode (MatchingMode): MatchingMode instance.
         value (Optional[float]): Matching score.
 
     Args:
+    ----
         estimated_object (ObjectType): Estimated object.
         ground_truth_object (Optional[ObjectType]): Ground truth object.
 
     Raises:
+    ------
         AssertionError: When types of input objects are not same.
     """
 
@@ -98,12 +96,13 @@ class MatchingMethod(ABC):
         If input `self.value=None`, it always returns False.
 
         Args:
+        ----
             threshold_value (float): Threshold value.
 
         Returns:
+        -------
             bool: If value is better than threshold, return True.
         """
-        pass
 
 
 class CenterDistanceMatching(MatchingMethod):
@@ -112,10 +111,12 @@ class CenterDistanceMatching(MatchingMethod):
     If input `ground_truth_object=None`, `self.value=None`
 
     Attributes:
+    ----------
         mode (MatchingMode): Matching mode that is `MatchingMode.CENTERDISTANCE`.
         value (Optional[float]): Center distance score.
 
     Args:
+    ----
         estimated_object (ObjectType): Estimated object.
         ground_truth_object (Optional[ObjectType]): Ground truth object.
     """
@@ -139,9 +140,11 @@ class CenterDistanceMatching(MatchingMethod):
         If `self.value=None`, always returns False.
 
         Args:
+        ----
             threshold_value (float): Threshold value.
 
         Returns:
+        -------
             bool: If value is better than threshold, return True.
         """
         if self.value is None:
@@ -159,10 +162,12 @@ class CenterDistanceMatching(MatchingMethod):
         If input `ground_truth_object=None`, it always returns None.
 
         Args:
+        ----
             estimated_object (ObjectType): Estimated object.
             ground_truth_object (Optional[ObjectType]): Ground truth object.
 
         Returns:
+        -------
             Optional[float]: Center distance between 2 objects.
         """
         if ground_truth_object is None:
@@ -177,6 +182,7 @@ class PlaneDistanceMatching(MatchingMethod):
     If input `ground_truth_object=None`, `self.value` and each NN plane attribute is None.
 
     Attributes:
+    ----------
         mode (MatchingMode): Matching mode that is `MatchingMode.PLANEDISTANCE`.
         value (Optional[float]): Plane distance[m].
         ground_truth_nn_plane (Optional[Tuple[Tuple[float, float]]]):
@@ -185,6 +191,7 @@ class PlaneDistanceMatching(MatchingMethod):
             Vertices of NN plane for estimation ((x1, y1), (x2, y2)).
 
     Args:
+    ----
         estimated_object (DynamicObject): Estimated object.
         ground_truth_object (Optional[DynamicObject]): Ground truth object.
     """
@@ -209,9 +216,11 @@ class PlaneDistanceMatching(MatchingMethod):
         If `self.value=None`, it always returns False.
 
         Args:
+        ----
             threshold_value (float): Threshold value.
 
         Returns:
+        -------
             bool: If value is better than threshold, return True.
         """
         if self.value is None:
@@ -230,10 +239,12 @@ class PlaneDistanceMatching(MatchingMethod):
         If input `ground_truth_object=None`, it always returns None,
 
         Args:
+        ----
             estimated_object (DynamicObject): Estimated object.
             ground_truth_object (Optional[DynamicObject]): Ground truth object.
 
         Returns:
+        -------
             Optional[float]: Plane distance.
         """
         if ground_truth_object is None:
@@ -248,7 +259,9 @@ class PlaneDistanceMatching(MatchingMethod):
         gt_corner_points: List[Tuple[float, float, float]] = polygon_to_list(gt_footprint_polygon)
 
         # Sort by 2d distance
-        lambda_func: Callable[[Tuple[float, float, float]], float] = lambda x: math.hypot(x[0], x[1])
+        def lambda_func(x: Tuple[float, float, float]) -> float:
+            return math.hypot(x[0], x[1])
+
         pr_corner_points.sort(key=lambda_func)
         gt_corner_points.sort(key=lambda_func)
 
@@ -278,10 +291,12 @@ class IOU2dMatching(MatchingMethod):
     This class allows either `DynamicObject` or `DynamicObject2D` as input type.
 
     Attributes:
+    ----------
         mode (MatchingMode): Matching mode that is `MatchingMode.IOU2D`.
         value (Optional[float]): 2D IoU score.
 
     Args:
+    ----
         estimated_object (DynamicObject): Estimated object.
         ground_truth_object (Optional[DynamicObject]): Ground truth object.
     """
@@ -305,12 +320,15 @@ class IOU2dMatching(MatchingMethod):
         Input `threshold_value` must be in [0.0, 1.0].
 
         Args:
+        ----
             threshold_value (float): The threshold value
 
         Returns:
+        -------
             bool: If value is better than threshold, return True.
 
         Raises:
+        ------
             AssertionError: When `threshold_value` is not in [0.0, 1.0].
         """
         assert 0.0 <= threshold_value <= 1.0, f"threshold must be [0.0, 1.0], but got {threshold_value}."
@@ -329,20 +347,22 @@ class IOU2dMatching(MatchingMethod):
 
         If input `ground_truth_object=None`, always returns 0.0.
 
-        NOTE:
+        Note:
+        ----
             If Object's size is tiny, it returns wrong IoU score.
 
         Args:
+        ----
             estimated_object (ObjectType): Estimated object
             ground_truth_object (Optional[ObjectType]): Ground truth object.
 
         Returns:
+        -------
             float: The value of 2D IoU score. If ground truth object is None, returns 0.0.
 
         Reference:
             https://github.com/lyft/nuscenes-devkit/blob/49c36da0a85da6bc9e8f2a39d5d967311cd75069/lyft_dataset_sdk/eval/detection/mAP_evaluation.py
         """
-
         if ground_truth_object is None:
             return 0.0
 
@@ -365,10 +385,12 @@ class IOU3dMatching(MatchingMethod):
     This class only allows `DynamicObject` as input.
 
     Attributes:
+    ----------
         mode (MatchingMode): Matching mode that is `MatchingMode.IOU3D`.
         value (Optional[float]): 3D IoU score.
 
     Args:
+    ----
         estimated_object (DynamicObject): Estimated object.
         ground_truth_object (Optional[DynamicObject]): Ground truth object.
     """
@@ -391,12 +413,15 @@ class IOU3dMatching(MatchingMethod):
         If `self.value` is None, it always returns `False`.
 
         Args:
+        ----
             threshold_value (float): Threshold value that must be in [0.0, 1.0].
 
         Returns:
+        -------
             bool: If value is better than threshold, return True.
 
         Raises:
+        ------
             AssertionError: When `threshold_value` is not in [0.0, 1.0].
         """
         assert 0.0 <= threshold_value <= 1.0, f"threshold must be [0.0, 1.0], but got {threshold_value}"
@@ -416,10 +441,12 @@ class IOU3dMatching(MatchingMethod):
         If input `ground_truth_object=None`, it always returns 0.0.
 
         Args:
+        ----
             estimated_object (DynamicObject): The estimated object
             ground_truth_object (DynamicObject): The corresponded ground truth object
 
         Returns:
+        -------
             Optional[float]: The value of 3D IoU.
                             If estimated_object do not have corresponded ground truth object,
                             return 0.0.
@@ -442,10 +469,12 @@ def _get_volume_intersection(
     """Get the volume at intersected area.
 
     Args:
+    ----
         estimated_object (DynamicObject): Estimated object.
         ground_truth_object (DynamicObject): Corresponding ground truth object.
 
     Returns:
+    -------
         float: Volume at intersected area.
     """
     area_intersection = _get_area_intersection(estimated_object, ground_truth_object)
@@ -460,10 +489,12 @@ def _get_height_intersection(
     """Get the height at intersection.
 
     Args:
+    ----
         estimated_object (DynamicObject): Estimated object
         ground_truth_object (DynamicObject): Corresponding ground truth object.
 
     Returns:
+    -------
         float: The height at intersection
     """
     min_z = max(
@@ -485,10 +516,12 @@ def _get_area_intersection(estimated_object: ObjectType, ground_truth_object: Ob
     For 2D object, get ROI of 2D box as a polygon.
 
     Args:
+    ----
         estimated_object (ObjectType): Estimated object.
         ground_truth_object (ObjectType): Corresponding ground truth object.
 
     Returns:
+    -------
         float: Area at intersection.
     """
     # estimated object footprint and Ground truth object footprint

@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from perception_eval.evaluation.matching.object_matching import CenterDistanceMatching
-from perception_eval.evaluation.matching.object_matching import IOU2dMatching
-from perception_eval.evaluation.matching.object_matching import IOU3dMatching
-from perception_eval.evaluation.matching.object_matching import MatchingMethod
-from perception_eval.evaluation.matching.object_matching import MatchingMode
-from perception_eval.evaluation.matching.object_matching import PlaneDistanceMatching
+from perception_eval.evaluation.matching.object_matching import (
+    CenterDistanceMatching,
+    IOU2dMatching,
+    IOU3dMatching,
+    MatchingMethod,
+    MatchingMode,
+    PlaneDistanceMatching,
+)
 
 __all__ = (
     "CenterDistanceMatching",

@@ -13,13 +13,12 @@
 # limitations under the License.
 
 import numpy as np
+
 from perception_eval.tool import Gmm
 
 
 def test_gmm():
-    """[summary]
-    Test GMM.
-    """
+    """Test GMM."""
     max_k: int = 10
     x_dim: int = 5
     y_dim: int = 3

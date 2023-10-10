@@ -12,16 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from test.util.dummy_object import make_dummy_data
-from typing import List
-from typing import Tuple
 import unittest
+from test.util.dummy_object import make_dummy_data
+from typing import TYPE_CHECKING, List, Tuple
 
-from perception_eval.common.object import DynamicObject
-from perception_eval.evaluation.matching.object_matching import _get_height_intersection
-from perception_eval.evaluation.matching.object_matching import _get_volume_intersection
-from perception_eval.evaluation.matching.object_matching import IOU3dMatching
+from perception_eval.evaluation.matching.object_matching import (
+    IOU3dMatching,
+    _get_height_intersection,
+    _get_volume_intersection,
+)
 from perception_eval.util.debug import get_objects_with_difference
+
+if TYPE_CHECKING:
+    from perception_eval.common.object import DynamicObject
 
 
 class TestIou3dMatching(unittest.TestCase):
@@ -41,7 +44,6 @@ class TestIou3dMatching(unittest.TestCase):
             Given diff_distance, check if height_intersection and ans_height_intersection
             are equal.
         """
-        # patterns: (diff_distance, List[ans_height_intersection])
         patterns: List[Tuple[float, float]] = [(0.0, 1.0), (-0.5, 0.5), (-1.0, 0.0)]
         for diff_distance, ans_height_intersection in patterns:
             with self.subTest("Test get_height_intersection."):
@@ -51,7 +53,8 @@ class TestIou3dMatching(unittest.TestCase):
                     diff_yaw=0,
                 )
                 for estimated_object, ground_truth_object in zip(
-                    diff_distance_dummy_ground_truth_objects, self.dummy_ground_truth_objects
+                    diff_distance_dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                 ):
                     height_intersection = _get_height_intersection(
                         estimated_object,
@@ -69,7 +72,6 @@ class TestIou3dMatching(unittest.TestCase):
         test patterns:
             Given diff_distance, check if intersection and ans_intersection are equal.
         """
-        # patterns: (diff_distance, List[ans_intersection])
         patterns: List[Tuple[float, float]] = [(0.0, 1.0), (0.5, 0.125), (1.5, 0.0)]
         for diff_distance, ans_intersection in patterns:
             with self.subTest("Test get_intersection."):
@@ -79,7 +81,8 @@ class TestIou3dMatching(unittest.TestCase):
                     diff_yaw=0,
                 )
                 for estimated_object, ground_truth_object in zip(
-                    diff_distance_dummy_ground_truth_objects, self.dummy_ground_truth_objects
+                    diff_distance_dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                 ):
                     intersection = _get_volume_intersection(estimated_object, ground_truth_object)
                     self.assertAlmostEqual(intersection, ans_intersection)
@@ -94,7 +97,6 @@ class TestIou3dMatching(unittest.TestCase):
         test patterns:
             Given diff_distance, check if iou_3d and ans_iou_3d are equal.
         """
-        # patterns: (diff_distance, List[ans_iou_3d])
         patterns: List[Tuple[float, float]] = [(0.0, 1.0), (-0.5, 1.0 / 3.0), (-1.0, 0.0)]
         for diff_distance, ans_iou_3d in patterns:
             with self.subTest("Test diff_x get_iou_3d."):
@@ -104,7 +106,8 @@ class TestIou3dMatching(unittest.TestCase):
                     diff_yaw=0,
                 )
                 for estimated_object, ground_truth_object in zip(
-                    diff_x_dummy_ground_truth_objects, self.dummy_ground_truth_objects
+                    diff_x_dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                 ):
                     iou_3d = IOU3dMatching(estimated_object, ground_truth_object)
                     self.assertAlmostEqual(iou_3d.value, ans_iou_3d)
@@ -116,7 +119,8 @@ class TestIou3dMatching(unittest.TestCase):
                     diff_yaw=0,
                 )
                 for estimated_object, ground_truth_object in zip(
-                    diff_z_dummy_ground_truth_objects, self.dummy_ground_truth_objects
+                    diff_z_dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                 ):
                     iou_3d = IOU3dMatching(estimated_object, ground_truth_object)
                     self.assertAlmostEqual(iou_3d.value, ans_iou_3d)

@@ -13,49 +13,29 @@
 # limitations under the License.
 
 
-# import os.path as osp
-# import tempfile
-# from typing import List
-# from typing import Union
-
-# from perception_eval.tool import PerceptionAnalyzer3D
-# from perception_eval.tool import PlotAxes
-# import pytest
-
 # @pytest.mark.skip(reason="pickle data is deprecated.")
 # class TestPerceptionAnalyzer3D:
-#     data_dir: str = osp.join(osp.dirname(__file__), "../sample_data")
-#     tmpdir = tempfile.TemporaryDirectory()
-#     analyzer = PerceptionAnalyzer3D.from_scenario(
 #         tmpdir.name,
-#         osp.join(data_dir, "scenario.yaml"),
-#     )
-#     analyzer.add_from_pkl(osp.join(data_dir, "pkl/sample_result.pkl"))
-#     uuid: str = "dcb2b352232fff50c4fad23718f31611"
 
 #     def test_analyze(self):
 #         """[summary]
 #         Test PerceptionAnalyzer3D.analyze().
 #         """
-#         self.analyzer.analyze()
 
 #     def test_summarize_ratio(self):
 #         """[summary]
 #         Test PerceptionAnalyzer3D.summarize_ratio().
 #         """
-#         self.analyzer.summarize_ratio()
 
 #     def test_summarize_score(self):
 #         """[summary]
 #         Test PerceptionAnalyzer3D.summarize_score().
 #         """
-#         self.analyzer.summarize_score()
 
 #     def test_summarize_error(self):
 #         """[summary]
 #         Test PerceptionAnalyzer3D.summarize_error().
 #         """
-#         self.analyzer.summarize_error()
 
 #     @pytest.mark.parametrize("columns", (["x", "y"], "yaw", ["w", "l"], ["vx", "vy"]))
 #     def test_plot_state(self, columns: Union[str, List[str]]):
@@ -64,10 +44,6 @@
 #         """
 #         for mode in PlotAxes:
 #             self.analyzer.plot_state(
-#                 uuid=self.uuid,
-#                 columns=columns,
-#                 mode=mode,
-#             )
 
 #     @pytest.mark.parametrize("columns", (["x", "y"], "yaw", ["w", "l"], ["vx", "vy"]))
 #     def test_plot_error(self, columns: Union[str, List[str]]):
@@ -77,21 +53,15 @@
 #         for mode in PlotAxes:
 #             for heatmap in (False, True):
 #                 self.analyzer.plot_error(
-#                     columns=columns,
-#                     mode=mode,
-#                     heatmap=heatmap,
-#                 )
 
 #     def test_plot_num_object(self):
 #         """[summary]
 #         Test to plot number of objects.
 #         """
 #         for mode in PlotAxes:
-#             self.analyzer.plot_num_object(mode=mode)
 
 #     @pytest.mark.parametrize("columns", (["x", "y"], "yaw", ["w", "l"], ["vx", "vy"]))
 #     def test_box_plot(self, columns: Union[str, List[str]]):
 #         """[summary]
 #         Test to box plot for each column.
 #         """
-#         self.analyzer.box_plot(columns)

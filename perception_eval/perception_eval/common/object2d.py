@@ -14,24 +14,25 @@
 
 from __future__ import annotations
 
-from typing import List
-from typing import Optional
-from typing import Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
-from perception_eval.common.label import Label
-from perception_eval.common.schema import FrameID
-from perception_eval.common.schema import Visibility
 from shapely.geometry import Polygon
+
+if TYPE_CHECKING:
+    from perception_eval.common.label import Label
+    from perception_eval.common.schema import FrameID, Visibility
 
 
 class Roi:
     """Region of Interest; ROI class.
 
-    TODO:
+    Todo:
+    ----
     - Support multi roi input for Blinker and BrakeLamp objects.
 
     Attributes:
+    ----------
         offset (Tuple[int, int]): Top-left pixels from (0, 0), (x, y) order.
         size (Tuple[int, int]): Size of ROI, (width, height) order.
         center (Tuple[int, int]): Center of ROI, (x, y) order.
@@ -40,50 +41,52 @@ class Roi:
         area (int): Area of ROI.
 
     Args:
+    ----
         roi (Tuple[int, int, int, int]): (xmin, ymin, width, height) of ROI.
     """
 
     def __init__(
         self,
-        roi: Tuple[int, int, int, int],
+        roi: tuple[int, int, int, int],
     ) -> None:
         if len(roi) != 4:
-            raise ValueError("`roi` must be 4 length int array.")
+            msg = "`roi` must be 4 length int array."
+            raise ValueError(msg)
 
-        self.__offset: Tuple[int, int] = roi[:2]
-        self.__size: Tuple[int, int] = roi[2:]
+        self.__offset: tuple[int, int] = roi[:2]
+        self.__size: tuple[int, int] = roi[2:]
 
-        self.__center: Tuple[int, int] = (
+        self.__center: tuple[int, int] = (
             self.offset[0] + self.width // 2,
             self.offset[1] + self.height // 2,
         )
         self.__area: int = self.size[0] * self.size[1]
         # corners
-        top_left: Tuple[int, int] = self.offset
-        top_right: Tuple[int, int] = (
+        top_left: tuple[int, int] = self.offset
+        top_right: tuple[int, int] = (
             self.offset[0] + self.width,
             self.offset[1],
         )
-        bottom_right: Tuple[int, int] = (
+        bottom_right: tuple[int, int] = (
             self.offset[0] + self.width,
             self.offset[1] + self.height,
         )
-        bottom_left: Tuple[int, int] = (
+        bottom_left: tuple[int, int] = (
             self.offset[0],
             self.offset[1] + self.height,
         )
         self.__corners: np.ndarray = np.array([top_left, top_right, bottom_right, bottom_left])
 
     @property
-    def offset(self) -> Tuple[int, int]:
+    def offset(self) -> tuple[int, int]:
         return self.__offset
 
     @property
-    def size(self) -> Tuple[int, int]:
+    def size(self) -> tuple[int, int]:
         return self.__size
 
     @property
-    def center(self) -> Tuple[int, int]:
+    def center(self) -> tuple[int, int]:
         return self.__center
 
     @property
@@ -107,6 +110,7 @@ class DynamicObject2D:
     """Dynamic object class for 2D object.
 
     Attributes:
+    ----------
         unix_time (int): Unix time[us].
         frame_id (FrameID): FrameID instance, where 2D objects are with respect, related to CAM_**.
         semantic_score (float): Object's confidence [0, 1].
@@ -116,6 +120,7 @@ class DynamicObject2D:
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
 
     Args:
+    ----
         unix_time (int): Unix time[us].
         frame_id (FrameID): FrameID instance, where 2D objects are with respect, related to CAM_**.
         semantic_score (float): Object's confidence [0, 1].
@@ -132,47 +137,53 @@ class DynamicObject2D:
         frame_id: FrameID,
         semantic_score: float,
         semantic_label: Label,
-        roi: Optional[Tuple[int, int, int, int]] = None,
-        uuid: Optional[str] = None,
-        visibility: Optional[Visibility] = None,
+        roi: tuple[int, int, int, int] | None = None,
+        uuid: str | None = None,
+        visibility: Visibility | None = None,
     ) -> None:
         super().__init__()
         self.unix_time: int = unix_time
         self.frame_id: FrameID = frame_id
         self.semantic_score: float = semantic_score
         self.semantic_label: Label = semantic_label
-        self.roi: Optional[Roi] = Roi(roi) if roi is not None else None
-        self.uuid: Optional[str] = uuid
-        self.visibility: Optional[Visibility] = visibility
+        self.roi: Roi | None = Roi(roi) if roi is not None else None
+        self.uuid: str | None = uuid
+        self.visibility: Visibility | None = visibility
 
     def get_corners(self) -> np.ndarray:
         """Returns the corners of bounding box in pixel.
 
         Returns:
+        -------
             numpy.ndarray: (top_left, top_right, bottom_right, bottom_left), in shape (4, 2).
         """
         if self.roi is None:
-            raise RuntimeError("self.roi is None.")
+            msg = "self.roi is None."
+            raise RuntimeError(msg)
         return self.roi.corners
 
     def get_area(self) -> int:
         """Returns the area of bounding box in pixel.
 
         Returns:
+        -------
             int: Area of bounding box[px].
         """
         if self.roi is None:
-            raise RuntimeError("self.roi is None.")
+            msg = "self.roi is None."
+            raise RuntimeError(msg)
         return self.roi.area
 
     def get_polygon(self) -> Polygon:
         """Returns the corners as polygon.
 
         Returns:
+        -------
             Polygon: Corners as Polygon. ((x0, y0), ..., (x0, y0))
         """
         if self.roi is None:
-            raise RuntimeError("self.roi is None.")
-        corners: List[List[float]] = self.get_corners().tolist()
+            msg = "self.roi is None."
+            raise RuntimeError(msg)
+        corners: list[list[float]] = self.get_corners().tolist()
         corners.append(corners[0])
         return Polygon(corners)

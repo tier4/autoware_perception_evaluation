@@ -13,10 +13,10 @@
 # limitations under the License.
 
 import logging
-from typing import List
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
+
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import crop_pointcloud
 from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
@@ -31,6 +31,7 @@ class SensingFrameResult:
     - `non-detection area`: The area pointcloud should not be detected, that means, the area there is no objects.
 
     Attributes:
+    ----------
         sensing_frame_config (SensingFrameConfig): Configuration of sensing evaluation at current frame.
         unix_time (int): Unix time [us].
         frame_name (str): The name of frame.
@@ -43,6 +44,7 @@ class SensingFrameResult:
             in non-detection area.
 
     Args:
+    ----
         sensing_frame_config (SensingFrameConfig): The configuration of sensing evaluation.
         unix_time (int): Unix time [us].
         frame_name (str): Frame name in string.
@@ -76,6 +78,7 @@ class SensingFrameResult:
         """Evaluate each object at current frame.
 
         Args:
+        ----
             ground_truth_objects (list[DynamicObject]): Ground truth objects list.
             pointcloud_for_detection (numpy.ndarray): Array of pointcloud in detection area.
             pointcloud_for_non_detection (List[numpy.ndarray]): List of pointcloud array in non-detection area.
@@ -100,11 +103,12 @@ class SensingFrameResult:
         If the object is occluded, the result is appended to `self.detection_warning_results`.
 
         Args:
+        ----
             ground_truth_objects (list[DynamicObject]): Ground truth objects list.
             pointcloud_for_detection (numpy.ndarray): Array of pointcloud in detection area.
         """
         if len(ground_truth_objects) == 0:
-            logging.warn("There is no annotated objects")
+            logging.warning("There is no annotated objects")
             return
 
         for ground_truth_object in ground_truth_objects:
@@ -135,6 +139,7 @@ class SensingFrameResult:
         `self.pointcloud_failed_non_detection`.
 
         Args:
+        ----
             ground_truth_objects (list[DynamicObject]): Ground truth objects list.
             pointcloud_for_non_detection (list[numpy.ndarray]): List of pointcloud array in non-detection area.
         """

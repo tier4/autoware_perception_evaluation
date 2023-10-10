@@ -13,34 +13,35 @@
 # limitations under the License.
 
 
-from typing import List
-from typing import Tuple
+from typing import List, Tuple
 
 from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import LabelType
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import PerceptionFrameResult
-from perception_eval.evaluation.matching.objects_filter import divide_objects
-from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
-from perception_eval.evaluation.matching.objects_filter import filter_object_results
-from perception_eval.evaluation.matching.objects_filter import filter_objects
+from perception_eval.evaluation.matching.objects_filter import (
+    divide_objects,
+    divide_objects_to_num,
+    filter_object_results,
+    filter_objects,
+)
 from perception_eval.evaluation.metrics import MetricsScore
-from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
-from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
-from perception_eval.visualization import PerceptionVisualizer2D
-from perception_eval.visualization import PerceptionVisualizer3D
-from perception_eval.visualization import PerceptionVisualizerType
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult, get_object_results
+from perception_eval.evaluation.result.perception_frame_config import (
+    CriticalObjectFilterConfig,
+    PerceptionPassFailConfig,
+)
+from perception_eval.visualization import PerceptionVisualizer2D, PerceptionVisualizer3D, PerceptionVisualizerType
 
 from ._evaluation_manager_base import _EvaluationMangerBase
-from ..evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from ..evaluation.result.object_result import get_object_results
 
 
 class PerceptionEvaluationManager(_EvaluationMangerBase):
     """A manager class to evaluate perception task.
 
     Attributes:
+    ----------
         evaluator_config (PerceptionEvaluatorConfig): Configuration for perception evaluation.
         ground_truth_frames (List[FrameGroundTruth]): Ground truth frames from datasets
         target_labels (List[LabelType]): List of target labels.
@@ -49,6 +50,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             If `self.evaluation_task.is_2d()=True`, this is None.
 
     Args:
+    ----
         evaluator_config (PerceptionEvaluatorConfig): Configuration for perception evaluation.
     """
 
@@ -89,11 +91,13 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
 
         Evaluated result is appended to `self.frame_results`.
 
-        TODO:
+        Todo:
+        ----
         - Arrange `CriticalObjectFilterConfig` and `PerceptionPassFailConfig` to `PerceptionFrameConfig`.
         - Allow input `PerceptionFrameConfig` and `ros_critical_ground_truth_objects` are None.
 
         Args:
+        ----
             unix_time (int): Unix timestamp [us].
             ground_truth_now_frame (FrameGroundTruth): FrameGroundTruth instance that has the closest
                 timestamp with `unix_time`.
@@ -104,6 +108,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             frame_pass_fail_config (PerceptionPassFailConfig):Parameter config to evaluate pass/fail.
 
         Returns:
+        -------
             PerceptionFrameResult: Evaluation result.
         """
         object_results, ground_truth_now_frame = self._filter_objects(
@@ -146,10 +151,12 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         Finally, filter `object_results` when `target_uuids` is specified.
 
         Args:
+        ----
             estimated_objects (List[ObjectType]): Estimated objects list.
             frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
 
         Returns:
+        -------
             object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results list.
             frame_ground_truth (FrameGroundTruth): Filtered FrameGroundTruth instance.
         """
@@ -188,6 +195,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         """Evaluate metrics score thorough a scene.
 
         Returns:
+        -------
             scene_metrics_score (MetricsScore): MetricsScore instance.
         """
         # Gather objects from frame results

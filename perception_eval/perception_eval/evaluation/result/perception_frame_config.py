@@ -14,24 +14,21 @@
 
 from __future__ import annotations
 
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import TYPE_CHECKING, Any
 
-from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import LabelType
-from perception_eval.common.label import set_target_lists
+from perception_eval.common.label import LabelType, set_target_lists
 from perception_eval.common.threshold import check_thresholds
 
-# from perception_eval.config import PerceptionEvaluationConfig
+if TYPE_CHECKING:
+    from perception_eval.common.evaluation_task import EvaluationTask
 
 
 class CriticalObjectFilterConfig:
     """[summary]
-    Config class for critical object filter
+    Config class for critical object filter.
 
     Attributes:
+    ----------
         self.target_labels (List[str]): Target list
         self.max_x_position_list (Optional[List[float]]):
             Maximum x position threshold list for each label. Defaults to None.
@@ -52,19 +49,20 @@ class CriticalObjectFilterConfig:
     def __init__(
         self,
         evaluator_config,  #: PerceptionEvaluationConfig,
-        target_labels: List[str],
-        ignore_attributes: Optional[List[str]] = None,
-        max_x_position_list: Optional[List[float]] = None,
-        max_y_position_list: Optional[List[float]] = None,
-        max_distance_list: Optional[List[float]] = None,
-        min_distance_list: Optional[List[float]] = None,
-        min_point_numbers: Optional[List[int]] = None,
-        confidence_threshold_list: Optional[List[float]] = None,
-        target_uuids: Optional[List[str]] = None,
+        target_labels: list[str],
+        ignore_attributes: list[str] | None = None,
+        max_x_position_list: list[float] | None = None,
+        max_y_position_list: list[float] | None = None,
+        max_distance_list: list[float] | None = None,
+        min_distance_list: list[float] | None = None,
+        min_point_numbers: list[int] | None = None,
+        confidence_threshold_list: list[float] | None = None,
+        target_uuids: list[str] | None = None,
     ) -> None:
-        """[summary]
+        """[summary].
 
         Args:
+        ----
             evaluator_config (PerceptionEvaluationConfig): Evaluation config
             target_labels (List[str]): The list of target label.
             max_x_position_list (Optional[List[float]]):
@@ -81,21 +79,21 @@ class CriticalObjectFilterConfig:
                 The list of confidence threshold for each label. Defaults to None.
             target_uuids (Optional[List[str]]): The list of target uuid. Defaults to None.
         """
-        self.target_labels: List[LabelType] = set_target_lists(
+        self.target_labels: list[LabelType] = set_target_lists(
             target_labels,
             evaluator_config.label_converter,
         )
-        self.ignore_attributes: Optional[List[str]] = ignore_attributes
+        self.ignore_attributes: list[str] | None = ignore_attributes
 
         num_elements: int = len(self.target_labels)
         if max_x_position_list and max_y_position_list:
-            self.max_x_position_list: List[float] = check_thresholds(max_x_position_list, num_elements)
-            self.max_y_position_list: List[float] = check_thresholds(max_y_position_list, num_elements)
+            self.max_x_position_list: list[float] = check_thresholds(max_x_position_list, num_elements)
+            self.max_y_position_list: list[float] = check_thresholds(max_y_position_list, num_elements)
             self.max_distance_list = None
             self.min_distance_list = None
         elif max_distance_list and min_distance_list:
-            self.max_distance_list: List[float] = check_thresholds(max_distance_list, num_elements)
-            self.min_distance_list: List[float] = check_thresholds(min_distance_list, num_elements)
+            self.max_distance_list: list[float] = check_thresholds(max_distance_list, num_elements)
+            self.min_distance_list: list[float] = check_thresholds(min_distance_list, num_elements)
             self.max_x_position_list = None
             self.max_y_position_list = None
         elif evaluator_config.evaluation_task.is_2d():
@@ -104,21 +102,22 @@ class CriticalObjectFilterConfig:
             self.max_distance_list = None
             self.min_distance_list = None
         else:
-            raise RuntimeError("Either max x/y position or max/min distance should be specified")
+            msg = "Either max x/y position or max/min distance should be specified"
+            raise RuntimeError(msg)
 
         if min_point_numbers is None:
             self.min_point_numbers = None
         else:
-            self.min_point_numbers: List[int] = check_thresholds(min_point_numbers, num_elements)
+            self.min_point_numbers: list[int] = check_thresholds(min_point_numbers, num_elements)
 
         if confidence_threshold_list is None:
             self.confidence_threshold_list = None
         else:
-            self.confidence_threshold_list: List[float] = check_thresholds(confidence_threshold_list, num_elements)
+            self.confidence_threshold_list: list[float] = check_thresholds(confidence_threshold_list, num_elements)
 
-        self.target_uuids: Optional[List[str]] = target_uuids
+        self.target_uuids: list[str] | None = target_uuids
 
-        self.filtering_params: Dict[str, Any] = {
+        self.filtering_params: dict[str, Any] = {
             "target_labels": self.target_labels,
             "ignore_attributes": self.ignore_attributes,
             "max_x_position_list": self.max_x_position_list,
@@ -133,9 +132,10 @@ class CriticalObjectFilterConfig:
 
 class PerceptionPassFailConfig:
     """[summary]
-    Config filter for pass fail to frame result
+    Config filter for pass fail to frame result.
 
     Attributes:
+    ----------
         self.evaluation_task (EvaluationTask): Evaluation task.
         self.target_labels (List[str]): The list of target label.
         self.matching_distance_list (Optional[List[float]]): The threshold list for Pass/Fail.
@@ -146,12 +146,14 @@ class PerceptionPassFailConfig:
     def __init__(
         self,
         evaluator_config,  #: PerceptionEvaluationConfig,
-        target_labels: Optional[List[str]],
-        matching_threshold_list: Optional[List[float]] = None,
-        confidence_threshold_list: Optional[List[float]] = None,
+        target_labels: list[str] | None,
+        matching_threshold_list: list[float] | None = None,
+        confidence_threshold_list: list[float] | None = None,
     ) -> None:
-        """[summary]
+        """[summary].
+
         Args:
+        ----
             evaluator_config (PerceptionEvaluationConfig): Evaluation config
             target_labels (List[str]): Target list. If None or empty list is specified, all labels will be evaluated.
             matching_threshold_list (List[float]): The threshold list for Pass/Fail.
@@ -159,7 +161,7 @@ class PerceptionPassFailConfig:
             confidence_threshold_list (Optional[List[float]]): The list of confidence threshold. Defaults to None.
         """
         self.evaluation_task: EvaluationTask = evaluator_config.evaluation_task
-        self.target_labels: List[LabelType] = set_target_lists(
+        self.target_labels: list[LabelType] = set_target_lists(
             target_labels,
             evaluator_config.label_converter,
         )
@@ -168,11 +170,11 @@ class PerceptionPassFailConfig:
         if matching_threshold_list is None:
             self.matching_threshold_list = None
         else:
-            self.matching_threshold_list: List[float] = check_thresholds(matching_threshold_list, num_elements)
+            self.matching_threshold_list: list[float] = check_thresholds(matching_threshold_list, num_elements)
         if confidence_threshold_list is None:
             self.confidence_threshold_list = None
         else:
-            self.confidence_threshold_list: List[float] = check_thresholds(confidence_threshold_list, num_elements)
+            self.confidence_threshold_list: list[float] = check_thresholds(confidence_threshold_list, num_elements)
 
 
 class UseCaseThresholdsError(Exception):

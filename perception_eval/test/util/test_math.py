@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import numpy as np
-from perception_eval.util.math import _is_rotation_matrix
-from perception_eval.util.math import rotation_matrix_to_euler
 import pytest
+
+from perception_eval.util.math import _is_rotation_matrix, rotation_matrix_to_euler
 
 
 def test_rotation_matrix_to_euler():

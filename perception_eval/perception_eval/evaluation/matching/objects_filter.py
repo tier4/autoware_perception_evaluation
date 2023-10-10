@@ -12,23 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
 import warnings
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
+
 from perception_eval.common import ObjectType
-from perception_eval.common.label import CommonLabel
-from perception_eval.common.label import Label
-from perception_eval.common.label import LabelType
+from perception_eval.common.label import CommonLabel, Label, LabelType
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
-from perception_eval.common.threshold import get_label_threshold
-from perception_eval.common.threshold import LabelThreshold
+from perception_eval.common.threshold import LabelThreshold, get_label_threshold
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
 
@@ -57,6 +51,7 @@ def filter_object_results(
     After that, remained `object_results` are filtered with input parameters considering ground truth objects.
 
     Args:
+    ----
         object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
         target_labels (Optional[List[LabelType]]): Filter target list of labels.
             Keep all `object_results` that both of their `estimated_object` and `ground_truth_object`
@@ -91,6 +86,7 @@ def filter_object_results(
             This is only needed when `frame_id=map`. Defaults to None.
 
     Returns:
+    -------
         filtered_object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results list.
     """
     filtered_object_results: List[DynamicObjectWithPerceptionResult] = []
@@ -151,6 +147,7 @@ def filter_objects(
     `min_point_numbers` or `confidence_threshold_list` are specified, each of them must be same length list.
 
     Args:
+    ----
         objects (List[ObjectType]: The objects you want to filter.
         is_gt (bool): Flag if input object is ground truth.
         target_labels Optional[List[Label]]): Filter target list of labels.
@@ -182,6 +179,7 @@ def filter_objects(
             This is only needed when `frame_id=map`. Defaults to None.
 
     Returns:
+    -------
         List[ObjectType]: Filtered objects.
     """
     filtered_objects: List[ObjectType] = []
@@ -216,6 +214,7 @@ def get_positive_objects(
     If an object result has better matching score than the matching threshold, it is TP, otherwise FP.
 
     Args:
+    ----
         object_results (List[DynamicObjectWithPerceptionResult]): List of matched estimation and GT objects.
         target_labels (Optional[List[Label]]): List of labels should be evaluated.
         matching_mode (Optional[MatchingMode]): Matching policy, i.e. center or plane distance, iou.
@@ -223,6 +222,7 @@ def get_positive_objects(
             each element corresponds to target label.
 
     Returns:
+    -------
         tp_object_results (List[DynamicObjectWithPerceptionResult]): List of TP.
         fp_object_results (List[DynamicObjectWithPerceptionResult]): List of FP.
     """
@@ -249,7 +249,7 @@ def get_positive_objects(
                     DynamicObjectWithPerceptionResult(
                         object_result.estimated_object,
                         None,
-                    )
+                    ),
                 )
             else:
                 fp_object_results.append(object_result)
@@ -272,6 +272,7 @@ def get_negative_objects(
     Otherwise, the label of ground truth is 'FP', which means this object should not estimated, it is TN.
 
     Args:
+    ----
         ground_truth_objects (List[DynamicObject]): List of ground truth objects.
         object_results (List[DynamicObjectWithPerceptionResult]): List of object results.
         target_labels (Optional[List[Label]]): List of labels should be evaluated.
@@ -280,6 +281,7 @@ def get_negative_objects(
             each element corresponds to target label.
 
     Returns:
+    -------
         tn_objects (List[DynamicObject]): List of TN.
         fn_objects (List[DynamicObject]): List of FN.
     """
@@ -335,6 +337,7 @@ def divide_tp_fp_objects(
     And also, judge with `confidence_threshold` when `confidence_threshold_list` is specified.
 
     Args:
+    ----
         object_results (List[DynamicObjectWithPerceptionResult]): The object results you want to filter
         target_labels Optional[List[Label]]): Target labels list.
             Get threshold value from `matching_threshold_list` at corresponding label index.
@@ -349,6 +352,7 @@ def divide_tp_fp_objects(
             than `confidence_threshold`. Defaults to None.
 
     Returns:
+    -------
         List[DynamicObjectWithPerceptionResult]]: TP object results.
         List[DynamicObjectWithPerceptionResult]]: FP object results.
     """
@@ -409,11 +413,13 @@ def get_fn_objects(
     This function returns a set of `ground_truth_objects` that are not contained in TP object results.
 
     Args:
+    ----
         ground_truth_objects (List[ObjectType]): Ground truth objects list.
         object_results (Optional[List[DynamicObjectWithPerceptionResult]]): Object results list.
         tp_object_results (Optional[List[DynamicObjectWithPerceptionResult]]): TP results list in object results.
 
     Returns:
+    -------
         List[ObjectType]: FN (False Negative) objects list.
     """
     warnings.warn(
@@ -441,11 +447,13 @@ def _is_fn_object(
     """Judge whether ground truth object is FN (False Negative) object.
 
     Args:
+    ----
         ground_truth_object (ObjectType): Ground truth object.
         object_results (List[DynamicObjectWithPerceptionResult]): object results list.
         tp_object_results (List[DynamicObjectWithPerceptionResult]): TP results list in object results.
 
     Returns:
+    -------
         bool: Whether ground truth object is FN (False Negative) object.
     """
     warnings.warn(
@@ -477,6 +485,7 @@ def _is_target_object(
     This function used to filtering for both of ground truths and object results.
 
     Args:
+    ----
         dynamic_object (ObjectType): The dynamic object
         is_gt (bool): Whether input object is GT or not.
         target_labels Optional[List[LabelType]]): Target labels list.
@@ -506,6 +515,7 @@ def _is_target_object(
             This is only needed when `frame_id=map`. Defaults to None.
 
     Returns:
+    -------
         bool: If the object is filter target, return True
     """
     if dynamic_object.semantic_label.is_fp():
@@ -516,7 +526,7 @@ def _is_target_object(
 
     # Whether unknown is contained in target labels
     is_contained_unknown: bool = (
-        any([label == CommonLabel.UNKNOWN for label in target_labels]) if target_labels is not None else False
+        any(label == CommonLabel.UNKNOWN for label in target_labels) if target_labels is not None else False
     )
 
     use_unknown_threshold: bool = is_unknown_estimation and not is_contained_unknown
@@ -593,7 +603,7 @@ def _is_target_object(
 
     if is_target and target_uuids is not None and is_gt:
         assert isinstance(target_uuids, list)
-        assert all([isinstance(uuid, str) for uuid in target_uuids])
+        assert all(isinstance(uuid, str) for uuid in target_uuids)
         is_target = is_target and dynamic_object.uuid in target_uuids
 
     return is_target
@@ -606,12 +616,14 @@ def divide_objects(
     """Divide DynamicObject or DynamicObjectWithPerceptionResult into dict mapped by their labels.
 
     Args:
+    ----
         objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
             List of ObjectType or DynamicObjectWithPerceptionResult.
         target_labels (Optional[List[LabelType]]): If this is specified, create empty list even
             if there is no object having specified label. Defaults to None.
 
     Returns:
+    -------
         ret (Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]):
             Dict that are list of ObjectType or DynamicObjectWithPerceptionResult mapped by their labels.
             It depends on the type of input object.
@@ -634,7 +646,7 @@ def divide_objects(
             else:
                 continue
 
-        if label not in ret.keys():
+        if label not in ret:
             ret[label] = [obj]
         else:
             ret[label].append(obj)
@@ -648,12 +660,14 @@ def divide_objects_to_num(
     """Divide the number of input `objects` mapped by their labels.
 
     Args:
+    ----
         objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
             List of ObjectType or DynamicObjectWithPerceptionResult.
         target_labels (Optional[List[LabelType]]): If this is specified, create empty list even
             if there is no object having specified label. Defaults to None.
 
     Returns:
+    -------
         ret (Dict[LabelType, int]): Dict that are number of ObjectType or DynamicObjectWithPerceptionResult
             mapped by their labels.
     """
@@ -674,7 +688,7 @@ def divide_objects_to_num(
             else:
                 continue
 
-        if label not in ret.keys():
+        if label not in ret:
             ret[label] = 1
         else:
             ret[label] += 1

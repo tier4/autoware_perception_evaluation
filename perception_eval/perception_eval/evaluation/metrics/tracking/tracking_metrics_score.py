@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ctypes import Union
-from typing import Dict
-from typing import List
-from typing import Tuple
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
 
 from .clear import CLEAR
+
+if TYPE_CHECKING:
+    from ctypes import Union
 
 
 class TrackingMetricsScore:
@@ -30,11 +30,13 @@ class TrackingMetricsScore:
     Length of input `target_labels` and `matching_threshold_list` must be same.
 
     Attributes:
+    ----------
         target_labels: (List[LabelType]): Target labels list.
         matching_mode (MatchingMode): MatchingMode instance.
         clears (List[CLEAR]): List of CLEAR instances.
 
     Args:
+    ----
         object_results_dict (Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]):
             Dict that items are object results list mapped by their labels.
         num_ground_truth (int): Number of ground truths.
@@ -74,6 +76,7 @@ class TrackingMetricsScore:
         """Summing up multi CLEAR result.
 
         Returns:
+        -------
             mota (float): MOTA score.
             motp (float): MOTP score.
             num_id_switch (int): The number of ID switched.
@@ -99,9 +102,10 @@ class TrackingMetricsScore:
         return mota, motp, num_id_switch
 
     def __str__(self) -> str:
-        """__str__ method
+        """__str__ method.
 
         Returns:
+        -------
             str: Formatted string.
         """
         str_: str = "\n"

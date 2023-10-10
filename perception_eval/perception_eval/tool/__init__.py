@@ -1,7 +1,6 @@
 from typing import Union
 
-from .gmm import Gmm
-from .gmm import load_sample
+from .gmm import Gmm, load_sample
 from .perception_analyzer2d import PerceptionAnalyzer2D
 from .perception_analyzer3d import PerceptionAnalyzer3D
 from .utils import PlotAxes

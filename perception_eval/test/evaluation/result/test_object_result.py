@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import unittest
 from test.util.dummy_object import make_dummy_data
 from test.util.object_diff import DiffTranslation
-from typing import List
-from typing import Optional
-from typing import Tuple
-import unittest
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
-from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult, get_object_results
 from perception_eval.util.debug import get_objects_with_difference
+
+if TYPE_CHECKING:
+    from perception_eval.common import DynamicObject
 
 
 class TestObjectResult(unittest.TestCase):
@@ -46,14 +45,10 @@ class TestObjectResult(unittest.TestCase):
                             (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
         """
         patterns: List[Tuple[DiffTranslation, List[Tuple[int, Optional[int]]]]] = [
-            # (1)
-            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[0], None)
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 [(0, 0), (1, 1), (2, None)],
             ),
-            # (2)
-            # (Est[0], None), (Est[1], GT[1]), (Est[0], GT[0])
             (
                 DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
                 [(0, None), (1, 1), (2, 0)],
@@ -79,22 +74,13 @@ class TestObjectResult(unittest.TestCase):
                 )
 
                 for i, object_result_ in enumerate(object_results):
-                    self.assertIn(
-                        object_result_.estimated_object,
-                        estimated_objects,
-                        f"Unexpected estimated object at {i}",
-                    )
+                    assert object_result_.estimated_object in estimated_objects, f"Unexpected estimated object at {i}"
                     estimated_object_index: int = estimated_objects.index(object_result_.estimated_object)
                     gt_idx = ans_pair_index[estimated_object_index][1]
                     if gt_idx is not None:
-                        self.assertEqual(
-                            object_result_.ground_truth_object,
-                            ground_truth_objects[gt_idx],
-                            f"Unexpected ground truth object at {i}",
-                        )
+                        assert (
+                            object_result_.ground_truth_object == ground_truth_objects[gt_idx]
+                        ), f"Unexpected ground truth object at {i}"
                     else:
                         # In this case, there is no threshold
-                        self.assertIsNone(
-                            object_result_.ground_truth_object,
-                            "ground truth must be None",
-                        )
+                        assert object_result_.ground_truth_object is None, "ground truth must be None"

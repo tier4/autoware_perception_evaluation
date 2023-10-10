@@ -14,29 +14,29 @@
 
 from __future__ import annotations
 
+import unittest
 from math import isclose
 from test.util.dummy_object import make_dummy_data
 from test.util.object_diff import DiffTranslation
-from typing import List
-from typing import Optional
-from typing import Tuple
-import unittest
+from typing import TYPE_CHECKING
 
-from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.tracking.clear import CLEAR
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult, get_object_results
 from perception_eval.util.debug import get_objects_with_difference
+
+if TYPE_CHECKING:
+    from perception_eval.common import DynamicObject
 
 
 class AnswerCLEAR:
     """Answer class for CLEAR to compare result.
 
     Attributes:
+    ----------
         self.num_ground_truth (int)
         self.tp (float)
         self.fp (float)
@@ -55,16 +55,18 @@ class AnswerCLEAR:
         tp_matching_score: float,
         mota: float,
         motp: float,
-    ):
-        """[summary]
+    ) -> None:
+        """[summary].
+
         Args:
+        ----
             num_ground_truth (int)
             tp (float)
             fp (float)
             id_switch (float)
             tp_matching_score (float)
             mota (float)
-            motp (float)
+            motp (float).
         """
         self.num_ground_truth: int = num_ground_truth
         self.tp: float = tp
@@ -79,9 +81,11 @@ class AnswerCLEAR:
         """Generate AnswerCLEAR from CLEAR.
 
         Args:
+        ----
             clear (CLEAR)
 
         Returns:
+        -------
             AnswerCLEAR
         """
         return AnswerCLEAR(
@@ -120,20 +124,20 @@ class AnswerCLEAR:
 
 class TestCLEAR(unittest.TestCase):
     def setUp(self) -> None:
-        self.dummy_estimated_objects: List[DynamicObject] = []
-        self.dummy_ground_truth_objects: List[DynamicObject] = []
+        self.dummy_estimated_objects: list[DynamicObject] = []
+        self.dummy_ground_truth_objects: list[DynamicObject] = []
         self.dummy_unique_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data(use_unique_id=True)
         self.dummy_estimated_objects, _ = make_dummy_data(use_unique_id=False)
 
         self.evaluation_task: EvaluationTask = EvaluationTask.TRACKING
-        self.target_labels: List[AutowareLabel] = [
+        self.target_labels: list[AutowareLabel] = [
             AutowareLabel.CAR,
             AutowareLabel.BICYCLE,
             AutowareLabel.PEDESTRIAN,
             AutowareLabel.MOTORBIKE,
         ]
-        self.max_x_position_list: List[float] = [100.0, 100.0, 100.0, 100.0]
-        self.max_y_position_list: List[float] = [100.0, 100.0, 100.0, 100.0]
+        self.max_x_position_list: list[float] = [100.0, 100.0, 100.0, 100.0]
+        self.max_y_position_list: list[float] = [100.0, 100.0, 100.0, 100.0]
 
     def test_calculate_tp_fp(self):
         """[summary]
@@ -145,7 +149,9 @@ class TestCLEAR(unittest.TestCase):
             - matching mode     : Center distance
             - matching threshold: 0.5
             - tp metrics        : AP(=1.0)
-            NOTE:
+
+        Note:
+        ----
                 - The flag must be same whether use unique ID or not.
                 - Estimated object is only matched with GT that has same label.
                 - The estimations & GTs are following (number represents the index)
@@ -154,8 +160,7 @@ class TestCLEAR(unittest.TestCase):
                     GT = 4
                         (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
         """
-        # patterns: (prev_diff_trans, cur_diff_trans, target_label, use_unique_id, ans_clear)
-        patterns: List[Tuple[Optional[DiffTranslation], DiffTranslation, AutowareLabel, AnswerCLEAR]] = [
+        patterns: list[tuple[DiffTranslation | None, DiffTranslation, AutowareLabel, AnswerCLEAR]] = [
             # ========== Test unique ID association ==========
             # (1). Est: 2, GT: 1
             # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
@@ -189,7 +194,8 @@ class TestCLEAR(unittest.TestCase):
             # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
             # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
             # -> TP score=1.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=0.0
-            # When current/previous has same match and previous result is TP, previous TP is assigned even though current is TP.
+            # When current/previous has same match and previous result is TP,
+            # previous TP is assigned even though current is TP.
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
@@ -201,7 +207,8 @@ class TestCLEAR(unittest.TestCase):
             # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
             # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
             # -> TP score=1.0, IDsw=1, matching score=0.2, MOTA=0.0, MOTP=0.2
-            # In case of current/previous has same match, current IDsw is 0 if TP even though previous is FP.
+            # In case of current/previous has same match,
+            # current IDsw is 0 if TP even though previous is FP.
             (
                 DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
                 DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
@@ -215,7 +222,8 @@ class TestCLEAR(unittest.TestCase):
             # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
             # If there is no GT, MOTA get inf. Also, if there is no TP, MOTP get inf.
             # In this case, GT is filtered by max_x_position(=100.0).
-            # When current/previous has same match and previous result is TP, previous TP is assigned even though current is TP.
+            # When current/previous has same match and previous result is TP,
+            # previous TP is assigned even though current is TP.
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 DiffTranslation((0.0, 0.0, 0.0), (101.0, 0.0, 0.0)),
@@ -328,7 +336,8 @@ class TestCLEAR(unittest.TestCase):
             # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
             # If there is no GT, MOTA get inf. Also, if there is no TP, MOTP get inf.
             # In this case, GT is filtered by max_x_position(=100.0).
-            # When current/previous has same match and previous result is TP, previous TP is assigned even though current is FP.
+            # When current/previous has same match and previous result is TP,
+            # previous TP is assigned even though current is FP.
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 DiffTranslation((0.0, 0.0, 0.0), (101.0, 0.0, 0.0)),
@@ -392,11 +401,11 @@ class TestCLEAR(unittest.TestCase):
         ) in enumerate(patterns):
             with self.subTest(f"Test calculate TP/FP: {n + 1}"):
                 # Previous estimated objects
-                prev_object_results: Optional[List[DynamicObjectWithPerceptionResult]] = []
+                prev_object_results: list[DynamicObjectWithPerceptionResult] | None = []
 
                 if prev_diff_trans is not None:
                     # Translate previous estimated objects
-                    prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
+                    prev_estimated_objects: list[DynamicObject] = get_objects_with_difference(
                         ground_truth_objects=self.dummy_unique_estimated_objects
                         if use_unique_id
                         else self.dummy_estimated_objects,
@@ -435,14 +444,14 @@ class TestCLEAR(unittest.TestCase):
                     prev_object_results = []
 
                 # Translate current objects
-                cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
+                cur_estimated_objects: list[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_unique_estimated_objects
                     if use_unique_id
                     else self.dummy_estimated_objects,
                     diff_distance=cur_diff_trans.diff_estimated,
                     diff_yaw=0.0,
                 )
-                cur_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
+                cur_ground_truth_objects: list[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=cur_diff_trans.diff_ground_truth,
                     diff_yaw=0.0,
@@ -465,7 +474,7 @@ class TestCLEAR(unittest.TestCase):
                 )
 
                 # Current object results
-                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                cur_object_results: list[DynamicObjectWithPerceptionResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
@@ -481,11 +490,7 @@ class TestCLEAR(unittest.TestCase):
                     matching_threshold_list=[0.5],
                 )
                 out_clear: AnswerCLEAR = AnswerCLEAR.from_clear(clear_)
-                self.assertEqual(
-                    out_clear,
-                    ans_clear,
-                    f"\nout_clear = {str(out_clear)},\nans_clear = {str(ans_clear)}",
-                )
+                assert out_clear == ans_clear, f"\nout_clear = {out_clear!s},\nans_clear = {ans_clear!s}"
 
     def test_is_id_switched(self):
         """[summary]
@@ -494,7 +499,9 @@ class TestCLEAR(unittest.TestCase):
         test patterns:
             Check if ID was switched between each i-th current object result and j-th previous object.
             ``ans_flags`` represents the answer flag for three object results per one previous result.
-            NOTE:
+
+        Note:
+        ----
                 - The flag must be same whether use unique ID or not.
                 - Estimated object is only matched with GT that has same label.
                 - The estimations & GTs are following (number represents the index)
@@ -503,10 +510,8 @@ class TestCLEAR(unittest.TestCase):
                     GT = 4
                         (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
         """
-        # patterns: (prev_diff_trans, cur_diff_trans, use_unique_id, ans_flags)
-        patterns: List[Tuple[DiffTranslation, DiffTranslation, bool, Tuple[bool]]] = [
+        patterns: list[tuple[DiffTranslation, DiffTranslation, bool, tuple[bool]]] = [
             # ========== Test unique ID association ==========
-            # (1)
             # -> previous   : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
             (
@@ -516,10 +521,8 @@ class TestCLEAR(unittest.TestCase):
                 # If ID was switched for cur[i] and prev[j]
                 ((False, False, False), (False, False, False), (False, False, False)),
             ),
-            # (2)
             # -> previous   : (Est[2], GT[0]), (Est[1], GT[1]), (Est[0], None)
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
-            # ((False, False, False), (False, False, False), (False, False, False))
             # The IDsw only is counted for TP pairs both previous and current.
             # If previous result is TP though current result is FP, IDsw is not counted
             (
@@ -529,7 +532,6 @@ class TestCLEAR(unittest.TestCase):
                 ((True, False, False), (False, False, False), (False, False, False)),
             ),
             # --- Test there is no previous result ---
-            # (3)
             # -> previous   : (Est[0], None), (Est[1], None), (Est[2], None)
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
             # The IDsw only is counted for TP pairs both previous and current.
@@ -542,7 +544,6 @@ class TestCLEAR(unittest.TestCase):
                 ((False, False, False), (False, False, False), (False, False, False)),
             ),
             # ========== Test non-unique ID association ==========
-            # (4)   = Case(1)
             # Est: 3, GT: 4
             # -> previous   : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
@@ -552,10 +553,8 @@ class TestCLEAR(unittest.TestCase):
                 False,
                 ((False, False, False), (False, False, False), (False, False, False)),
             ),
-            # (5)   = Case(2)
             # -> previous   : (Est[2], GT[0]), (Est[1], GT[1]), (Est[0], None)
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
-            # ((False, False, False), (False, False, False), (False, False, False))
             (
                 DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
@@ -563,7 +562,6 @@ class TestCLEAR(unittest.TestCase):
                 ((True, False, False), (False, False, False), (False, False, False)),
             ),
             # --- Test there is no previous result ---
-            # (6)   = Case(3)
             # -> previous   : (Est[0], None), (Est[1], None), (Est[2], None)
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
             (
@@ -577,7 +575,7 @@ class TestCLEAR(unittest.TestCase):
             with self.subTest(f"Test is ID switched: {n + 1}"):
                 if prev_diff_trans is not None:
                     # Translate previous objects
-                    prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
+                    prev_estimated_objects: list[DynamicObject] = get_objects_with_difference(
                         ground_truth_objects=self.dummy_unique_estimated_objects
                         if use_unique_id
                         else self.dummy_estimated_objects,
@@ -616,14 +614,14 @@ class TestCLEAR(unittest.TestCase):
                     prev_object_results = []
 
                 # Translate current objects
-                cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
+                cur_estimated_objects: list[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_unique_estimated_objects
                     if use_unique_id
                     else self.dummy_estimated_objects,
                     diff_distance=cur_diff_trans.diff_estimated,
                     diff_yaw=0.0,
                 )
-                cur_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
+                cur_ground_truth_objects: list[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=cur_diff_trans.diff_ground_truth,
                     diff_yaw=0.0,
@@ -646,7 +644,7 @@ class TestCLEAR(unittest.TestCase):
                 )
 
                 # Current object results
-                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                cur_object_results: list[DynamicObjectWithPerceptionResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
@@ -657,7 +655,7 @@ class TestCLEAR(unittest.TestCase):
                             cur_object_result=cur_obj_result,
                             prev_object_result=prev_obj_result,
                         )
-                        self.assertEqual(flag, ans_flags[i][j], f"{flag} != ans_flags[{i}][{j}]]")
+                        assert flag == ans_flags[i][j], f"{flag} != ans_flags[{i}][{j}]]"
 
     def test_is_same_match(self):
         """[summary]
@@ -666,7 +664,9 @@ class TestCLEAR(unittest.TestCase):
         test patterns:
             Check if the object result is same one between each i-th current object result and j-th previous object.
             ``ans_flags`` represents the answer flag for three object results per one previous result.
-            NOTE:
+
+        Note:
+        ----
                 - The flag must be same whether use unique ID or not.
                 - Estimated object is only matched with GT that has same label.
                 - The estimations & GTs are following (number represents the index)
@@ -675,10 +675,8 @@ class TestCLEAR(unittest.TestCase):
                     GT
                         (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
         """
-        # patterns: (prev_diff_trans, cur_diff_trans, use_unique_id, ans_flags)
-        patterns: List[Tuple[DiffTranslation, DiffTranslation, Tuple[bool]]] = [
+        patterns: list[tuple[DiffTranslation, DiffTranslation, tuple[bool]]] = [
             # ========== Test unique ID association ==========
-            # (1)
             # -> previous   : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
             # When previous or current GT is None(=FP), return False regardless the ID of estimated.
@@ -690,11 +688,9 @@ class TestCLEAR(unittest.TestCase):
                 ((True, False, False), (False, True, False), (False, False, False)),
             ),
             # TODO
-            # (2)
             # [Confidence priority]
             # -> previous   : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
-            # ((False, False, False), (False, False, False), (False, False, False))
             # [Matching score priority]
             # -> previous   : (Est[0], None), (Est[1], GT[1]), (Est[2], GT[0])
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
@@ -707,7 +703,6 @@ class TestCLEAR(unittest.TestCase):
                 ((False, False, False), (False, False, False), (False, False, False)),
             ),
             # --- Test there is no previous result ---
-            # (3)
             # -> previous   : No matching result
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
             # If previous estimation is FP, IDsw is not counted
@@ -719,7 +714,6 @@ class TestCLEAR(unittest.TestCase):
                 ((False, False, False), (False, False, False), (False, False, False)),
             ),
             # ========== Test non-unique ID association ==========
-            # (4)   = Case(1)
             # Est: 3, GT: 4
             # -> previous   : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
@@ -730,15 +724,12 @@ class TestCLEAR(unittest.TestCase):
                 ((True, False, False), (False, True, False), (False, False, False)),
             ),
             # TODO
-            # (5)   = Case(2)
             # [Confidence priority]
             # -> previous   : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
-            # ((False, False, False), (False, False, False), (False, False, False))
             # [Matching score priority]
             # -> previous   : (Est[0], None), (Est[1], GT[1]), (Est[2], GT[0])
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
-            # ((False, False, False), (False, False, False), (False, False, False))
             # When previous or current GT is None(=FP), return False regardless the ID of estimated.
             (
                 DiffTranslation((0.0, 0.0, 0.0), (-2.5, 0.0, 0.0)),
@@ -747,7 +738,6 @@ class TestCLEAR(unittest.TestCase):
                 ((False, False, False), (False, False, False), (False, False, False)),
             ),
             # --- Test there is no previous result ---
-            # (6)   = Case(3)
             # -> previous   : No matching result
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
             (
@@ -761,7 +751,7 @@ class TestCLEAR(unittest.TestCase):
             with self.subTest(f"Test is same result: {n + 1}"):
                 if prev_diff_trans is not None:
                     # Translate previous objects
-                    prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
+                    prev_estimated_objects: list[DynamicObject] = get_objects_with_difference(
                         ground_truth_objects=self.dummy_unique_estimated_objects
                         if use_unique_id
                         else self.dummy_estimated_objects,
@@ -800,14 +790,14 @@ class TestCLEAR(unittest.TestCase):
                     prev_object_results = []
 
                 # Translate current objects
-                cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
+                cur_estimated_objects: list[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_unique_estimated_objects
                     if use_unique_id
                     else self.dummy_estimated_objects,
                     diff_distance=cur_diff_trans.diff_estimated,
                     diff_yaw=0.0,
                 )
-                cur_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
+                cur_ground_truth_objects: list[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=cur_diff_trans.diff_ground_truth,
                     diff_yaw=0.0,
@@ -830,7 +820,7 @@ class TestCLEAR(unittest.TestCase):
                 )
 
                 # Current object results
-                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                cur_object_results: list[DynamicObjectWithPerceptionResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
@@ -841,4 +831,4 @@ class TestCLEAR(unittest.TestCase):
                             cur_object_result=cur_obj_result,
                             prev_object_result=prev_obj_result,
                         )
-                    self.assertEqual(flag, ans_flags[i][j], f"{flag} != ans_flags[{i}][{j}]")
+                    assert flag == ans_flags[i][j], f"{flag} != ans_flags[{i}][{j}]"

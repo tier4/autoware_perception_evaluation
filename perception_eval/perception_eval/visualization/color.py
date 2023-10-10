@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict
-from typing import List
-from typing import Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 
@@ -23,13 +21,15 @@ class ColorMap:
     """The color map class.
 
     Attributes:
+    ----------
         self.rgb (bool): Whether use RGB order.
     """
 
     def __init__(self, rgb: bool = True) -> None:
-        """[summary]
+        """[summary].
 
         Args:
+        ----
             rgb (bool): Whether use RGB order. Defaults to True.
         """
         self.__rgb: bool = rgb
@@ -52,10 +52,12 @@ class ColorMap:
         If the cached uuid is specified it returns same color.
 
         Args:
+        ----
             uuid (str): The string id.
             normalize (bool): Whether normalize color code. Defaults to True.
 
         Returns:
+        -------
             np.ndarray: The 3D array. If self.rgb is True, return RGB order, else BGR.
         """
         if self.is_unique(uuid):
@@ -66,17 +68,20 @@ class ColorMap:
 
     def get_simple(self, key: str, normalize: bool = True) -> np.ndarray:
         """[summary]
-        Returns simple color, [red, green, blue, cyan, orange, black]
+        Returns simple color, [red, green, blue, cyan, orange, black].
 
         Args:
+        ----
             key (str): The name of color.
             normalize (bool): Whether normalize color code.
 
         Returns:
+        -------
             np.ndarray: The 3D array. If self.rgb is True, return RGB order, else BGR.
         """
         if key not in self.__simple_cmap:
-            raise KeyError(f"Unexpected color: {key}\n Usage: {list(self.__simple_cmap.keys())}")
+            msg = f"Unexpected color: {key}\n Usage: {list(self.__simple_cmap.keys())}"
+            raise KeyError(msg)
         color: np.ndarray = self.__simple_cmap[key]
 
         if not self.__rgb:
@@ -104,9 +109,11 @@ def _colormap(rgb: bool) -> np.ndarray:
     Create color map that has 79 RGB colors.
 
     Args:
+    ----
         rgb (bool): Whether use RGB order.
 
     Returns:
+    -------
         color_list (np.ndarray): The 3D array. If self.rgb is True, return RGB order, else BGR.
     """
     color_list: np.ndarray = np.array(
@@ -348,7 +355,7 @@ def _colormap(rgb: bool) -> np.ndarray:
             1.000,
             1.000,
             1.000,
-        ]
+        ],
     ).astype(np.float32)
     color_list = color_list.reshape((-1, 3)) * 255
     if not rgb:

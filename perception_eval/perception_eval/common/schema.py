@@ -14,10 +14,8 @@
 
 from __future__ import annotations
 
-from enum import Enum
 import logging
-from typing import Dict
-from typing import Union
+from enum import Enum
 
 from perception_eval.common.evaluation_task import EvaluationTask
 
@@ -49,46 +47,55 @@ class FrameID(Enum):
     def from_value(cls, name: str) -> FrameID:
         """Returns FrameID from its value.
 
-        NOTE:
+        Note:
+        ----
             This method allow that input value is upper case.
 
         Args:
+        ----
             name (str): Value in string.
 
         Returns:
+        -------
             FrameID: Corresponding FrameID instance.
         """
         name = name.lower()
-        for _, v in cls.__members__.items():
+        for v in cls.__members__.values():
             if v == name:
                 return v
-        raise ValueError(f"Unexpected value: {name}")
+        msg = f"Unexpected value: {name}"
+        raise ValueError(msg)
 
     @classmethod
-    def from_task(cls, task: Union[str, EvaluationTask]) -> FrameID:
+    def from_task(cls, task: str | EvaluationTask) -> FrameID:
         """Return FrameID from EvaluationTask.
 
         Args:
+        ----
             task (Union[str, EvaluationTask]): Task name.
 
         Returns:
+        -------
             FrameID: For DETECTION or SENSING, Returns BASE_LINK. For TRACKING or PREDICTION, returns MAP.
 
         Raises:
+        ------
             ValueError: When `task` is evaluation for 2D input data.
         """
         if isinstance(task, str):
             task = EvaluationTask.from_value(task)
 
         if task.is_2d():
-            raise ValueError("For 2D task, FrameID must be initialized explicitly, or use `FrameID.from_value(name)`.")
+            msg = "For 2D task, FrameID must be initialized explicitly, or use `FrameID.from_value(name)`."
+            raise ValueError(msg)
 
         if task in (EvaluationTask.DETECTION, EvaluationTask.SENSING):
             return FrameID.BASE_LINK
         elif task in (EvaluationTask.TRACKING, EvaluationTask.PREDICTION):
             return FrameID.MAP
         else:
-            raise ValueError(f"Unexpected task: {task}")
+            msg = f"Unexpected task: {task}"
+            raise ValueError(msg)
 
 
 class Visibility(Enum):
@@ -108,7 +115,7 @@ class Visibility(Enum):
     UNAVAILABLE = "not available"
 
     @staticmethod
-    def from_alias(name: str) -> Dict[str, Visibility]:
+    def from_alias(name: str) -> dict[str, Visibility]:
         if name == "v0-40":
             return Visibility.NONE
         elif name == "v40-60":
@@ -136,12 +143,15 @@ class Visibility(Enum):
         If `name` is not in the set of Visibility values, call self.from_alias(`name`).
 
         Args:
+        ----
             name (str): Visibility name in string.
 
         Returns:
+        -------
             Visibility: Visibility instance.
 
         Examples:
+        --------
             >>> Visibility.from_value("most")
             Visibility.MOST
         """
@@ -169,15 +179,19 @@ class SensorModality(Enum):
         """Returns the SensorModality instance from string.
 
         Args:
+        ----
             name (str): Sensor name in string.
 
         Returns:
+        -------
             SensorModality: SensorModality instance.
 
         Examples:
+        --------
             >>> SensorModality.from_value("camera")
             SensorModality.CAMERA
         """
         for k, v in cls.__members__.items():
             if v == name:
                 return k
+        return None

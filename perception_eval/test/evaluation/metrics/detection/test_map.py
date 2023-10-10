@@ -13,23 +13,20 @@
 # limitations under the License.
 
 import math
-from test.util.dummy_object import make_dummy_data
-from typing import Dict
-from typing import List
-from typing import Tuple
 import unittest
+from test.util.dummy_object import make_dummy_data
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
-from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching.object_matching import MatchingMode
-from perception_eval.evaluation.matching.objects_filter import divide_objects
-from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
-from perception_eval.evaluation.matching.objects_filter import filter_objects
+from perception_eval.evaluation.matching.objects_filter import divide_objects, divide_objects_to_num, filter_objects
 from perception_eval.evaluation.metrics.detection.map import Map
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult, get_object_results
 from perception_eval.util.debug import get_objects_with_difference
+
+if TYPE_CHECKING:
+    from perception_eval.common import DynamicObject
 
 
 class TestMap(unittest.TestCase):
@@ -60,7 +57,6 @@ class TestMap(unittest.TestCase):
         test patterns:
             Given diff_distance, check if map and maph are almost correct.
         """
-        # patterns: (diff_distance, ans_map, ans_maph)
         patterns: List[Tuple[float, float, float]] = [
             # Given no diff_distance, map and maph is 1.0.
             (0.0, 1.0, 1.0),
@@ -131,7 +127,6 @@ class TestMap(unittest.TestCase):
         test patterns:
             Given diff_yaw, check if map and maph are almost correct.
         """
-        # patterns: (diff_yaw, ans_map, ans_maph)
         patterns: List[Tuple[float, float, float]] = [
             # Given no diff_yaw, map and maph is 1.0.
             (0.0, 1.0, 1.0),
@@ -267,7 +262,6 @@ class TestMap(unittest.TestCase):
         test patterns:
             Given diff_distance, check if map and maph are almost correct.
         """
-        # patterns: (diff_distance, ans_map, ans_maph)
         patterns: List[Tuple[float, float, float]] = [
             # Given no diff_distance, map and maph is 1.0.
             (0.0, 1.0, 1.0),
@@ -339,7 +333,6 @@ class TestMap(unittest.TestCase):
         test patterns:
             Given diff_yaw, check if map and maph are almost correct.
         """
-        # patterns: (diff_yaw, ans_map, ans_maph)
         patterns: List[Tuple[float, float, float]] = [
             # Given no diff_yaw, map and maph is 1.0.
             (0.0, 1.0, 1.0),
@@ -474,7 +467,6 @@ class TestMap(unittest.TestCase):
         test patterns:
             Given diff_distance, check if map and maph are almost correct.
         """
-        # patterns: (diff_distance, ans_map, ans_maph)
         patterns: List[Tuple[float, float, float]] = [
             # Given no diff_distance, map and maph is 1.0.
             (0.0, 1.0, 1.0),
@@ -545,7 +537,6 @@ class TestMap(unittest.TestCase):
         test patterns:
             Given diff_yaw, check if map and maph are almost correct.
         """
-        # patterns: (diff_yaw, ans_map, ans_maph)
         patterns: List[Tuple[float, float, float]] = [
             # Given no diff_yaw, map and maph is 1.0.
             (0.0, 1.0, 1.0),
@@ -682,7 +673,6 @@ class TestMap(unittest.TestCase):
         test patterns:
             Given diff_distance, check if map and maph are almost correct.
         """
-        # patterns: (diff_distance, ans_map, ans_maph)
         patterns: List[Tuple[float, float, float]] = [
             # Given no diff_distance, map and maph is 1.0.
             (0.0, 1.0, 1.0),
@@ -754,7 +744,6 @@ class TestMap(unittest.TestCase):
         test patterns:
             Given diff_yaw, check if map and maph are almost correct.
         """
-        # patterns: (diff_yaw, ans_map, ans_maph)
         patterns: List[Tuple[float, float, float]] = [
             # Given no diff_yaw, map and maph is 1.0.
             (0.0, 1.0, 1.0),
@@ -833,28 +822,14 @@ class TestMap(unittest.TestCase):
             Check if map and maph are almost correct.
         """
         # dummy_estimated_objects[0] (CAR) and dummy_ground_truth_objects[0] (CAR):
-        #   pr_corner_points(left, right) = [(0.25, 0.25, 1.0), (0.25, 1.75, 1.0)]
-        #   gt_corner_points(left, right) = [(0.5, 0.5, 1.0), (0.5, 1.5, 1.0)]
-        #   plane_distance = 0.3535533905932738
         #
         # dummy_estimated_objects[1] (BICYCLE) and dummy_ground_truth_objects[1] (BICYCLE):
-        #   pr_corner_points(left, right) = [(1.25, -0.75, 1.0), (0.75, -0.75, 1.0)]
-        #   gt_corner_points(left, right) = [(1.5, -0.5, 1.0), (0.5, -0.5, 1.0)]
-        #   plane_distance = 0.3535533905932738
         #
         # dummy_estimated_objects[2] (PEDESTRIAN) and dummy_ground_truth_objects[2] (CAR):
-        #   pr_corner_points(left, right) = [(-0.5, 0.5, 1.0), (-0.5, 1.5, 1.0)]
-        #   gt_corner_points(left, right) = [(-0.5, 0.5, 1.0), (-0.5, 1.5, 1.0)]
-        #   plane_distance = 0.0
 
         # CAR: under the threshold
-        #   ap and aph: 1.0
         # BICYCLE: under the threshold
-        #   ap and aph: 1.0
         # PEDESTRIAN: under the threshold but label does not match
-        #   ap and aph: 0.0
-        # MOTORBIKE: not estimated
-        #   ap and aph: 0.0
         # PEDESTRIAN and MOTORBIKE is not included -> each AP is `inf` and skipped in mAP computation.
         ans_map: float = (1.0 + 1.0) / 2.0
         ans_maph: float = (1.0 + 1.0) / 2.0

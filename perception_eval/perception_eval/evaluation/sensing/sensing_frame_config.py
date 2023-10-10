@@ -12,19 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List
-from typing import Optional
+from typing import List, Optional
 
 
 class SensingFrameConfig:
     """Config class for sensing detection evaluation per frame.
 
     Attributes:
+    ----------
         box_scale_0m (float): Scale factor for bounding box at 0m.
         box_scale_100m (float): Scale factor for bounding box at 100m.
         min_points_threshold (int): The minimum number of points should be detected in bounding box.
 
     Args:
+    ----
         target_uuids (Optional[List[str]]): List of target uuids to be filtered.
         box_scale_0m (float): Scale factor for bounding box at 0m.
         box_scale_100m (float): Scale factor for bounding box at 100m.
@@ -49,12 +50,15 @@ class SensingFrameConfig:
         """Calculate scale factor linearly for bounding box at specified distance.
 
         Note:
+        ----
             scale = ((box_scale_100m - box_scale_0m) / (100 - 0)) * (distance - 0) + box_scale_0m
 
         Args:
+        ----
             distance (float): The distance from vehicle to target bounding box.
 
         Returns:
+        -------
             float: Calculated scale factor.
         """
         return self.scale_slope_ * distance + self.box_scale_0m

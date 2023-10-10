@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List
-from typing import Optional
+from typing import List, Optional
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
@@ -25,6 +24,7 @@ class DetectionMetricsConfig(_MetricsConfigBase):
     """Configuration class for detection evaluation metrics.
 
     Attributes:
+    ----------
         evaluation_task (EvaluationTask.DETECTION)
         target_labels (List[LabelType]): Target labels list.
         center_distance_thresholds (List[float]): Thresholds list of center distance matching.
@@ -33,6 +33,7 @@ class DetectionMetricsConfig(_MetricsConfigBase):
         iou_3d_thresholds (List[float]): Thresholds list of 3d iou matching.
 
     Args:
+    ----
         target_labels (List[LabelType]): Target labels list.
         center_distance_thresholds (List[float]): Thresholds list of center distance matching.
         plane_distance_thresholds (List[float]): Threshold list of plane distance matching.

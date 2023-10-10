@@ -12,14 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import ABC
-from abc import abstractmethod
-from typing import List
-from typing import Optional
+from abc import ABC, abstractmethod
+from typing import List, Optional
 
-from perception_eval.common.dataset import FrameGroundTruth
-from perception_eval.common.dataset import get_now_frame
-from perception_eval.common.dataset import load_all_datasets
+from perception_eval.common.dataset import FrameGroundTruth, get_now_frame, load_all_datasets
 from perception_eval.config import EvaluationConfigType
 from perception_eval.evaluation import FrameResultType
 from perception_eval.visualization import VisualizerType
@@ -29,10 +25,12 @@ class _EvaluationMangerBase(ABC):
     """Abstract base class for EvaluationManager.
 
     Attributes:
+    ----------
         evaluator_config (EvaluationConfigType): Configuration for specified evaluation task.
         ground_truth_frames (List[FrameGroundTruth]): List of ground truths per frame.
 
     Args:
+    ----
         evaluation_config (EvaluationConfigType): Parameter config for EvaluationManager.
     """
 
@@ -75,17 +73,16 @@ class _EvaluationMangerBase(ABC):
 
     @abstractmethod
     def add_frame_result(self) -> FrameResultType:
-        """Add perception/sensing frame result to `self.frame_results`
+        """Add perception/sensing frame result to `self.frame_results`.
 
         Returns:
+        -------
             FrameResultType: Frame result at current frame.
         """
-        pass
 
     @abstractmethod
     def _filter_objects(self):
-        """Filter objects with `self.filtering_params`"""
-        pass
+        """Filter objects with `self.filtering_params`."""
 
     def get_ground_truth_now_frame(
         self,
@@ -97,10 +94,12 @@ class _EvaluationMangerBase(ABC):
         If there is no corresponding ground truth, returns None.
 
         Args:
+        ----
             unix_time (int): Unix time of frame to evaluate.
             threshold_min_time (int, optional): Minimum timestamp threshold[s]. Defaults to 75000[s]=75[ms].
 
         Returns:
+        -------
             Optional[FrameGroundTruth]: FrameGroundTruth instance at current frame.
                 If there is no corresponding ground truth, returns None.
         """
@@ -120,6 +119,7 @@ class _EvaluationMangerBase(ABC):
         Visualize object result in BEV space at specified frame.
 
         Args:
+        ----
             frame_index (int): The index of frame to be visualized. Defaults to -1 (latest frame).
         """
         self.visualizer.visualize_frame(self.frame_results[frame_index])

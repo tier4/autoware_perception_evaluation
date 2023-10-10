@@ -15,39 +15,38 @@
 from __future__ import annotations
 
 import os.path as osp
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
+from typing import TYPE_CHECKING
 
 import cv2
-from matplotlib.figure import Figure
-from matplotlib.patches import Patch
-from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 import numpy as np
-from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import AutowareLabel
-from perception_eval.common.label import TrafficLightLabel
-from perception_eval.common.object2d import DynamicObject2D
-from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation import PerceptionFrameResult
-from perception_eval.visualization.color import ColorMap
-from PIL import Image
-from PIL.Image import Image as PILImage
-from tqdm import tqdm
 import yaml
+from matplotlib.patches import Patch, Rectangle
+from PIL import Image
+from tqdm import tqdm
+
+from perception_eval.common.evaluation_task import EvaluationTask
+from perception_eval.common.label import AutowareLabel, TrafficLightLabel
+from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult, PerceptionFrameResult
+from perception_eval.visualization.color import ColorMap
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+    from PIL.Image import Image as PILImage
+
+    from perception_eval.common.object2d import DynamicObject2D
 
 
 class PerceptionVisualizer2D:
     """The class to visualize perception results in BEV space.
 
     Attributes:
+    ----------
         config (PerceptionEvaluationConfig): Evaluation config.
 
     Args:
+    ----
         config (PerceptionEvaluationConfig): Evaluation config.
         figsize (Tuple[int, int]): Figure size, (width, height) order. Defaults to (800, 600).
     """
@@ -55,13 +54,13 @@ class PerceptionVisualizer2D:
     def __init__(
         self,
         config: PerceptionEvaluationConfig,
-        figsize: Tuple[int, int] = (800, 600),
+        figsize: tuple[int, int] = (800, 600),
     ) -> None:
         assert config.evaluation_task.is_2d()
         self.__config: PerceptionEvaluationConfig = config
         self.__cmap: ColorMap = ColorMap(rgb=True)
         self.__figsize = (figsize[0] / 100.0, figsize[1] / 100.0)
-        self.__animation_frames: List[PILImage] = []
+        self.__animation_frames: list[PILImage] = []
 
         self.__figure, self.__axes = self.init_figure()
 
@@ -75,24 +74,25 @@ class PerceptionVisualizer2D:
         """Perception results made by logsim are reproduced from pickle file.
 
         Args:
+        ----
             result_root_directory (str): The root path to save result.
             scenario_path (str): The path of scenario file .yaml.
 
         Returns:
+        -------
             PerceptionVisualizer2D: Visualizer instance.
         """
-
         # Load scenario file
-        with open(scenario_path, "r") as scenario_file:
-            scenario_obj: Optional[Dict[str, any]] = yaml.safe_load(scenario_file)
+        with open(scenario_path) as scenario_file:
+            scenario_obj: dict[str, any] | None = yaml.safe_load(scenario_file)
 
-        p_cfg: Dict[str, any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
-        eval_cfg_dict: Dict[str, any] = p_cfg["evaluation_config_dict"]
+        p_cfg: dict[str, any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
+        eval_cfg_dict: dict[str, any] = p_cfg["evaluation_config_dict"]
 
         eval_cfg_dict["label_prefix"] = (
             "traffic_light" if eval_cfg_dict["UseCaseName"] == "traffic_light" else "autoware"
         )
-        camera_types: Dict[str, int] = scenario_obj["Evaluation"]["Conditions"]["TargetCameras"]
+        camera_types: dict[str, int] = scenario_obj["Evaluation"]["Conditions"]["TargetCameras"]
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
@@ -104,21 +104,21 @@ class PerceptionVisualizer2D:
 
         return cls(evaluation_config, **kwargs)
 
-    def init_figure(self) -> Tuple[Figure, np.ndarray]:
+    def init_figure(self) -> tuple[Figure, np.ndarray]:
         """Initialize figure and axes.
 
         Returns:
+        -------
             Figure: Figure instance.
             numpy.ndarray: NDArray of multiple Axes instances.
         """
-
-        self.label_type: Union[AutowareLabel, TrafficLightLabel] = self.__config.label_converter.label_type
+        self.label_type: AutowareLabel | TrafficLightLabel = self.__config.label_converter.label_type
 
         if self.label_type == TrafficLightLabel:
-            self.camera_names: Tuple[str] = ("cam_traffic_light_near", "cam_traffic_light_far")
-            fig, axes = plt.subplots(1, 2, figsize=self.__figsize, gridspec_kw=dict(wspace=0))
+            self.camera_names: tuple[str] = ("cam_traffic_light_near", "cam_traffic_light_far")
+            fig, axes = plt.subplots(1, 2, figsize=self.__figsize, gridspec_kw={"wspace": 0})
         elif self.label_type == AutowareLabel:
-            self.camera_names: Tuple[str] = (
+            self.camera_names: tuple[str] = (
                 "cam_front_left",
                 "cam_front",
                 "cam_front_right",
@@ -126,9 +126,10 @@ class PerceptionVisualizer2D:
                 "cam_back",
                 "cam_back_right",
             )
-            fig, axes = plt.subplots(2, 3, figsize=self.__figsize, gridspec_kw=dict(wspace=0))
+            fig, axes = plt.subplots(2, 3, figsize=self.__figsize, gridspec_kw={"wspace": 0})
         else:
-            raise TypeError(f"Unexpected label type: {self.label_type}")
+            msg = f"Unexpected label type: {self.label_type}"
+            raise TypeError(msg)
         return fig, axes
 
     @property
@@ -137,13 +138,14 @@ class PerceptionVisualizer2D:
 
     def visualize_all(
         self,
-        frame_results: List[PerceptionFrameResult],
-        filename: Optional[str] = None,
+        frame_results: list[PerceptionFrameResult],
+        filename: str | None = None,
         cache_figure: bool = False,
     ) -> None:
         """Visualize all frames in BEV space.
 
         Args:
+        ----
             frame_results (List[PerceptionFrameResult]): The list of PerceptionFrameResult.
             save_html (bool): Wether save image as html. Defaults to False.
             animation (bool): Whether create animation as gif. Defaults to False.
@@ -181,9 +183,11 @@ class PerceptionVisualizer2D:
                 for j in range(num_cols):
                     self.__axes[i, j].clear()
 
-    def set_figsize(self, figsize: Tuple[int, int]) -> None:
+    def set_figsize(self, figsize: tuple[int, int]) -> None:
         """Set figure size.
+
         Args:
+        ----
             figsize (Tuple[int, int]): Figure size, (width, height).
         """
         width, height = figsize[0] / 100.0, figsize[1] / 100.0
@@ -191,7 +195,7 @@ class PerceptionVisualizer2D:
         self.__figure.set_figheight(height)
         self.__figsize = (width, height)
 
-    def __get_axes_idx(self, key: str) -> Tuple[int, int]:
+    def __get_axes_idx(self, key: str) -> tuple[int, int]:
         i: int = self.camera_names.index(key)
         row, col = (0, i) if self.label_type == TrafficLightLabel else (i // 3, i - (3 * (i // 3)))
         return row, col
@@ -199,7 +203,7 @@ class PerceptionVisualizer2D:
     def visualize_frame(
         self,
         frame_result: PerceptionFrameResult,
-        axes: Optional[np.ndarray] = None,
+        axes: np.ndarray | None = None,
     ) -> np.ndarray:
         """Visualize a frame result on image.
 
@@ -211,20 +215,23 @@ class PerceptionVisualizer2D:
             FN              : Orange
 
         Args:
+        ----
             frame_result (PerceptionFrameResult)
             axes (Optional[numpy.ndarray]): Axes instances. Defaults to None.
 
         Returns:
+        -------
             numpy.ndarray: Numpy array of Axes instances.
         """
         if axes is None:
             axes = self.__axes
 
         if frame_result.frame_ground_truth.raw_data is None:
-            raise RuntimeError("`raw_data`: must be loaded.")
+            msg = "`raw_data`: must be loaded."
+            raise RuntimeError(msg)
         else:
             for i, camera_name in enumerate(self.camera_names):
-                img: Optional[np.ndarray] = frame_result.frame_ground_truth.raw_data.get(camera_name)
+                img: np.ndarray | None = frame_result.frame_ground_truth.raw_data.get(camera_name)
                 if self.label_type == TrafficLightLabel:
                     if img is not None:
                         axes[i].imshow(img)
@@ -241,7 +248,7 @@ class PerceptionVisualizer2D:
         self.__figure.suptitle(f"Frame: {frame_number}")
 
         # Plot objects
-        handles: List[Patch] = []
+        handles: list[Patch] = []
         axes = self.plot_objects(
             objects=frame_result.pass_fail_result.tp_object_results,
             is_ground_truth=False,
@@ -301,10 +308,10 @@ class PerceptionVisualizer2D:
 
     def plot_objects(
         self,
-        objects: List[Union[DynamicObject2D, DynamicObjectWithPerceptionResult]],
+        objects: list[DynamicObject2D | DynamicObjectWithPerceptionResult],
         is_ground_truth: bool,
-        axes: Optional[np.ndarray] = None,
-        color: Optional[str] = None,
+        axes: np.ndarray | None = None,
+        color: str | None = None,
     ) -> np.ndarray:
         """Plot objects on image.
 
@@ -317,13 +324,16 @@ class PerceptionVisualizer2D:
         ```
 
         Args:
-            objects (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): The list of object being visualized.
+        ----
+            objects (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]):
+                The list of object being visualized.
             is_ground_truth (bool): Whether ground truth object is.
             axes (Optional[Axes]): Axes instances. If not specified, new Axes is created. Defaults to None.
             color (Optional[str]): Name of color, red/green/blue/yellow/cyan/black. Defaults to None.
                 If not be specified, red is used.
 
         Returns:
+        -------
             axes (Axes): The Axes instance.
         """
         if axes is None:
@@ -343,7 +353,7 @@ class PerceptionVisualizer2D:
             if self.config.evaluation_task == EvaluationTask.TRACKING2D:
                 edge_color = self.__cmap.get(object_.uuid)
 
-            box_text = f"{object_text}: {str(object_.semantic_label.label)}"
+            box_text = f"{object_text}: {object_.semantic_label.label!s}"
             box: Rectangle = Rectangle(
                 xy=box_bottom_left,
                 width=box_size[0],
@@ -362,10 +372,11 @@ class PerceptionVisualizer2D:
 
         return axes
 
-    def __save_animation(self, filename: Optional[str] = None) -> None:
+    def __save_animation(self, filename: str | None = None) -> None:
         """Save animation as mp4.
 
         Args:
+        ----
             filename (Optional[str]): Video filename. If None, save as scene_result_2d.mp4. Defaults to None.
         """
         if filename is None:

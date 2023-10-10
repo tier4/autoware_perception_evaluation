@@ -15,9 +15,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List
 from typing import Tuple
-from typing import Union
 
 
 class MatchingStatus(Enum):
@@ -29,7 +27,7 @@ class MatchingStatus(Enum):
     def __str__(self) -> str:
         return self.value
 
-    def __eq__(self, other: Union[MatchingStatus, str]) -> bool:
+    def __eq__(self, other: MatchingStatus | str) -> bool:
         if isinstance(other, str):
             return self.value == other
         return super().__eq__(other)
@@ -38,6 +36,7 @@ class MatchingStatus(Enum):
         """Indicates whether current status is TP or FP.
 
         Returns:
+        -------
             bool: Returns `True` if status is TP or FP.
         """
         return self in (MatchingStatus.TP, MatchingStatus.FP)
@@ -46,6 +45,7 @@ class MatchingStatus(Enum):
         """Indicates whether current status is TN or FN.
 
         Returns:
+        -------
             bool: Returns `True` if status is TN or FN.
         """
         return self in (MatchingStatus.TN, MatchingStatus.FN)
@@ -54,6 +54,7 @@ class MatchingStatus(Enum):
         """Indicates whether current status is TP or TN.
 
         Returns:
+        -------
             bool: Returns `True` if status is TP or FN.
         """
         return self in (MatchingStatus.TP, MatchingStatus.TN)
@@ -62,6 +63,7 @@ class MatchingStatus(Enum):
         """Indicates whether current status is FP or FN.
 
         Returns:
+        -------
             bool: Returns `True` if status is FP or FN.
         """
         return self in (MatchingStatus.FP, MatchingStatus.FN)
@@ -73,8 +75,8 @@ class StatusRate:
     def __init__(
         self,
         status: MatchingStatus,
-        status_frame_nums: List[int],
-        total_frame_nums: List[int],
+        status_frame_nums: list[int],
+        total_frame_nums: list[int],
     ) -> None:
         self.status = status
         self.status_frame_nums = status_frame_nums
@@ -107,6 +109,7 @@ class GroundTruthStatus:
     """Class for keeping and calculating status information of each matching status for one GT.
 
     Attributes:
+    ----------
         uuid (str): UUID of ground truth object.
         total_frame_nums (List[int]): List of frame numbers, which GT is evaluated.
         tp_frame_nums (List[int]): List of frame numbers, which GT is evaluated as TP.
@@ -115,17 +118,18 @@ class GroundTruthStatus:
         fn_frame_nums (List[int]): List of frame numbers, which GT is evaluated as FN.
 
     Args:
+    ----
         uuid (str): object uuid
     """
 
     def __init__(self, uuid: str) -> None:
         self.uuid: str = uuid
 
-        self.total_frame_nums: List[int] = []
-        self.tp_frame_nums: List[int] = []
-        self.fp_frame_nums: List[int] = []
-        self.tn_frame_nums: List[int] = []
-        self.fn_frame_nums: List[int] = []
+        self.total_frame_nums: list[int] = []
+        self.tp_frame_nums: list[int] = []
+        self.fp_frame_nums: list[int] = []
+        self.tn_frame_nums: list[int] = []
+        self.fn_frame_nums: list[int] = []
 
     def add_status(self, status: MatchingStatus, frame_num: int) -> None:
         self.total_frame_nums.append(frame_num)
@@ -138,12 +142,14 @@ class GroundTruthStatus:
         elif status == MatchingStatus.FN:
             self.fn_frame_nums.append(frame_num)
         else:
-            raise ValueError(f"Unexpected status: {status}")
+            msg = f"Unexpected status: {status}"
+            raise ValueError(msg)
 
     def get_status_rates(self) -> StatusRates:
         """Returns frame rates for each status.
 
         Returns:
+        -------
             StatusRates: Rates [TP, FP, TN, FN] order.
         """
         return (
@@ -157,15 +163,17 @@ class GroundTruthStatus:
         return self.uuid == uuid
 
 
-def get_scene_rates(status_list: List[GroundTruthStatus]) -> Tuple[float, float, float, float]:
+def get_scene_rates(status_list: list[GroundTruthStatus]) -> tuple[float, float, float, float]:
     """Returns TP/FP/TN/FN rates from all `GroundTruthStatus`.
 
     If `status_list` is empty, returns sequence of `float("inf")`.
 
     Args:
+    ----
         status_list (List[GroundTruthStatus]): All GT status.
 
     Returns:
+    -------
         Tuple[float, float, float, float]: Sequence of rates, (TP, FP, TN, FN) order.
     """
     num_total_frame: int = 0

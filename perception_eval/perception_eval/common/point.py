@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List
-from typing import Sequence
-from typing import Tuple
+from typing import List, Sequence, Tuple
 
 import numpy as np
 from shapely.geometry import Polygon
@@ -25,13 +23,16 @@ def distance_points(
     point_2: np.ndarray,
 ) -> float:
     """Calculate the center distance between two points.
+
     Args:
+    ----
         point_1 (numpy.ndarray[3,]): 3D point.
         point_2 (numpy.ndarray[3,]): 3D point.
-    Returns: float: The distance between two points
+    Returns: float: The distance between two points.
     """
     if not (len(point_1) == 3 and len(point_2) == 3):
-        raise RuntimeError(f"The length of a point is {len(point_1)} and {len(point_2)}, it needs 3.")
+        msg = f"The length of a point is {len(point_1)} and {len(point_2)}, it needs 3."
+        raise RuntimeError(msg)
     vec: np.ndarray = np.array(point_1) - np.array(point_2)
     return np.linalg.norm(vec, ord=2, axis=0).item()
 
@@ -41,14 +42,19 @@ def distance_points_bev(
     point_2: np.ndarray,
 ) -> float:
     """Calculate the 2d center distance between two points.
+
     Args:
+    ----
         point_1 (numpy.ndarray[3,]): 3D point.
         point_2 (numpy.ndarray[3,]): 3D point.
+
     Returns:
+    -------
         float: Distance between two points in BEV space.
     """
     if not (len(point_1) == 3 and len(point_2) == 3):
-        raise RuntimeError(f"The length of a point is {len(point_1)} and {len(point_2)}, it needs 3.")
+        msg = f"The length of a point is {len(point_1)} and {len(point_2)}, it needs 3."
+        raise RuntimeError(msg)
     p1_bev: np.ndarray = np.array(to_bev(point_1))
     p2_bev: np.ndarray = np.array(to_bev(point_2))
     vec: np.ndarray = p1_bev - p2_bev
@@ -57,13 +63,18 @@ def distance_points_bev(
 
 def to_bev(point_1: np.ndarray) -> np.ndarray:
     """(x, y, z) -> (x, y).
+
     Args:
+    ----
         point_1 (np.ndarray): 3D point.
+
     Returns:
+    -------
         np.ndarray: (x, y) point of input `point_1`.
     """
-    if not len(point_1) == 3:
-        raise RuntimeError(f"The length of a point is {len(point_1)}, it needs 3.")
+    if len(point_1) != 3:
+        msg = f"The length of a point is {len(point_1)}, it needs 3."
+        raise RuntimeError(msg)
     return point_1[:2]
 
 
@@ -74,25 +85,30 @@ def crop_pointcloud(
 ) -> np.ndarray:
     """Crop pointcloud from (N, 3) to (M, 3) with Winding Number Algorithm.
 
-    TODO:
+    Todo:
+    ----
         Implement to support the case area min/max height is not constant.
 
     Args:
+    ----
         pointcloud (numpy.ndarray): The array of pointcloud, in shape (N, C).
         area (List[Sequence[float]): The 3D-polygon area to be cropped.
         inside (bool): Whether output inside pointcloud. Defaults to True.
 
     Returns:
+    -------
         numpy.ndarray: The  of cropped pointcloud, in shape (M, C)
     """
     # NOTE: upper and lower plane has same shape.
     num_vertices: int = len(area) // 2
     if pointcloud.ndim != 2 or pointcloud.shape[1] < 2:
+        msg = f"The shape of pointcloud is {pointcloud.shape}, it needs (N, k>=2) and k is (x,y,z,i) order."
         raise RuntimeError(
-            f"The shape of pointcloud is {pointcloud.shape}, it needs (N, k>=2) and k is (x,y,z,i) order."
+            msg,
         )
     if num_vertices < 3 or len(area) % 2 != 0:
-        raise RuntimeError(f"The area must be a 3D-polygon, it needs the edges more than 6, but got {len(area)}.")
+        msg = f"The area must be a 3D-polygon, it needs the edges more than 6, but got {len(area)}."
+        raise RuntimeError(msg)
 
     # crop with polygon in xy-plane
     num_vertices = len(area) // 2
@@ -113,7 +129,7 @@ def crop_pointcloud(
         cnt_arr_[incremental_flags] += 1
         cnt_arr_[decremental_flags] -= 1
 
-    xy_idx: np.ndarray = 0 < cnt_arr_ if inside else cnt_arr_ <= 0
+    xy_idx: np.ndarray = cnt_arr_ > 0 if inside else cnt_arr_ <= 0
 
     if pointcloud.shape[1] < 3:
         return pointcloud[xy_idx]
@@ -138,6 +154,7 @@ def polygon_to_list(polygon: Polygon) -> List[Tuple[float, float, float]]:
     List: [(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3)]
 
     Args:
+    ----
         polygon (Polygon): Polygon
     Returns:
         List[Tuple[float, float, float]]: List of coordinates
@@ -150,14 +167,17 @@ def get_point_left_right(
     point_2: Tuple[float, float, float],
 ) -> Tuple[Tuple[float, float, float]]:
     """Examine the 2D geometric location of a point1 and a point2.
+
     Args:
+    ----
         point_1 (Tuple[float, float, float]): A point
         point_2 (Tuple[float, float, float]): A point
     Returns:
-        Tuple[Tuple[float, float, float]]: Returns [left_point, right_point]
+        Tuple[Tuple[float, float, float]]: Returns [left_point, right_point].
     """
     if not (len(point_1) > 2 and len(point_2) > 2):
-        raise RuntimeError(f"The length of a point is {len(point_1)} and {len(point_2)}, they must be greater than 2.")
+        msg = f"The length of a point is {len(point_1)} and {len(point_2)}, they must be greater than 2."
+        raise RuntimeError(msg)
     cross_product = point_1[0] * point_2[1] - point_1[1] * point_2[0]
     if cross_product < 0:
         return (point_1, point_2)

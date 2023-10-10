@@ -21,10 +21,11 @@ from perception_eval.common import ObjectType
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.status import get_scene_rates
 from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation import get_object_status
-from perception_eval.evaluation import PerceptionFrameResult
-from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
-from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from perception_eval.evaluation import PerceptionFrameResult, get_object_status
+from perception_eval.evaluation.result.perception_frame_config import (
+    CriticalObjectFilterConfig,
+    PerceptionPassFailConfig,
+)
 from perception_eval.manager import PerceptionEvaluationManager
 from perception_eval.util.debug import get_objects_with_difference
 from perception_eval.util.logger_config import configure_logger
@@ -91,7 +92,6 @@ class FPValidationLsimMoc:
 
     def display(self, frame_result: PerceptionFrameResult) -> None:
         """Display TP/FP/FN information."""
-
         logging.info(
             f"{len(frame_result.pass_fail_result.tp_object_results)} TP objects, "
             f"{len(frame_result.pass_fail_result.fp_object_results)} FP objects, "
@@ -121,7 +121,7 @@ class FPValidationLsimMoc:
 
         scene_tp_rate, scene_fp_rate, scene_tn_rate, scene_fn_rate = get_scene_rates(status_list)
         logging.info(
-            "[scene]" f"TP: {scene_tp_rate}, " f"FP: {scene_fp_rate}, " f"TN: {scene_tn_rate}, " f"FN: {scene_fn_rate}"
+            "[scene]" f"TP: {scene_tp_rate}, FP: {scene_fp_rate}, TN: {scene_tn_rate}, FN: {scene_fn_rate}",
         )
 
 

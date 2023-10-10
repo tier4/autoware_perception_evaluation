@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict
-from typing import List
+from typing import Dict, List
 
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
@@ -29,6 +28,7 @@ class MetricsScore:
     """Metrics score class.
 
     Attributes:
+    ----------
         detection_config (Optional[DetectionMetricsConfig]): Config for detection evaluation.
         tracking_config (Optional[DetectionMetricsConfig]): Config for tracking evaluation.
         prediction_config (Optional[PredictionMetricsConfig]): Config for prediction evaluation.
@@ -41,6 +41,7 @@ class MetricsScore:
         classification_score (List[ClassificationMetricsScore]): List of ClassificationMetricsScore instances.
 
     Args:
+    ----
         config (MetricsScoreConfig): MetricsScoreConfig instance.
         used_frame: List[int]: List of frame numbers loaded to evaluate.
     """
@@ -68,9 +69,10 @@ class MetricsScore:
         self.__used_frame: List[int] = used_frame
 
     def __str__(self) -> str:
-        """__str__ method
+        """__str__ method.
 
         Returns:
+        -------
             str: Formatted string.
         """
         str_: str = "\n\n"
@@ -123,9 +125,10 @@ class MetricsScore:
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
         """[summary]
-        Calculate detection metrics
+        Calculate detection metrics.
 
         Args:
+        ----
             object_results (Dict[LabelType, List[DynamicObjectWithPerceptionResult]]): The dict of object result
         """
         if self.tracking_config is None:
@@ -181,12 +184,14 @@ class MetricsScore:
         """[summary]
         Calculate tracking metrics.
 
-        NOTE:
+        Note:
+        ----
             object_results and ground_truth_objects must be nested list.
             In case of evaluating single frame, [[previous], [current]].
             In case of evaluating multi frame, [[], [t1], [t2], ..., [tn]]
 
         Args:
+        ----
             object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object result for each frame.
         """
         self.__num_gt += sum(num_ground_truth.values())
@@ -236,12 +241,12 @@ class MetricsScore:
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
         """[summary]
-        Calculate prediction metrics
+        Calculate prediction metrics.
 
         Args:
+        ----
             object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
         """
-        pass
 
     def evaluate_classification(
         self,

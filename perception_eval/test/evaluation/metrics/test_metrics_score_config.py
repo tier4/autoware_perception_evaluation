@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Tuple
 import unittest
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
-from perception_eval.evaluation.metrics.config._metrics_config_base import _MetricsConfigBase
+import pytest
+
 from perception_eval.evaluation.metrics.config.detection_metrics_config import DetectionMetricsConfig
 from perception_eval.evaluation.metrics.config.tracking_metrics_config import TrackingMetricsConfig
-from perception_eval.evaluation.metrics.metrics_score_config import MetricsParameterError
-from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
+from perception_eval.evaluation.metrics.metrics_score_config import MetricsParameterError, MetricsScoreConfig
+
+if TYPE_CHECKING:
+    from perception_eval.evaluation.metrics.config._metrics_config_base import _MetricsConfigBase
 
 
 class TestMetricsScoreConfig(unittest.TestCase):
@@ -62,5 +62,5 @@ class TestMetricsScoreConfig(unittest.TestCase):
 
         for n, (config, params) in enumerate(patterns):
             with self.subTest(f"Test if it can detect the exception of parameters: {n + 1}"):
-                with self.assertRaises(MetricsParameterError):
+                with pytest.raises(MetricsParameterError):
                     MetricsScoreConfig._check_parameters(config, params)

@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from collections import OrderedDict
-from typing import Dict
-from typing import List
-from typing import Tuple
+from typing import Dict, List, Tuple
 
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
@@ -26,6 +24,7 @@ class ClassificationAccuracy:
     Class to calculate classification accuracy.
 
     Attributes:
+    ----------
         target_labels (List[LabelType]): Target labels list.
         num_ground_truth (int): Number of ground truths.
         objects_results_num (int): Number of object results.
@@ -38,6 +37,7 @@ class ClassificationAccuracy:
         results (Dict[str, float]): Dict that items are scores mapped by score names.
 
     Args:
+    ----
         object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
         num_ground_truth (int): Number of ground truths.
         target_labels (List[LabelType]): Target labels list.
@@ -72,7 +72,7 @@ class ClassificationAccuracy:
                 "Precision": self.precision,
                 "Recall": self.recall,
                 "F1score": self.f1score,
-            }
+            },
         )
 
     def calculate_tp_fp(
@@ -82,9 +82,11 @@ class ClassificationAccuracy:
         """Calculate accuracy score.
 
         Args:
+        ----
             object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
 
         Returns:
+        -------
             num_tp (int): Number of TP results.
             num_fp (int): Number of FP results.
         """
@@ -103,9 +105,11 @@ class ClassificationAccuracy:
         Accuracy = (TP + TN) / (TP + TN + FP + FN)
 
         Args:
+        ----
             num_tp (int): Number of TP results.
 
         Returns:
+        -------
             float: Accuracy score. When `objects_results_num+num_ground_truth-num_tp=0`, returns float('inf').
         """
         return (
@@ -121,9 +125,11 @@ class ClassificationAccuracy:
         Recall = TP / (TP + FN)
 
         Args:
+        ----
             num_tp (int): Number of TP results.
 
         Returns:
+        -------
             precision (float): Precision score. When `self.object_results_num=0`, returns float('inf').
             recall (float): Recall score. When `self.num_ground_truth=0`, returns float('inf').
         """
@@ -137,11 +143,13 @@ class ClassificationAccuracy:
         F score = (1 + beta**2) * precision * recall / (beta**2 * precision + recall)
 
         Args:
+        ----
             precision (float): Precision score.
             recall (float): Recall score.
             beta (float): Defaults 1.0.
 
         Returns:
+        -------
             f1score (float): F1 score. When `precision+recall=0`, returns float('inf').
         """
         return (

@@ -13,17 +13,13 @@
 # limitations under the License.
 
 from collections import OrderedDict
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
+from typing import Dict, List, Optional, Tuple
 
 from perception_eval.common.label import LabelType
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetrics
-from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
+from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetrics, TPMetricsAp
 
 from ._metrics_base import _TrackingMetricsBase
 
@@ -38,9 +34,11 @@ class CLEAR(_TrackingMetricsBase):
     NOTE: MT, ML, PT is under construction.
 
     Attributes:
+    ----------
         target_labels (List[LabelType]): The list of target label.
         matching_mode (MatchingMode): The target matching mode.
-        metrics_field (Optional[List[str]]): The list of target metrics name. If not specified, set default supported metrics.
+        metrics_field (Optional[List[str]]): The list of target metrics name.
+            If not specified, set default supported metrics.
         ground_truth_objects_num (int): The number of ground truth.
         support_metrics (List[str]): The list of supported metrics name. (["MOTA", "MOTP"])
         tp (float): The total value/number of TP.
@@ -52,6 +50,7 @@ class CLEAR(_TrackingMetricsBase):
         results (OrderedDict[str, Any]): The dict to keep scores.
 
     Args:
+    ----
         object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results for each frames.
         num_ground_truth (int): The number of ground truth.
         target_labels (List[LabelType]): The list of target labels.
@@ -122,16 +121,18 @@ class CLEAR(_TrackingMetricsBase):
                 "tp": self.tp,
                 "fp": self.fp,
                 "tp_matching_score": self.tp_matching_score,
-            }
+            },
         )
 
     def _calculate_score(self):
         """Calculate MOTA and MOTP.
 
-        NOTE:
+        Note:
+        ----
             if the number of GT is 0, MOTA returns inf and if the TP score is 0, MOTP returns inf.
 
         Returns:
+        -------
             mota (float): MOTA score.
             motp (float): MOTP score.
         """
@@ -156,14 +157,18 @@ class CLEAR(_TrackingMetricsBase):
         """Calculate matching compared with previous object results.
 
         Args:
+        ----
             cur_object_results (List[List[DynamicObjectWithPerceptionResult]]): Object results list at current frame.
             prev_object_results (List[List[DynamicObjectWithPerceptionResult]]): Object results list at previous frame.
 
         Returns:
+        -------
             tp (float): Total value of TP. If matching is True, num_tp += 1.0.
             fp (float): Total value of FP. If matching is False, num_fp += 1.0.
-            num_id_switch (int): Total number of ID switch. If matching is switched compared with previous result, num_id_switch += 1.
-            tp_matching_scores: (float): Total matching score in TP. If matching True, total_tp_scores += matching_score.
+            num_id_switch (int): Total number of ID switch.
+                If matching is switched compared with previous result, num_id_switch += 1.
+            tp_matching_scores: (float): Total matching score in TP.
+                If matching True, total_tp_scores += matching_score.
         """
         tp: float = 0.0
         fp: float = 0.0
@@ -192,7 +197,6 @@ class CLEAR(_TrackingMetricsBase):
                 # is_tp_cur: bool = cur_obj_result.is_result_correct(
                 #     self.matching_mode,
                 #     matching_threshold_,
-                # )
                 # if is_tp_prev is False or is_tp_cur is False:
                 if not is_tp_prev:
                     continue
@@ -233,15 +237,18 @@ class CLEAR(_TrackingMetricsBase):
     ) -> bool:
         """Check whether current and previous object result have switched ID for TP pairs.
 
-        NOTE:
+        Note:
+        ----
             There is a case the label is not same in spite of the same ID is given.
             GT ID is unique between the different labels.
 
         Args:
+        ----
             cur_object_result (DynamicObjectWithPerceptionResult): Object result at current frame.
             prev_object_result (DynamicObjectWithPerceptionResult): Object result at previous frame.
 
         Returns:
+        -------
             bool: Return True if ID is switched.
         """
         # current GT = None -> FP
@@ -279,10 +286,12 @@ class CLEAR(_TrackingMetricsBase):
         When previous or current GT is None(=FP), return False regardless the ID of estimated.
 
         Args:
+        ----
             cur_object_result (DynamicObjectWithPerceptionResult): Object result at current frame.
             prev_object_result (DynamicObjectWithPerceptionResult):Object result at previous frame.
 
         Returns:
+        -------
             bool: Return True if both estimated and GT ID are same.
         """
         if cur_object_result.ground_truth_object is None or prev_object_result.ground_truth_object is None:

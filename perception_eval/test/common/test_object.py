@@ -13,17 +13,18 @@
 # limitations under the License.
 
 import math
-from test.util.dummy_object import make_dummy_data
-from typing import List
-from typing import Tuple
 import unittest
+from test.util.dummy_object import make_dummy_data
+from typing import TYPE_CHECKING, List, Tuple
 
 import numpy as np
-from perception_eval.common import distance_objects
-from perception_eval.common import distance_objects_bev
-from perception_eval.common.object import DynamicObject
-from perception_eval.util.debug import get_objects_with_difference
 from shapely.geometry import Polygon
+
+from perception_eval.common import distance_objects, distance_objects_bev
+from perception_eval.util.debug import get_objects_with_difference
+
+if TYPE_CHECKING:
+    from perception_eval.common.object import DynamicObject
 
 
 class TestObject(unittest.TestCase):
@@ -42,7 +43,6 @@ class TestObject(unittest.TestCase):
         test patterns:
             Test if the 3d distance is almost equal to ans_distance.
         """
-        # patterns: (ans_distance)
         patterns: List[float] = [
             # 3d_distance to the dummy_ground_truth_object from ego vehicle.
             math.sqrt(3 * 1.0**2),
@@ -66,7 +66,6 @@ class TestObject(unittest.TestCase):
         test patterns:
             Test if the 2d distance is almost equal to ans_distance_bev.
         """
-        # patterns: (ans_distance_bev)
         patterns: List[float] = [
             math.sqrt(2 * 1.0**2),
             math.sqrt(2 * 1.0**2),
@@ -89,7 +88,6 @@ class TestObject(unittest.TestCase):
         test patterns:
             Test if the object heading is almost equal to ans_heading_bev.
         """
-        # patterns: (diff_yaw, ans_heading_bev)
         patterns: List[Tuple[float, float]] = [
             (0.0, math.pi / 2),
             (math.pi / 2, 0.0),
@@ -118,7 +116,6 @@ class TestObject(unittest.TestCase):
         test patterns:
             Test if the object footprint polygon is equal to ans_polygon.
         """
-        # patterns: (ans_polygon)
         patterns: List[Polygon] = [
             Polygon([(0.5, 0.5), (1.5, 0.5), (1.5, 1.5), (0.5, 1.5), (0.5, 0.5)]),
             Polygon([(0.5, -1.5), (1.5, -1.5), (1.5, -0.5), (0.5, -0.5), (0.5, -1.5)]),
@@ -128,7 +125,7 @@ class TestObject(unittest.TestCase):
         with self.subTest("Test get_footprint"):
             for dummy_object, ans_polygon in zip(self.dummy_ground_truth_objects, patterns):
                 footprint = dummy_object.get_footprint()
-                self.assertTrue(footprint.equals(ans_polygon))
+                assert footprint.equals(ans_polygon)
 
     def test_get_area_bev(self):
         """[summary]
@@ -140,7 +137,6 @@ class TestObject(unittest.TestCase):
         test patterns:
             Test if the 2d area is almost equal to ans_area_bev.
         """
-        # patterns: (ans_area_bev)
         patterns: List[float] = [
             math.sqrt(1.0 * 1.0),
             math.sqrt(1.0 * 1.0),
@@ -163,7 +159,6 @@ class TestObject(unittest.TestCase):
         test patterns:
             Test if the volume is almost equal to ans_volume.
         """
-        # patterns: (ans_volume)
         patterns: List[float] = [
             math.sqrt(1.0**3),
             math.sqrt(1.0**3),
@@ -187,7 +182,6 @@ class TestObject(unittest.TestCase):
         test patterns:
             Test if distance is almost equal to ans_distance.
         """
-        # patterns: (diff_distance, ans_distance)
         patterns: List[Tuple[float, float]] = [
             (0.0, 0.0),
             (2.0, math.sqrt(3 * 2.0**2)),
@@ -201,7 +195,8 @@ class TestObject(unittest.TestCase):
                     diff_yaw=0,
                 )
                 for dummy_object, diff_dummy_object in zip(
-                    self.dummy_ground_truth_objects, diff_distance_dummy_ground_truth_objects
+                    self.dummy_ground_truth_objects,
+                    diff_distance_dummy_ground_truth_objects,
                 ):
                     distance = distance_objects(dummy_object, diff_dummy_object)
                     self.assertAlmostEqual(distance, ans_distance)
@@ -217,7 +212,6 @@ class TestObject(unittest.TestCase):
         test patterns:
             Test if 2d distance is almost equal to ans_distance_bev.
         """
-        # patterns: (diff_distance, ans_distance_bev)
         patterns: List[Tuple[float, float]] = [
             (0.0, 0.0),
             (2.0, math.sqrt(2 * 2.0**2)),
@@ -231,23 +225,23 @@ class TestObject(unittest.TestCase):
                     diff_yaw=0,
                 )
                 for dummy_object, diff_dummy_object in zip(
-                    self.dummy_ground_truth_objects, diff_distance_dummy_ground_truth_objects
+                    self.dummy_ground_truth_objects,
+                    diff_distance_dummy_ground_truth_objects,
                 ):
                     distance_bev = distance_objects_bev(dummy_object, diff_dummy_object)
                     self.assertAlmostEqual(distance_bev, ans_distance_bev)
 
     def test_crop_pointcloud(self):
-        """[summary]"""
+        """[summary]."""
         pointcloud: np.ndarray = np.array(
             [
                 (1.0, 1.0, 1.0),
                 (1.0, -1.0, 1.0),
                 (-1.0, 1.0, 1.0),
                 (-1.0, -1.0, 1.0),
-            ]
+            ],
         )
         bbox_scale: float = 1.1
-        # patterns: (inside, ans_inside_pointcloud)
         inside_patterns: List[np.ndarray] = [
             np.array([(1.0, 1.0, 1.0)]),
             np.array([(1.0, -1.0, 1.0)]),
@@ -264,10 +258,7 @@ class TestObject(unittest.TestCase):
                     bbox_scale,
                     inside=True,
                 )
-                self.assertEqual(
-                    inside_pointcloud.tolist(),
-                    ans_inside_pointcloud.tolist(),
-                )
+                assert inside_pointcloud.tolist() == ans_inside_pointcloud.tolist()
 
         outside_patterns: List[np.ndarray] = [
             np.array([(1.0, -1.0, 1.0), (-1.0, 1.0, 1.0), (-1.0, -1.0, 1.0)]),
@@ -285,10 +276,7 @@ class TestObject(unittest.TestCase):
                     bbox_scale,
                     inside=False,
                 )
-                self.assertEqual(
-                    outside_pointcloud.tolist(),
-                    ans_outside_pointcloud.tolist(),
-                )
+                assert outside_pointcloud.tolist() == ans_outside_pointcloud.tolist()
 
     def test_get_inside_pointcloud_num(self):
         """[summary]
@@ -306,16 +294,15 @@ class TestObject(unittest.TestCase):
                 (1.0, -1.0, 1.0),
                 (-1.0, 1.0, 1.0),
                 (-1.0, -1.0, 1.0),
-            ]
+            ],
         )
         bbox_scale: float = 1.0
 
-        # patterns: (ans_num_inside)
         patterns: List[int] = [1, 1, 1, 1]
         with self.subTest("Test get_inside_pointcloud_num"):
             for dummy_object, ans_num_inside in zip(self.dummy_ground_truth_objects, patterns):
                 num_inside = dummy_object.get_inside_pointcloud_num(pointcloud, bbox_scale)
-                self.assertEqual(num_inside, ans_num_inside)
+                assert num_inside == ans_num_inside
 
     def test_point_exist(self):
         """[summary]
@@ -333,15 +320,14 @@ class TestObject(unittest.TestCase):
                 (1.0, -1.0, 1.0),
                 (-1.0, 1.0, 1.0),
                 (-1.0, -1.0, 1.0),
-            ]
+            ],
         )
         bbox_scale = 1.0
-        # patterns: (ans_is_exist)
         patterns: List[bool] = [True, True, True, True]
         with self.subTest("Test point_exist"):
             for dummy_object, ans_is_exist in zip(self.dummy_ground_truth_objects, patterns):
                 is_exist = dummy_object.point_exist(pointcloud, bbox_scale)
-                self.assertEqual(is_exist, ans_is_exist)
+                assert is_exist == ans_is_exist
 
 
 if __name__ == "__main__":

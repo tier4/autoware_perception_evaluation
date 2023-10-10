@@ -13,28 +13,23 @@
 # limitations under the License.
 
 import os
-from secrets import token_hex
 import tempfile
+from secrets import token_hex
 from test.util.dummy_object import make_dummy_data
-from typing import Dict
-from typing import List
-from typing import Union
+from typing import Dict, List, Union
+
+import pytest
+from pyquaternion.quaternion import Quaternion
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import AutowareLabel
-from perception_eval.common.label import Label
+from perception_eval.common.label import AutowareLabel, Label
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
-from perception_eval.common.shape import Shape
-from perception_eval.common.shape import ShapeType
+from perception_eval.common.shape import Shape, ShapeType
 from perception_eval.evaluation.matching.object_matching import MatchingMode
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult, get_object_results
 from perception_eval.util.debug import get_objects_with_difference
-from perception_eval.visualization.eda_tool import EDAManager
-from perception_eval.visualization.eda_tool import EDAVisualizer
-from pyquaternion.quaternion import Quaternion
-import pytest
+from perception_eval.visualization.eda_tool import EDAManager, EDAVisualizer
 
 
 class TestEDAVisualizer:
@@ -42,12 +37,14 @@ class TestEDAVisualizer:
     EDA Visualization test class.
 
     Attributes:
+    ----------
         self.dummy_estimated_objects (List[DynamicObject]): dummy estimated objects.
         self.dummy_ground_truth_objects (List[DynamicObject]): dummy ground truth objects.
         self.object_results (List[DynamicObjectWithPerceptionResult]): dummy object results.
         self.class_names (List[str]): names of class you want to visualize.
         self.ranges_xy (List[Union[int, float]]): distances in x-y plane.
-        self.xylim_dict (Dict[str, List[float]]): xlim, ylim for visualization. e.g. xlim_dict['car'] is [xmin, xmax] for car
+        self.xylim_dict (Dict[str, List[float]]): xlim, ylim for visualization.
+            e.g. xlim_dict['car'] is [xmin, xmax] for car
     """
 
     dummy_estimated_objects: List[DynamicObject] = []
@@ -86,7 +83,7 @@ class TestEDAVisualizer:
 
     show: bool = False
 
-    @pytest.fixture
+    @pytest.fixture()
     def save_dir(self):
         """[summary]
         Path for saving files.
@@ -99,9 +96,10 @@ class TestEDAVisualizer:
 
     def test_objects_to_df_for_object_results(self, save_dir: str):
         """[summary]
-        Check if fields exist in DataFrame when input is List[DynamicObjectWithPerceptionResult]]
+        Check if fields exist in DataFrame when input is List[DynamicObjectWithPerceptionResult]].
 
         Args:
+        ----
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
         """
@@ -113,9 +111,10 @@ class TestEDAVisualizer:
 
     def test_get_subplots(self, save_dir: str):
         """[summary]
-        Check if length of axes equals length of class names
+        Check if length of axes equals length of class names.
 
         Args:
+        ----
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
         """
@@ -128,6 +127,7 @@ class TestEDAVisualizer:
         Check if file of hist_object_count_for_each_distance is generated.
 
         Args:
+        ----
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
         """
@@ -140,6 +140,7 @@ class TestEDAVisualizer:
         Check if file of hist_object_dist2d_for_each_class is generated.
 
         Args:
+        ----
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
         """
@@ -152,6 +153,7 @@ class TestEDAVisualizer:
         Check if file of hist2d_object_wl_for_each_class is generated.
 
         Args:
+        ----
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
         """
@@ -164,6 +166,7 @@ class TestEDAVisualizer:
         Check if file of hist2d_object_center_xy_for_each_class is generated.
 
         Args:
+        ----
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
         """
@@ -178,6 +181,7 @@ class TestEDAVisualizer:
         Check if file of pandas_profiling is generated.
 
         Args:
+        ----
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
         """
@@ -190,9 +194,11 @@ class TestEDAVisualizer:
 
     def test_hist2d_object_num_points_for_each_class_for_object_results(self, save_dir: str):
         """[summary]
-        Check if error raises when hist2d_object_num_points_for_each_class is used for List[DynamicObjectWithPerceptionResult]
+        Check if error raises when hist2d_object_num_points_for_each_class is used for
+            List[DynamicObjectWithPerceptionResult].
 
         Args:
+        ----
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
         """
@@ -204,13 +210,13 @@ class TestEDAVisualizer:
 
     def test_objects_to_df_for_gt_objects(self, save_dir: str):
         """[summary]
-        Check if fields exist in DataFrame when input is List[DynamicObject]]
+        Check if fields exist in DataFrame when input is List[DynamicObject]].
 
         Args:
+        ----
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
         """
-
         visualizer = EDAVisualizer(self.dummy_ground_truth_objects, save_dir, show=self.show)
         visualizer.objects_to_df(self.dummy_ground_truth_objects)
         assert hasattr(visualizer, "visualize_df")
@@ -222,6 +228,7 @@ class TestEDAVisualizer:
         Check if file of hist_object_count_for_each_distance is generated.
 
         Args:
+        ----
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
         """
@@ -234,6 +241,7 @@ class TestEDAVisualizer:
         Check if file of hist_object_dist2d_for_each_class is generated.
 
         Args:
+        ----
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
         """
@@ -246,6 +254,7 @@ class TestEDAVisualizer:
         Check if file of hist2d_object_wl_for_each_class is generated.
 
         Args:
+        ----
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
         """
@@ -258,6 +267,7 @@ class TestEDAVisualizer:
         Check if file of hist2d_object_center_xy_for_each_class is generated.
 
         Args:
+        ----
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
         """
@@ -272,6 +282,7 @@ class TestEDAVisualizer:
         Check if file of hist2d_object_num_points_for_each_class is generated.
 
         Args:
+        ----
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
         """
@@ -284,6 +295,7 @@ class TestEDAVisualizer:
         Check if file of pandas_profiling is generated.
 
         Args:
+        ----
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
         """
@@ -440,12 +452,12 @@ class TestEDAManager:
         Check if visualized results of ground_truth_objects are generated.
         """
         ground_truth_object_dict: Dict[str, List[DynamicObject]] = {
-            "dummy_ground_truths": self.dummy_ground_truth_objects
+            "dummy_ground_truths": self.dummy_ground_truth_objects,
         }
 
         self.eda_manager.visualize_ground_truth_objects(ground_truth_object_dict)
 
-        for object_name in ground_truth_object_dict.keys():
+        for object_name in ground_truth_object_dict:
             assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_count_for_each_distance.html")
             assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_dist2d_for_each_class.html")
             assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_wl_for_each_class.svg")
@@ -454,7 +466,7 @@ class TestEDAManager:
             assert os.path.exists(self.root_path + "/" + object_name + "/" + "profiling_" + object_name + "_all.html")
             for class_name in self.class_names:
                 assert os.path.exists(
-                    self.root_path + "/" + object_name + "/" + "profiling_" + object_name + f"_{class_name}.html"
+                    self.root_path + "/" + object_name + "/" + "profiling_" + object_name + f"_{class_name}.html",
                 )
 
     def test_visualize_estimated_objects(self) -> None:
@@ -467,7 +479,7 @@ class TestEDAManager:
 
         self.eda_manager.visualize_estimated_objects(estimated_object_dict)
 
-        for object_name in estimated_object_dict.keys():
+        for object_name in estimated_object_dict:
             assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_count_for_each_distance.html")
             assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_dist2d_for_each_class.html")
             assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_wl_for_each_class.svg")
@@ -475,14 +487,13 @@ class TestEDAManager:
             assert os.path.exists(self.root_path + "/" + object_name + "/" + "profiling_" + object_name + "_all.html")
             for class_name in self.class_names:
                 assert os.path.exists(
-                    self.root_path + "/" + object_name + "/" + "profiling_" + object_name + f"_{class_name}.html"
+                    self.root_path + "/" + object_name + "/" + "profiling_" + object_name + f"_{class_name}.html",
                 )
 
     def test_visualize_evaluated_results(self) -> None:
         """[summary]
         Check if visualized TP, FP results, FP results with high confidence and FN ground_truth_objects are generated.
         """
-
         self.eda_manager.visualize_evaluated_results(
             self.object_results,
             self.dummy_ground_truth_objects,
@@ -504,7 +515,7 @@ class TestEDAManager:
             assert os.path.exists(self.root_path + "/" + object_name + "/" + "profiling_" + object_name + "_all.html")
             for class_name in self.class_names:
                 assert os.path.exists(
-                    self.root_path + "/" + object_name + "/" + "profiling_" + object_name + f"_{class_name}.html"
+                    self.root_path + "/" + object_name + "/" + "profiling_" + object_name + f"_{class_name}.html",
                 )
 
     def test_report_rates(self) -> None:

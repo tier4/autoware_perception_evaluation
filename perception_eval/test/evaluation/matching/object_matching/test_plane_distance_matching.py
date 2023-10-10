@@ -13,14 +13,15 @@
 # limitations under the License.
 
 import math
-from test.util.dummy_object import make_dummy_data
-from typing import List
-from typing import Tuple
 import unittest
+from test.util.dummy_object import make_dummy_data
+from typing import TYPE_CHECKING, List, Tuple
 
-from perception_eval.common.object import DynamicObject
 from perception_eval.evaluation.matching.object_matching import PlaneDistanceMatching
 from perception_eval.util.debug import get_objects_with_difference
+
+if TYPE_CHECKING:
+    from perception_eval.common.object import DynamicObject
 
 
 class TestPlaneDistanceMatching(unittest.TestCase):
@@ -39,7 +40,6 @@ class TestPlaneDistanceMatching(unittest.TestCase):
         test patterns:
             Given diff_distance, check if plane_distance and ans_plane_distance are equal.
         """
-        # patterns: (diff_distance, List[ans_plane_distance])
         patterns: List[Tuple[float, List[float]]] = [
             (0.0, [0.0, 0.0, 0.0, 0.0]),
             (1.0, [1.0, 1.0, 1.0, 1.0]),
@@ -86,24 +86,16 @@ class TestPlaneDistanceMatching(unittest.TestCase):
             Check if plane_distance and ans_plane_distance are equal.
         """
         # dummy_estimated_objects[0] (CAR) and dummy_ground_truth_objects[0] (CAR):
-        #   pr_corner_points(left, right) = [(0.25, 0.25, 1.0), (0.25, 1.75, 1.0)]
-        #   gt_corner_points(left, right) = [(0.5, 0.5, 1.0), (0.5, 1.5, 1.0)]
-        #   plane_distance = 0.3535533905932738
         #
         # dummy_estimated_objects[1] (BICYCLE) and dummy_ground_truth_objects[1] (BICYCLE):
-        #   pr_corner_points(left, right) = [(1.25, -0.75, 1.0), (0.75, -0.75, 1.0)]
-        #   gt_corner_points(left, right) = [(1.5, -0.5, 1.0), (0.5, -0.5, 1.0)]
-        #   plane_distance = 0.3535533905932738
         #
         # dummy_estimated_objects[2] (PEDESTRIAN) and dummy_ground_truth_objects[2] (CAR):
-        #   pr_corner_points(left, right) = [(-0.5, 0.5, 1.0), (-0.5, 1.5, 1.0)]
-        #   gt_corner_points(left, right) = [(-0.5, 0.5, 1.0), (-0.5, 1.5, 1.0)]
-        #   plane_distance = 0.0
 
-        # patterns: List[ans_plane_distance]
         ans_plane_distance_list = [0.3535533905932738, 0.3535533905932738, 0.0]
         for estimated_object, ground_truth_object, ans_plane_distance in zip(
-            self.dummy_estimated_objects, self.dummy_ground_truth_objects, ans_plane_distance_list
+            self.dummy_estimated_objects,
+            self.dummy_ground_truth_objects,
+            ans_plane_distance_list,
         ):
             plane_distance = PlaneDistanceMatching(
                 estimated_object,

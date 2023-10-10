@@ -23,9 +23,11 @@ def rotation_matrix_to_euler(rotation_matrix: np.ndarray) -> np.ndarray:
     Convert rotation matrix to euler angles.
 
     Args:
+    ----
         rotation_matrix (np.ndarray): The 3x3 array of rotation matrix.
 
     Returns:
+    -------
         np.ndarray: The 3D array, [roll, pitch, yaw].
     """
     assert _is_rotation_matrix(rotation_matrix)
@@ -50,9 +52,11 @@ def _is_rotation_matrix(rotation_matrix: np.ndarray) -> bool:
     Check whether input matrix is rotation matrix.
 
     Args:
+    ----
         rotation_matrix (np.ndarray): 3x3 array.
 
     Returns:
+    -------
         bool: Whether input matrix is rotation matrix.
     """
     rot_mat_t = np.transpose(rotation_matrix)
@@ -66,14 +70,17 @@ def get_bbox_scale(distance: float, box_scale_0m: float, box_scale_100m: float) 
     """Calculate scale factor linearly for bounding box at specified distance.
 
     Note:
+    ----
         scale = ((box_scale_100m - box_scale_0m) / (100 - 0)) * (distance - 0) + box_scale_0m
 
     Args:
+    ----
         distance (float): The distance from vehicle to target bounding box.
         box_scale_0m (float): Scale factor for bbox at 0m.
         box_scale_100m (float): Scale factor for bbox at 100m.
 
     Returns:
+    -------
         float: Calculated scale factor.
     """
     slope: float = 0.01 * (box_scale_100m - box_scale_0m)
@@ -82,27 +89,32 @@ def get_bbox_scale(distance: float, box_scale_0m: float, box_scale_100m: float) 
 
 def get_skew_matrix(arr: np.ndarray, use_tril: bool = True) -> np.ndarray:
     """Returns the skew-symmetric matrix.
+
     Args:
+    ----
         arr (numpy.ndarray)
         use_tril (bool)
+
     Returns:
-        numpy.ndarray
+    -------
+        numpy.ndarray.
     """
     ret: np.ndarray = arr.copy()
-    if use_tril:
-        ret = np.tril(ret)
-    else:
-        ret = np.triu(ret)
+    ret = np.tril(ret) if use_tril else np.triu(ret)
     return ret - ret.T
 
 
 def get_pose_transform_matrix(position: Sequence, rotation: np.ndarray) -> np.ndarray:
     """Returns 4x4 homogeneous transformation matrix for pose.
+
     Args:
+    ----
         position (Sequence): In shape (3,)
         rotation (numpy.ndarray): In shape (3, 3).
+
     Returns:
-        ret (numpy.ndarray)
+    -------
+        ret (numpy.ndarray).
     """
     if not isinstance(position, np.ndarray):
         position = np.array(position)
@@ -115,10 +127,14 @@ def get_pose_transform_matrix(position: Sequence, rotation: np.ndarray) -> np.nd
 
 def get_velocity_transform_matrix(position: Sequence, rotation: np.ndarray) -> np.ndarray:
     """Returns 6x6 homogeneous transformation matrix for pose.
+
     Args:
+    ----
         position (Sequence): In shape (3,)
         rotation (numpy.ndarray): In shape (3, 3).
+
     Returns:
+    -------
         ret (numpy.ndarray): In shape (6, 6).
     """
     if not isinstance(position, np.ndarray):

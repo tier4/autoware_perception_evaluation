@@ -20,6 +20,7 @@ class DiffTranslation:
     """Differences of translation class for estimated and ground truth object.
 
     Attributes:
+    ----------
         self.diff_estimated (Tuple[float, float, float]): The translation difference of estimated object.
         self.diff_ground_truth (Tuple[float, float, float]): The translation difference of ground truth object.
     """
@@ -29,8 +30,10 @@ class DiffTranslation:
         diff_estimated: Tuple[float, float, float],
         diff_ground_truth: Tuple[float, float, float],
     ) -> None:
-        """[summary]
+        """[summary].
+
         Args:
+        ----
             diff_estimated (Tuple[float, float, float]): The translation difference of estimated object.
             diff_ground_truth (Tuple[float, float, float]): The translation difference of ground truth object.
         """
@@ -42,6 +45,7 @@ class DiffYaw:
     """Differences of yaw class for estimated and ground truth object.
 
     Attributes:
+    ----------
         self.diff_estimated (float): The yaw difference of estimated object.
         self.diff_ground_truth (float): The yaw difference of ground truth object.
     """
@@ -52,8 +56,10 @@ class DiffYaw:
         diff_ground_truth: float,
         deg2rad: bool = False,
     ) -> None:
-        """[summary]
+        """[summary].
+
         Args:
+        ----
             diff_estimated (float): The yaw difference of estimated object.
             diff_ground_truth (float): The yaw difference of ground truth object.
             deg2rad (bool): Whether convert degrees to radians. Defaults to False.

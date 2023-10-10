@@ -12,22 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from logging import getLogger
 import os.path as osp
-from typing import Callable
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
+from logging import getLogger
+from typing import List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 from perception_eval.common.label import LabelType
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
-from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
+from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp, TPMetricsAph
 
 logger = getLogger(__name__)
 
@@ -36,6 +32,7 @@ class Ap:
     """AP class.
 
     Attributes:
+    ----------
         ap (float): AP (Average Precision) score.
         matching_average (Optional[float]): Average of matching score.
             If there are no object results, this variable is None.
@@ -50,6 +47,7 @@ class Ap:
         fp_list (List[float]): List of the number of FP objects ordered by their confidences.
 
     Args:
+    ----
         tp_metrics (TPMetrics): Mode of TP (True positive) metrics.
         object_results (List[List[DynamicObjectWithPerceptionResult]]): Object results list.
         num_ground_truth (int): Number of ground truths.
@@ -83,7 +81,9 @@ class Ap:
         self.objects_results_num: int = len(all_object_results)
 
         # sort by confidence
-        lambda_func: Callable[[DynamicObjectWithPerceptionResult], float] = lambda x: x.estimated_object.semantic_score
+        def lambda_func(x: DynamicObjectWithPerceptionResult) -> float:
+            return x.estimated_object.semantic_score
+
         all_object_results.sort(key=lambda_func, reverse=True)
 
         # tp and fp from object results ordered by confidence
@@ -101,7 +101,7 @@ class Ap:
 
         # AP
         self.ap: float = (
-            self._calculate_ap(precision_list, recall_list) if 0 < len(all_object_results) else float("inf")
+            self._calculate_ap(precision_list, recall_list) if len(all_object_results) > 0 else float("inf")
         )
         # average and standard deviation
         self.matching_average: Optional[float] = None
@@ -121,10 +121,10 @@ class Ap:
         The circle points represent original values and the square points represent interpolated ones.
 
         Args:
+        ----
             result_directory (str): The directory path to save images.
             frame_name (str): The frame name.
         """
-
         base_name = f"{frame_name}_pr_curve_{self._get_flat_str(self.matching_threshold_list)}_"
         target_str = f"{self._get_flat_str(self.target_labels)}"
         file_name = base_name + target_str + ".png"
@@ -134,7 +134,8 @@ class Ap:
         recall_list: List[float] = []
         precision_list, recall_list = self.get_precision_recall_list()
         max_precision_list, max_precision_recall_list = self.interpolate_precision_recall_list(
-            precision_list, recall_list
+            precision_list,
+            recall_list,
         )
         # plot original values
         plt.plot(
@@ -164,13 +165,17 @@ class Ap:
         Calculate precision recall.
 
         Returns:
+        -------
             Tuple[List[float], List[float]]: tp_list and fp_list
 
         Example:
+        -------
             state
                 self.tp_list = [1, 1, 2, 3]
                 self.fp_list = [0, 1, 1, 1]
-            return
+
+        Return:
+        ------
                 precision_list = [1.0, 0.5, 0.67, 0.75]
                 recall_list = [0.25, 0.25, 0.5, 0.75]
         """
@@ -195,6 +200,7 @@ class Ap:
         Interpolate precision and recall with maximum precision value per recall bins.
 
         Args:
+        ----
             precision_list (List[float])
             recall_list (List[float])
         """
@@ -217,26 +223,29 @@ class Ap:
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
         object_results: List[DynamicObjectWithPerceptionResult],
     ) -> Tuple[List[float], List[float]]:
-        """
-        Calculate TP (true positive) and FP (false positive).
+        """Calculate TP (true positive) and FP (false positive).
 
         Args:
+        ----
             tp_metrics (TPMetrics): The mode of TP (True positive) metrics
             object_results (List[DynamicObjectWithPerceptionResult]): the list of objects with result
 
         Return:
+        ------
             Tuple[tp_list, fp_list]
 
             tp_list (List[float]): the list of TP ordered by object confidence
             fp_list (List[float]): the list of FP ordered by object confidence
 
         Example:
+        -------
             whether object label is correct [True, False, True, True]
-            return
+
+        Return:
+        ------
                 tp_list = [1, 1, 2, 3]
                 fp_list = [0, 1, 1, 1]
         """
-
         # When result num is 0
         if len(object_results) == 0:
             if self.num_ground_truth == 0:
@@ -284,16 +293,19 @@ class Ap:
         recall_list: List[float],
     ) -> float:
         """[summary]
-        Calculate AP (average precision)
+        Calculate AP (average precision).
 
         Args:
+        ----
             precision_list (List[float]): The list of precision
             recall_list (List[float]): The list of recall
 
         Returns:
+        -------
             float: AP
 
         Example:
+        -------
             precision_list = [1.0, 0.5, 0.67, 0.75]
             recall_list = [0.25, 0.25, 0.5, 0.75]
 
@@ -304,7 +316,6 @@ class Ap:
                = 0.625
 
         """
-
         if len(precision_list) == 0:
             return 0.0
 
@@ -329,13 +340,14 @@ class Ap:
         Calculate average and standard deviation.
 
         Args:
+        ----
             object_results (List[DynamicObjectWithPerceptionResult]): The object results
             matching_mode (MatchingMode): [description]
 
         Returns:
+        -------
             Tuple[float, float]: [description]
         """
-
         matching_score_list: List[float] = [
             object_result.get_matching(matching_mode).value for object_result in object_results
         ]
@@ -348,10 +360,10 @@ class Ap:
 
     @staticmethod
     def _get_flat_str(str_list: List[str]) -> str:
-        """
-        Example:
+        """Example:
+        -------
             a = _get_flat_str([aaa, bbb, ccc])
-            print(a) # aaa_bbb_ccc
+            print(a) # aaa_bbb_ccc.
         """
         output = ""
         for one_str in str_list:

@@ -14,12 +14,9 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from enum import Enum
-import logging
-from typing import List
-from typing import Optional
-from typing import Tuple
 from typing import Union
 
 from perception_eval.common.evaluation_task import EvaluationTask
@@ -28,7 +25,7 @@ from perception_eval.common.evaluation_task import EvaluationTask
 class AutowareLabel(Enum):
     """[summary]
     Autoware label enum.
-    See https://github.com/tier4/autoware_iv_msgs/blob/main/autoware_perception_msgs/msg/object_recognition/Semantic.msg
+    See https://github.com/tier4/autoware_iv_msgs/blob/main/autoware_perception_msgs/msg/object_recognition/Semantic.msg.
     """
 
     UNKNOWN = "unknown"
@@ -87,7 +84,8 @@ class CommonLabel(Enum):
         elif self == CommonLabel.FP:
             return "false_positive"
         else:
-            raise ValueError(f"Unexpected element: {self}")
+            msg = f"Unexpected element: {self}"
+            raise ValueError(msg)
 
 
 LabelType = Union[AutowareLabel, TrafficLightLabel]
@@ -98,6 +96,7 @@ class LabelInfo:
     """Label data class.
 
     Attributes:
+    ----------
         label (LabelType): Corresponding label.
         name (str): Label before converted.
         num (int): The number of each label.
@@ -109,43 +108,49 @@ class LabelInfo:
 
 
 class Label:
-    """
-    Attributes:
+    """Attributes:
+    ----------
         label (LabelType): Corresponding label.
         name (str): Label before converted.
         attributes (List[str]): List of attributes. Defaults to [].
 
     Args:
+    ----
         label (LabelType): LabelType instance.
         name (str): Original label name.
         attributes (List[str]): List of attributes. Defaults to [].
     """
 
-    def __init__(self, label: LabelType, name: str, attributes: List[str] = []) -> None:
+    def __init__(self, label: LabelType, name: str, attributes: list[str] | None = None) -> None:
+        if attributes is None:
+            attributes = []
         self.label: LabelType = label
         self.name: str = name
-        self.attributes: List[str] = attributes
+        self.attributes: list[str] = attributes
 
     def contains(self, key: str) -> bool:
         """Check whether self.name contains input attribute.
 
         Args:
+        ----
             key (str): Target name or attribute.
 
         Returns:
+        -------
             bool: Indicates whether input self.name contains input attribute.
         """
         assert isinstance(key, str), f"Expected type is str, but got {type(key)}"
         return key in self.name or key in self.attributes
 
-    def contains_any(self, keys: List[str]) -> bool:
+    def contains_any(self, keys: list[str]) -> bool:
         assert isinstance(keys, (list, tuple)), f"Expected type is sequence, but got {type(keys)}"
-        return any([self.contains(key) for key in keys])
+        return any(self.contains(key) for key in keys)
 
     def is_fp(self) -> bool:
         """Returns `True`, if myself is `false_positive` label.
 
         Returns:
+        -------
             bool: Whether myself is `false_positive`.
         """
         return self.label == CommonLabel.FP
@@ -154,6 +159,7 @@ class Label:
         """Returns `True`, if myself is `unknown` label.
 
         Returns:
+        -------
             bool: Whether myself is `unknown`.
         """
         return self.label == CommonLabel.UNKNOWN
@@ -166,11 +172,13 @@ class LabelConverter:
     """A class to convert string label name to LabelType instance.
 
     Attributes:
+    ----------
         evaluation_task (EvaluationTask): EvaluationTask instance.
         labels (List[LabelInfo]): The list of label to convert.
         label_type (LabelType): This is determined by `label_prefix`.
 
     Args:
+    ----
         evaluation_task (EvaluationTask): EvaluationTask instance.
         merge_similar_labels (bool): Whether merge similar labels.
             If True,
@@ -179,13 +187,14 @@ class LabelConverter:
         label_prefix (str): Prefix of label, [autoware, traffic_light]. Defaults to autoware.
 
     Raises:
+    ------
         NotImplementedError: For prefix named `blinker` and `brake_lamp` is under construction.
         ValueError: When unexpected prefix is specified.
     """
 
     def __init__(
         self,
-        evaluation_task: Union[str, EvaluationTask],
+        evaluation_task: str | EvaluationTask,
         merge_similar_labels: bool,
         label_prefix: str,
         count_label_number: bool = False,
@@ -204,30 +213,36 @@ class LabelConverter:
             self.label_type = TrafficLightLabel
             pair_list = _get_traffic_light_paris(evaluation_task)
         elif label_prefix in ("blinker", "brake_lamp"):
-            raise NotImplementedError(f"{label_prefix} is under construction.")
+            msg = f"{label_prefix} is under construction."
+            raise NotImplementedError(msg)
         else:
-            raise ValueError(f"Unexpected `label_prefix`: {label_prefix}")
+            msg = f"Unexpected `label_prefix`: {label_prefix}"
+            raise ValueError(msg)
 
-        self.label_infos: List[LabelInfo] = [LabelInfo(label, name) for label, name in pair_list]
+        self.label_infos: list[LabelInfo] = [LabelInfo(label, name) for label, name in pair_list]
 
         logging.debug(f"label {self.label_infos}")
 
     def convert_label(
         self,
         name: str,
-        attributes: List[str] = [],
+        attributes: list[str] | None = None,
     ) -> Label:
         """Convert label name and attributes to Label instance.
 
         Args:
+        ----
             label (str): Label name you want to convert to any LabelType object.
             count_label_number (bool): Whether to count how many labels have been converted.
                 Defaults to False.
 
         Returns:
+        -------
             Label: Converted label.
         """
-        return_label: Optional[Label] = None
+        if attributes is None:
+            attributes = []
+        return_label: Label | None = None
         for label_info in self.label_infos:
             if name.lower() == label_info.name:
                 if self.count_label_number:
@@ -245,14 +260,16 @@ class LabelConverter:
         """Convert label name to LabelType instance.
 
         Args:
+        ----
             label (str): Label name you want to convert to any LabelType object.
             count_label_number (bool): Whether to count how many labels have been converted.
                 Defaults to False.
 
         Returns:
+        -------
             Label: Converted label.
         """
-        return_label: Optional[LabelType] = None
+        return_label: LabelType | None = None
         for label_info in self.label_infos:
             if name.lower() == label_info.name:
                 if self.count_label_number:
@@ -264,20 +281,22 @@ class LabelConverter:
         return return_label
 
 
-def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel, str]]:
+def _get_autoware_pairs(merge_similar_labels: bool) -> list[tuple[AutowareLabel, str]]:
     """[summary]
     Set pairs of AutowareLabel and str as list.
 
     Args:
+    ----
         merge_similar_labels (bool): Whether merge similar labels.
             If True,
                 - BUS, TRUCK, TRAILER -> CAR
                 - MOTORBIKE, CYCLIST -> BICYCLE
 
     Returns:
+    -------
         List[Tuple[AutowareLabel, str]]: The list of pair.
     """
-    pair_list: List[Tuple[AutowareLabel, str]] = [
+    pair_list: list[tuple[AutowareLabel, str]] = [
         (AutowareLabel.BICYCLE, "bicycle"),
         (AutowareLabel.BICYCLE, "vehicle.bicycle"),
         (AutowareLabel.CAR, "car"),
@@ -337,9 +356,9 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
 
 def _get_traffic_light_paris(
     evaluation_task: EvaluationTask,
-) -> List[Tuple[TrafficLightLabel, str]]:
+) -> list[tuple[TrafficLightLabel, str]]:
     if evaluation_task == EvaluationTask.CLASSIFICATION2D:
-        pair_list: List[Tuple[TrafficLightLabel, str]] = [
+        pair_list: list[tuple[TrafficLightLabel, str]] = [
             (TrafficLightLabel.GREEN, "green"),
             (TrafficLightLabel.RED, "red"),
             (TrafficLightLabel.YELLOW, "yellow"),
@@ -355,7 +374,7 @@ def _get_traffic_light_paris(
             (TrafficLightLabel.FP, "false_positive"),
         ]
     else:
-        pair_list: List[Tuple[TrafficLightLabel, str]] = [
+        pair_list: list[tuple[TrafficLightLabel, str]] = [
             (TrafficLightLabel.TRAFFIC_LIGHT, "traffic_light"),
             (TrafficLightLabel.TRAFFIC_LIGHT, "green"),
             (TrafficLightLabel.TRAFFIC_LIGHT, "red"),
@@ -375,25 +394,28 @@ def _get_traffic_light_paris(
 
 
 def set_target_lists(
-    target_labels: Optional[List[str]],
+    target_labels: list[str] | None,
     label_converter: LabelConverter,
-) -> List[LabelType]:
+) -> list[LabelType]:
     """Returns a LabelType list from a list of label names in string.
 
     If no label is specified, returns all LabelType elements.
 
     Args:
+    ----
         target_labels (List[str]): The target class to evaluate
         label_converter (LabelConverter): Label Converter class
 
     Returns:
+    -------
         List[LabelType]:  LabelType instance list.
 
     Examples:
+    --------
         >>> converter = LabelConverter(False, "autoware")
         >>> set_target_lists(["car", "pedestrian"], converter)
         [<AutowareLabel.CAR: 'car'>, <AutowareLabel.PEDESTRIAN: 'pedestrian'>]
     """
     if target_labels is None or len(target_labels) == 0:
-        return [label for label in label_converter.label_type]
+        return list(label_converter.label_type)
     return [label_converter.convert_name(name) for name in target_labels]

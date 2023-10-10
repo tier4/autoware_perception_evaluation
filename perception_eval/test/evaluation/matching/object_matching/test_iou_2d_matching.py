@@ -13,15 +13,15 @@
 # limitations under the License.
 
 import math
-from test.util.dummy_object import make_dummy_data
-from typing import List
-from typing import Tuple
 import unittest
+from test.util.dummy_object import make_dummy_data
+from typing import TYPE_CHECKING, List, Tuple
 
-from perception_eval.common.object import DynamicObject
-from perception_eval.evaluation.matching.object_matching import _get_area_intersection
-from perception_eval.evaluation.matching.object_matching import IOU2dMatching
+from perception_eval.evaluation.matching.object_matching import IOU2dMatching, _get_area_intersection
 from perception_eval.util.debug import get_objects_with_difference
+
+if TYPE_CHECKING:
+    from perception_eval.common.object import DynamicObject
 
 
 class TestIou2dMatching(unittest.TestCase):
@@ -40,7 +40,6 @@ class TestIou2dMatching(unittest.TestCase):
         test patterns:
             Given diff_distance, check if area_intersection and ans_area_intersection are equal.
         """
-        # patterns: (diff_distance, List[ans_area_intersection])
         patterns: List[Tuple[float, float]] = [(0.0, 1.0), (0.5, 0.5), (1.0, 0.0)]
         for diff_distance, ans_area_intersection in patterns:
             with self.subTest("Test get_area_intersection."):
@@ -50,7 +49,8 @@ class TestIou2dMatching(unittest.TestCase):
                     diff_yaw=0,
                 )
                 for estimated_object, ground_truth_object in zip(
-                    diff_distance_dummy_ground_truth_objects, self.dummy_ground_truth_objects
+                    diff_distance_dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                 ):
                     area_intersection = _get_area_intersection(estimated_object, ground_truth_object)
                     self.assertAlmostEqual(area_intersection, ans_area_intersection)
@@ -65,7 +65,6 @@ class TestIou2dMatching(unittest.TestCase):
         test patterns:
             Given diff_distance, check if iou_bev and ans_iou_bev are equal.
         """
-        # patterns: (diff_distance, ans_iou_bev)
         distance_patterns: List[Tuple[float, float]] = [
             # Given no diff_distance, iou is 1.0.
             (0.0, 1.0),
@@ -77,7 +76,6 @@ class TestIou2dMatching(unittest.TestCase):
             # Given no diff_yaw, iou is 1.0.
             (0.0, 1.0),
         ]
-        # patterns: (diff_yaw, ans_iou_bev)
         yaw_patterns: List[Tuple[float, float]] = [
             # Given vertical diff_yaw, iou is 1.0
             # since ground_truth_objects and estimated_objects overlap exactly.
@@ -115,7 +113,8 @@ class TestIou2dMatching(unittest.TestCase):
                 )
 
                 for estimated_object, ground_truth_object in zip(
-                    diff_yaw_dummy_ground_truth_objects, self.dummy_ground_truth_objects
+                    diff_yaw_dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                 ):
                     iou_bev = IOU2dMatching(estimated_object, ground_truth_object)
                     self.assertAlmostEqual(iou_bev.value, ans_iou_bev)
@@ -130,7 +129,8 @@ class TestIou2dMatching(unittest.TestCase):
                 )
 
                 for estimated_object, ground_truth_object in zip(
-                    diff_yaw_dummy_ground_truth_objects, self.dummy_ground_truth_objects
+                    diff_yaw_dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                 ):
                     iou_bev = IOU2dMatching(estimated_object, ground_truth_object)
                     self.assertAlmostEqual(iou_bev.value, ans_iou_bev)

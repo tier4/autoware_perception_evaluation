@@ -12,15 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List
-from typing import Tuple
+from typing import List, Tuple
+
+import pytest
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import AutowareLabel
-from perception_eval.common.label import LabelConverter
-from perception_eval.common.label import LabelType
-from perception_eval.common.label import TrafficLightLabel
-import pytest
+from perception_eval.common.label import AutowareLabel, LabelConverter, LabelType, TrafficLightLabel
 
 autoware_non_merged_pairs = [
     (AutowareLabel.BICYCLE, "bicycle"),
@@ -92,7 +89,7 @@ traffic_light_non_classification_pairs = [
 
 
 @pytest.mark.parametrize(
-    "evaluation_task, merge_similar_labels, label_prefix, label_pairs",
+    ("evaluation_task", "merge_similar_labels", "label_prefix", "label_pairs"),
     [
         (EvaluationTask.DETECTION, False, "autoware", autoware_non_merged_pairs),
         (EvaluationTask.DETECTION2D, True, "autoware", autoware_merged_pairs),

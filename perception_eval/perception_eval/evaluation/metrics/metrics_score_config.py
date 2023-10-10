@@ -13,14 +13,9 @@
 # limitations under the License.
 
 from inspect import signature
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Set
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import LabelType
 
 from .config._metrics_config_base import _MetricsConfigBase
 from .config.classification_metrics_config import ClassificationMetricsConfig
@@ -28,11 +23,15 @@ from .config.detection_metrics_config import DetectionMetricsConfig
 from .config.prediction_metrics_config import PredictionMetricsConfig
 from .config.tracking_metrics_config import TrackingMetricsConfig
 
+if TYPE_CHECKING:
+    from perception_eval.common.label import LabelType
+
 
 class MetricsScoreConfig:
     """A configuration class for each evaluation task metrics.
 
     Attributes:
+    ----------
         detection_config (Optional[DetectionMetricsConfig]): Config for detection evaluation.
         tracking_config (Optional[DetectionMetricsConfig]): Config for tracking evaluation.
         prediction_config (Optional[PredictionMetricsConfig]): Config for prediction evaluation.
@@ -40,6 +39,7 @@ class MetricsScoreConfig:
         evaluation_task (EvaluationTask): EvaluationTask instance.
 
     Args:
+    ----
         evaluation_task (EvaluationTask): EvaluationTask instance.
         **cfg: Configuration data.
     """
@@ -65,9 +65,9 @@ class MetricsScoreConfig:
             self.detection_config = DetectionMetricsConfig(**cfg)
         elif self.evaluation_task == EvaluationTask.PREDICTION:
             self._check_parameters(PredictionMetricsConfig, cfg)
-            raise NotImplementedError("Prediction config is under construction")
+            msg = "Prediction config is under construction"
+            raise NotImplementedError(msg)
             # TODO
-            # self.evaluation_tasks.append(task)
         elif self.evaluation_task == EvaluationTask.CLASSIFICATION2D:
             self._check_parameters(ClassificationMetricsConfig, cfg)
             self.classification_config = ClassificationMetricsConfig(**cfg)
@@ -77,22 +77,27 @@ class MetricsScoreConfig:
         """Check if input parameters are valid.
 
         Args:
+        ----
             config (_MetricsConfigBase): Metrics score instance.
             params (Dict[str, any]): Parameters for metrics.
 
         Raises:
+        ------
             KeyError: When got invalid parameter names.
         """
         valid_parameters: Set = set(signature(config).parameters)
         input_params: Set = set(params.keys())
         if not input_params <= valid_parameters:
-            raise MetricsParameterError(
+            msg = (
                 f"MetricsConfig for '{config.evaluation_task}'\n"
                 f"Unexpected parameters: {input_params - valid_parameters} \n"
                 f"Usage: {valid_parameters} \n"
+            )
+            raise MetricsParameterError(
+                msg,
             )
 
 
 class MetricsParameterError(Exception):
     def __init__(self, *args) -> None:
-        super(MetricsParameterError, self).__init__(*args)
+        super().__init__(*args)

@@ -14,48 +14,41 @@
 
 from __future__ import annotations
 
-from abc import ABC
-from abc import abstractmethod
 import logging
 import os
 import os.path as osp
 import pickle
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Set
-from typing import Tuple
-from typing import Union
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
 
-from matplotlib import cm
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import pandas as pd
-from perception_eval.common.label import LabelType
-from perception_eval.common.object import DynamicObject
-from perception_eval.common.status import MatchingStatus
-from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation import PerceptionFrameResult
-from perception_eval.evaluation.matching.objects_filter import divide_objects
-from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
-from perception_eval.evaluation.metrics.metrics import MetricsScore
+from matplotlib import cm
 from tqdm import tqdm
 
-from .utils import filter_df
-from .utils import get_metrics_info
-from .utils import PlotAxes
-from .utils import setup_axis
+from perception_eval.common.status import MatchingStatus
+from perception_eval.evaluation.matching.objects_filter import divide_objects, divide_objects_to_num
+from perception_eval.evaluation.metrics.metrics import MetricsScore
+
+from .utils import PlotAxes, filter_df, get_metrics_info, setup_axis
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
+    from mpl_toolkits.mplot3d import Axes3D
+
+    from perception_eval.common.label import LabelType
+    from perception_eval.common.object import DynamicObject
+    from perception_eval.config import PerceptionEvaluationConfig
+    from perception_eval.evaluation import DynamicObjectWithPerceptionResult, PerceptionFrameResult
 
 
 class PerceptionAnalyzerBase(ABC):
     """An abstract base class class for perception evaluation results analyzer.
 
     Attributes:
+    ----------
         config (PerceptionEvaluationConfig): Configurations for evaluation parameters.
         target_labels (List[str]): Target labels list. (e.g. ["car", "pedestrian", "motorbike"]).
         all_labels (List[str]): Target labels list including "ALL". (e.g. ["ALL", "car", "pedestrian", "motorbike"]).
@@ -73,6 +66,7 @@ class PerceptionAnalyzerBase(ABC):
         num_fn (int): Number of FN GT objects.
 
     Args:
+    ----
         evaluation_config (PerceptionEvaluationConfig): Config used in evaluation.
     """
 
@@ -83,9 +77,8 @@ class PerceptionAnalyzerBase(ABC):
         if not os.path.exists(self.__plot_dir):
             os.makedirs(self.__plot_dir)
 
-        # NOTE: all_labels = ["ALL", ...(target_labels)]
-        self.__target_labels: List[str] = [label.value for label in self.config.target_labels]
-        self.__all_labels: List[str] = self.__target_labels.copy()
+        self.__target_labels: list[str] = [label.value for label in self.config.target_labels]
+        self.__all_labels: list[str] = self.__target_labels.copy()
         self.__all_labels.insert(0, "ALL")
         self.__initialize()
 
@@ -93,8 +86,8 @@ class PerceptionAnalyzerBase(ABC):
         """Initialize data cached in `self.add()` method."""
         self.__num_scene: int = 0
         self.__num_frame: int = 0
-        self.__frame_results: Dict[int, List[PerceptionFrameResult]] = {}
-        self.__ego2maps: Dict[str, Dict[str, np.ndarray]] = {}
+        self.__frame_results: dict[int, list[PerceptionFrameResult]] = {}
+        self.__ego2maps: dict[str, dict[str, np.ndarray]] = {}
         self.__df: pd.DataFrame = pd.DataFrame(columns=self.columns)
 
     @classmethod
@@ -108,12 +101,12 @@ class PerceptionAnalyzerBase(ABC):
 
     @property
     @abstractmethod
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         pass
 
     @property
     @abstractmethod
-    def state_columns(self) -> List[str]:
+    def state_columns(self) -> list[str]:
         pass
 
     @property
@@ -121,11 +114,11 @@ class PerceptionAnalyzerBase(ABC):
         return self.__config
 
     @property
-    def target_labels(self) -> List[str]:
+    def target_labels(self) -> list[str]:
         return self.__target_labels
 
     @property
-    def all_labels(self) -> List[str]:
+    def all_labels(self) -> list[str]:
         return self.__all_labels
 
     @property
@@ -137,7 +130,7 @@ class PerceptionAnalyzerBase(ABC):
         return self.__plot_dir
 
     @property
-    def frame_results(self) -> Dict[int, List[PerceptionFrameResult]]:
+    def frame_results(self) -> dict[int, list[PerceptionFrameResult]]:
         return self.__frame_results
 
     @property
@@ -174,7 +167,9 @@ class PerceptionAnalyzerBase(ABC):
 
     def get(self, *args, **kwargs) -> pd.DataFrame:
         """Returns specified columns of DataFrame.
+
         Returns:
+        -------
             pandas.DataFrame: Selected DataFrame.
         """
         df = self.df
@@ -182,16 +177,20 @@ class PerceptionAnalyzerBase(ABC):
 
     def sortby(
         self,
-        columns: Union[str, List[str]],
-        df: Optional[pd.DataFrame] = None,
+        columns: str | list[str],
+        df: pd.DataFrame | None = None,
         ascending: bool = False,
     ) -> pd.DataFrame:
         """Sort DataFrame by specified column's values.
+
         Args:
+        ----
             column (str): Name of column.
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
             ascending (bool): Whether sort ascending order. Defaults to False.
+
         Returns:
+        -------
             pandas.DataFrame: Sorted DataFrame.
         """
         if df is None:
@@ -202,11 +201,15 @@ class PerceptionAnalyzerBase(ABC):
     def keys(self) -> pd.Index:
         return self.df.keys()
 
-    def shape(self, columns: Optional[Union[str, List[str]]] = None) -> Tuple[int]:
+    def shape(self, columns: str | list[str] | None = None) -> tuple[int]:
         """Get the shape of DataFrame or specified column(s).
+
         Args:
+        ----
             columns (Optional[Union[str, List[str]]): Name of column(s).
+
         Returns:
+        -------
             Tuple[int]: Shape.
         """
         if columns:
@@ -215,39 +218,55 @@ class PerceptionAnalyzerBase(ABC):
 
     def head(self, n: int = 5) -> pd.DataFrame:
         """Returns the first `n` rows of DataFrame.
+
         Args:
+        ----
             n (int): Number of rows to select.
+
         Returns:
+        -------
             pandas.DataFrame: The first `n` rows of the caller object.
         """
         return self.df.head(n)
 
     def tail(self, n: int = 5) -> pd.DataFrame:
         """Returns the last `n` rows of DataFrame.
+
         Args:
+        ----
             n (int): Number of rows to select.
+
         Returns:
+        -------
             pandas.DataFrame: The last `n` rows of the caller object.
         """
         return self.df.tail(n)
 
-    def get_num_ground_truth(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
+    def get_num_ground_truth(self, df: pd.DataFrame | None = None, **kwargs) -> int:
         """Returns the number of ground truths.
+
         Args:
+        ----
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
             **kwargs: Specify if you want to get the number of FP that their columns are specified value.
+
         Returns:
+        -------
             int: The number of ground truths.
         """
         df_ = self.get_ground_truth(**kwargs)
         return len(df_)
 
-    def get_num_estimation(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
+    def get_num_estimation(self, df: pd.DataFrame | None = None, **kwargs) -> int:
         """Returns the number of estimations.
+
         Args:
+        ----
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
             **kwargs: Specify if you want to get the number of FP that their columns are specified value.
+
         Returns:
+        -------
             int: The number of estimations.
         """
         df_ = self.get_estimation(df=df, **kwargs)
@@ -255,18 +274,20 @@ class PerceptionAnalyzerBase(ABC):
 
     def get_status_num(
         self,
-        status: Union[str, MatchingStatus],
-        df: Optional[pd.DataFrame] = None,
+        status: str | MatchingStatus,
+        df: pd.DataFrame | None = None,
         **kwargs,
     ) -> int:
         """Returns number of matching status TP/FP/TN/FN.
 
         Args:
+        ----
             status (Union[str, MatchingStatus]): Status.
             df (Optional[pandas.DataFrame]): Target DataFrame. Defaults to None.
             **kwargs
 
         Returns:
+        -------
             int: Number of matching status.
         """
         if status == MatchingStatus.TP:
@@ -278,59 +299,82 @@ class PerceptionAnalyzerBase(ABC):
         elif status == MatchingStatus.FN:
             return self.get_num_fn(df, **kwargs)
         else:
-            raise ValueError(f"Expected status is TP/FP/TN/FN, but got {status}")
+            msg = f"Expected status is TP/FP/TN/FN, but got {status}"
+            raise ValueError(msg)
 
-    def get_num_tp(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
+    def get_num_tp(self, df: pd.DataFrame | None = None, **kwargs) -> int:
         """Returns the number of TP.
+
         Args:
+        ----
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
             **kwargs: Specify if you want to get the number of FP that their columns are specified value.
+
         Returns:
+        -------
             inf: The number of TP.
         """
         df_ = self.get_estimation(df=df, **kwargs)
         return sum(df_["status"] == "TP")
 
-    def get_num_fp(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
+    def get_num_fp(self, df: pd.DataFrame | None = None, **kwargs) -> int:
         """Returns the number of FP.
+
         Args:
+        ----
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
             **kwargs: Specify if you want to get the number of FP that their columns are specified value.
+
         Returns:
+        -------
             inf: The number of FP.
         """
         df_ = self.get_estimation(df=df, **kwargs)
         return sum(df_["status"] == "FP")
 
-    def get_num_tn(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
+    def get_num_tn(self, df: pd.DataFrame | None = None, **kwargs) -> int:
         """Returns the number of TN.
+
         Args:
-            Args:
+        ----
+
+        Args:
+        ----
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
             **kwargs: Specify if you want to get the number of TN that their columns are specified value.
+
         Returns:
+        -------
             inf: The number of TN.
         """
         df_ = self.get_ground_truth(df=df, **kwargs)
         return sum(df_["status"] == "TN")
 
-    def get_num_fn(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
+    def get_num_fn(self, df: pd.DataFrame | None = None, **kwargs) -> int:
         """Returns the number of FN.
+
         Args:
+        ----
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
             **kwargs: Specify if you want to get the number of FN that their columns are specified value.
+
         Returns:
+        -------
             inf: The number of FN.
         """
         df_ = self.get_ground_truth(df=df, **kwargs)
         return sum(df_["status"] == "FN")
 
-    def get_ground_truth(self, df: Optional[pd.DataFrame] = None, **kwargs) -> pd.DataFrame:
+    def get_ground_truth(self, df: pd.DataFrame | None = None, **kwargs) -> pd.DataFrame:
         """Returns the DataFrame for ground truth.
+
         Args:
+        ----
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
+
         Returns:
-            pandas.DataFrame
+        -------
+            pandas.DataFrame.
         """
         if df is None:
             df = self.df
@@ -343,12 +387,16 @@ class PerceptionAnalyzerBase(ABC):
             df = df[df[key] == item]
         return df
 
-    def get_estimation(self, df: Optional[pd.DataFrame] = None, **kwargs) -> pd.DataFrame:
+    def get_estimation(self, df: pd.DataFrame | None = None, **kwargs) -> pd.DataFrame:
         """Returns the DataFrame for estimation.
+
         Args:
+        ----
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
+
         Returns:
-            pandas.DataFrame
+        -------
+            pandas.DataFrame.
         """
         if df is None:
             df = self.df
@@ -364,14 +412,16 @@ class PerceptionAnalyzerBase(ABC):
 
     def get_pair_results(
         self,
-        df: Optional[pd.DataFrame] = None,
-    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        df: pd.DataFrame | None = None,
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Returns paired results, which means both the row of GT and estimation valid values.
 
         Args:
+        ----
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
 
         Returns:
+        -------
             pandas.DataFrame: GT DataFrame.
             pandas.DataFrame: Estimation DataFrame.
         """
@@ -385,12 +435,16 @@ class PerceptionAnalyzerBase(ABC):
         est_df = est_df[valid_idx]
         return gt_df, est_df
 
-    def get_scenes(self, df: Optional[pd.DataFrame] = None, **kwargs) -> np.ndarray:
+    def get_scenes(self, df: pd.DataFrame | None = None, **kwargs) -> np.ndarray:
         """Returns numpy array of unique scenes.
+
         Args:
+        ----
             df (optional[pd.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
+
         Returns:
-            numpy.ndarray
+        -------
+            numpy.ndarray.
         """
         if df is None:
             df = self.get(**kwargs)
@@ -400,10 +454,14 @@ class PerceptionAnalyzerBase(ABC):
 
     def get_ego2map(self, scene: int, frame: int) -> np.ndarray:
         """Returns 4x4 ego2map transform matrix.
+
         Args:
+        ----
             scene (int): Number of scene.
             frame (int): Number of frame.
+
         Returns:
+        -------
             numpy.ndarray: In shape (4, 4).
         """
         return self.__ego2maps[str(scene)][str(frame)]
@@ -411,19 +469,21 @@ class PerceptionAnalyzerBase(ABC):
     def __len__(self) -> int:
         return len(self.df)
 
-    def get_metrics_score(self, frame_results: List[PerceptionFrameResult]) -> MetricsScore:
-        """Returns the metrics score for each evaluator
+    def get_metrics_score(self, frame_results: list[PerceptionFrameResult]) -> MetricsScore:
+        """Returns the metrics score for each evaluator.
 
         Args:
+        ----
             frame_results (List[PerceptionFrameResult]): List of frame results.
 
         Returns:
+        -------
             metrics_score (MetricsScore): The final metrics score.
         """
-        target_labels: List[LabelType] = self.config.target_labels
+        target_labels: list[LabelType] = self.config.target_labels
         scene_results = {label: [[]] for label in target_labels}
         scene_num_gt = {label: 0 for label in target_labels}
-        used_frame: List[int] = []
+        used_frame: list[int] = []
 
         for frame in frame_results:
             obj_results_dict = divide_objects(frame.object_results, target_labels)
@@ -448,13 +508,15 @@ class PerceptionAnalyzerBase(ABC):
 
         return metrics_score
 
-    def analyze(self, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
+    def analyze(self, **kwargs) -> tuple[pd.DataFrame | None, pd.DataFrame | None]:
         """Analyze TP/FP/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
 
         Args:
+        ----
             **kwargs: Specify scene, frame, area or uuid.
 
         Returns:
+        -------
             score_df (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
             error_df (Optional[pandas.DataFrame]): DataFrame of errors.
         """
@@ -469,20 +531,22 @@ class PerceptionAnalyzerBase(ABC):
         logging.warning("There is no DataFrame to be able to analyze.")
         return None, None
 
-    def add(self, frame_results: List[PerceptionFrameResult]) -> pd.DataFrame:
+    def add(self, frame_results: list[PerceptionFrameResult]) -> pd.DataFrame:
         """Add frame results and update DataFrame.
 
         Args:
+        ----
             frame_results (List[PerceptionFrameResult]): List of frame results.
 
         Returns:
+        -------
             pandas.DataFrame
         """
         self.__num_scene += 1
         start = len(self.df) // 2
         self.__ego2maps[str(self.num_scene)] = {}
         for frame in tqdm(frame_results, "Updating DataFrame"):
-            concat: List[pd.DataFrame] = []
+            concat: list[pd.DataFrame] = []
             if len(self) > 0:
                 concat.append(self.df)
 
@@ -545,13 +609,15 @@ class PerceptionAnalyzerBase(ABC):
         Add frame results from pickle and update DataFrame.
 
         Args:
+        ----
             pickle_path (str)
 
         Returns:
+        -------
             pandas.DataFrame
         """
         with open(pickle_path, "rb") as pickle_file:
-            frame_results: List[PerceptionFrameResult] = pickle.load(pickle_file)
+            frame_results: list[PerceptionFrameResult] = pickle.load(pickle_file)
         return self.add(frame_results)
 
     def clear(self) -> None:
@@ -562,60 +628,64 @@ class PerceptionAnalyzerBase(ABC):
 
     def format2df(
         self,
-        object_results: List[Union[DynamicObject, DynamicObjectWithPerceptionResult]],
+        object_results: list[DynamicObject | DynamicObjectWithPerceptionResult],
         status: MatchingStatus,
         frame_num: int,
         start: int = 0,
-        ego2map: Optional[np.ndarray] = None,
+        ego2map: np.ndarray | None = None,
     ) -> pd.DataFrame:
         """Format objects to pandas.DataFrame.
 
         Args:
-            object_results (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): List of objects or object results.
+        ----
+            object_results (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]):
+                List of objects or object results.
             status (MatchingStatus): Object's status.
             frame_num (int): Number of frame.
             start (int): Number of the first index. Defaults to 0.
             ego2map (Optional[np.ndarray]): Matrix to transform from ego coords to map coords. Defaults to None.
 
         Returns:
+        -------
             df (pandas.DataFrame)
         """
-        rets: Dict[int, Dict[str, Any]] = {}
+        rets: dict[int, dict[str, Any]] = {}
         for i, obj_result in enumerate(object_results, start=start):
             rets[i] = self.format2dict(obj_result, status, frame_num, ego2map)
 
-        df = pd.DataFrame.from_dict(
-            {(i, j): rets[i][j] for i in rets.keys() for j in rets[i].keys()},
+        return pd.DataFrame.from_dict(
+            {(i, j): rets[i][j] for i in rets for j in rets[i]},
             orient="index",
             columns=self.keys(),
         )
-        return df
 
     @abstractmethod
     def format2dict(
         self,
-        object_result: Union[DynamicObject, DynamicObjectWithPerceptionResult],
+        object_result: DynamicObject | DynamicObjectWithPerceptionResult,
         status: MatchingStatus,
         frame_num: int,
-        ego2map: Optional[np.ndarray] = None,
-    ) -> Dict[str, Dict[str, Any]]:
+        ego2map: np.ndarray | None = None,
+    ) -> dict[str, dict[str, Any]]:
         """Format objects to dict.
 
         Args:
-            object_results (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): List of objects or object results.
+        ----
+            object_results (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]):
+                List of objects or object results.
             status (MatchingStatus): Object's status.
             frame_num (int): Number of frame.
             ego2map (Optional[np.ndarray]): Matrix to transform from ego coords to map coords. Defaults to None.
 
         Returns:
+        -------
             Dict[str, Dict[str, Any]]
         """
-        pass
 
     def calculate_error(
         self,
-        column: Union[str, List[str]],
-        df: Optional[pd.DataFrame] = None,
+        column: str | list[str],
+        df: pd.DataFrame | None = None,
         remove_nan: bool = False,
     ) -> np.ndarray:
         """Calculate specified column's error for TP.
@@ -623,18 +693,21 @@ class PerceptionAnalyzerBase(ABC):
         TODO: plot not only TP status, but also matched objects FP/TN.
 
         Args:
+        ----
             column (Union[str, List[str]]): name of column
             df (pandas.DataFrame): Specify if you want use filtered DataFrame. Defaults to None.
             remove_nan (bool): Whether remove nan value. Defaults to False.
 
         Returns:
+        -------
             np.ndarray: Array of error, in shape (N, M).
                 N is number of TP, M is dimensions.
         """
-        expects: Set[str] = set(self.state_columns)
-        keys: Set[str] = set([column]) if isinstance(column, str) else set(column)
+        expects: set[str] = set(self.state_columns)
+        keys: set[str] = {column} if isinstance(column, str) else set(column)
         if keys > expects:
-            raise ValueError(f"Unexpected keys: {column}, expected: {expects}")
+            msg = f"Unexpected keys: {column}, expected: {expects}"
+            raise ValueError(msg)
 
         if df is None:
             df = self.df
@@ -661,30 +734,33 @@ class PerceptionAnalyzerBase(ABC):
         return err
 
     @abstractmethod
-    def summarize_error(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+    def summarize_error(self, df: pd.DataFrame | None = None) -> pd.DataFrame:
         """Calculate mean, sigma, RMS, max and min of error.
 
         Args:
+        ----
             df (Optional[pd.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
 
         Returns:
+        -------
             pd.DataFrame
         """
-        pass
 
-    def summarize_ratio(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+    def summarize_ratio(self, df: pd.DataFrame | None = None) -> pd.DataFrame:
         """Summarize TP/FP/FN ratio.
 
         Args:
+        ----
             df (Optional[pandas.DataFrame]): Specify, if you want to use any filtered DataFrame. Defaults to None.
 
         Returns:
+        -------
             pd.DataFrame
         """
         if df is None:
             df = self.df
 
-        data: Dict[str, List[float]] = {str(s): [0.0] * len(self.all_labels) for s in MatchingStatus}
+        data: dict[str, list[float]] = {str(s): [0.0] * len(self.all_labels) for s in MatchingStatus}
         for i, label in enumerate(self.all_labels):
             if label == "ALL":
                 label = None
@@ -696,24 +772,26 @@ class PerceptionAnalyzerBase(ABC):
                 data["FN"][i] = self.get_num_fn(label=label) / num_ground_truth
         return pd.DataFrame(data, index=self.all_labels)
 
-    def summarize_score(self, scene: Optional[Union[int, List[int]]] = None) -> pd.DataFrame:
+    def summarize_score(self, scene: int | list[int] | None = None) -> pd.DataFrame:
         """Summarize MetricsScore.
 
         Args:
+        ----
             scene (Optional[int]): Number of scene. If it is not specified, calculate metrics score for all scenes.
                 Defaults to None.
 
         Returns:
+        -------
             pandas.DataFrame
         """
         if scene is None:
             frame_results = [x for v in self.frame_results.values() for x in v]
         else:
-            scene: List[int] = [scene] if isinstance(scene, int) else scene
+            scene: list[int] = [scene] if isinstance(scene, int) else scene
             frame_results = [x for k, v in self.frame_results.items() if k in scene for x in v]
 
         metrics_score = self.get_metrics_score(frame_results)
-        data: Dict[str, Any] = get_metrics_info(metrics_score)
+        data: dict[str, Any] = get_metrics_info(metrics_score)
 
         return pd.DataFrame(data, index=self.all_labels)
 
@@ -721,16 +799,17 @@ class PerceptionAnalyzerBase(ABC):
         self,
         mode: PlotAxes = PlotAxes.DISTANCE,
         show: bool = False,
-        bins: Optional[float] = None,
+        bins: float | None = None,
         **kwargs,
     ) -> None:
         """Plot the number of objects for each time/distance range with histogram.
 
         Args:
+        ----
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.DISTANCE (1-dimensional).
             show (bool): Whether show the plotted figure. Defaults to False.
-            bins (float): The interval of time/distance. If not specified, 0.1[s] for time and 0.5[m] for distance will be use.
-                Defaults to None.
+            bins (float): The interval of time/distance. If not specified, 0.1[s] for time and 0.5[m]
+                for distance will be use. Defaults to None.
             **kwargs: Specify if you want to plot for the specific conditions.
                 For example, label, area, frame or scene.
         """
@@ -738,7 +817,7 @@ class PerceptionAnalyzerBase(ABC):
             title = "Number of Objects @all"
             filename = "all"
         else:
-            title: str = f"Num Object @{str(self.all_labels)}"
+            title: str = f"Num Object @{self.all_labels!s}"
             filename: str = ""
             for key, item in kwargs.items():
                 title += f"@{key.upper()}:{item} "
@@ -753,7 +832,7 @@ class PerceptionAnalyzerBase(ABC):
             xlabel, ylabel = mode.get_label()
 
         fig: Figure = plt.figure(figsize=(16, 8))
-        ax: Union[Axes, Axes3D] = fig.add_subplot(
+        ax: Axes | Axes3D = fig.add_subplot(
             xlabel=xlabel,
             ylabel=ylabel,
             title="Number of samples",
@@ -793,22 +872,23 @@ class PerceptionAnalyzerBase(ABC):
             fig=fig,
             title=title,
             legend=True,
-            filename=f"num_object_{str(mode)}_{filename}",
+            filename=f"num_object_{mode!s}_{filename}",
             show=show,
         )
 
     def plot_state(
         self,
         uuid: str,
-        columns: Union[str, List[str]],
+        columns: str | list[str],
         mode: PlotAxes = PlotAxes.TIME,
-        status: Optional[MatchingStatus] = None,
+        status: MatchingStatus | None = None,
         show: bool = False,
         **kwargs,
     ) -> None:
         """Plot states for each time/distance estimated and GT object in TP.
 
         Args:
+        ----
             uuid (str): Target object's uuid.
             columns (Union[str, List[str]]): Target column name.
                 If you want plot multiple column for one image, use List[str].
@@ -818,7 +898,7 @@ class PerceptionAnalyzerBase(ABC):
             **kwargs
         """
         if isinstance(columns, str):
-            columns: List[str] = [columns]
+            columns: list[str] = [columns]
 
         gt_df = self.get_ground_truth(uuid=uuid, status=status)
         index = pd.unique(gt_df.index.get_level_values(level=0))
@@ -871,13 +951,13 @@ class PerceptionAnalyzerBase(ABC):
             fig=fig,
             title=f"State of {columns} @uuid:{uuid}",
             legend=False,
-            filename=f"state_{columns_str}_{uuid}_{str(mode)}",
+            filename=f"state_{columns_str}_{uuid}_{mode!s}",
             show=show,
         )
 
     def plot_error(
         self,
-        columns: Union[str, List[str]],
+        columns: str | list[str],
         mode: PlotAxes = PlotAxes.TIME,
         heatmap: bool = False,
         show: bool = False,
@@ -889,6 +969,7 @@ class PerceptionAnalyzerBase(ABC):
         TODO: plot not only TP status, but also matched objects FP/TN.
 
         Args:
+        ----
             columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
@@ -899,7 +980,7 @@ class PerceptionAnalyzerBase(ABC):
                 For example, label, area, frame or scene.
         """
         if isinstance(columns, str):
-            columns: List[str] = [columns]
+            columns: list[str] = [columns]
 
         tp_gt_df = self.get_ground_truth(status="TP", **kwargs)
         tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
@@ -920,7 +1001,7 @@ class PerceptionAnalyzerBase(ABC):
             else:
                 xlabel, ylabel = mode.get_label()
                 title: str = f"Error({col}) = F({xlabel}, {ylabel})"
-            ax: Union[Axes, Axes3D] = fig.add_subplot(
+            ax: Axes | Axes3D = fig.add_subplot(
                 1,
                 num_cols,
                 n + 1,
@@ -960,31 +1041,32 @@ class PerceptionAnalyzerBase(ABC):
             fig=fig,
             title=f"Errors@{columns}",
             legend=False,
-            filename=f"error_{columns_str}_{str(mode)}",
+            filename=f"error_{columns_str}_{mode!s}",
             show=show,
         )
 
     def box_plot(
         self,
-        columns: Union[str, List[str]],
+        columns: str | list[str],
         show: bool = False,
         **kwargs,
     ) -> None:
         """Plot box-plot of errors.
 
         Args:
+        ----
             column (Union[str, List[str]]): Target column name.
                 If you want plot multiple column for one image, use List[str].
             show (bool): Whether show the plotted figure. Defaults to False.
         """
         if isinstance(columns, str):
-            columns: List[str] = [columns]
+            columns: list[str] = [columns]
 
         fig, ax = plt.subplots()
         setup_axis(ax, **kwargs)
 
         df = self.get(**kwargs)
-        errors: List[np.ndarray] = [self.calculate_error(col, df) for col in columns]
+        errors: list[np.ndarray] = [self.calculate_error(col, df) for col in columns]
         ax.boxplot(errors)
         ax.set_xticklabels(columns)
         columns_str: str = "".join(columns)
@@ -998,16 +1080,17 @@ class PerceptionAnalyzerBase(ABC):
 
     def plot_ratio(
         self,
-        status: Union[str, MatchingStatus],
+        status: str | MatchingStatus,
         mode: PlotAxes = PlotAxes.DISTANCE,
         show: bool = False,
-        bins: Optional[float] = None,
-        plot_range: Optional[Tuple[float]] = None,
+        bins: float | None = None,
+        plot_range: tuple[float] | None = None,
         **kwargs,
     ) -> None:
         """Plot TP/FP/TN/FN ratio.
 
         Args:
+        ----
             status (Union[str, MatchingStatus]): Matching status, TP/FP/TN/FN.
             mode (PlotAxes): PlotAxes instance.
             show (bool): Whether show the plotted figure. Defaults to False.
@@ -1015,7 +1098,8 @@ class PerceptionAnalyzerBase(ABC):
             plot_range (Optional[Tuple[float, float]]): Range of plot. Defaults to None.
         """
         if mode.is_3d():
-            raise NotImplementedError("3D plot is under construction.")
+            msg = "3D plot is under construction."
+            raise NotImplementedError(msg)
 
         gt_df = self.get_ground_truth(**kwargs)
         est_df = self.get_estimation(**kwargs)
@@ -1025,7 +1109,7 @@ class PerceptionAnalyzerBase(ABC):
         est_values: np.ndarray = mode.get_axes(est_df)
 
         xlabel: str = mode.xlabel
-        ylabel: str = f"{str(status)} ratio"
+        ylabel: str = f"{status!s} ratio"
         if plot_range is not None:
             min_value, max_value = plot_range
         else:
@@ -1036,10 +1120,10 @@ class PerceptionAnalyzerBase(ABC):
         _, axis = np.histogram(est_values, bins=hist_bins)
 
         fig: Figure = plt.figure(figsize=(16, 8))
-        ax: Union[Axes, Axes3D] = fig.add_subplot(
+        ax: Axes | Axes3D = fig.add_subplot(
             xlabel=xlabel,
             ylabel=ylabel,
-            title=f"{str(status)} ratio",
+            title=f"{status!s} ratio",
             projection=mode.projection,
         )
 
@@ -1067,7 +1151,8 @@ class PerceptionAnalyzerBase(ABC):
                     elif status == "FN":
                         ratios.append(np.sum(gt_df_["status"] == status) / num_gt)
                     else:
-                        raise ValueError(f"Unexpected status: {status}")
+                        msg = f"Unexpected status: {status}"
+                        raise ValueError(msg)
                 else:
                     ratios.append(0) if mode.is_2d() else ratios.append((0, 0))
                 axes.append((axis[i] + axis[i + 1]) * 0.5)
@@ -1079,7 +1164,7 @@ class PerceptionAnalyzerBase(ABC):
 
         self.__post_process_figure(
             fig=fig,
-            title=f"{str(status)} ratio",
+            title=f"{status!s} ratio",
             legend=True,
             filename=f"{str(status).lower()}_ratio_{mode.value}",
             show=show,

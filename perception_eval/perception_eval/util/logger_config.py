@@ -19,14 +19,14 @@ import os
 
 def CustomTextFormatter():
     """[summary]
-    Custom Formatter
+    Custom Formatter.
     """
     return logging.Formatter("[%(asctime)s] [%(levelname)s] [%(filename)s:%(lineno)d %(funcName)s] %(message)s")
 
 
 class SensitiveWordFilter(logging.Filter):
     """[summary]
-    The class to filer sensitive words like password
+    The class to filer sensitive words like password.
     """
 
     def filter(self, record):
@@ -36,10 +36,7 @@ class SensitiveWordFilter(logging.Filter):
             "secret",
         ]
         log_message = record.getMessage()
-        for word in sensitive_words:
-            if word in log_message:
-                return False
-        return True
+        return all(word not in log_message for word in sensitive_words)
 
 
 def configure_logger(
@@ -49,9 +46,10 @@ def configure_logger(
     logger_name: str = "",
 ) -> logging.Logger:
     """[summary]
-    The function to make logger
+    The function to make logger.
 
     Args:
+    ----
         log_file_directory (str): The directory path to save log
         console_log_level (int): Log level for console. Defaults to logging.INFO.
         file_log_level (int): Log level for log file. Defaults to logging.INFO.
@@ -75,7 +73,7 @@ def configure_logger(
     logger.addHandler(stream_handler)
 
     # handler for file
-    time = "{0:%Y%m%d_%H%M%S}.log".format(datetime.datetime.now())
+    time = f"{datetime.datetime.now():%Y%m%d_%H%M%S}.log"
     log_file_path = os.path.join(log_file_directory, time)
     file_handler = logging.FileHandler(filename=log_file_path, encoding="utf-8")
     file_handler.setLevel(file_log_level)

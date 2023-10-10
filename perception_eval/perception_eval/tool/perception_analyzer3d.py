@@ -16,27 +16,19 @@ from __future__ import annotations
 
 import logging
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
 
 import numpy as np
 import pandas as pd
+import yaml
+
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
-from perception_eval.util.math import get_pose_transform_matrix
-from perception_eval.util.math import rotation_matrix_to_euler
-import yaml
+from perception_eval.util.math import get_pose_transform_matrix, rotation_matrix_to_euler
 
 from .perception_analyzer_base import PerceptionAnalyzerBase
-from .utils import extract_area_results
-from .utils import generate_area_points
-from .utils import get_area_idx
-from .utils import get_metrics_info
-from .utils import PlotAxes
+from .utils import PlotAxes, extract_area_results, generate_area_points, get_area_idx, get_metrics_info
 
 # TODO: Refactor plot methods
 
@@ -45,6 +37,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
     """An analyzer class for 3D perception evaluation results.
 
     Attributes:
+    ----------
         config (PerceptionEvaluationConfig): Configurations for evaluation parameters.
         target_labels (List[str]): Target labels list. (e.g. ["car", "pedestrian", "motorbike"]).
         all_labels (List[str]): Target labels list including "ALL". (e.g. ["ALL", "car", "pedestrian", "motorbike"]).
@@ -52,7 +45,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         upper_rights (numpy.ndarray): Upper right points of each separated area.
         bottom_lefts (numpy.ndarray): Bottom left points of each separated area.
         columns (List[str]): List of columns in `df`.
-            `["frame_id", "timestamp", "x", "y", "width", "length", "height", "yaw", "vx", "vy", "nn_point1", "nn_point2",\
+            `["frame_id", "timestamp", "x", "y", "width", "length", "height", \
+                "yaw", "vx", "vy", "nn_point1", "nn_point2", \
                 "label", "label_name", "attributes", "confidence", "uuid", \
                 "num_points", "status", "area", "frame", "scene"]`.
         state_columns (List[str]): List of state columns in `df`.
@@ -70,6 +64,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         num_fn (int): Number of FN GT objects.
 
     Args:
+    ----
         evaluation_config (PerceptionEvaluationConfig): Config used in evaluation.
         num_area_division (int): Number to divide area. Defaults to 1.
     """
@@ -82,13 +77,16 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         super().__init__(evaluation_config=evaluation_config)
 
         if not self.config.evaluation_task.is_3d():
-            raise RuntimeError("Evaluation task must be 3D.")
+            msg = "Evaluation task must be 3D."
+            raise RuntimeError(msg)
 
         self.__num_area_division: int = num_area_division
         max_x: float = self.config.evaluation_config_dict.get("max_x_position", 100.0)
         max_y: float = self.config.evaluation_config_dict.get("max_y_position", 100.0)
         self.__upper_rights, self.__bottom_lefts = generate_area_points(
-            self.num_area_division, max_x=max_x, max_y=max_y
+            self.num_area_division,
+            max_x=max_x,
+            max_y=max_y,
         )
 
     @classmethod
@@ -101,23 +99,25 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """Perception results made by logsim are reproduced from pickle file.
 
         Args:
+        ----
             result_root_directory (str): The root path to save result.
             scenario_path (str): The path of scenario file .yaml.
             num_area_division (int): Number to divide evaluation target area.
 
         Returns:
+        -------
             PerceptionAnalyzer3D: PerceptionAnalyzer3D instance.
 
         Raises:
+        ------
             ValueError: When unexpected evaluation task is specified in scenario file.
         """
-
         # Load scenario file
-        with open(scenario_path, "r") as scenario_file:
-            scenario_obj: Optional[Dict[str, Any]] = yaml.safe_load(scenario_file)
+        with open(scenario_path) as scenario_file:
+            scenario_obj: dict[str, Any] | None = yaml.safe_load(scenario_file)
 
-        p_cfg: Dict[str, Any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
-        eval_cfg_dict: Dict[str, Any] = p_cfg["evaluation_config_dict"]
+        p_cfg: dict[str, Any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
+        eval_cfg_dict: dict[str, Any] = p_cfg["evaluation_config_dict"]
 
         eval_cfg_dict["label_prefix"] = "autoware"
 
@@ -132,7 +132,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         return cls(evaluation_config, num_area_division)
 
     @property
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         return [
             "frame_id",
             "timestamp",
@@ -159,7 +159,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         ]
 
     @property
-    def state_columns(self) -> List[str]:
+    def state_columns(self) -> list[str]:
         return [
             "x",
             "y",
@@ -187,24 +187,27 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
     def format2dict(
         self,
-        object_result: Union[DynamicObject, DynamicObjectWithPerceptionResult],
+        object_result: DynamicObject | DynamicObjectWithPerceptionResult,
         status: MatchingStatus,
         frame_num: int,
-        ego2map: Optional[np.ndarray] = None,
-    ) -> Dict[str, Dict[str, Any]]:
+        ego2map: np.ndarray | None = None,
+    ) -> dict[str, dict[str, Any]]:
         """Format objects to dict.
 
         Args:
-            object_results (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): List of objects or object results.
+        ----
+            object_results (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]):
+                List of objects or object results.
             status (MatchingStatus): Object's status.
             frame_num (int): Number of frame.
             ego2map (Optional[np.ndarray]): Matrix to transform from ego coords to map coords. Defaults to None.
 
         Returns:
+        -------
             Dict[str, Dict[str, Any]]
         """
         if isinstance(object_result, DynamicObjectWithPerceptionResult):
-            gt: Optional[DynamicObject] = object_result.ground_truth_object
+            gt: DynamicObject | None = object_result.ground_truth_object
             estimation: DynamicObject = object_result.estimated_object
             gt_point1, gt_point2 = object_result.plane_distance.ground_truth_nn_plane
             est_point1, est_point2 = object_result.plane_distance.estimated_nn_plane
@@ -219,7 +222,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 estimation = None
                 gt: DynamicObject = object_result
             else:
-                raise ValueError(f"For DynamicObject status must be in FP/TN/FN, but got {status}")
+                msg = f"For DynamicObject status must be in FP/TN/FN, but got {status}"
+                raise ValueError(msg)
             gt_point1, gt_point2 = None, None
             est_point1, est_point2 = None, None
         elif object_result is None:
@@ -227,7 +231,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             gt_point1, gt_point2 = None, None
             est_point1, est_point2 = None, None
         else:
-            raise TypeError(f"Unexpected object type: {type(object_result)}")
+            msg = f"Unexpected object type: {type(object_result)}"
+            raise TypeError(msg)
 
         area: int = get_area_idx(
             object_result=object_result,
@@ -256,30 +261,30 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
             gt_w, gt_l, gt_h = gt.state.size
 
-            gt_ret = dict(
-                frame_id=gt.frame_id.value,
-                timestamp=gt.unix_time,
-                x=gt_x,
-                y=gt_y,
-                width=gt_w,
-                length=gt_l,
-                hight=gt_h,
-                yaw=gt_yaw,
-                vx=gt_vx,
-                vy=gt_vy,
-                nn_point1=gt_point1,
-                nn_point2=gt_point2,
-                label=str(gt.semantic_label.label),
-                label_name=gt.semantic_label.name,
-                attributes=gt.semantic_label.attributes,
-                confidence=gt.semantic_score,
-                uuid=gt.uuid,
-                num_points=gt.pointcloud_num,
-                status=status,
-                area=area,
-                frame=frame_num,
-                scene=self.num_scene,
-            )
+            gt_ret = {
+                "frame_id": gt.frame_id.value,
+                "timestamp": gt.unix_time,
+                "x": gt_x,
+                "y": gt_y,
+                "width": gt_w,
+                "length": gt_l,
+                "hight": gt_h,
+                "yaw": gt_yaw,
+                "vx": gt_vx,
+                "vy": gt_vy,
+                "nn_point1": gt_point1,
+                "nn_point2": gt_point2,
+                "label": str(gt.semantic_label.label),
+                "label_name": gt.semantic_label.name,
+                "attributes": gt.semantic_label.attributes,
+                "confidence": gt.semantic_score,
+                "uuid": gt.uuid,
+                "num_points": gt.pointcloud_num,
+                "status": status,
+                "area": area,
+                "frame": frame_num,
+                "scene": self.num_scene,
+            }
         else:
             gt_ret = {k: None for k in self.keys()}
 
@@ -303,64 +308,66 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
             est_w, est_l, est_h = estimation.state.size
 
-            est_ret = dict(
-                frame_id=estimation.frame_id.value,
-                timestamp=estimation.unix_time,
-                x=est_x,
-                y=est_y,
-                width=est_w,
-                length=est_l,
-                height=est_h,
-                yaw=est_yaw,
-                vx=est_vx,
-                vy=est_vy,
-                nn_point1=est_point1,
-                nn_point2=est_point2,
-                label=str(estimation.semantic_label.label),
-                label_name=estimation.semantic_label.name,
-                attributes=estimation.semantic_label.attributes,
-                confidence=estimation.semantic_score,
-                uuid=estimation.uuid,
-                num_points=np.nan,
-                status=status,
-                area=area,
-                frame=frame_num,
-                scene=self.num_scene,
-            )
+            est_ret = {
+                "frame_id": estimation.frame_id.value,
+                "timestamp": estimation.unix_time,
+                "x": est_x,
+                "y": est_y,
+                "width": est_w,
+                "length": est_l,
+                "height": est_h,
+                "yaw": est_yaw,
+                "vx": est_vx,
+                "vy": est_vy,
+                "nn_point1": est_point1,
+                "nn_point2": est_point2,
+                "label": str(estimation.semantic_label.label),
+                "label_name": estimation.semantic_label.name,
+                "attributes": estimation.semantic_label.attributes,
+                "confidence": estimation.semantic_score,
+                "uuid": estimation.uuid,
+                "num_points": np.nan,
+                "status": status,
+                "area": area,
+                "frame": frame_num,
+                "scene": self.num_scene,
+            }
         else:
             est_ret = {k: None for k in self.keys()}
 
         return {"ground_truth": gt_ret, "estimation": est_ret}
 
-    def summarize_error(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+    def summarize_error(self, df: pd.DataFrame | None = None) -> pd.DataFrame:
         """Calculate mean, sigma, RMS, max and min of error.
 
         Args:
+        ----
             df (Optional[pd.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
 
         Returns:
+        -------
             pd.DataFrame
         """
 
         def _summarize(
-            _column: Union[str, List[str]],
-            _df: Optional[pd.DataFrame] = None,
-        ) -> Dict[str, float]:
+            _column: str | list[str],
+            _df: pd.DataFrame | None = None,
+        ) -> dict[str, float]:
             if len(_df) == 0:
                 logging.warning(f"The array of errors is empty for column: {_column}")
-                return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan)
+                return {"average": np.nan, "rms": np.nan, "std": np.nan, "max": np.nan, "min": np.nan}
 
             err: np.ndarray = self.calculate_error(_column, _df, remove_nan=True)
             if len(err) == 0:
                 logging.warning(f"The array of errors is empty for column: {_column}")
-                return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan)
+                return {"average": np.nan, "rms": np.nan, "std": np.nan, "max": np.nan, "min": np.nan}
 
             err_avg = np.average(err)
             err_rms = np.sqrt(np.square(err).mean())
             err_std = np.std(err)
             err_max = np.max(np.abs(err))
             err_min = np.min(np.abs(err))
-            return dict(average=err_avg, rms=err_rms, std=err_std, max=err_max, min=err_min)
+            return {"average": err_avg, "rms": err_rms, "std": err_std, "max": err_max, "min": err_min}
 
         if df is None:
             df = self.df
@@ -389,33 +396,33 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             data["nn_plane"] = _summarize(["nn_point1", "nn_point2"], df_)
             all_data[str(label)] = data
 
-        ret_df = pd.DataFrame.from_dict(
-            {(i, j): all_data[i][j] for i in all_data.keys() for j in all_data[i].keys()},
+        return pd.DataFrame.from_dict(
+            {(i, j): all_data[i][j] for i in all_data for j in all_data[i]},
             orient="index",
         )
 
-        return ret_df
-
     def summarize_score(
         self,
-        scene: Optional[Union[int, List[int]]] = None,
-        area: Optional[int] = None,
+        scene: int | list[int] | None = None,
+        area: int | None = None,
     ) -> pd.DataFrame:
         """Summarize MetricsScore.
 
         Args:
+        ----
             area (Optional[int]): Number of area. If it is not specified, calculate metrics score for all areas.
                 Defaults to None.
             scene (Optional[int]): Number of scene. If it is not specified, calculate metrics score for all scenes.
                 Defaults to None.
 
         Returns:
+        -------
             pandas.DataFrame
         """
         if scene is None:
             frame_results = [x for v in self.frame_results.values() for x in v]
         else:
-            scene: List[int] = [scene] if isinstance(scene, int) else scene
+            scene: list[int] = [scene] if isinstance(scene, int) else scene
             frame_results = [x for k, v in self.frame_results.items() if k in scene for x in v]
 
         if area is not None:
@@ -427,22 +434,23 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             )
 
         metrics_score = self.get_metrics_score(frame_results)
-        data: Dict[str, Any] = get_metrics_info(metrics_score)
+        data: dict[str, Any] = get_metrics_info(metrics_score)
 
         return pd.DataFrame(data, index=self.all_labels)
 
     def plot_state(
         self,
         uuid: str,
-        columns: Union[str, List[str]],
+        columns: str | list[str],
         mode: PlotAxes = PlotAxes.TIME,
-        status: Optional[MatchingStatus] = None,
+        status: MatchingStatus | None = None,
         show: bool = False,
         **kwargs,
     ) -> None:
         """Plot states for each time/distance estimated and GT object.
 
         Args:
+        ----
             uuid (str): Target object's uuid.
             columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "vx", "vy"].
                 If you want plot multiple column for one image, use List[str].
@@ -452,9 +460,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             **kwargs
         """
         if isinstance(columns, str):
-            columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
-            raise ValueError(f"{columns} is unsupported for plot")
+            columns: list[str] = [columns]
+        if set(columns) > {"x", "y", "yaw", "width", "length", "vx", "vy"}:
+            msg = f"{columns} is unsupported for plot"
+            raise ValueError(msg)
         return super().plot_state(
             uuid=uuid,
             columns=columns,
@@ -466,7 +475,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
     def plot_error(
         self,
-        columns: Union[str, List[str]],
+        columns: str | list[str],
         mode: PlotAxes = PlotAxes.TIME,
         heatmap: bool = False,
         show: bool = False,
@@ -476,6 +485,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """Plot states for each time/distance estimated and GT object in TP.
 
         Args:
+        ----
             columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
@@ -486,27 +496,30 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 For example, label, area, frame or scene.
         """
         if isinstance(columns, str):
-            columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
-            raise ValueError(f"{columns} is unsupported for plot")
+            columns: list[str] = [columns]
+        if set(columns) > {"x", "y", "yaw", "width", "length", "vx", "vy"}:
+            msg = f"{columns} is unsupported for plot"
+            raise ValueError(msg)
         return super().plot_error(columns=columns, mode=mode, heatmap=heatmap, show=show, bins=bins, **kwargs)
 
     def box_plot(
         self,
-        columns: Union[str, List[str]],
+        columns: str | list[str],
         show: bool = False,
         **kwargs,
     ) -> None:
         """Plot box-plot of errors.
 
         Args:
+        ----
             column (Union[str, List[str]]): Target column name.
                 Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
                 If you want plot multiple column for one image, use List[str].
             show (bool): Whether show the plotted figure. Defaults to False.
         """
         if isinstance(columns, str):
-            columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
-            raise ValueError(f"{columns} is unsupported for plot")
+            columns: list[str] = [columns]
+        if set(columns) > {"x", "y", "yaw", "width", "length", "vx", "vy"}:
+            msg = f"{columns} is unsupported for plot"
+            raise ValueError(msg)
         return super().box_plot(columns=columns, show=show, **kwargs)

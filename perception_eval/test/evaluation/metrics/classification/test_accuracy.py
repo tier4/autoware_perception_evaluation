@@ -14,10 +14,9 @@
 
 from __future__ import annotations
 
+import unittest
 from math import isclose
 from test.util.dummy_object import make_dummy_data2d
-from typing import List
-import unittest
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
@@ -90,8 +89,7 @@ class TestClassificationAccuracy(unittest.TestCase):
         self.evaluation_task: EvaluationTask = EvaluationTask.CLASSIFICATION2D
 
     def test_calculate_accuracy(self):
-        # patterns: List[Tuple[AutowareLabel, AnswerAccuracy]]
-        patterns: List[AnswerAccuracy] = [
+        patterns: list[AnswerAccuracy] = [
             (AutowareLabel.CAR, AnswerAccuracy(1, 1, 1, 0.5, 0.5, 1.0, 0.66)),
             (AutowareLabel.BICYCLE, AnswerAccuracy(1, 1, 0, 1.0, 1.0, 1.0, 1.0)),
         ]
@@ -121,4 +119,4 @@ class TestClassificationAccuracy(unittest.TestCase):
                     target_labels=[target_label],
                 )
                 out_accuracy = AnswerAccuracy.from_accuracy(accuracy)
-                self.assertEqual(out_accuracy, answer, f"\nout = {str(out_accuracy)},\nanswer = {str(answer)}")
+                assert out_accuracy == answer, f"\nout = {out_accuracy!s},\nanswer = {answer!s}"

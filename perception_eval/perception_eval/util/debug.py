@@ -12,22 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import Enum
 import pprint
 import random
-from typing import List
-from typing import Optional
-from typing import Tuple
+from enum import Enum
+from typing import List, Optional, Tuple
 
 import numpy as np
-from perception_eval.common.label import AutowareLabel
-from perception_eval.common.label import Label
-from perception_eval.common.label import LabelType
-from perception_eval.common.label import TrafficLightLabel
-from perception_eval.common.object2d import DynamicObject2D
-from perception_eval.common.object import DynamicObject
-from perception_eval.common.shape import Shape
 from pyquaternion.quaternion import Quaternion
+
+from perception_eval.common.label import AutowareLabel, Label, LabelType, TrafficLightLabel
+from perception_eval.common.object import DynamicObject
+from perception_eval.common.object2d import DynamicObject2D
+from perception_eval.common.shape import Shape
 
 
 def format_class_for_log(
@@ -35,17 +31,20 @@ def format_class_for_log(
     abbreviation: Optional[int] = None,
 ) -> str:
     """[summary]
-    Convert class object to str to save log
+    Convert class object to str to save log.
 
     Args:
+    ----
         object (object): Class object which you want to convert for str
         abbreviation (Optional[int]): If len(list_object) > abbreviation,
                                       then abbreviate the result.
 
     Returns:
+    -------
         str: str converted from class object
 
     Note:
+    ----
         Reference is below.
         https://stackoverflow.com/questions/1036409/recursively-convert-python-object-graph-to-dictionary
 
@@ -59,23 +58,25 @@ def class_to_dict(
     class_key: Optional[str] = None,
 ) -> dict:
     """[summary]
-    Convert class object to dict
+    Convert class object to dict.
 
     Args:
+    ----
         object (object): Class object which you want to convert to dict
         abbreviation (Optional[int]): If len(list_object) > abbreviation,
                                       then abbreviate the result
         class_key (Optional[str]): class key for dict
 
     Returns:
+    -------
         dict: Dict converted from class object
 
     Note:
+    ----
         Reference is below.
         https://stackoverflow.com/questions/1036409/recursively-convert-python-object-graph-to-dictionary
 
     """
-
     if isinstance(object, dict):
         data = {}
         for k, v in object.items():
@@ -90,13 +91,11 @@ def class_to_dict(
             return f" --- length of element {len(object)} ---,"  # type: ignore
         return [class_to_dict(v, abbreviation, class_key) for v in object]  # type: ignore
     elif hasattr(object, "__dict__"):
-        data = dict(
-            [
-                (key, class_to_dict(value, abbreviation, class_key))
-                for key, value in object.__dict__.items()
-                if not callable(value) and not key.startswith("_")
-            ]
-        )
+        data = {
+            key: class_to_dict(value, abbreviation, class_key)
+            for key, value in object.__dict__.items()
+            if not callable(value) and not key.startswith("_")
+        }
         if class_key is not None and hasattr(object, "__class__"):
             data[class_key] = object.__class__.__name__  # type: ignore
         return data
@@ -107,13 +106,14 @@ def class_to_dict(
 def format_dict_for_log(
     dict: dict,
 ) -> str:
-    """
-    Format dict class to str for logger
+    """Format dict class to str for logger.
 
     Args:
+    ----
         dict (dict): dict which you want to format for logger
 
     Returns:
+    -------
         (str) formatted str
     """
     formatted_str: str = "\n" + pprint.pformat(dict, indent=1, width=120, depth=None, compact=True) + "\n"
@@ -132,6 +132,7 @@ def get_objects_with_difference(
     """Get objects with distance and yaw difference for test.
 
     Args:
+    ----
         ground_truth_objects (List[DynamicObject]):
                 The ground truth objects.
         diff_distance (Tuple[float, float, float], optional):
@@ -153,9 +154,9 @@ def get_objects_with_difference(
                 from base_link coordinate system to map coordinate system.
 
     Returns:
+    -------
         List[DynamicObject]: objects with distance and yaw difference.
     """
-
     output_objects: List[DynamicObject] = []
     for object_ in ground_truth_objects:
         position: Tuple[float, float, float] = (
@@ -213,18 +214,20 @@ def get_objects_with_difference(
 
 def get_objects_with_difference2d(
     objects: List[DynamicObject2D],
-    translate: Tuple[int, int] = None,
+    translate: Optional[Tuple[int, int]] = None,
     label_to_unknown_rate: float = 1.0,
     label_candidates: Optional[List[LabelType]] = None,
 ) -> List[DynamicObject2D]:
     """Returns translated 2D objects.
 
     Args:
+    ----
         objects (List[DynamicObject2D])
         translate (Optional[Tuple[int, int]]): Translation vector [tx, ty][px]. Defaults to None.
         label_unknown_rate (float): Rate to convert label into unknown randomly. Defaults to 0.5.
 
     Returns:
+    -------
         List[DynamicObject2D]: List of translated objects.
     """
     output_objects: List[DynamicObject2D] = []
@@ -262,6 +265,6 @@ def get_objects_with_difference2d(
                 roi=roi,
                 uuid=object_.uuid,
                 visibility=object_.visibility,
-            )
+            ),
         )
     return output_objects

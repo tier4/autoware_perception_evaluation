@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import ABC
-from abc import abstractmethod
-from typing import List
-from typing import Optional
+from abc import ABC, abstractmethod
+from typing import List, Optional
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
@@ -30,6 +28,7 @@ class _MetricsConfigBase(ABC):
     Then, threshold for car objects is 1.0. threshold for bike objects is 0.5. threshold for pedestrian object is 0.5.
 
     Args:
+    ----
         target_labels (List[LabelType]): Target labels list.
         center_distance_thresholds (List[List[float]]):
                 Thresholds List of center distance. Defaults to None.

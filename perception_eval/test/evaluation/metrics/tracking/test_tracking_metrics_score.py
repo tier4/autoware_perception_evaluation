@@ -12,26 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import unittest
 from test.evaluation.metrics.tracking.test_clear import AnswerCLEAR
 from test.util.dummy_object import make_dummy_data
-from test.util.object_diff import DiffTranslation
-from test.util.object_diff import DiffYaw
-from typing import Dict
-from typing import List
-from typing import Tuple
-import unittest
+from test.util.object_diff import DiffTranslation, DiffYaw
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
-from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching.object_matching import MatchingMode
-from perception_eval.evaluation.matching.objects_filter import divide_objects
-from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
-from perception_eval.evaluation.matching.objects_filter import filter_objects
+from perception_eval.evaluation.matching.objects_filter import divide_objects, divide_objects_to_num, filter_objects
 from perception_eval.evaluation.metrics.tracking.tracking_metrics_score import TrackingMetricsScore
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult, get_object_results
 from perception_eval.util.debug import get_objects_with_difference
+
+if TYPE_CHECKING:
+    from perception_eval.common import DynamicObject
 
 
 class TestTrackingMetricsScore(unittest.TestCase):
@@ -58,7 +54,9 @@ class TestTrackingMetricsScore(unittest.TestCase):
 
         test patterns:
             Check the summed up MOTA/MOTP and ID switch score with translated previous and current results.
-            NOTE:
+
+        Note:
+        ----
                 - Estimated object is only matched with GT that has same label.
                 - The estimations & GTs are following (number represents the index)
                     Estimation = 3
@@ -66,15 +64,9 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     GT = 4
                         (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
         """
-        # patterns: (prev_diff_trans, cur_diff_trans, ans_mota, ans_motp, ans_id_switch)
         patterns: List[Tuple[DiffTranslation, DiffTranslation, float, float, int]] = [
-            # (1)
             # -> previous   : TP=2.0((Est[0], GT[0]), (Est[1], GT[1])), FP=1.0(Est[2])
-            #       MOTA=(1.0-1.0)/2+1.0/1+0.0/1+0.0/1=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
             # -> current    : TP=2.0((Est[0], GT[2]), (Est[0], GT[2])), FP=1.0(Est[2])
-            #       MOTA=(1.0-1.0)/2+1.0/1+0.0/1+0.0/1=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
-            # [TOTAL]
-            #       MOTA=(0.25*4 + 0.25*4)/8=0.25, MOTP=(0.0*1+0.0*1)/2=0.0, IDsw=0
             (
                 # prev: (trans est, trans gt)
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
@@ -84,13 +76,9 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 0.0,
                 0,
             ),
-            # (2)
             # -> previous   : TP=1.0(Est[1], GT[1]), FP=2.0(Est[0], Est[2])
             #       MOTA=(1.0-2.0)/2->0.0, MOTP=(0.0/1.0)=0.0, IDsw=0
             # -> current    : TP=2.0((Est[0], GT[2]), (Est[0], GT[2])), FP=1.0(Est[2])
-            #       MOTA=(2.0-1.0)/4=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
-            # [TOTAL]
-            #       MOTA=(0.25*4+0.25*4)/8=0.25, MOTP=(0.0*2+0.0*2)/4, IDsw=0
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.5, 2.0, 0.0)),
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
@@ -98,13 +86,8 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 0.0,
                 0,
             ),
-            # (3)
             # -> previous   : TP=2.0((Est[0], GT[0]), (Est[1], Est[1])), FP=1.0(Est[2])
-            #       MOTA=(2.0-1.0)/4=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
             # -> current    : TP=2.0((Est[0], Est[2]), (Est[0], Est[2])), FP=1.0(Est[2])
-            #       MOTA=(2.0-1.0)/4=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
-            # [TOTAL]
-            #       MOTA=(0.25*4+0.25*4)/8=0.25, MOTP=(0.0*2+0.0*2)/4=0.25, IDsw=0
             (
                 DiffTranslation((1.0, 0.0, 0.0), (0.2, 0, 0.0)),
                 DiffTranslation((0.25, 0.0, 0.0), (0.0, 0.0, 0.0)),
@@ -192,7 +175,8 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     ]
 
                 num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-                    cur_ground_truth_objects, self.target_labels
+                    cur_ground_truth_objects,
+                    self.target_labels,
                 )
 
                 tracking_score: TrackingMetricsScore = TrackingMetricsScore(
@@ -205,7 +189,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 mota, motp, id_switch = tracking_score._sum_clear()
                 self.assertAlmostEqual(mota, ans_mota)
                 self.assertAlmostEqual(motp, ans_motp)
-                self.assertEqual(id_switch, ans_id_switch)
+                assert id_switch == ans_id_switch
 
     def test_center_distance_translation_difference(self):
         """[summary]
@@ -214,7 +198,6 @@ class TestTrackingMetricsScore(unittest.TestCase):
         Test patterns:
             Check the clear score for each target label with translated previous and current results.
         """
-        # patterns: (prev_diff_difference, cur_diff_difference, ans_clears)
         patterns: List[Tuple[DiffTranslation, DiffTranslation, Tuple[AnswerCLEAR]]] = [
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
@@ -325,11 +308,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 for clear_, ans_clear_ in zip(tracking_score.clears, ans_clears):
                     out_clear_: AnswerCLEAR = AnswerCLEAR.from_clear(clear_)
-                    self.assertEqual(
-                        out_clear_,
-                        ans_clear_,
-                        f"out_clear = {str(out_clear_)}, ans_clear = {str(ans_clear_)}",
-                    )
+                    assert out_clear_ == ans_clear_, f"out_clear = {out_clear_!s}, ans_clear = {ans_clear_!s}"
 
     def test_center_distance_yaw_difference(self):
         """[summary]
@@ -338,7 +317,6 @@ class TestTrackingMetricsScore(unittest.TestCase):
         Test patterns:
             Check the clear score for each target label with rotated previous and current results around yaw angle.
         """
-        # patterns: (prev_diff_yaw, cur_diff_yaw, ans_clears)
         patterns: List[Tuple[DiffYaw, DiffYaw, List[AnswerCLEAR]]] = [
             (
                 DiffYaw(60.0, 0.0, deg2rad=True),
@@ -442,8 +420,4 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 # Check scores for each target label
                 for clear_, ans_clear_ in zip(tracking_score.clears, ans_clears):
                     out_clear_: AnswerCLEAR = AnswerCLEAR.from_clear(clear_)
-                    self.assertEqual(
-                        out_clear_,
-                        ans_clear_,
-                        f"out_clear = {str(out_clear_)}, ans_clear = {str(ans_clear_)}",
-                    )
+                    assert out_clear_ == ans_clear_, f"out_clear = {out_clear_!s}, ans_clear = {ans_clear_!s}"

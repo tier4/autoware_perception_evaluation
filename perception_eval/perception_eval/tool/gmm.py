@@ -16,14 +16,9 @@ from __future__ import annotations
 
 import logging
 import pickle
-from typing import List
-from typing import Optional
-from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-
-# from perception_eval.tool import PerceptionAnalyzerType
 from scipy.stats import multivariate_normal
 from sklearn.mixture import GaussianMixture
 
@@ -32,6 +27,7 @@ class Gmm:
     """This is a wrapper class of sklearn's GaussianMixture.
 
     Attributes:
+    ----------
         self.max_k (int)
         self.n_init (int)
         self.random_state (int)
@@ -47,65 +43,72 @@ class Gmm:
     eps: float = np.spacing(1)
 
     def __init__(self, max_k: int, n_init: int = 1, random_state: int = 1234) -> None:
-        """
-        Args:
+        """Args:
+        ----
             max_k (int): Maximum number of clusters K.
             n_init (int)
-            random_state (int)
+            random_state (int).
         """
         self.max_k: int = max_k
         self.n_init: int = n_init
         self.random_state: int = random_state
-        self.model: Optional[GaussianMixture] = None
-        self.__models: Optional[List[GaussianMixture]] = None
+        self.model: GaussianMixture | None = None
+        self.__models: list[GaussianMixture] | None = None
 
     @classmethod
     def load(cls, filename: str) -> Gmm:
         """[summary]
         Load from saved model.
+
         Args:
+        ----
             filename (str): File path.
 
         Returns:
+        -------
             Gmm: Loaded GMM.
         """
         with open(filename, "rb") as f:
-            gmm = pickle.load(f)
-        return gmm
+            return pickle.load(f)
 
     @property
     def num_k(self) -> int:
         if self.model is None:
-            raise RuntimeError("Model has not been estimated.")
+            msg = "Model has not been estimated."
+            raise RuntimeError(msg)
         return self.model.n_components
 
     @property
     def pi(self) -> np.ndarray:
         if self.model is None:
-            raise RuntimeError("Model has not been estimated.")
+            msg = "Model has not been estimated."
+            raise RuntimeError(msg)
         return self.model.weights_
 
     @property
     def means(self) -> np.ndarray:
         if self.model is None:
-            raise RuntimeError("Model has not been estimated.")
+            msg = "Model has not been estimated."
+            raise RuntimeError(msg)
         return self.model.means_
 
     @property
     def covariances(self) -> np.ndarray:
         if self.model is None:
-            raise RuntimeError("Model has not been estimated.")
+            msg = "Model has not been estimated."
+            raise RuntimeError(msg)
         return self.model.covariances_
 
     def fit(
         self,
         x: np.ndarray,
-        x_test: Optional[np.ndarray] = None,
+        x_test: np.ndarray | None = None,
     ) -> None:
         """[summary]
         Fitting parameters for GMM.
 
         Args:
+        ----
             x (numpy.ndarray): Input data, in shape of (N, D).
             x_test (Optional[numpy.ndarray]): Test data to determine number of components, in shape (N, D).
                 If None, input data will be used. Defaults to None.
@@ -121,8 +124,8 @@ class Gmm:
         if x_test is None:
             x_test = x
 
-        self.aic_list: List[float] = [m.aic(x_test) for m in self.__models]
-        self.bic_list: List[float] = [m.bic(x_test) for m in self.__models]
+        self.aic_list: list[float] = [m.aic(x_test) for m in self.__models]
+        self.bic_list: list[float] = [m.bic(x_test) for m in self.__models]
 
         min_aic_idx: int = np.argmin(self.aic_list)
         min_bic_idx: int = np.argmin(self.bic_list)
@@ -135,28 +138,33 @@ class Gmm:
         Save estimated model's parameters.
 
         Args:
+        ----
             filename (str): Path to save model.
         """
         if self.model is None:
-            raise RuntimeError("Model has not been estimated")
+            msg = "Model has not been estimated"
+            raise RuntimeError(msg)
 
         with open(filename, "wb") as f:
             pickle.dump(self, f)
 
     def get_gamma(self, x: np.ndarray) -> np.ndarray:
         """[summary]
-        Returns gamma that describes the weight
+        Returns gamma that describes the weight.
 
         Args:
+        ----
             x (numpy.ndarray): Input data, in shape (N, D)
 
         Returns:
+        -------
             gamma (numpy.ndarray): Weight, in shape (K,)
         """
         if x.ndim == 1:
             x = x.reshape(1, -1)
         elif x.ndim > 2:
-            raise RuntimeError(f"Invalid input shape: {x.shape}, expected (N, D)")
+            msg = f"Invalid input shape: {x.shape}, expected (N, D)"
+            raise RuntimeError(msg)
         x_dim: int = x.shape[-1]
 
         pdf = np.array(
@@ -168,7 +176,7 @@ class Gmm:
                     self.covariances[i, :x_dim, :x_dim],
                 )
                 for i in range(self.num_k)
-            ]
+            ],
         ).T
         with np.errstate(invalid="ignore", divide="ignore"):
             gamma = np.exp(np.log(pdf) - np.log(np.sum(pdf, axis=-1, keepdims=True)))
@@ -185,19 +193,23 @@ class Gmm:
         Predict means of posteriors.
 
         Args:
+        ----
             x (numpy.ndarray)
             kernel (str): mean or mode. Defaults to mean.
 
         Returns:
+        -------
             numpy.ndarray: Predicted means.
         """
         if self.model is None:
-            raise RuntimeError("Model has not been estimated.")
+            msg = "Model has not been estimated."
+            raise RuntimeError(msg)
 
         if x.ndim == 1:
             x = x.reshape(1, -1)
         elif x.ndim > 2:
-            raise RuntimeError(f"Invalid input shape: {x.shape}, expected (N, D)")
+            msg = f"Invalid input shape: {x.shape}, expected (N, D)"
+            raise RuntimeError(msg)
         x_dim: int = x.shape[-1]
 
         mean_x: np.ndarray = self.means[:, :x_dim]
@@ -229,28 +241,33 @@ class Gmm:
                 )
             )
         else:
-            raise ValueError(f"Expected kernel mean or mode, but got {kernel}")
+            msg = f"Expected kernel mean or mode, but got {kernel}"
+            raise ValueError(msg)
 
     def predict_label(self, x: np.ndarray) -> np.ndarray:
         """[summary]
         Predict cluster of input.
 
         Args:
+        ----
             x (numpy.ndarray)
 
         Returns:
+        -------
             numpy.ndarray: Array of labels.
         """
         if self.model is None:
-            raise RuntimeError("Model has not been estimated.")
+            msg = "Model has not been estimated."
+            raise RuntimeError(msg)
         return self.model.predict(x)
 
-    def plot_ic(self, filename: Optional[str] = None, show: bool = False) -> None:
+    def plot_ic(self, filename: str | None = None, show: bool = False) -> None:
         """[summary]
         Plot Information Criterion scores, which are AIC and BIC, for each number of components.
         """
         if self.aic_list is None or self.bic_list is None:
-            raise RuntimeError("Model has not been estimated.")
+            msg = "Model has not been estimated."
+            raise RuntimeError(msg)
 
         _, ax = plt.subplots(figsize=(6, 6))
         num_components = np.arange(1, self.max_k + 1)
@@ -269,15 +286,17 @@ class Gmm:
 
 def load_sample(
     analyzer,  # PerceptionAnalyzerType
-    state: List[str],
-    error: List[str],
-) -> Tuple[np.ndarray, np.ndarray]:
+    state: list[str],
+    error: list[str],
+) -> tuple[np.ndarray, np.ndarray]:
     """Load sample data
     Args:
         analyzer (PerceptionAnalyzerType): Perception analyzer instance.
         state (List[str]): List of state names. For example, [x, y].
         error (List[str]): List of error names. For example, [x, y].
+
     Returns:
+    -------
         state_arr (numpy.ndarray): Array of states, in shape (N, num_state).
         error_arr (numpy.ndarray): Array of errors, in shape (N, num_error).
     """

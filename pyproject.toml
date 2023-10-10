@@ -23,18 +23,103 @@ pandas = [
 ]
 pandas-profiling = "^3.5.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 black = "^22.3.0"
-flake8 = "^4.0.1"
-pep8-naming = "^0.12.1"
-isort = "^5.9.3"
-pre-commit = "^2.10"
+ruff = "^0.0.292"
 pytest = "^7.1.2"
-pydocstyle = "^6.1.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.black]
-line_length = 100
+line-length = 120
+
+[tool.ruff]
+line-length = 120
+show-source = true
+select = [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "I",
+    "N",
+    "Q",
+    "S",
+    "T",
+    "W",
+    "ANN",
+    "ARG",
+    "BLE",
+    "COM",
+    "DJ",
+    "DTZ",
+    "EM",
+    "ERA",
+    "EXE",
+    "FBT",
+    "ICN",
+    "ISC",
+    "NPY",
+    "PGH",
+    "PIE",
+    "PL",
+    "PT",
+    "PYI",
+    "RET",
+    "RSE",
+    "RUF",
+    "SIM",
+    "SLF",
+    "TCH",
+    "TID",
+    "TRY",
+    "UP",
+    "YTT",
+]
+ignore = [
+    "Q000",
+    "ANN101",
+    "ANN102",
+    "ANN401",
+    "PGH004",
+    "E501",
+    "PLR0913",
+    "S101",
+    "S301",
+    "S602",
+    "SIM115",
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D106",
+    "D107",
+    "D203",
+    "D212",
+    "D404",
+    "D417",
+    "N806",
+]
+fixable = ["D", "I", "ANN", "COM", "EXE", "PIE"]
+
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+[tool.ruff.pyupgrade]
+keep-runtime-typing = true
+
+[tool.pytest.ini_options]
+norecursedirs = ["docs", ".tox"]
+addopts = """
+    -vv
+    -rw
+    --cache-clear
+    """

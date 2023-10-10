@@ -15,29 +15,27 @@
 from __future__ import annotations
 
 import os.path as osp
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
+from typing import TYPE_CHECKING
 
 import cv2
-from matplotlib.axes import Axes
-from matplotlib.patches import Patch
-from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
-from matplotlib.transforms import Affine2D
 import numpy as np
-from perception_eval.common.object import DynamicObject
-from perception_eval.config import SensingEvaluationConfig
-from perception_eval.evaluation import DynamicObjectWithSensingResult
-from perception_eval.evaluation import SensingFrameResult
-from perception_eval.visualization.color import ColorMap
-from PIL import Image
-from PIL.Image import Image as PILImage
-from pyquaternion import Quaternion
-from tqdm import tqdm
 import yaml
+from matplotlib.patches import Patch, Rectangle
+from matplotlib.transforms import Affine2D
+from PIL import Image
+from tqdm import tqdm
+
+from perception_eval.config import SensingEvaluationConfig
+from perception_eval.evaluation import DynamicObjectWithSensingResult, SensingFrameResult
+from perception_eval.visualization.color import ColorMap
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+    from PIL.Image import Image as PILImage
+    from pyquaternion import Quaternion
+
+    from perception_eval.common.object import DynamicObject
 
 
 class SensingVisualizer:
@@ -47,6 +45,7 @@ class SensingVisualizer:
         config (SensingEvaluationConfig)
 
     Args:
+    ----
         config (SensingEvaluationConfig)
         figsize (Tuple[int, int]): Figure size, (width, height) order. Defaults to (800, 600).
     """
@@ -54,8 +53,8 @@ class SensingVisualizer:
     def __init__(
         self,
         config: SensingEvaluationConfig,
-        xylim: Tuple[float, float] = (100, 100),
-        figsize: Tuple[int, int] = (800, 600),
+        xylim: tuple[float, float] = (100, 100),
+        figsize: tuple[int, int] = (800, 600),
     ) -> None:
         assert config.evaluation_task.is_3d()
         self.__config: SensingEvaluationConfig = config
@@ -63,7 +62,7 @@ class SensingVisualizer:
         self.__figsize = (figsize[0] / 100.0, figsize[1] / 100.0)
 
         self.__figure, self.__axes = plt.subplots(figsize=self.__figsize)
-        self.__animation_frames: List[PILImage] = []
+        self.__animation_frames: list[PILImage] = []
 
         self.__xlim, self.__ylim = xylim
 
@@ -77,18 +76,20 @@ class SensingVisualizer:
         """Sensing results made by logsim are reproduced from pickle file.
 
         Args:
+        ----
             result_root_directory (str): The root path to save result.
             scenario_path (str): The path of scenario file .yaml.
+
         Returns:
+        -------
             SensingVisualizer
         """
-
         # Load scenario file
-        with open(scenario_path, "r") as scenario_file:
-            scenario_obj: Optional[Dict[str, any]] = yaml.safe_load(scenario_file)
+        with open(scenario_path) as scenario_file:
+            scenario_obj: dict[str, any] | None = yaml.safe_load(scenario_file)
 
-        s_cfg: Dict[str, any] = scenario_obj["Evaluation"]["SensingEvaluationConfig"]
-        eval_cfg_dict: Dict[str, any] = s_cfg["evaluation_config_dict"]
+        s_cfg: dict[str, any] = scenario_obj["Evaluation"]["SensingEvaluationConfig"]
+        eval_cfg_dict: dict[str, any] = s_cfg["evaluation_config_dict"]
 
         eval_cfg_dict["label_prefix"] = "autoware"
 
@@ -118,6 +119,7 @@ class SensingVisualizer:
         """Set xy-axes limit.
 
         Args:
+        ----
             xlim (float): Limit of x-axis.
             ylim (float): Limit of y-axis.
         """
@@ -126,13 +128,14 @@ class SensingVisualizer:
 
     def visualize_all(
         self,
-        frame_results: List[SensingFrameResult],
-        filename: Optional[str] = None,
+        frame_results: list[SensingFrameResult],
+        filename: str | None = None,
         cache_figure: bool = False,
     ) -> None:
         """Visualize all frames in BEV space.
 
         Args:
+        ----
             frame_results (List[SensingFrameResult]): The list of SensingFrameResult.
             filename  (Optional[str])
             cache_figure (bool): Whether cache figure for each frame. Defaults to False.
@@ -152,9 +155,11 @@ class SensingVisualizer:
         self.__axes.clear()
         self.__animation_frames.clear()
 
-    def set_figsize(self, figsize: Tuple[int, int]) -> None:
+    def set_figsize(self, figsize: tuple[int, int]) -> None:
         """Set figure size.
+
         Args:
+        ----
             figsize (Tuple[int, int]): Figure size, (width, height) order.
         """
         width, height = figsize[0] / 100.0, figsize[1] / 100.0
@@ -165,7 +170,7 @@ class SensingVisualizer:
     def visualize_frame(
         self,
         frame_result: SensingFrameResult,
-        axes: Optional[Axes] = None,
+        axes: Axes | None = None,
     ) -> Axes:
         """Visualize a frame result in BEV space.
 
@@ -176,6 +181,7 @@ class SensingVisualizer:
             FN              : Orange
 
         Args:
+        ----
             frame_result (PerceptionFrameResult)
             axes (Optional[Axes]): The Axes instance. Defaults to None.
         """
@@ -190,7 +196,7 @@ class SensingVisualizer:
         # Plot ego vehicle position
         axes = self._plot_ego(axes=axes)
 
-        handles: List[Patch] = []
+        handles: list[Patch] = []
         # Plot objects
         axes = self.plot_objects(
             objects=frame_result.detection_success_results,
@@ -235,16 +241,18 @@ class SensingVisualizer:
 
     def _plot_ego(
         self,
-        axes: Optional[Axes] = None,
-        size: Tuple[float, float] = (5.0, 2.5),
+        axes: Axes | None = None,
+        size: tuple[float, float] = (5.0, 2.5),
     ) -> Axes:
         """Plot ego vehicle.
 
         Args:
+        ----
             axes (Axes): The Axes instance.
             size (Tuple[float, float]): The size of box, (length, width). Defaults to (5.0, 2.5).
 
         Returns:
+        -------
             axes (Axes): The Axes instance.
         """
         if axes is None:
@@ -276,9 +284,9 @@ class SensingVisualizer:
 
     def plot_objects(
         self,
-        objects: Union[List[DynamicObject], List[DynamicObjectWithSensingResult]],
-        axes: Optional[Axes] = None,
-        color: Union[str, np.ndarray] = "red",
+        objects: list[DynamicObject] | list[DynamicObjectWithSensingResult],
+        axes: Axes | None = None,
+        color: str | np.ndarray = "red",
     ) -> Axes:
         """Plot objects in BEV space.
 
@@ -291,12 +299,14 @@ class SensingVisualizer:
         ```
 
         Args:
+        ----
             objects (Union[List[DynamicObject], DynamicObjectWithSensingResult]): The list of object being visualized.
             axes (Optional[Axes]): The Axes instance. If not specified, new Axes is created. Defaults to None.
             color (Union[str, np.ndarray]): The name of color, red/green/blue/yellow/cyan/black. Defaults to None.
                 If not be specified, red is used.
 
         Returns:
+        -------
             axes (Axes): The Axes instance.
         """
         if axes is None:
@@ -307,7 +317,7 @@ class SensingVisualizer:
         for object_ in objects:
             if isinstance(object_, DynamicObjectWithSensingResult):
                 pointcloud: np.ndarray = object_.inside_pointcloud
-                nearest_point: Optional[np.ndarray] = object_.nearest_point
+                nearest_point: np.ndarray | None = object_.nearest_point
                 object_: DynamicObject = object_.ground_truth_object
             box_center: np.ndarray = np.array(object_.state.position)[:2]
             orientation: Quaternion = object_.state.orientation
@@ -346,16 +356,18 @@ class SensingVisualizer:
     def plot_pointcloud(
         self,
         pointcloud: np.ndarray,
-        axes: Optional[Axes] = None,
-        color: Union[str, np.ndarray] = "red",
+        axes: Axes | None = None,
+        color: str | np.ndarray = "red",
     ) -> Axes:
         """Plot pointcloud.
 
         Args:
+        ----
             axes (Optional[Axes]): Axes instance. If not specified new Axes is created. Defaults to None.
             color (Union[str, np.ndarray]): Name of color. If not be specified, red is used. Defaults to None.
 
         Returns:
+        -------
             axes (Axes): Axes instance.
         """
         if axes is None:
@@ -368,10 +380,11 @@ class SensingVisualizer:
 
         return axes
 
-    def __save_animation(self, filename: Optional[str] = None) -> None:
+    def __save_animation(self, filename: str | None = None) -> None:
         """Save animation as mp4.
 
         Args:
+        ----
             filename (Optional[str]): Video filename. If None, save as scene_result_3d.mp4. Defaults to None.
         """
         if filename is None:

@@ -21,12 +21,13 @@ from perception_eval.common.object import DynamicObject
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.metrics import MetricsScore
-from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
-from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from perception_eval.evaluation.result.perception_frame_config import (
+    CriticalObjectFilterConfig,
+    PerceptionPassFailConfig,
+)
 from perception_eval.manager import PerceptionEvaluationManager
 from perception_eval.tool import PerceptionAnalyzer3D
-from perception_eval.util.debug import format_class_for_log
-from perception_eval.util.debug import get_objects_with_difference
+from perception_eval.util.debug import format_class_for_log, get_objects_with_difference
 from perception_eval.util.logger_config import configure_logger
 
 
@@ -36,7 +37,7 @@ class PerceptionLSimMoc:
         dataset_paths: List[str],
         evaluation_task: str,
         result_root_directory: str,
-    ):
+    ) -> None:
         evaluation_config_dict = {
             "evaluation_task": evaluation_task,
             # ラベル，max x/y，マッチング閾値 (detection/tracking/predictionで共通)
@@ -47,12 +48,6 @@ class PerceptionLSimMoc:
             "max_x_position": 102.4,
             "max_y_position": 102.4,
             # max/min distance
-            # "max_distance": 102.4,
-            # "min_distance": 10.0,
-            # # confidenceによるフィルタ (Optional)
-            # "confidence_threshold": 0.5,
-            # # GTのuuidによるフィルタ (Optional)
-            # "target_uuids": ["foo", "bar"],
             # objectごとにparamを設定
             "center_distance_thresholds": [
                 [1.0, 1.0, 1.0, 1.0],
@@ -100,11 +95,11 @@ class PerceptionLSimMoc:
         # [Option] ROS側でやる（Map情報・Planning結果を用いる）UC評価objectを選別
         # ros_critical_ground_truth_objects : List[DynamicObject] = custom_critical_object_filter(
         #   ground_truth_now_frame.objects
-        # )
         ros_critical_ground_truth_objects = ground_truth_now_frame.objects
 
         # 1 frameの評価
-        # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
+        # 距離などでUC評価objectを選別するためのインターフェイス
+        # PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam
         critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
@@ -131,16 +126,10 @@ class PerceptionLSimMoc:
         self.visualize(frame_result)
 
     def get_final_result(self) -> MetricsScore:
-        """
-        処理の最後に評価結果を出す
-        """
-
+        """処理の最後に評価結果を出す."""
         # number of fails for critical objects
         num_critical_fail: int = sum(
-            map(
-                lambda frame_result: frame_result.pass_fail_result.get_num_fail(),
-                self.evaluator.frame_results,
-            )
+            frame_result.pass_fail_result.get_num_fail() for frame_result in self.evaluator.frame_results
         )
         logging.info(f"Number of fails for critical objects: {num_critical_fail}")
 
@@ -150,9 +139,7 @@ class PerceptionLSimMoc:
         return final_metric_score
 
     def visualize(self, frame_result: PerceptionFrameResult):
-        """
-        Frameごとの可視化
-        """
+        """Frameごとの可視化."""
         logging.info(
             f"{len(frame_result.pass_fail_result.tp_object_results)} TP objects, "
             f"{len(frame_result.pass_fail_result.fp_object_results)} FP objects, "
@@ -161,10 +148,8 @@ class PerceptionLSimMoc:
 
         if frame_result.metrics_score.maps[0].map < 0.7:
             logging.debug("mAP is low")
-            # logging.debug(f"frame result {format_class_for_log(frame_result.metrics_score)}")
 
         # Visualize the latest frame result
-        # self.evaluator.visualize_frame()
 
 
 if __name__ == "__main__":
@@ -224,7 +209,7 @@ if __name__ == "__main__":
     # Metrics config
     logging.info(
         "Detection Metrics example (final_metric_score): "
-        f"{format_class_for_log(detection_final_metric_score, len(detection_final_metric_score.detection_config.target_labels))}",
+        f"{format_class_for_log(detection_final_metric_score, len(detection_final_metric_score.detection_config.target_labels))}",  # noqa
     )
 
     # Detection metrics score
@@ -246,11 +231,6 @@ if __name__ == "__main__":
         logging.info(score_df.to_string())
     if error_df is not None:
         logging.info(error_df.to_string())
-
-    # detection_analyzer.plot_state("4bae7e75c7de70be980ce20ce8cbb642", ["x", "y"])
-    # detection_analyzer.plot_error(["x", "y"])
-    # detection_analyzer.plot_num_object()
-    # detection_analyzer.box_plot()
 
     # ========================================= Tracking =========================================
     print("=" * 50 + "Start Tracking" + "=" * 50)
@@ -297,7 +277,7 @@ if __name__ == "__main__":
     # Metrics config
     logging.info(
         "Tracking Metrics example (tracking_final_metric_score): "
-        f"{format_class_for_log(tracking_final_metric_score, len(tracking_final_metric_score.detection_config.target_labels))}",
+        f"{format_class_for_log(tracking_final_metric_score, len(tracking_final_metric_score.detection_config.target_labels))}",  # noqa
     )
 
     # Detection metrics score in Tracking
@@ -309,7 +289,7 @@ if __name__ == "__main__":
     # Tracking metrics score
     logging.info(
         "CLEAR result example (tracking_final_metric_score.tracking_scores[0].clears[0]): "
-        f"{format_class_for_log(tracking_final_metric_score.tracking_scores[0], 100)}"
+        f"{format_class_for_log(tracking_final_metric_score.tracking_scores[0], 100)}",
     )
 
     if tracking_lsim.evaluator.evaluator_config.load_raw_data:

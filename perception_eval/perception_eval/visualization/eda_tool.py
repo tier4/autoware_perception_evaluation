@@ -12,38 +12,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from logging import getLogger
 import os
-from typing import Dict
-from typing import List
-from typing import Union
+from logging import getLogger
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pandas_profiling as pdp
+from plotly import graph_objects as go
+from plotly.subplots import make_subplots
+
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import LabelConverter
-from perception_eval.common.label import LabelType
+from perception_eval.common.label import LabelConverter, LabelType
 from perception_eval.common.object import DynamicObject
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.matching.objects_filter import divide_tp_fp_objects
-from perception_eval.evaluation.matching.objects_filter import filter_object_results
-from perception_eval.evaluation.matching.objects_filter import get_fn_objects
-from plotly import graph_objects as go
-from plotly.graph_objs import Figure
-from plotly.subplots import make_subplots
+from perception_eval.evaluation.matching.objects_filter import (
+    divide_tp_fp_objects,
+    filter_object_results,
+    get_fn_objects,
+)
+
+if TYPE_CHECKING:
+    from plotly.graph_objs import Figure
 
 logger = getLogger(__name__)
 
 
 class EDAVisualizer:
     """[summary]
-    Visualization class for EDA
+    Visualization class for EDA.
 
     Attributes:
+    ----------
         self.visualize_df (pd.DataFrame): pd.DataFrame converted from objects.
         self.save_dir (str): save directory for each graph.
         self.is_gt (bool): Ground truth objects or not.
@@ -55,11 +58,13 @@ class EDAVisualizer:
         save_dir: str,
         show: bool = False,
     ) -> None:
-        """[summary]
+        """[summary].
 
         Args:
+        ----
             objects (Union[List[DynamicObject], List[DynamicObjectWithPerceptionResult]]):
-                    estimated objects(List[DynamicObject]) or ground truth objects(List[DynamicObjectWithPerceptionResult]]) which you want to visualize
+                    estimated objects(List[DynamicObject]) or ground truth objects
+                    (List[DynamicObjectWithPerceptionResult]]) which you want to visualize
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
             show (bool): Whether show visualized figures. Defaults to False.
@@ -71,16 +76,20 @@ class EDAVisualizer:
         self.show: show = show
 
     def objects_to_df(
-        self, objects: Union[List[DynamicObject], List[DynamicObjectWithPerceptionResult]]
+        self,
+        objects: Union[List[DynamicObject], List[DynamicObjectWithPerceptionResult]],
     ) -> pd.DataFrame:
         """[summary]
         Convert List[DynamicObject] or List[DynamicObjectWithPerceptionResult]] to pd.DataFrame.
 
         Args:
+        ----
             objects (Union[List[DynamicObject], List[DynamicObjectWithPerceptionResult]]):
-                    estimated objects(List[DynamicObject]) or ground truth objects(List[DynamicObjectWithPerceptionResult]]) which you want to visualize
+                    estimated objects(List[DynamicObject]) or ground truth objects
+                    (List[DynamicObjectWithPerceptionResult]]) which you want to visualize
 
         Returns:
+        -------
             df (pd.DataFrame):
                     converted pd.DataFrame from objects
         """
@@ -93,16 +102,16 @@ class EDAVisualizer:
             pcd_nums = np.stack([gt_object.pointcloud_num for gt_object in objects])
 
             df: pd.DataFrame = pd.DataFrame(
-                dict(
-                    name=names,
-                    w=wlh[:, 0],
-                    l=wlh[:, 1],
-                    h=wlh[:, 2],
-                    x=xyz[:, 0],
-                    y=xyz[:, 1],
-                    z=xyz[:, 2],
-                    num_points=pcd_nums,
-                )
+                {
+                    "name": names,
+                    "w": wlh[:, 0],
+                    "l": wlh[:, 1],
+                    "h": wlh[:, 2],
+                    "x": xyz[:, 0],
+                    "y": xyz[:, 1],
+                    "z": xyz[:, 2],
+                    "num_points": pcd_nums,
+                },
             )
             df["distance_2d"] = np.sqrt((df["x"]) ** 2 + (df["y"]) ** 2)
 
@@ -110,7 +119,7 @@ class EDAVisualizer:
             self.is_gt = False
 
             names = np.stack(
-                [estimated_object.estimated_object.semantic_label.label.value for estimated_object in objects]
+                [estimated_object.estimated_object.semantic_label.label.value for estimated_object in objects],
             )
             xyz = np.stack([estimated_object.estimated_object.state.position for estimated_object in objects])
             wlh = np.stack([estimated_object.estimated_object.state.size for estimated_object in objects])
@@ -119,18 +128,18 @@ class EDAVisualizer:
             confidences = np.stack([estimated_object.estimated_object.semantic_score for estimated_object in objects])
 
             df: pd.DataFrame = pd.DataFrame(
-                dict(
-                    name=names,
-                    w=wlh[:, 0],
-                    l=wlh[:, 1],
-                    h=wlh[:, 2],
-                    x=xyz[:, 0],
-                    y=xyz[:, 1],
-                    z=xyz[:, 2],
-                    num_points=pcd_nums,
-                    center_distance=center_distances,
-                    confidence=confidences,
-                )
+                {
+                    "name": names,
+                    "w": wlh[:, 0],
+                    "l": wlh[:, 1],
+                    "h": wlh[:, 2],
+                    "x": xyz[:, 0],
+                    "y": xyz[:, 1],
+                    "z": xyz[:, 2],
+                    "num_points": pcd_nums,
+                    "center_distance": center_distances,
+                    "confidence": confidences,
+                },
             )
             df["distance_2d"] = np.sqrt((df["x"]) ** 2 + (df["y"]) ** 2)
 
@@ -138,20 +147,21 @@ class EDAVisualizer:
 
     def get_subplots(self, class_names: List[str]) -> None:
         """[summary]
-        Get subplots
+        Get subplots.
 
         Args:
+        ----
             class_names (List[str]):
                     names of class you want to visualize.
 
         Return:
+        ------
             axes (numpy.ndarray):
                     axes of subplots
         """
         col_size = len(class_names)
         fig, axes = plt.subplots(col_size, 1, figsize=(16, 6 * col_size))
-        axes = axes.flatten()
-        return axes
+        return axes.flatten()
 
     def hist_object_count_for_each_distance(self, class_names: List[str], ranges_xy: List[Union[int, float]]) -> None:
         """[summary]
@@ -159,6 +169,7 @@ class EDAVisualizer:
         Distance is specified by ranges_xy.
 
         Args:
+        ----
             class_names (List[str]):
                     names of class you want to visualize.
             ranges_xy (List[Union[int, float]]):
@@ -174,7 +185,7 @@ class EDAVisualizer:
             _df: pd.DataFrame = self.visualize_df[self.visualize_df.distance_2d < range_xy]
 
             fig.add_trace(
-                go.Histogram(x=_df["name"], name=f"#objects: ~{range_xy}m", marker=dict(color="blue")),
+                go.Histogram(x=_df["name"], name=f"#objects: ~{range_xy}m", marker={"color": "blue"}),
                 row=1,
                 col=i + 1,
             )
@@ -187,13 +198,17 @@ class EDAVisualizer:
         fig.write_html(self.save_dir + "/hist_object_count_for_each_distance.html")
 
     def hist_object_dist2d_for_each_class(
-        self, class_names: List[str], x_range: List[float] = [-2, 120], y_range: List[float] = None
+        self,
+        class_names: List[str],
+        x_range: Optional[List[float]] = None,
+        y_range: Optional[List[float]] = None,
     ) -> None:
         """[summary]
         Show histogram of distance in x-y plane of objects.
         X axis shows the distance. Y axis shows the count of objects.
 
         Args:
+        ----
             class_names (List[str]):
                     names of class you want to visualize.
             x_range (List[float]):
@@ -201,12 +216,17 @@ class EDAVisualizer:
             y_range (List[float]):
                     range of count of objects in that distance.
         """
+        if x_range is None:
+            x_range = [-2, 120]
         subplot_titles: List[str] = []
         for class_name in class_names:
             subplot_titles.append(f"{class_name}")
 
         fig: Figure = make_subplots(
-            rows=1, cols=len(class_names), subplot_titles=subplot_titles, horizontal_spacing=0.1
+            rows=1,
+            cols=len(class_names),
+            subplot_titles=subplot_titles,
+            horizontal_spacing=0.1,
         )
 
         for cls_i, class_name in enumerate(class_names):
@@ -233,13 +253,14 @@ class EDAVisualizer:
     def hist2d_object_wl_for_each_class(
         self,
         class_names: List[str],
-        width_lim_dict: Dict[str, List[float]] = None,
-        length_lim_dict: Dict[str, List[float]] = None,
+        width_lim_dict: Optional[Dict[str, List[float]]] = None,
+        length_lim_dict: Optional[Dict[str, List[float]]] = None,
     ) -> None:
         """[summary]
         Show 2d-histogram of width and length in each class.
 
         Args:
+        ----
             class_names (List[str]):
                     names of class you want to visualize.
             width_lim_dict, length_lim_dict (Dict[str, List[float]]):
@@ -258,7 +279,8 @@ class EDAVisualizer:
                 hist = axes[cls_i].hist2d(_df_cls.w, _df_cls.l, bins=50, norm=mpl.colors.LogNorm())
                 axes[cls_i].plot(w_mean, l_mean, marker="x", color="r", markersize=10, markeredgewidth=3)
                 axes[cls_i].set_title(
-                    f"{class_name}: (w, l, h)=({w_mean:.2f}±{w_std:.2f}, {l_mean:.2f}±{l_std:.2f}, {h_mean:.2f}±{h_std:.2f})"
+                    f"{class_name}: (w, l, h)=({w_mean:.2f}±{w_std:.2f}, "
+                    f"{l_mean:.2f}±{l_std:.2f}, {h_mean:.2f}±{h_std:.2f})",
                 )
                 axes[cls_i].set_xlabel("width")
                 axes[cls_i].set_ylabel("length")
@@ -273,13 +295,14 @@ class EDAVisualizer:
     def hist2d_object_center_xy_for_each_class(
         self,
         class_names: List[str],
-        xlim_dict: Dict[str, List[float]] = None,
-        ylim_dict: Dict[str, List[float]] = None,
+        xlim_dict: Optional[Dict[str, List[float]]] = None,
+        ylim_dict: Optional[Dict[str, List[float]]] = None,
     ) -> None:
         """[summary]
         Show 2d-histogram of x and y in each class.
 
         Args:
+        ----
             class_names (List[str]):
                     names of class you want to visualize.
             xlim_dict, ylim_dict (Dict[str, List[float]]):
@@ -287,7 +310,6 @@ class EDAVisualizer:
                     e.g. xlim_dict['car'] is [xmin, xmax] for car
 
         """
-
         axes = self.get_subplots(class_names)
 
         for cls_i, class_name in enumerate(class_names):
@@ -300,7 +322,8 @@ class EDAVisualizer:
                 hist = axes[cls_i].hist2d(_df_cls.x, _df_cls.y, bins=50, norm=mpl.colors.LogNorm())
                 axes[cls_i].plot(x_mean, y_mean, marker="x", color="r", markersize=10, markeredgewidth=3)
                 axes[cls_i].set_title(
-                    f"{class_name}: (x, y, z)=({x_mean:.2f}±{x_std:.2f}, {y_mean:.2f}±{y_std:.2f}, {z_mean:.2f}±{z_std:.2f})"
+                    f"{class_name}: (x, y, z)=({x_mean:.2f}±{x_std:.2f}, "
+                    f"{y_mean:.2f}±{y_std:.2f}, {z_mean:.2f}±{z_std:.2f})",
                 )
                 axes[cls_i].set_xlabel("x [m] ")
                 axes[cls_i].set_ylabel("y [m] ")
@@ -315,17 +338,19 @@ class EDAVisualizer:
     def hist2d_object_num_points_for_each_class(self, class_names: List[str], max_pts: int = 500) -> None:
         """[summary]
         Show 2d-histogram of number of point clouds in each class.
-        Ground truth objects only have the number of point cloud in bbox, so this method works only for ground truth objects.
+        Ground truth objects only have the number of point cloud in bbox,
+        so this method works only for ground truth objects.
 
         Args:
+        ----
             class_names (List[str]):
                     names of class you want to visualize.
             max_pts (int):
                     max points to visualize.
         """
-
         if not self.is_gt:
-            raise ValueError("You should use this method only for ground truth objects")
+            msg = "You should use this method only for ground truth objects"
+            raise ValueError(msg)
 
         axes = self.get_subplots(class_names)
 
@@ -349,6 +374,7 @@ class EDAVisualizer:
         Get pandas profiling report for pd.DataFrame.
 
         Args:
+        ----
             class_names (List[str]):
                     names of class you want to visualize.
             file_name (str):
@@ -370,12 +396,15 @@ class EDAManager:
     This class includes some methods used in EDA.
 
     Attributes:
+    ----------
         self.root_path (str): root path for saving graphs
         self.class_names (List[str]): names of class you want to visualize
         self.ranges_xy (List[Union[int, float]]): distances in x-y plane for histogram of number of objects
-        self.xylim_dict (Dict[str, List[float]]): xlim, ylim for each class used in hist2d_object_center_xy_for_each_class
+        self.xylim_dict (Dict[str, List[float]]): xlim, ylim for each class used in
+            hist2d_object_center_xy_for_each_class
         self.width_lim_dict (Dict[str, List[float]]): width_lim for each class used in hist2d_object_wl_for_each_class
-        self.length_lim_dict (Dict[str, List[float]]): length_lim for each class used in hist2d_object_wl_for_each_class
+        self.length_lim_dict (Dict[str, List[float]]): length_lim for each class used in
+            hist2d_object_wl_for_each_class
         self.label_converter (LabelConverter): label converter
     """
 
@@ -392,9 +421,10 @@ class EDAManager:
         label_prefix: str = "autoware",
         show: bool = False,
     ) -> None:
-        """[summary]
+        """[summary].
 
         Args:
+        ----
             root_path (str): root path for saving graphs
             class_names (List[str]): names of class you want to visualize
             ranges_xy (List[Union[int, float]]): distances in x-y plane for histogram of number of objects
@@ -423,9 +453,10 @@ class EDAManager:
 
     def visualize_ground_truth_objects(self, ground_truth_object_dict: Dict[str, List[DynamicObject]]) -> None:
         """[summary]
-        visualize ground truth objects
+        visualize ground truth objects.
 
         Args:
+        ----
             ground_truth_object_dict (Dict[str, List[DynamicObject]]):
                     Key of dict is name of object. This is used in directory name for saving graphs.
                     Value is list of ground truth object.
@@ -435,12 +466,14 @@ class EDAManager:
             self.visualize(ground_truth_objects, object_name, is_gt=True)
 
     def visualize_estimated_objects(
-        self, estimated_object_dict: Dict[str, List[DynamicObjectWithPerceptionResult]]
+        self,
+        estimated_object_dict: Dict[str, List[DynamicObjectWithPerceptionResult]],
     ) -> None:
         """[summary]
-        visualize estimated objects
+        visualize estimated objects.
 
         Args:
+        ----
             estimated_object_dict (Dict[str, List[DynamicObjectWithPerceptionResult]]]):
                     Key of dict is name of object. This is used in directory name for saving graphs.
                     Value is list of estimated object.
@@ -458,9 +491,10 @@ class EDAManager:
         confidence_threshold: float,
     ) -> None:
         """[summary]
-        visualize TP, FP, FN objects and FP objects with high confidence
+        visualize TP, FP, FN objects and FP objects with high confidence.
 
         Args:
+        ----
             object_results (List[DynamicObjectWithPerceptionResult]):
                     list of estimated object
             ground_truth_objects (List[DynamicObject]):
@@ -525,11 +559,13 @@ class EDAManager:
         is_gt: bool,
     ) -> None:
         """[summary]
-        visualize objects
+        visualize objects.
 
         Args:
+        ----
             objects (Union[List[DynamicObject], List[DynamicObjectWithPerceptionResult]]):
-                    estimated objects(List[DynamicObject]) or ground truth objects(List[DynamicObjectWithPerceptionResult]]) which you want to visualize
+                    estimated objects(List[DynamicObject]) or ground truth objects
+                    (List[DynamicObjectWithPerceptionResult]]) which you want to visualize
             objects_name (str):
                     name of object. This is used in directory name for saving graphs.
             is_gt (bool):
@@ -544,7 +580,9 @@ class EDAManager:
             length_lim_dict=self.length_lim_dict,
         )
         visualizer.hist2d_object_center_xy_for_each_class(
-            self.class_names, xlim_dict=self.xylim_dict, ylim_dict=self.xylim_dict
+            self.class_names,
+            xlim_dict=self.xylim_dict,
+            ylim_dict=self.xylim_dict,
         )
         if is_gt:
             visualizer.hist2d_object_num_points_for_each_class(self.class_names)
@@ -562,7 +600,9 @@ class EDAManager:
         report TP, FP, FN rate.
 
         Args:
-            tp_num, fp_num, estimated_objects_num, fn_num, ground_truth_num (int): number of TP, FP, estimated objects, FN, ground truths
+        ----
+            tp_num, fp_num, estimated_objects_num, fn_num, ground_truth_num (int): number of TP, FP,
+                estimated objects, FN, ground truths
         """
         tp_rate_precision = tp_num / estimated_objects_num
         fp_rate = fp_num / estimated_objects_num

@@ -12,26 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import ABC
-from abc import abstractmethod
 import datetime
 import os
 import os.path as osp
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Sequence
-from typing import Tuple
-from typing import Union
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Sequence, Tuple, Union
 
-from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.evaluation_task import set_task
+from perception_eval.common.evaluation_task import EvaluationTask, set_task
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.schema import FrameID
 
 
 class _EvaluationConfigBase(ABC):
-    """Abstract base class for evaluation config
+    """Abstract base class for evaluation config.
 
     Directory structure to save log and visualization result is following
     - result_root_directory/
@@ -39,6 +32,7 @@ class _EvaluationConfigBase(ABC):
         └── visualization_directory/
 
     Attributes:
+    ----------
         dataset_paths (List[str]): Dataset paths list.
         frame_ids (List[FrameID]): List of FrameID instances, where objects are with respect.
         result_root_directory (str): Directory path to save result.
@@ -62,6 +56,7 @@ class _EvaluationConfigBase(ABC):
             SensingEvaluationManager: ["sensing"]
 
     Args:
+    ----
         dataset_paths (List[str]): Dataset paths list.
         frame_id (Union[str, Sequence[str]]): FrameID(s) in string, where objects are with respect.
         result_root_directory (str): Directory path to save result.
@@ -103,12 +98,13 @@ class _EvaluationConfigBase(ABC):
             [FrameID.from_value(frame_id)] if isinstance(frame_id, str) else [FrameID.from_value(f) for f in frame_id]
         )
         if self.evaluation_task.is_3d() and len(self.frame_ids) != 1:
-            raise ValueError(f"For 3D task, FrameID must be 1, but got {len(self.frame_ids)}")
+            msg = f"For 3D task, FrameID must be 1, but got {len(self.frame_ids)}"
+            raise ValueError(msg)
 
         self.load_raw_data: bool = load_raw_data
 
         # directory
-        time = "{0:%Y%m%d_%H%M%S}".format(datetime.datetime.now())
+        time = f"{datetime.datetime.now():%Y%m%d_%H%M%S}"
         self.result_root_directory: str = result_root_directory.format(TIME=time)
         self.__log_directory: str = osp.join(self.result_root_directory, "log")
         self.__visualization_directory: str = osp.join(self.result_root_directory, "visualization")
@@ -125,17 +121,21 @@ class _EvaluationConfigBase(ABC):
         """Check if specified tasks are supported.
 
         Args:
+        ----
             evaluation_config_dict (Dict[str, Any]): The config has params as dict.
 
         Returns:
+        -------
             evaluation_task (EvaluationTask): Evaluation task.
 
         Raises:
+        ------
             ValueError: If the keys of input config are unsupported.
         """
         task: str = evaluation_config_dict["evaluation_task"]
         if task not in self.support_tasks:
-            raise ValueError(f"Unsupported task: {task}\nSupported tasks: {self.support_tasks}")
+            msg = f"Unsupported task: {task}\nSupported tasks: {self.support_tasks}"
+            raise ValueError(msg)
 
         # evaluation task
         evaluation_task: EvaluationTask = set_task(task)
@@ -154,13 +154,14 @@ class _EvaluationConfigBase(ABC):
         """Extract filtering and metrics parameters from evaluation config.
 
         Args:
+        ----
             evaluation_config_dict (Dict[str, Any])
 
         Returns:
+        -------
             filter_params (Dict[str, Any]): filtering parameters.
             metrics_params (Dict[str, Any]): metrics parameters.
         """
-        pass
 
     @property
     def log_directory(self) -> str:

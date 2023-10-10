@@ -12,19 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import ABCMeta
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from math import pi
 
 import numpy as np
+
 from perception_eval.common.schema import FrameID
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 
 
 class TPMetrics(metaclass=ABCMeta):
-    """Tp metrics meta class
+    """Tp metrics meta class.
 
     Attributes:
+    ----------
         mode (str): TP metrics name.
     """
 
@@ -38,22 +39,23 @@ class TPMetrics(metaclass=ABCMeta):
         self,
         object_result: DynamicObjectWithPerceptionResult,
     ) -> float:
-        """Get TP metrics value
+        """Get TP metrics value.
 
         Args:
+        ----
             object_result (DynamicObjectWithPerceptionResult): Object result.
 
         Returns:
+        -------
             float: TP metrics value
         """
-        pass
 
 
 class TPMetricsAp(TPMetrics):
-    """
-    Ap metrics class
+    """Ap metrics class.
 
     Attributes:
+    ----------
         mode (str): TP metrics name that is TPMetricsAp.
     """
 
@@ -68,19 +70,21 @@ class TPMetricsAp(TPMetrics):
         This function always returns 1.0.
 
         Args:
+        ----
             object_result (DynamicObjectWithPerceptionResult): Object result.
 
         Returns:
+        -------
             float: TP value, 1.0.
         """
         return 1.0
 
 
 class TPMetricsAph(TPMetrics):
-    """
-    Aph metrics class
+    """Aph metrics class.
 
     Attributes:
+    ----------
         mode (str): TP metrics name that is TPMetricsAph.
     """
 
@@ -95,9 +99,11 @@ class TPMetricsAph(TPMetrics):
         APH is used in evaluation for waymo dataset.
 
         Args:
+        ----
             object_result (DynamicObjectWithPerceptionResult): Object result.
 
         Returns:
+        -------
             float: The heading similarity rate using for APH.
                    Calculate heading accuracy (1.0 - diff_heading / pi), instead of 1.0 for AP.
                    The minimum rate is 0 and maximum rate is 1.
@@ -126,6 +132,7 @@ class TPMetricsConfidence(TPMetrics):
     """Confidence TP class.
 
     Attributes:
+    ----------
         mode (str): TP metrics name that is TPMetricsConfidence.
     """
 
@@ -136,9 +143,11 @@ class TPMetricsConfidence(TPMetrics):
         Get TP (True positive) value, the heading similarity rate using with confidence.
 
         Args:
+        ----
             object_result (DynamicObjectWithPerceptionResult): The object result
 
         Returns:
+        -------
             float: TP (True positive) value, confidence score of estimated object.
         """
         return object_result.estimated_object.semantic_score

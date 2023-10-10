@@ -13,32 +13,29 @@
 # limitations under the License.
 
 import logging
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Sequence
-from typing import Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union
 
-from nuimages import NuImages
 import numpy as np
+from nuimages import NuImages
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
-from perception_eval.common import ObjectType
-from perception_eval.common.dataset_utils import _sample_to_frame
-from perception_eval.common.dataset_utils import _sample_to_frame_2d
+from tqdm import tqdm
+
+from perception_eval.common.dataset_utils import _sample_to_frame, _sample_to_frame_2d
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
-from tqdm import tqdm
+
+if TYPE_CHECKING:
+    from perception_eval.common import ObjectType
 
 
 class FrameGroundTruth:
-    """
-    Ground truth data per frame
+    """Ground truth data per frame.
 
     Attributes:
+    ----------
         unix_time (float): The unix time for the frame [us].
         frame_name (str): The file name for the frame.
         objects (List[DynamicObject]): Objects data.
@@ -51,6 +48,7 @@ class FrameGroundTruth:
         raw_data (Optional[Dict[str, numpy.ndarray]]): Raw data for each sensor modality.
 
     Args:
+    ----
         unix_time (int): The unix time for the frame [us]
         frame_name (str): The file name for the frame
         objects (List[DynamicObject]): Objects data.
@@ -81,10 +79,10 @@ def load_all_datasets(
     frame_id: Union[FrameID, Sequence[FrameID]],
     load_raw_data: bool = False,
 ) -> List[FrameGroundTruth]:
-    """
-    Load tier4 datasets.
+    """Load tier4 datasets.
 
     Args:
+    ----
         dataset_paths (List[str]): The list of root paths to dataset
         evaluation_tasks (EvaluationTask): The evaluation task
         label_converter (LabelConverter): Label convertor
@@ -93,9 +91,11 @@ def load_all_datasets(
             For 3D task, pointcloud will be loaded. For 2D, image will be loaded. Defaults to False.
 
     Returns:
+    -------
         List[FrameGroundTruth]: FrameGroundTruth instance list.
 
     Examples:
+    --------
         >>> evaluation_task = EvaluationTask.DETECTION
         >>> converter = LabelConverter(evaluation_task, False, "autoware")
         >>> load_all_datasets(["./data"], evaluation_task, converter, "base_link")
@@ -108,11 +108,12 @@ def load_all_datasets(
     elif isinstance(frame_id, (list, tuple)):
         frame_ids = list(frame_id)
     else:
-        raise TypeError(f"Unexpected frame id type: {type(frame_id)}")
+        msg = f"Unexpected frame id type: {type(frame_id)}"
+        raise TypeError(msg)
 
     logging.info(
         f"config: load_raw_data: {load_raw_data}, evaluation_task: {evaluation_task}, "
-        f"frame_id: {[fr.value for fr in frame_ids]}"
+        f"frame_id: {[fr.value for fr in frame_ids]}",
     )
 
     all_datasets: List[FrameGroundTruth] = []
@@ -136,9 +137,10 @@ def _load_dataset(
     frame_ids: List[FrameID],
     load_raw_data: bool,
 ) -> List[FrameGroundTruth]:
-    """
-    Load one tier4 dataset.
+    """Load one tier4 dataset.
+
     Args:
+    ----
         dataset_path (str): The root path to dataset.
         evaluation_tasks (EvaluationTask): The evaluation task.
         label_converter (LabelConverter): LabelConvertor instance.
@@ -148,7 +150,6 @@ def _load_dataset(
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
     """
-
     nusc: NuScenes = NuScenes(version="annotation", dataroot=dataset_path, verbose=False)
     nuim: Optional[NuImages] = (
         NuImages(version="annotation", dataroot=dataset_path, verbose=False) if evaluation_task.is_2d() else None
@@ -156,7 +157,7 @@ def _load_dataset(
     helper: PredictHelper = PredictHelper(nusc)
 
     if len(nusc.visibility) == 0:
-        logging.warn("visibility is not annotated")
+        logging.warning("visibility is not annotated")
 
     # Load category list
     category_list = []
@@ -199,9 +200,13 @@ def _get_str_objects_number_info(
     label_converter: LabelConverter,
 ) -> str:
     """Get str for the information of object label number.
+
     Args:
+    ----
         label_converter (LabelConverter): label convertor.
+
     Returns:
+    -------
         str: string.
     """
     str_: str = ""
@@ -216,21 +221,24 @@ class DatasetLoadingError(Exception):
 
 
 def _get_sample_tokens(nuscenes_sample: dict) -> List[Any]:
-    """Get sample tokens
+    """Get sample tokens.
 
     Args:
+    ----
         nuscenes_sample (dict): nusc.sample
 
     Raises:
+    ------
         DatasetLoadingError: Dataset loading error
 
     Returns:
+    -------
         List[Any]: [description]
     """
-
     sample_tokens_all: List[Any] = [s["token"] for s in nuscenes_sample]
     if len(sample_tokens_all) < 1:
-        raise DatasetLoadingError("Error: Database has no samples!")
+        msg = "Error: Database has no samples!"
+        raise DatasetLoadingError(msg)
 
     sample_tokens = []
     for sample_token in sample_tokens_all:
@@ -247,11 +255,13 @@ def get_now_frame(
     """Select the ground truth frame whose unix time is most close to args unix time from dataset.
 
     Args:
+    ----
         ground_truth_frames (List[FrameGroundTruth]): FrameGroundTruth instance list.
         unix_time (int): Unix time [us].
         threshold_min_time (int): Min time for unix time difference [us].
 
     Returns:
+    -------
         Optional[FrameGroundTruth]:
                 The ground truth frame whose unix time is most close to args unix time
                 from dataset.
@@ -259,17 +269,19 @@ def get_now_frame(
                 ground truth frame is larger than threshold_min_time, return None.
 
     Examples:
+    --------
         >>> ground_truth_frames = load_all_datasets(...)
         >>> get_now_frame(ground_truth_frames, 1624157578750212, 7500)
         <perception_eval.common.dataset.FrameGroundTruth object at 0x7f66040c36a0>
     """
-
     # error handling
     threshold_max_time = 10**17
     if unix_time > threshold_max_time:
+        msg = (
+            f"Error: The unit time of unix time is micro second,             but you may input nano second {unix_time}"
+        )
         raise DatasetLoadingError(
-            f"Error: The unit time of unix time is micro second,\
-             but you may input nano second {unix_time}"
+            msg,
         )
 
     ground_truth_now_frame: FrameGroundTruth = ground_truth_frames[0]
@@ -283,7 +295,7 @@ def get_now_frame(
     if min_time > threshold_min_time:
         logging.info(
             f"Now frame is {ground_truth_now_frame.unix_time} and time difference \
-                 is {min_time / 1000} ms > {threshold_min_time / 1000} ms"
+                 is {min_time / 1000} ms > {threshold_min_time / 1000} ms",
         )
         return None
     else:

@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Tuple
 import unittest
+from typing import Any, Dict, List, Tuple
+
+import pytest
 
 from perception_eval.config import PerceptionEvaluationConfig
 
@@ -43,7 +42,6 @@ class TestPerceptionEvaluationConfig(unittest.TestCase):
             "merge_similar_labels": False,
             "allow_matching_unknown": True,
         }
-        # patterns: (frame_id, evaluation_task)
         patterns: List[Tuple(str, Dict[str, Any])] = [
             ("map", {"evaluation_task": "foo"}),
             ("base_link", {"evaluation_task": "foo"}),
@@ -51,12 +49,11 @@ class TestPerceptionEvaluationConfig(unittest.TestCase):
             (["cam_front", "cam_back"], {"evaluation_task": "detection"}),
         ]
         for n, (frame_id, evaluation_task) in enumerate(patterns):
-            with self.subTest(f"Test if it can detect the exception of task keys: {n + 1}"):
-                with self.assertRaises(ValueError):
-                    evaluation_config_dict.update(evaluation_task)
-                    _ = PerceptionEvaluationConfig(
-                        dataset_paths="/tmp",
-                        frame_id=frame_id,
-                        result_root_directory="/tmp",
-                        evaluation_config_dict=evaluation_config_dict,
-                    )
+            with self.subTest(f"Test if it can detect the exception of task keys: {n + 1}"), pytest.raises(ValueError):
+                evaluation_config_dict.update(evaluation_task)
+                _ = PerceptionEvaluationConfig(
+                    dataset_paths="/tmp",
+                    frame_id=frame_id,
+                    result_root_directory="/tmp",
+                    evaluation_config_dict=evaluation_config_dict,
+                )

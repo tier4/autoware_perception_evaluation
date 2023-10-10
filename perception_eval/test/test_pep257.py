@@ -24,8 +24,8 @@ except ImportError as err:
     reason = str(err)
 
 
-@pytest.mark.linter
-@pytest.mark.pep257
+@pytest.mark.linter()
+@pytest.mark.pep257()
 @pytest.mark.skipif(no_ament, reason=reason)
 def test_pep257():
     rc = main(argv=[".", "test"])

@@ -12,12 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Sequence
-from typing import Tuple
-from typing import Union
+from typing import Any, Dict, List, Sequence, Tuple, Union
 
 from ._evaluation_config_base import _EvaluationConfigBase
 
@@ -31,6 +26,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         └── visualization_directory/
 
     Attributes:
+    ----------
         dataset_paths (List[str]): Dataset paths list.
         frame_ids (List[FrameID]): List of FrameID instances, where objects are with respect.
         result_root_directory (str): Directory path to save result.
@@ -45,6 +41,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         metrics_params (Dict[str, Any]): Metrics parameters.
 
     Args:
+    ----
         dataset_paths (List[str]): Dataset paths list.
         frame_id (Union[str, Sequence[str]]): FrameID(s) in string, where objects are with respect.
         result_root_directory (str): Directory path to save result.
@@ -86,9 +83,13 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         evaluation_config_dict: Dict[str, Any],
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """Extract parameters.
+
         Args:
+        ----
             evaluation_config_dict (Dict[str, Any]): Configuration as dict.
+
         Returns:
+        -------
             f_params (Dict[str, Any]): Parameters for filtering.
             m_params (Dict[str, Any]): Parameters for metrics.
         """

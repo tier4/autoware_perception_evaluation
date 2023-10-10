@@ -24,8 +24,8 @@ except ImportError as err:
     reason = str(err)
 
 
-@pytest.mark.copyright
-@pytest.mark.linter
+@pytest.mark.copyright()
+@pytest.mark.linter()
 @pytest.mark.skipif(no_ament, reason=reason)
 def test_copyright():
     rc = main(argv=[".", "test"])
