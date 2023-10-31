@@ -459,9 +459,7 @@ def _sample_to_frame_2d(
     frame_id_mapping: Dict[str, FrameID] = {}
     for frame_id_ in frame_ids:
         # TODO update
-        scene_descriptions: List[str] = nusc.get("scene", sample["scene_token"])[
-            "description"
-        ].split(", ")
+        scene_descriptions: List[str] = nusc.get("scene", sample["scene_token"])["description"].split(", ")
         if "regulatory_element" in scene_descriptions:
             for camera_type in (
                 FrameID.CAM_TRAFFIC_LIGHT_FAR.value.upper(),

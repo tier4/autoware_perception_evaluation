@@ -18,11 +18,7 @@ def refine_path(path):
 def main(map_path: str):
     # load map obj
     map_obj = TrafficLightLoader(map_path)
-    print(
-        map_obj.get_distance_to_traffic_light_group(
-            "179563", np.array([89434.6492, 42630.8311, 5.686])
-        )
-    )
+    print(map_obj.get_distance_to_traffic_light_group("179563", np.array([89434.6492, 42630.8311, 5.686])))
 
     print(map_obj)
 
