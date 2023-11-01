@@ -469,7 +469,7 @@ def _sample_to_frame_2d(
                     continue
                 sample_data_token = nusc_sample["data"][camera_type]
                 sample_data_tokens.append(sample_data_token)
-                frame_id_mapping[sample_data_token] = FrameID.TRAFFIC_LIGHT  # frame_id_
+                frame_id_mapping[sample_data_token] = FrameID.TRAFFIC_LIGHT
         else:
             camera_type: str = frame_id_.value.upper()
             if nusc_sample["data"].get(camera_type) is None:
