@@ -383,7 +383,7 @@ def _get_tracking_data(
     past_shapes: List[Shape] = []
     past_velocities: List[Tuple[float, float, float]] = []
     for record_ in past_records_:
-        translation: Tuple[float, float, float] = (float(t) for t in record_["translation"])
+        translation: Tuple[float, float, float] = tuple(float(t) for t in record_["translation"])
         past_positions.append(translation)
         past_orientations.append(Quaternion(record_["rotation"]))
         size: Tuple[float, float, float] = tuple(float(s) for s in record_["size"])
