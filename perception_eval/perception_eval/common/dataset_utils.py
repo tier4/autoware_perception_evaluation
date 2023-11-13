@@ -386,7 +386,7 @@ def _get_tracking_data(
         translation: Tuple[float, float, float] = (float(t) for t in record_["translation"])
         past_positions.append(translation)
         past_orientations.append(Quaternion(record_["rotation"]))
-        size: Tuple[float, float, float] = (float(s) for s in record_["size"])
+        size: Tuple[float, float, float] = tuple(float(s) for s in record_["size"])
         past_shapes.append(Shape(shape_type=ShapeType.BOUNDING_BOX, size=size))
         past_velocities.append(nusc.box_velocity(record_["token"]))
 
