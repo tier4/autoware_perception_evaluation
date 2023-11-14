@@ -20,7 +20,50 @@ from pathlib import Path
 
 from perception_eval.tool import PerceptionAnalyzer3DField
 
+import matplotlib.pyplot as plt
 import simplejson as json
+
+class PerceptionFieldPlot:
+    def __init__(self, figname:str)-> None:
+        self.name : str = figname
+        self.figure = plt.figure(self.name)
+        self.ax = self.figure.add_subplot(111)
+        self.ax.set_aspect('equal')
+    
+
+def visualize(field:PerceptionAnalyzer3DField, result_root_directory:str)->None:
+    
+    # Plot
+    figures = []
+    figures.append(PerceptionFieldPlot("num_pair"))
+    figures[-1].ax.matshow(field.num_pair, cmap='jet')
+  
+    figures.append(PerceptionFieldPlot("delta_mean"))
+    figures[-1].ax.matshow(field.error_delta_mean, cmap='jet')
+
+    figures.append(PerceptionFieldPlot("ratio_tp"))
+    figures[-1].ax.matshow(field.ratio_tp, cmap='jet')
+
+    figures.append(PerceptionFieldPlot("ratio_fp"))
+    figures[-1].ax.matshow(field.ratio_fp, cmap='jet')
+
+    figures.append(PerceptionFieldPlot("delta_mean_map"))
+    cs = figures[-1].ax.contourf(field.x, field.y, field.error_delta_mean, cmap='jet', corner_mask=False)
+    figures[-1].ax.contour(cs, colors='k')
+    figures[-1].ax.grid(c='k', ls='-', alpha=0.3)
+    cbar = figures[-1].figure.colorbar(cs)
+    figures[-1].ax.set_xlabel("x [m]")
+    figures[-1].ax.set_ylabel("y [m]")
+    figures[-1].ax.set_aspect('equal')
+    figures[-1].ax.set_xlim([-110, 110])
+    figures[-1].ax.set_ylim([-110, 110])
+
+    # Save result
+    plot_file_path = Path(result_root_directory, "plot")
+        
+    for fig in figures:
+        fig.figure.savefig(Path(plot_file_path, fig.name + ".png"))
+
 
 
 class PerceptionLoadDatabaseResult:
@@ -37,21 +80,23 @@ class PerceptionLoadDatabaseResult:
             analyzer.add_from_pkl(filepath.as_posix())
 
         # Analyze
-          # conditions: object class, grid type, error/uncertainty...
-        score_field, error_field = analyzer.analyze()
+        # conditions: object class, grid type, error/uncertainty...
 
+        # All classes
+        error_field, uncertainty_field = analyzer.analyze()
+
+        # Specific class
+        # labels: car, truck, bicycle, pedestrian, motorbike
+        # src/simulator/perception_eval/docs/en/perception/label.md
+        # error_field, _ = analyzer.analyze(label="car") 
 
         print(analyzer.df)
-
+        # print(analyzer.df.columns)
 
         # Plot
+        visualize(error_field, result_root_directory)
 
-
-
-        # # Save result
-        # result_file_path = Path(result_root_directory, "database_result.json")
-        # with result_file_path.open("w") as f:
-        #     json.dump(database_metrics, f)
+        plt.show()
 
 
 def main() -> None:
