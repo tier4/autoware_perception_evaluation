@@ -1,0 +1,67 @@
+# cspell: ignore autolabeler
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
+change-template: "* $TITLE (#$NUMBER) @$AUTHOR"
+
+template: |
+  ## What's Changed
+
+  $CHANGES
+
+categories:
+  - title: "🚀 Features"
+    labels: ["enhancement"]
+  - title: "🐛 Bug Fixes"
+    labels: ["bug"]
+  - title: "🔧 Refactoring"
+    labels: ["refactor"]
+  - title: "📖 Documents"
+    labels: ["documentation"]
+  - title: "🔎 Test"
+    labels: ["ci"]
+  - title: "🗳️ Dependency update"
+    labels: ["dependencies"]
+  - title: "🧰 Maintenance"
+    labels: ["chore"]
+  - title: "⏪ Revert"
+    labels: ["revert"]
+
+autolabeler:
+  - label: "enhancement"
+    branch:
+      - "/^feat(ure)?[/-].+/"
+  - label: "documentation"
+    branch:
+      - "/^docs[/-].+/"
+    files:
+      - "*.md"
+      - "**/*.md"
+      - docs/**/*
+  - label: "bug"
+    branch:
+      - "/^fix[/-].+/"
+  - label: refactor
+    branch:
+      - "/^refactor[/-].+/"
+      - "/^perf[/-].+/"
+      - "/^style[/-].+/"
+  - label: ci
+    branch:
+      - "/^ci[/-].+/"
+      - "/^test[/-].+/"
+    files:
+      - .github/**/*
+      - "tests/**/*"
+      - .gitignore
+  - label: dependencies
+    branch:
+      - "/^chore/(deps/)[/-].+/"
+    files:
+      - "pyproject.toml"
+      - "poetry.lock"
+  - label: "chore"
+    branch:
+      - "/^chore[/-].+/"
+  - label: "revert"
+    branch:
+      - "/^revert[/-].+/"
