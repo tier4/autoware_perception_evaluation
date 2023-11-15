@@ -19,8 +19,9 @@ from typing import List
 from typing import Tuple
 import unittest
 
+from perception_eval.common import DynamicObject
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
-from perception_eval.common.object import DynamicObject
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
@@ -37,6 +38,7 @@ class TestMap(unittest.TestCase):
         self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
+        self.evaluation_task: EvaluationTask = EvaluationTask.DETECTION
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
             AutowareLabel.BICYCLE,
@@ -70,12 +72,8 @@ class TestMap(unittest.TestCase):
             (2.5, 0.0, 0.0),
         ]
         for diff_distance, ans_map, ans_maph in patterns:
-            with self.subTest(
-                "Test mAP and mAPH with center distance matching for translation difference."
-            ):
-                diff_distance_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+            with self.subTest("Test mAP and mAPH with center distance matching for translation difference."):
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
@@ -98,12 +96,11 @@ class TestMap(unittest.TestCase):
                 )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
-                object_results_dict: Dict[
-                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
-                ] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -154,12 +151,8 @@ class TestMap(unittest.TestCase):
         ]
 
         for diff_yaw, ans_map, ans_maph in patterns:
-            with self.subTest(
-                "Test mAP and mAPH with center distance matching for yaw difference."
-            ):
-                diff_yaw_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+            with self.subTest("Test mAP and mAPH with center distance matching for yaw difference."):
+                diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
@@ -182,12 +175,11 @@ class TestMap(unittest.TestCase):
                 )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
-                object_results_dict: Dict[
-                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
-                ] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -218,8 +210,9 @@ class TestMap(unittest.TestCase):
         test patterns:
             Check if map and maph are almost correct.
         """
-        ans_map: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
-        ans_maph: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
+        # PEDESTRIAN and MOTORBIKE is not included -> each AP is `inf` and skipped in mAP computation.
+        ans_map: float = (1.0 + 1.0) / 2.0
+        ans_maph: float = (1.0 + 1.0) / 2.0
 
         # Filter objects
         dummy_estimated_objects = filter_objects(
@@ -239,12 +232,11 @@ class TestMap(unittest.TestCase):
         )
 
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )
-        object_results_dict: Dict[
-            AutowareLabel, List[DynamicObjectWithPerceptionResult]
-        ] = divide_objects(
+        object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
             object_results,
             self.target_labels,
         )
@@ -287,12 +279,8 @@ class TestMap(unittest.TestCase):
             (0.5, 0.0, 0.0),
         ]
         for diff_distance, ans_map, ans_maph in patterns:
-            with self.subTest(
-                "Test mAP and mAPH with iou bev matching for translation difference."
-            ):
-                diff_distance_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+            with self.subTest("Test mAP and mAPH with iou bev matching for translation difference."):
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
@@ -315,13 +303,12 @@ class TestMap(unittest.TestCase):
                 )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
 
-                object_results_dict: Dict[
-                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
-                ] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -373,9 +360,7 @@ class TestMap(unittest.TestCase):
 
         for diff_yaw, ans_map, ans_maph in patterns:
             with self.subTest("Test mAP and mAPH with iou bev matching for yaw difference."):
-                diff_yaw_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+                diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
@@ -398,12 +383,11 @@ class TestMap(unittest.TestCase):
                 )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
-                object_results_dict: Dict[
-                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
-                ] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -434,8 +418,9 @@ class TestMap(unittest.TestCase):
         test patterns:
             Check if map and maph are almost correct.
         """
-        ans_map: float = (1.0 + 0.0 + 0.0 + 0.0) / 4.0
-        ans_maph: float = (1.0 + 0.0 + 0.0 + 0.0) / 4.0
+        # PEDESTRIAN and MOTORBIKE is not included -> each AP is `inf` and skipped in mAP computation.
+        ans_map: float = (1.0 + 0.0) / 2.0
+        ans_maph: float = (1.0 + 0.0) / 2.0
 
         # Filter objects
         dummy_estimated_objects = filter_objects(
@@ -454,12 +439,11 @@ class TestMap(unittest.TestCase):
             min_point_numbers=self.min_point_numbers,
         )
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )
-        object_results_dict: Dict[
-            AutowareLabel, List[DynamicObjectWithPerceptionResult]
-        ] = divide_objects(
+        object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
             object_results,
             self.target_labels,
         )
@@ -503,9 +487,7 @@ class TestMap(unittest.TestCase):
         ]
         for diff_distance, ans_map, ans_maph in patterns:
             with self.subTest("Test mAP and mAPH with iou 3d matching for translation difference."):
-                diff_distance_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
@@ -528,12 +510,11 @@ class TestMap(unittest.TestCase):
                 )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
-                object_results_dict: Dict[
-                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
-                ] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -585,9 +566,7 @@ class TestMap(unittest.TestCase):
 
         for diff_yaw, ans_map, ans_maph in patterns:
             with self.subTest("Test mAP and mAPH with iou 3d matching for yaw difference."):
-                diff_yaw_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+                diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
@@ -610,12 +589,11 @@ class TestMap(unittest.TestCase):
                 )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
-                object_results_dict: Dict[
-                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
-                ] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -646,8 +624,9 @@ class TestMap(unittest.TestCase):
         test patterns:
             Check if map and maph are almost correct.
         """
-        ans_map: float = (1.0 + 0.0 + 0.0 + 0.0) / 4.0
-        ans_maph: float = (1.0 + 0.0 + 0.0 + 0.0) / 4.0
+        # PEDESTRIAN and MOTORBIKE is not included -> each AP is `inf` and skipped in mAP computation.
+        ans_map: float = (1.0 + 0.0) / 2.0
+        ans_maph: float = (1.0 + 0.0) / 2.0
 
         # Filter objects
         dummy_estimated_objects = filter_objects(
@@ -667,13 +646,12 @@ class TestMap(unittest.TestCase):
         )
 
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )
 
-        object_results_dict: Dict[
-            AutowareLabel, List[DynamicObjectWithPerceptionResult]
-        ] = divide_objects(
+        object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
             object_results,
             self.target_labels,
         )
@@ -716,12 +694,8 @@ class TestMap(unittest.TestCase):
             (2.5, 0.0, 0.0),
         ]
         for diff_distance, ans_map, ans_maph in patterns:
-            with self.subTest(
-                "Test mAP and mAPH with plane distance matching for translation difference."
-            ):
-                diff_distance_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+            with self.subTest("Test mAP and mAPH with plane distance matching for translation difference."):
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
@@ -744,13 +718,12 @@ class TestMap(unittest.TestCase):
                 )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
 
-                object_results_dict: Dict[
-                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
-                ] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -802,9 +775,7 @@ class TestMap(unittest.TestCase):
 
         for diff_yaw, ans_map, ans_maph in patterns:
             with self.subTest("Test mAP and mAPH with plane distance matching for yaw difference."):
-                diff_yaw_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+                diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
@@ -826,13 +797,12 @@ class TestMap(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
 
-                object_results_dict: Dict[
-                    AutowareLabel, List[DynamicObjectWithPerceptionResult]
-                ] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -885,8 +855,9 @@ class TestMap(unittest.TestCase):
         #   ap and aph: 0.0
         # MOTORBIKE: not estimated
         #   ap and aph: 0.0
-        ans_map: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
-        ans_maph: float = (1.0 + 1.0 + 0.0 + 0.0) / 4.0
+        # PEDESTRIAN and MOTORBIKE is not included -> each AP is `inf` and skipped in mAP computation.
+        ans_map: float = (1.0 + 1.0) / 2.0
+        ans_maph: float = (1.0 + 1.0) / 2.0
 
         # Filter objects
         dummy_estimated_objects = filter_objects(
@@ -906,12 +877,11 @@ class TestMap(unittest.TestCase):
         )
 
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )
-        object_results_dict: Dict[
-            AutowareLabel, List[DynamicObjectWithPerceptionResult]
-        ] = divide_objects(
+        object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
             object_results,
             self.target_labels,
         )

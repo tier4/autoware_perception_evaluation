@@ -24,7 +24,9 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import Label
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.status import FrameID
+from perception_eval.common.schema import FrameID
+from perception_eval.common.shape import Shape
+from perception_eval.common.shape import ShapeType
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.object_result import get_object_results
@@ -58,7 +60,7 @@ class TestEDAVisualizer:
             frame_id=FrameID.BASE_LINK,
             position=(-1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 1.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
@@ -66,7 +68,10 @@ class TestEDAVisualizer:
         ),
     )
 
+    evaluation_task: EvaluationTask = EvaluationTask.DETECTION
+
     object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        evaluation_task=evaluation_task,
         estimated_objects=dummy_estimated_objects,
         ground_truth_objects=dummy_ground_truth_objects,
     )
@@ -301,7 +306,7 @@ class TestEDAManager:
             frame_id=FrameID.BASE_LINK,
             position=(-1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 1.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
@@ -322,7 +327,7 @@ class TestEDAManager:
             frame_id=FrameID.BASE_LINK,
             position=(-1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(2.0, 4.0, 2.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(2.0, 4.0, 2.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.CAR, "car", []),
             velocity=(1.0, 1.0, 1.0),
@@ -334,7 +339,7 @@ class TestEDAManager:
             frame_id=FrameID.BASE_LINK,
             position=(1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(2.0, 4.0, 2.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(2.0, 4.0, 2.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.CAR, "car", []),
             velocity=(1.0, 1.0, 1.0),
@@ -346,7 +351,7 @@ class TestEDAManager:
             frame_id=FrameID.BASE_LINK,
             position=(1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 2.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 2.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.BICYCLE, "bicycle", []),
             velocity=(1.0, 1.0, 1.0),
@@ -358,7 +363,7 @@ class TestEDAManager:
             frame_id=FrameID.BASE_LINK,
             position=(-1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 2.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 2.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.BICYCLE, "bicycle", []),
             velocity=(1.0, 1.0, 1.0),
@@ -370,7 +375,7 @@ class TestEDAManager:
             frame_id=FrameID.BASE_LINK,
             position=(-1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 1.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
@@ -382,7 +387,7 @@ class TestEDAManager:
             frame_id=FrameID.BASE_LINK,
             position=(1.0, 10.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
-            size=(1.0, 1.0, 1.0),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
             semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
@@ -391,7 +396,10 @@ class TestEDAManager:
         ),
     ]
 
+    evaluation_task: EvaluationTask = EvaluationTask.DETECTION
+
     object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        evaluation_task=evaluation_task,
         estimated_objects=dummy_estimated_objects,
         ground_truth_objects=dummy_ground_truth_objects,
     )
@@ -422,7 +430,7 @@ class TestEDAManager:
         xylim_dict,
         width_lim_dict,
         length_lim_dict,
-        evaluation_task=EvaluationTask.DETECTION,
+        evaluation_task=evaluation_task,
         merge_similar_labels=False,
         show=False,
     )
@@ -438,33 +446,15 @@ class TestEDAManager:
         self.eda_manager.visualize_ground_truth_objects(ground_truth_object_dict)
 
         for object_name in ground_truth_object_dict.keys():
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist_object_count_for_each_distance.html"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist_object_dist2d_for_each_class.html"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist2d_object_wl_for_each_class.svg"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist2d_object_center_xy_for_each_class.svg"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist2d_object_num_points_for_each_class.svg"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/" + "profiling_" + object_name + "_all.html"
-            )
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_count_for_each_distance.html")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_dist2d_for_each_class.html")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_wl_for_each_class.svg")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_center_xy_for_each_class.svg")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_num_points_for_each_class.svg")
+            assert os.path.exists(self.root_path + "/" + object_name + "/" + "profiling_" + object_name + "_all.html")
             for class_name in self.class_names:
                 assert os.path.exists(
-                    self.root_path
-                    + "/"
-                    + object_name
-                    + "/"
-                    + "profiling_"
-                    + object_name
-                    + f"_{class_name}.html"
+                    self.root_path + "/" + object_name + "/" + "profiling_" + object_name + f"_{class_name}.html"
                 )
 
     def test_visualize_estimated_objects(self) -> None:
@@ -478,30 +468,14 @@ class TestEDAManager:
         self.eda_manager.visualize_estimated_objects(estimated_object_dict)
 
         for object_name in estimated_object_dict.keys():
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist_object_count_for_each_distance.html"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist_object_dist2d_for_each_class.html"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist2d_object_wl_for_each_class.svg"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist2d_object_center_xy_for_each_class.svg"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/" + "profiling_" + object_name + "_all.html"
-            )
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_count_for_each_distance.html")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_dist2d_for_each_class.html")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_wl_for_each_class.svg")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_center_xy_for_each_class.svg")
+            assert os.path.exists(self.root_path + "/" + object_name + "/" + "profiling_" + object_name + "_all.html")
             for class_name in self.class_names:
                 assert os.path.exists(
-                    self.root_path
-                    + "/"
-                    + object_name
-                    + "/"
-                    + "profiling_"
-                    + object_name
-                    + f"_{class_name}.html"
+                    self.root_path + "/" + object_name + "/" + "profiling_" + object_name + f"_{class_name}.html"
                 )
 
     def test_visualize_evaluated_results(self) -> None:
@@ -523,36 +497,18 @@ class TestEDAManager:
             "fp_results_with_high_confidence",
             "fn_ground_truths",
         ]:
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist_object_count_for_each_distance.html"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist_object_dist2d_for_each_class.html"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist2d_object_wl_for_each_class.svg"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist2d_object_center_xy_for_each_class.svg"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/" + "profiling_" + object_name + "_all.html"
-            )
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_count_for_each_distance.html")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_dist2d_for_each_class.html")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_wl_for_each_class.svg")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_center_xy_for_each_class.svg")
+            assert os.path.exists(self.root_path + "/" + object_name + "/" + "profiling_" + object_name + "_all.html")
             for class_name in self.class_names:
                 assert os.path.exists(
-                    self.root_path
-                    + "/"
-                    + object_name
-                    + "/"
-                    + "profiling_"
-                    + object_name
-                    + f"_{class_name}.html"
+                    self.root_path + "/" + object_name + "/" + "profiling_" + object_name + f"_{class_name}.html"
                 )
 
     def test_report_rates(self) -> None:
         """[summary]
         Check if output of report_rates is correct.
         """
-        self.eda_manager.report_rates(
-            tp_num=8, fp_num=12, estimated_objects_num=20, fn_num=2, ground_truth_num=10
-        )
+        self.eda_manager.report_rates(tp_num=8, fp_num=12, estimated_objects_num=20, fn_num=2, ground_truth_num=10)

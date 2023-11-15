@@ -21,8 +21,9 @@ from typing import List
 from typing import Tuple
 import unittest
 
+from perception_eval.common import DynamicObject
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
-from perception_eval.common.object import DynamicObject
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
@@ -41,6 +42,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
         self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
+        self.evaluation_task: EvaluationTask = EvaluationTask.TRACKING
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
             AutowareLabel.BICYCLE,
@@ -111,9 +113,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 0,
             ),
         ]
-        for n, (prev_diff_trans, cur_diff_trans, ans_mota, ans_motp, ans_id_switch) in enumerate(
-            patterns
-        ):
+        for n, (prev_diff_trans, cur_diff_trans, ans_mota, ans_motp, ans_id_switch) in enumerate(patterns):
             with self.subTest(f"Test sum CLEAR: {n + 1}"):
                 prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
@@ -143,6 +143,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Previous object results
                 prev_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=prev_estimated_objects,
                     ground_truth_objects=prev_ground_truth_objects,
                 )
@@ -177,6 +178,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Current object results
                 cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
@@ -255,6 +257,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Previous object results
                 prev_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=prev_estimated_objects,
                     ground_truth_objects=prev_ground_truth_objects,
                 )
@@ -292,6 +295,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Current object results
                 cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
@@ -348,9 +352,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
             ),
         ]
         for n, (prev_diff_yaw, cur_diff_yaw, ans_clears) in enumerate(patterns):
-            with self.subTest(
-                f"Test tracking score with center distance matching translated by yaw: {n + 1}"
-            ):
+            with self.subTest(f"Test tracking score with center distance matching translated by yaw: {n + 1}"):
                 prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
                     diff_distance=(0.0, 0.0, 0.0),
@@ -379,6 +381,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Previous object results
                 prev_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=prev_estimated_objects,
                     ground_truth_objects=prev_ground_truth_objects,
                 )
@@ -413,6 +416,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Current object results
                 cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
@@ -425,9 +429,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                         cur_object_results_dict[label],
                     ]
 
-                num_ground_truth_dict = divide_objects_to_num(
-                    cur_ground_truth_objects, self.target_labels
-                )
+                num_ground_truth_dict = divide_objects_to_num(cur_ground_truth_objects, self.target_labels)
 
                 tracking_score: TrackingMetricsScore = TrackingMetricsScore(
                     object_results_dict=object_results_dict,

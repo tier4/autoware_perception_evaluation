@@ -146,16 +146,15 @@ object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(est
   | `is_label_correct`    |          `bool`          | Whether the labels which estimation and GT object has are same |
   | `center_distance`     | `CenterDistanceMatching` | Distance of center between two objects                         |
   | `plane_distance`      | `PlaneDistanceMatching`  | Distance of the nearest plane between two objects              |
-  | `iou_bev`             |     `IOUBEVMatching`     | IOU score in BEV                                               |
+  | `iou_2d`              |     `IOU2DMatching`      | IOU score in 2-dimensions                                      |
   | `iou_3d`              |     `IOU3dMatching`      | IOU score in 3-dimensions                                      |
 
 - Methods
 
-  | Methods                    |     Returns      | Description                          |
-  | :------------------------- | :--------------: | :----------------------------------- |
-  | `get_matching()`           | `MatchingMethod` | Returns the corresponding matching   |
-  | `get_distance_error_bev()` |     `float`      | Returns the distance in BEV          |
-  | `is_result_correct()`      |      `bool`      | Returns the result if it is TP or FP |
+  | Methods               |     Returns      | Description                          |
+  | :-------------------- | :--------------: | :----------------------------------- |
+  | `get_matching()`      | `MatchingMethod` | Returns the corresponding matching   |
+  | `is_result_correct()` |      `bool`      | Returns the result if it is TP or FP |
 
 ```yaml
 [2022-08-09 18:56:45,237] [INFO] [perception_lsim.py:208 <module>] Object result example (frame_results[0].object_results[0]):

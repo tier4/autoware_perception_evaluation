@@ -196,12 +196,8 @@ class PlaneDistanceMatching(MatchingMethod):
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> None:
-        self.ground_truth_nn_plane: Optional[
-            Tuple[Tuple[float, float, float], Tuple[float, float, float]]
-        ] = None
-        self.estimated_nn_plane: Optional[
-            Tuple[Tuple[float, float, float], Tuple[float, float, float]]
-        ] = None
+        self.ground_truth_nn_plane: Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float]]] = None
+        self.estimated_nn_plane: Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float]]] = None
         super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
 
     def is_better_than(
@@ -252,18 +248,12 @@ class PlaneDistanceMatching(MatchingMethod):
         gt_corner_points: List[Tuple[float, float, float]] = polygon_to_list(gt_footprint_polygon)
 
         # Sort by 2d distance
-        lambda_func: Callable[[Tuple[float, float, float]], float] = lambda x: math.hypot(
-            x[0], x[1]
-        )
+        lambda_func: Callable[[Tuple[float, float, float]], float] = lambda x: math.hypot(x[0], x[1])
         pr_corner_points.sort(key=lambda_func)
         gt_corner_points.sort(key=lambda_func)
 
-        pr_left_point, pr_right_point = get_point_left_right(
-            pr_corner_points[0], pr_corner_points[1]
-        )
-        gt_left_point, gt_right_point = get_point_left_right(
-            gt_corner_points[0], gt_corner_points[1]
-        )
+        pr_left_point, pr_right_point = get_point_left_right(pr_corner_points[0], pr_corner_points[1])
+        gt_left_point, gt_right_point = get_point_left_right(gt_corner_points[0], gt_corner_points[1])
 
         # Calculate plane distance
         distance_left_point: float = abs(distance_points_bev(pr_left_point, gt_left_point))
@@ -271,9 +261,7 @@ class PlaneDistanceMatching(MatchingMethod):
         distance_squared: float = distance_left_point**2 + distance_right_point**2
         plane_distance: float = math.sqrt(distance_squared / 2.0)
 
-        self.ground_truth_nn_plane: Tuple[
-            Tuple[float, float, float], Tuple[float, float, float]
-        ] = (
+        self.ground_truth_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
             gt_left_point,
             gt_right_point,
         )
@@ -325,9 +313,7 @@ class IOU2dMatching(MatchingMethod):
         Raises:
             AssertionError: When `threshold_value` is not in [0.0, 1.0].
         """
-        assert (
-            0.0 <= threshold_value <= 1.0
-        ), f"threshold must be [0.0, 1.0], but got {threshold_value}."
+        assert 0.0 <= threshold_value <= 1.0, f"threshold must be [0.0, 1.0], but got {threshold_value}."
 
         if self.value is None:
             return False
@@ -413,9 +399,7 @@ class IOU3dMatching(MatchingMethod):
         Raises:
             AssertionError: When `threshold_value` is not in [0.0, 1.0].
         """
-        assert (
-            0.0 <= threshold_value <= 1.0
-        ), f"threshold must be [0.0, 1.0], but got {threshold_value}"
+        assert 0.0 <= threshold_value <= 1.0, f"threshold must be [0.0, 1.0], but got {threshold_value}"
 
         if self.value is None:
             return False

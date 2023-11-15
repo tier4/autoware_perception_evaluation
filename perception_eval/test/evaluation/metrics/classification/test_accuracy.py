@@ -19,6 +19,7 @@ from test.util.dummy_object import make_dummy_data2d
 from typing import List
 import unittest
 
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.classification.accuracy import ClassificationAccuracy
@@ -84,9 +85,9 @@ class AnswerAccuracy:
 
 class TestClassificationAccuracy(unittest.TestCase):
     def setUp(self) -> None:
-        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data2d(
-            use_roi=False
-        )
+        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data2d(use_roi=False)
+
+        self.evaluation_task: EvaluationTask = EvaluationTask.CLASSIFICATION2D
 
     def test_calculate_accuracy(self):
         # patterns: List[Tuple[AutowareLabel, AnswerAccuracy]]
@@ -109,6 +110,7 @@ class TestClassificationAccuracy(unittest.TestCase):
                 )
                 # Get object results
                 object_results = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=ground_truth_objects,
                 )
@@ -119,6 +121,4 @@ class TestClassificationAccuracy(unittest.TestCase):
                     target_labels=[target_label],
                 )
                 out_accuracy = AnswerAccuracy.from_accuracy(accuracy)
-                self.assertEqual(
-                    out_accuracy, answer, f"\nout = {str(out_accuracy)},\nanswer = {str(answer)}"
-                )
+                self.assertEqual(out_accuracy, answer, f"\nout = {str(out_accuracy)},\nanswer = {str(answer)}")

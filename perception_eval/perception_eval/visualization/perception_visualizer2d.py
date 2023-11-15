@@ -70,7 +70,6 @@ class PerceptionVisualizer2D:
         cls,
         result_root_directory: str,
         scenario_path: str,
-        camera_frame: str,
         **kwargs,
     ) -> PerceptionVisualizer2D:
         """Perception results made by logsim are reproduced from pickle file.
@@ -78,7 +77,7 @@ class PerceptionVisualizer2D:
         Args:
             result_root_directory (str): The root path to save result.
             scenario_path (str): The path of scenario file .yaml.
-            camera_frame (str): Frame name of camera, for example, CAM_FRONT or cam_front.
+
         Returns:
             PerceptionVisualizer2D: Visualizer instance.
         """
@@ -90,10 +89,14 @@ class PerceptionVisualizer2D:
         p_cfg: Dict[str, any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
         eval_cfg_dict: Dict[str, any] = p_cfg["evaluation_config_dict"]
 
+        eval_cfg_dict["label_prefix"] = (
+            "traffic_light" if eval_cfg_dict["UseCaseName"] == "traffic_light" else "autoware"
+        )
+        camera_types: Dict[str, int] = scenario_obj["Evaluation"]["Conditions"]["TargetCameras"]
+
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
-            frame_id=camera_frame,
-            merge_similar_labels=p_cfg.get("merge_similar_labels", False),
+            frame_id=list(camera_types.keys()),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
             load_raw_data=False,
@@ -109,9 +112,7 @@ class PerceptionVisualizer2D:
             numpy.ndarray: NDArray of multiple Axes instances.
         """
 
-        self.label_type: Union[
-            AutowareLabel, TrafficLightLabel
-        ] = self.__config.label_converter.label_type
+        self.label_type: Union[AutowareLabel, TrafficLightLabel] = self.__config.label_converter.label_type
 
         if self.label_type == TrafficLightLabel:
             self.camera_names: Tuple[str] = ("cam_traffic_light_near", "cam_traffic_light_far")
@@ -206,6 +207,7 @@ class PerceptionVisualizer2D:
             TP estimated    : Blue
             TP GT           : Red
             FP              : Cyan
+            TN              : Purple
             FN              : Orange
 
         Args:
@@ -222,9 +224,7 @@ class PerceptionVisualizer2D:
             raise RuntimeError("`raw_data`: must be loaded.")
         else:
             for i, camera_name in enumerate(self.camera_names):
-                img: Optional[np.ndarray] = frame_result.frame_ground_truth.raw_data.get(
-                    camera_name
-                )
+                img: Optional[np.ndarray] = frame_result.frame_ground_truth.raw_data.get(camera_name)
                 if self.label_type == TrafficLightLabel:
                     if img is not None:
                         axes[i].imshow(img)
@@ -265,6 +265,14 @@ class PerceptionVisualizer2D:
             color="cyan",
         )
         handles.append(Patch(color="cyan", label="FP"))
+
+        axes = self.plot_objects(
+            objects=frame_result.pass_fail_result.tn_objects,
+            is_ground_truth=True,
+            axes=axes,
+            color="purple",
+        )
+        handles.append(Patch(color="purple", label="TN"))
 
         axes = self.plot_objects(
             objects=frame_result.pass_fail_result.fn_objects,
@@ -326,9 +334,7 @@ class PerceptionVisualizer2D:
         object_text = "GT" if is_ground_truth else "Est"
         for object_ in objects:
             if isinstance(object_, DynamicObjectWithPerceptionResult):
-                object_: DynamicObject2D = (
-                    object_.ground_truth_object if is_ground_truth else object_.estimated_object
-                )
+                object_: DynamicObject2D = object_.ground_truth_object if is_ground_truth else object_.estimated_object
             if object_ is None or object_.roi is None:
                 continue
             box_top_left: np.ndarray = np.array(object_.roi.offset)
@@ -352,9 +358,7 @@ class PerceptionVisualizer2D:
                 axes[col].text(*box_bottom_left, s=box_text, fontsize="x-small", color=edge_color)
             else:
                 axes[row, col].add_patch(box)
-                axes[row, col].text(
-                    *box_bottom_left, s=box_text, fontsize="x-small", color=edge_color
-                )
+                axes[row, col].text(*box_bottom_left, s=box_text, fontsize="x-small", color=edge_color)
 
         return axes
 

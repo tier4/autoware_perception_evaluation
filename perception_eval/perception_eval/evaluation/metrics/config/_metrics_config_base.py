@@ -19,7 +19,6 @@ from typing import Optional
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
-from perception_eval.common.threshold import check_thresholds_list
 from perception_eval.common.threshold import set_thresholds
 
 
@@ -57,59 +56,23 @@ class _MetricsConfigBase(ABC):
 
         self.target_labels: List[LabelType] = target_labels
 
+        num_targets: int = len(target_labels)
         if center_distance_thresholds:
-            center_distance_thresholds_ = set_thresholds(
-                center_distance_thresholds,
-                len(target_labels),
-            )
-            self.center_distance_thresholds: List[List[float]] = check_thresholds_list(
-                center_distance_thresholds_,
-                self.target_labels,
-                MetricThresholdsError,
-            )
+            self.center_distance_thresholds = set_thresholds(center_distance_thresholds, num_targets, True)
         else:
             self.center_distance_thresholds = []
 
         if plane_distance_thresholds:
-            plane_distance_thresholds_ = set_thresholds(
-                plane_distance_thresholds,
-                len(target_labels),
-            )
-            self.plane_distance_thresholds: List[List[float]] = check_thresholds_list(
-                plane_distance_thresholds_,
-                self.target_labels,
-                MetricThresholdsError,
-            )
+            self.plane_distance_thresholds = set_thresholds(plane_distance_thresholds, num_targets, True)
         else:
             self.plane_distance_thresholds = []
 
         if iou_2d_thresholds:
-            iou_2d_thresholds_ = set_thresholds(
-                iou_2d_thresholds,
-                len(target_labels),
-            )
-            self.iou_2d_thresholds: List[List[float]] = check_thresholds_list(
-                iou_2d_thresholds_,
-                self.target_labels,
-                MetricThresholdsError,
-            )
+            self.iou_2d_thresholds = set_thresholds(iou_2d_thresholds, num_targets, True)
         else:
             self.iou_2d_thresholds = []
 
         if iou_3d_thresholds:
-            iou_3d_thresholds_ = set_thresholds(
-                iou_3d_thresholds,
-                len(target_labels),
-            )
-            self.iou_3d_thresholds: List[List[float]] = check_thresholds_list(
-                iou_3d_thresholds_,
-                self.target_labels,
-                MetricThresholdsError,
-            )
+            self.iou_3d_thresholds = set_thresholds(iou_3d_thresholds, num_targets, True)
         else:
             self.iou_3d_thresholds = []
-
-
-class MetricThresholdsError(Exception):
-    def __init__(self, message) -> None:
-        super().__init__(message)

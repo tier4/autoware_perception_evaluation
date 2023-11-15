@@ -28,24 +28,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.status import FrameID
+from perception_eval.common.schema import FrameID
 from perception_eval.evaluation.metrics.metrics import MetricsScore
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
-
-
-class MatchingStatus(Enum):
-    TP = "TP"
-    FP = "FP"
-    FN = "FN"
-
-    def __str__(self) -> str:
-        return self.value
-
-    def __eq__(self, other: Union[MatchingStatus, str]) -> bool:
-        if isinstance(other, str):
-            return self.value == other
-        return super().__eq__(other)
 
 
 class PlotAxes(Enum):
@@ -270,9 +256,7 @@ def generate_area_points(
         upper_rights: np.ndarray = np.stack([r_xx, r_yy], axis=-1).reshape(-1, 2)
         bottom_lefts: np.ndarray = np.stack([l_xx, l_yy], axis=-1).reshape(-1, 2)
     else:
-        raise ValueError(
-            f"The number of area division must be 1, 3 or 9, but got {num_area_division}"
-        )
+        raise ValueError(f"The number of area division must be 1, 3 or 9, but got {num_area_division}")
 
     return upper_rights, bottom_lefts
 

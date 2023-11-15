@@ -30,7 +30,7 @@ from matplotlib.transforms import Affine2D
 import numpy as np
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.status import FrameID
+from perception_eval.common.schema import FrameID
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation import PerceptionFrameResult
@@ -96,6 +96,7 @@ class PerceptionVisualizer3D:
         Args:
             result_root_directory (str): The root path to save result.
             scenario_path (str): The path of scenario file .yaml.
+
         Returns:
             PerceptionVisualizer3D
         """
@@ -107,10 +108,11 @@ class PerceptionVisualizer3D:
         p_cfg: Dict[str, any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
         eval_cfg_dict: Dict[str, any] = p_cfg["evaluation_config_dict"]
 
+        eval_cfg_dict["label_prefix"] = "autoware"
+
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id="base_link" if eval_cfg_dict["evaluation_task"] == "detection" else "map",
-            merge_similar_labels=p_cfg.get("merge_similar_labels", False),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
             load_raw_data=False,
@@ -195,6 +197,7 @@ class PerceptionVisualizer3D:
             TP estimated    : Blue
             TP GT           : Red
             FP              : Cyan
+            TN              : Purple
             FN              : Orange
 
         Args:
@@ -252,6 +255,16 @@ class PerceptionVisualizer3D:
         handles.append(Patch(color="cyan", label="FP"))
 
         axes = self.plot_objects(
+            objects=frame_result.pass_fail_result.tn_objects,
+            is_ground_truth=True,
+            axes=axes,
+            label="TN",
+            color="purple",
+            pointcloud=pointcloud,
+        )
+        handles.append(Patch(color="purple", label="TN"))
+
+        axes = self.plot_objects(
             objects=frame_result.pass_fail_result.fn_objects,
             is_ground_truth=True,
             axes=axes,
@@ -296,11 +309,7 @@ class PerceptionVisualizer3D:
             axes: Axes = plt.subplot()
 
         ego_color: np.ndarray = self.__cmap.get_simple("black")
-        ego_xy: np.ndarray = (
-            np.array((0.0, 0.0))
-            if self.config.frame_ids[0] == FrameID.BASE_LINK
-            else ego2map[:2, 3]
-        )
+        ego_xy: np.ndarray = np.array((0.0, 0.0)) if self.config.frame_ids[0] == FrameID.BASE_LINK else ego2map[:2, 3]
         box_width: float = size[0]
         box_height: float = size[1]
 
@@ -309,9 +318,7 @@ class PerceptionVisualizer3D:
 
         box_bottom_left: np.ndarray = ego_xy - (np.array(size) / 2.0)
         yaw: float = (
-            0.0
-            if self.config.frame_ids[0] == FrameID.BASE_LINK
-            else rotation_matrix_to_euler(ego2map[:3, :3])[2]
+            0.0 if self.config.frame_ids[0] == FrameID.BASE_LINK else rotation_matrix_to_euler(ego2map[:3, :3])[2]
         )
 
         transform: Affine2D = Affine2D().rotate_around(ego_xy[0], ego_xy[1], yaw) + axes.transData
@@ -380,9 +387,7 @@ class PerceptionVisualizer3D:
 
             # rotate box around center
             yaw: float = orientation.yaw_pitch_roll[0]
-            transform: Affine2D = (
-                Affine2D().rotate_around(box_center[0], box_center[1], yaw) + axes.transData
-            )
+            transform: Affine2D = Affine2D().rotate_around(box_center[0], box_center[1], yaw) + axes.transData
 
             box: Rectangle = Rectangle(
                 xy=box_bottom_left,
@@ -394,10 +399,11 @@ class PerceptionVisualizer3D:
             )
             axes.add_patch(box)
 
-            if self.config.evaluation_task == EvaluationTask.TRACKING:
-                box_velocity: np.ndarray = np.array(object_.state.velocity)[:2]
-                # plot heading
-                dx, dy = box_velocity
+            if object_.state.velocity is not None:
+                vx, vy = object_.state.velocity[:2]
+                v: float = np.linalg.norm((vx, vy))
+                dx = 3.0 * vx / v * np.cos(yaw) if v != 0.0 else 0.0
+                dy = 3.0 * vx / v * np.sin(yaw) if v != 0.0 else 0.0
 
                 axes.arrow(
                     x=box_center[0],

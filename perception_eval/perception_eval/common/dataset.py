@@ -30,7 +30,7 @@ from perception_eval.common.dataset_utils import _sample_to_frame_2d
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.status import FrameID
+from perception_eval.common.schema import FrameID
 from tqdm import tqdm
 
 
@@ -151,9 +151,7 @@ def _load_dataset(
 
     nusc: NuScenes = NuScenes(version="annotation", dataroot=dataset_path, verbose=False)
     nuim: Optional[NuImages] = (
-        NuImages(version="annotation", dataroot=dataset_path, verbose=False)
-        if evaluation_task.is_2d()
-        else None
+        NuImages(version="annotation", dataroot=dataset_path, verbose=False) if evaluation_task.is_2d() else None
     )
     helper: PredictHelper = PredictHelper(nusc)
 
@@ -182,9 +180,7 @@ def _load_dataset(
                 load_raw_data=load_raw_data,
             )
         else:
-            assert (
-                len(frame_ids) == 1
-            ), f"For 3D evaluation, only one Frame ID must be specified, but got {frame_ids}"
+            assert len(frame_ids) == 1, f"For 3D evaluation, only one Frame ID must be specified, but got {frame_ids}"
             frame = _sample_to_frame(
                 nusc=nusc,
                 helper=helper,

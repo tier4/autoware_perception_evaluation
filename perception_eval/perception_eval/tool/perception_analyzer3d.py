@@ -24,6 +24,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.util.math import get_pose_transform_matrix
@@ -35,7 +36,6 @@ from .utils import extract_area_results
 from .utils import generate_area_points
 from .utils import get_area_idx
 from .utils import get_metrics_info
-from .utils import MatchingStatus
 from .utils import PlotAxes
 
 # TODO: Refactor plot methods
@@ -48,21 +48,26 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         config (PerceptionEvaluationConfig): Configurations for evaluation parameters.
         target_labels (List[str]): Target labels list. (e.g. ["car", "pedestrian", "motorbike"]).
         all_labels (List[str]): Target labels list including "ALL". (e.g. ["ALL", "car", "pedestrian", "motorbike"]).
-        num_area_division (int): Number
-        upper_rights (numpy.ndarray)
-        bottom_lefts (numpy.ndarray)
-        columns (List[str])
-        state_columns (List[str])
-        df (pandas.DataFrame)
-        plot_directory (str)
-        frame_results (Dict[str, List[PerceptionFrameResult]])
-        num_frame (int)
-        num_scene (int)
-        num_ground_truth (int)
-        num_estimation (int)
-        num_tp (int)
-        num_fp (int)
-        num_fn (int)
+        num_area_division (int): Number of area separations.
+        upper_rights (numpy.ndarray): Upper right points of each separated area.
+        bottom_lefts (numpy.ndarray): Bottom left points of each separated area.
+        columns (List[str]): List of columns in `df`.
+            `["frame_id", "timestamp", "x", "y", "width", "length", "height", "yaw", "vx", "vy", "nn_point1", "nn_point2",\
+                "label", "label_name", "attributes", "confidence", "uuid", \
+                "num_points", "status", "area", "frame", "scene"]`.
+        state_columns (List[str]): List of state columns in `df`.
+            `["x", "y", "width", "length", "height", "yaw", "vx", "vy", "nn_point1", "nn_point2"]`.
+        plot_directory (str): Directory path to save plot.
+        frame_results (Dict[str, List[PerceptionFrameResult]]):
+            Hashmap of frame results, which key is the number of scene and value is frame results.
+        num_frame (int): Number of frames.
+        num_scene (int): Number of scenes.
+        num_ground_truth (int): Number of GT objects.
+        num_estimation (int): Number of estimations.
+        num_tp (int): Number of TP results.
+        num_fp (int): Number of FP results.
+        num_tn (int): Number of TN GT objects.
+        num_fn (int): Number of FN GT objects.
 
     Args:
         evaluation_config (PerceptionEvaluationConfig): Config used in evaluation.
@@ -114,10 +119,11 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         p_cfg: Dict[str, Any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
         eval_cfg_dict: Dict[str, Any] = p_cfg["evaluation_config_dict"]
 
+        eval_cfg_dict["label_prefix"] = "autoware"
+
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id="base_link" if eval_cfg_dict["evaluation_task"] == "detection" else "map",
-            merge_similar_labels=p_cfg.get("merge_similar_labels", False),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
             load_raw_data=False,
@@ -203,14 +209,17 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             gt_point1, gt_point2 = object_result.plane_distance.ground_truth_nn_plane
             est_point1, est_point2 = object_result.plane_distance.estimated_nn_plane
         elif isinstance(object_result, DynamicObject):
-            if status == MatchingStatus.FN:
-                gt: DynamicObject = object_result
-                estimation = None
-            elif status == MatchingStatus.FP:
+            if status == MatchingStatus.FP:
                 estimation: DynamicObject = object_result
                 gt = None
+            elif status == MatchingStatus.TN:
+                estimation = None
+                gt: DynamicObject = object_result
+            elif status == MatchingStatus.FN:
+                estimation = None
+                gt: DynamicObject = object_result
             else:
-                raise ValueError("For DynamicObject status must be in FP or FN, but got {status}")
+                raise ValueError(f"For DynamicObject status must be in FP/TN/FN, but got {status}")
             gt_point1, gt_point2 = None, None
             est_point1, est_point2 = None, None
         elif object_result is None:
@@ -228,11 +237,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         )
 
         if gt:
-            if gt.state.velocity:
+            if gt.state.velocity is not None:
                 gt_vx, gt_vy = gt.state.velocity[:2]
-                gt_vel = np.array([gt_vx, gt_vy, 0])
             else:
-                gt_vx, gt_vy = None, None
+                gt_vx, gt_vy = np.nan, np.nan
 
             if self.config.frame_ids[0] == "map":
                 src: np.ndarray = get_pose_transform_matrix(
@@ -242,8 +250,6 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 dst: np.ndarray = np.linalg.inv(ego2map).dot(src)
                 gt_x, gt_y = dst[:2, 3]
                 gt_yaw = rotation_matrix_to_euler(dst[:3, :3])[-1].item()
-                if gt.state.velocity:
-                    gt_vx, gt_vy = np.linalg.inv(ego2map[:3, :3]).dot(gt_vel)[:2]
             else:
                 gt_x, gt_y = gt.state.position[:2]
                 gt_yaw = gt.state.orientation.yaw_pitch_roll[0]
@@ -278,11 +284,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             gt_ret = {k: None for k in self.keys()}
 
         if estimation:
-            if estimation.state.velocity:
+            if estimation.state.velocity is not None:
                 est_vx, est_vy = estimation.state.velocity[:2]
-                est_vel = np.array([est_vx, est_vy, 0.0])
             else:
-                est_vx, est_vy = None, None
+                est_vx, est_vy = np.nan, np.nan
 
             if self.config.frame_ids[0] == "map":
                 src: np.ndarray = get_pose_transform_matrix(
@@ -292,14 +297,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 dst: np.ndarray = np.linalg.inv(ego2map).dot(src)
                 est_x, est_y = dst[:2, 3]
                 est_yaw = rotation_matrix_to_euler(dst[:3, :3])[-1].item()
-                if estimation.state.velocity:
-                    est_vx, est_vy = dst[:3, :3].dot(est_vel)[:2]
             else:
                 est_x, est_y = estimation.state.position[:2]
                 est_yaw = estimation.state.orientation.yaw_pitch_roll[0]
-                if estimation.state.velocity:
-                    est_rot = estimation.state.orientation.rotation_matrix
-                    est_vx, est_vy = np.linalg.inv(est_rot).dot(est_vel)[:2]
 
             est_w, est_l, est_h = estimation.state.size
 
@@ -321,7 +321,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 attributes=estimation.semantic_label.attributes,
                 confidence=estimation.semantic_score,
                 uuid=estimation.uuid,
-                num_points=None,
+                num_points=np.nan,
                 status=status,
                 area=area,
                 frame=frame_num,
@@ -346,10 +346,15 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             _column: Union[str, List[str]],
             _df: Optional[pd.DataFrame] = None,
         ) -> Dict[str, float]:
+            if len(_df) == 0:
+                logging.warning(f"The array of errors is empty for column: {_column}")
+                return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan)
+
             err: np.ndarray = self.calculate_error(_column, _df, remove_nan=True)
             if len(err) == 0:
                 logging.warning(f"The array of errors is empty for column: {_column}")
                 return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan)
+
             err_avg = np.average(err)
             err_rms = np.sqrt(np.square(err).mean())
             err_std = np.std(err)
@@ -363,7 +368,16 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         all_data = {}
         for label in self.all_labels:
             data = {}
-            df_ = df if label == "ALL" else df[df["label"] == label]
+            if label == "ALL":
+                df_ = df
+            else:
+                tp_gt_df = self.get_ground_truth(status="TP", label=label)
+                tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
+                if len(tp_index) == 0:
+                    logging.warning(f"There is no TP object for {label}.")
+                    df_ = pd.DataFrame()
+                else:
+                    df_ = self.df.loc[tp_index]
 
             data["x"] = _summarize("x", df_)
             data["y"] = _summarize("y", df_)
@@ -426,14 +440,14 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         show: bool = False,
         **kwargs,
     ) -> None:
-        """Plot states for each time/distance estimated and GT object in TP.
+        """Plot states for each time/distance estimated and GT object.
 
         Args:
             uuid (str): Target object's uuid.
             columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "vx", "vy"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
-            status (Optional[int]): Target status TP/FP/FN. If not specified, plot all status. Defaults to None.
+            status (Optional[int]): Target status TP/FP/TN/FN. If not specified, plot all status. Defaults to None.
             show (bool): Whether show the plotted figure. Defaults to False.
             **kwargs
         """
@@ -475,9 +489,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             columns: List[str] = [columns]
         if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
             raise ValueError(f"{columns} is unsupported for plot")
-        return super().plot_error(
-            columns=columns, mode=mode, heatmap=heatmap, show=show, bins=bins, **kwargs
-        )
+        return super().plot_error(columns=columns, mode=mode, heatmap=heatmap, show=show, bins=bins, **kwargs)
 
     def box_plot(
         self,

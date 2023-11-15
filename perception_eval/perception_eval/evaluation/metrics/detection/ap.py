@@ -83,9 +83,7 @@ class Ap:
         self.objects_results_num: int = len(all_object_results)
 
         # sort by confidence
-        lambda_func: Callable[
-            [DynamicObjectWithPerceptionResult], float
-        ] = lambda x: x.estimated_object.semantic_score
+        lambda_func: Callable[[DynamicObjectWithPerceptionResult], float] = lambda x: x.estimated_object.semantic_score
         all_object_results.sort(key=lambda_func, reverse=True)
 
         # tp and fp from object results ordered by confidence
@@ -102,8 +100,9 @@ class Ap:
         precision_list, recall_list = self.get_precision_recall_list()
 
         # AP
-        self.ap: float = self._calculate_ap(precision_list, recall_list)
-
+        self.ap: float = (
+            self._calculate_ap(precision_list, recall_list) if 0 < len(all_object_results) else float("inf")
+        )
         # average and standard deviation
         self.matching_average: Optional[float] = None
         self.matching_standard_deviation: Optional[float] = None
@@ -240,7 +239,7 @@ class Ap:
 
         # When result num is 0
         if len(object_results) == 0:
-            if self.num_ground_truth != 0:
+            if self.num_ground_truth == 0:
                 logger.debug("The size of object_results is 0")
                 return [], []
             else:
@@ -257,10 +256,14 @@ class Ap:
 
         for i, obj_result in enumerate(object_results):
             matching_threshold_ = get_label_threshold(
-                semantic_label=obj_result.estimated_object.semantic_label,
+                semantic_label=obj_result.ground_truth_object.semantic_label
+                if obj_result.ground_truth_object is not None
+                else obj_result.estimated_object.semantic_label,
                 target_labels=self.target_labels,
                 threshold_list=self.matching_threshold_list,
             )
+            if matching_threshold_ is None:
+                continue
             is_result_correct = obj_result.is_result_correct(
                 matching_mode=self.matching_mode,
                 matching_threshold=matching_threshold_,
@@ -312,9 +315,7 @@ class Ap:
 
         ap: float = 0.0
         for i in range(len(max_precision_list) - 1):
-            score: float = max_precision_list[i] * (
-                max_precision_recall_list[i] - max_precision_recall_list[i + 1]
-            )
+            score: float = max_precision_list[i] * (max_precision_recall_list[i] - max_precision_recall_list[i + 1])
             ap += score
 
         return ap
@@ -338,9 +339,7 @@ class Ap:
         matching_score_list: List[float] = [
             object_result.get_matching(matching_mode).value for object_result in object_results
         ]
-        matching_score_list_without_none = list(
-            filter(lambda x: x is not None, matching_score_list)
-        )
+        matching_score_list_without_none = list(filter(lambda x: x is not None, matching_score_list))
         if len(matching_score_list_without_none) == 0:
             return None, None
         mean: float = np.mean(matching_score_list_without_none).item()

@@ -22,8 +22,9 @@ from typing import Optional
 from typing import Tuple
 import unittest
 
+from perception_eval.common import DynamicObject
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
-from perception_eval.common.object import DynamicObject
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.tracking.clear import CLEAR
@@ -121,11 +122,10 @@ class TestCLEAR(unittest.TestCase):
     def setUp(self) -> None:
         self.dummy_estimated_objects: List[DynamicObject] = []
         self.dummy_ground_truth_objects: List[DynamicObject] = []
-        self.dummy_unique_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data(
-            use_unique_id=True
-        )
+        self.dummy_unique_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data(use_unique_id=True)
         self.dummy_estimated_objects, _ = make_dummy_data(use_unique_id=False)
 
+        self.evaluation_task: EvaluationTask = EvaluationTask.TRACKING
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
             AutowareLabel.BICYCLE,
@@ -155,9 +155,7 @@ class TestCLEAR(unittest.TestCase):
                         (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
         """
         # patterns: (prev_diff_trans, cur_diff_trans, target_label, use_unique_id, ans_clear)
-        patterns: List[
-            Tuple[Optional[DiffTranslation], DiffTranslation, AutowareLabel, AnswerCLEAR]
-        ] = [
+        patterns: List[Tuple[Optional[DiffTranslation], DiffTranslation, AutowareLabel, AnswerCLEAR]] = [
             # ========== Test unique ID association ==========
             # (1). Est: 2, GT: 1
             # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
@@ -429,6 +427,7 @@ class TestCLEAR(unittest.TestCase):
 
                     # Get previous object results
                     prev_object_results = get_object_results(
+                        evaluation_task=self.evaluation_task,
                         estimated_objects=prev_estimated_objects,
                         ground_truth_objects=prev_ground_truth_objects,
                     )
@@ -467,6 +466,7 @@ class TestCLEAR(unittest.TestCase):
 
                 # Current object results
                 cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
@@ -608,6 +608,7 @@ class TestCLEAR(unittest.TestCase):
 
                     # Previous object results
                     prev_object_results = get_object_results(
+                        evaluation_task=self.evaluation_task,
                         estimated_objects=prev_estimated_objects,
                         ground_truth_objects=prev_ground_truth_objects,
                     )
@@ -646,6 +647,7 @@ class TestCLEAR(unittest.TestCase):
 
                 # Current object results
                 cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
@@ -790,6 +792,7 @@ class TestCLEAR(unittest.TestCase):
 
                     # Previous object results
                     prev_object_results = get_object_results(
+                        evaluation_task=self.evaluation_task,
                         estimated_objects=prev_estimated_objects,
                         ground_truth_objects=prev_ground_truth_objects,
                     )
@@ -828,6 +831,7 @@ class TestCLEAR(unittest.TestCase):
 
                 # Current object results
                 cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
