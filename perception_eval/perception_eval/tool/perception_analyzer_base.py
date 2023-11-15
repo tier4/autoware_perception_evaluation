@@ -720,17 +720,20 @@ class PerceptionAnalyzerBase(ABC):
     def plot_num_object(
         self,
         mode: PlotAxes = PlotAxes.DISTANCE,
-        show: bool = False,
         bins: Optional[float] = None,
+        heatmap: bool = False,
+        show: bool = False,
         **kwargs,
     ) -> None:
         """Plot the number of objects for each time/distance range with histogram.
 
         Args:
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.DISTANCE (1-dimensional).
+            bins (float): The interval of time/distance. If not specified, 0.1[s] for time
+                and 0.5[m] for distance will be use. Defaults to None.
+            heatmap (bool): Whether to visualize heatmap of the number of objects for corresponding axes.
+                The heatmap can be visualized only 3D axes. Defaults to False.
             show (bool): Whether show the plotted figure. Defaults to False.
-            bins (float): The interval of time/distance. If not specified, 0.1[s] for time and 0.5[m] for distance will be use.
-                Defaults to None.
             **kwargs: Specify if you want to plot for the specific conditions.
                 For example, label, area, frame or scene.
         """
@@ -753,12 +756,15 @@ class PerceptionAnalyzerBase(ABC):
             xlabel, ylabel = mode.get_label()
 
         fig: Figure = plt.figure(figsize=(16, 8))
-        ax: Union[Axes, Axes3D] = fig.add_subplot(
-            xlabel=xlabel,
-            ylabel=ylabel,
-            title="Number of samples",
-            projection=mode.projection,
-        )
+        if mode.is_3d() and heatmap:
+            ax = fig.subplots(nrows=1, ncols=2)
+        else:
+            ax: Union[Axes, Axes3D] = fig.add_subplot(
+                xlabel=xlabel,
+                ylabel=ylabel,
+                title="Number of samples",
+                projection=mode.projection if not heatmap else None,
+            )
         mode.setup_axis(ax, **kwargs)
         gt_axes = mode.get_axes(self.get_ground_truth(**kwargs))
         est_axes = mode.get_axes(self.get_estimation(**kwargs))
@@ -774,20 +780,31 @@ class PerceptionAnalyzerBase(ABC):
             ax.bar(xaxis[:-1] - 0.5 * width, gt_hist, width, label="GT")
             ax.bar(xaxis[:-1] + 0.5 * width, est_hist, width, label="Estimation")
         else:
-            ax.set_zlabel("Number of samples")
             gt_xaxes, gt_yaxes = gt_axes[:, ~np.isnan(gt_axes).any(0)]
             est_xaxes, est_yaxes = est_axes[:, ~np.isnan(est_axes).any(0)]
-            gt_hist, gt_x_edges, gt_y_edges = np.histogram2d(gt_xaxes, gt_yaxes)
-            est_hist, est_x_edges, est_y_edges = np.histogram2d(est_xaxes, est_yaxes)
-            gt_x, gt_y = np.meshgrid(gt_x_edges[:-1], gt_y_edges[:-1])
-            est_x, est_y = np.meshgrid(est_x_edges[:-1], est_y_edges[:-1])
+
             if bins is not None and isinstance(bins, float):
                 bins = (bins, bins)
-            dx, dy = mode.get_bins() if bins is None else bins
-            dx *= 0.5
-            dy *= 0.5
-            ax.bar3d(gt_x.ravel(), gt_y.ravel(), 0, dx, dy, gt_hist.ravel(), alpha=0.6)
-            ax.bar3d(est_x.ravel(), est_y.ravel(), 0, dx, dy, est_hist.ravel(), alpha=0.6)
+            else:
+                bins = mode.get_bins()
+
+            gt_hist, gt_x_edges, gt_y_edges = np.histogram2d(gt_xaxes, gt_yaxes, bins=bins[0])
+            est_hist, est_x_edges, est_y_edges = np.histogram2d(est_xaxes, est_yaxes, bins=bins[0])
+            if heatmap:
+                gt_extent = [gt_x_edges[0], gt_x_edges[-1], gt_y_edges[0], gt_y_edges[-1]]
+                est_extent = [est_x_edges[0], est_x_edges[-1], est_y_edges[0], est_y_edges[-1]]
+
+                ax[0].imshow(gt_hist, extent=gt_extent)
+                ax[1].imshow(est_hist, extent=est_extent)
+            else:
+                ax.set_zlabel("Number of samples")
+                gt_x, gt_y = np.meshgrid(gt_x_edges[:-1], gt_y_edges[:-1])
+                est_x, est_y = np.meshgrid(est_x_edges[:-1], est_y_edges[:-1])
+                dx, dy = mode.get_bins() if bins is None else bins
+                dx *= 0.5
+                dy *= 0.5
+                ax.bar3d(gt_x.ravel(), gt_y.ravel(), 0, dx, dy, gt_hist.ravel(), alpha=0.6)
+                ax.bar3d(est_x.ravel(), est_y.ravel(), 0, dx, dy, est_hist.ravel(), alpha=0.6)
 
         self.__post_process_figure(
             fig=fig,

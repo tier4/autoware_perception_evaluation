@@ -357,7 +357,7 @@ def extract_area_results(
     return out_frame_results
 
 
-def setup_axis(ax: plt.Axes, **kwargs) -> None:
+def setup_axis(ax: Union[plt.Axes, np.ndarray], **kwargs) -> None:
     """[summary]
     Setup axis limits and grid interval to plt.Axes.
 
@@ -368,22 +368,26 @@ def setup_axis(ax: plt.Axes, **kwargs) -> None:
             ylim (Union[float, Sequence]): If use sequence, (left, right) order. Defaults to None.
             grid_interval (float): Interval of grid. Defaults to None.
     """
-    ax.grid()
-    if kwargs.get("xlim"):
-        xlim: Union[float, Sequence] = kwargs.pop("xlim")
-        if isinstance(xlim, float):
-            ax.set_xlim(-xlim, xlim)
-        elif isinstance(xlim, (list, tuple)):
-            ax.set_xlim(xlim[0], xlim[1])
-    if kwargs.get("ylim"):
-        ylim: Union[float, Sequence] = kwargs.pop("ylim")
-        if isinstance(ylim, float):
-            ax.set_ylim(-ylim, ylim)
-        elif isinstance(ylim, (list, tuple)):
-            ax.set_ylim(ylim[0], ylim[1])
+    if isinstance(ax, np.ndarray):
+        for ax_ in ax:
+            setup_axis(ax_, **kwargs)
+    else:
+        ax.grid()
+        if kwargs.get("xlim"):
+            xlim: Union[float, Sequence] = kwargs.pop("xlim")
+            if isinstance(xlim, float):
+                ax.set_xlim(-xlim, xlim)
+            elif isinstance(xlim, (list, tuple)):
+                ax.set_xlim(xlim[0], xlim[1])
+        if kwargs.get("ylim"):
+            ylim: Union[float, Sequence] = kwargs.pop("ylim")
+            if isinstance(ylim, float):
+                ax.set_ylim(-ylim, ylim)
+            elif isinstance(ylim, (list, tuple)):
+                ax.set_ylim(ylim[0], ylim[1])
 
-    if kwargs.get("grid_interval"):
-        ax.grid(lw=kwargs.pop("grid_interval"))
+        if kwargs.get("grid_interval"):
+            ax.grid(lw=kwargs.pop("grid_interval"))
 
 
 def get_metrics_info(metrics_score: MetricsScore) -> Dict[str, Any]:
