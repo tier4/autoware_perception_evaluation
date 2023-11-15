@@ -794,10 +794,12 @@ class PerceptionAnalyzerBase(ABC):
                 gt_extent = [gt_x_edges[0], gt_x_edges[-1], gt_y_edges[0], gt_y_edges[-1]]
                 est_extent = [est_x_edges[0], est_x_edges[-1], est_y_edges[0], est_y_edges[-1]]
 
-                ax[0].imshow(gt_hist, extent=gt_extent)
                 ax[0].set_title("GT")
-                ax[1].imshow(est_hist, extent=est_extent)
                 ax[1].set_title("Estimation")
+                gt_img = ax[0].imshow(gt_hist, extent=gt_extent)
+                fig.colorbar(gt_img, ax=ax[0])
+                est_img = ax[1].imshow(est_hist, extent=est_extent)
+                fig.colorbar(est_img, ax=ax[1])
             else:
                 ax.set_zlabel("Number of samples")
                 gt_x, gt_y = np.meshgrid(gt_x_edges[:-1], gt_y_edges[:-1])
