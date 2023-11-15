@@ -381,11 +381,12 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
   - Plot number of objects by distance from `base_link` in histogram
 
-  | Arguments |    type    | Mandatory | Description                                      |
-  | :-------- | :--------: | :-------: | :----------------------------------------------- |
-  | `mode`    | `PlotAxes` |    No     | Target plot axes. (Defaults=`PlotAxes.DISTANCE`) |
-  | `bin`     |  `float`   |    No     | Bin of distance. (Defaults=`0.5`)                |
-  | `show`    |   `bool`   |    No     | Whether sho plot result.(Defaults=`False`)       |
+  | Arguments |    type    | Mandatory | Description                                           |
+  | :-------- | :--------: | :-------: | :---------------------------------------------------- |
+  | `mode`    | `PlotAxes` |    No     | Target plot axes. (Defaults=`PlotAxes.DISTANCE`)      |
+  | `bins`    |  `float`   |    No     | Number of bins. (Defaults=`0.5`)                      |
+  | `heatmap` |   `bool`   |    No     | Whether to plot heatmap (3D only). (Defaults=`False`) |
+  | `show`    |   `bool`   |    No     | Whether sho plot result.(Defaults=`False`)            |
 
   ```python
   # Plot the number of all objects
