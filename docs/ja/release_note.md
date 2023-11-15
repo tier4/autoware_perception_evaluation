@@ -6,6 +6,24 @@
 
 ## Release for main branch
 
+### v1.1.4
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/101>
+
+  - 【fix】`tuple`の宣言の修正
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/98>
+
+  - 【ci】develop 環境の更新
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/97>
+
+  - 【ci】pre-commit configの更新
+
+- <https://github.com/tier4/autoware_perception_evaluation/pull/96>
+
+  - 【chore】bump library
+
 ### v1.1.3
 
 - <https://github.com/tier4/autoware_perception_evaluation/pull/94>
