@@ -19,6 +19,8 @@ from os.path import expandvars
 from pathlib import Path
 
 from perception_eval.tool import PerceptionAnalyzer3DField
+from perception_eval.tool import PerceptionFieldXY
+from perception_eval.tool import PerceptionFieldAxis
 
 import matplotlib.pyplot as plt
 import simplejson as json
@@ -37,50 +39,83 @@ class PerceptionFieldPlot:
                                      shading='nearest',
                                      **kwargs)
         self.cbar = self.figure.colorbar(self.cs)
-        self.setXY()
 
     def contourf(self, x, y, z, **kwargs):
         self.cs = self.ax.contourf(x, y, z, **kwargs)
         self.ax.contour(self.cs, colors='k')
         self.cbar = self.figure.colorbar(self.cs)
-        self.setXY()
 
-    def setXY(self)->None:
-        self.ax.set_xlabel("x [m]")
-        self.ax.set_ylabel("y [m]")
-        self.ax.set_aspect('equal')
-        self.ax.set_xlim([-110, 110])
-        self.ax.set_ylim([-110, 110])
+    def setAxes(self, field:PerceptionAnalyzer3DField):
+        self.ax.set_xlabel(field.axis_x.getTitle())
+        self.ax.set_ylabel(field.axis_y.getTitle())
+        self.ax.set_aspect(field.axis_x.plot_aspect_ratio / field.axis_y.plot_aspect_ratio)
+        self.ax.set_xlim(field.axis_x.plot_range)
+        self.ax.set_ylim(field.axis_y.plot_range)
         self.ax.grid(c='k', ls='-', alpha=0.3)
 
-def visualize(field:PerceptionAnalyzer3DField, result_root_directory:str)->None:
+    def plotMeshMap(self, field:PerceptionAnalyzer3DField, valuemap:np.ndarray, **kwargs):
+        x = field.mesh_center_x * field.axis_x.plot_scale
+        y = field.mesh_center_y * field.axis_y.plot_scale
+        z = valuemap
+        self.cs = self.ax.pcolormesh(x, y, z, 
+                                     shading='nearest',
+                                     **kwargs)
+        self.cbar = self.figure.colorbar(self.cs)
+
+def visualize(field:PerceptionFieldXY, prefix : str, save_dir:str)->None:
     
+    # Preprocess
+    mask_layer :np.ndarray = np.zeros(np.shape(field.num_pair),dtype=np.bool_)
+    mask_layer[field.num_pair == 0] = True
+
+    field.num_pair[mask_layer] = np.nan
+    field.ratio_tp[mask_layer] = np.nan
+    field.ratio_fp[mask_layer] = np.nan
+    field.ratio_fn[mask_layer] = np.nan
+    field.error_delta_mean[mask_layer] = np.nan
+
     # Plot
     figures = []
-    figures.append(PerceptionFieldPlot("num_pair"))
-    figures[-1].pcolormesh(field.mesh_center_x, field.mesh_center_y, field.num_pair, vmin=0)
 
-    figures.append(PerceptionFieldPlot("ratio_tp"))
-    figures[-1].pcolormesh(field.mesh_center_x, field.mesh_center_y, field.ratio_tp, vmin=0, vmax=1)
+    # Number of data
+    figures.append(PerceptionFieldPlot(prefix + "_" + "num"))
+    figures[-1].plotMeshMap(field, field.num, vmin=0)
+    figures[-1].setAxes(field)
+    
+    # True positive rate
+    figures.append(PerceptionFieldPlot(prefix + "_" + "ratio_tp"))
+    figures[-1].plotMeshMap(field, field.ratio_tp, vmin=0, vmax=1)
+    figures[-1].setAxes(field)
 
-    figures.append(PerceptionFieldPlot("ratio_fp"))
-    figures[-1].pcolormesh(field.mesh_center_x, field.mesh_center_y, field.ratio_fp, vmin=0, vmax=1)
+    # False positive rate
+    figures.append(PerceptionFieldPlot(prefix + "_" + "ratio_fp"))
+    figures[-1].plotMeshMap(field, field.ratio_fp, vmin=0, vmax=1)
+    figures[-1].setAxes(field)
 
-    # figures.append(PerceptionFieldPlot("delta_mean"))
-    # figures[-1].ax.matshow(field.error_delta_mean, cmap='jet')
+    # False negative rate
+    figures.append(PerceptionFieldPlot(prefix + "_" + "ratio_fn"))
+    figures[-1].plotMeshMap(field, field.ratio_fn, vmin=0, vmax=1)
+    figures[-1].setAxes(field)
 
-    # figures.append(PerceptionFieldPlot("delta_mean_contour"))
-    # levels = [0,0.1,0.2,0.3,0.5,1,2,5,10]
-    # figures[-1].contourf(field.x, field.y, field.error_delta_mean, 
-    #                      levels=levels, cmap='jet', corner_mask=False)
+    # Position error
+    figures.append(PerceptionFieldPlot(prefix + "_" + "delta_mean_mesh"))
+    figures[-1].plotMeshMap(field, field.error_delta_mean, vmin=0, vmax=np.nanmax(field.error_delta_mean))
+    # mean positions of each grid
+    if hasattr(field, field.axis_x.data_label):
+        x_mean_plot = getattr(field,field.axis_x.data_label) * field.axis_x.plot_scale
+    else:
+        x_mean_plot = field.mesh_center_x * field.axis_x.plot_scale
 
-    figures.append(PerceptionFieldPlot("delta_mean_mesh"))
-    figures[-1].pcolormesh(field.x, field.y, field.error_delta_mean, 
-                           vmin=0, vmax = np.nanmax(field.error_delta_mean))
-    cs = figures[-1].ax.scatter(field.x, field.y, marker='+',c='r', s=10)
+    if hasattr(field, field.axis_y.data_label):
+        y_mean_plot = getattr(field,field.axis_y.data_label) * field.axis_y.plot_scale
+    else:
+        y_mean_plot = field.mesh_center_y * field.axis_y.plot_scale
+
+    cs = figures[-1].ax.scatter(x_mean_plot, y_mean_plot, marker='+',c='r', s=10)
+    figures[-1].setAxes(field)
 
     # Save result
-    plot_file_path = Path(result_root_directory, "plot")
+    plot_file_path = Path(save_dir, "plot")
         
     for fig in figures:
         fig.figure.savefig(Path(plot_file_path, fig.name + ".png"))
@@ -100,6 +135,11 @@ class PerceptionLoadDatabaseResult:
         for filepath in pickle_file_paths:
             analyzer.add_from_pkl(filepath.as_posix())
 
+        
+        # Add columns
+        analyzer.addAdditionalColumn()
+        analyzer.addErrorColumns()
+
         # Analyze
         # conditions: object class, grid type, error/uncertainty...
 
@@ -112,27 +152,82 @@ class PerceptionLoadDatabaseResult:
         # error_field, _ = analyzer.analyze(label="car") 
 
 
-        # Specific grid type - 2D xy grid
-        # Initialize fields
-        grid_axis_x : np.ndarray = np.array([-90, -60, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 60, 90])
-        grid_axis_y : np.ndarray = np.array([-90, -60, -40, -30, -20, -10, -5, 5, 10, 20, 30, 40, 60, 90])
+        # Define axes
+        # cartesian coordinate position
+        grid_axis_xy : np.ndarray = np.array([-90, -65, -55, -45, -35, -25, -15, -5, 5, 15, 25, 35, 45, 55, 65, 90])
+        axis_x : PerceptionFieldAxis = PerceptionFieldAxis(type="length",data_label="x")
+        axis_y : PerceptionFieldAxis = PerceptionFieldAxis(type="length",data_label="y")
+        axis_x.setGridAxis(grid_axis_xy)
+        axis_y.setGridAxis(grid_axis_xy)
+        # plane distance
+        axis_dist : PerceptionFieldAxis = PerceptionFieldAxis(type="length", data_label="dist", name="Distance")
+        grid_axis_dist : np.ndarray = np.arange(0, 105, 10)
+        axis_dist.setGridAxis(grid_axis_dist)
+        axis_dist.plot_range = [0, 110]
+        # position error
+        axis_error_delta : PerceptionFieldAxis = PerceptionFieldAxis(type="length", data_label="error_delta", name="Position Error")
+        grid_axis_error : np.ndarray = np.pi * np.arange(0, 2.0, 0.1)
+        axis_error_delta.setGridAxis(grid_axis_error)
+        axis_error_delta.plot_range = [0, 6.0]
+        axis_error_delta.plot_aspect_ratio = 0.9
+        # visual heading angle
+        axis_heding : PerceptionFieldAxis = PerceptionFieldAxis(type="angle", data_label="visual_heading", name="Heading")
+        # yaw error
+        axis_error_yaw : PerceptionFieldAxis = PerceptionFieldAxis(type="angle", data_label="error_yaw", name="Yaw Error")
 
-        # Set condition
-        error_field, uncertainty_field = analyzer.analyzeXY("x",grid_axis_x,"y",grid_axis_y)
 
-        # Specific grid type - 1D range grid
+        # 2D xy grid
+        error_field, _ = analyzer.analyzeXY(axis_x, axis_y)
+        visualize(error_field, prefix="XY", save_dir=result_root_directory)
+
+        # distance-visual_heading grid
+        error_field_dist_heading, _ = analyzer.analyzeXY(axis_dist, axis_heding)
+        visualize(error_field_dist_heading, prefix="dist_heading", save_dir=result_root_directory)
 
 
+        # Dist-error grid
+        prefix : str = "dist_delta-error"
+        error_field_range, _ = analyzer.analyzeXY(axis_dist, axis_error_delta)
+        field = error_field_range
+        numb = field.num
+        numb[numb == 0] = np.nan
+
+        # plot
+        figures = []
+        figures.append(PerceptionFieldPlot(prefix + "_" + "num"))
+        figures[-1].pcolormesh(field.mesh_center_x, field.mesh_center_y, numb, vmin=0)
+        figures[-1].setAxes(field)
 
 
+        # heading-yaw_error grid
+        prefix = "yaw_error"
+        error_field_yaw_error, _ = analyzer.analyzeXY(axis_heding, axis_error_yaw)
+        field = error_field_yaw_error
 
+        # plot
+        figures.append(PerceptionFieldPlot(prefix + "_" + "num"))
+        numb = field.num
+        numb[numb == 0] = np.nan
+
+        numb_log:np.ndarray = np.log10(field.num)
+        figures[-1].pcolormesh(field.mesh_center_x * 180.0 / np.pi, field.mesh_center_y * 180.0 / np.pi, numb_log, vmin=0)
+        figures[-1].setAxes(field)
+
+
+        # Save plots
+        for fig in figures:
+            fig.figure.savefig(Path(result_root_directory, "plot", fig.name + ".png"))
+
+
+        # for debug
         # print(analyzer.df)
-        print(analyzer.df.columns)
+        # print(analyzer.df.columns)
 
-        # Plot
-        visualize(error_field, result_root_directory)
 
+        # Show plots
         plt.show()
+
+
 
 
 def main() -> None:
