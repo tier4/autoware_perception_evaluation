@@ -394,11 +394,6 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
   <img src="../../fig/perception/plot_num_object_by_distance.png" width=800 height=400>
 
-## Known issues / Limitations
-
-- `PerceptionAnalyzer3D()`は 3D 評価のみ対応
-  <img src="../../fig/perception/plot_num_object_by_distance.png" width=800>
-
 - `<func> box_plot(...) -> None`
 
   - 指定した状態に対する誤差の箱ひげ図をプロット
@@ -414,6 +409,11 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
   ```
 
   <img src="../../fig/perception/box_plot_xy.png" width=400>
+
+## Known issues / Limitations
+
+- `PerceptionAnalyzer3D()`は 3D 評価のみ対応
+  <img src="../../fig/perception/plot_num_object_by_distance.png" width=800>
 
 ## [`<class> Gmm(...)`](../../../perception_eval/perception_eval/tool/gmm.py)
 
