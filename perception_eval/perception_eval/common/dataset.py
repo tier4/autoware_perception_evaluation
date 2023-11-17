@@ -206,7 +206,7 @@ def _get_str_objects_number_info(
     """
     str_: str = ""
     for label_info in label_converter.label_infos:
-        str_ += f"{label_info.label} (-> {label_info.label}): {label_info.num} \n"
+        str_ += f"{label_info.name} (-> {label_info.label}): {label_info.num} \n"
     return str_
 
 
