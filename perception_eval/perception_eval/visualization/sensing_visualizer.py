@@ -90,6 +90,8 @@ class SensingVisualizer:
         s_cfg: Dict[str, any] = scenario_obj["Evaluation"]["SensingEvaluationConfig"]
         eval_cfg_dict: Dict[str, any] = s_cfg["evaluation_config_dict"]
 
+        eval_cfg_dict["label_prefix"] = "autoware"
+
         evaluation_config: SensingEvaluationConfig = SensingEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id="base_link",
@@ -315,9 +317,7 @@ class SensingVisualizer:
 
             # rotate box around center
             yaw: float = orientation.yaw_pitch_roll[0]
-            transform: Affine2D = (
-                Affine2D().rotate_around(box_center[0], box_center[1], yaw) + axes.transData
-            )
+            transform: Affine2D = Affine2D().rotate_around(box_center[0], box_center[1], yaw) + axes.transData
 
             box: Rectangle = Rectangle(
                 xy=box_bottom_left,

@@ -82,9 +82,9 @@ class SensingLSimMoc:
         Returns:
             frame_result (SensingFrameResult): Result per frame.
         """
-        ground_truth_now_frame: Optional[
-            FrameGroundTruth
-        ] = self.evaluator.get_ground_truth_now_frame(unix_time=unix_time)
+        ground_truth_now_frame: Optional[FrameGroundTruth] = self.evaluator.get_ground_truth_now_frame(
+            unix_time=unix_time
+        )
 
         # Evaluation config for one frame.
         # If not specified, params of SensingEvaluationConfig will be used.

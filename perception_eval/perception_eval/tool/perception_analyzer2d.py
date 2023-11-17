@@ -71,14 +71,12 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         cls,
         result_root_directory: str,
         scenario_path: str,
-        camera_frame: str,
     ) -> PerceptionAnalyzer2D:
         """Perception results made by logsim are reproduced from pickle file.
 
         Args:
             result_root_directory (str): The root path to save result.
             scenario_path (str): The path of scenario file .yaml.
-            camera_frame (str): Name of camera frame. (e.g CAM_FRONT, CAM_RIGHT).
 
         Returns:
             PerceptionAnalyzer2D: PerceptionAnalyzer2D instance.
@@ -95,12 +93,13 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         eval_cfg_dict: Dict[str, Any] = p_cfg["evaluation_config_dict"]
 
         eval_cfg_dict["label_prefix"] = (
-            "traffic_light" if "traffic_light" in camera_frame else "autoware"
+            "traffic_light" if eval_cfg_dict["UseCaseName"] == "traffic_light" else "autoware"
         )
+        camera_types: Dict[str, int] = scenario_obj["Evaluation"]["Conditions"]["TargetCameras"]
 
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
-            frame_id=camera_frame,
+            frame_id=list(camera_types.keys()),
             result_root_directory=result_root_directory,
             evaluation_config_dict=eval_cfg_dict,
             load_raw_data=False,
@@ -262,10 +261,14 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             _column: Union[str, List[str]],
             _df: Optional[pd.DataFrame] = None,
         ) -> Dict[str, float]:
+            if len(_df) == 0:
+                return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan)
+
             err: np.ndarray = self.calculate_error(_column, _df, remove_nan=True)
             if len(err) == 0:
                 logging.warning(f"The array of errors is empty for column: {_column}")
                 return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan)
+
             err_avg = np.average(err)
             err_rms = np.sqrt(np.square(err).mean())
             err_std = np.std(err)
@@ -285,9 +288,10 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
                 tp_gt_df = self.get_ground_truth(status="TP", label=label)
                 tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
                 if len(tp_index) == 0:
-                    logging.warning("There is no TP object. Could not calculate error.")
-                    return pd.DataFrame()
-                df_ = self.df.loc[tp_index]
+                    logging.warning(f"There is no TP object for {label}.")
+                    df_ = pd.DataFrame()
+                else:
+                    df_ = self.df.loc[tp_index]
 
             data["x"] = _summarize("x", df_)
             data["y"] = _summarize("y", df_)
@@ -317,12 +321,8 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         if self.config.label_params["allow_matching_unknown"] and "unknown" not in target_labels:
             target_labels.append("unknown")
 
-        gt_indices: np.ndarray = (
-            gt_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
-        )
-        est_indices: np.ndarray = (
-            est_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
-        )
+        gt_indices: np.ndarray = gt_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
+        est_indices: np.ndarray = est_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
 
         num_classes = len(target_labels)
         indices = num_classes * gt_indices + est_indices

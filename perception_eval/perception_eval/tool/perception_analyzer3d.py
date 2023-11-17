@@ -119,6 +119,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         p_cfg: Dict[str, Any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
         eval_cfg_dict: Dict[str, Any] = p_cfg["evaluation_config_dict"]
 
+        eval_cfg_dict["label_prefix"] = "autoware"
+
         evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id="base_link" if eval_cfg_dict["evaluation_task"] == "detection" else "map",
@@ -235,11 +237,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         )
 
         if gt:
-            if gt.state.velocity:
+            if gt.state.velocity is not None:
                 gt_vx, gt_vy = gt.state.velocity[:2]
-                gt_vel = np.array([gt_vx, gt_vy, 0])
             else:
-                gt_vx, gt_vy = None, None
+                gt_vx, gt_vy = np.nan, np.nan
 
             if self.config.frame_ids[0] == "map":
                 src: np.ndarray = get_pose_transform_matrix(
@@ -249,8 +250,6 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 dst: np.ndarray = np.linalg.inv(ego2map).dot(src)
                 gt_x, gt_y = dst[:2, 3]
                 gt_yaw = rotation_matrix_to_euler(dst[:3, :3])[-1].item()
-                if gt.state.velocity:
-                    gt_vx, gt_vy = np.linalg.inv(ego2map[:3, :3]).dot(gt_vel)[:2]
             else:
                 gt_x, gt_y = gt.state.position[:2]
                 gt_yaw = gt.state.orientation.yaw_pitch_roll[0]
@@ -285,11 +284,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             gt_ret = {k: None for k in self.keys()}
 
         if estimation:
-            if estimation.state.velocity:
+            if estimation.state.velocity is not None:
                 est_vx, est_vy = estimation.state.velocity[:2]
-                est_vel = np.array([est_vx, est_vy, 0.0])
             else:
-                est_vx, est_vy = None, None
+                est_vx, est_vy = np.nan, np.nan
 
             if self.config.frame_ids[0] == "map":
                 src: np.ndarray = get_pose_transform_matrix(
@@ -299,14 +297,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 dst: np.ndarray = np.linalg.inv(ego2map).dot(src)
                 est_x, est_y = dst[:2, 3]
                 est_yaw = rotation_matrix_to_euler(dst[:3, :3])[-1].item()
-                if estimation.state.velocity:
-                    est_vx, est_vy = dst[:3, :3].dot(est_vel)[:2]
             else:
                 est_x, est_y = estimation.state.position[:2]
                 est_yaw = estimation.state.orientation.yaw_pitch_roll[0]
-                if estimation.state.velocity:
-                    est_rot = estimation.state.orientation.rotation_matrix
-                    est_vx, est_vy = np.linalg.inv(est_rot).dot(est_vel)[:2]
 
             est_w, est_l, est_h = estimation.state.size
 
@@ -328,7 +321,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 attributes=estimation.semantic_label.attributes,
                 confidence=estimation.semantic_score,
                 uuid=estimation.uuid,
-                num_points=None,
+                num_points=np.nan,
                 status=status,
                 area=area,
                 frame=frame_num,
@@ -353,10 +346,15 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             _column: Union[str, List[str]],
             _df: Optional[pd.DataFrame] = None,
         ) -> Dict[str, float]:
+            if len(_df) == 0:
+                logging.warning(f"The array of errors is empty for column: {_column}")
+                return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan)
+
             err: np.ndarray = self.calculate_error(_column, _df, remove_nan=True)
             if len(err) == 0:
                 logging.warning(f"The array of errors is empty for column: {_column}")
                 return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan)
+
             err_avg = np.average(err)
             err_rms = np.sqrt(np.square(err).mean())
             err_std = np.std(err)
@@ -376,9 +374,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 tp_gt_df = self.get_ground_truth(status="TP", label=label)
                 tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
                 if len(tp_index) == 0:
-                    logging.warning("There is no TP object. Could not calculate error.")
-                    return pd.DataFrame()
-                df_ = self.df.loc[tp_index]
+                    logging.warning(f"There is no TP object for {label}.")
+                    df_ = pd.DataFrame()
+                else:
+                    df_ = self.df.loc[tp_index]
 
             data["x"] = _summarize("x", df_)
             data["y"] = _summarize("y", df_)
@@ -490,9 +489,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             columns: List[str] = [columns]
         if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
             raise ValueError(f"{columns} is unsupported for plot")
-        return super().plot_error(
-            columns=columns, mode=mode, heatmap=heatmap, show=show, bins=bins, **kwargs
-        )
+        return super().plot_error(columns=columns, mode=mode, heatmap=heatmap, show=show, bins=bins, **kwargs)
 
     def box_plot(
         self,

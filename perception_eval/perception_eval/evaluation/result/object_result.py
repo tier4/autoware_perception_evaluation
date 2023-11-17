@@ -477,10 +477,7 @@ def _get_score_table(
             if gt_obj.semantic_label.is_fp():
                 is_label_ok = True
             elif allow_matching_unknown:
-                is_label_ok = (
-                    est_obj.semantic_label == gt_obj.semantic_label
-                    or est_obj.semantic_label.is_unknown()
-                )
+                is_label_ok = est_obj.semantic_label == gt_obj.semantic_label or est_obj.semantic_label.is_unknown()
             else:
                 is_label_ok = est_obj.semantic_label == gt_obj.semantic_label
 
@@ -495,9 +492,7 @@ def _get_score_table(
                     estimated_object=est_obj, ground_truth_object=gt_obj
                 )
 
-                if threshold is None or (
-                    threshold is not None and matching_method.is_better_than(threshold)
-                ):
+                if threshold is None or (threshold is not None and matching_method.is_better_than(threshold)):
                     score_table[i, j] = matching_method.value
 
     return score_table

@@ -62,9 +62,7 @@ class PassFailResult:
         self.unix_time: int = unix_time
         self.frame_number: int = frame_number
         # TODO(ktro2828): merge CriticalObjectFilterConfig and FramePassFailConfig into one
-        self.critical_object_filter_config: CriticalObjectFilterConfig = (
-            critical_object_filter_config
-        )
+        self.critical_object_filter_config: CriticalObjectFilterConfig = critical_object_filter_config
         self.frame_pass_fail_config: PerceptionPassFailConfig = frame_pass_fail_config
         self.ego2map: Optional[np.ndarray] = ego2map
 
@@ -101,9 +99,7 @@ class PassFailResult:
             self.critical_ground_truth_objects,
             object_results,
             self.frame_pass_fail_config.target_labels,
-            MatchingMode.IOU2D
-            if self.frame_pass_fail_config.evaluation_task.is_2d()
-            else MatchingMode.PLANEDISTANCE,
+            MatchingMode.IOU2D if self.frame_pass_fail_config.evaluation_task.is_2d() else MatchingMode.PLANEDISTANCE,
             self.frame_pass_fail_config.matching_threshold_list,
         )
 

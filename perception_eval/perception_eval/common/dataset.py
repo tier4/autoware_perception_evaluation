@@ -151,9 +151,7 @@ def _load_dataset(
 
     nusc: NuScenes = NuScenes(version="annotation", dataroot=dataset_path, verbose=False)
     nuim: Optional[NuImages] = (
-        NuImages(version="annotation", dataroot=dataset_path, verbose=False)
-        if evaluation_task.is_2d()
-        else None
+        NuImages(version="annotation", dataroot=dataset_path, verbose=False) if evaluation_task.is_2d() else None
     )
     helper: PredictHelper = PredictHelper(nusc)
 
@@ -182,9 +180,7 @@ def _load_dataset(
                 load_raw_data=load_raw_data,
             )
         else:
-            assert (
-                len(frame_ids) == 1
-            ), f"For 3D evaluation, only one Frame ID must be specified, but got {frame_ids}"
+            assert len(frame_ids) == 1, f"For 3D evaluation, only one Frame ID must be specified, but got {frame_ids}"
             frame = _sample_to_frame(
                 nusc=nusc,
                 helper=helper,
@@ -210,7 +206,7 @@ def _get_str_objects_number_info(
     """
     str_: str = ""
     for label_info in label_converter.label_infos:
-        str_ += f"{label_info.label} (-> {label_info.label}): {label_info.num} \n"
+        str_ += f"{label_info.name} (-> {label_info.label}): {label_info.num} \n"
     return str_
 
 

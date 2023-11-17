@@ -127,9 +127,7 @@ class Gmm:
         min_aic_idx: int = np.argmin(self.aic_list)
         min_bic_idx: int = np.argmin(self.bic_list)
         if min_aic_idx != min_bic_idx:
-            logging.warning(
-                f"min AIC and BIC is not same, got K={min_aic_idx + 1} and {min_bic_idx + 1}"
-            )
+            logging.warning(f"min AIC and BIC is not same, got K={min_aic_idx + 1} and {min_bic_idx + 1}")
         self.model = self.__models[min_bic_idx]
 
     def save(self, filename: str) -> None:

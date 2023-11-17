@@ -6,6 +6,7 @@
     "argsort",
     "astype",
     "AWML",
+    "autofix",
     "autoware",
     "bbox",
     "bboxes",

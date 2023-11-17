@@ -83,9 +83,7 @@ class Ap:
         self.objects_results_num: int = len(all_object_results)
 
         # sort by confidence
-        lambda_func: Callable[
-            [DynamicObjectWithPerceptionResult], float
-        ] = lambda x: x.estimated_object.semantic_score
+        lambda_func: Callable[[DynamicObjectWithPerceptionResult], float] = lambda x: x.estimated_object.semantic_score
         all_object_results.sort(key=lambda_func, reverse=True)
 
         # tp and fp from object results ordered by confidence
@@ -103,9 +101,7 @@ class Ap:
 
         # AP
         self.ap: float = (
-            self._calculate_ap(precision_list, recall_list)
-            if 0 < len(all_object_results)
-            else float("inf")
+            self._calculate_ap(precision_list, recall_list) if 0 < len(all_object_results) else float("inf")
         )
         # average and standard deviation
         self.matching_average: Optional[float] = None
@@ -319,9 +315,7 @@ class Ap:
 
         ap: float = 0.0
         for i in range(len(max_precision_list) - 1):
-            score: float = max_precision_list[i] * (
-                max_precision_recall_list[i] - max_precision_recall_list[i + 1]
-            )
+            score: float = max_precision_list[i] * (max_precision_recall_list[i] - max_precision_recall_list[i + 1])
             ap += score
 
         return ap
@@ -345,9 +339,7 @@ class Ap:
         matching_score_list: List[float] = [
             object_result.get_matching(matching_mode).value for object_result in object_results
         ]
-        matching_score_list_without_none = list(
-            filter(lambda x: x is not None, matching_score_list)
-        )
+        matching_score_list_without_none = list(filter(lambda x: x is not None, matching_score_list))
         if len(matching_score_list_without_none) == 0:
             return None, None
         mean: float = np.mean(matching_score_list_without_none).item()

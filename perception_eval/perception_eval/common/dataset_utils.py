@@ -116,9 +116,7 @@ def _sample_to_frame(
         semantic_label = label_converter.convert_label(object_box.name, attributes)
 
         if evaluation_task.is_fp_validation() and semantic_label.is_fp() is False:
-            raise ValueError(
-                f"Unexpected GT label for {evaluation_task.value}, got {semantic_label.label}"
-            )
+            raise ValueError(f"Unexpected GT label for {evaluation_task.value}, got {semantic_label.label}")
 
         object_: DynamicObject = _convert_nuscenes_box_to_dynamic_object(
             nusc=nusc,
@@ -175,16 +173,17 @@ def _convert_nuscenes_box_to_dynamic_object(
     Returns:
         DynamicObject: Converted dynamic object class
     """
-    position_: Tuple[float, float, float] = tuple(object_box.center.tolist())  # type: ignore
+    position_: Tuple[float, float, float] = tuple(object_box.center.astype(np.float64).tolist())
     orientation_: Quaternion = object_box.orientation
-    shape_: Shape = Shape(shape_type=ShapeType.BOUNDING_BOX, size=tuple(object_box.wlh.tolist()))
+    shape_: Shape = Shape(
+        shape_type=ShapeType.BOUNDING_BOX,
+        size=tuple(object_box.wlh.astype(np.float64).tolist()),
+    )
     semantic_score_: float = 1.0
 
     sample_annotation_: dict = nusc.get("sample_annotation", object_box.token)
     pointcloud_num_: int = sample_annotation_["num_lidar_pts"]
-    velocity_: Tuple[float, float, float] = tuple(
-        nusc.box_velocity(sample_annotation_["token"]).tolist()
-    )
+    velocity_: Optional[Tuple[float, float, float]] = _get_box_velocity(nusc, object_box.token)
 
     if evaluation_task == EvaluationTask.TRACKING:
         (
@@ -264,7 +263,7 @@ def _get_sample_boxes(
         raise ValueError(f"Expected frame_id base_link or map, but got {frame_id}")
 
     # Get a sensor2map transform matrix
-    vehicle2map = np.eye(4)
+    vehicle2map = np.eye(4, dtype=np.float64)
     vehicle_pose = nusc.get("ego_pose", frame_data["ego_pose_token"])
     vehicle2map[:3, :3] = Quaternion(vehicle_pose["rotation"]).rotation_matrix
     vehicle2map[:3, 3] = vehicle_pose["translation"]
@@ -279,6 +278,66 @@ def _get_sample_boxes(
         ego2map: np.ndarray = vehicle2map
 
     return lidar_path, object_boxes, ego2map
+
+
+def _get_box_velocity(
+    nusc: NuScenes,
+    sample_annotation_token: str,
+    max_time_diff: float = 1.5,
+) -> Optional[Tuple[float, float, float]]:
+    """
+    Estimate the velocity for an annotation.
+    If possible, we compute the centered difference between the previous and next frame.
+    Otherwise we use the difference between the current and previous/next frame.
+    If the velocity cannot be estimated, values are set to None.
+
+    Args:
+        sample_annotation_token (str): Unique sample_annotation identifier.
+        max_time_diff (float): Max allowed time diff between consecutive samples that are used to estimate velocities.
+
+    Returns:
+        Optional[Tuple[float, float, float]]: Velocity in x/y/z direction in m/s,
+            which is with respect to object coordinates system.
+    """
+
+    current = nusc.get("sample_annotation", sample_annotation_token)
+    has_prev = current["prev"] != ""
+    has_next = current["next"] != ""
+
+    # Cannot estimate velocity for a single annotation.
+    if not has_prev and not has_next:
+        return None
+
+    if has_prev:
+        first = nusc.get("sample_annotation", current["prev"])
+    else:
+        first = current
+
+    if has_next:
+        last = nusc.get("sample_annotation", current["next"])
+    else:
+        last = current
+
+    pos_last = np.array(last["translation"], dtype=np.float64)
+    pos_first = np.array(first["translation"], dtype=np.float64)
+    pos_diff = pos_last - pos_first
+
+    object2map = np.eye(4, dtype=np.float64)
+    object2map[:3, :3] = Quaternion(first["rotation"]).rotation_matrix
+    object2map[3, :3] = first["translation"]
+
+    pos_diff: np.ndarray = np.linalg.inv(object2map).dot((pos_diff[0], pos_diff[1], pos_diff[2], 1.0))[:3]
+
+    time_last: float = 1e-6 * nusc.get("sample", last["sample_token"])["timestamp"]
+    time_first: float = 1e-6 * nusc.get("sample", first["sample_token"])["timestamp"]
+    time_diff: float = time_last - time_first
+
+    if has_next and has_prev:
+        # If doing centered difference, allow for up to double the max_time_diff.
+        max_time_diff *= 2
+
+    # If time_diff is too big, don't return an estimate.
+    return tuple((pos_diff / time_diff).tolist()) if time_diff <= max_time_diff else None
 
 
 def _get_tracking_data(
@@ -324,9 +383,11 @@ def _get_tracking_data(
     past_shapes: List[Shape] = []
     past_velocities: List[Tuple[float, float, float]] = []
     for record_ in past_records_:
-        past_positions.append(tuple(record_["translation"]))
+        translation: Tuple[float, float, float] = tuple(float(t) for t in record_["translation"])
+        past_positions.append(translation)
         past_orientations.append(Quaternion(record_["rotation"]))
-        past_shapes.append(Shape(shape_type=ShapeType.BOUNDING_BOX, size=record_["size"]))
+        size: Tuple[float, float, float] = tuple(float(s) for s in record_["size"])
+        past_shapes.append(Shape(shape_type=ShapeType.BOUNDING_BOX, size=size))
         past_velocities.append(nusc.box_velocity(record_["token"]))
 
     return past_positions, past_orientations, past_shapes, past_velocities
@@ -404,9 +465,9 @@ def _sample_to_frame_2d(
     raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
     if load_raw_data:
         for sensor_name, sample_data_token in nusc_sample["data"].items():
-            if (
-                label_converter.label_type == TrafficLightLabel and "TRAFFIC_LIGHT" in sensor_name
-            ) or ("CAM" in sensor_name and "TRAFFIC_LIGHT" not in sensor_name):
+            if (label_converter.label_type == TrafficLightLabel and "TRAFFIC_LIGHT" in sensor_name) or (
+                "CAM" in sensor_name and "TRAFFIC_LIGHT" not in sensor_name
+            ):
                 img_path: str = nusc.get_sample_data_path(sample_data_token)
                 raw_data[sensor_name.lower()] = np.array(Image.open(img_path), dtype=np.uint8)
 

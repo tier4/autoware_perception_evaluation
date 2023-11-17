@@ -446,33 +446,15 @@ class TestEDAManager:
         self.eda_manager.visualize_ground_truth_objects(ground_truth_object_dict)
 
         for object_name in ground_truth_object_dict.keys():
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist_object_count_for_each_distance.html"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist_object_dist2d_for_each_class.html"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist2d_object_wl_for_each_class.svg"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist2d_object_center_xy_for_each_class.svg"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist2d_object_num_points_for_each_class.svg"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/" + "profiling_" + object_name + "_all.html"
-            )
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_count_for_each_distance.html")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_dist2d_for_each_class.html")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_wl_for_each_class.svg")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_center_xy_for_each_class.svg")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_num_points_for_each_class.svg")
+            assert os.path.exists(self.root_path + "/" + object_name + "/" + "profiling_" + object_name + "_all.html")
             for class_name in self.class_names:
                 assert os.path.exists(
-                    self.root_path
-                    + "/"
-                    + object_name
-                    + "/"
-                    + "profiling_"
-                    + object_name
-                    + f"_{class_name}.html"
+                    self.root_path + "/" + object_name + "/" + "profiling_" + object_name + f"_{class_name}.html"
                 )
 
     def test_visualize_estimated_objects(self) -> None:
@@ -486,30 +468,14 @@ class TestEDAManager:
         self.eda_manager.visualize_estimated_objects(estimated_object_dict)
 
         for object_name in estimated_object_dict.keys():
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist_object_count_for_each_distance.html"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist_object_dist2d_for_each_class.html"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist2d_object_wl_for_each_class.svg"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist2d_object_center_xy_for_each_class.svg"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/" + "profiling_" + object_name + "_all.html"
-            )
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_count_for_each_distance.html")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_dist2d_for_each_class.html")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_wl_for_each_class.svg")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_center_xy_for_each_class.svg")
+            assert os.path.exists(self.root_path + "/" + object_name + "/" + "profiling_" + object_name + "_all.html")
             for class_name in self.class_names:
                 assert os.path.exists(
-                    self.root_path
-                    + "/"
-                    + object_name
-                    + "/"
-                    + "profiling_"
-                    + object_name
-                    + f"_{class_name}.html"
+                    self.root_path + "/" + object_name + "/" + "profiling_" + object_name + f"_{class_name}.html"
                 )
 
     def test_visualize_evaluated_results(self) -> None:
@@ -531,36 +497,18 @@ class TestEDAManager:
             "fp_results_with_high_confidence",
             "fn_ground_truths",
         ]:
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist_object_count_for_each_distance.html"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist_object_dist2d_for_each_class.html"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist2d_object_wl_for_each_class.svg"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/hist2d_object_center_xy_for_each_class.svg"
-            )
-            assert os.path.exists(
-                self.root_path + "/" + object_name + "/" + "profiling_" + object_name + "_all.html"
-            )
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_count_for_each_distance.html")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist_object_dist2d_for_each_class.html")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_wl_for_each_class.svg")
+            assert os.path.exists(self.root_path + "/" + object_name + "/hist2d_object_center_xy_for_each_class.svg")
+            assert os.path.exists(self.root_path + "/" + object_name + "/" + "profiling_" + object_name + "_all.html")
             for class_name in self.class_names:
                 assert os.path.exists(
-                    self.root_path
-                    + "/"
-                    + object_name
-                    + "/"
-                    + "profiling_"
-                    + object_name
-                    + f"_{class_name}.html"
+                    self.root_path + "/" + object_name + "/" + "profiling_" + object_name + f"_{class_name}.html"
                 )
 
     def test_report_rates(self) -> None:
         """[summary]
         Check if output of report_rates is correct.
         """
-        self.eda_manager.report_rates(
-            tp_num=8, fp_num=12, estimated_objects_num=20, fn_num=2, ground_truth_num=10
-        )
+        self.eda_manager.report_rates(tp_num=8, fp_num=12, estimated_objects_num=20, fn_num=2, ground_truth_num=10)

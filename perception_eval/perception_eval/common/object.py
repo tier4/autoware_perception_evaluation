@@ -53,12 +53,12 @@ class ObjectState:
         position: Tuple[float, float, float],
         orientation: Quaternion,
         shape: Shape,
-        velocity: Tuple[float, float, float],
+        velocity: Optional[Tuple[float, float, float]],
     ) -> None:
         self.position: Tuple[float, float, float] = position
         self.orientation: Quaternion = orientation
         self.shape: Shape = shape
-        self.velocity: Tuple[float, float, float] = velocity
+        self.velocity: Optional[Tuple[float, float, float]] = velocity
 
     @property
     def shape_type(self) -> ShapeType:
@@ -136,7 +136,7 @@ class DynamicObject:
         position: Tuple[float, float, float],
         orientation: Quaternion,
         shape: Shape,
-        velocity: Tuple[float, float, float],
+        velocity: Optional[Tuple[float, float, float]],
         semantic_score: float,
         semantic_label: Label,
         pointcloud_num: Optional[int] = None,
@@ -224,9 +224,7 @@ class DynamicObject:
             return np.linalg.norm(self.state.position)
 
         if ego2map is None:
-            raise RuntimeError(
-                "For objects with respect to map coordinate system, ego2map must be specified."
-            )
+            raise RuntimeError("For objects with respect to map coordinate system, ego2map must be specified.")
 
         pos_arr: np.ndarray = np.append(self.state.position, 1.0)
         return np.linalg.norm(np.linalg.inv(ego2map).dot(pos_arr)[:3])
@@ -245,9 +243,7 @@ class DynamicObject:
             return math.hypot(self.state.position[0], self.state.position[1])
 
         if ego2map is None:
-            raise RuntimeError(
-                "For objects with respect to map coordinate system, ego2map must be specified."
-            )
+            raise RuntimeError("For objects with respect to map coordinate system, ego2map must be specified.")
 
         pos_arr: np.ndarray = np.append(self.state.position, 1.0)
         return np.linalg.norm(np.linalg.inv(ego2map).dot(pos_arr)[:2])
@@ -264,9 +260,7 @@ class DynamicObject:
         """
         if self.frame_id == FrameID.MAP:
             if ego2map is None:
-                raise RuntimeError(
-                    "For objects with respect to map coordinate system, ego2map must be specified."
-                )
+                raise RuntimeError("For objects with respect to map coordinate system, ego2map must be specified.")
             src: np.ndarray = np.eye(4, 4)
             src[:3, :3] = self.state.orientation.rotation_matrix
             src[:3, 3] = self.state.position

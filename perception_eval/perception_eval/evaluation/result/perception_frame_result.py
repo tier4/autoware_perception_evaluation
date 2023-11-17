@@ -99,9 +99,9 @@ class PerceptionFrameResult:
             previous_result (Optional[PerceptionFrameResult]): The previous frame result. If None, set it as empty list []. Defaults to None.
         """
         # Divide objects by label to dict
-        object_results_dict: Dict[
-            LabelType, List[DynamicObjectWithPerceptionResult]
-        ] = divide_objects(self.object_results, self.target_labels)
+        object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+            self.object_results, self.target_labels
+        )
 
         num_ground_truth_dict: Dict[LabelType, int] = divide_objects_to_num(
             self.frame_ground_truth.objects, self.target_labels
@@ -114,12 +114,8 @@ class PerceptionFrameResult:
             if previous_result is None:
                 previous_results_dict = {label: [] for label in self.target_labels}
             else:
-                previous_results_dict = divide_objects(
-                    previous_result.object_results, self.target_labels
-                )
-            tracking_results: Dict[
-                LabelType, List[DynamicObjectWithPerceptionResult]
-            ] = object_results_dict.copy()
+                previous_results_dict = divide_objects(previous_result.object_results, self.target_labels)
+            tracking_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = object_results_dict.copy()
             for label, prev_results in previous_results_dict.items():
                 tracking_results[label] = [prev_results, tracking_results[label]]
             self.metrics_score.evaluate_tracking(tracking_results, num_ground_truth_dict)

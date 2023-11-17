@@ -77,9 +77,7 @@ def visualize_ground_truth(dataset_paths: List[str], save_path: str, show: bool)
     )
 
     # Show 2d-histogram of x and y in each class
-    visualizer.hist2d_object_center_xy_for_each_class(
-        class_names, xlim_dict=xylim_dict, ylim_dict=xylim_dict
-    )
+    visualizer.hist2d_object_center_xy_for_each_class(class_names, xlim_dict=xylim_dict, ylim_dict=xylim_dict)
 
     # Show 2d-histogram of number of point clouds in each class
     visualizer.hist2d_object_num_points_for_each_class(class_names)
