@@ -45,6 +45,17 @@ class PerceptionFieldPlot:
         self.ax.contour(self.cs, colors='k')
         self.cbar = self.figure.colorbar(self.cs)
 
+    def setAxis1D(self, field:PerceptionAnalyzer3DField, value:np.ndarray):
+        self.ax.set_xlabel(field.axis_x.getTitle())
+        value_range = [np.nanmin(value), np.nanmax(value)]
+        value_scale = (value_range[1] - value_range[0]) / 10.0
+        value_plot_margin = value_scale / 2.0  # 5% margin
+        self.ax.set_aspect(field.axis_x.plot_aspect_ratio / value_scale)
+        self.ax.set_xlim(field.axis_x.plot_range)
+        self.ax.set_ylim(value_range[0] - value_plot_margin , value_range[1] + value_plot_margin )
+        self.ax.grid(c='k', ls='-', alpha=0.3)
+        self.ax.set_xticks(field.axis_x.grid_axis * field.axis_x.plot_scale)
+
     def setAxes(self, field:PerceptionAnalyzer3DField):
         self.ax.set_xlabel(field.axis_x.getTitle())
         self.ax.set_ylabel(field.axis_y.getTitle())
@@ -63,6 +74,7 @@ class PerceptionFieldPlot:
                                      shading='nearest',
                                      **kwargs)
         self.cbar = self.figure.colorbar(self.cs)
+
 
 def visualize(field:PerceptionFieldXY, prefix : str, save_dir:str)->None:
     
@@ -176,7 +188,8 @@ class PerceptionLoadDatabaseResult:
         axis_heding : PerceptionFieldAxis = PerceptionFieldAxis(type="angle", data_label="visual_heading", name="Heading")
         # yaw error
         axis_error_yaw : PerceptionFieldAxis = PerceptionFieldAxis(type="angle", data_label="error_yaw", name="Yaw Error")
-
+        # none
+        axis_none : PerceptionFieldAxis = PerceptionFieldAxis(type="none", data_label="none", name="None")
 
         # 2D xy grid
         error_field, _ = analyzer.analyzeXY(axis_x, axis_y)
@@ -187,6 +200,9 @@ class PerceptionLoadDatabaseResult:
         visualize(error_field_dist_heading, prefix="dist_heading", save_dir=result_root_directory)
 
 
+        # individual analysis
+        figures = []
+
         # Dist-error grid
         prefix : str = "dist_delta-error"
         error_field_range, _ = analyzer.analyzeXY(axis_dist, axis_error_delta)
@@ -195,7 +211,6 @@ class PerceptionLoadDatabaseResult:
         numb[numb == 0] = np.nan
         numb_log:np.ndarray = np.log10(field.num)
         # plot
-        figures = []
         figures.append(PerceptionFieldPlot(prefix + "_" + "numb_log"))
         figures[-1].pcolormesh(field.mesh_center_x, field.mesh_center_y, numb_log, vmin=0)
         figures[-1].setAxes(field)
@@ -213,6 +228,33 @@ class PerceptionLoadDatabaseResult:
         figures[-1].pcolormesh(field.mesh_center_x * 180.0 / np.pi, field.mesh_center_y * 180.0 / np.pi, numb_log, vmin=0)
         figures[-1].setAxes(field)
 
+
+
+        # 1D analysis
+        # distance_heading grid
+        prefix = "dist_1D"
+
+        error_field_dist_1d, _ = analyzer.analyzeXY(axis_dist, axis_none)
+        field = error_field_dist_1d
+
+        figures.append(PerceptionFieldPlot(prefix + "_" + "numb"))
+        figures[-1].ax.scatter(field.dist, field.num, marker='x',c='r', s=10)
+        figures[-1].setAxis1D(field, field.num)
+
+        figures.append(PerceptionFieldPlot(prefix + "_" + "error_delta_bar"))
+        figures[-1].ax.errorbar(field.dist.flatten(), field.error_delta_mean.flatten(), 
+                                yerr=field.error_delta_std.flatten(),  marker='x', c='r')
+        figures[-1].setAxis1D(field, field.error_delta_mean)
+        figures[-1].ax.set_ylim([-1, 5])       
+        figures[-1].ax.set_aspect(10.0/1)       
+
+        figures.append(PerceptionFieldPlot(prefix + "_" + "rates"))
+        figures[-1].ax.scatter(field.dist, field.ratio_tp, marker='o', c='b', s=20)
+        figures[-1].ax.scatter(field.dist, field.ratio_fn, marker='x', c='r', s=20)
+        figures[-1].ax.scatter(field.dist, field.ratio_fp, marker='^', c='g', s=20)
+        figures[-1].setAxis1D(field, field.ratio_tp)
+        figures[-1].ax.set_ylim([0, 1])       
+        figures[-1].ax.set_aspect(10.0/0.2)       
 
         # Save plots
         for fig in figures:

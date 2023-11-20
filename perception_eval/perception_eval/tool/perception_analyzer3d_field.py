@@ -69,10 +69,16 @@ class PerceptionFieldAxis:
             self.plot_aspect_ratio : float = 1.0
             self.unit : str = "s"
         else:
-            self.grid_axis : np.ndarray = [0]
-            self.plot_range : Tuple[float, float] = (0.0, 1.0)
+            self.grid_axis : np.ndarray = np.ndarray([0])
+            self.plot_range : Tuple[float, float] = (-1.0, 1.0)
             self.plot_aspect_ratio : float = 1.0
             self.unit : str = "none"
+
+    def getLabel(self) -> str:
+        if self.type == "none":
+            return "x"
+        else:
+            return self.data_label
 
     def setGridAxis(self, grid_axis : np.ndarray) -> None:
         if (grid_axis.shape[0] < 2) & (self.type != "none"):
@@ -149,6 +155,9 @@ class PerceptionFieldXY:
         if field_axis.isNone():
             return np.array([0.0])
 
+        if field_axis.grid_axis.shape[0] < 2:
+            raise ValueError("field_axis.grid_axis must have more than 2 elements.")
+
         grid_axis : np.ndarray = field_axis.grid_axis
         cell_pos_array : np.ndarray = np.copy(grid_axis)
 
@@ -186,12 +195,6 @@ class PerceptionFieldXY:
         self.grid_axis_y = axis_y.grid_axis
 
         # Generate cell positions
-        #   The mesh is created by two 1D arrays of grid points
-        if self.grid_axis_x.shape[0] < 2:
-            raise ValueError("grid_axis_x must have more than 2 elements.")
-        if self.grid_axis_y.shape[0] < 2:
-            raise ValueError("grid_axis_y must have more than 2 elements.")
-
         self.cell_pos_x : np.ndarray = self._getCellPos(axis_x)
         self.cell_pos_y : np.ndarray = self._getCellPos(axis_y)
 
@@ -363,8 +366,8 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         df: pd.DataFrame = self.get(**kwargs)
 
         # Set axis data labels
-        label_axis_x : str = axis_x.data_label
-        label_axis_y : str = axis_y.data_label
+        label_axis_x : str = axis_x.getLabel()
+        label_axis_y : str = axis_y.getLabel()
 
         # Initialize fields
         error_field : PerceptionFieldXY = PerceptionFieldXY(self.config, axis_x, axis_y)
