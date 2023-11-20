@@ -48,8 +48,8 @@ class PerceptionFieldAxis:
             self.plot_aspect_ratio : float = 10.0
             self.unit : str = "m"
         elif self.type == "angle":
-            self.grid_axis : np.ndarray = np.arange(-180-22.5, 180.0, 45) * np.pi / 180.0
-            self.plot_range : Tuple[float, float] = (-180.0, 180.0)
+            self.grid_axis : np.ndarray = np.arange(-180+22.5, 180.0, 45) * np.pi / 180.0
+            self.plot_range : Tuple[float, float] = (-180.0-22.5, 180.0-22.5)
             self.plot_aspect_ratio : float = 45.0
             self.plot_scale = 180.0 / np.pi # convert radian to degree
             self.unit : str = "deg"
@@ -144,6 +144,35 @@ class PerceptionFieldXY:
         self.error_yaw_mean : np.ndarray = np.zeros((self.nx, self.ny))
         self.error_yaw_std : np.ndarray = np.zeros((self.nx, self.ny))
 
+    def _getCellPos(self, field_axis:PerceptionFieldAxis) -> np.ndarray:
+
+        if field_axis.isNone():
+            return np.array([0.0])
+
+        grid_axis : np.ndarray = field_axis.grid_axis
+        cell_pos_array : np.ndarray = np.copy(grid_axis)
+
+        # cell center positions are defined as average of grid points
+        cell_pos_array[1:] = (grid_axis[0:-1] + grid_axis[1:]) / 2.0
+        x0 : float = 0.0
+        xe : float = 0.0
+
+        # Set cell positions of boundary
+        if grid_axis[0] == 2:
+            x0 = 2 * grid_axis[0] - grid_axis[1]
+            xe = 2 * grid_axis[1] - grid_axis[0]
+        else:
+            x0 : float = grid_axis[0] - 0.5 * (grid_axis[1] - grid_axis[0])
+            xe : float = grid_axis[-1] + 0.5 * (grid_axis[-1] - grid_axis[-2])
+        cell_pos_array[0] = x0
+
+        # Set additioanl cell for outside of grid points, on when the axis is not loop
+        if field_axis.isLoop() != True:
+            cell_pos_array = np.append(cell_pos_array, xe)
+
+        return cell_pos_array
+
+
     def generateGrid(self, axis_x : PerceptionFieldAxis, axis_y : PerceptionFieldAxis) -> None:
         # Generate mesh cells
         #   Grid axis 1 dimenstion and is defined as follows:
@@ -163,44 +192,18 @@ class PerceptionFieldXY:
         if self.grid_axis_y.shape[0] < 2:
             raise ValueError("grid_axis_y must have more than 2 elements.")
 
-        self.cell_pos_x : np.ndarray = np.copy(self.grid_axis_x)
-        self.cell_pos_y : np.ndarray = np.copy(self.grid_axis_y)
-        self.cell_pos_x[1:] = (self.grid_axis_x[0:-1] +  self.grid_axis_x[1:]) / 2.0
-        self.cell_pos_y[1:] = (self.grid_axis_y[0:-1] +  self.grid_axis_y[1:]) / 2.0
-
-        # Set cell positions of boundary
-        x0 : float = 0.0
-        y0 : float = 0.0
-        xe : float = 0.0
-        ye : float = 0.0
-        if self.grid_axis_x.shape[0] == 2:
-            x0 = 2 * self.grid_axis_x[0] - self.grid_axis_x[1]
-            xe = 2 * self.grid_axis_x[1] - self.grid_axis_x[0]
-        else:
-            x0 : float = self.grid_axis_x[0] - 0.5 * (self.grid_axis_x[1] - self.grid_axis_x[0])
-            xe : float = self.grid_axis_x[-1] + 0.5 * (self.grid_axis_x[-1] - self.grid_axis_x[-2])
-        if self.grid_axis_y.shape[0] == 2:
-            y0 = 2 * self.grid_axis_y[0] - self.grid_axis_y[1]
-            ye = 2 * self.grid_axis_y[1] - self.grid_axis_y[0]
-        else:
-            y0 : float = self.grid_axis_y[0] - 0.5 * (self.grid_axis_y[1] - self.grid_axis_y[0])
-            ye : float = self.grid_axis_y[-1] + 0.5 * (self.grid_axis_y[-1] - self.grid_axis_y[-2])
-
-        self.cell_pos_x[0] = x0
-        self.cell_pos_y[0] = y0
-        self.cell_pos_x : np.ndarray = np.append(self.cell_pos_x, xe)
-        self.cell_pos_y : np.ndarray = np.append(self.cell_pos_y, ye)
+        self.cell_pos_x : np.ndarray = self._getCellPos(axis_x)
+        self.cell_pos_y : np.ndarray = self._getCellPos(axis_y)
 
         # Generate mesh
         self.mesh_center_x, self.mesh_center_y = np.meshgrid(self.cell_pos_x, self.cell_pos_y, indexing='ij')
 
         # Set layer array size
         #   arrays represent surface, including outside of grid points
-        #   therefore, the size of array is (number of grid points + 1)
         self.nx : int = self.mesh_center_x.shape[0]
         self.ny : int = self.mesh_center_x.shape[1]
 
-    def processMeans(self)->None:
+    def _processMeans(self)->None:
         self.ratio_valid = self.num > 0
         self.x[self.ratio_valid] = np.divide(self.x[self.ratio_valid], self.num[self.ratio_valid])
         self.y[self.ratio_valid] = np.divide(self.y[self.ratio_valid], self.num[self.ratio_valid])
@@ -215,7 +218,7 @@ class PerceptionFieldXY:
         self.vy[~self.ratio_valid] = np.nan
         self.dist[~self.ratio_valid] = np.nan
 
-    def processRatios(self)->None:
+    def _processRatios(self)->None:
         self.ratio_valid = self.num > 0
         self.ratio_tp[self.ratio_valid] = np.divide(self.num_tp[self.ratio_valid], self.num[self.ratio_valid])
         self.ratio_tn[self.ratio_valid] = np.divide(self.num_tn[self.ratio_valid], self.num[self.ratio_valid])
@@ -226,7 +229,7 @@ class PerceptionFieldXY:
         self.ratio_fp[~self.ratio_valid] = np.nan
         self.ratio_fn[~self.ratio_valid] = np.nan
 
-    def processError(self)->None:
+    def _processError(self)->None:
         self.pair_valid = self.num_pair > self.config_statistic_min_numb
         self.error_x_mean[self.pair_valid] = np.divide(self.error_x_mean[self.pair_valid], self.num_pair[self.pair_valid])
         self.error_x_std[self.pair_valid] = np.sqrt(np.divide(self.error_x_std[self.pair_valid], self.num_pair[self.pair_valid]))
@@ -245,27 +248,48 @@ class PerceptionFieldXY:
         self.error_delta_mean[~self.pair_valid] = np.nan
         self.error_delta_std[~self.pair_valid] = np.nan
 
+    def doPostprocess(self)->None:
+        self._processMeans()
+        self._processRatios()
+        self._processError()
+
+
+    def _getAxisIndex(self, axis:PerceptionFieldAxis, value:float) -> int:
+        # Get index of grid axis
+
+        # Process differently by its axis type
+
+        if axis.isNone():
+            return 0
+        
+        if axis.type == "angle":
+            if value > np.pi:
+                value = value - 2*np.pi
+            elif value < -np.pi:
+                value = value + 2*np.pi
+
+        idx_cell : int = 0
+        for idx, x in enumerate(axis.grid_axis):
+            if value >= x:
+                idx_cell = idx + 1
+        
+        if value < axis.grid_axis[0]:
+            idx_cell = 0
+
+        
+        if idx_cell == axis.grid_axis.shape[0]:
+            if axis.isLoop():
+                idx_cell = 0
+            else:
+                idx_cell = axis.grid_axis.shape[0] - 1
+
+        return idx_cell
+
     # Get index
     def getGridIndex(self, pos_x: float, pos_y: float) -> Tuple[int, int]:
 
-        # Process differently by its axis type
-        idx_x : int = 0
-        idx_y : int = 0
-        for idx, x in enumerate(self.grid_axis_x):
-            if pos_x >= x:
-                idx_x = idx + 1
-        if pos_x < self.grid_axis_x[0]:
-            idx_x = 0
-        if idx_x == self.nx:
-            idx_x = self.nx - 1
-
-        for idx, y in enumerate(self.grid_axis_y):
-            if pos_y >= y:
-                idx_y = idx +1
-        if pos_y < self.grid_axis_y[0]:
-            idx_y = 0
-        if idx_y == self.ny:
-            idx_y = self.ny - 1
+        idx_x :int = self._getAxisIndex(self.axis_x, pos_x)
+        idx_y :int = self._getAxisIndex(self.axis_y, pos_y)
         
         return idx_x, idx_y
    
@@ -436,16 +460,8 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 uncertainty_field.error_delta_std[idx_est_x, idx_est_y] += error_delta ** 2
 
         # process statistics
-        # mean
-        error_field.processMeans()
-        uncertainty_field.processMeans()
-        # ratio
-        error_field.processRatios()
-        uncertainty_field.processRatios()
-
-        # error score
-        error_field.processError()
-        uncertainty_field.processError()
+        error_field.doPostprocess()
+        uncertainty_field.doPostprocess()
             
         return error_field, uncertainty_field
 

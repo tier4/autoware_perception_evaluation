@@ -52,6 +52,8 @@ class PerceptionFieldPlot:
         self.ax.set_xlim(field.axis_x.plot_range)
         self.ax.set_ylim(field.axis_y.plot_range)
         self.ax.grid(c='k', ls='-', alpha=0.3)
+        self.ax.set_xticks(field.axis_x.grid_axis * field.axis_x.plot_scale)
+        self.ax.set_yticks(field.axis_y.grid_axis * field.axis_y.plot_scale)
 
     def plotMeshMap(self, field:PerceptionAnalyzer3DField, valuemap:np.ndarray, **kwargs):
         x = field.mesh_center_x * field.axis_x.plot_scale
@@ -166,10 +168,10 @@ class PerceptionLoadDatabaseResult:
         axis_dist.plot_range = [0, 110]
         # position error
         axis_error_delta : PerceptionFieldAxis = PerceptionFieldAxis(type="length", data_label="error_delta", name="Position Error")
-        grid_axis_error : np.ndarray = np.pi * np.arange(0, 2.0, 0.1)
+        grid_axis_error : np.ndarray = np.arange(0, 8.0, 0.5)
         axis_error_delta.setGridAxis(grid_axis_error)
         axis_error_delta.plot_range = [0, 6.0]
-        axis_error_delta.plot_aspect_ratio = 0.9
+        axis_error_delta.plot_aspect_ratio = 1.0
         # visual heading angle
         axis_heding : PerceptionFieldAxis = PerceptionFieldAxis(type="angle", data_label="visual_heading", name="Heading")
         # yaw error
@@ -191,11 +193,11 @@ class PerceptionLoadDatabaseResult:
         field = error_field_range
         numb = field.num
         numb[numb == 0] = np.nan
-
+        numb_log:np.ndarray = np.log10(field.num)
         # plot
         figures = []
-        figures.append(PerceptionFieldPlot(prefix + "_" + "num"))
-        figures[-1].pcolormesh(field.mesh_center_x, field.mesh_center_y, numb, vmin=0)
+        figures.append(PerceptionFieldPlot(prefix + "_" + "numb_log"))
+        figures[-1].pcolormesh(field.mesh_center_x, field.mesh_center_y, numb_log, vmin=0)
         figures[-1].setAxes(field)
 
 
@@ -203,13 +205,11 @@ class PerceptionLoadDatabaseResult:
         prefix = "yaw_error"
         error_field_yaw_error, _ = analyzer.analyzeXY(axis_heding, axis_error_yaw)
         field = error_field_yaw_error
-
-        # plot
-        figures.append(PerceptionFieldPlot(prefix + "_" + "num"))
         numb = field.num
         numb[numb == 0] = np.nan
-
         numb_log:np.ndarray = np.log10(field.num)
+        # plot
+        figures.append(PerceptionFieldPlot(prefix + "_" + "numb_log"))
         figures[-1].pcolormesh(field.mesh_center_x * 180.0 / np.pi, field.mesh_center_y * 180.0 / np.pi, numb_log, vmin=0)
         figures[-1].setAxes(field)
 
