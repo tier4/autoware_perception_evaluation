@@ -721,7 +721,7 @@ class PerceptionAnalyzerBase(ABC):
     def plot_num_object(
         self,
         mode: PlotAxes = PlotAxes.DISTANCE,
-        bins: Optional[Union[Number, Tuple[Number, Number]]] = None,
+        bins: Optional[Union[int, Tuple[int, int]]] = None,
         heatmap: bool = False,
         show: bool = False,
         **kwargs,
@@ -730,7 +730,7 @@ class PerceptionAnalyzerBase(ABC):
 
         Args:
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.DISTANCE (1-dimensional).
-            bins (Optional[Union[Number, Tuple[Number, Number]]]): The interval of time/distance.
+            bins (Optional[Union[int, Tuple[int, int]]]): The interval of time/distance.
                 If not specified, 0.1[s] for time and 0.5[m] for distance will be use. Defaults to None.
             heatmap (bool): Whether to visualize heatmap of the number of objects for corresponding axes.
                 The heatmap can be visualized only 3D axes. Defaults to False.
@@ -758,6 +758,7 @@ class PerceptionAnalyzerBase(ABC):
 
         fig: Figure = plt.figure(figsize=(16, 8))
         if mode.is_3d() and heatmap:
+            filename += "_heatmap"
             ax = fig.subplots(nrows=1, ncols=2)
         else:
             ax: Union[Axes, Axes3D] = fig.add_subplot(
@@ -787,6 +788,7 @@ class PerceptionAnalyzerBase(ABC):
             gt_xaxes, gt_yaxes = gt_axes[:, ~np.isnan(gt_axes).any(0)]
             est_xaxes, est_yaxes = est_axes[:, ~np.isnan(est_axes).any(0)]
 
+            bins = int(bins) if isinstance(bins, Number) else (int(bins[0]), int(bins[1]))
             gt_hist, gt_x_edges, gt_y_edges = np.histogram2d(gt_xaxes, gt_yaxes, bins=bins)
             est_hist, est_x_edges, est_y_edges = np.histogram2d(est_xaxes, est_yaxes, bins=bins)
             if heatmap:

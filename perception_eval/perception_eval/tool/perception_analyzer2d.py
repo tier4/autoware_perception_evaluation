@@ -333,7 +333,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
     def plot_num_object(
         self,
         show: bool = False,
-        bins: int = 1.0,
+        bins: int = 1,
         **kwargs,
     ) -> None:
         """Plot the number of objects per confidence.
@@ -367,7 +367,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         self,
         status: Union[str, MatchingStatus],
         show: bool = False,
-        bins: float = 1.0,
+        bins: float = 1,
         **kwargs,
     ) -> None:
         """Plot TP/FP/TN/FN ratio per confidence.

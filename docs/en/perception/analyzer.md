@@ -339,7 +339,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
     | `CONFIDENCE` | Confidence of estimation[GT=1.0](0, 1). |
     | `POSITION`   | xy position[m] from ego vehicle.        |
     | `VELOCITY`   | xy velocity[m/s].                       |
-    | `POLAR`      | polar coordinates, (theta[rad], r[m]).  |
+    | `POLAR`      | polar coordinates, (theta[deg], r[m]).  |
 
 - `<func> plot_state(...) -> None`
 
@@ -384,7 +384,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
   | Arguments |    type    | Mandatory | Description                                           |
   | :-------- | :--------: | :-------: | :---------------------------------------------------- |
   | `mode`    | `PlotAxes` |    No     | Target plot axes. (Defaults=`PlotAxes.DISTANCE`)      |
-  | `bins`    |  `float`   |    No     | Number of bins. (Defaults=`0.5`)                      |
+  | `bins`    |   `int`    |    No     | Number of bins. (Defaults=`1`)                        |
   | `heatmap` |   `bool`   |    No     | Whether to plot heatmap (3D only). (Defaults=`False`) |
   | `show`    |   `bool`   |    No     | Whether sho plot result.(Defaults=`False`)            |
 

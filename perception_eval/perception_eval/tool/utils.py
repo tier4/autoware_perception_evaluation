@@ -50,7 +50,7 @@ class PlotAxes(Enum):
         POSITION: X-axis is x[m], y-axis is y[m].
         VELOCITY: X-axis is vx[m/s], y-axis is vy[m/s].
         SIZE: X-axis is width[m], y-axis is height[m](2D) or length[m](3D).
-        POLAR: X-axis is theta[rad], y-axis is r[m]
+        POLAR: X-axis is theta[deg], y-axis is r[m]
     """
 
     FRAME = "frame"
@@ -122,6 +122,7 @@ class PlotAxes(Enum):
             distances: np.ndarray = np.linalg.norm(df[["x", "y"]], axis=1)
             thetas: np.ndarray = np.arctan2(df["x"], df["y"])
             thetas[thetas > np.pi] = thetas[thetas > np.pi] - 2.0 * np.pi
+            thetas = np.rad2deg(thetas)
             axes: np.ndarray = np.stack([thetas, distances], axis=0)
         else:
             raise TypeError(f"Unexpected mode: {self}")
@@ -151,32 +152,32 @@ class PlotAxes(Enum):
         elif self == PlotAxes.VELOCITY:
             return "vx [m/s]", "vy [m/s]"
         elif self == PlotAxes.POLAR:
-            return "theta [rad]", "r [m]"
+            return "theta [deg]", "r [m]"
 
-    def get_bins(self) -> Union[float, Tuple[float, float]]:
+    def get_bins(self) -> Union[int, Tuple[int, int]]:
         """Returns default bins.
 
         Returns:
-            Union[float, Tuple[float, float]]
+            Union[int, Tuple[int, int]]
         """
         if self == PlotAxes.FRAME:
-            return 1.0
+            return 1
         elif self == PlotAxes.TIME:
-            return 1.0
+            return 1
         elif self in (PlotAxes.DISTANCE, PlotAxes.X, PlotAxes.Y):
             return 10
         elif self in (PlotAxes.VX, PlotAxes.VY):
-            return 1.0
+            return 1
         elif self == PlotAxes.CONFIDENCE:
-            return 1.0
+            return 1
         elif self == PlotAxes.POSITION:
             return (10, 10)
         elif self == PlotAxes.SIZE:
-            return (5.0, 5.0)
+            return (5, 5)
         elif self == PlotAxes.VELOCITY:
-            return (1.0, 1.0)
+            return (1, 1)
         elif self == PlotAxes.POLAR:
-            return (0.2, 10)
+            return (5, 10)
 
     def setup_axis(self, ax: plt.Axes, **kwargs) -> None:
         """Setup axis limits and grid interval to plt.Axes.
