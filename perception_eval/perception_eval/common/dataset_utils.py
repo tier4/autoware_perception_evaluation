@@ -492,6 +492,8 @@ def _sample_to_frame_2d(
     ]
 
     objects_: List[DynamicObject2D] = []
+    # used to merge multiple traffic lights with same regulatory element ID
+    uuids: List[str] = []
     for ann in object_annotations:
         if evaluation_task in (EvaluationTask.DETECTION2D, EvaluationTask.TRACKING2D):
             bbox: List[float] = ann["bbox"]
@@ -511,17 +513,14 @@ def _sample_to_frame_2d(
         if label_converter.label_type == TrafficLightLabel:
             # NOTE: Check whether Regulatory Element is used
             # in scene.json => description: "TLR, regulatory_element"
-
             for instance_record in nusc.instance:
                 if instance_record["token"] == ann["instance_token"]:
                     instance_name: str = instance_record["instance_name"]
                     uuid: str = instance_name.split(":")[-1]
+                    break
+            uuids.append(uuid)
         else:
             uuid: str = ann["instance_token"]
-
-        visibility = None
-
-        logging.debug(f"uuid: {uuid}")
 
         object_: DynamicObject2D = DynamicObject2D(
             unix_time=unix_time,
@@ -530,9 +529,12 @@ def _sample_to_frame_2d(
             semantic_label=semantic_label,
             roi=roi,
             uuid=uuid,
-            visibility=visibility,
+            visibility=None,
         )
         objects_.append(object_)
+
+    if label_converter.label_type == TrafficLightLabel and evaluation_task == EvaluationTask.CLASSIFICATION2D:
+        objects_ = _merge_duplicated_traffic_lights(unix_time, objects_, uuids)
 
     frame = dataset.FrameGroundTruth(
         unix_time=unix_time,
@@ -542,3 +544,52 @@ def _sample_to_frame_2d(
     )
 
     return frame
+
+
+def _merge_duplicated_traffic_lights(
+    unix_time: int,
+    objects: List[DynamicObject2D],
+    uuids: List[str],
+) -> List[DynamicObject2D]:
+    """Merge traffic light objects which have same uuid.
+
+    Args:
+        unix_time (int): Current unix timestamp.
+        objects (List[DynamicObject2D]): List of traffic light objects.
+            It can contain the multiple traffic lights with same uuid.
+        uuids (List[str]): List of uuids.
+
+    Returns:
+        List[DynamicObject2D]: List of merged results.
+    """
+    uuids = set(uuids)
+    ret_objects: List[DynamicObject2D] = []
+    for uuid in uuids:
+        candidates = [obj for obj in objects if obj.uuid == uuid]
+        candidate_labels = [obj.semantic_label for obj in candidates]
+        if all([label == candidate_labels[0] for label in candidate_labels]):
+            # all unknown or not unknown
+            semantic_label = candidate_labels[0]
+        else:
+            unique_labels = set([obj.semantic_label.label for obj in candidates])
+            assert len(unique_labels) == 2, (
+                "If the same regulatory element ID is assigned to multiple traffic lights, "
+                f"it must annotated with only two labels: (unknown, another one). But got, {unique_labels}"
+            )
+            semantic_label = [
+                label
+                for label in candidate_labels
+                if label.label != TrafficLightLabel.UNKNOWN and TrafficLightLabel.CROSSWALK_UNKNOWN
+            ][0]
+        merged_object = DynamicObject2D(
+            unix_time=unix_time,
+            frame_id=candidates[0].frame_id,
+            semantic_score=1.0,
+            semantic_label=semantic_label,
+            roi=None,
+            uuid=uuid,
+            visibility=None,
+        )
+        ret_objects.append(merged_object)
+    assert len(ret_objects) == len(set([obj.uuid for obj in ret_objects]))
+    return ret_objects
