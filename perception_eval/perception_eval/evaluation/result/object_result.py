@@ -425,12 +425,9 @@ def _get_object_results_for_tlr(
     object_results: List[DynamicObjectWithPerceptionResult] = []
     estimated_objects_ = estimated_objects.copy()
     ground_truth_objects_ = ground_truth_objects.copy()
-    # TODO(ktro282):
-    # In case of there are multiple objects which have same regulatory element id,
-    # it might be matched with unintended GT
     for est_object in estimated_objects:
         for gt_object in ground_truth_objects_:
-            if est_object.semantic_label == gt_object.semantic_label:
+            if est_object.uuid == gt_object.uuid and est_object.semantic_label == gt_object.semantic_label:
                 object_results.append(
                     DynamicObjectWithPerceptionResult(
                         estimated_object=est_object,
@@ -439,8 +436,10 @@ def _get_object_results_for_tlr(
                 )
                 estimated_objects_.remove(est_object)
                 ground_truth_objects_.remove(gt_object)
-                logging.info(f"[OK] Est: {est_object.semantic_label.label}, GT: {gt_object.semantic_label.label}")
-                continue
+                logging.info(
+                    f"[OK] Est: {est_object.semantic_label.label}:{est_object.uuid}, "
+                    f"GT: {gt_object.semantic_label.label}:{gt_object.uuid}"
+                )
     # when there are rest of a GT objects, one of the estimated objects is FP.
     if 0 < len(ground_truth_objects_):
         object_results += _get_fp_object_results([estimated_objects_[0]])
