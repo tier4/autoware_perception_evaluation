@@ -54,6 +54,7 @@ class TrafficLightLabel(Enum):
     TRAFFIC_LIGHT = "traffic_light"
 
     # classification
+    # === for vehicle ===
     GREEN = "green"
     GREEN_STRAIGHT = "green_straight"
     GREEN_LEFT = "green_left"
@@ -74,6 +75,11 @@ class TrafficLightLabel(Enum):
     RED_STRAIGHT_LEFT_RIGHT = "red_straight_left_right"
     RED_LEFT_DIAGONAL = "red_left_diagonal"
     RED_RIGHT_DIAGONAL = "red_right_diagonal"
+
+    # === for crosswalk ===
+    CROSSWALK_RED = "crosswalk_red"
+    CROSSWALK_GREEN = "crosswalk_green"
+    CROSSWALK_UNKNOWN = "crosswalk_unknown"
 
     # unknown is used in both detection and classification
     UNKNOWN = "unknown"
@@ -373,6 +379,9 @@ def _get_traffic_light_paris(
             (TrafficLightLabel.RED_LEFT_DIAGONAL, "red_left_diagonal"),
             (TrafficLightLabel.RED_LEFT_DIAGONAL, "red_leftdiagonal"),
             (TrafficLightLabel.UNKNOWN, "unknown"),
+            (TrafficLightLabel.CROSSWALK_RED, "crosswalk_red"),
+            (TrafficLightLabel.CROSSWALK_GREEN, "crosswalk_green"),
+            (TrafficLightLabel.CROSSWALK_UNKNOWN, "crosswalk_unknown"),
             (TrafficLightLabel.FP, "false_positive"),
         ]
     else:
@@ -398,7 +407,10 @@ def _get_traffic_light_paris(
             (TrafficLightLabel.TRAFFIC_LIGHT, "red_rightdiagonal"),
             (TrafficLightLabel.TRAFFIC_LIGHT, "red_left_diagonal"),
             (TrafficLightLabel.TRAFFIC_LIGHT, "red_leftdiagonal"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "crosswalk_red"),
+            (TrafficLightLabel.TRAFFIC_LIGHT, "crosswalk_green"),
             (TrafficLightLabel.UNKNOWN, "unknown"),
+            (TrafficLightLabel.UNKNOWN, "crosswalk_unknown"),
             (TrafficLightLabel.FP, "false_positive"),
         ]
     return pair_list
