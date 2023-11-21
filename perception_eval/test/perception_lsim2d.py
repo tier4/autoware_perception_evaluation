@@ -45,10 +45,7 @@ class PerceptionLSimMoc:
         if evaluation_task in ("detection2d", "tracking2d"):
             evaluation_config_dict = {
                 "evaluation_task": evaluation_task,
-                "center_distance_thresholds": [
-                    100,
-                    200,
-                ],  # = [[100, 100, 100, 100], [200, 200, 200, 200]]
+                "center_distance_thresholds": [100, 200],  # = [[100, 100, 100, 100], [200, 200, 200, 200]]
                 "iou_2d_thresholds": [0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
             }
         elif evaluation_task == "classification2d":
@@ -59,15 +56,7 @@ class PerceptionLSimMoc:
         # If target_labels = None, all labels will be evaluated.
         evaluation_config_dict.update(
             dict(
-                target_labels=[
-                    "green",
-                    "red",
-                    "yellow",
-                    "unknown",
-                    "crosswalk_green",
-                    "crosswalk_red",
-                    "crosswalk_unknown",
-                ]
+                target_labels=["green", "red", "yellow", "unknown"]
                 if label_prefix == "traffic_light"
                 else ["car", "bicycle", "pedestrian", "motorbike"],
                 ignore_attributes=["cycle_state.without_rider"] if label_prefix == "autoware" else None,
@@ -114,14 +103,12 @@ class PerceptionLSimMoc:
 
         # 1 frameの評価
         target_labels = (
-            ["green", "red", "yellow", "unknown", "crosswalk_green", "crosswalk_red", "crosswalk_unknown"]
+            ["green", "red", "yellow", "unknown"]
             if self.label_prefix == "traffic_light"
             else ["car", "bicycle", "pedestrian", "motorbike"]
         )
         ignore_attributes = ["cycle_state.without_rider"] if self.label_prefix == "autoware" else None
-        matching_threshold_list = (
-            None if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
-        )
+        matching_threshold_list = None if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5]
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam
         critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(

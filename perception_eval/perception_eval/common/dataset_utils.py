@@ -576,11 +576,8 @@ def _merge_duplicated_traffic_lights(
                 "If the same regulatory element ID is assigned to multiple traffic lights, "
                 f"it must annotated with only two labels: (unknown, another one). But got, {unique_labels}"
             )
-            semantic_label = [
-                label
-                for label in candidate_labels
-                if label.label != TrafficLightLabel.UNKNOWN and TrafficLightLabel.CROSSWALK_UNKNOWN
-            ][0]
+            semantic_label = [label for label in candidate_labels if label.label != TrafficLightLabel.UNKNOWN][0]
+            assert semantic_label.label != TrafficLightLabel.UNKNOWN
         merged_object = DynamicObject2D(
             unix_time=unix_time,
             frame_id=candidates[0].frame_id,
