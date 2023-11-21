@@ -115,8 +115,8 @@ class PerceptionVisualizer2D:
         self.label_type: Union[AutowareLabel, TrafficLightLabel] = self.__config.label_converter.label_type
 
         if self.label_type == TrafficLightLabel:
-            self.camera_names: Tuple[str] = ("cam_traffic_light_near", "cam_traffic_light_far")
-            fig, axes = plt.subplots(1, 2, figsize=self.__figsize, gridspec_kw=dict(wspace=0))
+            self.camera_names: Tuple[str] = ("cam_traffic_light_near", "cam_traffic_light_far", "traffic_light")
+            fig, axes = plt.subplots(1, 3, figsize=self.__figsize, gridspec_kw=dict(wspace=0))
         elif self.label_type == AutowareLabel:
             self.camera_names: Tuple[str] = (
                 "cam_front_left",
