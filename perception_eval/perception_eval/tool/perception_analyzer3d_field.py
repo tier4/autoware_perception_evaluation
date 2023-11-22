@@ -177,15 +177,18 @@ class PerceptionFieldXY:
         self.generateGrid(axis_x, axis_y)
 
         # Define layers
+
+        # Object statistics
         self.x: np.ndarray = np.zeros((self.nx, self.ny))
         self.y: np.ndarray = np.zeros((self.nx, self.ny))
         self.yaw: np.ndarray = np.zeros((self.nx, self.ny))
         self.vx: np.ndarray = np.zeros((self.nx, self.ny))
         self.vy: np.ndarray = np.zeros((self.nx, self.ny))
         self.dist: np.ndarray = np.zeros((self.nx, self.ny))
-
         self.num: np.ndarray = np.zeros((self.nx, self.ny))
-        self.ratio_valid: np.ndarray = np.ones((self.nx, self.ny))
+        self.num_pair: np.ndarray = np.zeros((self.nx, self.ny))
+
+        # Detection statistics
         self.num_tp: np.ndarray = np.zeros((self.nx, self.ny))
         self.num_tn: np.ndarray = np.zeros((self.nx, self.ny))
         self.num_fp: np.ndarray = np.zeros((self.nx, self.ny))
@@ -194,8 +197,9 @@ class PerceptionFieldXY:
         self.ratio_tn: np.ndarray = np.zeros((self.nx, self.ny))
         self.ratio_fp: np.ndarray = np.zeros((self.nx, self.ny))
         self.ratio_fn: np.ndarray = np.zeros((self.nx, self.ny))
+        self.confidence: np.ndarray = np.zeros((self.nx, self.ny))
 
-        self.num_pair: np.ndarray = np.zeros((self.nx, self.ny))
+        # Error statistics
         self.pair_valid: np.ndarray = np.ones((self.nx, self.ny))
         self.error_x_mean: np.ndarray = np.zeros((self.nx, self.ny))
         self.error_x_std: np.ndarray = np.zeros((self.nx, self.ny))
@@ -205,10 +209,15 @@ class PerceptionFieldXY:
         self.error_delta_std: np.ndarray = np.zeros((self.nx, self.ny))
         self.error_yaw_mean: np.ndarray = np.zeros((self.nx, self.ny))
         self.error_yaw_std: np.ndarray = np.zeros((self.nx, self.ny))
+        self.error_dist_mean: np.ndarray = np.zeros((self.nx, self.ny))
+        self.error_dist_std: np.ndarray = np.zeros((self.nx, self.ny))
+        self.error_azimuth_mean: np.ndarray = np.zeros((self.nx, self.ny))
+        self.error_azimuth_std: np.ndarray = np.zeros((self.nx, self.ny))
 
         # TODO: Array of numpy array
         # Collect all data points on each cell of array
         # then calculate statistics, plot all points, etc.
+
 
     def _getCellPos(self, field_axis: PerceptionFieldAxis) -> np.ndarray:
         """
@@ -286,45 +295,49 @@ class PerceptionFieldXY:
         """
         Processes the mean values of the perception field.
         """
-        self.ratio_valid = self.num > 0
-        self.x[self.ratio_valid] = np.divide(self.x[self.ratio_valid], self.num[self.ratio_valid])
-        self.y[self.ratio_valid] = np.divide(self.y[self.ratio_valid], self.num[self.ratio_valid])
-        self.yaw[self.ratio_valid] = np.divide(
-            self.yaw[self.ratio_valid], self.num[self.ratio_valid]
+        mask = self.num > 0
+        self.x[mask] = np.divide(self.x[mask], self.num[mask])
+        self.y[mask] = np.divide(self.y[mask], self.num[mask])
+        self.yaw[mask] = np.divide(
+            self.yaw[mask], self.num[mask]
         )
-        self.vx[self.ratio_valid] = np.divide(self.vx[self.ratio_valid], self.num[self.ratio_valid])
-        self.vy[self.ratio_valid] = np.divide(self.vy[self.ratio_valid], self.num[self.ratio_valid])
-        self.dist[self.ratio_valid] = np.divide(
-            self.dist[self.ratio_valid], self.num[self.ratio_valid]
+        self.vx[mask] = np.divide(self.vx[mask], self.num[mask])
+        self.vy[mask] = np.divide(self.vy[mask], self.num[mask])
+        self.dist[mask] = np.divide(
+            self.dist[mask], self.num[mask]
         )
-        self.x[~self.ratio_valid] = self.mesh_center_x[~self.ratio_valid]
-        self.y[~self.ratio_valid] = self.mesh_center_y[~self.ratio_valid]
-        self.yaw[~self.ratio_valid] = np.nan
-        self.vx[~self.ratio_valid] = np.nan
-        self.vy[~self.ratio_valid] = np.nan
-        self.dist[~self.ratio_valid] = np.nan
+        self.confidence[mask] = np.divide(
+            self.confidence[mask], self.num[mask]
+        )
+        self.x[~mask] = self.mesh_center_x[~mask]
+        self.y[~mask] = self.mesh_center_y[~mask]
+        self.yaw[~mask] = np.nan
+        self.vx[~mask] = np.nan
+        self.vy[~mask] = np.nan
+        self.dist[~mask] = np.nan
+        self.confidence[~mask] = np.nan
 
     def _processRatios(self) -> None:
         """
         Processes the ratio values of the perception field.
         """
-        self.ratio_valid = self.num > 0
-        self.ratio_tp[self.ratio_valid] = np.divide(
-            self.num_tp[self.ratio_valid], self.num[self.ratio_valid]
+        mask = self.num > 0
+        self.ratio_tp[mask] = np.divide(
+            self.num_tp[mask], self.num[mask]
         )
-        self.ratio_tn[self.ratio_valid] = np.divide(
-            self.num_tn[self.ratio_valid], self.num[self.ratio_valid]
+        self.ratio_tn[mask] = np.divide(
+            self.num_tn[mask], self.num[mask]
         )
-        self.ratio_fp[self.ratio_valid] = np.divide(
-            self.num_fp[self.ratio_valid], self.num[self.ratio_valid]
+        self.ratio_fp[mask] = np.divide(
+            self.num_fp[mask], self.num[mask]
         )
-        self.ratio_fn[self.ratio_valid] = np.divide(
-            self.num_fn[self.ratio_valid], self.num[self.ratio_valid]
+        self.ratio_fn[mask] = np.divide(
+            self.num_fn[mask], self.num[mask]
         )
-        self.ratio_tp[~self.ratio_valid] = np.nan
-        self.ratio_tn[~self.ratio_valid] = np.nan
-        self.ratio_fp[~self.ratio_valid] = np.nan
-        self.ratio_fn[~self.ratio_valid] = np.nan
+        self.ratio_tp[~mask] = np.nan
+        self.ratio_tn[~mask] = np.nan
+        self.ratio_fp[~mask] = np.nan
+        self.ratio_fn[~mask] = np.nan
 
     def _processError(self) -> None:
         """
@@ -504,6 +517,8 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         self.df["error_y"] = np.nan
         self.df["error_yaw"] = np.nan
         self.df["error_delta"] = np.nan
+        self.df["error_dist"] = np.nan
+        self.df["error_azimuth"] = np.nan
 
         # Get ground truth and estimation data
         gt_mask = self.df.index.get_level_values(1) == "ground_truth"
@@ -526,6 +541,10 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         error_yaw: np.ndarray = est["yaw"].values[valid_mask] - gt["yaw"].values[valid_mask]
         error_yaw[error_yaw > np.pi] -= 2 * np.pi
         error_yaw[error_yaw < -np.pi] += 2 * np.pi
+        error_distance: np.ndarray  = est["dist"].values[valid_mask] - gt["dist"].values[valid_mask]
+        error_azimuth: np.ndarray  = est["azimuth"].values[valid_mask] - gt["azimuth"].values[valid_mask]
+        error_azimuth[error_azimuth > np.pi] -= 2 * np.pi
+        error_azimuth[error_azimuth < -np.pi] += 2 * np.pi
 
         valid_mask = np.repeat(valid_mask.values, 2, axis=0)
 
@@ -534,10 +553,14 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         self.df.loc[gt_mask & valid_mask, "error_y"] = error_y
         self.df.loc[gt_mask & valid_mask, "error_delta"] = error_delta
         self.df.loc[gt_mask & valid_mask, "error_yaw"] = error_yaw
+        self.df.loc[gt_mask & valid_mask, "error_dist"] = error_distance
+        self.df.loc[gt_mask & valid_mask, "error_azimuth"] = error_azimuth
         self.df.loc[est_mask & valid_mask, "error_x"] = -error_x
         self.df.loc[est_mask & valid_mask, "error_y"] = -error_y
         self.df.loc[est_mask & valid_mask, "error_delta"] = error_delta
         self.df.loc[est_mask & valid_mask, "error_yaw"] = -error_yaw
+        self.df.loc[est_mask & valid_mask, "error_dist"] = -error_distance
+        self.df.loc[est_mask & valid_mask, "error_azimuth"] = -error_azimuth
 
     def analyzeXY(
         self, axis_x: PerceptionFieldAxis, axis_y: PerceptionFieldAxis, **kwargs
@@ -592,6 +615,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 error_field.vx[idx_gt_x, idx_gt_y] += gt["vx"]
                 error_field.vy[idx_gt_x, idx_gt_y] += gt["vy"]
                 error_field.dist[idx_gt_x, idx_gt_y] += np.sqrt(gt["x"] ** 2 + gt["y"] ** 2)
+                error_field.confidence[idx_gt_x, idx_gt_y] += gt["confidence"]
 
                 if gt["status"] == MatchingStatus.TP.value:
                     error_field.num_tp[idx_gt_x, idx_gt_y] += 1
@@ -604,6 +628,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 else:
                     pass
 
+
             if is_est_valid:
                 idx_est_x, idx_est_y = uncertainty_field.getGridIndex(
                     est[label_axis_x], est[label_axis_y]
@@ -615,6 +640,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 uncertainty_field.yaw[idx_est_x, idx_est_y] += est["yaw"]
                 uncertainty_field.vx[idx_est_x, idx_est_y] += est["vx"]
                 uncertainty_field.vy[idx_est_x, idx_est_y] += est["vy"]
+                uncertainty_field.confidence[idx_est_x, idx_est_y] += est["confidence"]
 
                 if est["status"] == MatchingStatus.TP.value:
                     uncertainty_field.num_tp[idx_est_x, idx_est_y] += 1
