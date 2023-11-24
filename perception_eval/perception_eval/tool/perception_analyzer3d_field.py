@@ -26,6 +26,7 @@ import logging
 import numpy as np
 import pandas as pd
 import yaml
+from enum import IntEnum, auto
 
 from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
@@ -149,6 +150,26 @@ class PerceptionFieldAxis:
         return self.name + " [" + self.unit + "]"
 
 
+class DataTableIdx(IntEnum):
+    X = 0
+    Y = auto()
+    YAW = auto()
+    VX = auto()
+    VY = auto()
+    DIST = auto()
+    AZIMUTH = auto()
+    HEADING = auto()
+    WIDTH = auto()
+    LENGTH = auto()
+    D_X = auto()
+    D_Y = auto()
+    D_YAW = auto()
+    D_DIST = auto()
+    D_AZIMUTH = auto()
+    D_WIDTH = auto()
+    D_LENGTH = auto()
+
+
 class PerceptionFieldXY:
     def __init__(
         self,
@@ -213,10 +234,6 @@ class PerceptionFieldXY:
         self.error_dist_std: np.ndarray = np.zeros((self.nx, self.ny))
         self.error_azimuth_mean: np.ndarray = np.zeros((self.nx, self.ny))
         self.error_azimuth_std: np.ndarray = np.zeros((self.nx, self.ny))
-
-        # TODO: Array of numpy array
-        # Collect all data points on each cell of array
-        # then calculate statistics, plot all points, etc.
 
 
     def _getCellPos(self, field_axis: PerceptionFieldAxis) -> np.ndarray:
@@ -298,17 +315,11 @@ class PerceptionFieldXY:
         mask = self.num > 0
         self.x[mask] = np.divide(self.x[mask], self.num[mask])
         self.y[mask] = np.divide(self.y[mask], self.num[mask])
-        self.yaw[mask] = np.divide(
-            self.yaw[mask], self.num[mask]
-        )
+        self.yaw[mask] = np.divide(self.yaw[mask], self.num[mask])
         self.vx[mask] = np.divide(self.vx[mask], self.num[mask])
         self.vy[mask] = np.divide(self.vy[mask], self.num[mask])
-        self.dist[mask] = np.divide(
-            self.dist[mask], self.num[mask]
-        )
-        self.confidence[mask] = np.divide(
-            self.confidence[mask], self.num[mask]
-        )
+        self.dist[mask] = np.divide(self.dist[mask], self.num[mask])
+        self.confidence[mask] = np.divide(self.confidence[mask], self.num[mask])
         self.x[~mask] = self.mesh_center_x[~mask]
         self.y[~mask] = self.mesh_center_y[~mask]
         self.yaw[~mask] = np.nan
@@ -322,18 +333,10 @@ class PerceptionFieldXY:
         Processes the ratio values of the perception field.
         """
         mask = self.num > 0
-        self.ratio_tp[mask] = np.divide(
-            self.num_tp[mask], self.num[mask]
-        )
-        self.ratio_tn[mask] = np.divide(
-            self.num_tn[mask], self.num[mask]
-        )
-        self.ratio_fp[mask] = np.divide(
-            self.num_fp[mask], self.num[mask]
-        )
-        self.ratio_fn[mask] = np.divide(
-            self.num_fn[mask], self.num[mask]
-        )
+        self.ratio_tp[mask] = np.divide(self.num_tp[mask], self.num[mask])
+        self.ratio_tn[mask] = np.divide(self.num_tn[mask], self.num[mask])
+        self.ratio_fp[mask] = np.divide(self.num_fp[mask], self.num[mask])
+        self.ratio_fn[mask] = np.divide(self.num_fn[mask], self.num[mask])
         self.ratio_tp[~mask] = np.nan
         self.ratio_tn[~mask] = np.nan
         self.ratio_fp[~mask] = np.nan
@@ -520,6 +523,20 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         self.df["error_dist"] = np.nan
         self.df["error_azimuth"] = np.nan
 
+        # load all data, without filtering
+        df = self.df
+        
+        # check on each index level 0, that has grount_truth and estimation in index level 1
+        # then mask of dataframe index that has both ground_truth and estimation
+        gt_est_pair_mask: np.ndarray = np.zeros(df.shape[0], dtype=bool)
+        pos: int = 0
+        for _, item in df.groupby(level=0):
+            item_length = item.shape[0]
+            pos += item_length
+            if "ground_truth" in item.index.get_level_values(1) and "estimation" in item.index.get_level_values(1):
+                gt_est_pair_mask[pos - item_length : pos] = True
+        df = df[gt_est_pair_mask]
+
         # Get ground truth and estimation data
         gt_mask = self.df.index.get_level_values(1) == "ground_truth"
         est_mask = self.df.index.get_level_values(1) == "estimation"
@@ -541,11 +558,14 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         error_yaw: np.ndarray = est["yaw"].values[valid_mask] - gt["yaw"].values[valid_mask]
         error_yaw[error_yaw > np.pi] -= 2 * np.pi
         error_yaw[error_yaw < -np.pi] += 2 * np.pi
-        error_distance: np.ndarray  = est["dist"].values[valid_mask] - gt["dist"].values[valid_mask]
-        error_azimuth: np.ndarray  = est["azimuth"].values[valid_mask] - gt["azimuth"].values[valid_mask]
+        error_distance: np.ndarray = est["dist"].values[valid_mask] - gt["dist"].values[valid_mask]
+        error_azimuth: np.ndarray = (
+            est["azimuth"].values[valid_mask] - gt["azimuth"].values[valid_mask]
+        )
         error_azimuth[error_azimuth > np.pi] -= 2 * np.pi
         error_azimuth[error_azimuth < -np.pi] += 2 * np.pi
 
+        # repeat valid_mask, since each pair has two rows
         valid_mask = np.repeat(valid_mask.values, 2, axis=0)
 
         # Update error columns
@@ -561,6 +581,116 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         self.df.loc[est_mask & valid_mask, "error_yaw"] = -error_yaw
         self.df.loc[est_mask & valid_mask, "error_dist"] = -error_distance
         self.df.loc[est_mask & valid_mask, "error_azimuth"] = -error_azimuth
+
+    # TODO: all point loader
+    # three types of tabels, GT, Est, and GT-Est pair
+    def analyzeAll(self, **kwargs) -> None:
+
+        self.analyzeGT(**kwargs)
+        self.analyzeEst( **kwargs)
+        self.analyzeAllPair(**kwargs)
+
+
+    def analyzeGT(self, **kwargs) -> None:
+        """Analyze ground truth data."""
+        # Extrack data
+        df: pd.DataFrame = self.get(**kwargs)
+
+        gt = df[df.index.get_level_values(1) == "ground_truth"].droplevel(level=1)
+        valid_mask: pd.DataFrame = (
+            ~np.isnan(gt["x"])
+            & ~np.isnan(gt["y"])
+            & ~np.isnan(gt["yaw"])
+        )
+        self.data_gt: np.ndarray = np.concatenate(
+            (
+                [gt["x"].values[valid_mask]],
+                [gt["y"].values[valid_mask]],
+                [gt["yaw"].values[valid_mask]],
+                [gt["vx"].values[valid_mask]],
+                [gt["vy"].values[valid_mask]],
+                [gt["dist"].values[valid_mask]],
+                [gt["azimuth"].values[valid_mask]],
+                [gt["visual_heading"].values[valid_mask]],
+                [gt["width"].values[valid_mask]],
+                [gt["length"].values[valid_mask]],
+            )
+        ).transpose()
+
+    def analyzeEst(self, **kwargs) -> None:
+        """Analyze estimation data."""
+        # Extrack data
+        df: pd.DataFrame = self.get(**kwargs)
+
+        est = df[df.index.get_level_values(1) == "estimation"].droplevel(level=1)
+        valid_mask: pd.DataFrame = (
+            ~np.isnan(est["x"])
+            & ~np.isnan(est["y"])
+            & ~np.isnan(est["yaw"])
+        )
+        self.data_est: np.ndarray = np.concatenate(
+            (
+                [est["x"].values[valid_mask]],
+                [est["y"].values[valid_mask]],
+                [est["yaw"].values[valid_mask]],
+                [est["dist"].values[valid_mask]],
+                [est["azimuth"].values[valid_mask]],
+                [est["width"].values[valid_mask]],
+                [est["length"].values[valid_mask]],
+            )
+        ).transpose()
+
+    def analyzeAllPair(self, **kwargs) -> None:    
+        # Extrack data
+        df: pd.DataFrame = self.get(**kwargs)
+
+        # check on each index level 0, that has grount_truth and estimation in index level 1
+        # then mask of dataframe index that has both ground_truth and estimation
+        gt_est_pair_mask: np.ndarray = np.zeros(df.shape[0], dtype=bool)
+        pos: int = 0
+        for _, item in df.groupby(level=0):
+            item_length = item.shape[0]
+            pos += item_length
+            if "ground_truth" in item.index.get_level_values(1) and "estimation" in item.index.get_level_values(1):
+                gt_est_pair_mask[pos - item_length : pos] = True
+        df = df[gt_est_pair_mask]
+
+        # get ground_truth and estimation data
+        gt = df[df.index.get_level_values(1) == "ground_truth"].droplevel(level=1)
+        est = df[df.index.get_level_values(1) == "estimation"].droplevel(level=1)
+
+        # create mask that indicates whether the ground_truth and estimation are valid
+        valid_mask: pd.DataFrame = (
+            ~np.isnan(gt["x"])
+            & ~np.isnan(gt["y"])
+            & ~np.isnan(gt["yaw"])
+            & ~np.isnan(est["x"])
+            & ~np.isnan(est["y"])
+            & ~np.isnan(est["yaw"])
+        )
+
+        # fill the data, following definition of DataTableIdx
+        self.data_pair: np.ndarray = np.concatenate(
+            (
+                [gt["x"].values[valid_mask]],
+                [gt["y"].values[valid_mask]],
+                [gt["yaw"].values[valid_mask]],
+                [gt["vx"].values[valid_mask]],
+                [gt["vy"].values[valid_mask]],
+                [gt["dist"].values[valid_mask]],
+                [gt["azimuth"].values[valid_mask]],
+                [gt["visual_heading"].values[valid_mask]],
+                [gt["width"].values[valid_mask]],
+                [gt["length"].values[valid_mask]],
+                [est["x"].values[valid_mask]],
+                [est["y"].values[valid_mask]],
+                [est["yaw"].values[valid_mask]],
+                [est["dist"].values[valid_mask]],
+                [est["azimuth"].values[valid_mask]],
+                [est["width"].values[valid_mask]],
+                [est["length"].values[valid_mask]],
+            )
+        ).transpose()
 
     def analyzeXY(
         self, axis_x: PerceptionFieldAxis, axis_y: PerceptionFieldAxis, **kwargs
@@ -589,7 +719,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         error_field: PerceptionFieldXY = PerceptionFieldXY(self.config, axis_x, axis_y)
         uncertainty_field: PerceptionFieldXY = PerceptionFieldXY(self.config, axis_x, axis_y)
 
-        # loop for each frame
+        # loop for each index
         for _, item in df.groupby(level=0):
             pair = item.droplevel(level=0)
             is_gt_valid: bool = False
@@ -628,7 +758,6 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 else:
                     pass
 
-
             if is_est_valid:
                 idx_est_x, idx_est_y = uncertainty_field.getGridIndex(
                     est[label_axis_x], est[label_axis_y]
@@ -659,6 +788,8 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 error_y: float = gt["error_y"]
                 error_delta: float = gt["error_delta"]
                 error_yaw: float = gt["error_yaw"]
+                error_dist: float = gt["error_dist"]
+                error_azimuth: float = gt["error_azimuth"]
 
                 # fill the bins
                 idx_gt_x, idx_gt_y = error_field.getGridIndex(gt[label_axis_x], gt[label_axis_y])
@@ -671,6 +802,10 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 error_field.error_yaw_std[idx_gt_x, idx_gt_y] += error_yaw**2
                 error_field.error_delta_mean[idx_gt_x, idx_gt_y] += error_delta
                 error_field.error_delta_std[idx_gt_x, idx_gt_y] += error_delta**2
+                error_field.error_dist_mean[idx_gt_x, idx_gt_y] += error_dist
+                error_field.error_dist_std[idx_gt_x, idx_gt_y] += error_dist**2
+                error_field.error_azimuth_mean[idx_gt_x, idx_gt_y] += error_azimuth
+                error_field.error_azimuth_std[idx_gt_x, idx_gt_y] += error_azimuth**2
 
                 idx_est_x, idx_est_y = uncertainty_field.getGridIndex(
                     est[label_axis_x], est[label_axis_y]
@@ -684,6 +819,10 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 uncertainty_field.error_yaw_std[idx_est_x, idx_est_y] += error_yaw**2
                 uncertainty_field.error_delta_mean[idx_est_x, idx_est_y] += error_delta
                 uncertainty_field.error_delta_std[idx_est_x, idx_est_y] += error_delta**2
+                uncertainty_field.error_dist_mean[idx_est_x, idx_est_y] += -error_dist
+                uncertainty_field.error_dist_std[idx_est_x, idx_est_y] += error_dist**2
+                uncertainty_field.error_azimuth_mean[idx_est_x, idx_est_y] += -error_azimuth
+                uncertainty_field.error_azimuth_std[idx_est_x, idx_est_y] += error_azimuth**2
 
         # process statistics
         error_field.doPostprocess()

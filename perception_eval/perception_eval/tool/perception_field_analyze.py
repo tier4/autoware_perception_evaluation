@@ -22,6 +22,7 @@ from pathlib import Path
 from perception_eval.tool import PerceptionAnalyzer3DField
 from perception_eval.tool import PerceptionFieldXY
 from perception_eval.tool import PerceptionFieldAxis
+from perception_eval.tool import DataTableIdx
 
 import matplotlib.pyplot as plt
 import simplejson as json
@@ -80,6 +81,13 @@ class PerceptionFieldPlot:
         self.cs = self.ax.pcolormesh(x, y, z, shading="nearest", **kwargs)
         self.cbar = self.figure.colorbar(self.cs)
 
+    def plotScatter(self, x, y, **kwargs) -> None:
+        self.cs = self.ax.scatter(x, y, **kwargs)
+
+    def plotScatter3D(self, x, y, z, **kwargs) -> None:
+        self.ax.clear()
+        self.ax = self.figure.add_subplot(111, projection="3d")
+        self.cs = self.ax.scatter(x, y, z, **kwargs)
 
 class PerceptionLoadDatabaseResult:
     def __init__(self, result_root_directory: str, scenario_path: str, show: bool = False) -> None:
@@ -117,7 +125,7 @@ class PerceptionLoadDatabaseResult:
             self.analyseAndVisualize(analyzer, subfolder=label_group, label=labels)
             print("Done")
 
-        # for debug
+        # # for debug
         # print(analyzer.df)
         # print(analyzer.df.columns)
 
@@ -244,6 +252,33 @@ class PerceptionLoadDatabaseResult:
         else:
             print("No TP data, nothing for error analysis")
 
+        # all data analysis
+        analyzer.analyzeAll(**kwargs)
+        prefix = "all_points"
+
+        figures.append(PerceptionFieldPlot(prefix + "_" + "dist_diff"))
+        figures[-1].plotScatter(analyzer.data_pair[:, DataTableIdx.DIST], analyzer.data_pair[:, DataTableIdx.D_DIST])
+
+        figures.append(PerceptionFieldPlot(prefix + "_" + "azimuth_diff"))
+        figures[-1].plotScatter(analyzer.data_pair[:, DataTableIdx.AZIMUTH], analyzer.data_pair[:, DataTableIdx.D_AZIMUTH])
+
+        azimuth_error: np.ndarray = (analyzer.data_pair[:, DataTableIdx.D_AZIMUTH] - analyzer.data_pair[:, DataTableIdx.AZIMUTH])
+        azimuth_error[azimuth_error > np.pi] -= 2 * np.pi
+        azimuth_error[azimuth_error < -np.pi] += 2 * np.pi
+        azimuth_dist_error: np.ndarray = azimuth_error * analyzer.data_pair[:, DataTableIdx.DIST]
+        figures.append(PerceptionFieldPlot(prefix + "_" + "dist_latitudinal_dist_error"))
+        figures[-1].plotScatter(analyzer.data_pair[:, DataTableIdx.DIST], 
+                                azimuth_dist_error)
+        
+        dist_error = analyzer.data_pair[:, DataTableIdx.D_DIST] - analyzer.data_pair[:, DataTableIdx.DIST]
+        figures.append(PerceptionFieldPlot(prefix + "_" + "X_Y_dist_error"))
+        figures[-1].plotScatter3D(analyzer.data_pair[:, DataTableIdx.X],
+                                  analyzer.data_pair[:, DataTableIdx.Y],
+                                  dist_error)
+        figures[-1].ax.set_xlabel("X")
+        figures[-1].ax.set_ylabel("Y")
+        figures[-1].ax.set_zlabel("dist error")
+
         # Save plots
         for fig in figures:
             fig.figure.savefig(Path(plot_dir, fig.name + ".png"))
@@ -253,6 +288,7 @@ class PerceptionLoadDatabaseResult:
             plt.show()
 
         plt.close("all")
+        
 
     def visualize(self, field: PerceptionFieldXY, prefix: str, save_dir: str) -> None:
         # Check if there is no TP data
