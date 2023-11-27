@@ -22,6 +22,7 @@ from perception_eval.tool import PerceptionFieldXY
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 class PerceptionFieldPlot:
     def __init__(self, figname: str, value: str = "Value []") -> None:
         self.name: str = figname
@@ -39,7 +40,7 @@ class PerceptionFieldPlot:
         self.cs = self.ax.contourf(x, y, z, **kwargs)
         self.ax.contour(self.cs, colors="k")
         self.cbar = self.figure.colorbar(self.cs)
-        self.cbar.set_label(self.value)    
+        self.cbar.set_label(self.value)
 
     def setAxis1D(self, field: PerceptionFieldXY, value: np.ndarray) -> None:
         if np.all(np.isnan(value)):
@@ -76,7 +77,7 @@ class PerceptionFieldPlot:
         z = valuemap
         self.cs = self.ax.pcolormesh(x, y, z, shading="nearest", **kwargs)
         self.cbar = self.figure.colorbar(self.cs)
-        self.cbar.set_label(self.value)    
+        self.cbar.set_label(self.value)
 
     def plotScatter(self, x, y, **kwargs) -> None:
         self.cs = self.ax.scatter(x, y, **kwargs)
@@ -91,17 +92,17 @@ class PerceptionFieldPlot:
 
 
 class PerceptionFieldPlots:
-    def __init__(self, save_dir:str) -> None:
+    def __init__(self, save_dir: str) -> None:
         self.save_dir = save_dir
         self.figures: list[PerceptionFieldPlot] = []
-    
+
     def add(self, figure: PerceptionFieldPlot) -> None:
         self.figures.append(figure)
 
     def save(self) -> None:
         for fig in self.figures:
             fig.figure.savefig(Path(self.save_dir, fig.name + ".png"))
-    
+
     def show(self) -> None:
         plt.show()
 
@@ -111,13 +112,17 @@ class PerceptionFieldPlots:
     @property
     def last(self) -> PerceptionFieldPlot:
         return self.figures[-1]
-    
-    def plot_field_basics(self, field: PerceptionFieldXY, prefix: str) -> None:
 
+    def plot_field_basics(
+        self, field: PerceptionFieldXY, prefix: str, is_uncertainty: bool = False
+    ) -> None:
         # Preprocess
         mask_layer: np.ndarray = np.zeros(np.shape(field.num_pair), dtype=np.bool_)
         mask_layer[field.num_pair == 0] = True
         field.num_pair[mask_layer] = np.nan
+
+        if is_uncertainty:
+            prefix = prefix + "_uncertainty"
 
         # Plot
         # Number of data
@@ -134,15 +139,19 @@ class PerceptionFieldPlots:
         self.add(PerceptionFieldPlot(prefix + "_" + "ratio_fp", "False Positive rate [-]"))
         self.last.plotMeshMap(field, field.ratio_fp, vmin=0, vmax=1)
         self.last.setAxes(field)
-
-        # False negative rate
-        self.add(PerceptionFieldPlot(prefix + "_" + "ratio_fn", "False Negative rate [-]"))
-        self.last.plotMeshMap(field, field.ratio_fn, vmin=0, vmax=1)
-        self.last.setAxes(field)
+        
+        if is_uncertainty==False:
+            # False negative rate
+            self.add(PerceptionFieldPlot(prefix + "_" + "ratio_fn", "False Negative rate [-]"))
+            self.last.plotMeshMap(field, field.ratio_fn, vmin=0, vmax=1)
+            self.last.setAxes(field)
 
         # Position error
         if field.has_any_error_data:
-            self.add(PerceptionFieldPlot(prefix + "_" + "delta_mean_mesh", "Mean position error [m]"))
+            title: str = "Position error [m]"
+            if is_uncertainty:
+                title = "Position uncertainty [m]"
+            self.add(PerceptionFieldPlot(prefix + "_" + "delta_mean_mesh", title))
             vmax = 1
             if np.all(np.isnan(field.error_delta_mean)) != True:
                 vmax = np.nanmax(field.error_delta_mean)
@@ -161,16 +170,21 @@ class PerceptionFieldPlots:
             _ = self.last.ax.scatter(x_mean_plot, y_mean_plot, marker="+", c="r", s=10)
             self.last.setAxes(field)
         else:
-            print("Plot (Prefix "+prefix+"): No TP data, nothing for error analysis")
+            print("Plot (Prefix " + prefix + "): No TP data, nothing for error analysis")
 
-    def plot_custom_field(self, field: PerceptionFieldXY, array: np.ndarray, filename: str, title: str, **kwargs) -> None:
+    def plot_custom_field(
+        self, field: PerceptionFieldXY, array: np.ndarray, filename: str, title: str, **kwargs
+    ) -> None:
         self.add(PerceptionFieldPlot(filename, title))
         self.last.plotMeshMap(field, array, **kwargs)
         self.last.setAxes(field)
 
+    def plot_axis_basic(
+        self, field: PerceptionFieldXY, prefix: str, is_uncertainty: bool = False
+    ) -> None:
+        if is_uncertainty:
+            prefix = prefix + "_uncertainty"
 
-    def plot_axis_basic(self, field: PerceptionFieldXY, prefix: str) -> None:
-        
         self.add(PerceptionFieldPlot(prefix + "_" + "numb", "Samples [-]"))
         self.last.ax.scatter(field.dist, field.num, marker="x", c="r", s=10, label="Samples")
         self.last.setAxis1D(field, field.num)
@@ -185,8 +199,10 @@ class PerceptionFieldPlots:
         self.last.ax.legend()
 
         if field.has_any_error_data == True:
-            self.add(PerceptionFieldPlot(prefix + "_" + "error_delta_bar", "Position error [m]"))
-            self.last.ax.set_ylim([-1, 5])
+            title: str = "Position error [m]"
+            if is_uncertainty:
+                title = "Position uncertainty [m]"
+            self.add(PerceptionFieldPlot(prefix + "_" + "error_delta_bar", title))
             self.last.ax.errorbar(
                 field.dist.flatten(),
                 field.error_delta_mean.flatten(),
@@ -196,5 +212,6 @@ class PerceptionFieldPlots:
             )
             self.last.setAxis1D(field, field.error_delta_mean)
             self.last.ax.set_aspect(10.0 / 1)
+            self.last.ax.set_ylim([-1, 5])
         else:
-            print("Plot (Prefix "+prefix+"): No TP data, nothing for error analysis")
+            print("Plot (Prefix " + prefix + "): No TP data, nothing for error analysis")

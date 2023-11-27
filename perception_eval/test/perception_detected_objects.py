@@ -47,7 +47,7 @@ class PerceptionFieldPlot:
         self.cs = self.ax.contourf(x, y, z, **kwargs)
         self.ax.contour(self.cs, colors="k")
         self.cbar = self.figure.colorbar(self.cs)
-        self.cbar.set_label(self.value)    
+        self.cbar.set_label(self.value)
 
     def setAxis1D(self, field: PerceptionFieldXY, value: np.ndarray) -> None:
         if np.all(np.isnan(value)):
@@ -84,7 +84,7 @@ class PerceptionFieldPlot:
         z = valuemap
         self.cs = self.ax.pcolormesh(x, y, z, shading="nearest", **kwargs)
         self.cbar = self.figure.colorbar(self.cs)
-        self.cbar.set_label(self.value)    
+        self.cbar.set_label(self.value)
 
     def plotScatter(self, x, y, **kwargs) -> None:
         self.cs = self.ax.scatter(x, y, **kwargs)
@@ -96,7 +96,6 @@ class PerceptionFieldPlot:
         # enlarge figure size
         self.figure.set_size_inches(14, 10)
         self.ax.set_zlabel(self.value)
-
 
 
 class PerceptionLoadDatabaseResult:
@@ -134,7 +133,6 @@ class PerceptionLoadDatabaseResult:
             self.analyseAndVisualize(analyzer, subfolder=label_group, label=labels)
             print("Done")
 
-
     def analyseAndVisualize(
         self, analyzer: PerceptionAnalyzer3DField, subfolder: str, **kwargs
     ) -> None:
@@ -157,7 +155,9 @@ class PerceptionLoadDatabaseResult:
         figures[-1].ax.set_ylabel("Est Distance [m]")
 
         figures.append(PerceptionFieldPlot(prefix + "_" + "azimuth_diff", "Azimuth error [rad]"))
-        figures[-1].plotScatter(table_gt[:, DataTableIdx.AZIMUTH], table_est[:, DataTableIdx.AZIMUTH])
+        figures[-1].plotScatter(
+            table_gt[:, DataTableIdx.AZIMUTH], table_est[:, DataTableIdx.AZIMUTH]
+        )
         figures[-1].ax.set_xlabel("GT Azimuth [rad]")
         figures[-1].ax.set_ylabel("Est Azimuth [rad]")
 
@@ -167,14 +167,20 @@ class PerceptionLoadDatabaseResult:
         azimuth_error[azimuth_error > np.pi] -= 2 * np.pi
         azimuth_error[azimuth_error < -np.pi] += 2 * np.pi
         azimuth_dist_error: np.ndarray = azimuth_error * table_gt[:, DataTableIdx.DIST]
-        figures.append(PerceptionFieldPlot(prefix + "_" + "dist_latitudinal_position_error","Latitudinal position error [m]"))
+        figures.append(
+            PerceptionFieldPlot(
+                prefix + "_" + "dist_latitudinal_position_error", "Latitudinal position error [m]"
+            )
+        )
         figures[-1].plotScatter(table_gt[:, DataTableIdx.DIST], azimuth_dist_error)
         figures[-1].ax.set_xlabel("GT Distance [m]")
         figures[-1].ax.set_ylabel("Latitudinal position error [m]")
 
         dist_error = table_est[:, DataTableIdx.DIST] - table_gt[:, DataTableIdx.DIST]
         figures.append(PerceptionFieldPlot(prefix + "_" + "TP_XY_dist_error", "Position error [m]"))
-        figures[-1].plotScatter3D(table_gt[:, DataTableIdx.X], table_gt[:, DataTableIdx.Y], dist_error)
+        figures[-1].plotScatter3D(
+            table_gt[:, DataTableIdx.X], table_gt[:, DataTableIdx.Y], dist_error
+        )
         figures[-1].ax.set_xlabel("X [m]")
         figures[-1].ax.set_ylabel("Y [m]")
 
@@ -196,7 +202,6 @@ class PerceptionLoadDatabaseResult:
             plt.show()
 
         plt.close("all")
-
 
 
 def main() -> None:
