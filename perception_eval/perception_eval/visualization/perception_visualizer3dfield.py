@@ -17,10 +17,9 @@
 
 from pathlib import Path
 
-from perception_eval.tool import PerceptionFieldXY
-
 import matplotlib.pyplot as plt
 import numpy as np
+from perception_eval.tool import PerceptionFieldXY
 
 
 class PerceptionFieldPlot:
@@ -113,9 +112,7 @@ class PerceptionFieldPlots:
     def last(self) -> PerceptionFieldPlot:
         return self.figures[-1]
 
-    def plot_field_basics(
-        self, field: PerceptionFieldXY, prefix: str, is_uncertainty: bool = False
-    ) -> None:
+    def plot_field_basics(self, field: PerceptionFieldXY, prefix: str, is_uncertainty: bool = False) -> None:
         # Preprocess
         mask_layer: np.ndarray = np.zeros(np.shape(field.num_pair), dtype=np.bool_)
         mask_layer[field.num_pair == 0] = True
@@ -139,8 +136,8 @@ class PerceptionFieldPlots:
         self.add(PerceptionFieldPlot(prefix + "_" + "ratio_fp", "False Positive rate [-]"))
         self.last.plotMeshMap(field, field.ratio_fp, vmin=0, vmax=1)
         self.last.setAxes(field)
-        
-        if is_uncertainty==False:
+
+        if is_uncertainty == False:
             # False negative rate
             self.add(PerceptionFieldPlot(prefix + "_" + "ratio_fn", "False Negative rate [-]"))
             self.last.plotMeshMap(field, field.ratio_fn, vmin=0, vmax=1)
@@ -179,9 +176,7 @@ class PerceptionFieldPlots:
         self.last.plotMeshMap(field, array, **kwargs)
         self.last.setAxes(field)
 
-    def plot_axis_basic(
-        self, field: PerceptionFieldXY, prefix: str, is_uncertainty: bool = False
-    ) -> None:
+    def plot_axis_basic(self, field: PerceptionFieldXY, prefix: str, is_uncertainty: bool = False) -> None:
         if is_uncertainty:
             prefix = prefix + "_uncertainty"
 

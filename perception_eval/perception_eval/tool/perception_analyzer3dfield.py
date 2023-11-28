@@ -14,21 +14,21 @@
 
 from __future__ import annotations
 
+from enum import auto
+from enum import IntEnum
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import List
 
 import numpy as np
 import pandas as pd
-import yaml
-from enum import IntEnum, auto
-
 from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
-from .perception_analyzer3d import PerceptionAnalyzer3D
+import yaml
 
+from .perception_analyzer3d import PerceptionAnalyzer3D
 
 # minimum number of GT-Est pairs to calculate statistics
 STATISTICS_MIN_NUMB: int = 4
@@ -230,8 +230,7 @@ class PerceptionFieldXY:
         # dimension 3: data
         table_width: int = len(DataTableIdx)
         self.data: List[List[List[np.ndarray]]] = [
-            [[np.zeros((0, table_width), float) for k in [0, 1]] for j in range(self.ny)]
-            for i in range(self.nx)
+            [[np.zeros((0, table_width), float) for k in [0, 1]] for j in range(self.ny)] for i in range(self.nx)
         ]
 
     def _getCellPos(self, field_axis: PerceptionFieldAxis) -> np.ndarray:
@@ -297,9 +296,7 @@ class PerceptionFieldXY:
         self.cell_pos_y: np.ndarray = self._getCellPos(axis_y)
 
         # Generate mesh
-        self.mesh_center_x, self.mesh_center_y = np.meshgrid(
-            self.cell_pos_x, self.cell_pos_y, indexing="ij"
-        )
+        self.mesh_center_x, self.mesh_center_y = np.meshgrid(self.cell_pos_x, self.cell_pos_y, indexing="ij")
 
         # Set layer array size
         #   arrays represent surface, including outside of grid points
@@ -531,9 +528,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         for _, item in df.groupby(level=0):
             item_length = item.shape[0]
             pos += item_length
-            if "ground_truth" in item.index.get_level_values(
-                1
-            ) and "estimation" in item.index.get_level_values(1):
+            if "ground_truth" in item.index.get_level_values(1) and "estimation" in item.index.get_level_values(1):
                 gt_est_pair_mask[pos - item_length : pos] = True
         df = df[gt_est_pair_mask]
 
@@ -559,9 +554,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         error_yaw[error_yaw > np.pi] -= 2 * np.pi
         error_yaw[error_yaw < -np.pi] += 2 * np.pi
         error_distance: np.ndarray = est["dist"].values[valid_mask] - gt["dist"].values[valid_mask]
-        error_azimuth: np.ndarray = (
-            est["azimuth"].values[valid_mask] - gt["azimuth"].values[valid_mask]
-        )
+        error_azimuth: np.ndarray = est["azimuth"].values[valid_mask] - gt["azimuth"].values[valid_mask]
         error_azimuth[error_azimuth > np.pi] -= 2 * np.pi
         error_azimuth[error_azimuth < -np.pi] += 2 * np.pi
 
@@ -648,9 +641,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         for _, item in df.groupby(level=0):
             item_length = item.shape[0]
             pos += item_length
-            if "ground_truth" in item.index.get_level_values(
-                1
-            ) and "estimation" in item.index.get_level_values(1):
+            if "ground_truth" in item.index.get_level_values(1) and "estimation" in item.index.get_level_values(1):
                 gt_est_pair_mask[pos - item_length : pos] = True
         df = df[gt_est_pair_mask]
 
@@ -786,9 +777,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 )
 
             if is_est_valid:
-                idx_est_x, idx_est_y = uncertainty_field.getGridIndex(
-                    est[label_axis_x], est[label_axis_y]
-                )
+                idx_est_x, idx_est_y = uncertainty_field.getGridIndex(est[label_axis_x], est[label_axis_y])
                 uncertainty_field.num[idx_est_x, idx_est_y] += 1
 
                 uncertainty_field.x[idx_est_x, idx_est_y] += est["x"]
@@ -796,9 +785,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 uncertainty_field.yaw[idx_est_x, idx_est_y] += est["yaw"]
                 uncertainty_field.vx[idx_est_x, idx_est_y] += est["vx"]
                 uncertainty_field.vy[idx_est_x, idx_est_y] += est["vy"]
-                uncertainty_field.dist[idx_est_x, idx_est_y] += np.sqrt(
-                    est["x"] ** 2 + est["y"] ** 2
-                )
+                uncertainty_field.dist[idx_est_x, idx_est_y] += np.sqrt(est["x"] ** 2 + est["y"] ** 2)
                 uncertainty_field.confidence[idx_est_x, idx_est_y] += est["confidence"]
 
                 if est["status"] == MatchingStatus.TP.value:
@@ -879,9 +866,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                     axis=0,
                 )
 
-                idx_est_x, idx_est_y = uncertainty_field.getGridIndex(
-                    est[label_axis_x], est[label_axis_y]
-                )
+                idx_est_x, idx_est_y = uncertainty_field.getGridIndex(est[label_axis_x], est[label_axis_y])
                 uncertainty_field.num_pair[idx_est_x, idx_est_y] += 1
                 uncertainty_field.error_x_mean[idx_est_x, idx_est_y] += -error_x
                 uncertainty_field.error_x_std[idx_est_x, idx_est_y] += error_x**2

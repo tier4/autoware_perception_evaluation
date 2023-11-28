@@ -4,7 +4,10 @@ from .gmm import Gmm
 from .gmm import load_sample
 from .perception_analyzer2d import PerceptionAnalyzer2D
 from .perception_analyzer3d import PerceptionAnalyzer3D
-from .perception_analyzer3dfield import PerceptionAnalyzer3DField, PerceptionFieldXY, PerceptionFieldAxis, DataTableIdx
+from .perception_analyzer3dfield import DataTableIdx
+from .perception_analyzer3dfield import PerceptionAnalyzer3DField
+from .perception_analyzer3dfield import PerceptionFieldAxis
+from .perception_analyzer3dfield import PerceptionFieldXY
 from .utils import PlotAxes
 
 # type aliases
