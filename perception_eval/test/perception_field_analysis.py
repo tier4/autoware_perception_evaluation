@@ -89,7 +89,7 @@ class PerceptionLoadDatabaseResult:
         axis_error_delta.plot_range = (0.0, 6.0)
         axis_error_delta.plot_aspect_ratio = 1.0
         # visual heading angle
-        axis_heding: PerceptionFieldAxis = PerceptionFieldAxis(
+        axis_heading: PerceptionFieldAxis = PerceptionFieldAxis(
             type="angle", data_label="visual_heading", name="Heading"
         )
         # yaw error
@@ -109,7 +109,7 @@ class PerceptionLoadDatabaseResult:
 
         # distance-visual_heading grid
         # Analysis
-        error_field_dist_heading, uncertainty_field_dist_heading = analyzer.analyzeXY(axis_dist, axis_heding, **kwargs)
+        error_field_dist_heading, uncertainty_field_dist_heading = analyzer.analyzeXY(axis_dist, axis_heading, **kwargs)
         # Visualization
         plots.plot_field_basics(error_field_dist_heading, prefix="dist_heading")
         plots.plot_field_basics(uncertainty_field_dist_heading, prefix="dist_heading", is_uncertainty=True)
@@ -137,7 +137,7 @@ class PerceptionLoadDatabaseResult:
             plots.plot_custom_field(field, numb_log, prefix + "_" + "numb_log", "log10 of samples [-]", vmin=0)
 
         # heading-yaw_error grid
-        error_field_yaw_error, _ = analyzer.analyzeXY(axis_heding, axis_error_yaw, **kwargs)
+        error_field_yaw_error, _ = analyzer.analyzeXY(axis_heading, axis_error_yaw, **kwargs)
         field = error_field_yaw_error
 
         if field.has_any_error_data == True:

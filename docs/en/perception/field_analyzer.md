@@ -118,7 +118,7 @@ plots.save()
 ## (Grid) point Analysis
 
 This analysis method is utilize all of the object as points.
-At this moment, all of the points are in the same table, but will be separated into grid of tabels in further development.
+At this moment, all of the points are in the same table, but will be separated into grid of tables in further development.
 
 ### Usage
 

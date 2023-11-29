@@ -223,7 +223,7 @@ class PerceptionFieldXY:
         self.error_azimuth_mean: np.ndarray = np.zeros((self.nx, self.ny))
         self.error_azimuth_std: np.ndarray = np.zeros((self.nx, self.ny))
 
-        # Grid of data tabels
+        # Grid of data tables
         # dimension 0: x
         # dimension 1: y
         # dimension 2: ground truth and estimation
@@ -537,7 +537,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         # load all data, without filtering
         df = self.df
 
-        # check on each index level 0, that has grount_truth and estimation in index level 1
+        # check on each index level 0, that has ground_truth and estimation in index level 1
         # then mask of dataframe index that has both ground_truth and estimation
         gt_est_pair_mask: np.ndarray = np.zeros(df.shape[0], dtype=bool)
         pos: int = 0
@@ -592,7 +592,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         self.df.loc[est_mask & valid_mask, "error_azimuth"] = -error_azimuth
 
     # TODO: all point loader
-    # three types of tabels, GT, Est, and GT-Est pair
+    # three types of tables, GT, Est, and GT-Est pair
     def analyzePoints(self, **kwargs) -> None:
         self.analyzePointsTP(**kwargs)
         self.analyzePointsFN(**kwargs)
@@ -600,7 +600,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
 
     def analyzePointsFN(self, **kwargs) -> None:
         """Analyze ground truth data."""
-        # Extrack data
+        # Extract data
         df: pd.DataFrame = self.get(**kwargs)
 
         gt = df[df.index.get_level_values(1) == "ground_truth"].droplevel(level=1)
@@ -624,7 +624,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
 
     def analyzePointsFP(self, **kwargs) -> None:
         """Analyze estimation data."""
-        # Extrack data
+        # Extract data
         df: pd.DataFrame = self.get(**kwargs)
 
         est = df[df.index.get_level_values(1) == "estimation"].droplevel(level=1)
@@ -647,10 +647,10 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         ).transpose()
 
     def analyzePointsTP(self, **kwargs) -> None:
-        # Extrack data
+        # Extract data
         df: pd.DataFrame = self.get(**kwargs)
 
-        # check on each index level 0, that has grount_truth and estimation in index level 1
+        # check on each index level 0, that has ground_truth and estimation in index level 1
         # then mask of dataframe index that has both ground_truth and estimation
         gt_est_pair_mask: np.ndarray = np.zeros(df.shape[0], dtype=bool)
         pos: int = 0
@@ -721,7 +721,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
 
         """
 
-        # Extrack data
+        # Extract data
         df: pd.DataFrame = self.get(**kwargs)
 
         # Set axis data labels
