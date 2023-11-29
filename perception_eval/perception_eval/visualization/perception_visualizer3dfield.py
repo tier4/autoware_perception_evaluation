@@ -107,9 +107,7 @@ class PerceptionFieldPlots:
     def last(self) -> PerceptionFieldPlot:
         return self.figures[-1]
 
-    def plot_field_basics(
-        self, field: PerceptionFieldXY, prefix: str, is_uncertainty: bool = False
-    ) -> None:
+    def plot_field_basics(self, field: PerceptionFieldXY, prefix: str, is_uncertainty: bool = False) -> None:
         # Preprocess
         mask_layer: np.ndarray = np.zeros(np.shape(field.num_pair), dtype=np.bool_)
         mask_layer[field.num_pair == 0] = True
@@ -171,9 +169,7 @@ class PerceptionFieldPlots:
         self.last.plot_mesh_map(field, array, **kwargs)
         self.last.set_axes(field)
 
-    def plot_axis_basic(
-        self, field: PerceptionFieldXY, prefix: str, is_uncertainty: bool = False
-    ) -> None:
+    def plot_axis_basic(self, field: PerceptionFieldXY, prefix: str, is_uncertainty: bool = False) -> None:
         if is_uncertainty:
             prefix = prefix + "_uncertainty"
 

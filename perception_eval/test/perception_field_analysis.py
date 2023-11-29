@@ -109,7 +109,9 @@ class PerceptionLoadDatabaseResult:
 
         # distance-visual_heading grid
         # Analysis
-        error_field_dist_heading, uncertainty_field_dist_heading = analyzer.analyze_xy(axis_dist, axis_heading, **kwargs)
+        error_field_dist_heading, uncertainty_field_dist_heading = analyzer.analyze_xy(
+            axis_dist, axis_heading, **kwargs
+        )
         # Visualization
         plots.plot_field_basics(error_field_dist_heading, prefix="dist_heading")
         plots.plot_field_basics(uncertainty_field_dist_heading, prefix="dist_heading", is_uncertainty=True)
