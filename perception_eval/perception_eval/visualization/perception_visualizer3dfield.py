@@ -143,7 +143,7 @@ class PerceptionFieldPlots:
             title: str = "Position uncertainty [m]" if is_uncertainty else "Position error [m]"
             self.add(PerceptionFieldPlot(prefix + "_" + "delta_mean_mesh", title))
             vmax = 1
-            if np.all(np.isnan(field.error_delta_mean)) != True:
+            if bool(np.all(np.isnan(field.error_delta_mean))) is False:
                 vmax = np.nanmax(field.error_delta_mean)
             self.last.plot_mesh_map(field, field.error_delta_mean, vmin=0, vmax=vmax)
 
