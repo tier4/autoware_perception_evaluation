@@ -47,7 +47,7 @@ class PerceptionLoadDatabaseResult:
             analyzer.add_from_pkl(filepath.as_posix())
 
         # Add columns
-        analyzer.addAdditionalColumn()
+        analyzer.add_additional_column()
 
         # Analyze and visualize, for each label group
         label_lists: dict = {}
@@ -58,17 +58,17 @@ class PerceptionLoadDatabaseResult:
 
         for label_group, labels in label_lists.items():
             print('Analyzing label group: {}, label list of "{}" '.format(label_group, labels))
-            self.analyseAndVisualize(analyzer, subfolder=label_group, label=labels)
+            self.analyse_and_visualize(analyzer, subfolder=label_group, label=labels)
             print("Done")
 
-    def analyseAndVisualize(self, analyzer: PerceptionAnalyzer3DField, subfolder: str, **kwargs) -> None:
+    def analyse_and_visualize(self, analyzer: PerceptionAnalyzer3DField, subfolder: str, **kwargs) -> None:
         plot_dir: str = Path(self._plot_dir, subfolder).as_posix()
         if not os.path.isdir(plot_dir):
             os.makedirs(plot_dir)
 
         # all objects analysis
         figures: list[PerceptionFieldPlot] = []
-        analyzer.analyzePoints(**kwargs)
+        analyzer.analyze_points(**kwargs)
 
         # true positives
         prefix = "points_tp"
@@ -76,12 +76,12 @@ class PerceptionLoadDatabaseResult:
         table_est = analyzer.data_tp_est
 
         figures.append(PerceptionFieldPlot(prefix + "_" + "dist_diff", "Distance error [m]"))
-        figures[-1].plotScatter(table_gt[:, DataTableIdx.DIST], table_est[:, DataTableIdx.DIST])
+        figures[-1].plot_scatter(table_gt[:, DataTableIdx.DIST], table_est[:, DataTableIdx.DIST])
         figures[-1].ax.set_xlabel("GT Distance [m]")
         figures[-1].ax.set_ylabel("Est Distance [m]")
 
         figures.append(PerceptionFieldPlot(prefix + "_" + "azimuth_diff", "Azimuth error [rad]"))
-        figures[-1].plotScatter(table_gt[:, DataTableIdx.AZIMUTH], table_est[:, DataTableIdx.AZIMUTH])
+        figures[-1].plot_scatter(table_gt[:, DataTableIdx.AZIMUTH], table_est[:, DataTableIdx.AZIMUTH])
         figures[-1].ax.set_xlabel("GT Azimuth [rad]")
         figures[-1].ax.set_ylabel("Est Azimuth [rad]")
 
@@ -92,20 +92,20 @@ class PerceptionLoadDatabaseResult:
         figures.append(
             PerceptionFieldPlot(prefix + "_" + "dist_latitudinal_position_error", "Latitudinal position error [m]")
         )
-        figures[-1].plotScatter(table_gt[:, DataTableIdx.DIST], azimuth_dist_error)
+        figures[-1].plot_scatter(table_gt[:, DataTableIdx.DIST], azimuth_dist_error)
         figures[-1].ax.set_xlabel("GT Distance [m]")
         figures[-1].ax.set_ylabel("Latitudinal position error [m]")
 
         dist_error = table_est[:, DataTableIdx.DIST] - table_gt[:, DataTableIdx.DIST]
         figures.append(PerceptionFieldPlot(prefix + "_" + "TP_XY_dist_error", "Position error [m]"))
-        figures[-1].plotScatter3D(table_gt[:, DataTableIdx.X], table_gt[:, DataTableIdx.Y], dist_error)
+        figures[-1].plot_scatter_3d(table_gt[:, DataTableIdx.X], table_gt[:, DataTableIdx.Y], dist_error)
         figures[-1].ax.set_xlabel("X [m]")
         figures[-1].ax.set_ylabel("Y [m]")
 
         # false negatives
         table = analyzer.data_fn
         figures.append(PerceptionFieldPlot(prefix + "_" + "FN_XY_width", "Width [m]"))
-        figures[-1].plotScatter3D(table[:, DataTableIdx.X], table[:, DataTableIdx.Y], table[:, DataTableIdx.WIDTH])
+        figures[-1].plot_scatter_3d(table[:, DataTableIdx.X], table[:, DataTableIdx.Y], table[:, DataTableIdx.WIDTH])
         figures[-1].ax.set_xlabel("X [m]")
         figures[-1].ax.set_ylabel("Y [m]")
 

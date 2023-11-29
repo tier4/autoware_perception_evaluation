@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# cspell: ignore figname, cbar, valuemap, yerr
 
 from pathlib import Path
 
@@ -36,7 +37,7 @@ class PerceptionFieldPlot:
         self.cbar = self.figure.colorbar(self.cs)
         self.cbar.set_label(self.value)
 
-    def setAxis1D(self, field: PerceptionFieldXY, value: np.ndarray) -> None:
+    def set_axis_1d(self, field: PerceptionFieldXY, value: np.ndarray) -> None:
         if np.all(np.isnan(value)):
             return
         value_range = [np.nanmin(value), np.nanmax(value)]
@@ -44,7 +45,7 @@ class PerceptionFieldPlot:
             value_range[0] -= 1
             value_range[1] += 1
 
-        self.ax.set_xlabel(field.axis_x.getTitle())
+        self.ax.set_xlabel(field.axis_x.get_title())
         self.ax.set_ylabel(self.value)
 
         value_scale = (value_range[1] - value_range[0]) / 10.0
@@ -55,9 +56,9 @@ class PerceptionFieldPlot:
         self.ax.grid(c="k", ls="-", alpha=0.3)
         self.ax.set_xticks(field.axis_x.grid_axis * field.axis_x.plot_scale)
 
-    def setAxes(self, field: PerceptionFieldXY) -> None:
-        self.ax.set_xlabel(field.axis_x.getTitle())
-        self.ax.set_ylabel(field.axis_y.getTitle())
+    def set_axes(self, field: PerceptionFieldXY) -> None:
+        self.ax.set_xlabel(field.axis_x.get_title())
+        self.ax.set_ylabel(field.axis_y.get_title())
         self.ax.set_aspect(field.axis_x.plot_aspect_ratio / field.axis_y.plot_aspect_ratio)
         self.ax.set_xlim(field.axis_x.plot_range)
         self.ax.set_ylim(field.axis_y.plot_range)
@@ -65,17 +66,17 @@ class PerceptionFieldPlot:
         self.ax.set_xticks(field.axis_x.grid_axis * field.axis_x.plot_scale)
         self.ax.set_yticks(field.axis_y.grid_axis * field.axis_y.plot_scale)
 
-    def plotMeshMap(self, field: PerceptionFieldXY, valuemap: np.ndarray, **kwargs) -> None:
+    def plot_mesh_map(self, field: PerceptionFieldXY, valuemap: np.ndarray, **kwargs) -> None:
         x: np.ndarray = field.mesh_x * field.axis_x.plot_scale
         y: np.ndarray = field.mesh_y * field.axis_y.plot_scale
         self.cs = self.ax.pcolormesh(x, y, valuemap, **kwargs)
         self.cbar = self.figure.colorbar(self.cs)
         self.cbar.set_label(self.value)
 
-    def plotScatter(self, x, y, **kwargs) -> None:
+    def plot_scatter(self, x, y, **kwargs) -> None:
         self.cs = self.ax.scatter(x, y, **kwargs)
 
-    def plotScatter3D(self, x, y, z, **kwargs) -> None:
+    def plot_scatter_3d(self, x, y, z, **kwargs) -> None:
         self.ax.remove()
         self.ax = self.figure.add_subplot(111, projection="3d")
         self.cs = self.ax.scatter(x, y, z, **kwargs)
@@ -106,7 +107,9 @@ class PerceptionFieldPlots:
     def last(self) -> PerceptionFieldPlot:
         return self.figures[-1]
 
-    def plot_field_basics(self, field: PerceptionFieldXY, prefix: str, is_uncertainty: bool = False) -> None:
+    def plot_field_basics(
+        self, field: PerceptionFieldXY, prefix: str, is_uncertainty: bool = False
+    ) -> None:
         # Preprocess
         mask_layer: np.ndarray = np.zeros(np.shape(field.num_pair), dtype=np.bool_)
         mask_layer[field.num_pair == 0] = True
@@ -118,24 +121,24 @@ class PerceptionFieldPlots:
         # Plot
         # Number of data
         self.add(PerceptionFieldPlot(prefix + "_" + "num", "Samples [-]"))
-        self.last.plotMeshMap(field, field.num, vmin=0)
-        self.last.setAxes(field)
+        self.last.plot_mesh_map(field, field.num, vmin=0)
+        self.last.set_axes(field)
 
         # True positive rate
         self.add(PerceptionFieldPlot(prefix + "_" + "ratio_tp", "True Positive rate [-]"))
-        self.last.plotMeshMap(field, field.ratio_tp, vmin=0, vmax=1)
-        self.last.setAxes(field)
+        self.last.plot_mesh_map(field, field.ratio_tp, vmin=0, vmax=1)
+        self.last.set_axes(field)
 
         # False positive rate
         self.add(PerceptionFieldPlot(prefix + "_" + "ratio_fp", "False Positive rate [-]"))
-        self.last.plotMeshMap(field, field.ratio_fp, vmin=0, vmax=1)
-        self.last.setAxes(field)
+        self.last.plot_mesh_map(field, field.ratio_fp, vmin=0, vmax=1)
+        self.last.set_axes(field)
 
         if is_uncertainty == False:
             # False negative rate
             self.add(PerceptionFieldPlot(prefix + "_" + "ratio_fn", "False Negative rate [-]"))
-            self.last.plotMeshMap(field, field.ratio_fn, vmin=0, vmax=1)
-            self.last.setAxes(field)
+            self.last.plot_mesh_map(field, field.ratio_fn, vmin=0, vmax=1)
+            self.last.set_axes(field)
 
         # Position error
         if field.has_any_error_data:
@@ -144,7 +147,7 @@ class PerceptionFieldPlots:
             vmax = 1
             if np.all(np.isnan(field.error_delta_mean)) != True:
                 vmax = np.nanmax(field.error_delta_mean)
-            self.last.plotMeshMap(field, field.error_delta_mean, vmin=0, vmax=vmax)
+            self.last.plot_mesh_map(field, field.error_delta_mean, vmin=0, vmax=vmax)
 
             # mean positions of each grid
             if hasattr(field, field.axis_x.data_label):
@@ -157,7 +160,7 @@ class PerceptionFieldPlots:
                 y_mean_plot = field.mesh_center_y * field.axis_y.plot_scale
 
             _ = self.last.ax.scatter(x_mean_plot, y_mean_plot, marker="+", c="r", s=10)
-            self.last.setAxes(field)
+            self.last.set_axes(field)
         else:
             print("Plot (Prefix " + prefix + "): No TP data, nothing for error analysis")
 
@@ -165,22 +168,24 @@ class PerceptionFieldPlots:
         self, field: PerceptionFieldXY, array: np.ndarray, filename: str, title: str, **kwargs
     ) -> None:
         self.add(PerceptionFieldPlot(filename, title))
-        self.last.plotMeshMap(field, array, **kwargs)
-        self.last.setAxes(field)
+        self.last.plot_mesh_map(field, array, **kwargs)
+        self.last.set_axes(field)
 
-    def plot_axis_basic(self, field: PerceptionFieldXY, prefix: str, is_uncertainty: bool = False) -> None:
+    def plot_axis_basic(
+        self, field: PerceptionFieldXY, prefix: str, is_uncertainty: bool = False
+    ) -> None:
         if is_uncertainty:
             prefix = prefix + "_uncertainty"
 
         self.add(PerceptionFieldPlot(prefix + "_" + "numb", "Samples [-]"))
         self.last.ax.scatter(field.dist, field.num, marker="x", c="r", s=10, label="Samples")
-        self.last.setAxis1D(field, field.num)
+        self.last.set_axis_1d(field, field.num)
 
         self.add(PerceptionFieldPlot(prefix + "_" + "rates", "TP/FN/FP Rates [-]"))
         self.last.ax.scatter(field.dist, field.ratio_tp, marker="o", c="b", s=20, label="TP")
         self.last.ax.scatter(field.dist, field.ratio_fn, marker="x", c="r", s=20, label="FN")
         self.last.ax.scatter(field.dist, field.ratio_fp, marker="^", c="g", s=20, label="FP")
-        self.last.setAxis1D(field, field.ratio_tp)
+        self.last.set_axis_1d(field, field.ratio_tp)
         self.last.ax.set_ylim([0, 1])
         self.last.ax.set_aspect(10.0 / 0.2)
         self.last.ax.legend()
@@ -197,7 +202,7 @@ class PerceptionFieldPlots:
                 marker="x",
                 c="r",
             )
-            self.last.setAxis1D(field, field.error_delta_mean)
+            self.last.set_axis_1d(field, field.error_delta_mean)
             self.last.ax.set_aspect(10.0 / 1)
             self.last.ax.set_ylim([-1, 5])
         else:
