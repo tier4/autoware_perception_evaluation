@@ -233,6 +233,38 @@ class PerceptionFieldXY:
             [[np.zeros((0, table_width), float) for k in [0, 1]] for j in range(self.ny)] for i in range(self.nx)
         ]
 
+    def _expandGridAtBoundary(self, field_axis: PerceptionFieldAxis) -> np.ndarray:
+        """
+        Expands the grid at the boundary.
+
+        Args:
+            field_axis (PerceptionFieldAxis): The field axis.
+
+        Returns:
+            np.ndarray: The expanded grid.
+        """
+
+        if field_axis.isNone():
+            return np.array([0.0, 1.0])
+
+        # Set expanded positions of grid axis
+        x0: float = 0.0
+        xe: float = 0.0
+        grid_axis: np.ndarray = np.copy(field_axis.grid_axis)
+
+        if grid_axis.shape[0] == 1:
+            point: float = grid_axis[0]
+            x0 = point - 1.0
+            xe = point + 1.0
+        else:
+            x0 = 2 * grid_axis[0] - grid_axis[1]
+            xe = 2 * grid_axis[-1] - grid_axis[-2]
+
+        if field_axis.isLoop():
+            return np.append(x0, grid_axis)
+        else:
+            return np.append(np.append(x0, grid_axis), xe)
+
     def _getCellPos(self, field_axis: PerceptionFieldAxis) -> np.ndarray:
         """
         Calculates the cell positions for a given field axis.
@@ -246,29 +278,8 @@ class PerceptionFieldXY:
         if field_axis.isNone():
             return np.array([0.0])
 
-        if field_axis.grid_axis.shape[0] < 2:
-            raise ValueError("field_axis.grid_axis must have more than 2 elements.")
-
-        grid_axis: np.ndarray = field_axis.grid_axis
-        cell_pos_array: np.ndarray = np.copy(grid_axis)
-
-        # cell center positions are defined as average of grid points
-        cell_pos_array[1:] = (grid_axis[0:-1] + grid_axis[1:]) / 2.0
-        x0: float = 0.0
-        xe: float = 0.0
-
-        # Set cell positions of boundary
-        if grid_axis[0] == 2:
-            x0 = 2 * grid_axis[0] - grid_axis[1]
-            xe = 2 * grid_axis[1] - grid_axis[0]
-        else:
-            x0 = grid_axis[0] - 0.5 * (grid_axis[1] - grid_axis[0])
-            xe = grid_axis[-1] + 0.5 * (grid_axis[-1] - grid_axis[-2])
-        cell_pos_array[0] = x0
-
-        # Set additioanl cell for outside of grid points, on when the axis is not loop
-        if field_axis.isLoop() != True:
-            cell_pos_array = np.append(cell_pos_array, xe)
+        expanded_grid_axis: np.ndarray = self._expandGridAtBoundary(field_axis)
+        cell_pos_array: np.ndarray = (expanded_grid_axis[0:-1] + expanded_grid_axis[1:]) / 2.0
 
         return cell_pos_array
 
@@ -281,7 +292,7 @@ class PerceptionFieldXY:
             axis_y (PerceptionFieldAxis): The y-axis configuration for the perception field.
         """
         # Generate mesh cells
-        #   Grid axis 1 dimenstion and is defined as follows:
+        #   Grid axis 1 dimension and is defined as follows:
         #      0     1     2          grid points, positions
         #  ----|-----|-----|---->
         #   0     1     2     3       cell array index, 0 and 3 are outside of grid points
@@ -302,6 +313,11 @@ class PerceptionFieldXY:
         #   arrays represent surface, including outside of grid points
         self.nx: int = self.mesh_center_x.shape[0]
         self.ny: int = self.mesh_center_x.shape[1]
+
+        # Generate mesh for plotting
+        mesh_x = self._expandGridAtBoundary(axis_x)
+        mesh_y = self._expandGridAtBoundary(axis_y)
+        self.mesh_x, self.mesh_y = np.meshgrid(mesh_x, mesh_y, indexing="ij")
 
     def _processMeans(self) -> None:
         """

@@ -30,11 +30,6 @@ class PerceptionFieldPlot:
         self.ax.set_aspect("equal")
         self.value: str = value
 
-    def pcolormesh(self, x, y, z, **kwargs):
-        self.cs = self.ax.pcolormesh(x, y, z, shading="nearest", **kwargs)
-        self.cbar = self.figure.colorbar(self.cs)
-        self.cbar.set_label(self.value)
-
     def contourf(self, x, y, z, **kwargs):
         self.cs = self.ax.contourf(x, y, z, **kwargs)
         self.ax.contour(self.cs, colors="k")
@@ -71,10 +66,9 @@ class PerceptionFieldPlot:
         self.ax.set_yticks(field.axis_y.grid_axis * field.axis_y.plot_scale)
 
     def plotMeshMap(self, field: PerceptionFieldXY, valuemap: np.ndarray, **kwargs) -> None:
-        x = field.mesh_center_x * field.axis_x.plot_scale
-        y = field.mesh_center_y * field.axis_y.plot_scale
-        z = valuemap
-        self.cs = self.ax.pcolormesh(x, y, z, shading="nearest", **kwargs)
+        x: np.ndarray = field.mesh_x * field.axis_x.plot_scale
+        y: np.ndarray = field.mesh_y * field.axis_y.plot_scale
+        self.cs = self.ax.pcolormesh(x, y, valuemap, **kwargs)
         self.cbar = self.figure.colorbar(self.cs)
         self.cbar.set_label(self.value)
 
@@ -145,9 +139,7 @@ class PerceptionFieldPlots:
 
         # Position error
         if field.has_any_error_data:
-            title: str = "Position error [m]"
-            if is_uncertainty:
-                title = "Position uncertainty [m]"
+            title: str = "Position uncertainty [m]" if is_uncertainty else "Position error [m]"
             self.add(PerceptionFieldPlot(prefix + "_" + "delta_mean_mesh", title))
             vmax = 1
             if np.all(np.isnan(field.error_delta_mean)) != True:
