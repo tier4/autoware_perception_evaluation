@@ -132,7 +132,7 @@ class PerceptionFieldPlots:
         self.last.plot_mesh_map(field, field.ratio_fp, vmin=0, vmax=1)
         self.last.set_axes(field)
 
-        if is_uncertainty == False:
+        if not is_uncertainty:
             # False negative rate
             self.add(PerceptionFieldPlot(prefix + "_" + "ratio_fn", "False Negative rate [-]"))
             self.last.plot_mesh_map(field, field.ratio_fn, vmin=0, vmax=1)
@@ -186,7 +186,7 @@ class PerceptionFieldPlots:
         self.last.ax.set_aspect(10.0 / 0.2)
         self.last.ax.legend()
 
-        if field.has_any_error_data == True:
+        if field.has_any_error_data:
             title: str = "Position error [m]"
             if is_uncertainty:
                 title = "Position uncertainty [m]"

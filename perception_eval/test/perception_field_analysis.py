@@ -130,7 +130,7 @@ class PerceptionLoadDatabaseResult:
         field = error_field_range
         numb_log: np.ndarray
 
-        if field.has_any_error_data == True:
+        if field.has_any_error_data:
             prefix = "dist_delta-error"
             numb = field.num
             numb[numb == 0] = np.nan
@@ -142,7 +142,7 @@ class PerceptionLoadDatabaseResult:
         error_field_yaw_error, _ = analyzer.analyze_xy(axis_heading, axis_error_yaw, **kwargs)
         field = error_field_yaw_error
 
-        if field.has_any_error_data == True:
+        if field.has_any_error_data:
             prefix = "yaw_error"
             numb = field.num
             numb[numb == 0] = np.nan
