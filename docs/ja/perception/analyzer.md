@@ -380,12 +380,13 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
   - GT/Estimation のオブジェクト数をヒストグラムでプロット
 
-  | Arguments  |       type        | Mandatory | Description                                                                        |
-  | :--------- | :---------------: | :-------: | :--------------------------------------------------------------------------------- |
-  | `mode`     |    `PlotAxes`     |    No     | 距離ごとまたは時系列(Defaults=`PlotAxes.DISTANCE`)                                 |
-  | `bin`      | `Optional[float]` |    No     | 描画間隔．デフォルトで距離ごとなら`0.5`[m]，時系列なら`100`[ms]．(Defaults=`None`) |
-  | `show`     |      `bool`       |    No     | 描画結果を表示するかのフラッグ(Defaults=`False`)                                   |
-  | `**kwargs` |       `Any`       |    No     | 特定のラベル，エリアなどについてのみ描画する際に指定．(e.g.`area=0`)               |
+  | Arguments  |      type       | Mandatory | Description                                                                       |
+  | :--------- | :-------------: | :-------: | :-------------------------------------------------------------------------------- |
+  | `mode`     |   `PlotAxes`    |    No     | 距離ごとまたは時系列(Defaults=`PlotAxes.DISTANCE`)                                |
+  | `bins`     | `Optional[int]` |    No     | 描画間隔．デフォルトで距離ごとなら`10`[m]，時系列なら`100`[ms]．(Defaults=`None`) |
+  | `heatmap`  |     `bool`      |    No     | ヒートマップを可視化するかどうか(3Dのみ)(Defaults=`False`)                        |
+  | `show`     |     `bool`      |    No     | 描画結果を表示するかのフラッグ(Defaults=`False`)                                  |
+  | `**kwargs` |      `Any`      |    No     | 特定のラベル，エリアなどについてのみ描画する際に指定．(e.g.`area=0`)              |
 
   ```python
   # 全オブジェクトの数を距離ごとにプロット
