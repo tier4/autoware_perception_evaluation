@@ -16,6 +16,8 @@ from typing import Union
 
 from perception_eval.visualization.perception_visualizer2d import PerceptionVisualizer2D
 from perception_eval.visualization.perception_visualizer3d import PerceptionVisualizer3D
+from perception_eval.visualization.perception_visualizer3dfield import PerceptionFieldPlot
+from perception_eval.visualization.perception_visualizer3dfield import PerceptionFieldPlots
 from perception_eval.visualization.sensing_visualizer import SensingVisualizer
 
 # type aliases
