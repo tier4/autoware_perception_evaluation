@@ -242,14 +242,14 @@ def get_positive_objects(
         # in case of matching (Est, GT) = (unknown, except of unknown)
         # use GT label
         # TODO: ここ汚い
-        matching_threshold_list: Optional[List[float]] = List(
+        matching_threshold_list: Optional[List[float]] = [
             get_label_threshold(
                 semantic_label=object_result.ground_truth_object.semantic_label,
                 target_labels=target_labels,
                 threshold_list=matching_threshold_list_for_matching_mode_i,
             )
             for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_labels
-        )
+        ]
 
         est_status, gt_status = object_result.get_status(matching_mode_list, matching_threshold_list)
 
@@ -308,7 +308,7 @@ def get_negative_objects(
     non_candidates: List[ObjectType] = []
     for object_result in object_results:
         # TODO: ここ汚い
-        matching_threshold_list: Optional[List[float]] = List(
+        matching_threshold_list: Optional[List[float]] = [
             get_label_threshold(
                 semantic_label=object_result.ground_truth_object.semantic_label
                 if object_result.ground_truth_object is not None
@@ -317,7 +317,7 @@ def get_negative_objects(
                 threshold_list=matching_threshold_list_for_matching_mode_i,
             )
             for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_labels
-        )
+        ]
         _, gt_status = object_result.get_status(matching_mode_list, matching_threshold_list)
 
         if gt_status == MatchingStatus.TN:
@@ -343,8 +343,8 @@ def get_negative_objects(
 def divide_tp_fp_objects(
     object_results: List[DynamicObjectWithPerceptionResult],
     target_labels: Optional[List[LabelType]],
-    matching_mode: Optional[MatchingMode] = None,
-    matching_threshold_list: Optional[List[float]] = None,
+    matching_mode_list: Optional[List[MatchingMode]] = None,
+    matching_threshold_list_for_labels: Optional[List[List[float]]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
 ) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
     """Divide input `object_results` into TP (True Positive) and FP (False Positive) object results.
@@ -389,21 +389,31 @@ def divide_tp_fp_objects(
 
         # in case of matching (Est, GT) = (unknown, except of unknown)
         # use GT label
-        matching_threshold_ = get_label_threshold(
-            semantic_label=object_result.ground_truth_object.semantic_label,
-            target_labels=target_labels,
-            threshold_list=matching_threshold_list,
-        )
+        matching_threshold_list = [
+            get_label_threshold(
+                semantic_label=object_result.ground_truth_object.semantic_label,
+                target_labels=target_labels,
+                threshold_list=matching_threshold_list_for_matching_mode_i,
+            )
+            for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_labels
+        ]
+    
+        # matching_threshold_ = get_label_threshold(
+        #     semantic_label=object_result.ground_truth_object.semantic_label,
+        #     target_labels=target_labels,
+        #     threshold_list=matching_threshold_list,
+        # )
 
         # matching threshold
         is_correct: bool = True
-        if matching_threshold_ is None:
+        if matching_threshold_list is None:
             is_correct = object_result.is_label_correct
         else:
-            is_correct = object_result.is_result_correct(
-                matching_mode=matching_mode,
-                matching_threshold=matching_threshold_,
-            )
+            for matching_mode, matching_threshold in zip(matching_mode_list, matching_threshold_list):
+                is_correct = is_correct and object_result.is_result_correct(
+                    matching_mode=matching_mode,
+                    matching_threshold=matching_threshold,
+                )
 
         # confidence threshold
         confidence_threshold_: Optional[float] = get_label_threshold(

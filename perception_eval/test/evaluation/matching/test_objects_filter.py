@@ -54,8 +54,8 @@ class TestObjectsFilter(unittest.TestCase):
         self.max_y_position_list: List[float] = [2.0, 2.0, 2.0, 2.0]
         self.max_pos_distance_list: List[float] = [1.5, 1.5, 1.5, 1.5]
         self.min_pos_distance_list: List[float] = [0.3, 0.3, 0.3, 0.3]
-        self.matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE
-        self.matching_threshold_list: List[float] = [2.0, 2.0, 2.0, 2.0]
+        self.matching_mode_list: List[MatchingMode] = [MatchingMode.CENTERDISTANCE]
+        self.matching_threshold_list_for_modes: List[List[float]] = [[2.0, 2.0, 2.0, 2.0]]
         self.confidence_threshold_list: List[float] = [0.5, 0.5, 0.5, 0.5]
         self.min_point_numbers: List[int] = [0, 1, 10, 0]
 
@@ -271,8 +271,8 @@ class TestObjectsFilter(unittest.TestCase):
                 tp_results, fp_results = get_positive_objects(
                     object_results,
                     self.target_labels,
-                    self.matching_mode,
-                    self.matching_threshold_list,
+                    self.matching_mode_list,
+                    self.matching_threshold_list_for_modes,
                 )
                 # TP
                 self.assertEqual(
@@ -351,8 +351,8 @@ class TestObjectsFilter(unittest.TestCase):
                     self.dummy_ground_truth_objects,
                     object_results,
                     self.target_labels,
-                    self.matching_mode,
-                    self.matching_threshold_list,
+                    self.matching_mode_list,
+                    self.matching_threshold_list_for_modes,
                 )
                 self.assertEqual(
                     tn_objects,
@@ -477,8 +477,8 @@ class TestObjectsFilter(unittest.TestCase):
                 tp_results, fp_results = divide_tp_fp_objects(
                     object_results,
                     self.target_labels,
-                    self.matching_mode,
-                    self.matching_threshold_list,
+                    self.matching_mode_list,
+                    self.matching_threshold_list_for_modes,
                     self.confidence_threshold_list,
                 )
                 # TP
@@ -570,8 +570,8 @@ class TestObjectsFilter(unittest.TestCase):
                 tp_results, _ = divide_tp_fp_objects(
                     object_results,
                     self.target_labels,
-                    self.matching_mode,
-                    self.matching_threshold_list,
+                    self.matching_mode_list,
+                    self.matching_threshold_list_for_modes,
                     self.confidence_threshold_list,
                 )
 
@@ -648,8 +648,8 @@ class TestObjectsFilter(unittest.TestCase):
                 tp_results, _ = divide_tp_fp_objects(
                     object_results,
                     self.target_labels,
-                    self.matching_mode,
-                    self.matching_threshold_list,
+                    self.matching_mode_list,
+                    self.matching_threshold_list_for_modes,
                     self.confidence_threshold_list,
                 )
                 fn_objects = get_fn_objects(

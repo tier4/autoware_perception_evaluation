@@ -477,8 +477,8 @@ class EDAManager:
         tp_results, fp_results = divide_tp_fp_objects(
             object_results,
             target_labels,
-            matching_mode,
-            [matching_threshold] * len(target_labels),
+            [matching_mode],
+            [[matching_threshold] * len(target_labels)],
         )
         if len(tp_results) == 0:
             logger.info("No TP results, so no graphs are generated for TP.")
