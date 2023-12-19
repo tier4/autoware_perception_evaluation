@@ -17,12 +17,15 @@ from __future__ import annotations
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
-from perception_eval.common.label import Label
-from perception_eval.common.schema import FrameID
-from perception_eval.common.schema import Visibility
 from shapely.geometry import Polygon
+
+if TYPE_CHECKING:
+    from perception_eval.common.label import SemanticLabel
+    from perception_eval.common.schema import FrameID
+    from perception_eval.common.schema import Visibility
 
 
 class Roi:
@@ -131,19 +134,19 @@ class DynamicObject2D:
         unix_time: int,
         frame_id: FrameID,
         semantic_score: float,
-        semantic_label: Label,
+        semantic_label: SemanticLabel,
         roi: Optional[Tuple[int, int, int, int]] = None,
         uuid: Optional[str] = None,
         visibility: Optional[Visibility] = None,
     ) -> None:
         super().__init__()
-        self.unix_time: int = unix_time
-        self.frame_id: FrameID = frame_id
-        self.semantic_score: float = semantic_score
-        self.semantic_label: Label = semantic_label
-        self.roi: Optional[Roi] = Roi(roi) if roi is not None else None
-        self.uuid: Optional[str] = uuid
-        self.visibility: Optional[Visibility] = visibility
+        self.unix_time = unix_time
+        self.frame_id = frame_id
+        self.semantic_score = semantic_score
+        self.semantic_label = semantic_label
+        self.roi = Roi(roi) if roi is not None else None
+        self.uuid = uuid
+        self.visibility = visibility
 
     def get_corners(self) -> np.ndarray:
         """Returns the corners of bounding box in pixel.
@@ -151,8 +154,7 @@ class DynamicObject2D:
         Returns:
             numpy.ndarray: (top_left, top_right, bottom_right, bottom_left), in shape (4, 2).
         """
-        if self.roi is None:
-            raise RuntimeError("self.roi is None.")
+        assert self.roi is not None, "self.roi is None."
         return self.roi.corners
 
     def get_area(self) -> int:
@@ -161,8 +163,7 @@ class DynamicObject2D:
         Returns:
             int: Area of bounding box[px].
         """
-        if self.roi is None:
-            raise RuntimeError("self.roi is None.")
+        assert self.roi is not None, "self.roi is None."
         return self.roi.area
 
     def get_polygon(self) -> Polygon:
@@ -171,8 +172,7 @@ class DynamicObject2D:
         Returns:
             Polygon: Corners as Polygon. ((x0, y0), ..., (x0, y0))
         """
-        if self.roi is None:
-            raise RuntimeError("self.roi is None.")
+        assert self.roi is not None, "self.roi is None."
         corners: List[List[float]] = self.get_corners().tolist()
         corners.append(corners[0])
         return Polygon(corners)

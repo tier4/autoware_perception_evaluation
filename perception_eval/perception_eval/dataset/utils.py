@@ -42,9 +42,9 @@ from pyquaternion.quaternion import Quaternion
 from .load import FrameGroundTruth
 
 if TYPE_CHECKING:
-    from perception_eval.common.label import Label
     from perception_eval.common.label import LabelConverter
     from perception_eval.common.label import LabelType
+    from perception_eval.common.label import SemanticLabel
 
 #################################
 #           Dataset 3D          #
@@ -152,7 +152,7 @@ def _convert_nuscenes_box_to_dynamic_object(
     object_box: Box,
     unix_time: int,
     evaluation_task: EvaluationTask,
-    semantic_label: Label,
+    semantic_label: SemanticLabel,
     instance_token: str,
     sample_token: str,
     visibility: Optional[Visibility] = None,

@@ -15,82 +15,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
 import logging
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import TYPE_CHECKING
 from typing import Union
 
 from perception_eval.common.evaluation_task import EvaluationTask
 
+from .types import AutowareLabel
+from .types import SemanticLabel
+from .types import TrafficLightLabel
 
-class AutowareLabel(Enum):
-    """[summary]
-    Autoware label enum.
-    See https://github.com/tier4/autoware_iv_msgs/blob/main/autoware_perception_msgs/msg/object_recognition/Semantic.msg
-    """
-
-    UNKNOWN = "unknown"
-    CAR = "car"
-    TRUCK = "truck"
-    BUS = "bus"
-    BICYCLE = "bicycle"
-    MOTORBIKE = "motorbike"
-    PEDESTRIAN = "pedestrian"
-    ANIMAL = "animal"
-
-    # for FP validation
-    FP = "false_positive"
-
-    def __str__(self) -> str:
-        return self.value
-
-
-class TrafficLightLabel(Enum):
-    # except of classification
-    TRAFFIC_LIGHT = "traffic_light"
-
-    # classification
-    GREEN = "green"
-    RED = "red"
-    YELLOW = "yellow"
-    RED_STRAIGHT = "red_straight"
-    RED_LEFT = "red_left"
-    RED_LEFT_STRAIGHT = "red_left_straight"
-    RED_LEFT_DIAGONAL = "red_left_diagonal"
-    RED_RIGHT = "red_right"
-    RED_RIGHT_STRAIGHT = "red_right_straight"
-    RED_RIGHT_DIAGONAL = "red_right_diagonal"
-    YELLOW_RIGHT = "yellow_right"
-
-    # unknown is used in both detection and classification
-    UNKNOWN = "unknown"
-
-    # for FP validation
-    FP = "false_positive"
-
-    def __str__(self) -> str:
-        return self.value
-
-
-class CommonLabel(Enum):
-    UNKNOWN = (AutowareLabel.UNKNOWN, TrafficLightLabel.UNKNOWN)
-    FP = (AutowareLabel.FP, TrafficLightLabel.FP)
-
-    def __eq__(self, label: LabelType) -> bool:
-        return label in self.value
-
-    def __str__(self) -> str:
-        if self == CommonLabel.UNKNOWN:
-            return "unknown"
-        elif self == CommonLabel.FP:
-            return "false_positive"
-        else:
-            raise ValueError(f"Unexpected element: {self}")
-
-
-LabelType = Union[AutowareLabel, TrafficLightLabel]
+if TYPE_CHECKING:
+    from .types import LabelType
 
 
 @dataclass
@@ -106,60 +45,6 @@ class LabelInfo:
     label: LabelType
     name: str
     num: int = 0
-
-
-class Label:
-    """
-    Attributes:
-        label (LabelType): Corresponding label.
-        name (str): Label before converted.
-        attributes (List[str]): List of attributes. Defaults to [].
-
-    Args:
-        label (LabelType): LabelType instance.
-        name (str): Original label name.
-        attributes (List[str]): List of attributes. Defaults to [].
-    """
-
-    def __init__(self, label: LabelType, name: str, attributes: List[str] = []) -> None:
-        self.label: LabelType = label
-        self.name: str = name
-        self.attributes: List[str] = attributes
-
-    def contains(self, key: str) -> bool:
-        """Check whether self.name contains input attribute.
-
-        Args:
-            key (str): Target name or attribute.
-
-        Returns:
-            bool: Indicates whether input self.name contains input attribute.
-        """
-        assert isinstance(key, str), f"Expected type is str, but got {type(key)}"
-        return key in self.name or key in self.attributes
-
-    def contains_any(self, keys: List[str]) -> bool:
-        assert isinstance(keys, (list, tuple)), f"Expected type is sequence, but got {type(keys)}"
-        return any([self.contains(key) for key in keys])
-
-    def is_fp(self) -> bool:
-        """Returns `True`, if myself is `false_positive` label.
-
-        Returns:
-            bool: Whether myself is `false_positive`.
-        """
-        return self.label == CommonLabel.FP
-
-    def is_unknown(self) -> bool:
-        """Returns `True`, if myself is `unknown` label.
-
-        Returns:
-            bool: Whether myself is `unknown`.
-        """
-        return self.label == CommonLabel.UNKNOWN
-
-    def __eq__(self, other: Label) -> bool:
-        return self.label == other.label
 
 
 class LabelConverter:
@@ -208,7 +93,7 @@ class LabelConverter:
         else:
             raise ValueError(f"Unexpected `label_prefix`: {label_prefix}")
 
-        self.label_infos: List[LabelInfo] = [LabelInfo(label, name) for label, name in pair_list]
+        self.label_infos = [LabelInfo(label, name) for label, name in pair_list]
 
         logging.debug(f"label {self.label_infos}")
 
@@ -216,7 +101,7 @@ class LabelConverter:
         self,
         name: str,
         attributes: List[str] = [],
-    ) -> Label:
+    ) -> SemanticLabel:
         """Convert label name and attributes to Label instance.
 
         Args:
@@ -227,18 +112,18 @@ class LabelConverter:
         Returns:
             Label: Converted label.
         """
-        return_label: Optional[Label] = None
+        return_label: Optional[SemanticLabel] = None
         for label_info in self.label_infos:
             if name.lower() == label_info.name:
                 if self.count_label_number:
                     label_info.num += 1
                     if return_label is not None:
                         logging.error(f"Label {name} is already converted to {return_label}.")
-                return_label = Label(label_info.label, name, attributes)
+                return_label = SemanticLabel(label_info.label, name, attributes)
                 break
         if return_label is None:
             logging.warning(f"Label {name} is not registered.")
-            return_label = Label(self.label_type.UNKNOWN, name, attributes)
+            return_label = SemanticLabel(self.label_type.UNKNOWN, name, attributes)
         return return_label
 
     def convert_name(self, name: str) -> LabelType:
@@ -372,28 +257,3 @@ def _get_traffic_light_paris(
             (TrafficLightLabel.FP, "false_positive"),
         ]
     return pair_list
-
-
-def set_target_lists(
-    target_labels: Optional[List[str]],
-    label_converter: LabelConverter,
-) -> List[LabelType]:
-    """Returns a LabelType list from a list of label names in string.
-
-    If no label is specified, returns all LabelType elements.
-
-    Args:
-        target_labels (List[str]): The target class to evaluate
-        label_converter (LabelConverter): Label Converter class
-
-    Returns:
-        List[LabelType]:  LabelType instance list.
-
-    Examples:
-        >>> converter = LabelConverter(False, "autoware")
-        >>> set_target_lists(["car", "pedestrian"], converter)
-        [<AutowareLabel.CAR: 'car'>, <AutowareLabel.PEDESTRIAN: 'pedestrian'>]
-    """
-    if target_labels is None or len(target_labels) == 0:
-        return [label for label in label_converter.label_type]
-    return [label_converter.convert_name(name) for name in target_labels]

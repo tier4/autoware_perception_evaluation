@@ -12,13 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from numbers import Real
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Union
 
-from perception_eval.common.label import Label
-from perception_eval.common.label import LabelType
+if TYPE_CHECKING:
+    from perception_eval.common.label import LabelType
+    from perception_eval.common.label import SemanticLabel
 
 
 class LabelThreshold:
@@ -35,11 +39,11 @@ class LabelThreshold:
 
     def __init__(
         self,
-        semantic_label: Label,
+        semantic_label: SemanticLabel,
         target_labels: Optional[List[LabelType]],
     ) -> None:
-        self.semantic_label: Label = semantic_label
-        self.target_labels: Optional[List[LabelType]] = target_labels
+        self.semantic_label = semantic_label
+        self.target_labels = target_labels
 
     def get_label_threshold(
         self,
@@ -69,7 +73,7 @@ class LabelThreshold:
 
 
 def get_label_threshold(
-    semantic_label: Label,
+    semantic_label: SemanticLabel,
     target_labels: Optional[List[LabelType]],
     threshold_list: Optional[List[float]],
 ) -> Optional[float]:
