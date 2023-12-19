@@ -247,7 +247,8 @@ def get_positive_objects(
                 semantic_label=object_result.ground_truth_object.semantic_label,
                 target_labels=target_labels,
                 threshold_list=matching_threshold_list_for_matching_mode_i,
-            ) for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_labels
+            )
+            for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_labels
         )
 
         est_status, gt_status = object_result.get_status(matching_mode_list, matching_threshold_list)
@@ -295,7 +296,7 @@ def get_negative_objects(
                 [matching_threshold_list_for_matching_mode_2],
                 ...
             ]
-            where matching_threshold_list_for_mode_i is the list of matching threshold for each target label.    
+            where matching_threshold_list_for_mode_i is the list of matching threshold for each target label.
 
     Returns:
         tn_objects (List[DynamicObject]): List of TN.
@@ -310,11 +311,12 @@ def get_negative_objects(
         matching_threshold_list: Optional[List[float]] = List(
             get_label_threshold(
                 semantic_label=object_result.ground_truth_object.semantic_label
-                    if object_result.ground_truth_object is not None
-                    else object_result.estimated_object.semantic_label,
+                if object_result.ground_truth_object is not None
+                else object_result.estimated_object.semantic_label,
                 target_labels=target_labels,
                 threshold_list=matching_threshold_list_for_matching_mode_i,
-            ) for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_labels
+            )
+            for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_labels
         )
         _, gt_status = object_result.get_status(matching_mode_list, matching_threshold_list)
 

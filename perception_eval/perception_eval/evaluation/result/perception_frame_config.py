@@ -179,7 +179,9 @@ class PerceptionPassFailConfig:
 
         num_elements: int = len(self.target_labels)
         if matching_mode_list is None:
-            self.matching_mode_list: List[MatchingMode] = [MatchingMode.IOU2D if self.evaluation_task.is_2d() else MatchingMode.PLANEDISTANCE]
+            self.matching_mode_list: List[MatchingMode] = [
+                MatchingMode.IOU2D if self.evaluation_task.is_2d() else MatchingMode.PLANEDISTANCE
+            ]
         else:
             self.matching_mode_list: List[MatchingMode] = matching_mode_list
         if matching_threshold_list_for_labels is None:
@@ -194,7 +196,8 @@ class PerceptionPassFailConfig:
                 f"must be equal to length of matching_mode_list ({len(self.matching_mode_list)})"
             )
             self.matching_threshold_list_for_labels: List[List[float]] = List(
-                check_thresholds(matching_threshold_list, num_elements) for matching_threshold_list in matching_threshold_list_for_labels
+                check_thresholds(matching_threshold_list, num_elements)
+                for matching_threshold_list in matching_threshold_list_for_labels
             )
         if confidence_threshold_list is None:
             self.confidence_threshold_list = None

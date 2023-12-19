@@ -111,7 +111,9 @@ class DynamicObjectWithPerceptionResult:
         Returns:
             Tuple[MatchingStatus, Optional[MatchingStatus]]: Matching status of estimation and GT.
         """
-        assert len(matching_mode_list) == len(matching_threshold_list), "Length of matching mode and threshold must be same."
+        assert len(matching_mode_list) == len(
+            matching_threshold_list
+        ), "Length of matching mode and threshold must be same."
 
         if self.ground_truth_object is None:
             return (MatchingStatus.FP, None)
