@@ -18,7 +18,7 @@ import tempfile
 from typing import List
 from typing import Union
 
-from perception_eval.common.object2d import DynamicObject2D
+from perception_eval.common.object import DynamicObject2D
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.metrics import MetricsScore

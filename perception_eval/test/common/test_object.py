@@ -19,8 +19,8 @@ from typing import Tuple
 import unittest
 
 import numpy as np
-from perception_eval.common import distance_objects
-from perception_eval.common import distance_objects_bev
+from perception_eval.common.object import distance_objects
+from perception_eval.common.object import distance_objects_bev
 from perception_eval.common.object import DynamicObject
 from perception_eval.util.debug import get_objects_with_difference
 from shapely.geometry import Polygon

@@ -18,9 +18,9 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
-from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import LabelType
+from perception_eval.common.object import ObjectType
 from perception_eval.common.status import GroundTruthStatus
 from perception_eval.common.status import MatchingStatus
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult

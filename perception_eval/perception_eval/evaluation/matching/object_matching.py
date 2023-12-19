@@ -21,10 +21,10 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-from perception_eval.common import distance_objects
-from perception_eval.common import distance_points_bev
-from perception_eval.common import ObjectType
+from perception_eval.common.object import distance_objects
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.object import ObjectType
+from perception_eval.common.point import distance_points_bev
 from perception_eval.common.point import get_point_left_right
 from perception_eval.common.point import polygon_to_list
 from shapely.geometry import Polygon
@@ -73,7 +73,7 @@ class MatchingMethod(ABC):
         ground_truth_object: Optional[ObjectType],
     ) -> None:
         if ground_truth_object is not None:
-            assert type(estimated_object) == type(ground_truth_object)
+            assert type(estimated_object) is type(ground_truth_object)
         self.value: Optional[float] = self._calculate_matching_score(
             estimated_object=estimated_object,
             ground_truth_object=ground_truth_object,
