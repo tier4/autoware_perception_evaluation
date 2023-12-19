@@ -24,7 +24,6 @@ from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.manager import PerceptionEvaluationManager
 from perception_eval.result import PerceptionFrameConfig
 from perception_eval.result import PerceptionFrameResult
-from perception_eval.result import PerceptionPassFailConfig
 from perception_eval.tool import PerceptionAnalyzer3D
 from perception_eval.util.debug import format_class_for_log
 from perception_eval.util.debug import get_objects_with_difference
@@ -117,11 +116,6 @@ class PerceptionLSimMoc:
             ignore_attributes=["cycle_state.without_rider"],
             max_x_position_list=[30.0, 30.0, 30.0, 30.0],
             max_y_position_list=[30.0, 30.0, 30.0, 30.0],
-        )
-        # Pass fail を決めるパラメータ
-        frame_pass_fail_config = PerceptionPassFailConfig(
-            evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
             thresholds=[2.0, 2.0, 2.0, 2.0],
         )
 
@@ -131,7 +125,6 @@ class PerceptionLSimMoc:
             estimated_objects=estimated_objects,
             critical_ground_truth_objects=critical_ground_truth_objects,
             frame_config=frame_config,
-            frame_pass_fail_config=frame_pass_fail_config,
         )
         self.visualize(frame_result)
 
