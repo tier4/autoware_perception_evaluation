@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from .perception_frame_config import CriticalObjectFilterConfig
+from .perception_frame_config import PerceptionFrameConfig
 from .perception_frame_config import PerceptionPassFailConfig
 from .perception_frame_result import get_object_status
 from .perception_frame_result import PerceptionFrameResult
@@ -21,7 +21,7 @@ from .perception_result import DynamicObjectWithPerceptionResult
 from .perception_result import get_object_results
 
 __all__ = (
-    "CriticalObjectFilterConfig",
+    "PerceptionFrameConfig",
     "PerceptionPassFailConfig",
     "get_object_status",
     "PerceptionFrameResult",

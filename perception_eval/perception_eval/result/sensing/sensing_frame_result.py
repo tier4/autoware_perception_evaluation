@@ -53,14 +53,14 @@ class SensingFrameResult:
         self,
         sensing_frame_config: SensingFrameConfig,
         unix_time: int,
-        frame_name: str,
+        frame_number: int,
     ) -> None:
         # Config
         self.sensing_frame_config = sensing_frame_config
 
         # Frame information
         self.unix_time: int = unix_time
-        self.frame_name: str = frame_name
+        self.frame_number: int = frame_number
 
         # Containers for results
         self.detection_success_results: List[DynamicObjectWithSensingResult] = []

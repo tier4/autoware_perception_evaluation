@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from perception_eval.config import PerceptionEvaluationConfig
 
 
-class CriticalObjectFilterConfig:
+class PerceptionFrameConfig:
     """[summary]
     Config class for critical object filter
 
@@ -149,10 +149,9 @@ class PerceptionPassFailConfig:
         self,
         evaluator_config: PerceptionEvaluationConfig,
         target_labels: Optional[List[str]],
-        matching_threshold_list: Optional[List[float]] = None,
-        confidence_threshold_list: Optional[List[float]] = None,
+        thresholds: Optional[List[float]] = None,
     ) -> None:
-        """[summary]
+        """
         Args:
             evaluator_config (PerceptionEvaluationConfig): Evaluation config
             target_labels (List[str]): Target list. If None or empty list is specified, all labels will be evaluated.
@@ -167,14 +166,11 @@ class PerceptionPassFailConfig:
         )
 
         num_elements: int = len(self.target_labels)
-        if matching_threshold_list is None:
-            self.matching_threshold_list = None
+
+        if thresholds is None:
+            self.thresholds = None
         else:
-            self.matching_threshold_list: List[float] = check_thresholds(matching_threshold_list, num_elements)
-        if confidence_threshold_list is None:
-            self.confidence_threshold_list = None
-        else:
-            self.confidence_threshold_list: List[float] = check_thresholds(confidence_threshold_list, num_elements)
+            self.thresholds = check_thresholds(thresholds, num_elements)
 
 
 class UseCaseThresholdsError(Exception):

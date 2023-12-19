@@ -39,13 +39,13 @@ class FrameGroundTruth:
     def __init__(
         self,
         unix_time: int,
-        frame_name: str,
+        frame_number: int,
         objects: List[ObjectType],
         ego2map: Optional[np.ndarray] = None,
         raw_data: Optional[Dict[str, np.ndarray]] = None,
     ) -> None:
         self.unix_time = unix_time
-        self.frame_name = frame_name
+        self.frame_number = frame_number
         self.objects = objects
         self.ego2map = ego2map
         self.raw_data = raw_data

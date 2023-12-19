@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from perception_eval.metrics import MetricsScoreConfig
     from perception_eval.object import ObjectType
 
-    from .perception_frame_config import CriticalObjectFilterConfig
+    from .perception_frame_config import PerceptionFrameConfig
     from .perception_frame_config import PerceptionPassFailConfig
     from .perception_result import DynamicObjectWithPerceptionResult
 
@@ -43,7 +43,7 @@ class PerceptionFrameResult:
     Attributes:
         object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results to each estimated object.
         frame_ground_truth (FrameGroundTruth): Filtered ground truth of frame.
-        frame_name (str): The file name of frame in the datasets.
+        frame_number (int): The file name of frame in the datasets.
         unix_time (int): The unix time for frame [us].
         target_labels (List[AutowareLabel]): The list of target label.
         metrics_score (MetricsScore): Metrics score results.
@@ -64,14 +64,12 @@ class PerceptionFrameResult:
         object_results: List[DynamicObjectWithPerceptionResult],
         frame_ground_truth: FrameGroundTruth,
         metrics_config: MetricsScoreConfig,
-        critical_object_filter_config: CriticalObjectFilterConfig,
+        frame_config: PerceptionFrameConfig,
         frame_pass_fail_config: PerceptionPassFailConfig,
         unix_time: int,
         target_labels: List[LabelType],
     ) -> None:
-        # TODO(ktro2828): rename `frame_name` into `frame_number`
-        # frame information
-        self.frame_name = frame_ground_truth.frame_name
+        self.frame_number = frame_ground_truth.frame_number
         self.unix_time = unix_time
         self.target_labels = target_labels
 
@@ -81,19 +79,19 @@ class PerceptionFrameResult:
         # init evaluation
         self.metrics_score = metrics.MetricsScore(
             metrics_config,
-            used_frame=[int(self.frame_name)],
+            used_frame=[int(self.frame_number)],
         )
         self.pass_fail_result = PassFailResult(
             unix_time=unix_time,
-            frame_number=frame_ground_truth.frame_name,
-            critical_object_filter_config=critical_object_filter_config,
+            frame_number=self.frame_number,
+            frame_config=frame_config,
             frame_pass_fail_config=frame_pass_fail_config,
             ego2map=frame_ground_truth.ego2map,
         )
 
     def evaluate_frame(
         self,
-        ros_critical_ground_truth_objects: List[ObjectType],
+        critical_ground_truth_objects: List[ObjectType],
         previous_result: Optional[PerceptionFrameResult] = None,
     ) -> None:
         """[summary]
@@ -130,7 +128,7 @@ class PerceptionFrameResult:
 
         self.pass_fail_result.evaluate(
             object_results=self.object_results,
-            ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
+            critical_ground_truth_objects=critical_ground_truth_objects,
         )
 
 
@@ -145,7 +143,7 @@ def get_object_status(frame_results: List[PerceptionFrameResult]) -> List[Ground
     """
     status_infos: List[GroundTruthStatus] = []
     for frame_result in frame_results:
-        frame_num: int = int(frame_result.frame_name)
+        frame_num = int(frame_result.frame_number)
         # TP
         for tp_object_result in frame_result.pass_fail_result.tp_object_results:
             if tp_object_result.ground_truth_object.uuid not in status_infos:

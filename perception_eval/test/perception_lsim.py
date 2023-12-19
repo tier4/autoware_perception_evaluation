@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING
 
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.manager import PerceptionEvaluationManager
-from perception_eval.result import CriticalObjectFilterConfig
+from perception_eval.result import PerceptionFrameConfig
 from perception_eval.result import PerceptionFrameResult
 from perception_eval.result import PerceptionPassFailConfig
 from perception_eval.tool import PerceptionAnalyzer3D
@@ -106,12 +106,12 @@ class PerceptionLSimMoc:
         # ros_critical_ground_truth_objects : List[DynamicObject] = custom_critical_object_filter(
         #   ground_truth_now_frame.objects
         # )
-        ros_critical_ground_truth_objects = ground_truth_now_frame.objects
+        critical_ground_truth_objects = ground_truth_now_frame.objects
 
         # 1 frameの評価
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam
-        critical_object_filter_config = CriticalObjectFilterConfig(
+        frame_config = PerceptionFrameConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
             ignore_attributes=["cycle_state.without_rider"],
@@ -122,15 +122,15 @@ class PerceptionLSimMoc:
         frame_pass_fail_config = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            matching_threshold_list=[2.0, 2.0, 2.0, 2.0],
+            thresholds=[2.0, 2.0, 2.0, 2.0],
         )
 
         frame_result = self.evaluator.add_frame_result(
             unix_time=unix_time,
             ground_truth_now_frame=ground_truth_now_frame,
             estimated_objects=estimated_objects,
-            ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
-            critical_object_filter_config=critical_object_filter_config,
+            critical_ground_truth_objects=critical_ground_truth_objects,
+            frame_config=frame_config,
             frame_pass_fail_config=frame_pass_fail_config,
         )
         self.visualize(frame_result)

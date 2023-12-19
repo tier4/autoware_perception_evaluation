@@ -35,8 +35,8 @@ if TYPE_CHECKING:
     from perception_eval.config import PerceptionEvaluationConfig
     from perception_eval.dataset import FrameGroundTruth
     from perception_eval.object import ObjectType
-    from perception_eval.result import CriticalObjectFilterConfig
     from perception_eval.result import DynamicObjectWithPerceptionResult
+    from perception_eval.result import PerceptionFrameConfig
     from perception_eval.result import PerceptionPassFailConfig
     from perception_eval.visualization import PerceptionVisualizerType
 
@@ -84,8 +84,8 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         unix_time: int,
         ground_truth_now_frame: FrameGroundTruth,
         estimated_objects: List[ObjectType],
-        ros_critical_ground_truth_objects: List[ObjectType],
-        critical_object_filter_config: CriticalObjectFilterConfig,
+        critical_ground_truth_objects: List[ObjectType],
+        frame_config: PerceptionFrameConfig,
         frame_pass_fail_config: PerceptionPassFailConfig,
     ) -> PerceptionFrameResult:
         """Get perception result at current frame.
@@ -118,7 +118,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             object_results=object_results,
             frame_ground_truth=ground_truth_now_frame,
             metrics_config=self.metrics_config,
-            critical_object_filter_config=critical_object_filter_config,
+            frame_config=frame_config,
             frame_pass_fail_config=frame_pass_fail_config,
             unix_time=unix_time,
             target_labels=self.target_labels,
@@ -126,13 +126,11 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
 
         if len(self.frame_results) > 0:
             result.evaluate_frame(
-                ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
+                critical_ground_truth_objects=critical_ground_truth_objects,
                 previous_result=self.frame_results[-1],
             )
         else:
-            result.evaluate_frame(
-                ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
-            )
+            result.evaluate_frame(critical_ground_truth_objects=critical_ground_truth_objects)
 
         self.frame_results.append(result)
         return result
@@ -204,7 +202,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             for label in target_labels:
                 all_frame_results[label].append(obj_result_dict[label])
                 all_num_gt[label] += num_gt_dict[label]
-            used_frame.append(int(frame.frame_name))
+            used_frame.append(frame.frame_number)
 
         # Calculate score
         scene_metrics_score = MetricsScore(

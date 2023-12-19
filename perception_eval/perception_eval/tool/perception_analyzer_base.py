@@ -432,7 +432,7 @@ class PerceptionAnalyzerBase(ABC):
             for label in target_labels:
                 scene_results[label].append(obj_results_dict[label])
                 scene_num_gt[label] += num_gt_dict[label]
-            used_frame.append(int(frame.frame_name))
+            used_frame.append(frame.frame_number)
 
         metrics_score: MetricsScore = MetricsScore(
             config=self.config.metrics_config,
@@ -487,13 +487,13 @@ class PerceptionAnalyzerBase(ABC):
             if len(self) > 0:
                 concat.append(self.df)
 
-            self.__ego2maps[str(self.num_scene)][str(frame.frame_name)] = frame.frame_ground_truth.ego2map
+            self.__ego2maps[str(self.num_scene)][str(frame.frame_number)] = frame.frame_ground_truth.ego2map
 
             tp_df = self.format2df(
                 frame.pass_fail_result.tp_object_results,
                 status=MatchingStatus.TP,
                 start=start,
-                frame_num=int(frame.frame_name),
+                frame_num=frame.frame_number,
                 ego2map=frame.frame_ground_truth.ego2map,
             )
             if len(tp_df) > 0:
@@ -504,7 +504,7 @@ class PerceptionAnalyzerBase(ABC):
                 frame.pass_fail_result.fp_object_results,
                 status=MatchingStatus.FP,
                 start=start,
-                frame_num=int(frame.frame_name),
+                frame_num=frame.frame_number,
                 ego2map=frame.frame_ground_truth.ego2map,
             )
             if len(fp_df) > 0:
@@ -515,7 +515,7 @@ class PerceptionAnalyzerBase(ABC):
                 frame.pass_fail_result.tn_objects,
                 status=MatchingStatus.TN,
                 start=start,
-                frame_num=int(frame.frame_name),
+                frame_num=frame.frame_number,
                 ego2map=frame.frame_ground_truth.ego2map,
             )
             if len(tn_df) > 0:
@@ -526,7 +526,7 @@ class PerceptionAnalyzerBase(ABC):
                 frame.pass_fail_result.fn_objects,
                 status=MatchingStatus.FN,
                 start=start,
-                frame_num=int(frame.frame_name),
+                frame_num=frame.frame_number,
                 ego2map=frame.frame_ground_truth.ego2map,
             )
             if len(fn_df) > 0:

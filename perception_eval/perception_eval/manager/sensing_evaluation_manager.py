@@ -99,7 +99,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         result = SensingFrameResult(
             sensing_frame_config=sensing_frame_config,
             unix_time=unix_time,
-            frame_name=ground_truth_now_frame.frame_name,
+            frame_number=ground_truth_now_frame.frame_number,
         )
 
         result.evaluate_frame(
