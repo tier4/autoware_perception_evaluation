@@ -1,6 +1,6 @@
 # Common items in Perception and Sensing
 
-## [`<class> DynamicObject(...)`](../../perception_eval/perception_eval/common/object/object3d.py)
+## [`<class> DynamicObject(...)`](../../perception_eval/perception_eval/object/object3d.py)
 
 - Evaluation task: `DETECTION`, `TRACKING`, `PREDICTION`, `SENSING`
 
@@ -27,7 +27,7 @@
 | `predicted_confidence`   |              `float`               | List of predicted confidence.                                              |
 | `visibility`             |       `Optional[Visibility]`       | Visibility status.                                                         |
 
-## [`<class> DynamicObject2D(...)`](../../perception_eval/perception_eval/common/object/object2d.py)
+## [`<class> DynamicObject2D(...)`](../../perception_eval/perception_eval/object/object2d.py)
 
 - Evaluation task: `DETECTION2D`, `TRACING2D`, `CLASSIFICATION2D`
 
@@ -43,7 +43,7 @@
 
 ## Ground truth
 
-### [`<class> FrameGroundTruth(...)`](../../perception_eval/perception_eval/common/dataset/ground_truth.py)
+### [`<class> FrameGroundTruth(...)`](../../perception_eval/perception_eval/dataset/ground_truth.py)
 
 | Argument     |           type            | Description                                                                                             |
 | :----------- | :-----------------------: | :------------------------------------------------------------------------------------------------------ |
@@ -53,7 +53,7 @@
 | `ego2map`    | `Optional[numpy.ndarray]` | 4x4 matrix to transform objects with respect to base_link coordinate system map one. (Defaults to None) |
 | `raw_data`   | `Optional[numpy.ndarray]` | Array of pointcloud/image. (Defaults to None)                                                           |
 
-### [`<func> load_all_datasets(...) -> List[FrameGroundTruth]`](../../perception_eval/perception_eval/common/dataset/load.py)
+### [`<func> load_all_datasets(...) -> List[FrameGroundTruth]`](../../perception_eval/perception_eval/dataset/load.py)
 
 | Argument          |                type                 | Description                                       |
 | :---------------- | :---------------------------------: | :------------------------------------------------ |

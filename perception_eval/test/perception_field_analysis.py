@@ -22,8 +22,6 @@ from pathlib import Path
 import numpy as np
 from perception_eval.tool import PerceptionAnalyzer3DField
 from perception_eval.tool import PerceptionFieldAxis
-from perception_eval.tool import PerceptionFieldXY
-from perception_eval.visualization.perception_visualizer3dfield import PerceptionFieldPlot
 from perception_eval.visualization.perception_visualizer3dfield import PerceptionFieldPlots
 
 

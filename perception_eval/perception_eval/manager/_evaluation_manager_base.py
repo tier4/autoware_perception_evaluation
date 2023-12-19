@@ -12,17 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from abc import ABC
 from abc import abstractmethod
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 
-from perception_eval.common.dataset import FrameGroundTruth
-from perception_eval.common.dataset import get_now_frame
-from perception_eval.common.dataset import load_all_datasets
-from perception_eval.config import EvaluationConfigType
-from perception_eval.evaluation import FrameResultType
-from perception_eval.visualization import VisualizerType
+from perception_eval.dataset import get_now_frame
+from perception_eval.dataset import load_all_datasets
+
+if TYPE_CHECKING:
+    from perception_eval.config import EvaluationConfigType
+    from perception_eval.dataset import FrameGroundTruth
+    from perception_eval.result import FrameResultType
+    from perception_eval.visualization import VisualizerType
 
 
 class _EvaluationMangerBase(ABC):
@@ -44,13 +49,15 @@ class _EvaluationMangerBase(ABC):
         super().__init__()
 
         self.evaluator_config = evaluation_config
-        self.ground_truth_frames: List[FrameGroundTruth] = load_all_datasets(
+        self.ground_truth_frames = load_all_datasets(
             dataset_paths=self.evaluator_config.dataset_paths,
             evaluation_task=self.evaluator_config.evaluation_task,
             label_converter=self.evaluator_config.label_converter,
             frame_id=self.evaluator_config.frame_ids,
             load_raw_data=self.evaluator_config.load_raw_data,
         )
+
+        self.frame_results: List[FrameResultType] = []
 
     @property
     def evaluation_task(self):
@@ -104,7 +111,7 @@ class _EvaluationMangerBase(ABC):
             Optional[FrameGroundTruth]: FrameGroundTruth instance at current frame.
                 If there is no corresponding ground truth, returns None.
         """
-        ground_truth_now_frame: FrameGroundTruth = get_now_frame(
+        ground_truth_now_frame = get_now_frame(
             ground_truth_frames=self.ground_truth_frames,
             unix_time=unix_time,
             threshold_min_time=threshold_min_time,
