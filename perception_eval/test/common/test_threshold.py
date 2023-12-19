@@ -17,7 +17,7 @@ from typing import Tuple
 import unittest
 
 from perception_eval.common.label import AutowareLabel
-from perception_eval.common.label import Label
+from perception_eval.common.label import SemanticLabel
 from perception_eval.common.threshold import check_nested_thresholds
 from perception_eval.common.threshold import check_thresholds
 from perception_eval.common.threshold import get_label_threshold
@@ -45,9 +45,9 @@ class TestThreshold(unittest.TestCase):
 
         # patterns: (semantic_label,  ans_threshold)
         patterns: List[Tuple[AutowareLabel, float]] = [
-            (Label(AutowareLabel.CAR, "car", []), 0.1),
-            (Label(AutowareLabel.BUS, "bus", []), 0.2),
-            (Label(AutowareLabel.PEDESTRIAN, "pedestrian", []), 0.3),
+            (SemanticLabel(AutowareLabel.CAR, "car", []), 0.1),
+            (SemanticLabel(AutowareLabel.BUS, "bus", []), 0.2),
+            (SemanticLabel(AutowareLabel.PEDESTRIAN, "pedestrian", []), 0.3),
         ]
         for semantic_label, ans_threshold in patterns:
             with self.subTest("Test get_label_thresholds"):

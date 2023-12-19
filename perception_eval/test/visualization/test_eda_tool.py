@@ -22,7 +22,7 @@ from typing import Union
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
-from perception_eval.common.label import Label
+from perception_eval.common.label import SemanticLabel
 from perception_eval.common.schema import FrameID
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
@@ -62,7 +62,7 @@ class TestEDAVisualizer:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
-            semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
+            semantic_label=SemanticLabel(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16),
         ),
@@ -308,7 +308,7 @@ class TestEDAManager:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
-            semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
+            semantic_label=SemanticLabel(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16),
         ),
@@ -329,7 +329,7 @@ class TestEDAManager:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(2.0, 4.0, 2.0)),
             semantic_score=0.9,
-            semantic_label=Label(AutowareLabel.CAR, "car", []),
+            semantic_label=SemanticLabel(AutowareLabel.CAR, "car", []),
             velocity=(1.0, 1.0, 1.0),
             pointcloud_num=10,
             uuid=token_hex(16),
@@ -341,7 +341,7 @@ class TestEDAManager:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(2.0, 4.0, 2.0)),
             semantic_score=0.9,
-            semantic_label=Label(AutowareLabel.CAR, "car", []),
+            semantic_label=SemanticLabel(AutowareLabel.CAR, "car", []),
             velocity=(1.0, 1.0, 1.0),
             pointcloud_num=10,
             uuid=token_hex(16),
@@ -353,7 +353,7 @@ class TestEDAManager:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 2.0, 1.0)),
             semantic_score=0.9,
-            semantic_label=Label(AutowareLabel.BICYCLE, "bicycle", []),
+            semantic_label=SemanticLabel(AutowareLabel.BICYCLE, "bicycle", []),
             velocity=(1.0, 1.0, 1.0),
             pointcloud_num=10,
             uuid=token_hex(16),
@@ -365,7 +365,7 @@ class TestEDAManager:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 2.0, 1.0)),
             semantic_score=0.9,
-            semantic_label=Label(AutowareLabel.BICYCLE, "bicycle", []),
+            semantic_label=SemanticLabel(AutowareLabel.BICYCLE, "bicycle", []),
             velocity=(1.0, 1.0, 1.0),
             pointcloud_num=10,
             uuid=token_hex(16),
@@ -377,7 +377,7 @@ class TestEDAManager:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
-            semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
+            semantic_label=SemanticLabel(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
             pointcloud_num=10,
             uuid=token_hex(16),
@@ -389,7 +389,7 @@ class TestEDAManager:
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.0, 1.0, 1.0)),
             semantic_score=0.9,
-            semantic_label=Label(AutowareLabel.PEDESTRIAN, "pedestrian", []),
+            semantic_label=SemanticLabel(AutowareLabel.PEDESTRIAN, "pedestrian", []),
             velocity=(1.0, 1.0, 1.0),
             pointcloud_num=10,
             uuid=token_hex(16),
