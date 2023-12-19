@@ -203,7 +203,7 @@
 
   - **4. Specify parameters besides parameters of `MetricsConfig`**
 
-    - About each MetricsConfig，see [perception_eval/evaluation/metrics/config](../../../perception_eval/perception_eval/evaluation/metrics/config/)
+    - About each MetricsConfig，see [perception_eval/metrics/config](../../../perception_eval/perception_eval/metrics/config/)
 
     ```python
     evaluation_config_dict = {
@@ -236,7 +236,7 @@
 
 - An interface to determine target objects dynamically
 - Specify in every frame, not in initialization of `PerceptionEvaluationManger`
-- See [perception_eval/evaluation/result/perception_frame_config](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py)
+- See [perception_eval/result/perception/perception_frame_config](../../../perception_eval/perception_eval/result/perception/perception_frame_config.py)
 
 | Arguments                   |             type             |    Mandatory    | Description                                                                                                     |
 | :-------------------------- | :--------------------------: | :-------------: | :-------------------------------------------------------------------------------------------------------------- |
@@ -257,7 +257,7 @@
 
 - A class to decide Pass / Fail. For Pass/Fail decision, determine TP/FP by **Plane distance**.
 - Specify in every frame, not in initializing `PerceptionEvaluationManager`.
-- For the details, see [perception_eval/evaluation/result/perception_frame_config](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py).
+- For the details, see [perception_eval/result/perception/perception_frame_config](../../../perception_eval/perception_eval/result/perception/perception_frame_config.py).
 
 | Arguments                 |             type             | Mandatory | Description                                                                                                            |
 | :------------------------ | :--------------------------: | :-------: | :--------------------------------------------------------------------------------------------------------------------- |

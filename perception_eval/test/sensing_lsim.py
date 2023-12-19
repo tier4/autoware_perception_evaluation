@@ -20,11 +20,11 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
-from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.config import SensingEvaluationConfig
-from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
-from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
+from perception_eval.dataset import FrameGroundTruth
 from perception_eval.manager import SensingEvaluationManager
+from perception_eval.result import SensingFrameConfig
+from perception_eval.result import SensingFrameResult
 from perception_eval.util.logger_config import configure_logger
 
 

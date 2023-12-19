@@ -12,29 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
 
 from typing import List
 from typing import Tuple
+from typing import TYPE_CHECKING
 
-from perception_eval.common.dataset import FrameGroundTruth
-from perception_eval.common.label import LabelType
-from perception_eval.common.object import ObjectType
-from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation import PerceptionFrameResult
-from perception_eval.evaluation.matching.objects_filter import divide_objects
-from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
-from perception_eval.evaluation.matching.objects_filter import filter_object_results
-from perception_eval.evaluation.matching.objects_filter import filter_objects
-from perception_eval.evaluation.metrics import MetricsScore
-from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
-from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from perception_eval.matching.objects_filter import divide_objects
+from perception_eval.matching.objects_filter import divide_objects_to_num
+from perception_eval.matching.objects_filter import filter_object_results
+from perception_eval.matching.objects_filter import filter_objects
+from perception_eval.metrics import MetricsScore
+from perception_eval.result import get_object_results
+from perception_eval.result import PerceptionFrameResult
 from perception_eval.visualization import PerceptionVisualizer2D
 from perception_eval.visualization import PerceptionVisualizer3D
-from perception_eval.visualization import PerceptionVisualizerType
 
 from ._evaluation_manager_base import _EvaluationMangerBase
-from ..evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from ..evaluation.result.object_result import get_object_results
+
+if TYPE_CHECKING:
+    from perception_eval.common.label import LabelType
+    from perception_eval.config import PerceptionEvaluationConfig
+    from perception_eval.dataset import FrameGroundTruth
+    from perception_eval.object import ObjectType
+    from perception_eval.result import CriticalObjectFilterConfig
+    from perception_eval.result import DynamicObjectWithPerceptionResult
+    from perception_eval.result import PerceptionPassFailConfig
+    from perception_eval.visualization import PerceptionVisualizerType
 
 
 class PerceptionEvaluationManager(_EvaluationMangerBase):
@@ -57,7 +61,6 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         evaluation_config: PerceptionEvaluationConfig,
     ) -> None:
         super().__init__(evaluation_config=evaluation_config)
-        self.frame_results: List[PerceptionFrameResult] = []
         self.__visualizer = (
             PerceptionVisualizer2D(self.evaluator_config)
             if self.evaluation_task.is_2d()
@@ -167,7 +170,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             **self.filtering_params,
         )
 
-        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        object_results = get_object_results(
             evaluation_task=self.evaluation_task,
             estimated_objects=estimated_objects,
             ground_truth_objects=frame_ground_truth.objects,
@@ -204,7 +207,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             used_frame.append(int(frame.frame_name))
 
         # Calculate score
-        scene_metrics_score: MetricsScore = MetricsScore(
+        scene_metrics_score = MetricsScore(
             config=self.metrics_config,
             used_frame=used_frame,
         )

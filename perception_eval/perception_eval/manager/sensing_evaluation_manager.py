@@ -17,13 +17,13 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
-from perception_eval.common.dataset import FrameGroundTruth
-from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import crop_pointcloud
 from perception_eval.config import SensingEvaluationConfig
-from perception_eval.evaluation import SensingFrameResult
-from perception_eval.evaluation.matching.objects_filter import filter_objects
-from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
+from perception_eval.dataset import FrameGroundTruth
+from perception_eval.matching.objects_filter import filter_objects
+from perception_eval.object import DynamicObject
+from perception_eval.result import SensingFrameConfig
+from perception_eval.result import SensingFrameResult
 from perception_eval.util.math import get_bbox_scale
 from perception_eval.visualization import SensingVisualizer
 
@@ -47,7 +47,6 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         evaluation_config: SensingEvaluationConfig,
     ) -> None:
         super().__init__(evaluation_config)
-        self.frame_results: List[SensingFrameResult] = []
         self.__visualizer = SensingVisualizer(self.evaluator_config)
 
     @property

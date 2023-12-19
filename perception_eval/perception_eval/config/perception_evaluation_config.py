@@ -18,15 +18,18 @@ from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
+from typing import TYPE_CHECKING
 from typing import Union
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.threshold import set_thresholds
-from perception_eval.evaluation.metrics import MetricsScoreConfig
+from perception_eval.metrics import MetricsScoreConfig
 
 from ._evaluation_config_base import _EvaluationConfigBase
+
+if TYPE_CHECKING:
+    from perception_eval.common.label import LabelType
 
 
 class PerceptionEvaluationConfig(_EvaluationConfigBase):
@@ -87,10 +90,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             load_raw_data=load_raw_data,
         )
 
-        self.metrics_config: MetricsScoreConfig = MetricsScoreConfig(
-            self.evaluation_task,
-            **self.metrics_params,
-        )
+        self.metrics_config = MetricsScoreConfig(self.evaluation_task, **self.metrics_params)
 
     @staticmethod
     def _extract_label_params(evaluation_config_dict: Dict[str, Any]) -> Dict[str, Any]:

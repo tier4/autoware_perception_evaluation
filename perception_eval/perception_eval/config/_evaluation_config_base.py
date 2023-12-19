@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from abc import ABC
 from abc import abstractmethod
 import datetime
@@ -22,12 +24,15 @@ from typing import Dict
 from typing import List
 from typing import Sequence
 from typing import Tuple
+from typing import TYPE_CHECKING
 from typing import Union
 
-from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.evaluation_task import set_task
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.schema import FrameID
+
+if TYPE_CHECKING:
+    from perception_eval.common.evaluation_task import EvaluationTask
 
 
 class _EvaluationConfigBase(ABC):
