@@ -24,9 +24,9 @@ from typing import Tuple
 import unittest
 
 import numpy as np
-from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
+from perception_eval.common.object import DynamicObject
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.detection.ap import Ap

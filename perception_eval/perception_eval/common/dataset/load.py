@@ -15,68 +15,26 @@
 from copy import deepcopy
 import logging
 from typing import Any
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Union
 
 from nuimages import NuImages
-import numpy as np
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
-from perception_eval.common import ObjectType
-from perception_eval.common.dataset_utils import _sample_to_frame
-from perception_eval.common.dataset_utils import _sample_to_frame_2d
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.geometry import interpolate_homogeneous_matrix
 from perception_eval.common.geometry import interpolate_object_list
 from perception_eval.common.label import LabelConverter
-from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.util.math import get_pose_transform_matrix
 from pyquaternion import Quaternion
 from tqdm import tqdm
 
-
-class FrameGroundTruth:
-    """
-    Ground truth data per frame
-
-    Attributes:
-        unix_time (float): The unix time for the frame [us].
-        frame_name (str): The file name for the frame.
-        objects (List[DynamicObject]): Objects data.
-        pointcloud (Optional[numpy.ndarray], optional):
-                Pointcloud data. Defaults to None, but if you want to visualize dataset,
-                you should load pointcloud data.
-        transform_matrix (Optional[np.ndarray]): The numpy array to transform position.
-        objects (List[ObjectType]): Objects data.
-        ego2map (Optional[np.ndarray]): The numpy array to transform position.
-        raw_data (Optional[Dict[str, numpy.ndarray]]): Raw data for each sensor modality.
-
-    Args:
-        unix_time (int): The unix time for the frame [us]
-        frame_name (str): The file name for the frame
-        objects (List[DynamicObject]): Objects data.
-        ego2map (Optional[np.ndarray]): The array of 4x4 matrix.
-            Transform position with respect to vehicle coord system to map one.
-        raw_data (Optional[Dict[str, numpy.ndarray]]): Raw data for each sensor modality.
-    """
-
-    def __init__(
-        self,
-        unix_time: int,
-        frame_name: str,
-        objects: List[DynamicObject],
-        ego2map: Optional[np.ndarray] = None,
-        raw_data: Optional[Dict[str, np.ndarray]] = None,
-    ) -> None:
-        self.unix_time: int = unix_time
-        self.frame_name: str = frame_name
-        self.objects: List[ObjectType] = objects
-        self.ego2map: Optional[np.ndarray] = ego2map
-        self.raw_data: Optional[Dict[str, np.ndarray]] = raw_data
+from .ground_truth import FrameGroundTruth
+from .utils import _sample_to_frame
+from .utils import _sample_to_frame_2d
 
 
 def load_all_datasets(

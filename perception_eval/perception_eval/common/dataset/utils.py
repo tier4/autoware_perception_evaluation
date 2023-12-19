@@ -32,8 +32,8 @@ from perception_eval.common.label import Label
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import TrafficLightLabel
-from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.object import DynamicObject2D
 from perception_eval.common.schema import FrameID
 from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
@@ -41,7 +41,7 @@ from perception_eval.common.shape import ShapeType
 from PIL import Image
 from pyquaternion.quaternion import Quaternion
 
-from . import dataset
+from .load import FrameGroundTruth
 
 #################################
 #           Dataset 3D          #
@@ -57,7 +57,7 @@ def _sample_to_frame(
     frame_id: FrameID,
     frame_name: str,
     load_raw_data: bool,
-) -> dataset.FrameGroundTruth:
+) -> FrameGroundTruth:
     """Load FrameGroundTruth instance from sample record.
 
     Args:
@@ -132,7 +132,7 @@ def _sample_to_frame(
         )
         objects_.append(object_)
 
-    frame = dataset.FrameGroundTruth(
+    frame = FrameGroundTruth(
         unix_time=unix_time_,
         frame_name=frame_name,
         objects=objects_,
@@ -433,7 +433,7 @@ def _sample_to_frame_2d(
     frame_ids: List[FrameID],
     frame_name: str,
     load_raw_data: bool,
-) -> dataset.FrameGroundTruth:
+) -> FrameGroundTruth:
     """Returns FrameGroundTruth constructed with DynamicObject2D.
 
     Args:
@@ -513,7 +513,7 @@ def _sample_to_frame_2d(
         )
         objects_.append(object_)
 
-    frame = dataset.FrameGroundTruth(
+    frame = FrameGroundTruth(
         unix_time=unix_time,
         frame_name=frame_name,
         objects=objects_,
