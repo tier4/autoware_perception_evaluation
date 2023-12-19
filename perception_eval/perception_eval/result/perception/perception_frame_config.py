@@ -20,17 +20,15 @@ from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 
-from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.threshold import check_thresholds
 
 if TYPE_CHECKING:
-    from perception_eval.common.label import LabelType
     from perception_eval.config import PerceptionEvaluationConfig
 
 
 class PerceptionFrameConfig:
-    """[summary]
+    """
     Config class for critical object filter
 
     Attributes:
@@ -63,9 +61,9 @@ class PerceptionFrameConfig:
         min_point_numbers: Optional[List[int]] = None,
         confidence_threshold_list: Optional[List[float]] = None,
         target_uuids: Optional[List[str]] = None,
+        thresholds: Optional[List[float]] = None,
     ) -> None:
-        """[summary]
-
+        """
         Args:
             evaluator_config (PerceptionEvaluationConfig): Evaluation config
             target_labels (List[str]): The list of target label.
@@ -83,11 +81,10 @@ class PerceptionFrameConfig:
                 The list of confidence threshold for each label. Defaults to None.
             target_uuids (Optional[List[str]]): The list of target uuid. Defaults to None.
         """
-        self.target_labels: List[LabelType] = set_target_lists(
-            target_labels,
-            evaluator_config.label_converter,
-        )
-        self.ignore_attributes: Optional[List[str]] = ignore_attributes
+        self.evaluation_task = evaluator_config.evaluation_task
+
+        self.target_labels = set_target_lists(target_labels, evaluator_config.label_converter)
+        self.ignore_attributes = ignore_attributes
 
         num_elements: int = len(self.target_labels)
         if max_x_position_list and max_y_position_list:
@@ -132,47 +129,9 @@ class PerceptionFrameConfig:
             "target_uuids": self.target_uuids,
         }
 
-
-class PerceptionPassFailConfig:
-    """[summary]
-    Config filter for pass fail to frame result
-
-    Attributes:
-        self.evaluation_task (EvaluationTask): Evaluation task.
-        self.target_labels (List[str]): The list of target label.
-        self.matching_distance_list (Optional[List[float]]): The threshold list for Pass/Fail.
-            For 2D evaluation, IOU2D, for 3D evaluation, PLANEDISTANCE will be used.
-        self.confidence_threshold_list (Optional[List[float]]): The list of confidence threshold.
-    """
-
-    def __init__(
-        self,
-        evaluator_config: PerceptionEvaluationConfig,
-        target_labels: Optional[List[str]],
-        thresholds: Optional[List[float]] = None,
-    ) -> None:
-        """
-        Args:
-            evaluator_config (PerceptionEvaluationConfig): Evaluation config
-            target_labels (List[str]): Target list. If None or empty list is specified, all labels will be evaluated.
-            matching_threshold_list (List[float]): The threshold list for Pass/Fail.
-                For 2D evaluation, IOU2D, for 3D evaluation, PLANEDISTANCE will be used. Defaults to None.
-            confidence_threshold_list (Optional[List[float]]): The list of confidence threshold. Defaults to None.
-        """
-        self.evaluation_task: EvaluationTask = evaluator_config.evaluation_task
-        self.target_labels: List[LabelType] = set_target_lists(
-            target_labels,
-            evaluator_config.label_converter,
-        )
-
         num_elements: int = len(self.target_labels)
 
         if thresholds is None:
             self.thresholds = None
         else:
             self.thresholds = check_thresholds(thresholds, num_elements)
-
-
-class UseCaseThresholdsError(Exception):
-    def __init__(self, message) -> None:
-        super().__init__(message)

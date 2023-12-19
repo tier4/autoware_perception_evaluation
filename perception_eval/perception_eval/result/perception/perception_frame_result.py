@@ -33,7 +33,6 @@ if TYPE_CHECKING:
     from perception_eval.object import ObjectType
 
     from .perception_frame_config import PerceptionFrameConfig
-    from .perception_frame_config import PerceptionPassFailConfig
     from .perception_result import DynamicObjectWithPerceptionResult
 
 
@@ -65,7 +64,6 @@ class PerceptionFrameResult:
         frame_ground_truth: FrameGroundTruth,
         metrics_config: MetricsScoreConfig,
         frame_config: PerceptionFrameConfig,
-        frame_pass_fail_config: PerceptionPassFailConfig,
         unix_time: int,
         target_labels: List[LabelType],
     ) -> None:
@@ -85,7 +83,6 @@ class PerceptionFrameResult:
             unix_time=unix_time,
             frame_number=self.frame_number,
             frame_config=frame_config,
-            frame_pass_fail_config=frame_pass_fail_config,
             ego2map=frame_ground_truth.ego2map,
         )
 

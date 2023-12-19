@@ -24,7 +24,6 @@ from typing import Union
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.manager import PerceptionEvaluationManager
 from perception_eval.result import PerceptionFrameConfig
-from perception_eval.result import PerceptionPassFailConfig
 from perception_eval.tool import PerceptionAnalyzer2D
 from perception_eval.util.debug import get_objects_with_difference2d
 from perception_eval.util.logger_config import configure_logger
@@ -123,11 +122,6 @@ class PerceptionLSimMoc:
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=target_labels,
             ignore_attributes=ignore_attributes,
-        )
-        # Pass fail を決めるパラメータ
-        frame_pass_fail_config = PerceptionPassFailConfig(
-            evaluator_config=self.evaluator.evaluator_config,
-            target_labels=target_labels,
             thresholds=thresholds,
         )
 
@@ -137,7 +131,6 @@ class PerceptionLSimMoc:
             estimated_objects=estimated_objects,
             critical_ground_truth_objects=critical_ground_truth_objects,
             frame_config=frame_config,
-            frame_pass_fail_config=frame_pass_fail_config,
         )
         self.visualize(frame_result)
 

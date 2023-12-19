@@ -37,7 +37,6 @@ if TYPE_CHECKING:
     from perception_eval.object import ObjectType
     from perception_eval.result import DynamicObjectWithPerceptionResult
     from perception_eval.result import PerceptionFrameConfig
-    from perception_eval.result import PerceptionPassFailConfig
     from perception_eval.visualization import PerceptionVisualizerType
 
 
@@ -86,7 +85,6 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         estimated_objects: List[ObjectType],
         critical_ground_truth_objects: List[ObjectType],
         frame_config: PerceptionFrameConfig,
-        frame_pass_fail_config: PerceptionPassFailConfig,
     ) -> PerceptionFrameResult:
         """Get perception result at current frame.
 
@@ -101,10 +99,9 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             ground_truth_now_frame (FrameGroundTruth): FrameGroundTruth instance that has the closest
                 timestamp with `unix_time`.
             estimated_objects (List[ObjectType]): Estimated objects list.
-            ros_critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects filtered by ROS
+            critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects filtered by ROS
                 node to evaluate pass fail result.
-            critical_object_filter_config (CriticalObjectFilterConfig): Parameter config to filter objects.
-            frame_pass_fail_config (PerceptionPassFailConfig):Parameter config to evaluate pass/fail.
+            frame_config (PerceptionFrameConfig): Parameter config for frame.
 
         Returns:
             PerceptionFrameResult: Evaluation result.
@@ -119,7 +116,6 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             frame_ground_truth=ground_truth_now_frame,
             metrics_config=self.metrics_config,
             frame_config=frame_config,
-            frame_pass_fail_config=frame_pass_fail_config,
             unix_time=unix_time,
             target_labels=self.target_labels,
         )
