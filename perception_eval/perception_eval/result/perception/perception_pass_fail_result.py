@@ -12,21 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import TYPE_CHECKING
 import warnings
 
 import numpy as np
-from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.matching.objects_filter import filter_objects
-from perception_eval.evaluation.matching.objects_filter import get_negative_objects
-from perception_eval.evaluation.matching.objects_filter import get_positive_objects
-from perception_eval.object import ObjectType
+from perception_eval.matching import MatchingMode
+import perception_eval.matching.objects_filter as objects_filter
 
-from .perception_frame_config import CriticalObjectFilterConfig
-from .perception_frame_config import PerceptionPassFailConfig
-from .perception_result import DynamicObjectWithPerceptionResult
+if TYPE_CHECKING:
+    from perception_eval.object import ObjectType
+
+    from .perception_frame_config import CriticalObjectFilterConfig
+    from .perception_frame_config import PerceptionPassFailConfig
+    from .perception_result import DynamicObjectWithPerceptionResult
 
 
 class PassFailResult:
@@ -60,12 +63,12 @@ class PassFailResult:
         frame_pass_fail_config: PerceptionPassFailConfig,
         ego2map: Optional[np.ndarray] = None,
     ) -> None:
-        self.unix_time: int = unix_time
-        self.frame_number: int = frame_number
+        self.unix_time = unix_time
+        self.frame_number = frame_number
         # TODO(ktro2828): merge CriticalObjectFilterConfig and FramePassFailConfig into one
-        self.critical_object_filter_config: CriticalObjectFilterConfig = critical_object_filter_config
-        self.frame_pass_fail_config: PerceptionPassFailConfig = frame_pass_fail_config
-        self.ego2map: Optional[np.ndarray] = ego2map
+        self.critical_object_filter_config = critical_object_filter_config
+        self.frame_pass_fail_config = frame_pass_fail_config
+        self.ego2map = ego2map
 
         self.critical_ground_truth_objects: List[ObjectType] = []
         self.tn_objects: List[ObjectType] = []
@@ -85,7 +88,7 @@ class PassFailResult:
             ros_critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects
                 must be evaluated at current frame.
         """
-        self.critical_ground_truth_objects = filter_objects(
+        self.critical_ground_truth_objects = objects_filter.filter_objects(
             objects=ros_critical_ground_truth_objects,
             is_gt=True,
             ego2map=self.ego2map,
@@ -96,7 +99,7 @@ class PassFailResult:
             critical_ground_truth_objects=self.critical_ground_truth_objects,
         )
 
-        self.tn_objects, self.fn_objects = get_negative_objects(
+        self.tn_objects, self.fn_objects = objects_filter.get_negative_objects(
             self.critical_ground_truth_objects,
             object_results,
             self.frame_pass_fail_config.target_labels,
@@ -148,7 +151,7 @@ class PassFailResult:
             List[DynamicObjectWithPerceptionResult]: TP object results.
             List[DynamicObjectWithPerceptionResult]: FP object results.
         """
-        tp_object_results, fp_object_results = get_positive_objects(
+        tp_object_results, fp_object_results = objects_filter.get_positive_objects(
             object_results=object_results,
             target_labels=self.frame_pass_fail_config.target_labels,
             matching_mode=MatchingMode.IOU2D

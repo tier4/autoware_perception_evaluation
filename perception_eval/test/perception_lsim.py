@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import argparse
 import logging
 import tempfile
 from typing import List
+from typing import TYPE_CHECKING
 
 from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.manager import PerceptionEvaluationManager
-from perception_eval.object import DynamicObject
 from perception_eval.result import CriticalObjectFilterConfig
 from perception_eval.result import PerceptionFrameResult
 from perception_eval.result import PerceptionPassFailConfig
@@ -28,6 +29,10 @@ from perception_eval.tool import PerceptionAnalyzer3D
 from perception_eval.util.debug import format_class_for_log
 from perception_eval.util.debug import get_objects_with_difference
 from perception_eval.util.logger_config import configure_logger
+
+if TYPE_CHECKING:
+    from perception_eval.metrics import MetricsScore
+    from perception_eval.object import DynamicObject
 
 
 class PerceptionLSimMoc:
@@ -106,7 +111,7 @@ class PerceptionLSimMoc:
         # 1 frameの評価
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam
-        critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
+        critical_object_filter_config = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
             ignore_attributes=["cycle_state.without_rider"],
@@ -114,7 +119,7 @@ class PerceptionLSimMoc:
             max_y_position_list=[30.0, 30.0, 30.0, 30.0],
         )
         # Pass fail を決めるパラメータ
-        frame_pass_fail_config: PerceptionPassFailConfig = PerceptionPassFailConfig(
+        frame_pass_fail_config = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
             matching_threshold_list=[2.0, 2.0, 2.0, 2.0],

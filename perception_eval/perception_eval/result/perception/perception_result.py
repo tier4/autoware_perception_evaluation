@@ -24,12 +24,12 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
 from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
-from perception_eval.evaluation.matching import CenterDistanceMatching
-from perception_eval.evaluation.matching import IOU2dMatching
-from perception_eval.evaluation.matching import IOU3dMatching
-from perception_eval.evaluation.matching import MatchingMethod
-from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.matching import PlaneDistanceMatching
+from perception_eval.matching import CenterDistanceMatching
+from perception_eval.matching import IOU2dMatching
+from perception_eval.matching import IOU3dMatching
+from perception_eval.matching import MatchingMethod
+from perception_eval.matching import MatchingMode
+from perception_eval.matching import PlaneDistanceMatching
 from perception_eval.object import distance_objects
 from perception_eval.object import distance_objects_bev
 from perception_eval.object import DynamicObject
@@ -68,28 +68,28 @@ class DynamicObjectWithPerceptionResult:
                 ground_truth_object
             ), f"Input objects type must be same, but got {type(estimated_object)} and {type(ground_truth_object)}"
 
-        self.estimated_object: ObjectType = estimated_object
-        self.ground_truth_object: Optional[ObjectType] = ground_truth_object
+        self.estimated_object = estimated_object
+        self.ground_truth_object = ground_truth_object
 
         if isinstance(self.estimated_object, DynamicObject2D) and self.estimated_object.roi is None:
             self.center_distance = None
             self.iou_2d = None
         else:
-            self.center_distance: CenterDistanceMatching = CenterDistanceMatching(
+            self.center_distance = CenterDistanceMatching(
                 self.estimated_object,
                 self.ground_truth_object,
             )
-            self.iou_2d: IOU2dMatching = IOU2dMatching(
+            self.iou_2d = IOU2dMatching(
                 self.estimated_object,
                 self.ground_truth_object,
             )
 
         if isinstance(estimated_object, DynamicObject):
-            self.iou_3d: IOU3dMatching = IOU3dMatching(
+            self.iou_3d = IOU3dMatching(
                 self.estimated_object,
                 self.ground_truth_object,
             )
-            self.plane_distance: PlaneDistanceMatching = PlaneDistanceMatching(
+            self.plane_distance = PlaneDistanceMatching(
                 self.estimated_object,
                 self.ground_truth_object,
             )
@@ -154,7 +154,7 @@ class DynamicObjectWithPerceptionResult:
             return self.is_label_correct
 
         # Whether is matching to ground truth
-        matching: Optional[MatchingMethod] = self.get_matching(matching_mode)
+        matching = self.get_matching(matching_mode)
         if matching is None:
             return self.is_label_correct
 
@@ -307,7 +307,7 @@ def get_object_results(
         return _get_object_results_with_id(estimated_objects, ground_truth_objects)
 
     matching_method_module, maximize = _get_matching_module(matching_mode)
-    score_table: np.ndarray = _get_score_table(
+    score_table = _get_score_table(
         estimated_objects,
         ground_truth_objects,
         allow_matching_unknown,
@@ -318,8 +318,8 @@ def get_object_results(
 
     # assign correspond GT to estimated objects
     object_results: List[DynamicObjectWithPerceptionResult] = []
-    estimated_objects_: List[ObjectType] = estimated_objects.copy()
-    ground_truth_objects_: List[ObjectType] = ground_truth_objects.copy()
+    estimated_objects_ = estimated_objects.copy()
+    ground_truth_objects_ = ground_truth_objects.copy()
     num_estimation: int = score_table.shape[0]
     for _ in range(num_estimation):
         if np.isnan(score_table).all():
@@ -409,7 +409,7 @@ def _get_fp_object_results(
     """
     object_results: List[DynamicObjectWithPerceptionResult] = []
     for est_obj_ in estimated_objects:
-        object_result_: DynamicObjectWithPerceptionResult = DynamicObjectWithPerceptionResult(
+        object_result_ = DynamicObjectWithPerceptionResult(
             estimated_object=est_obj_,
             ground_truth_object=None,
         )
@@ -470,10 +470,9 @@ def _get_score_table(
     # fill matching score table, in shape (NumEst, NumGT)
     num_row: int = len(estimated_objects)
     num_col: int = len(ground_truth_objects)
-    score_table: np.ndarray = np.full((num_row, num_col), np.nan)
+    score_table = np.full((num_row, num_col), np.nan)
     for i, est_obj in enumerate(estimated_objects):
         for j, gt_obj in enumerate(ground_truth_objects):
-            is_label_ok: bool = False
             if gt_obj.semantic_label.is_fp():
                 is_label_ok = True
             elif allow_matching_unknown:
@@ -481,7 +480,7 @@ def _get_score_table(
             else:
                 is_label_ok = est_obj.semantic_label == gt_obj.semantic_label
 
-            is_same_frame_id: bool = est_obj.frame_id == gt_obj.frame_id
+            is_same_frame_id = est_obj.frame_id == gt_obj.frame_id
 
             if is_label_ok and is_same_frame_id:
                 threshold: Optional[float] = get_label_threshold(

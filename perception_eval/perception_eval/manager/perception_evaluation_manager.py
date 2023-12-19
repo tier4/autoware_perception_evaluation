@@ -18,11 +18,11 @@ from typing import List
 from typing import Tuple
 from typing import TYPE_CHECKING
 
-from perception_eval.evaluation.matching.objects_filter import divide_objects
-from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
-from perception_eval.evaluation.matching.objects_filter import filter_object_results
-from perception_eval.evaluation.matching.objects_filter import filter_objects
-from perception_eval.evaluation.metrics import MetricsScore
+from perception_eval.matching.objects_filter import divide_objects
+from perception_eval.matching.objects_filter import divide_objects_to_num
+from perception_eval.matching.objects_filter import filter_object_results
+from perception_eval.matching.objects_filter import filter_objects
+from perception_eval.metrics import MetricsScore
 from perception_eval.result import get_object_results
 from perception_eval.result import PerceptionFrameResult
 from perception_eval.visualization import PerceptionVisualizer2D

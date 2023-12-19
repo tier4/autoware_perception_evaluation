@@ -26,7 +26,7 @@ from perception_eval.common.label import Label
 from perception_eval.common.schema import FrameID
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
-from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.matching import MatchingMode
 from perception_eval.object import DynamicObject
 from perception_eval.result import DynamicObjectWithPerceptionResult
 from perception_eval.result import get_object_results

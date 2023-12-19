@@ -19,22 +19,22 @@ from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 
-from perception_eval.common.label import LabelType
 from perception_eval.common.status import GroundTruthStatus
 from perception_eval.common.status import MatchingStatus
-from perception_eval.dataset import FrameGroundTruth
-from perception_eval.evaluation.matching.objects_filter import divide_objects
-from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
-import perception_eval.evaluation.metrics as metrics
-from perception_eval.object import ObjectType
+import perception_eval.matching.objects_filter as objects_filter
+import perception_eval.metrics as metrics
 
-from .perception_frame_config import CriticalObjectFilterConfig
-from .perception_frame_config import PerceptionPassFailConfig
 from .perception_pass_fail_result import PassFailResult
-from .perception_result import DynamicObjectWithPerceptionResult
 
 if TYPE_CHECKING:
-    from perception_eval.evaluation.metrics import MetricsScoreConfig
+    from perception_eval.common.label import LabelType
+    from perception_eval.dataset import FrameGroundTruth
+    from perception_eval.metrics import MetricsScoreConfig
+    from perception_eval.object import ObjectType
+
+    from .perception_frame_config import CriticalObjectFilterConfig
+    from .perception_frame_config import PerceptionPassFailConfig
+    from .perception_result import DynamicObjectWithPerceptionResult
 
 
 class PerceptionFrameResult:
@@ -103,11 +103,9 @@ class PerceptionFrameResult:
             previous_result (Optional[PerceptionFrameResult]): The previous frame result. If None, set it as empty list []. Defaults to None.
         """
         # Divide objects by label to dict
-        object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
-            self.object_results, self.target_labels
-        )
+        object_results_dict = objects_filter.divide_objects(self.object_results, self.target_labels)
 
-        num_ground_truth_dict: Dict[LabelType, int] = divide_objects_to_num(
+        num_ground_truth_dict = objects_filter.divide_objects_to_num(
             self.frame_ground_truth.objects, self.target_labels
         )
 
@@ -118,7 +116,9 @@ class PerceptionFrameResult:
             if previous_result is None:
                 previous_results_dict = {label: [] for label in self.target_labels}
             else:
-                previous_results_dict = divide_objects(previous_result.object_results, self.target_labels)
+                previous_results_dict = objects_filter.divide_objects(
+                    previous_result.object_results, self.target_labels
+                )
             tracking_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = object_results_dict.copy()
             for label, prev_results in previous_results_dict.items():
                 tracking_results[label] = [prev_results, tracking_results[label]]

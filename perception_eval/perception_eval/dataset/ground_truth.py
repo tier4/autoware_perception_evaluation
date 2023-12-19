@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from ..object import ObjectType
+    from perception_eval.object import ObjectType
 
 
 class FrameGroundTruth:

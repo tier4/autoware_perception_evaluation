@@ -20,7 +20,7 @@ import numpy as np
 from perception_eval.common.point import crop_pointcloud
 from perception_eval.config import SensingEvaluationConfig
 from perception_eval.dataset import FrameGroundTruth
-from perception_eval.evaluation.matching.objects_filter import filter_objects
+from perception_eval.matching.objects_filter import filter_objects
 from perception_eval.object import DynamicObject
 from perception_eval.result import SensingFrameConfig
 from perception_eval.result import SensingFrameResult

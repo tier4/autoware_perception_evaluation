@@ -12,22 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import argparse
 import logging
 import tempfile
 from typing import List
+from typing import TYPE_CHECKING
 from typing import Union
 
 from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.manager import PerceptionEvaluationManager
-from perception_eval.object import DynamicObject2D
 from perception_eval.result import CriticalObjectFilterConfig
-from perception_eval.result import PerceptionFrameResult
 from perception_eval.result import PerceptionPassFailConfig
 from perception_eval.tool import PerceptionAnalyzer2D
 from perception_eval.util.debug import get_objects_with_difference2d
 from perception_eval.util.logger_config import configure_logger
+
+if TYPE_CHECKING:
+    from perception_eval.metrics import MetricsScore
+    from perception_eval.object import DynamicObject2D
+    from perception_eval.result import PerceptionFrameResult
 
 
 class PerceptionLSimMoc:
