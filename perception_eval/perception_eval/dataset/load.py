@@ -11,25 +11,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 import logging
 from typing import Any
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import TYPE_CHECKING
 from typing import Union
 
 from nuimages import NuImages
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
-from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import LabelConverter
 from perception_eval.common.schema import FrameID
 from tqdm import tqdm
 
 from .ground_truth import FrameGroundTruth
 from .utils import _sample_to_frame
 from .utils import _sample_to_frame_2d
+
+if TYPE_CHECKING:
+    from perception_eval.common.evaluation_task import EvaluationTask
+    from perception_eval.common.label import LabelConverter
 
 
 def load_all_datasets(

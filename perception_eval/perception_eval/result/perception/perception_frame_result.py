@@ -17,20 +17,24 @@ from __future__ import annotations
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 
-from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import LabelType
-from perception_eval.common.object import ObjectType
 from perception_eval.common.status import GroundTruthStatus
 from perception_eval.common.status import MatchingStatus
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.dataset import FrameGroundTruth
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
-from perception_eval.evaluation.metrics import MetricsScore
-from perception_eval.evaluation.metrics import MetricsScoreConfig
-from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
-from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
-from perception_eval.evaluation.result.perception_pass_fail_result import PassFailResult
+import perception_eval.evaluation.metrics as metrics
+from perception_eval.object import ObjectType
+
+from .perception_frame_config import CriticalObjectFilterConfig
+from .perception_frame_config import PerceptionPassFailConfig
+from .perception_pass_fail_result import PassFailResult
+from .perception_result import DynamicObjectWithPerceptionResult
+
+if TYPE_CHECKING:
+    from perception_eval.evaluation.metrics import MetricsScoreConfig
 
 
 class PerceptionFrameResult:
@@ -67,19 +71,19 @@ class PerceptionFrameResult:
     ) -> None:
         # TODO(ktro2828): rename `frame_name` into `frame_number`
         # frame information
-        self.frame_name: str = frame_ground_truth.frame_name
-        self.unix_time: int = unix_time
-        self.target_labels: List[LabelType] = target_labels
+        self.frame_name = frame_ground_truth.frame_name
+        self.unix_time = unix_time
+        self.target_labels = target_labels
 
-        self.object_results: List[DynamicObjectWithPerceptionResult] = object_results
-        self.frame_ground_truth: FrameGroundTruth = frame_ground_truth
+        self.object_results = object_results
+        self.frame_ground_truth = frame_ground_truth
 
         # init evaluation
-        self.metrics_score: MetricsScore = MetricsScore(
+        self.metrics_score = metrics.MetricsScore(
             metrics_config,
             used_frame=[int(self.frame_name)],
         )
-        self.pass_fail_result: PassFailResult = PassFailResult(
+        self.pass_fail_result = PassFailResult(
             unix_time=unix_time,
             frame_number=frame_ground_truth.frame_name,
             critical_object_filter_config=critical_object_filter_config,

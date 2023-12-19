@@ -17,10 +17,10 @@ from typing import List
 from typing import Optional
 
 from perception_eval.common.label import LabelType
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetrics
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
+from perception_eval.result import DynamicObjectWithPerceptionResult
 
 from ._metrics_base import _TrackingMetricsBase
 

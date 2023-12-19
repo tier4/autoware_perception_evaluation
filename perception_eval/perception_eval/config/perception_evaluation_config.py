@@ -18,15 +18,18 @@ from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
+from typing import TYPE_CHECKING
 from typing import Union
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.threshold import set_thresholds
 from perception_eval.evaluation.metrics import MetricsScoreConfig
 
 from ._evaluation_config_base import _EvaluationConfigBase
+
+if TYPE_CHECKING:
+    from perception_eval.common.label import LabelType
 
 
 class PerceptionEvaluationConfig(_EvaluationConfigBase):

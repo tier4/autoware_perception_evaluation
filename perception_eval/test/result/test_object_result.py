@@ -20,9 +20,9 @@ from typing import Tuple
 import unittest
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.object import DynamicObject
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.object import DynamicObject
+from perception_eval.result import DynamicObjectWithPerceptionResult
+from perception_eval.result import get_object_results
 from perception_eval.util.debug import get_objects_with_difference
 
 

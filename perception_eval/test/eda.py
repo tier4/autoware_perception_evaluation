@@ -18,12 +18,12 @@ from typing import Dict
 from typing import List
 from typing import Union
 
-from perception_eval.common.dataset import FrameGroundTruth
-from perception_eval.common.dataset import load_all_datasets
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelConverter
-from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
+from perception_eval.dataset import FrameGroundTruth
+from perception_eval.dataset import load_all_datasets
+from perception_eval.object import DynamicObject
 from perception_eval.visualization.eda_tool import EDAVisualizer
 
 

@@ -20,6 +20,7 @@ from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
+from typing import TYPE_CHECKING
 from typing import Union
 
 from nuimages import NuImages
@@ -28,20 +29,22 @@ from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
 from nuscenes.utils.data_classes import Box
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import Label
-from perception_eval.common.label import LabelConverter
-from perception_eval.common.label import LabelType
 from perception_eval.common.label import TrafficLightLabel
-from perception_eval.common.object import DynamicObject
-from perception_eval.common.object import DynamicObject2D
 from perception_eval.common.schema import FrameID
 from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
+from perception_eval.object import DynamicObject
+from perception_eval.object import DynamicObject2D
 from PIL import Image
 from pyquaternion.quaternion import Quaternion
 
 from .load import FrameGroundTruth
+
+if TYPE_CHECKING:
+    from perception_eval.common.label import Label
+    from perception_eval.common.label import LabelConverter
+    from perception_eval.common.label import LabelType
 
 #################################
 #           Dataset 3D          #

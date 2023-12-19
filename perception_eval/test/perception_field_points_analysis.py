@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from perception_eval.tool import DataTableIdx
 from perception_eval.tool import PerceptionAnalyzer3DField
-from perception_eval.visualization.perception_visualizer3dfield import PerceptionFieldPlot
+from perception_eval.visualization import PerceptionFieldPlot
 
 
 class PerceptionLoadDatabaseResult:

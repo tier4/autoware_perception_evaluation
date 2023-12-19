@@ -22,7 +22,7 @@ from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.classification import ClassificationMetricsScore
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.result import get_object_results
 
 
 class TestClassificationMetricsScore(unittest.TestCase):

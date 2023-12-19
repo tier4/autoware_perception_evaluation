@@ -18,14 +18,15 @@ from typing import Tuple
 import warnings
 
 import numpy as np
-from perception_eval.common.object import ObjectType
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.matching.objects_filter import get_negative_objects
 from perception_eval.evaluation.matching.objects_filter import get_positive_objects
-from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
-from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from perception_eval.object import ObjectType
+
+from .perception_frame_config import CriticalObjectFilterConfig
+from .perception_frame_config import PerceptionPassFailConfig
+from .perception_result import DynamicObjectWithPerceptionResult
 
 
 class PassFailResult:

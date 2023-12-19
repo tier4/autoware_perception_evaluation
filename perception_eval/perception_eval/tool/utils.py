@@ -27,11 +27,11 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.evaluation.metrics.metrics import MetricsScore
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
+from perception_eval.object import DynamicObject
+from perception_eval.result import DynamicObjectWithPerceptionResult
+from perception_eval.result import PerceptionFrameResult
 
 
 class PlotAxes(Enum):

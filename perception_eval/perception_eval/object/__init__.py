@@ -15,12 +15,12 @@
 from typing import Union
 
 import numpy as np
+from perception_eval.common.point import distance_points
+from perception_eval.common.point import distance_points_bev
 
 from .object2d import DynamicObject2D
 from .object2d import Roi
 from .object3d import DynamicObject
-from ..point import distance_points
-from ..point import distance_points_bev
 
 ObjectType = Union[DynamicObject, DynamicObject2D]
 

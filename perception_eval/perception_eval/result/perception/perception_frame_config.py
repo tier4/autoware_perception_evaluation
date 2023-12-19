@@ -18,13 +18,15 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.threshold import check_thresholds
 
-# from perception_eval.config import PerceptionEvaluationConfig
+if TYPE_CHECKING:
+    from perception_eval.common.label import LabelType
+    from perception_eval.config import PerceptionEvaluationConfig
 
 
 class CriticalObjectFilterConfig:
@@ -51,7 +53,7 @@ class CriticalObjectFilterConfig:
 
     def __init__(
         self,
-        evaluator_config,  #: PerceptionEvaluationConfig,
+        evaluator_config: PerceptionEvaluationConfig,
         target_labels: List[str],
         ignore_attributes: Optional[List[str]] = None,
         max_x_position_list: Optional[List[float]] = None,
@@ -145,7 +147,7 @@ class PerceptionPassFailConfig:
 
     def __init__(
         self,
-        evaluator_config,  #: PerceptionEvaluationConfig,
+        evaluator_config: PerceptionEvaluationConfig,
         target_labels: Optional[List[str]],
         matching_threshold_list: Optional[List[float]] = None,
         confidence_threshold_list: Optional[List[float]] = None,

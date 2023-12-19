@@ -23,18 +23,21 @@ import numpy as np
 from perception_eval.common.label import CommonLabel
 from perception_eval.common.label import Label
 from perception_eval.common.label import LabelType
-from perception_eval.common.object import DynamicObject
-from perception_eval.common.object import ObjectType
 from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.common.threshold import LabelThreshold
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
+from perception_eval.object import DynamicObject
+from perception_eval.object import ObjectType
+from perception_eval.result.perception.perception_result import DynamicObjectWithPerceptionResult
+
+# type alias
+ObjectResultType = DynamicObjectWithPerceptionResult
 
 
 def filter_object_results(
-    object_results: List[DynamicObjectWithPerceptionResult],
+    object_results: List[ObjectResultType],
     target_labels: Optional[List[LabelType]] = None,
     ignore_attributes: Optional[List[str]] = None,
     max_x_position_list: Optional[List[float]] = None,
@@ -47,7 +50,7 @@ def filter_object_results(
     ego2map: Optional[np.ndarray] = None,
     *args,
     **kwargs,
-) -> List[DynamicObjectWithPerceptionResult]:
+) -> List[ObjectResultType]:
     """Filter DynamicObjectWithPerceptionResult considering both estimated and ground truth objects.
 
     If any of `target_labels`, `max_x_position_list`, `max_y_position_list`, `max_distance_list`, `min_distance_list`,
@@ -93,7 +96,7 @@ def filter_object_results(
     Returns:
         filtered_object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results list.
     """
-    filtered_object_results: List[DynamicObjectWithPerceptionResult] = []
+    filtered_object_results: List[ObjectResultType] = []
     for object_result in object_results:
         is_target: bool = _is_target_object(
             dynamic_object=object_result.estimated_object,
@@ -206,11 +209,11 @@ def filter_objects(
 
 
 def get_positive_objects(
-    object_results: List[DynamicObjectWithPerceptionResult],
+    object_results: List[ObjectResultType],
     target_labels: List[Label],
     matching_mode: Optional[MatchingMode] = None,
     matching_threshold_list: Optional[List[float]] = None,
-) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
+) -> Tuple[List[ObjectResultType], List[ObjectResultType]]:
     """Returns TP (True Positive) and FP (False Positive) object results as `tuple`.
 
     If an object result has better matching score than the matching threshold, it is TP, otherwise FP.
@@ -226,8 +229,8 @@ def get_positive_objects(
         tp_object_results (List[DynamicObjectWithPerceptionResult]): List of TP.
         fp_object_results (List[DynamicObjectWithPerceptionResult]): List of FP.
     """
-    tp_object_results: List[DynamicObjectWithPerceptionResult] = []
-    fp_object_results: List[DynamicObjectWithPerceptionResult] = []
+    tp_object_results: List[ObjectResultType] = []
+    fp_object_results: List[ObjectResultType] = []
     for object_result in object_results:
         if object_result.ground_truth_object is None:
             fp_object_results.append(object_result)
@@ -261,7 +264,7 @@ def get_positive_objects(
 
 def get_negative_objects(
     ground_truth_objects: List[ObjectType],
-    object_results: List[DynamicObjectWithPerceptionResult],
+    object_results: List[ObjectResultType],
     target_labels: List[Label],
     matching_mode: Optional[MatchingMode] = None,
     matching_threshold_list: Optional[List[float]] = None,
@@ -318,12 +321,12 @@ def get_negative_objects(
 
 
 def divide_tp_fp_objects(
-    object_results: List[DynamicObjectWithPerceptionResult],
+    object_results: List[ObjectResultType],
     target_labels: Optional[List[LabelType]],
     matching_mode: Optional[MatchingMode] = None,
     matching_threshold_list: Optional[List[float]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
-) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
+) -> Tuple[List[ObjectResultType], List[ObjectResultType]]:
     """Divide input `object_results` into TP (True Positive) and FP (False Positive) object results.
 
     This function judge whether input `object_results` is TP or FP with `matching_threshold` when
@@ -357,8 +360,8 @@ def divide_tp_fp_objects(
         DeprecationWarning,
     )
 
-    tp_object_results: List[DynamicObjectWithPerceptionResult] = []
-    fp_object_results: List[DynamicObjectWithPerceptionResult] = []
+    tp_object_results: List[ObjectResultType] = []
+    fp_object_results: List[ObjectResultType] = []
     for object_result in object_results:
         if object_result.ground_truth_object is None:
             fp_object_results.append(object_result)
@@ -401,8 +404,8 @@ def divide_tp_fp_objects(
 
 def get_fn_objects(
     ground_truth_objects: List[ObjectType],
-    object_results: List[DynamicObjectWithPerceptionResult],
-    tp_object_results: List[DynamicObjectWithPerceptionResult],
+    object_results: List[ObjectResultType],
+    tp_object_results: List[ObjectResultType],
 ) -> List[ObjectType]:
     """Get FN (False Negative) objects from ground truth objects by using object result.
 
@@ -435,8 +438,8 @@ def get_fn_objects(
 
 def _is_fn_object(
     ground_truth_object: ObjectType,
-    object_results: List[DynamicObjectWithPerceptionResult],
-    tp_object_results: List[DynamicObjectWithPerceptionResult],
+    object_results: List[ObjectResultType],
+    tp_object_results: List[ObjectResultType],
 ) -> bool:
     """Judge whether ground truth object is FN (False Negative) object.
 
@@ -600,9 +603,9 @@ def _is_target_object(
 
 
 def divide_objects(
-    objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
+    objects: List[Union[ObjectType, ObjectResultType]],
     target_labels: Optional[List[LabelType]] = None,
-) -> Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]:
+) -> Dict[LabelType, List[Union[ObjectType, ObjectResultType]]]:
     """Divide DynamicObject or DynamicObjectWithPerceptionResult into dict mapped by their labels.
 
     Args:
@@ -623,13 +626,11 @@ def divide_objects(
 
     for obj in objects:
         label: LabelType = (
-            obj.estimated_object.semantic_label.label
-            if isinstance(obj, DynamicObjectWithPerceptionResult)
-            else obj.semantic_label.label
+            obj.estimated_object.semantic_label.label if isinstance(obj, ObjectResultType) else obj.semantic_label.label
         )
 
         if target_labels is not None and label not in target_labels:
-            if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
+            if isinstance(obj, ObjectResultType) and obj.ground_truth_object is not None:
                 label = obj.ground_truth_object.semantic_label.label
             else:
                 continue
@@ -642,7 +643,7 @@ def divide_objects(
 
 
 def divide_objects_to_num(
-    objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
+    objects: List[Union[ObjectType, ObjectResultType]],
     target_labels: Optional[List[LabelType]] = None,
 ) -> Dict[LabelType, int]:
     """Divide the number of input `objects` mapped by their labels.
@@ -663,13 +664,13 @@ def divide_objects_to_num(
         ret: Dict[LabelType, int] = {}
 
     for obj in objects:
-        if isinstance(obj, DynamicObjectWithPerceptionResult):
+        if isinstance(obj, ObjectResultType):
             label: LabelType = obj.estimated_object.semantic_label.label
         else:
             label: LabelType = obj.semantic_label.label
 
         if target_labels is not None and label not in target_labels:
-            if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
+            if isinstance(obj, ObjectResultType) and obj.ground_truth_object is not None:
                 label = obj.ground_truth_object.semantic_label.label
             else:
                 continue

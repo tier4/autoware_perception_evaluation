@@ -22,11 +22,6 @@ from typing import Tuple
 import numpy as np
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
-from perception_eval.common.object import distance_objects
-from perception_eval.common.object import distance_objects_bev
-from perception_eval.common.object import DynamicObject
-from perception_eval.common.object import DynamicObject2D
-from perception_eval.common.object import ObjectType
 from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.evaluation.matching import CenterDistanceMatching
@@ -35,6 +30,11 @@ from perception_eval.evaluation.matching import IOU3dMatching
 from perception_eval.evaluation.matching import MatchingMethod
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching import PlaneDistanceMatching
+from perception_eval.object import distance_objects
+from perception_eval.object import distance_objects_bev
+from perception_eval.object import DynamicObject
+from perception_eval.object import DynamicObject2D
+from perception_eval.object import ObjectType
 
 
 class DynamicObjectWithPerceptionResult:

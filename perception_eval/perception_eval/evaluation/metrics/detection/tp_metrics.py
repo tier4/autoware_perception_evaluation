@@ -18,7 +18,7 @@ from math import pi
 
 import numpy as np
 from perception_eval.common.schema import FrameID
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.result import DynamicObjectWithPerceptionResult
 
 
 class TPMetrics(metaclass=ABCMeta):

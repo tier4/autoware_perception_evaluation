@@ -17,10 +17,11 @@ from typing import List
 from typing import Tuple
 
 import numpy as np
-from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import crop_pointcloud
-from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
-from perception_eval.evaluation.sensing.sensing_result import DynamicObjectWithSensingResult
+from perception_eval.object import DynamicObject
+
+from .sensing_frame_config import SensingFrameConfig
+from .sensing_result import DynamicObjectWithSensingResult
 
 
 class SensingFrameResult:

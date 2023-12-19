@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..object import ObjectType
+if TYPE_CHECKING:
+    from ..object import ObjectType
 
 
 class FrameGroundTruth:
@@ -40,8 +44,8 @@ class FrameGroundTruth:
         ego2map: Optional[np.ndarray] = None,
         raw_data: Optional[Dict[str, np.ndarray]] = None,
     ) -> None:
-        self.unix_time: int = unix_time
-        self.frame_name: str = frame_name
-        self.objects: List[ObjectType] = objects
-        self.ego2map: Optional[np.ndarray] = ego2map
-        self.raw_data: Optional[Dict[str, np.ndarray]] = raw_data
+        self.unix_time = unix_time
+        self.frame_name = frame_name
+        self.objects = objects
+        self.ego2map = ego2map
+        self.raw_data = raw_data

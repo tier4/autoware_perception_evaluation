@@ -28,10 +28,10 @@ from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 from matplotlib.transforms import Affine2D
 import numpy as np
-from perception_eval.common.object import DynamicObject
 from perception_eval.config import SensingEvaluationConfig
-from perception_eval.evaluation import DynamicObjectWithSensingResult
-from perception_eval.evaluation import SensingFrameResult
+from perception_eval.object import DynamicObject
+from perception_eval.result import DynamicObjectWithSensingResult
+from perception_eval.result import SensingFrameResult
 from perception_eval.visualization.color import ColorMap
 from PIL import Image
 from PIL.Image import Image as PILImage

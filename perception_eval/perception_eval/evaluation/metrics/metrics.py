@@ -16,13 +16,13 @@ from typing import Dict
 from typing import List
 
 from perception_eval.common.label import LabelType
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
 
 from .classification import ClassificationMetricsScore
 from .detection import Map
 from .metrics_score_config import MetricsScoreConfig
 from .tracking import TrackingMetricsScore
+from ...result import DynamicObjectWithPerceptionResult
 
 
 class MetricsScore:

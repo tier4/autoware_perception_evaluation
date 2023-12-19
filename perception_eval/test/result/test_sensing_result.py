@@ -15,7 +15,7 @@
 from test.util.dummy_object import make_dummy_data
 
 import numpy as np
-from perception_eval.evaluation.sensing.sensing_result import DynamicObjectWithSensingResult
+from perception_eval.result import DynamicObjectWithSensingResult
 
 
 def test_get_nearest_point():

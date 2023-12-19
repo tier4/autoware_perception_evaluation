@@ -23,13 +23,13 @@ from typing import Union
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import Label
-from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
 from perception_eval.evaluation.matching.object_matching import MatchingMode
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.object import DynamicObject
+from perception_eval.result import DynamicObjectWithPerceptionResult
+from perception_eval.result import get_object_results
 from perception_eval.util.debug import get_objects_with_difference
 from perception_eval.visualization.eda_tool import EDAManager
 from perception_eval.visualization.eda_tool import EDAVisualizer
