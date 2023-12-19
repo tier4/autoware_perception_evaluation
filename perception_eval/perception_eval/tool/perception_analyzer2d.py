@@ -25,10 +25,10 @@ from typing import Union
 import numpy as np
 import pandas as pd
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.object import DynamicObject2D
 from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.object import DynamicObject2D
+from perception_eval.result import DynamicObjectWithPerceptionResult
 import yaml
 
 from .perception_analyzer_base import PerceptionAnalyzerBase

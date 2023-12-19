@@ -48,7 +48,7 @@
 ### `<class> SensingFrameResult(...)`
 
 Sensing result for pointcloud in detection/non-detection area at one frame.
-For the details, see [perception_eval/evaluation/sensing/sensing_frame_result.py](../../../perception_eval/perception_eval/evaluation/sensing/sensing_frame_result.py)
+For the details, see [perception_eval/result/sensing/sensing_frame_result.py](../../../perception_eval/perception_eval/result/sensing/sensing_frame_result.py)
 
 | Argument               |         type         | Description             |
 | :--------------------- | :------------------: | :---------------------- |
@@ -76,7 +76,7 @@ Evaluate false position pointcloud detection in detection/non-detection area.
 ### `<class> DynamicObjectWithSensingResult(...)`
 
 Sensing result for one GT.
-For the details, see [perception_eval/evaluation/sensing/sensing_result.py](../../../perception_eval/perception_eval/evaluation/sensing/sensing_result.py)
+For the details, see [perception_eval/result/sensing/sensing_result.py](../../../perception_eval/perception_eval/result/sensing/sensing_result.py)
 
 | Argument                       |         type          | Description                                   |
 | :----------------------------- | :-------------------: | :-------------------------------------------- |
