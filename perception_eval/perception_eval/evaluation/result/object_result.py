@@ -20,13 +20,13 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
-from perception_eval.common import distance_objects
-from perception_eval.common import distance_objects_bev
-from perception_eval.common import DynamicObject
-from perception_eval.common import DynamicObject2D
-from perception_eval.common import ObjectType
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
+from perception_eval.common.object import distance_objects
+from perception_eval.common.object import distance_objects_bev
+from perception_eval.common.object import DynamicObject
+from perception_eval.common.object import DynamicObject2D
+from perception_eval.common.object import ObjectType
 from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.evaluation.matching import CenterDistanceMatching
@@ -64,7 +64,7 @@ class DynamicObjectWithPerceptionResult:
             ground_truth_objects (Optional[ObjectType]): The list of Ground truth objects
         """
         if ground_truth_object is not None:
-            assert type(estimated_object) == type(
+            assert type(estimated_object) is type(
                 ground_truth_object
             ), f"Input objects type must be same, but got {type(estimated_object)} and {type(ground_truth_object)}"
 
