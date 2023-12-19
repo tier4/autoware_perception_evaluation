@@ -18,18 +18,21 @@ import math
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
-from perception_eval.common.label import Label
 from perception_eval.common.point import crop_pointcloud
 from perception_eval.common.point import polygon_to_list
 from perception_eval.common.schema import FrameID
-from perception_eval.common.schema import Visibility
-from perception_eval.common.shape import Shape
-from perception_eval.common.shape import ShapeType
 from perception_eval.util.math import rotation_matrix_to_euler
 from pyquaternion import Quaternion
 from shapely.geometry import Polygon
+
+if TYPE_CHECKING:
+    from perception_eval.common.label import SemanticLabel
+    from perception_eval.common.schema import Visibility
+    from perception_eval.common.shape import Shape
+    from perception_eval.common.shape import ShapeType
 
 
 class ObjectState:
@@ -57,7 +60,7 @@ class ObjectState:
     ) -> None:
         self.position: Tuple[float, float, float] = position
         self.orientation: Quaternion = orientation
-        self.shape: Shape = shape
+        self.shape = shape
         self.velocity: Optional[Tuple[float, float, float]] = velocity
 
     @property
@@ -138,7 +141,7 @@ class DynamicObject:
         shape: Shape,
         velocity: Optional[Tuple[float, float, float]],
         semantic_score: float,
-        semantic_label: Label,
+        semantic_label: SemanticLabel,
         pointcloud_num: Optional[int] = None,
         uuid: Optional[str] = None,
         tracked_positions: Optional[List[Tuple[float, float, float]]] = None,
@@ -153,24 +156,24 @@ class DynamicObject:
         visibility: Optional[Visibility] = None,
     ) -> None:
         # detection
-        self.unix_time: int = unix_time
-        self.frame_id: FrameID = frame_id
-        self.state: ObjectState = ObjectState(
+        self.unix_time = unix_time
+        self.frame_id = frame_id
+        self.state = ObjectState(
             position=position,
             orientation=orientation,
             shape=shape,
             velocity=velocity,
         )
-        self.semantic_score: float = semantic_score
-        self.semantic_label: Label = semantic_label
+        self.semantic_score = semantic_score
+        self.semantic_label = semantic_label
 
         # for detection label for case evaluation
         # pointcloud number inside bounding box
-        self.pointcloud_num: Optional[int] = pointcloud_num
+        self.pointcloud_num = pointcloud_num
 
         # tracking
-        self.uuid: Optional[str] = uuid
-        self.tracked_path: Optional[List[ObjectState]] = self._set_states(
+        self.uuid = uuid
+        self.tracked_path = self._set_states(
             positions=tracked_positions,
             orientations=tracked_orientations,
             shapes=tracked_shapes,
@@ -178,15 +181,15 @@ class DynamicObject:
         )
 
         # prediction
-        self.predicted_confidence: Optional[float] = predicted_confidence
-        self.predicted_path: Optional[List[ObjectState]] = self._set_states(
+        self.predicted_confidence = predicted_confidence
+        self.predicted_path = self._set_states(
             positions=predicted_positions,
             orientations=predicted_orientations,
             shapes=predicted_shapes,
             twists=predicted_twists,
         )
 
-        self.visibility: Optional[Visibility] = visibility
+        self.visibility = visibility
 
     def __eq__(self, other: Optional[DynamicObject]) -> bool:
         """Check if other equals this object.

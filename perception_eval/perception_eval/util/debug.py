@@ -21,8 +21,8 @@ from typing import Tuple
 
 import numpy as np
 from perception_eval.common.label import AutowareLabel
-from perception_eval.common.label import Label
 from perception_eval.common.label import LabelType
+from perception_eval.common.label import SemanticLabel
 from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.shape import Shape
 from perception_eval.object import DynamicObject
@@ -187,10 +187,10 @@ def get_objects_with_difference(
                 label = AutowareLabel.UNKNOWN
             elif isinstance(object_.semantic_label.label, TrafficLightLabel):
                 label = TrafficLightLabel.UNKNOWN
-            semantic_label = Label(label, "unknown")
+            semantic_label = SemanticLabel(label, "unknown")
         if label_candidates is not None:
-            label: LabelType = random.choice(label_candidates)
-            semantic_label = Label(label, label.value)
+            label = random.choice(label_candidates)
+            semantic_label = SemanticLabel(label, label.value)
         else:
             semantic_label = object_.semantic_label
 
@@ -243,13 +243,13 @@ def get_objects_with_difference2d(
                 label = AutowareLabel.UNKNOWN
             elif isinstance(object_.semantic_label.label, TrafficLightLabel):
                 label = TrafficLightLabel.UNKNOWN
-            semantic_label = Label(label, "unknown")
+            semantic_label = SemanticLabel(label, "unknown")
         else:
             semantic_label = object_.semantic_label
 
         if label_candidates is not None:
             label: LabelType = random.choice(label_candidates)
-            semantic_label = Label(label, label.value)
+            semantic_label = SemanticLabel(label, label.value)
         else:
             semantic_label = object_.semantic_label
 
