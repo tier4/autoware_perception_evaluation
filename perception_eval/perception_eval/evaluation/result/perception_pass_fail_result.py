@@ -99,8 +99,8 @@ class PassFailResult:
             self.critical_ground_truth_objects,
             object_results,
             self.frame_pass_fail_config.target_labels,
-            MatchingMode.IOU2D if self.frame_pass_fail_config.evaluation_task.is_2d() else MatchingMode.PLANEDISTANCE,
-            self.frame_pass_fail_config.matching_threshold_list,
+            self.frame_pass_fail_config.matching_mode_list,
+            self.frame_pass_fail_config.matching_threshold_list_for_labels,
         )
 
     def get_num_success(self) -> int:
@@ -150,10 +150,8 @@ class PassFailResult:
         tp_object_results, fp_object_results = get_positive_objects(
             object_results=object_results,
             target_labels=self.frame_pass_fail_config.target_labels,
-            matching_mode=MatchingMode.IOU2D
-            if self.frame_pass_fail_config.evaluation_task.is_2d()
-            else MatchingMode.PLANEDISTANCE,
-            matching_threshold_list=self.frame_pass_fail_config.matching_threshold_list,
+            matching_mode_list=self.frame_pass_fail_config.matching_mode_list,
+            matching_threshold_list_for_labels=self.frame_pass_fail_config.matching_threshold_list_for_labels,
         )
 
         # filter by critical_ground_truth_objects

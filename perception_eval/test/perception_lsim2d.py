@@ -123,7 +123,7 @@ class PerceptionLSimMoc:
         frame_pass_fail_config: PerceptionPassFailConfig = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=target_labels,
-            matching_threshold_list=matching_threshold_list,
+            matching_threshold_list_for_labels=matching_threshold_list,
         )
 
         frame_result = self.evaluator.add_frame_result(

@@ -208,8 +208,8 @@ def filter_objects(
 def get_positive_objects(
     object_results: List[DynamicObjectWithPerceptionResult],
     target_labels: List[Label],
-    matching_mode: Optional[MatchingMode] = None,
-    matching_threshold_list: Optional[List[float]] = None,
+    matching_mode_list: Optional[List[MatchingMode]],
+    matching_threshold_list_for_labels: Optional[List[List[float]]],
 ) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
     """Returns TP (True Positive) and FP (False Positive) object results as `tuple`.
 
@@ -218,9 +218,15 @@ def get_positive_objects(
     Args:
         object_results (List[DynamicObjectWithPerceptionResult]): List of matched estimation and GT objects.
         target_labels (Optional[List[Label]]): List of labels should be evaluated.
-        matching_mode (Optional[MatchingMode]): Matching policy, i.e. center or plane distance, iou.
-        matching_threshold_list (Optional[List[float]]): List of matching thresholds,
-            each element corresponds to target label.
+        matching_mode_list (Optional[List[MatchingMode]]): List of matching policies, i.e. center or plane distance, iou.
+        matching_threshold_list_for_labels (Optional[List[List[float]]]): The list of matching threshold for each matching mode.
+            The shape of matching_threshold_list_for_labels is
+            [
+                [matching_threshold_list_for_matching_mode_1],
+                [matching_threshold_list_for_matching_mode_2],
+                ...
+            ]
+            where matching_threshold_list_for_mode_i is the list of matching threshold for each target label.
 
     Returns:
         tp_object_results (List[DynamicObjectWithPerceptionResult]): List of TP.
@@ -235,13 +241,16 @@ def get_positive_objects(
 
         # in case of matching (Est, GT) = (unknown, except of unknown)
         # use GT label
-        matching_threshold = get_label_threshold(
-            semantic_label=object_result.ground_truth_object.semantic_label,
-            target_labels=target_labels,
-            threshold_list=matching_threshold_list,
+        # TODO: ここ汚い
+        matching_threshold_list: Optional[List[float]] = List(
+            get_label_threshold(
+                semantic_label=object_result.ground_truth_object.semantic_label,
+                target_labels=target_labels,
+                threshold_list=matching_threshold_list_for_matching_mode_i,
+            ) for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_labels
         )
 
-        est_status, gt_status = object_result.get_status(matching_mode, matching_threshold)
+        est_status, gt_status = object_result.get_status(matching_mode_list, matching_threshold_list)
 
         if est_status == MatchingStatus.FP:
             if gt_status == MatchingStatus.TN:
@@ -263,8 +272,8 @@ def get_negative_objects(
     ground_truth_objects: List[DynamicObject],
     object_results: List[DynamicObjectWithPerceptionResult],
     target_labels: List[Label],
-    matching_mode: Optional[MatchingMode] = None,
-    matching_threshold_list: Optional[List[float]] = None,
+    matching_mode_list: Optional[List[MatchingMode]],
+    matching_threshold_list_for_labels: Optional[List[List[float]]],
 ) -> Tuple[List[DynamicObject], List[DynamicObject]]:
     """Returns TN (True Negative) and FN (False Negative) objects as `tuple`.
 
@@ -275,9 +284,18 @@ def get_negative_objects(
         ground_truth_objects (List[DynamicObject]): List of ground truth objects.
         object_results (List[DynamicObjectWithPerceptionResult]): List of object results.
         target_labels (Optional[List[Label]]): List of labels should be evaluated.
-        matching_mode (Optional[MatchingMode]): Matching policy, i.e. center or plane distance, iou.
-        matching_threshold_list (Optional[List[float]]): List of matching thresholds,
-            each element corresponds to target label.
+        # matching_mode (Optional[MatchingMode]): Matching policy, i.e. center or plane distance, iou.
+        # matching_threshold_list (Optional[List[float]]): List of matching thresholds,
+        #     each element corresponds to target label.
+        matching_mode_list (Optional[List[MatchingMode]]): List of matching policies, i.e. center or plane distance, iou.
+        matching_threshold_list_for_labels (Optional[List[List[float]]]): The list of matching threshold for each matching mode.
+            The shape of matching_threshold_list_for_labels is
+            [
+                [matching_threshold_list_for_matching_mode_1],
+                [matching_threshold_list_for_matching_mode_2],
+                ...
+            ]
+            where matching_threshold_list_for_mode_i is the list of matching threshold for each target label.    
 
     Returns:
         tn_objects (List[DynamicObject]): List of TN.
@@ -288,14 +306,17 @@ def get_negative_objects(
 
     non_candidates: List[ObjectType] = []
     for object_result in object_results:
-        matching_threshold: Optional[float] = get_label_threshold(
-            object_result.ground_truth_object.semantic_label
-            if object_result.ground_truth_object is not None
-            else object_result.estimated_object.semantic_label,
-            target_labels,
-            matching_threshold_list,
+        # TODO: ここ汚い
+        matching_threshold_list: Optional[List[float]] = List(
+            get_label_threshold(
+                semantic_label=object_result.ground_truth_object.semantic_label
+                    if object_result.ground_truth_object is not None
+                    else object_result.estimated_object.semantic_label,
+                target_labels=target_labels,
+                threshold_list=matching_threshold_list_for_matching_mode_i,
+            ) for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_labels
         )
-        _, gt_status = object_result.get_status(matching_mode, matching_threshold)
+        _, gt_status = object_result.get_status(matching_mode_list, matching_threshold_list)
 
         if gt_status == MatchingStatus.TN:
             tn_objects.append(object_result.ground_truth_object)

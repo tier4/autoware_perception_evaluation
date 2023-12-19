@@ -99,22 +99,28 @@ class DynamicObjectWithPerceptionResult:
 
     def get_status(
         self,
-        matching_mode: MatchingMode,
-        matching_threshold: Optional[float],
+        matching_mode_list: List[MatchingMode],
+        matching_threshold_list: Optional[List[float]],
     ) -> Tuple[MatchingStatus, Optional[MatchingStatus]]:
         """Returns matching status both of estimation and GT as `tuple`.
 
         Args:
-            matching_mode (MatchingMode): Matching policy.
-            matching_threshold (float): Matching threshold.
+            matching_mode_list (List[MatchingMode]): Matching policy.
+            matching_threshold (List[float]): Matching threshold.
 
         Returns:
             Tuple[MatchingStatus, Optional[MatchingStatus]]: Matching status of estimation and GT.
         """
+        assert len(matching_mode_list) == len(matching_threshold_list), "Length of matching mode and threshold must be same."
+
         if self.ground_truth_object is None:
             return (MatchingStatus.FP, None)
 
-        if self.is_result_correct(matching_mode, matching_threshold):
+        is_result_correct: bool = True
+        for matching_mode, matching_threshold in zip(matching_mode_list, matching_threshold_list):
+            is_result_correct = is_result_correct and self.is_result_correct(matching_mode, matching_threshold)
+
+        if is_result_correct:
             return (
                 (MatchingStatus.FP, MatchingStatus.TN)
                 if self.ground_truth_object.semantic_label.is_fp()
