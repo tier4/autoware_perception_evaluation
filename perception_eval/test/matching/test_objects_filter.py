@@ -22,7 +22,7 @@ import unittest
 import numpy as np
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
-from perception_eval.common.label import Label
+from perception_eval.common.label import SemanticLabel
 from perception_eval.matching import MatchingMode
 from perception_eval.matching.objects_filter import divide_objects
 from perception_eval.matching.objects_filter import divide_objects_to_num
@@ -204,8 +204,8 @@ class TestObjectsFilter(unittest.TestCase):
                 np.array([(0, 0), (1, 1), (2, 2)]),
                 np.array([(3, None)]),
                 {
-                    0: Label(AutowareLabel.UNKNOWN, "unknown", []),
-                    3: Label(AutowareLabel.ANIMAL, "animal", []),
+                    0: SemanticLabel(AutowareLabel.UNKNOWN, "unknown", []),
+                    3: SemanticLabel(AutowareLabel.ANIMAL, "animal", []),
                 },
             ),
             # (3)
@@ -226,7 +226,7 @@ class TestObjectsFilter(unittest.TestCase):
                 1.5,
                 np.array([(2, 0), (1, 1), (3, 3)]),
                 np.array([(0, None)]),
-                {2: Label(AutowareLabel.UNKNOWN, "unknown", [])},
+                {2: SemanticLabel(AutowareLabel.UNKNOWN, "unknown", [])},
             ),
             # (5)
             # TP: (Est[2], GT[0]), (Est[1], GT[1]), (Est[3], GT[3])
@@ -236,7 +236,7 @@ class TestObjectsFilter(unittest.TestCase):
                 1.5,
                 np.array([(2, 0), (1, 1), (3, 3)]),
                 np.array([(0, None)]),
-                {2: Label(AutowareLabel.CAR, "car", [])},
+                {2: SemanticLabel(AutowareLabel.CAR, "car", [])},
             ),
             # (6)
             # TP:
@@ -405,8 +405,8 @@ class TestObjectsFilter(unittest.TestCase):
                 np.array([(0, 0), (1, 1), (2, 2)]),
                 np.array([(3, None)]),
                 {
-                    "0": Label(AutowareLabel.UNKNOWN, "unknown", []),
-                    "3": Label(AutowareLabel.ANIMAL, "animal", []),
+                    "0": SemanticLabel(AutowareLabel.UNKNOWN, "unknown", []),
+                    "3": SemanticLabel(AutowareLabel.ANIMAL, "animal", []),
                 },
             ),
             # (3)
@@ -427,7 +427,7 @@ class TestObjectsFilter(unittest.TestCase):
                 1.5,
                 np.array([(2, 0), (1, 1), (3, 3)]),
                 np.array([(0, None)]),
-                {"2": Label(AutowareLabel.UNKNOWN, "unknown", [])},
+                {"2": SemanticLabel(AutowareLabel.UNKNOWN, "unknown", [])},
             ),
             # (5)
             # TP: (Est[2], GT[0]), (Est[1], GT[1]), (Est[3], GT[3])
@@ -437,7 +437,7 @@ class TestObjectsFilter(unittest.TestCase):
                 1.5,
                 np.array([(2, 0), (1, 1), (3, 3)]),
                 np.array([(0, None)]),
-                {"2": Label(AutowareLabel.CAR, "car", [])},
+                {"2": SemanticLabel(AutowareLabel.CAR, "car", [])},
             ),
             # (6)
             # TP:
@@ -607,8 +607,8 @@ class TestObjectsFilter(unittest.TestCase):
                 0.0,
                 [3],
                 {
-                    "0": Label(AutowareLabel.UNKNOWN, "unknown", []),
-                    "3": Label(AutowareLabel.ANIMAL, "animal", []),
+                    "0": SemanticLabel(AutowareLabel.UNKNOWN, "unknown", []),
+                    "3": SemanticLabel(AutowareLabel.ANIMAL, "animal", []),
                 },
             ),
             # TODO(Shin-kyoto): 以下のtestも通る必要あり．現在，ground truth一つに対しestimated objectが複数紐づくため通らなくなっている
@@ -621,7 +621,7 @@ class TestObjectsFilter(unittest.TestCase):
             # Given difference (1.5, 0.0), there are no fn.
             (1.5, 0.0, [], {}),
             # Given difference (1.5, 0.0) and 1 labels changed, 1 estimated_objects are fp.
-            (1.5, 0.0, [], {"1": Label(AutowareLabel.UNKNOWN, "unknown", [])}),
+            (1.5, 0.0, [], {"1": SemanticLabel(AutowareLabel.UNKNOWN, "unknown", [])}),
             # Given difference (2.5, 0.0), all ground_truth_objects are fn
             (2.5, 0.0, [0, 1, 2, 3], {}),
             # Given difference (2.5, 2.5), all ground_truth_objects are fn

@@ -32,8 +32,8 @@ from perception_eval.object import DynamicObject
 from perception_eval.result.perception.perception_result import DynamicObjectWithPerceptionResult
 
 if TYPE_CHECKING:
-    from perception_eval.common.label import Label
     from perception_eval.common.label import LabelType
+    from perception_eval.common.label import SemanticLabel
     from perception_eval.matching import MatchingMode
     from perception_eval.object import ObjectType
 
@@ -137,7 +137,7 @@ def filter_object_results(
 def filter_objects(
     objects: List[ObjectType],
     is_gt: bool,
-    target_labels: Optional[List[Label]] = None,
+    target_labels: Optional[List[SemanticLabel]] = None,
     ignore_attributes: Optional[List[str]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
@@ -212,7 +212,7 @@ def filter_objects(
 
 def get_positive_objects(
     object_results: List[DynamicObjectWithPerceptionResult],
-    target_labels: List[Label],
+    target_labels: List[SemanticLabel],
     matching_mode: Optional[MatchingMode] = None,
     matching_threshold_list: Optional[List[float]] = None,
 ) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
@@ -267,7 +267,7 @@ def get_positive_objects(
 def get_negative_objects(
     ground_truth_objects: List[ObjectType],
     object_results: List[DynamicObjectWithPerceptionResult],
-    target_labels: List[Label],
+    target_labels: List[LabelType],
     matching_mode: Optional[MatchingMode] = None,
     matching_threshold_list: Optional[List[float]] = None,
 ) -> Tuple[List[ObjectType], List[ObjectType]]:
@@ -394,7 +394,7 @@ def divide_tp_fp_objects(
             threshold_list=confidence_threshold_list,
         )
         if confidence_threshold_ is not None:
-            is_confidence: bool = object_result.estimated_object.semantic_score > confidence_threshold_
+            is_confidence = object_result.estimated_object.semantic_score > confidence_threshold_
             is_correct = is_correct and is_confidence
 
         if is_correct:
