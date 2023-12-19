@@ -397,7 +397,7 @@ def divide_tp_fp_objects(
             )
             for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_labels
         ]
-    
+
         # matching_threshold_ = get_label_threshold(
         #     semantic_label=object_result.ground_truth_object.semantic_label,
         #     target_labels=target_labels,
