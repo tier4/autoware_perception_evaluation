@@ -24,8 +24,8 @@ from perception_eval.common.label import AutowareLabel
 from perception_eval.common.status import get_scene_rates
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.manager import PerceptionEvaluationManager
-from perception_eval.result import CriticalObjectFilterConfig
 from perception_eval.result import get_object_status
+from perception_eval.result import PerceptionFrameConfig
 from perception_eval.result import PerceptionPassFailConfig
 from perception_eval.util.debug import get_objects_with_difference
 from perception_eval.util.logger_config import configure_logger
@@ -69,9 +69,9 @@ class FPValidationLsimMoc:
 
         # Ideally, critical GT should be obtained in each frame.
         # In this mock, set it as a copy of `ground_truth_now_frame`.
-        ros_critical_ground_truth_objects = ground_truth_now_frame.objects
+        critical_ground_truth_objects = ground_truth_now_frame.objects
 
-        critical_object_filter_config = CriticalObjectFilterConfig(
+        frame_config = PerceptionFrameConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
             max_x_position_list=[100.0, 100.0, 100.0, 100.0],
@@ -81,15 +81,15 @@ class FPValidationLsimMoc:
         frame_pass_fail_config = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            matching_threshold_list=[2.0, 2.0, 2.0, 2.0],
+            thresholds=[2.0, 2.0, 2.0, 2.0],
         )
 
         frame_result = self.evaluator.add_frame_result(
             unix_time=unix_time,
             ground_truth_now_frame=ground_truth_now_frame,
             estimated_objects=estimated_objects,
-            ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
-            critical_object_filter_config=critical_object_filter_config,
+            critical_ground_truth_objects=critical_ground_truth_objects,
+            frame_config=frame_config,
             frame_pass_fail_config=frame_pass_fail_config,
         )
         self.display(frame_result)

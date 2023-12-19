@@ -27,7 +27,7 @@ import perception_eval.matching.objects_filter as objects_filter
 if TYPE_CHECKING:
     from perception_eval.object import ObjectType
 
-    from .perception_frame_config import CriticalObjectFilterConfig
+    from .perception_frame_config import PerceptionFrameConfig
     from .perception_frame_config import PerceptionPassFailConfig
     from .perception_result import DynamicObjectWithPerceptionResult
 
@@ -59,14 +59,14 @@ class PassFailResult:
         self,
         unix_time: int,
         frame_number: int,
-        critical_object_filter_config: CriticalObjectFilterConfig,
+        frame_config: PerceptionFrameConfig,
         frame_pass_fail_config: PerceptionPassFailConfig,
         ego2map: Optional[np.ndarray] = None,
     ) -> None:
         self.unix_time = unix_time
         self.frame_number = frame_number
         # TODO(ktro2828): merge CriticalObjectFilterConfig and FramePassFailConfig into one
-        self.critical_object_filter_config = critical_object_filter_config
+        self.frame_config = frame_config
         self.frame_pass_fail_config = frame_pass_fail_config
         self.ego2map = ego2map
 
@@ -79,7 +79,7 @@ class PassFailResult:
     def evaluate(
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
-        ros_critical_ground_truth_objects: List[ObjectType],
+        critical_ground_truth_objects: List[ObjectType],
     ) -> None:
         """Evaluate object results' pass fail.
 
@@ -88,11 +88,11 @@ class PassFailResult:
             ros_critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects
                 must be evaluated at current frame.
         """
-        self.critical_ground_truth_objects = objects_filter.filter_objects(
-            objects=ros_critical_ground_truth_objects,
+        self.critical_ground_truths = objects_filter.filter_objects(
+            objects=critical_ground_truth_objects,
             is_gt=True,
             ego2map=self.ego2map,
-            **self.critical_object_filter_config.filtering_params,
+            **self.frame_config.filtering_params,
         )
         self.tp_object_results, self.fp_object_results = self.__get_positive_object_results(
             object_results=object_results,
@@ -104,7 +104,7 @@ class PassFailResult:
             object_results,
             self.frame_pass_fail_config.target_labels,
             MatchingMode.IOU2D if self.frame_pass_fail_config.evaluation_task.is_2d() else MatchingMode.PLANEDISTANCE,
-            self.frame_pass_fail_config.matching_threshold_list,
+            self.frame_pass_fail_config.thresholds,
         )
 
     def get_num_success(self) -> int:
@@ -157,7 +157,7 @@ class PassFailResult:
             matching_mode=MatchingMode.IOU2D
             if self.frame_pass_fail_config.evaluation_task.is_2d()
             else MatchingMode.PLANEDISTANCE,
-            matching_threshold_list=self.frame_pass_fail_config.matching_threshold_list,
+            matching_threshold_list=self.frame_pass_fail_config.thresholds,
         )
 
         # filter by critical_ground_truth_objects
