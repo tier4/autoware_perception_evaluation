@@ -150,7 +150,7 @@ class PerceptionPassFailConfig:
         evaluator_config,  #: PerceptionEvaluationConfig,
         target_labels: Optional[List[str]],
         matching_mode_list: Optional[List[MatchingMode]] = None,
-        matching_threshold_list_for_labels: Union[List[List[float]], List[float], None] = None,
+        matching_threshold_list_for_modes: Union[List[List[float]], List[float], None] = None,
         confidence_threshold_list: Optional[List[float]] = None,
     ) -> None:
         """[summary]
@@ -158,17 +158,19 @@ class PerceptionPassFailConfig:
             evaluator_config (PerceptionEvaluationConfig): Evaluation config
             target_labels (List[str]): Target list. If None or empty list is specified, all labels will be evaluated.
             matching_mode_list (Optional[List[MatchingMode]]): The list of matching mode.
-            matching_threshold_list_for_labels (Union[List[List[float]], List[float], None]):
+            matching_threshold_list_for_modes (Union[List[List[float]], List[float], None]):
                 The list of matching threshold for each matching mode. Defaults to None.
-                The shape of matching_threshold_list_for_labels is
+                The shape of matching_threshold_list_for_modes is
                 [
                     [matching_threshold_list_for_matching_mode_1],
                     [matching_threshold_list_for_matching_mode_2],
                     ...
                 ]
                 where matching_threshold_list_for_mode_i is the list of matching threshold for each label.
-            # MEMO: 後で消す。matching_threshold_list_for_labelsが1次元で、かつmatching_mode_listがNoneの場合（つまり現状の殆どのscenario.yaml）は、
-            # 必ずmatching_modeが1つになる（2D IOUまたは平面距離）ので、matching_threshold_list_for_labelsをそのまま2次元にしている。が、ここはなくしても良いかも。
+                If this matches List[float], this function will assume that there is only one matching mode.
+                [
+                    matching_threshold_list_for_matching_mode_1,
+                ]
             confidence_threshold_list (Optional[List[float]]): The list of confidence threshold. Defaults to None.
         """
         self.evaluation_task: EvaluationTask = evaluator_config.evaluation_task
@@ -184,20 +186,20 @@ class PerceptionPassFailConfig:
             ]
         else:
             self.matching_mode_list: List[MatchingMode] = matching_mode_list
-        if matching_threshold_list_for_labels is None:
-            self.matching_threshold_list_for_labels = None
-        elif all(isinstance(elem, float) for elem in matching_threshold_list_for_labels):
-            self.matching_threshold_list_for_labels: List[List[float]] = [
-                check_thresholds(matching_threshold_list_for_labels, num_elements)
+        if matching_threshold_list_for_modes is None:
+            self.matching_threshold_list_for_modes = None
+        elif all(isinstance(elem, float) for elem in matching_threshold_list_for_modes):
+            self.matching_threshold_list_for_modes: List[List[float]] = [
+                check_thresholds(matching_threshold_list_for_modes, num_elements)
             ]
         else:
-            assert len(matching_threshold_list_for_labels) == len(self.matching_mode_list), (
-                f"Length of matching_threshold_list_for_labels ({len(matching_threshold_list_for_labels)}) "
+            assert len(matching_threshold_list_for_modes) == len(self.matching_mode_list), (
+                f"Length of matching_threshold_list_for_modes ({len(matching_threshold_list_for_modes)}) "
                 f"must be equal to length of matching_mode_list ({len(self.matching_mode_list)})"
             )
-            self.matching_threshold_list_for_labels: List[List[float]] = List(
+            self.matching_threshold_list_for_modes: List[List[float]] = List(
                 check_thresholds(matching_threshold_list, num_elements)
-                for matching_threshold_list in matching_threshold_list_for_labels
+                for matching_threshold_list in matching_threshold_list_for_modes
             )
         if confidence_threshold_list is None:
             self.confidence_threshold_list = None

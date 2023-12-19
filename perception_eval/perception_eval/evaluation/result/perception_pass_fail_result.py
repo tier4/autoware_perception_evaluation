@@ -100,7 +100,7 @@ class PassFailResult:
             object_results,
             self.frame_pass_fail_config.target_labels,
             self.frame_pass_fail_config.matching_mode_list,
-            self.frame_pass_fail_config.matching_threshold_list_for_labels,
+            self.frame_pass_fail_config.matching_threshold_list_for_modes,
         )
 
     def get_num_success(self) -> int:
@@ -151,7 +151,7 @@ class PassFailResult:
             object_results=object_results,
             target_labels=self.frame_pass_fail_config.target_labels,
             matching_mode_list=self.frame_pass_fail_config.matching_mode_list,
-            matching_threshold_list_for_labels=self.frame_pass_fail_config.matching_threshold_list_for_labels,
+            matching_threshold_list_for_modes=self.frame_pass_fail_config.matching_threshold_list_for_modes,
         )
 
         # filter by critical_ground_truth_objects

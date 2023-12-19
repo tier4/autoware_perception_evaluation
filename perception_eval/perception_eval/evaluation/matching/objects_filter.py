@@ -209,7 +209,7 @@ def get_positive_objects(
     object_results: List[DynamicObjectWithPerceptionResult],
     target_labels: List[Label],
     matching_mode_list: Optional[List[MatchingMode]],
-    matching_threshold_list_for_labels: Optional[List[List[float]]],
+    matching_threshold_list_for_modes: Optional[List[List[float]]],
 ) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
     """Returns TP (True Positive) and FP (False Positive) object results as `tuple`.
 
@@ -219,8 +219,8 @@ def get_positive_objects(
         object_results (List[DynamicObjectWithPerceptionResult]): List of matched estimation and GT objects.
         target_labels (Optional[List[Label]]): List of labels should be evaluated.
         matching_mode_list (Optional[List[MatchingMode]]): List of matching policies, i.e. center or plane distance, iou.
-        matching_threshold_list_for_labels (Optional[List[List[float]]]): The list of matching threshold for each matching mode.
-            The shape of matching_threshold_list_for_labels is
+        matching_threshold_list_for_modes (Optional[List[List[float]]]): The list of matching threshold for each matching mode.
+            The shape of matching_threshold_list_for_modes is
             [
                 [matching_threshold_list_for_matching_mode_1],
                 [matching_threshold_list_for_matching_mode_2],
@@ -241,14 +241,13 @@ def get_positive_objects(
 
         # in case of matching (Est, GT) = (unknown, except of unknown)
         # use GT label
-        # TODO: ここ汚い
         matching_threshold_list: Optional[List[float]] = [
             get_label_threshold(
                 semantic_label=object_result.ground_truth_object.semantic_label,
                 target_labels=target_labels,
                 threshold_list=matching_threshold_list_for_matching_mode_i,
             )
-            for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_labels
+            for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_modes
         ]
 
         est_status, gt_status = object_result.get_status(matching_mode_list, matching_threshold_list)
@@ -274,7 +273,7 @@ def get_negative_objects(
     object_results: List[DynamicObjectWithPerceptionResult],
     target_labels: List[Label],
     matching_mode_list: Optional[List[MatchingMode]],
-    matching_threshold_list_for_labels: Optional[List[List[float]]],
+    matching_threshold_list_for_modes: Optional[List[List[float]]],
 ) -> Tuple[List[DynamicObject], List[DynamicObject]]:
     """Returns TN (True Negative) and FN (False Negative) objects as `tuple`.
 
@@ -285,12 +284,9 @@ def get_negative_objects(
         ground_truth_objects (List[DynamicObject]): List of ground truth objects.
         object_results (List[DynamicObjectWithPerceptionResult]): List of object results.
         target_labels (Optional[List[Label]]): List of labels should be evaluated.
-        # matching_mode (Optional[MatchingMode]): Matching policy, i.e. center or plane distance, iou.
-        # matching_threshold_list (Optional[List[float]]): List of matching thresholds,
-        #     each element corresponds to target label.
         matching_mode_list (Optional[List[MatchingMode]]): List of matching policies, i.e. center or plane distance, iou.
-        matching_threshold_list_for_labels (Optional[List[List[float]]]): The list of matching threshold for each matching mode.
-            The shape of matching_threshold_list_for_labels is
+        matching_threshold_list_for_modes (Optional[List[List[float]]]): The list of matching threshold for each matching mode.
+            The shape of matching_threshold_list_for_modes is
             [
                 [matching_threshold_list_for_matching_mode_1],
                 [matching_threshold_list_for_matching_mode_2],
@@ -307,7 +303,6 @@ def get_negative_objects(
 
     non_candidates: List[ObjectType] = []
     for object_result in object_results:
-        # TODO: ここ汚い
         matching_threshold_list: Optional[List[float]] = [
             get_label_threshold(
                 semantic_label=object_result.ground_truth_object.semantic_label
@@ -316,7 +311,7 @@ def get_negative_objects(
                 target_labels=target_labels,
                 threshold_list=matching_threshold_list_for_matching_mode_i,
             )
-            for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_labels
+            for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_modes
         ]
         _, gt_status = object_result.get_status(matching_mode_list, matching_threshold_list)
 
@@ -344,7 +339,7 @@ def divide_tp_fp_objects(
     object_results: List[DynamicObjectWithPerceptionResult],
     target_labels: Optional[List[LabelType]],
     matching_mode_list: Optional[List[MatchingMode]] = None,
-    matching_threshold_list_for_labels: Optional[List[List[float]]] = None,
+    matching_threshold_list_for_modes: Optional[List[List[float]]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
 ) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
     """Divide input `object_results` into TP (True Positive) and FP (False Positive) object results.
@@ -361,9 +356,9 @@ def divide_tp_fp_objects(
         object_results (List[DynamicObjectWithPerceptionResult]): The object results you want to filter
         target_labels Optional[List[Label]]): Target labels list.
             Get threshold value from `matching_threshold_list` at corresponding label index.
-        matching_mode (Optional[MatchingMode]): MatchingMode instance.
+        matching_mode_list (Optional[List[MatchingMode]]): Matching modes list.
             When `matching_threshold_list=None`, this is not have to be specified. Defaults to None.
-        matching_threshold_list (Optional[List[float]]): Matching thresholds list. Defaults to None.
+        matching_threshold_list_for_modes (Optional[List[List[float]]]): Matching thresholds list for each matching mode.
             For example, if `matching_mode=MatchingMode.IOU3D` and `matching_threshold=0.5`,
             and `object_result.is_result_correct(matching_mode, matching_threshold)=True`,
             then those `object_results` are regarded as TP object results. Defaults to None.
@@ -395,14 +390,8 @@ def divide_tp_fp_objects(
                 target_labels=target_labels,
                 threshold_list=matching_threshold_list_for_matching_mode_i,
             )
-            for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_labels
+            for matching_threshold_list_for_matching_mode_i in matching_threshold_list_for_modes
         ]
-
-        # matching_threshold_ = get_label_threshold(
-        #     semantic_label=object_result.ground_truth_object.semantic_label,
-        #     target_labels=target_labels,
-        #     threshold_list=matching_threshold_list,
-        # )
 
         # matching threshold
         is_correct: bool = True
