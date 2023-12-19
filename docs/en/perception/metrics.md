@@ -1,6 +1,6 @@
 # Perception Evaluation Metrics
 
-## [`<class> MetricsScore(...)`](../../../perception_eval/perception_eval/evaluation/metrics/metrics.py)
+## [`<class> MetricsScore(...)`](../../../perception_eval/perception_eval/metrics/metrics.py)
 
 - A class to evaluate each of detection/tracking/prediction task
 
@@ -10,10 +10,10 @@
 
 - Initialize `detection/tracking/prediction_config` from input MetricsConfig
 
-  - [`detection_config (DetectionMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/detection_metrics_config.py)
-  - [`tracking_config (TrackingMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/tracking_metrics_config.py)
-  - [`prediction_config (PredictionMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/prediction_metrics_config.py)
-  - [`classification_config (ClassificationMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/classification_metrics_config.py)
+  - [`detection_config (DetectionMetricsConfig)`](../../../perception_eval/perception_eval/metrics/config/detection_metrics_config.py)
+  - [`tracking_config (TrackingMetricsConfig)`](../../../perception_eval/perception_eval/metrics/config/tracking_metrics_config.py)
+  - [`prediction_config (PredictionMetricsConfig)`](../../../perception_eval/perception_eval/metrics/config/prediction_metrics_config.py)
+  - [`classification_config (ClassificationMetricsConfig)`](../../../perception_eval/perception_eval/metrics/config/classification_metrics_config.py)
 
 - Calculate each metrics based on each config
 
@@ -77,7 +77,7 @@
 
 ## Detection
 
-### [`<class> Map(...)`](../../../perception_eval/perception_eval/evaluation/metrics/detection/map.py)
+### [`<class> Map(...)`](../../../perception_eval/perception_eval/metrics/detection/map.py)
 
 - A class to calculate mAP (mean Average Prevision)
 
@@ -252,7 +252,7 @@
 ## Matching
 
 - A class of the way of matching estimation and GT
-  - For the details, see [perception_eval/evaluation/matching/object_matching.py](../../../perception_eval/perception_eval/evaluation/matching/object_matching.py)
+  - For the details, see [perception_eval/evaluation/matching/object_matching.py](../../../perception_eval/perception_eval/matching/object_matching.py)
 
 | Matching Method    | Value                                                                 |
 | ------------------ | --------------------------------------------------------------------- |
@@ -296,7 +296,7 @@
 ## TP Metrics
 
 - A class to return TP value
-  - For the details，see [perception_eval/evaluation/metrics/detection/tp_metrics.py](../../../perception_eval/perception_eval/evaluation/metrics/detection/tp_metrics.py)
+  - For the details，see [perception_eval/evaluation/metrics/detection/tp_metrics.py](../../../perception_eval/perception_eval/metrics/detection/tp_metrics.py)
 
 | TP Metrics          | Value                                      |
 | ------------------- | ------------------------------------------ |

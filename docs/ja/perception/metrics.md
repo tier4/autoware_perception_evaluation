@@ -1,6 +1,6 @@
 # Perception Evaluation Metrics
 
-## [`<class> MetricsScore(...)`](../../../perception_eval/perception_eval/evaluation/metrics/metrics.py)
+## [`<class> MetricsScore(...)`](../../../perception_eval/perception_eval/metrics/metrics.py)
 
 - detection/tracking/prediction の各評価指標を実行する class
 
@@ -10,9 +10,9 @@
 
 - 入力された MetricsScoreConfig から，`detection/tracking/prediction_config`を生成
 
-  - [`detection_config (DetectionMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/detection_metrics_config.py)
-  - [`tracking_config (TrackingMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/tracking_metrics_config.py)
-  - [`prediction_config (PredictionMetricsConfig)`](../../../perception_eval/perception_eval/evaluation/metrics/config/prediction_metrics_config.py)
+  - [`detection_config (DetectionMetricsConfig)`](../../../perception_eval/perception_eval/metrics/config/detection_metrics_config.py)
+  - [`tracking_config (TrackingMetricsConfig)`](../../../perception_eval/perception_eval/metrics/config/tracking_metrics_config.py)
+  - [`prediction_config (PredictionMetricsConfig)`](../../../perception_eval/perception_eval/metrics/config/prediction_metrics_config.py)
 
 - 各 config をもとにそれぞれの Metrics が計算される．
 
@@ -76,7 +76,7 @@
 
 ## Detection
 
-### [`<class> Map(...)`](../../../perception_eval/perception_eval/evaluation/metrics/detection/map.py)
+### [`<class> Map(...)`](../../../perception_eval/perception_eval/metrics/detection/map.py)
 
 - mAP (mean Average Precision) のスコア計算を行う class．
 
@@ -249,7 +249,7 @@
 ## Matching
 
 - 予測 object と Ground Truth のマッチング方式の class
-  - 詳細は，[perception_eval/evaluation/matching/object_matching.py](../../../perception_eval/perception_eval/evaluation/matching/object_matching.py)を参照
+  - 詳細は，[perception_eval/evaluation/matching/object_matching.py](../../../perception_eval/perception_eval/matching/object_matching.py)を参照
 
 | Matching Method    | Value                                                                 |
 | ------------------ | --------------------------------------------------------------------- |
@@ -295,7 +295,7 @@
 ## TP Metrics
 
 - True Positive 時の値を返す class
-  - 詳細は，[perception_eval/evaluation/metrics/detection/tp_metrics.py](../../../perception_eval/perception_eval/evaluation/metrics/detection/tp_metrics.py)を参照
+  - 詳細は，[perception_eval/evaluation/metrics/detection/tp_metrics.py](../../../perception_eval/perception_eval/metrics/detection/tp_metrics.py)を参照
 
 | TP Metrics          | Value                         |
 | ------------------- | ----------------------------- |
