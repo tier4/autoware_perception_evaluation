@@ -1,6 +1,6 @@
 # Common items in Perception and Sensing
 
-## [`<class> DynamicObject(...)`](../../perception_eval/perception_eval/common/object.py)
+## [`<class> DynamicObject(...)`](../../perception_eval/perception_eval/common/object/object3d.py)
 
 3 次元オブジェクトのクラス．
 
@@ -29,7 +29,7 @@
 | `predicted_confidence`   |              `Optional[float]`               | 予測状態の信頼度. (Default: None)                                       |
 | `visibility`             |            `Optional[Visibility]`            | 視認性のステータス. (Default: None)                                     |
 
-## [`<class> DynamicObject2D(...)`](../../perception_eval/perception_eval/common/object2d.py)
+## [`<class> DynamicObject2D(...)`](../../perception_eval/perception_eval/common/object/object2d.py)
 
 2 次元オブジェクトのクラス．
 
@@ -47,7 +47,7 @@
 
 ## Ground truth
 
-### [`<class> FrameGroundTruth(...)`](../../perception_eval/perception_eval/common/dataset.py)
+### [`<class> FrameGroundTruth(...)`](../../perception_eval/perception_eval/common/dataset/ground_truth.py)
 
 フレームごとの GT オブジェクトの集合のクラス．
 
@@ -59,7 +59,7 @@
 | `ego2map`    | `Optional[numpy.ndarray]` | オブジェクトの座標系を base_link から map に変換する 4x4 行列. (Default: None) |
 | `raw_data`   | `Optional[numpy.ndarray]` | 点群または画像. (Default: None)                                                |
 
-### [`<func> load_all_datasets(...) -> List[FrameGroundTruth]`](../../perception_eval/perception_eval/common/dataset.py)
+### [`<func> load_all_datasets(...) -> List[FrameGroundTruth]`](../../perception_eval/perception_eval/common/dataset/load.py)
 
 データセットをロードする関数．
 
