@@ -18,7 +18,7 @@ from typing import Tuple
 import warnings
 
 import numpy as np
-from perception_eval.common import ObjectType
+from perception_eval.common.object import ObjectType
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import filter_objects

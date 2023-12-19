@@ -30,7 +30,7 @@ import numpy as np
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import TrafficLightLabel
-from perception_eval.common.object2d import DynamicObject2D
+from perception_eval.common.object import DynamicObject2D
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation import PerceptionFrameResult

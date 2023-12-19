@@ -20,11 +20,11 @@ from typing import Union
 import warnings
 
 import numpy as np
-from perception_eval.common import ObjectType
 from perception_eval.common.label import CommonLabel
 from perception_eval.common.label import Label
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.object import ObjectType
 from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
@@ -260,12 +260,12 @@ def get_positive_objects(
 
 
 def get_negative_objects(
-    ground_truth_objects: List[DynamicObject],
+    ground_truth_objects: List[ObjectType],
     object_results: List[DynamicObjectWithPerceptionResult],
     target_labels: List[Label],
     matching_mode: Optional[MatchingMode] = None,
     matching_threshold_list: Optional[List[float]] = None,
-) -> Tuple[List[DynamicObject], List[DynamicObject]]:
+) -> Tuple[List[ObjectType], List[ObjectType]]:
     """Returns TN (True Negative) and FN (False Negative) objects as `tuple`.
 
     If a ground truth object is contained in object results, it is TP or FP.
@@ -280,11 +280,11 @@ def get_negative_objects(
             each element corresponds to target label.
 
     Returns:
-        tn_objects (List[DynamicObject]): List of TN.
-        fn_objects (List[DynamicObject]): List of FN.
+        tn_objects (List[ObjectType]): List of TN.
+        fn_objects (List[ObjectType]): List of FN.
     """
-    tn_objects: List[DynamicObject] = []
-    fn_objects: List[DynamicObject] = []
+    tn_objects: List[ObjectType] = []
+    fn_objects: List[ObjectType] = []
 
     non_candidates: List[ObjectType] = []
     for object_result in object_results:
