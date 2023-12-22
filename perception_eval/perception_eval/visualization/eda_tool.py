@@ -22,7 +22,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pandas_profiling as pdp
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.label import LabelType
@@ -35,6 +34,11 @@ from perception_eval.evaluation.matching.objects_filter import get_fn_objects
 from plotly import graph_objects as go
 from plotly.graph_objs import Figure
 from plotly.subplots import make_subplots
+
+try:
+    import pandas_profiling as pdp
+except ImportError:
+    import ydata_profiling as pdp
 
 logger = getLogger(__name__)
 
