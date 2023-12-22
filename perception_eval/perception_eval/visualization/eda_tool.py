@@ -22,7 +22,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pandas_profiling as pdp
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.label import LabelType
@@ -35,6 +34,11 @@ from perception_eval.evaluation.matching.objects_filter import get_fn_objects
 from plotly import graph_objects as go
 from plotly.graph_objs import Figure
 from plotly.subplots import make_subplots
+
+try:
+    import pandas_profiling as pdp
+except ImportError:
+    import ydata_profiling as pdp
 
 logger = getLogger(__name__)
 
@@ -359,8 +363,11 @@ class EDAVisualizer:
 
         for class_name in class_names:
             _df_cls = self.visualize_df[self.visualize_df.name == class_name]
-            report = pdp.ProfileReport(_df_cls)
-            report.to_file(self.save_dir + "/" + file_name + f"_{class_name}.html")
+            try:
+                report = pdp.ProfileReport(_df_cls)
+                report.to_file(self.save_dir + "/" + file_name + f"_{class_name}.html")
+            except ValueError:
+                logger.warning("Empty DataFrame is detected, skip to save report")
 
 
 class EDAManager:
