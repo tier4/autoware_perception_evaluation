@@ -363,8 +363,11 @@ class EDAVisualizer:
 
         for class_name in class_names:
             _df_cls = self.visualize_df[self.visualize_df.name == class_name]
-            report = pdp.ProfileReport(_df_cls)
-            report.to_file(self.save_dir + "/" + file_name + f"_{class_name}.html")
+            try:
+                report = pdp.ProfileReport(_df_cls)
+                report.to_file(self.save_dir + "/" + file_name + f"_{class_name}.html")
+            except ValueError:
+                logger.warning("Empty DataFrame is detected, skip to save report")
 
 
 class EDAManager:
