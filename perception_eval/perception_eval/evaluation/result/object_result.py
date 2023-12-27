@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -381,16 +380,12 @@ def _get_object_results_with_id(
     estimated_objects_ = estimated_objects.copy()
     ground_truth_objects_ = ground_truth_objects.copy()
     for est_object in estimated_objects:
-        for gt_object in ground_truth_objects_:
+        for gt_object in ground_truth_objects:
             if est_object.uuid is None or gt_object.uuid is None:
                 raise RuntimeError(
                     f"uuid of estimation and ground truth must be set, but got {est_object.uuid} and {gt_object.uuid}"
                 )
-            if (
-                est_object.uuid == gt_object.uuid
-                and est_object.semantic_label == gt_object.semantic_label
-                and est_object.frame_id == gt_object.frame_id
-            ):
+            if est_object.uuid == gt_object.uuid and est_object.frame_id == gt_object.frame_id:
                 object_results.append(
                     DynamicObjectWithPerceptionResult(
                         estimated_object=est_object,
@@ -425,9 +420,19 @@ def _get_object_results_for_tlr(
     object_results: List[DynamicObjectWithPerceptionResult] = []
     estimated_objects_ = estimated_objects.copy()
     ground_truth_objects_ = ground_truth_objects.copy()
+    # 1. matching based on same label primary
     for est_object in estimated_objects:
-        for gt_object in ground_truth_objects_:
-            if est_object.uuid == gt_object.uuid and est_object.semantic_label == gt_object.semantic_label:
+        for gt_object in ground_truth_objects:
+            if est_object.uuid is None or gt_object.uuid is None:
+                raise RuntimeError(
+                    f"uuid of estimation and ground truth must be set, but got {est_object.uuid} and {gt_object.uuid}"
+                )
+
+            if (
+                est_object.uuid == gt_object.uuid
+                and est_object.frame_id == gt_object.frame_id
+                and est_object.semantic_label == gt_object.semantic_label
+            ):
                 object_results.append(
                     DynamicObjectWithPerceptionResult(
                         estimated_object=est_object,
@@ -436,13 +441,25 @@ def _get_object_results_for_tlr(
                 )
                 estimated_objects_.remove(est_object)
                 ground_truth_objects_.remove(gt_object)
-                logging.info(
-                    f"[OK] Est: {est_object.semantic_label.label}:{est_object.uuid}, "
-                    f"GT: {gt_object.semantic_label.label}:{gt_object.uuid}"
+    # 2. matching based on same ID
+    rest_estimated_objects_ = estimated_objects_.copy()
+    rest_ground_truth_objects_ = ground_truth_objects_.copy()
+    for est_object in rest_estimated_objects_:
+        for gt_object in rest_ground_truth_objects_:
+            if est_object.uuid is None or gt_object.uuid is None:
+                raise RuntimeError(
+                    f"uuid of estimation and ground truth must be set, but got {est_object.uuid} and {gt_object.uuid}"
                 )
-    # when there are rest of a GT objects, one of the estimated objects is FP.
-    if 0 < len(ground_truth_objects_):
-        object_results += _get_fp_object_results([estimated_objects_[0]])
+
+            if est_object.uuid == gt_object.uuid and est_object.frame_id == gt_object.frame_id:
+                object_results.append(
+                    DynamicObjectWithPerceptionResult(
+                        estimated_object=est_object,
+                        ground_truth_object=gt_object,
+                    )
+                )
+                estimated_objects_.remove(est_object)
+                ground_truth_objects_.remove(gt_object)
     return object_results
 
 
