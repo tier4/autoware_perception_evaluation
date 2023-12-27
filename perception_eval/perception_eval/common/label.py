@@ -381,6 +381,7 @@ def _get_traffic_light_paris(
         ]
     else:
         pair_list: List[Tuple[TrafficLightLabel, str]] = [
+            (TrafficLightLabel.TRAFFIC_LIGHT, "traffic_light"),
             (TrafficLightLabel.TRAFFIC_LIGHT, "green"),
             (TrafficLightLabel.TRAFFIC_LIGHT, "green_straight"),
             (TrafficLightLabel.TRAFFIC_LIGHT, "green_left"),
