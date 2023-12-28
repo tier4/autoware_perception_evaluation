@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from typing import List
+from typing import Optional
 from typing import Tuple
 from typing import TYPE_CHECKING
 
@@ -78,8 +79,8 @@ class PerceptionEvaluationManager(EvaluationMangerBase):
         unix_time: int,
         ground_truth_now_frame: FrameGroundTruth,
         estimated_objects: List[ObjectType],
-        critical_ground_truth_objects: List[ObjectType],
-        frame_config: PerceptionFrameConfig,
+        critical_ground_truth_objects: Optional[List[ObjectType]] = None,
+        frame_config: Optional[PerceptionFrameConfig] = None,
     ) -> PerceptionFrameResult:
         """Get perception result at current frame.
 
@@ -106,13 +107,18 @@ class PerceptionEvaluationManager(EvaluationMangerBase):
             ground_truth_now_frame,
         )
 
+        if critical_ground_truth_objects is None:
+            critical_ground_truth_objects = ground_truth_now_frame.objects.copy()
+
+        if frame_config is None:
+            frame_config = PerceptionFrameConfig(self.config)
+
         result = PerceptionFrameResult(
+            unix_time=unix_time,
+            frame_config=frame_config,
+            metrics_config=self.metrics_config,
             object_results=object_results,
             frame_ground_truth=ground_truth_now_frame,
-            metrics_config=self.metrics_config,
-            frame_config=frame_config,
-            unix_time=unix_time,
-            target_labels=self.target_labels,
         )
 
         if len(self.frame_results) > 0:
