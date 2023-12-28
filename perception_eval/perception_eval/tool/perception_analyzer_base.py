@@ -77,8 +77,8 @@ class PerceptionAnalyzerBase(ABC):
         evaluation_config (PerceptionEvaluationConfig): Config used in evaluation.
     """
 
-    def __init__(self, evaluation_config: PerceptionEvaluationConfig) -> None:
-        self.__config = evaluation_config
+    def __init__(self, config: PerceptionEvaluationConfig) -> None:
+        self.__config = config
 
         self.__plot_dir: str = os.path.join(self.__config.result_root_directory, "plot")
         if not os.path.exists(self.__plot_dir):

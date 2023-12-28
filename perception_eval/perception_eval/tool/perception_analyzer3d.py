@@ -74,19 +74,23 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         num_area_division (int): Number to divide area. Defaults to 1.
     """
 
-    def __init__(
-        self,
-        evaluation_config: PerceptionEvaluationConfig,
-        num_area_division: int = 1,
-    ) -> None:
-        super().__init__(evaluation_config=evaluation_config)
+    def __init__(self, config: PerceptionEvaluationConfig, num_area_division: int = 1) -> None:
+        super().__init__(config=config)
 
         if not self.config.evaluation_task.is_3d():
             raise RuntimeError("Evaluation task must be 3D.")
 
         self.__num_area_division: int = num_area_division
-        max_x: float = self.config.evaluation_config_dict.get("max_x_position", 100.0)
-        max_y: float = self.config.evaluation_config_dict.get("max_y_position", 100.0)
+        max_x_position_list = self.config.filter_param.max_x_position_list
+        max_y_position_list = self.config.filter_param.max_y_position_list
+        max_distance_list = self.config.filter_param.max_distance_list
+        if max_x_position_list is not None and max_y_position_list is not None:
+            max_x = max(max_x_position_list)
+            max_y = max(max_y_position_list)
+        elif max_distance_list is not None:
+            max_x = max_y = max(max_distance_list)
+        else:
+            max_x = max_y = 100.0
         self.__upper_rights, self.__bottom_lefts = generate_area_points(
             self.num_area_division, max_x=max_x, max_y=max_y
         )

@@ -25,12 +25,15 @@ from perception_eval.dataset import load_all_datasets
 
 if TYPE_CHECKING:
     from perception_eval.config import EvaluationConfigType
+    from perception_eval.config.params import FilterParamType
+    from perception_eval.config.params import LabelParam
+    from perception_eval.config.params import MetricsParamType
     from perception_eval.dataset import FrameGroundTruth
     from perception_eval.result import FrameResultType
     from perception_eval.visualization import VisualizerType
 
 
-class _EvaluationMangerBase(ABC):
+class EvaluationMangerBase(ABC):
     """Abstract base class for EvaluationManager.
 
     Attributes:
@@ -42,38 +45,39 @@ class _EvaluationMangerBase(ABC):
     """
 
     @abstractmethod
-    def __init__(
-        self,
-        evaluation_config: EvaluationConfigType,
-    ) -> None:
+    def __init__(self, config: EvaluationConfigType) -> None:
         super().__init__()
 
-        self.evaluator_config = evaluation_config
+        self.config = config
         self.ground_truth_frames = load_all_datasets(
-            dataset_paths=self.evaluator_config.dataset_paths,
-            evaluation_task=self.evaluator_config.evaluation_task,
-            label_converter=self.evaluator_config.label_converter,
-            frame_id=self.evaluator_config.frame_ids,
-            load_raw_data=self.evaluator_config.load_raw_data,
+            dataset_paths=self.config.dataset_paths,
+            evaluation_task=self.config.evaluation_task,
+            label_converter=self.config.label_converter,
+            frame_id=self.config.frame_ids,
+            load_raw_data=self.config.load_raw_data,
         )
 
         self.frame_results: List[FrameResultType] = []
 
     @property
     def evaluation_task(self):
-        return self.evaluator_config.evaluation_task
+        return self.config.evaluation_task
 
     @property
     def frame_ids(self):
-        return self.evaluator_config.frame_ids
+        return self.config.frame_ids
 
     @property
-    def filtering_params(self):
-        return self.evaluator_config.filtering_params
+    def label_param(self) -> LabelParam:
+        return self.config.label_param
 
     @property
-    def metrics_params(self):
-        return self.evaluator_config.metrics_params
+    def filter_param(self) -> FilterParamType:
+        return self.config.filter_param
+
+    @property
+    def metrics_param(self) -> MetricsParamType:
+        return self.config.metrics_param
 
     @property
     @abstractmethod

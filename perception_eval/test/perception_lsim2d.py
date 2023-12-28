@@ -47,7 +47,7 @@ class PerceptionLSimMoc:
         self.label_prefix = label_prefix
 
         if evaluation_task in ("detection2d", "tracking2d"):
-            evaluation_config_dict = {
+            config_dict = {
                 "evaluation_task": evaluation_task,
                 "center_distance_thresholds": [
                     100,
@@ -56,12 +56,12 @@ class PerceptionLSimMoc:
                 "iou_2d_thresholds": [0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
             }
         elif evaluation_task == "classification2d":
-            evaluation_config_dict = {"evaluation_task": evaluation_task}
+            config_dict = {"evaluation_task": evaluation_task}
         else:
             raise ValueError(f"Unexpected evaluation task: {evaluation_task}")
 
         # If target_labels = None, all labels will be evaluated.
-        evaluation_config_dict.update(
+        config_dict.update(
             dict(
                 target_labels=["green", "red", "yellow", "unknown"]
                 if label_prefix == "traffic_light"
@@ -69,7 +69,7 @@ class PerceptionLSimMoc:
                 ignore_attributes=["cycle_state.without_rider"] if label_prefix == "autoware" else None,
             )
         )
-        evaluation_config_dict.update(
+        config_dict.update(
             dict(
                 allow_matching_unknown=True,
                 merge_similar_labels=False,
@@ -82,7 +82,7 @@ class PerceptionLSimMoc:
             dataset_paths=dataset_paths,
             frame_id=camera_type,
             result_root_directory=result_root_directory,
-            evaluation_config_dict=evaluation_config_dict,
+            config_dict=config_dict,
             load_raw_data=True,
         )
 
@@ -92,7 +92,7 @@ class PerceptionLSimMoc:
             file_log_level=logging.INFO,
         )
 
-        self.evaluator = PerceptionEvaluationManager(evaluation_config=evaluation_config)
+        self.evaluator = PerceptionEvaluationManager(evaluation_config)
 
     def callback(
         self,
@@ -119,7 +119,7 @@ class PerceptionLSimMoc:
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam
         frame_config = PerceptionFrameConfig(
-            evaluator_config=self.evaluator.evaluator_config,
+            evaluator_config=self.evaluator.config,
             target_labels=target_labels,
             ignore_attributes=ignore_attributes,
             thresholds=thresholds,
@@ -234,11 +234,11 @@ if __name__ == "__main__":
 
     # Visualize all frame results.
     logging.info("Start visualizing detection results")
-    if detection_lsim.evaluator.evaluator_config.load_raw_data:
+    if detection_lsim.evaluator.config.load_raw_data:
         detection_lsim.evaluator.visualize_all()
 
     # Detection performance report
-    detection_analyzer = PerceptionAnalyzer2D(detection_lsim.evaluator.evaluator_config)
+    detection_analyzer = PerceptionAnalyzer2D(detection_lsim.evaluator.config)
     detection_analyzer.add(detection_lsim.evaluator.frame_results)
     score_df, conf_mat_df = detection_analyzer.analyze()
     if score_df is not None:
@@ -270,11 +270,11 @@ if __name__ == "__main__":
 
     # final result
     tracking_final_metric_score = tracking_lsim.get_final_result()
-    if tracking_lsim.evaluator.evaluator_config.load_raw_data:
+    if tracking_lsim.evaluator.config.load_raw_data:
         tracking_lsim.evaluator.visualize_all()
 
     # Tracking performance report
-    tracking_analyzer = PerceptionAnalyzer2D(tracking_lsim.evaluator.evaluator_config)
+    tracking_analyzer = PerceptionAnalyzer2D(tracking_lsim.evaluator.config)
     tracking_analyzer.add(tracking_lsim.evaluator.frame_results)
     score_df, conf_mat_df = tracking_analyzer.analyze()
     if score_df is not None:
@@ -306,7 +306,7 @@ if __name__ == "__main__":
     classification_final_metric_score = classification_lsim.get_final_result()
 
     # Classification performance report
-    classification_analyzer = PerceptionAnalyzer2D(classification_lsim.evaluator.evaluator_config)
+    classification_analyzer = PerceptionAnalyzer2D(classification_lsim.evaluator.config)
     classification_analyzer.add(classification_lsim.evaluator.frame_results)
     score_df, conf_mat_df = classification_analyzer.analyze()
     if score_df is not None:

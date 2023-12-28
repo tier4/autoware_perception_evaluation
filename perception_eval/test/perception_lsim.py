@@ -41,7 +41,7 @@ class PerceptionLSimMoc:
         evaluation_task: str,
         result_root_directory: str,
     ):
-        evaluation_config_dict = {
+        config_dict = {
             "evaluation_task": evaluation_task,
             # ラベル，max x/y，マッチング閾値 (detection/tracking/predictionで共通)
             "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
@@ -81,7 +81,7 @@ class PerceptionLSimMoc:
             dataset_paths=dataset_paths,
             frame_id="base_link" if evaluation_task == "detection" else "map",
             result_root_directory=result_root_directory,
-            evaluation_config_dict=evaluation_config_dict,
+            config_dict=config_dict,
             load_raw_data=True,
         )
 
@@ -91,7 +91,7 @@ class PerceptionLSimMoc:
             file_log_level=logging.INFO,
         )
 
-        self.evaluator = PerceptionEvaluationManager(evaluation_config=evaluation_config)
+        self.evaluator = PerceptionEvaluationManager(evaluation_config)
 
     def callback(
         self,
@@ -111,7 +111,7 @@ class PerceptionLSimMoc:
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam
         frame_config = PerceptionFrameConfig(
-            evaluator_config=self.evaluator.evaluator_config,
+            evaluator_config=self.evaluator.config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
             ignore_attributes=["cycle_state.without_rider"],
             max_x_position_list=[30.0, 30.0, 30.0, 30.0],
@@ -231,13 +231,13 @@ if __name__ == "__main__":
         f"{format_class_for_log(detection_final_metric_score.maps[0], 100)}",
     )
 
-    if detection_lsim.evaluator.evaluator_config.load_raw_data:
+    if detection_lsim.evaluator.config.load_raw_data:
         # Visualize all frame results.
         logging.info("Start visualizing detection results")
         detection_lsim.evaluator.visualize_all()
 
     # Detection performance report
-    detection_analyzer = PerceptionAnalyzer3D(detection_lsim.evaluator.evaluator_config)
+    detection_analyzer = PerceptionAnalyzer3D(detection_lsim.evaluator.config)
     detection_analyzer.add(detection_lsim.evaluator.frame_results)
     score_df, error_df = detection_analyzer.analyze()
     if score_df is not None:
@@ -310,13 +310,13 @@ if __name__ == "__main__":
         f"{format_class_for_log(tracking_final_metric_score.tracking_scores[0], 100)}"
     )
 
-    if tracking_lsim.evaluator.evaluator_config.load_raw_data:
+    if tracking_lsim.evaluator.config.load_raw_data:
         # Visualize all frame results
         logging.info("Start visualizing tracking results")
         tracking_lsim.evaluator.visualize_all()
 
     # Tracking performance report
-    tracking_analyzer = PerceptionAnalyzer3D(tracking_lsim.evaluator.evaluator_config)
+    tracking_analyzer = PerceptionAnalyzer3D(tracking_lsim.evaluator.config)
     tracking_analyzer.add(tracking_lsim.evaluator.frame_results)
     score_df, error_df = tracking_analyzer.analyze()
     if score_df is not None:
