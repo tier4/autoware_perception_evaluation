@@ -60,38 +60,45 @@ class PerceptionFrameResult:
 
     def __init__(
         self,
+        unix_time: int,
+        frame_config: PerceptionFrameConfig,
+        metrics_config: MetricsScoreConfig,
         object_results: List[DynamicObjectWithPerceptionResult],
         frame_ground_truth: FrameGroundTruth,
-        metrics_config: MetricsScoreConfig,
-        frame_config: PerceptionFrameConfig,
-        unix_time: int,
-        target_labels: List[LabelType],
     ) -> None:
-        self.frame_number = frame_ground_truth.frame_number
         self.unix_time = unix_time
-        self.target_labels = target_labels
+        self.frame_config = frame_config
+        self.metrics_config = metrics_config
 
         self.object_results = object_results
         self.frame_ground_truth = frame_ground_truth
 
         # init evaluation
         self.metrics_score = metrics.MetricsScore(
-            metrics_config,
+            self.metrics_config,
             used_frame=[int(self.frame_number)],
         )
         self.pass_fail_result = PassFailResult(
-            unix_time=unix_time,
+            unix_time=self.unix_time,
             frame_number=self.frame_number,
-            frame_config=frame_config,
-            ego2map=frame_ground_truth.ego2map,
+            frame_config=self.frame_config,
+            ego2map=self.frame_ground_truth.ego2map,
         )
+
+    @property
+    def target_labels(self) -> List[LabelType]:
+        return self.frame_config.target_labels
+
+    @property
+    def frame_number(self) -> int:
+        return self.frame_ground_truth.frame_number
 
     def evaluate_frame(
         self,
         critical_ground_truth_objects: List[ObjectType],
         previous_result: Optional[PerceptionFrameResult] = None,
     ) -> None:
-        """[summary]
+        """
         Evaluate a frame from the pair of estimated objects and ground truth objects
         Args:
             ros_critical_ground_truth_objects (List[ObjectType]): The list of Ground truth objects filtered by ROS node.
