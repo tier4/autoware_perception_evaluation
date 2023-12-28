@@ -84,7 +84,7 @@ class PassFailResult:
             objects=critical_ground_truth_objects,
             is_gt=True,
             ego2map=self.ego2map,
-            **self.frame_config.filtering_params,
+            **self.frame_config.filter_param.as_dict(),
         )
         self.tp_object_results, self.fp_object_results = self.__get_positive_object_results(
             object_results=object_results,

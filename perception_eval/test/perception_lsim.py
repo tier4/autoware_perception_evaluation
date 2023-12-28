@@ -123,8 +123,8 @@ class PerceptionLSimMoc:
             unix_time=unix_time,
             ground_truth_now_frame=ground_truth_now_frame,
             estimated_objects=estimated_objects,
-            critical_ground_truth_objects=critical_ground_truth_objects,
             frame_config=frame_config,
+            critical_ground_truth_objects=critical_ground_truth_objects,
         )
         self.visualize(frame_result)
 

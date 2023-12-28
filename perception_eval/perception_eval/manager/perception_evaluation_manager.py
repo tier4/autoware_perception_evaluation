@@ -79,8 +79,8 @@ class PerceptionEvaluationManager(EvaluationMangerBase):
         unix_time: int,
         ground_truth_now_frame: FrameGroundTruth,
         estimated_objects: List[ObjectType],
-        critical_ground_truth_objects: Optional[List[ObjectType]] = None,
         frame_config: Optional[PerceptionFrameConfig] = None,
+        critical_ground_truth_objects: Optional[List[ObjectType]] = None,
     ) -> PerceptionFrameResult:
         """Get perception result at current frame.
 
@@ -111,7 +111,7 @@ class PerceptionEvaluationManager(EvaluationMangerBase):
             critical_ground_truth_objects = ground_truth_now_frame.objects.copy()
 
         if frame_config is None:
-            frame_config = PerceptionFrameConfig(self.config)
+            frame_config = PerceptionFrameConfig.from_eval_cfg(self.config)
 
         result = PerceptionFrameResult(
             unix_time=unix_time,
