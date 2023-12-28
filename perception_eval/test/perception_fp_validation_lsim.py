@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 class FPValidationLsimMoc:
     def __init__(self, dataset_paths: List[int], result_root_directory: str) -> None:
-        evaluation_config_dict = {
+        config_dict = {
             "evaluation_task": "fp_validation",
             "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
             "max_x_position": 102.4,
@@ -51,7 +51,7 @@ class FPValidationLsimMoc:
             dataset_paths=dataset_paths,
             frame_id="base_link",
             result_root_directory=result_root_directory,
-            evaluation_config_dict=evaluation_config_dict,
+            config_dict=config_dict,
             load_raw_data=True,
         )
 
@@ -71,7 +71,7 @@ class FPValidationLsimMoc:
         critical_ground_truth_objects = ground_truth_now_frame.objects
 
         frame_config = PerceptionFrameConfig(
-            evaluator_config=self.evaluator.evaluator_config,
+            evaluator_config=self.evaluator.config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
             max_x_position_list=[100.0, 100.0, 100.0, 100.0],
             max_y_position_list=[100.0, 100.0, 100.0, 100.0],

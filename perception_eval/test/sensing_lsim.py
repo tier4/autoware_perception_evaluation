@@ -38,7 +38,7 @@ class SensingLSimMoc:
 
     def __init__(self, dataset_paths: List[str], result_root_directory: str):
         # sensing
-        evaluation_config_dict = {
+        config_dict = {
             "evaluation_task": "sensing",
             # object uuids to be detected
             # "target_uuids": ["1b40c0876c746f96ac679a534e1037a2"],
@@ -49,11 +49,11 @@ class SensingLSimMoc:
             "min_points_threshold": 1,
         }
 
-        evaluation_config: SensingEvaluationConfig = SensingEvaluationConfig(
+        evaluation_config = SensingEvaluationConfig(
             dataset_paths=dataset_paths,
             frame_id="base_link",
             result_root_directory=result_root_directory,
-            evaluation_config_dict=evaluation_config_dict,
+            config_dict=config_dict,
             load_raw_data=True,
         )
 
@@ -63,7 +63,7 @@ class SensingLSimMoc:
             file_log_level=logging.INFO,
         )
 
-        self.evaluator = SensingEvaluationManager(evaluation_config=evaluation_config)
+        self.evaluator = SensingEvaluationManager(evaluation_config)
 
     def callback(
         self,

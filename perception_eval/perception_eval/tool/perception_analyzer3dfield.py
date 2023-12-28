@@ -167,7 +167,7 @@ class DataTableIdx(IntEnum):
 class PerceptionFieldXY:
     def __init__(
         self,
-        evaluation_config: PerceptionEvaluationConfig,
+        config: PerceptionEvaluationConfig,
         axis_x: PerceptionFieldAxis,
         axis_y: PerceptionFieldAxis,
     ) -> None:
@@ -175,11 +175,11 @@ class PerceptionFieldXY:
         Initializes a PerceptionFieldXY object.
 
         Args:
-            evaluation_config (PerceptionEvaluationConfig): The configuration for perception evaluation.
+            config (PerceptionEvaluationConfig): The configuration for perception evaluation.
             axis_x (PerceptionFieldAxis): The x-axis configuration for the perception field.
             axis_y (PerceptionFieldAxis): The y-axis configuration for the perception field.
         """
-        self.__config: PerceptionEvaluationConfig = evaluation_config
+        self.__config: PerceptionEvaluationConfig = config
         # Set statistics parameters
         self.config_statistics_min_numb: int = STATISTICS_MIN_NUMB
 

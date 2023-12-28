@@ -67,9 +67,9 @@ class PerceptionVisualizer3D:
         self.__figure, self.__axes = plt.subplots(figsize=self.__figsize)
         self.__animation_frames: List[PILImage] = []
 
-        max_x_position_list = config.filtering_params.get("max_x_position_list")
-        max_y_position_list = config.filtering_params.get("max_y_position_list")
-        max_distance_list = config.filtering_params.get("max_distance_list")
+        max_x_position_list = config.filter_param.max_distance_list
+        max_y_position_list = config.filter_param.max_y_position_list
+        max_distance_list = config.filter_param.max_distance_list
         if max_x_position_list is not None and max_y_position_list is not None:
             self.__xlim: float = max(max_x_position_list)
             self.__ylim: float = max(max_y_position_list)

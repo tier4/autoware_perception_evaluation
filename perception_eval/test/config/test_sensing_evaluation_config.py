@@ -24,7 +24,7 @@ from perception_eval.config import SensingEvaluationConfig
 class TestSensingEvaluationConfig(unittest.TestCase):
     def test_check_tasks(self):
         """Test if it can detect the exception."""
-        evaluation_config_dict = {
+        config_dict = {
             "evaluation_task": "sensing",
             "target_uuids": ["1b40c0876c746f96ac679a534e1037a2"],
             "box_scale_0m": 1.0,
@@ -41,10 +41,10 @@ class TestSensingEvaluationConfig(unittest.TestCase):
         for n, (frame_id, evaluation_task) in enumerate(patterns):
             with self.subTest(f"Test if it can detect the exception of task keys: {n + 1}"):
                 with self.assertRaises(ValueError):
-                    evaluation_config_dict.update(evaluation_task)
+                    config_dict.update(evaluation_task)
                     _ = SensingEvaluationConfig(
                         dataset_paths="/tmp/path",
                         frame_id=frame_id,
                         result_root_directory="/tmp/path",
-                        evaluation_config_dict=evaluation_config_dict,
+                        config_dict=config_dict,
                     )

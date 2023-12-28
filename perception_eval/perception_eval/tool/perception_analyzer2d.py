@@ -61,8 +61,8 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         evaluation_config (PerceptionEvaluationConfig): Config used in evaluation.
     """
 
-    def __init__(self, evaluation_config: PerceptionEvaluationConfig) -> None:
-        super().__init__(evaluation_config=evaluation_config)
+    def __init__(self, config: PerceptionEvaluationConfig) -> None:
+        super().__init__(config=config)
         if not self.config.evaluation_task.is_2d():
             raise RuntimeError("Evaluation task must be 2D.")
 

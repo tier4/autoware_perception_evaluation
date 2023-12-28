@@ -27,7 +27,7 @@ class TestPerceptionEvaluationConfig(unittest.TestCase):
 
     def test_check_tasks(self):
         """Test if it can detect the exception."""
-        evaluation_config_dict = {
+        config_dict = {
             "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
             "max_x_position": 102.4,
             "max_y_position": 102.4,
@@ -53,10 +53,10 @@ class TestPerceptionEvaluationConfig(unittest.TestCase):
         for n, (frame_id, evaluation_task) in enumerate(patterns):
             with self.subTest(f"Test if it can detect the exception of task keys: {n + 1}"):
                 with self.assertRaises(ValueError):
-                    evaluation_config_dict.update(evaluation_task)
+                    config_dict.update(evaluation_task)
                     _ = PerceptionEvaluationConfig(
                         dataset_paths="/tmp",
                         frame_id=frame_id,
                         result_root_directory="/tmp",
-                        evaluation_config_dict=evaluation_config_dict,
+                        config_dict=config_dict,
                     )
