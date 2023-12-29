@@ -22,9 +22,8 @@ from typing import TYPE_CHECKING
 
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.manager import PerceptionEvaluationManager
-from perception_eval.result import CriticalObjectFilterConfig
+from perception_eval.result import PerceptionFrameConfig
 from perception_eval.result import PerceptionFrameResult
-from perception_eval.result import PerceptionPassFailConfig
 from perception_eval.tool import PerceptionAnalyzer3D
 from perception_eval.util.debug import format_class_for_log
 from perception_eval.util.debug import get_objects_with_difference
@@ -42,7 +41,7 @@ class PerceptionLSimMoc:
         evaluation_task: str,
         result_root_directory: str,
     ):
-        evaluation_config_dict = {
+        config_dict = {
             "evaluation_task": evaluation_task,
             # ラベル，max x/y，マッチング閾値 (detection/tracking/predictionで共通)
             "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
@@ -82,7 +81,7 @@ class PerceptionLSimMoc:
             dataset_paths=dataset_paths,
             frame_id="base_link" if evaluation_task == "detection" else "map",
             result_root_directory=result_root_directory,
-            evaluation_config_dict=evaluation_config_dict,
+            config_dict=config_dict,
             load_raw_data=True,
         )
 
@@ -92,7 +91,7 @@ class PerceptionLSimMoc:
             file_log_level=logging.INFO,
         )
 
-        self.evaluator = PerceptionEvaluationManager(evaluation_config=evaluation_config)
+        self.evaluator = PerceptionEvaluationManager(evaluation_config)
 
     def callback(
         self,
@@ -106,32 +105,26 @@ class PerceptionLSimMoc:
         # ros_critical_ground_truth_objects : List[DynamicObject] = custom_critical_object_filter(
         #   ground_truth_now_frame.objects
         # )
-        ros_critical_ground_truth_objects = ground_truth_now_frame.objects
+        critical_ground_truth_objects = ground_truth_now_frame.objects
 
         # 1 frameの評価
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam
-        critical_object_filter_config = CriticalObjectFilterConfig(
-            evaluator_config=self.evaluator.evaluator_config,
+        frame_config = PerceptionFrameConfig(
+            evaluator_config=self.evaluator.config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
             ignore_attributes=["cycle_state.without_rider"],
             max_x_position_list=[30.0, 30.0, 30.0, 30.0],
             max_y_position_list=[30.0, 30.0, 30.0, 30.0],
-        )
-        # Pass fail を決めるパラメータ
-        frame_pass_fail_config = PerceptionPassFailConfig(
-            evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            matching_threshold_list=[2.0, 2.0, 2.0, 2.0],
+            success_thresholds=[2.0, 2.0, 2.0, 2.0],
         )
 
         frame_result = self.evaluator.add_frame_result(
             unix_time=unix_time,
             ground_truth_now_frame=ground_truth_now_frame,
             estimated_objects=estimated_objects,
-            ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
-            critical_object_filter_config=critical_object_filter_config,
-            frame_pass_fail_config=frame_pass_fail_config,
+            frame_config=frame_config,
+            critical_ground_truth_objects=critical_ground_truth_objects,
         )
         self.visualize(frame_result)
 
@@ -238,13 +231,13 @@ if __name__ == "__main__":
         f"{format_class_for_log(detection_final_metric_score.maps[0], 100)}",
     )
 
-    if detection_lsim.evaluator.evaluator_config.load_raw_data:
+    if detection_lsim.evaluator.config.load_raw_data:
         # Visualize all frame results.
         logging.info("Start visualizing detection results")
         detection_lsim.evaluator.visualize_all()
 
     # Detection performance report
-    detection_analyzer = PerceptionAnalyzer3D(detection_lsim.evaluator.evaluator_config)
+    detection_analyzer = PerceptionAnalyzer3D(detection_lsim.evaluator.config)
     detection_analyzer.add(detection_lsim.evaluator.frame_results)
     score_df, error_df = detection_analyzer.analyze()
     if score_df is not None:
@@ -317,13 +310,13 @@ if __name__ == "__main__":
         f"{format_class_for_log(tracking_final_metric_score.tracking_scores[0], 100)}"
     )
 
-    if tracking_lsim.evaluator.evaluator_config.load_raw_data:
+    if tracking_lsim.evaluator.config.load_raw_data:
         # Visualize all frame results
         logging.info("Start visualizing tracking results")
         tracking_lsim.evaluator.visualize_all()
 
     # Tracking performance report
-    tracking_analyzer = PerceptionAnalyzer3D(tracking_lsim.evaluator.evaluator_config)
+    tracking_analyzer = PerceptionAnalyzer3D(tracking_lsim.evaluator.config)
     tracking_analyzer.add(tracking_lsim.evaluator.frame_results)
     score_df, error_df = tracking_analyzer.analyze()
     if score_df is not None:

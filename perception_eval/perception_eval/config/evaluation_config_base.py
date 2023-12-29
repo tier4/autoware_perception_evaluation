@@ -29,13 +29,19 @@ from typing import Union
 
 from perception_eval.common.evaluation_task import set_task
 from perception_eval.common.label import LabelConverter
+from perception_eval.common.label import set_target_lists
 from perception_eval.common.schema import FrameID
+
+from .params import LabelParam
 
 if TYPE_CHECKING:
     from perception_eval.common.evaluation_task import EvaluationTask
 
+    from .params import FilterParamType
+    from .params import MetricsParamType
 
-class _EvaluationConfigBase(ABC):
+
+class EvaluationConfigBase(ABC):
     """Abstract base class for evaluation config
 
     Directory structure to save log and visualization result is following
@@ -82,24 +88,23 @@ class _EvaluationConfigBase(ABC):
         dataset_paths: List[str],
         frame_id: Union[str, Sequence[str]],
         result_root_directory: str,
-        evaluation_config_dict: Dict[str, Any],
+        config_dict: Dict[str, Any],
         load_raw_data: bool = False,
     ) -> None:
         super().__init__()
         # Check tasks are supported
-        self.evaluation_task: EvaluationTask = self._check_tasks(evaluation_config_dict)
-        self.evaluation_config_dict: Dict[str, Any] = evaluation_config_dict
+        self.evaluation_task: EvaluationTask = self._check_tasks(config_dict)
 
         # Labels
-        self.label_params = self._extract_label_params(evaluation_config_dict)
+        self.label_param = LabelParam.from_dict(config_dict)
         self.label_converter = LabelConverter(
             self.evaluation_task,
-            self.label_params["merge_similar_labels"],
-            self.label_params["label_prefix"],
-            self.label_params["count_label_number"],
+            merge_similar_labels=self.label_param.merge_similar_labels,
+            label_prefix=self.label_param.label_prefix,
+            count_label_number=self.label_param.count_label_number,
         )
-
-        self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)
+        self.target_labels = set_target_lists(config_dict.get("target_labels"), self.label_converter)
+        self.filter_param, self.metrics_param = self._extract_params(config_dict)
 
         # dataset
         self.dataset_paths: List[str] = dataset_paths
@@ -126,7 +131,7 @@ class _EvaluationConfigBase(ABC):
     def support_tasks(self) -> List[str]:
         return self._support_tasks
 
-    def _check_tasks(self, evaluation_config_dict: Dict[str, Any]) -> EvaluationTask:
+    def _check_tasks(self, cfg: Dict[str, Any]) -> EvaluationTask:
         """Check if specified tasks are supported.
 
         Args:
@@ -138,32 +143,20 @@ class _EvaluationConfigBase(ABC):
         Raises:
             ValueError: If the keys of input config are unsupported.
         """
-        task: str = evaluation_config_dict["evaluation_task"]
-        if task not in self.support_tasks:
-            raise ValueError(f"Unsupported task: {task}\nSupported tasks: {self.support_tasks}")
-
-        # evaluation task
-        evaluation_task: EvaluationTask = set_task(task)
-        return evaluation_task
-
-    @staticmethod
-    @abstractmethod
-    def _extract_label_params(evaluation_config_dict: Dict[str, Any]) -> Dict[str, Any]:
-        pass
+        task_name: str = cfg["evaluation_task"]
+        if task_name not in self.support_tasks:
+            raise ValueError(f"Unsupported task: {task_name}\nSupported tasks: {self.support_tasks}")
+        return set_task(task_name)
 
     @abstractmethod
-    def _extract_params(
-        self,
-        evaluation_config_dict: Dict[str, Any],
-    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-        """Extract filtering and metrics parameters from evaluation config.
+    def _extract_params(self, cfg: Dict[str, Any]) -> Tuple[FilterParamType, MetricsParamType]:
+        """
 
         Args:
-            evaluation_config_dict (Dict[str, Any])
+            evaluation_config_dict (Dict[str, Any]): _description_
 
         Returns:
-            filter_params (Dict[str, Any]): filtering parameters.
-            metrics_params (Dict[str, Any]): metrics parameters.
+            Tuple[FilterParamType, MetricsParamType]: _description_
         """
         pass
 

@@ -19,10 +19,12 @@ from typing import Sequence
 from typing import Tuple
 from typing import Union
 
-from ._evaluation_config_base import _EvaluationConfigBase
+from .evaluation_config_base import EvaluationConfigBase
+from .params import SensingFilterParam
+from .params import SensingMetricsParam
 
 
-class SensingEvaluationConfig(_EvaluationConfigBase):
+class SensingEvaluationConfig(EvaluationConfigBase):
     """The class of config for sensing evaluation.
 
     Directory structure to save log and visualization result is following
@@ -48,7 +50,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         dataset_paths (List[str]): Dataset paths list.
         frame_id (Union[str, Sequence[str]]): FrameID(s) in string, where objects are with respect.
         result_root_directory (str): Directory path to save result.
-        evaluation_config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
+        config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
     """
 
@@ -59,45 +61,18 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         dataset_paths: List[str],
         frame_id: Union[str, Sequence[str]],
         result_root_directory: str,
-        evaluation_config_dict: Dict[str, Dict[str, Any]],
+        config_dict: Dict[str, Dict[str, Any]],
         load_raw_data: bool = False,
     ) -> None:
         super().__init__(
             dataset_paths=dataset_paths,
             frame_id=frame_id,
             result_root_directory=result_root_directory,
-            evaluation_config_dict=evaluation_config_dict,
+            config_dict=config_dict,
             load_raw_data=load_raw_data,
         )
 
-    @staticmethod
-    def _extract_label_params(evaluation_config_dict: Dict[str, Any]) -> Dict[str, Any]:
-        e_cfg: Dict[str, Any] = evaluation_config_dict.copy()
-        l_params: Dict[str, Any] = {
-            "label_prefix": e_cfg.get("label_prefix", "autoware"),
-            "merge_similar_labels": e_cfg.get("merge_similar_labels", False),
-            "allow_matching_unknown": True,
-            "count_label_number": e_cfg.get("count_label_number", True),
-        }
-        return l_params
-
-    def _extract_params(
-        self,
-        evaluation_config_dict: Dict[str, Any],
-    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-        """Extract parameters.
-        Args:
-            evaluation_config_dict (Dict[str, Any]): Configuration as dict.
-        Returns:
-            f_params (Dict[str, Any]): Parameters for filtering.
-            m_params (Dict[str, Any]): Parameters for metrics.
-        """
-        e_cfg: Dict[str, Any] = evaluation_config_dict.copy()
-        f_params: Dict[str, Any] = {"target_uuids": e_cfg.get("target_uuids", None)}
-        m_params: Dict[str, Any] = {
-            "box_scale_0m": e_cfg.get("box_scale_0m", 1.0),
-            "box_scale_100m": e_cfg.get("box_scale_100m", 1.0),
-            "min_points_threshold": e_cfg.get("min_points_threshold", 1),
-        }
-
-        return f_params, m_params
+    def _extract_params(self, cfg: Dict[str, Any]) -> Tuple[SensingFilterParam, SensingMetricsParam]:
+        filter_param = SensingFilterParam.from_dict(cfg)
+        metrics_param = SensingMetricsParam.from_dict(cfg)
+        return filter_param, metrics_param

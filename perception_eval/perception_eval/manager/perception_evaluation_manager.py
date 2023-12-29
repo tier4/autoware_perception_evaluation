@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from typing import List
+from typing import Optional
 from typing import Tuple
 from typing import TYPE_CHECKING
 
@@ -28,20 +29,19 @@ from perception_eval.result import PerceptionFrameResult
 from perception_eval.visualization import PerceptionVisualizer2D
 from perception_eval.visualization import PerceptionVisualizer3D
 
-from ._evaluation_manager_base import _EvaluationMangerBase
+from .evaluation_manager_base import EvaluationMangerBase
 
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
     from perception_eval.config import PerceptionEvaluationConfig
     from perception_eval.dataset import FrameGroundTruth
     from perception_eval.object import ObjectType
-    from perception_eval.result import CriticalObjectFilterConfig
     from perception_eval.result import DynamicObjectWithPerceptionResult
-    from perception_eval.result import PerceptionPassFailConfig
+    from perception_eval.result import PerceptionFrameConfig
     from perception_eval.visualization import PerceptionVisualizerType
 
 
-class PerceptionEvaluationManager(_EvaluationMangerBase):
+class PerceptionEvaluationManager(EvaluationMangerBase):
     """A manager class to evaluate perception task.
 
     Attributes:
@@ -56,24 +56,19 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         evaluator_config (PerceptionEvaluatorConfig): Configuration for perception evaluation.
     """
 
-    def __init__(
-        self,
-        evaluation_config: PerceptionEvaluationConfig,
-    ) -> None:
-        super().__init__(evaluation_config=evaluation_config)
+    def __init__(self, config: PerceptionEvaluationConfig) -> None:
+        super().__init__(config=config)
         self.__visualizer = (
-            PerceptionVisualizer2D(self.evaluator_config)
-            if self.evaluation_task.is_2d()
-            else PerceptionVisualizer3D(self.evaluator_config)
+            PerceptionVisualizer2D(self.config) if self.evaluation_task.is_2d() else PerceptionVisualizer3D(self.config)
         )
 
     @property
     def target_labels(self) -> List[LabelType]:
-        return self.evaluator_config.target_labels
+        return self.config.target_labels
 
     @property
     def metrics_config(self):
-        return self.evaluator_config.metrics_config
+        return self.config.metrics_config
 
     @property
     def visualizer(self) -> PerceptionVisualizerType:
@@ -84,9 +79,8 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         unix_time: int,
         ground_truth_now_frame: FrameGroundTruth,
         estimated_objects: List[ObjectType],
-        ros_critical_ground_truth_objects: List[ObjectType],
-        critical_object_filter_config: CriticalObjectFilterConfig,
-        frame_pass_fail_config: PerceptionPassFailConfig,
+        frame_config: Optional[PerceptionFrameConfig] = None,
+        critical_ground_truth_objects: Optional[List[ObjectType]] = None,
     ) -> PerceptionFrameResult:
         """Get perception result at current frame.
 
@@ -101,10 +95,9 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             ground_truth_now_frame (FrameGroundTruth): FrameGroundTruth instance that has the closest
                 timestamp with `unix_time`.
             estimated_objects (List[ObjectType]): Estimated objects list.
-            ros_critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects filtered by ROS
+            critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects filtered by ROS
                 node to evaluate pass fail result.
-            critical_object_filter_config (CriticalObjectFilterConfig): Parameter config to filter objects.
-            frame_pass_fail_config (PerceptionPassFailConfig):Parameter config to evaluate pass/fail.
+            frame_config (PerceptionFrameConfig): Parameter config for frame.
 
         Returns:
             PerceptionFrameResult: Evaluation result.
@@ -114,25 +107,27 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             ground_truth_now_frame,
         )
 
+        if critical_ground_truth_objects is None:
+            critical_ground_truth_objects = ground_truth_now_frame.objects.copy()
+
+        if frame_config is None:
+            frame_config = PerceptionFrameConfig.from_eval_cfg(self.config)
+
         result = PerceptionFrameResult(
+            unix_time=unix_time,
+            frame_config=frame_config,
+            metrics_config=self.metrics_config,
             object_results=object_results,
             frame_ground_truth=ground_truth_now_frame,
-            metrics_config=self.metrics_config,
-            critical_object_filter_config=critical_object_filter_config,
-            frame_pass_fail_config=frame_pass_fail_config,
-            unix_time=unix_time,
-            target_labels=self.target_labels,
         )
 
         if len(self.frame_results) > 0:
             result.evaluate_frame(
-                ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
+                critical_ground_truth_objects=critical_ground_truth_objects,
                 previous_result=self.frame_results[-1],
             )
         else:
-            result.evaluate_frame(
-                ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
-            )
+            result.evaluate_frame(critical_ground_truth_objects=critical_ground_truth_objects)
 
         self.frame_results.append(result)
         return result
@@ -160,14 +155,14 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             objects=estimated_objects,
             is_gt=False,
             ego2map=frame_ground_truth.ego2map,
-            **self.filtering_params,
+            **self.filter_param.as_dict(),
         )
 
         frame_ground_truth.objects = filter_objects(
             objects=frame_ground_truth.objects,
             is_gt=True,
             ego2map=frame_ground_truth.ego2map,
-            **self.filtering_params,
+            **self.filter_param.as_dict(),
         )
 
         object_results = get_object_results(
@@ -175,15 +170,15 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             estimated_objects=estimated_objects,
             ground_truth_objects=frame_ground_truth.objects,
             target_labels=self.target_labels,
-            allow_matching_unknown=self.evaluator_config.label_params["allow_matching_unknown"],
-            matchable_thresholds=self.filtering_params["max_matchable_radii"],
+            # allow_matching_unknown=self.label_param["allow_matching_unknown"], TODO
+            # matchable_thresholds=self.filtering_params["max_matchable_radii"],
         )
 
-        if self.evaluator_config.filtering_params.get("target_uuids"):
+        if self.filter_param.target_uuids is not None:
             object_results = filter_object_results(
                 object_results=object_results,
                 ego2map=frame_ground_truth.ego2map,
-                target_uuids=self.filtering_params["target_uuids"],
+                target_uuids=self.filter_param.target_uuids,
             )
         return object_results, frame_ground_truth
 
@@ -204,20 +199,17 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             for label in target_labels:
                 all_frame_results[label].append(obj_result_dict[label])
                 all_num_gt[label] += num_gt_dict[label]
-            used_frame.append(int(frame.frame_name))
+            used_frame.append(frame.frame_number)
 
         # Calculate score
-        scene_metrics_score = MetricsScore(
-            config=self.metrics_config,
-            used_frame=used_frame,
-        )
-        if self.evaluator_config.metrics_config.detection_config is not None:
+        scene_metrics_score = MetricsScore(config=self.metrics_config, used_frame=used_frame)
+        if self.config.metrics_config.detection_config is not None:
             scene_metrics_score.evaluate_detection(all_frame_results, all_num_gt)
-        if self.evaluator_config.metrics_config.tracking_config is not None:
+        if self.config.metrics_config.tracking_config is not None:
             scene_metrics_score.evaluate_tracking(all_frame_results, all_num_gt)
-        if self.evaluator_config.metrics_config.prediction_config is not None:
+        if self.config.metrics_config.prediction_config is not None:
             pass
-        if self.evaluator_config.metrics_config.classification_config is not None:
+        if self.config.metrics_config.classification_config is not None:
             scene_metrics_score.evaluate_classification(all_frame_results, all_num_gt)
 
         return scene_metrics_score
