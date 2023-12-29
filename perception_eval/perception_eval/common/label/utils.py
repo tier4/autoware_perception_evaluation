@@ -5,6 +5,8 @@ from typing import Optional
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from perception_eval.object import ObjectType
+
     from .converter import LabelConverter
     from .types import LabelType
 
@@ -32,3 +34,16 @@ def set_target_lists(
     if target_labels is None or len(target_labels) == 0:
         return [label for label in label_converter.label_type]
     return [label_converter.convert_name(name) for name in target_labels]
+
+
+def is_same_label(object1: ObjectType, object2: ObjectType) -> bool:
+    """Return `True`, if both objects has the same label.
+
+    Args:
+        object1 (ObjectType): An object.
+        object2 (ObjectType): An object.
+
+    Returns:
+        bool: `True` if the label is same.
+    """
+    return object1.semantic_label == object2.semantic_label
