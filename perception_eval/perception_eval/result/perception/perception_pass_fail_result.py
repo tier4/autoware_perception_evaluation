@@ -96,7 +96,7 @@ class PassFailResult:
             object_results,
             self.frame_config.target_labels,
             MatchingMode.IOU2D if self.frame_config.evaluation_task.is_2d() else MatchingMode.PLANEDISTANCE,
-            self.frame_config.thresholds,
+            self.frame_config.success_thresholds,
         )
 
         self.critical_ground_truth_objects = critical_ground_truth_objects
@@ -151,7 +151,7 @@ class PassFailResult:
             matching_mode=MatchingMode.IOU2D
             if self.frame_config.evaluation_task.is_2d()
             else MatchingMode.PLANEDISTANCE,
-            matching_threshold_list=self.frame_config.thresholds,
+            matching_threshold_list=self.frame_config.success_thresholds,
         )
 
         # filter by critical_ground_truth_objects
