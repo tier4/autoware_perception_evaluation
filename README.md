@@ -59,9 +59,8 @@ Basically, most parts of the codes are same with [test/perception_lsim.py](perce
 ```python
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.manager import PerceptionEvaluationManager
-from perception_eval.common.object import DynamicObject
-from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
-from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from perception_eval.object import DynamicObject
+from perception_eval.dataset import load_all_datasets
 
 # REQUIRED:
 #   dataset_path: str
@@ -71,18 +70,15 @@ evaluation_config = PerceptionEvaluationConfig(
     dataset_paths=[dataset_path],
     frame_id="base_link",
     result_root_directory="./data/result",
-    evaluation_config_dict={"evaluation_task": "detection",...},
+    config_dict={"evaluation_task": "detection",...},
     load_raw_data=True,
 )
 
 # initialize Evaluation Manager
-evaluator = PerceptionEvaluationManager(evaluation_config=evaluation_config)
+evaluator = PerceptionEvaluationManager(evaluation_config)
 
-critical_object_filter_config = CriticalObjectFilterConfig(...)
-pass_fail_config = PerceptionPassFailConfig(...)
-
-for frame in datasets:
-    unix_time = frame.unix_time
+for frame in evaluator.ground_truth_frames:
+    unix_time: int = frame.unix_time
     pointcloud: numpy.ndarray = frame.raw_data["lidar"]
     outputs = model(pointcloud)
     # create a list of estimated objects with your model's outputs
@@ -92,9 +88,6 @@ for frame in datasets:
         unix_time=unix_time,
         ground_truth_now_frame=frame,
         estimated_objects=estimated_objects,
-        ros_critical_ground_truth_objects=frame.objects,
-        critical_object_filter_config=critical_object_filter_config,
-        frame_pass_fail_config=pass_fail_config,
     )
 
 scene_score = evaluator.get_scene_result()
