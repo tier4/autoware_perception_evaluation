@@ -116,7 +116,7 @@ class PerceptionLSimMoc:
             ignore_attributes=["cycle_state.without_rider"],
             max_x_position_list=[30.0, 30.0, 30.0, 30.0],
             max_y_position_list=[30.0, 30.0, 30.0, 30.0],
-            thresholds=[2.0, 2.0, 2.0, 2.0],
+            success_thresholds=[2.0, 2.0, 2.0, 2.0],
         )
 
         frame_result = self.evaluator.add_frame_result(

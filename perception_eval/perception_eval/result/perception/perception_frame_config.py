@@ -19,6 +19,7 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
 
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.threshold import check_thresholds
 from perception_eval.config.params import PerceptionFilterParam
@@ -62,7 +63,7 @@ class PerceptionFrameConfig:
         confidence_threshold_list: Optional[List[float]] = None,
         target_uuids: Optional[List[str]] = None,
         ignore_attributes: Optional[List[str]] = None,
-        thresholds: Optional[List[float]] = None,
+        success_thresholds: Optional[List[float]] = None,
     ) -> None:
         """
         Args:
@@ -102,13 +103,22 @@ class PerceptionFrameConfig:
         )
 
         num_elements: int = len(self.target_labels)
-        if thresholds is None:
-            self.thresholds = None
+        if success_thresholds is None:
+            self.success_thresholds = None
         else:
-            self.thresholds = check_thresholds(thresholds, num_elements)
+            self.success_thresholds = check_thresholds(success_thresholds, num_elements)
 
     @classmethod
     def from_eval_cfg(cls, eval_cfg: PerceptionEvaluationConfig) -> PerceptionFrameConfig:
+        if eval_cfg.evaluation_task.is_3d():
+            success_thresholds = eval_cfg.metrics_param.plane_distance_thresholds
+        else:
+            success_thresholds = (
+                None
+                if eval_cfg.evaluation_task == EvaluationTask.CLASSIFICATION2D
+                else eval_cfg.metrics_param.iou_2d_thresholds
+            )
+
         return cls(
             evaluator_config=eval_cfg,
             target_labels=eval_cfg.target_labels,
@@ -120,5 +130,5 @@ class PerceptionFrameConfig:
             confidence_threshold_list=eval_cfg.filter_param.confidence_threshold_list,
             target_uuids=eval_cfg.filter_param.target_uuids,
             ignore_attributes=eval_cfg.filter_param.ignore_attributes,
-            thresholds=eval_cfg.metrics_param.plane_distance_thresholds,
+            success_thresholds=success_thresholds,
         )

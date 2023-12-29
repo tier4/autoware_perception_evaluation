@@ -115,14 +115,14 @@ class PerceptionLSimMoc:
             else ["car", "bicycle", "pedestrian", "motorbike"]
         )
         ignore_attributes = ["cycle_state.without_rider"] if self.label_prefix == "autoware" else None
-        thresholds = None if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5]
+        success_thresholds = None if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5]
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam
         frame_config = PerceptionFrameConfig(
             evaluator_config=self.evaluator.config,
             target_labels=target_labels,
             ignore_attributes=ignore_attributes,
-            thresholds=thresholds,
+            success_thresholds=success_thresholds,
         )
 
         frame_result = self.evaluator.add_frame_result(
