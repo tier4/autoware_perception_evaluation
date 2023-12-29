@@ -27,10 +27,10 @@ from perception_eval.result import SensingFrameResult
 from perception_eval.util.math import get_bbox_scale
 from perception_eval.visualization import SensingVisualizer
 
-from ._evaluation_manager_base import _EvaluationMangerBase
+from .evaluation_manager_base import EvaluationMangerBase
 
 
-class SensingEvaluationManager(_EvaluationMangerBase):
+class SensingEvaluationManager(EvaluationMangerBase):
     """A manager class to evaluate sensing task.
 
     Attributes:
@@ -42,12 +42,9 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         evaluation_config (SensingEvaluationConfig): Configuration for sensing evaluation.
     """
 
-    def __init__(
-        self,
-        evaluation_config: SensingEvaluationConfig,
-    ) -> None:
-        super().__init__(evaluation_config)
-        self.__visualizer = SensingVisualizer(self.evaluator_config)
+    def __init__(self, config: SensingEvaluationConfig) -> None:
+        super().__init__(config)
+        self.__visualizer = SensingVisualizer(self.config)
 
     @property
     def visualizer(self) -> SensingVisualizer:
@@ -79,8 +76,8 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         """
         if sensing_frame_config is None:
             sensing_frame_config = SensingFrameConfig(
-                **self.filtering_params,
-                **self.metrics_params,
+                **self.filter_param.as_dict(),
+                **self.metrics_param.as_dict(),
             )
 
         # Crop pointcloud for non-detection area
@@ -99,7 +96,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         result = SensingFrameResult(
             sensing_frame_config=sensing_frame_config,
             unix_time=unix_time,
-            frame_name=ground_truth_now_frame.frame_name,
+            frame_number=ground_truth_now_frame.frame_number,
         )
 
         result.evaluate_frame(
@@ -160,15 +157,13 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             )
 
         # Crop pointcloud for non-detection outside of objects' bbox
-        box_scale_0m: float = self.evaluator_config.metrics_params["box_scale_0m"]
-        box_scale_100m: float = self.evaluator_config.metrics_params["box_scale_100m"]
         for i, points in enumerate(cropped_pointcloud):
             outside_points: np.ndarray = points.copy()
             for ground_truth in ground_truth_objects:
                 bbox_scale: float = get_bbox_scale(
                     distance=ground_truth.get_distance(ego2map=ego2map),
-                    box_scale_0m=box_scale_0m,
-                    box_scale_100m=box_scale_100m,
+                    box_scale_0m=self.metrics_param.box_scale_0m,
+                    box_scale_100m=self.metrics_param.box_scale_100m,
                 )
                 outside_points: np.ndarray = ground_truth.crop_pointcloud(
                     pointcloud=outside_points,

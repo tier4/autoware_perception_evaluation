@@ -237,7 +237,7 @@ class PerceptionVisualizer2D:
                     axes[row, col].set_axis_off()
                     axes[row, col].set_title(f"{camera_name}")
 
-        frame_number: str = frame_result.frame_ground_truth.frame_name
+        frame_number: int = frame_result.frame_number
         self.__figure.suptitle(f"Frame: {frame_number}")
 
         # Plot objects

@@ -58,7 +58,7 @@ def _sample_to_frame(
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
     frame_id: FrameID,
-    frame_name: str,
+    frame_number: int,
     load_raw_data: bool,
 ) -> FrameGroundTruth:
     """Load FrameGroundTruth instance from sample record.
@@ -70,7 +70,7 @@ def _sample_to_frame(
         evaluation_tasks (EvaluationTask): The evaluation task.
         label_converter (LabelConverter): LabelConvertor instance.
         frame_id (FrameID): FrameID instance.
-        frame_name (str): Name of frame, number of frame is used.
+        frame_number (int): The number of frame, number of frame is used.
         load_raw_data (bool): Whether load pointcloud/image data.
 
     Raises:
@@ -137,7 +137,7 @@ def _sample_to_frame(
 
     frame = FrameGroundTruth(
         unix_time=unix_time_,
-        frame_name=frame_name,
+        frame_number=frame_number,
         objects=objects_,
         ego2map=ego2map,
         raw_data=raw_data,
@@ -434,7 +434,7 @@ def _sample_to_frame_2d(
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
     frame_ids: List[FrameID],
-    frame_name: str,
+    frame_number: int,
     load_raw_data: bool,
 ) -> FrameGroundTruth:
     """Returns FrameGroundTruth constructed with DynamicObject2D.
@@ -518,7 +518,7 @@ def _sample_to_frame_2d(
 
     frame = FrameGroundTruth(
         unix_time=unix_time,
-        frame_name=frame_name,
+        frame_number=frame_number,
         objects=objects_,
         raw_data=raw_data,
     )

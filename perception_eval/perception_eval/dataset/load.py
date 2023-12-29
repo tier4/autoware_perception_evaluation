@@ -145,7 +145,7 @@ def _load_dataset(
                 evaluation_task=evaluation_task,
                 label_converter=label_converter,
                 frame_ids=frame_ids,
-                frame_name=str(n),
+                frame_number=n,
                 load_raw_data=load_raw_data,
             )
         else:
@@ -157,7 +157,7 @@ def _load_dataset(
                 evaluation_task=evaluation_task,
                 label_converter=label_converter,
                 frame_id=frame_ids[0],
-                frame_name=str(n),
+                frame_number=n,
                 load_raw_data=load_raw_data,
             )
         dataset.append(frame)
