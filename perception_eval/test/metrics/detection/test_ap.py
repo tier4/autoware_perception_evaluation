@@ -32,8 +32,8 @@ from perception_eval.metrics.detection.ap import Ap
 from perception_eval.metrics.detection.tp_metrics import TPMetricsAp
 from perception_eval.metrics.detection.tp_metrics import TPMetricsAph
 from perception_eval.object import DynamicObject
-from perception_eval.result import DynamicObjectWithPerceptionResult
 from perception_eval.result import get_object_results
+from perception_eval.result import PerceptionObjectResult
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -238,7 +238,7 @@ class TestAp(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
 
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_trans_estimated_objects,
                     ground_truth_objects=diff_trans_ground_truth_objects,
@@ -508,7 +508,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     min_point_numbers=self.min_point_numbers,
                 )
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_estimated_objects,
                     ground_truth_objects=diff_yaw_ground_truth_objects,
@@ -567,7 +567,7 @@ class TestAp(unittest.TestCase):
             target_labels=[AutowareLabel.MOTORBIKE],
         )
 
-        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        object_results: List[PerceptionObjectResult] = get_object_results(
             evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
@@ -681,7 +681,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     min_point_numbers=self.min_point_numbers,
                 )
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_trans_estimated_objects,
                     ground_truth_objects=diff_trans_ground_truth_objects,
@@ -794,7 +794,7 @@ class TestAp(unittest.TestCase):
                     target_labels=self.target_labels,
                 )
 
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=ground_truth_objects,
@@ -858,7 +858,7 @@ class TestAp(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             min_point_numbers=self.min_point_numbers,
         )
-        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        object_results: List[PerceptionObjectResult] = get_object_results(
             evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
@@ -926,7 +926,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     min_point_numbers=self.min_point_numbers,
                 )
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
@@ -1010,7 +1010,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     min_point_numbers=self.min_point_numbers,
                 )
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
@@ -1070,7 +1070,7 @@ class TestAp(unittest.TestCase):
             min_point_numbers=self.min_point_numbers,
         )
 
-        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        object_results: List[PerceptionObjectResult] = get_object_results(
             evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
@@ -1140,7 +1140,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     min_point_numbers=self.min_point_numbers,
                 )
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
@@ -1219,7 +1219,7 @@ class TestAp(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     min_point_numbers=self.min_point_numbers,
                 )
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
@@ -1282,7 +1282,7 @@ class TestAp(unittest.TestCase):
             min_point_numbers=self.min_point_numbers,
         )
 
-        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        object_results: List[PerceptionObjectResult] = get_object_results(
             evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,

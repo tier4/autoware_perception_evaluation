@@ -30,7 +30,7 @@ from perception_eval.common.threshold import get_label_threshold
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
     from perception_eval.matching import MatchingMode
-    from perception_eval.result import DynamicObjectWithPerceptionResult
+    from perception_eval.result import PerceptionObjectResult
 
     from .tp_metrics import TPMetricsAp
     from .tp_metrics import TPMetricsAph
@@ -55,7 +55,7 @@ class Ap:
 
     Args:
         tp_metrics (TPMetrics): Mode of TP (True positive) metrics.
-        object_results (List[List[DynamicObjectWithPerceptionResult]]): Object results list.
+        object_results (List[List[PerceptionObjectResult]]): Object results list.
         num_ground_truth (int): Number of ground truths.
         target_labels (List[LabelType]): Target labels to evaluate.
         matching_mode (MatchingMode): Matching instance.
@@ -65,7 +65,7 @@ class Ap:
     def __init__(
         self,
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
-        object_results: List[List[DynamicObjectWithPerceptionResult]],
+        object_results: List[List[PerceptionObjectResult]],
         num_ground_truth: int,
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
@@ -78,7 +78,7 @@ class Ap:
         self.matching_mode: MatchingMode = matching_mode
         self.matching_threshold_list: List[float] = matching_threshold_list
 
-        all_object_results: List[DynamicObjectWithPerceptionResult] = []
+        all_object_results: List[PerceptionObjectResult] = []
         if len(object_results) == 0 or not isinstance(object_results[0], list):
             all_object_results = object_results
         else:
@@ -87,7 +87,7 @@ class Ap:
         self.objects_results_num: int = len(all_object_results)
 
         # sort by confidence
-        lambda_func: Callable[[DynamicObjectWithPerceptionResult], float] = lambda x: x.estimated_object.semantic_score
+        lambda_func: Callable[[PerceptionObjectResult], float] = lambda x: x.estimated_object.semantic_score
         all_object_results.sort(key=lambda_func, reverse=True)
 
         # tp and fp from object results ordered by confidence
@@ -219,14 +219,14 @@ class Ap:
     def _calculate_tp_fp(
         self,
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
-        object_results: List[DynamicObjectWithPerceptionResult],
+        object_results: List[PerceptionObjectResult],
     ) -> Tuple[List[float], List[float]]:
         """
         Calculate TP (true positive) and FP (false positive).
 
         Args:
             tp_metrics (TPMetrics): The mode of TP (True positive) metrics
-            object_results (List[DynamicObjectWithPerceptionResult]): the list of objects with result
+            object_results (List[PerceptionObjectResult]): the list of objects with result
 
         Return:
             Tuple[tp_list, fp_list]
@@ -326,14 +326,14 @@ class Ap:
 
     @staticmethod
     def _calculate_average_sd(
-        object_results: List[DynamicObjectWithPerceptionResult],
+        object_results: List[PerceptionObjectResult],
         matching_mode: MatchingMode,
     ) -> Tuple[Optional[float], Optional[float]]:
         """[summary]
         Calculate average and standard deviation.
 
         Args:
-            object_results (List[DynamicObjectWithPerceptionResult]): The object results
+            object_results (List[PerceptionObjectResult]): The object results
             matching_mode (MatchingMode): [description]
 
         Returns:

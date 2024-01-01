@@ -21,8 +21,8 @@ import unittest
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.object import DynamicObject
-from perception_eval.result import DynamicObjectWithPerceptionResult
 from perception_eval.result import get_object_results
+from perception_eval.result import PerceptionObjectResult
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -72,7 +72,7 @@ class TestObjectResult(unittest.TestCase):
                     diff_yaw=0.0,
                 )
 
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=ground_truth_objects,

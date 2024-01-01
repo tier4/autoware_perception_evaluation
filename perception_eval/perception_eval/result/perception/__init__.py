@@ -13,16 +13,16 @@
 # limitations under the License.
 
 
-from .perception_frame_config import PerceptionFrameConfig
-from .perception_frame_result import get_object_status
-from .perception_frame_result import PerceptionFrameResult
-from .perception_result import DynamicObjectWithPerceptionResult
-from .perception_result import get_object_results
+from .frame_config import PerceptionFrameConfig
+from .frame_result import get_object_status
+from .frame_result import PerceptionFrameResult
+from .object_result import get_object_results
+from .object_result import PerceptionObjectResult
 
 __all__ = (
     "PerceptionFrameConfig",
     "get_object_status",
     "PerceptionFrameResult",
-    "DynamicObjectWithPerceptionResult",
+    "PerceptionObjectResult",
     "get_object_results",
 )

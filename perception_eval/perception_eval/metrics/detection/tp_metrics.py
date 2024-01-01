@@ -23,7 +23,7 @@ import numpy as np
 from perception_eval.common.schema import FrameID
 
 if TYPE_CHECKING:
-    from perception_eval.result import DynamicObjectWithPerceptionResult
+    from perception_eval.result import PerceptionObjectResult
 
 
 class TPMetrics(metaclass=ABCMeta):
@@ -39,14 +39,11 @@ class TPMetrics(metaclass=ABCMeta):
         super().__init__()
 
     @abstractmethod
-    def get_value(
-        self,
-        object_result: DynamicObjectWithPerceptionResult,
-    ) -> float:
+    def get_value(self, object_result: PerceptionObjectResult) -> float:
         """Get TP metrics value
 
         Args:
-            object_result (DynamicObjectWithPerceptionResult): Object result.
+            object_result (PerceptionObjectResult): Object result.
 
         Returns:
             float: TP metrics value
@@ -64,16 +61,13 @@ class TPMetricsAp(TPMetrics):
 
     mode: str = "TPMetricsAp"
 
-    def get_value(
-        self,
-        object_result: DynamicObjectWithPerceptionResult,
-    ) -> float:
+    def get_value(self, object_result: PerceptionObjectResult) -> float:
         """Get TP (True positive) value.
 
         This function always returns 1.0.
 
         Args:
-            object_result (DynamicObjectWithPerceptionResult): Object result.
+            object_result (PerceptionObjectResult): Object result.
 
         Returns:
             float: TP value, 1.0.
@@ -91,16 +85,13 @@ class TPMetricsAph(TPMetrics):
 
     mode: str = "TPMetricsAph"
 
-    def get_value(
-        self,
-        object_result: DynamicObjectWithPerceptionResult,
-    ) -> float:
+    def get_value(self, object_result: PerceptionObjectResult) -> float:
         """[summary]
         Get TP (True positive) value, the heading similarity rate using for APH.
         APH is used in evaluation for waymo dataset.
 
         Args:
-            object_result (DynamicObjectWithPerceptionResult): Object result.
+            object_result (PerceptionObjectResult): Object result.
 
         Returns:
             float: The heading similarity rate using for APH.
@@ -136,12 +127,12 @@ class TPMetricsConfidence(TPMetrics):
 
     mode: str = "TPMetricsConfidence"
 
-    def get_value(self, object_result: DynamicObjectWithPerceptionResult) -> float:
+    def get_value(self, object_result: PerceptionObjectResult) -> float:
         """[summary]
         Get TP (True positive) value, the heading similarity rate using with confidence.
 
         Args:
-            object_result (DynamicObjectWithPerceptionResult): The object result
+            object_result (PerceptionObjectResult): The object result
 
         Returns:
             float: TP (True positive) value, confidence score of estimated object.

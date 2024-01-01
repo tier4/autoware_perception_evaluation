@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .sensing_frame_config import SensingFrameConfig
-from .sensing_frame_result import SensingFrameResult
-from .sensing_result import DynamicObjectWithSensingResult
+from .frame_config import SensingFrameConfig
+from .frame_result import SensingFrameResult
+from .object_result import SensingObjectResult
 
-__all__ = ("SensingFrameConfig", "SensingFrameResult", "DynamicObjectWithSensingResult")
+__all__ = ("SensingFrameConfig", "SensingFrameResult", "SensingObjectResult")

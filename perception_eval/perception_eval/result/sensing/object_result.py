@@ -19,9 +19,8 @@ from perception_eval.common.schema import Visibility
 from perception_eval.object import DynamicObject
 
 
-class DynamicObjectWithSensingResult:
-    """[summary]
-    The class to evaluate sensing result for dynamic object.
+class SensingObjectResult:
+    """The class to evaluate sensing result for dynamic object.
 
     Attributes:
         self.ground_truth_object (DynamicObject): The target DynamicObject.

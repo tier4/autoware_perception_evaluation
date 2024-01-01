@@ -32,8 +32,8 @@ from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import TrafficLightLabel
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.object import DynamicObject2D
-from perception_eval.result import DynamicObjectWithPerceptionResult
 from perception_eval.result import PerceptionFrameResult
+from perception_eval.result import PerceptionObjectResult
 from perception_eval.visualization.color import ColorMap
 from PIL import Image
 from PIL.Image import Image as PILImage
@@ -299,7 +299,7 @@ class PerceptionVisualizer2D:
 
     def plot_objects(
         self,
-        objects: List[Union[DynamicObject2D, DynamicObjectWithPerceptionResult]],
+        objects: List[Union[DynamicObject2D, PerceptionObjectResult]],
         is_ground_truth: bool,
         axes: Optional[np.ndarray] = None,
         color: Optional[str] = None,
@@ -315,7 +315,7 @@ class PerceptionVisualizer2D:
         ```
 
         Args:
-            objects (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): The list of object being visualized.
+            objects (List[Union[DynamicObject, PerceptionObjectResult]]): The list of object being visualized.
             is_ground_truth (bool): Whether ground truth object is.
             axes (Optional[Axes]): Axes instances. If not specified, new Axes is created. Defaults to None.
             color (Optional[str]): Name of color, red/green/blue/yellow/cyan/black. Defaults to None.
@@ -331,7 +331,7 @@ class PerceptionVisualizer2D:
         edge_color = self.__cmap.get_simple(color)
         object_text = "GT" if is_ground_truth else "Est"
         for object_ in objects:
-            if isinstance(object_, DynamicObjectWithPerceptionResult):
+            if isinstance(object_, PerceptionObjectResult):
                 object_: DynamicObject2D = object_.ground_truth_object if is_ground_truth else object_.estimated_object
             if object_ is None or object_.roi is None:
                 continue

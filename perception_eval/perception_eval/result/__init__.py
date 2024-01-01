@@ -18,5 +18,5 @@ from .perception import *  # noqa
 from .sensing import *  # noqa
 
 # type aliases
-ObjectResultType = Union[DynamicObjectWithPerceptionResult, DynamicObjectWithSensingResult]  # noqa
+ObjectResultType = Union[PerceptionObjectResult, SensingObjectResult]  # noqa
 FrameResultType = Union[PerceptionFrameResult, SensingFrameResult]  # noqa

@@ -36,7 +36,7 @@
 
 ### Frame 単位でのデータ構造
 
-- SensingFrameResult: 1 frame に対しての検出・非検出対象エリアに対する点群のセンシング結果[(参照)](../../../perception_eval/perception_eval/result/sensing/sensing_frame_result.py)
+- SensingFrameResult: 1 frame に対しての検出・非検出対象エリアに対する点群のセンシング結果[(参照)](../../../perception_eval/perception_eval/result/sensing/frame_result.py)
 
   ```txt
     Arguments:
@@ -65,7 +65,7 @@
 
   メソッドを呼ぶことで評価が実行される．
 
-- SensingFrameConfig: Frame 単位での評価用の config[(参照)](../../../perception_eval/perception_eval/result/sensing/sensing_frame_config.py)
+- SensingFrameConfig: Frame 単位での評価用の config[(参照)](../../../perception_eval/perception_eval/result/sensing/frame_config.py)
 
   ```txt
     Arguments:
@@ -83,7 +83,7 @@
 
 ### Object 単位でのデータ構造
 
-- DynamicObjectWithSensingResult: 1 ground truth object（アノテーションされた bounding box）に対しての結果[(参照)](../../../perception_eval/perception_eval/result/sensing/sensing_result.py)
+- DynamicObjectWithSensingResult: 1 ground truth object（アノテーションされた bounding box）に対しての結果[(参照)](../../../perception_eval/perception_eval/result/sensing/object_result.py)
 
   ```txt
     Arguments:

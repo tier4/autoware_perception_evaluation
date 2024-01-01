@@ -232,11 +232,11 @@
         Usage: {'plane_distance_thresholds', 'iou_3d_thresholds', 'center_distance_thresholds', 'target_labels', 'iou_2d_thresholds'}
     ```
 
-### `<class> CriticalObjectFilterConfig(...)`
+### `<class> PerceptionFrameConfig(...)`
 
 - An interface to determine target objects dynamically
 - Specify in every frame, not in initialization of `PerceptionEvaluationManger`
-- See [perception_eval/result/perception/perception_frame_config](../../../perception_eval/perception_eval/result/perception/perception_frame_config.py)
+- See [perception_eval/result/perception/frame_config](../../../perception_eval/perception_eval/result/perception/frame_config.py)
 
 | Arguments                   |             type             |    Mandatory    | Description                                                                                                     |
 | :-------------------------- | :--------------------------: | :-------------: | :-------------------------------------------------------------------------------------------------------------- |
@@ -252,18 +252,6 @@
 | `target_uuids`              |         `List[str]`          |       No        | List of GTs' ID. Specify if you want to evaluated specific objects                                              |
 
 \* It is necessary to specify either **max_x/y_position_list** or **max/min_distance_list**. Another groups must be `None`.
-
-### `<class> PerceptionPassFailConfig(...)`
-
-- A class to decide Pass / Fail. For Pass/Fail decision, determine TP/FP by **Plane distance**.
-- Specify in every frame, not in initializing `PerceptionEvaluationManager`.
-- For the details, see [perception_eval/result/perception/perception_frame_config](../../../perception_eval/perception_eval/result/perception/perception_frame_config.py).
-
-| Arguments                 |             type             | Mandatory | Description                                                                                                            |
-| :------------------------ | :--------------------------: | :-------: | :--------------------------------------------------------------------------------------------------------------------- |
-| `evaluator_config`        | `PerceptionEvaluationConfig` |    Yes    | Configuration settings which `PerceptionEvaluationManager` has.                                                        |
-| `target_labels`           |         `List[str]`          |    No     | List of name of target labels.                                                                                         |
-| `matching_threshold_list` |        `List[float]`         |    No     | Thresholds of matching. For 3D evaluation, plane distance will be used. For 2D detection/tracking, IoU2D will be used. |
 
 ### Execute evaluation
 

@@ -50,7 +50,7 @@
 
 ### SensingFrameResult
 
-1 frame に対しての検出・非検出対象エリアに対する点群のセンシング結果[(参照)](../../../perception_eval/perception_eval/result/sensing/sensing_frame_result.py)
+1 frame に対しての検出・非検出対象エリアに対する点群のセンシング結果[(参照)](../../../perception_eval/perception_eval/result/sensing/frame_result.py)
 
 | Argument               |         type         | Description    |
 | :--------------------- | :------------------: | :------------- |
@@ -76,7 +76,7 @@
 
 ### DynamicObjectWithSensingResult
 
-1 つの GT オブジェクト（アノテーションされた bounding box）に対しての結果[(参照)](../../../perception_eval/perception_eval/result/sensing/sensing_result.py)
+1 つの GT オブジェクト（アノテーションされた bounding box）に対しての結果[(参照)](../../../perception_eval/perception_eval/result/sensing/object_result.py)
 
 | Argument                       |         type          | Description                    |
 | :----------------------------- | :-------------------: | :----------------------------- |

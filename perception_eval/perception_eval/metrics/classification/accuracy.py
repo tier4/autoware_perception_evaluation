@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
-    from perception_eval.result import DynamicObjectWithPerceptionResult
+    from perception_eval.result import PerceptionObjectResult
 
 
 class ClassificationAccuracy:
@@ -42,14 +42,14 @@ class ClassificationAccuracy:
         results (Dict[str, float]): Dict that items are scores mapped by score names.
 
     Args:
-        object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
+        object_results (List[PerceptionObjectResult]): Object results list.
         num_ground_truth (int): Number of ground truths.
         target_labels (List[LabelType]): Target labels list.
     """
 
     def __init__(
         self,
-        object_results: List[DynamicObjectWithPerceptionResult],
+        object_results: List[PerceptionObjectResult],
         num_ground_truth: int,
         target_labels: List[LabelType],
     ) -> None:
@@ -79,14 +79,11 @@ class ClassificationAccuracy:
             }
         )
 
-    def calculate_tp_fp(
-        self,
-        object_results: List[DynamicObjectWithPerceptionResult],
-    ) -> Tuple[int, int]:
+    def calculate_tp_fp(self, object_results: List[PerceptionObjectResult]) -> Tuple[int, int]:
         """Calculate accuracy score.
 
         Args:
-            object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
+            object_results (List[PerceptionObjectResult]): Object results list.
 
         Returns:
             num_tp (int): Number of TP results.
