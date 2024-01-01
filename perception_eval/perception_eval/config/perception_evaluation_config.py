@@ -19,6 +19,7 @@ from typing import Sequence
 from typing import Tuple
 from typing import Union
 
+from perception_eval.matching import MatchingPolicy
 from perception_eval.metrics import MetricsScoreConfig
 
 from .evaluation_config_base import EvaluationConfigBase
@@ -83,6 +84,8 @@ class PerceptionEvaluationConfig(EvaluationConfigBase):
             config_dict=config_dict,
             load_raw_data=load_raw_data,
         )
+
+        self.matching_policy = MatchingPolicy.from_dict(config_dict)
 
         self.metrics_config = MetricsScoreConfig(self.metrics_param)
 

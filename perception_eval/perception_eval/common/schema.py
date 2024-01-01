@@ -17,9 +17,13 @@ from __future__ import annotations
 from enum import Enum
 import logging
 from typing import Dict
+from typing import TYPE_CHECKING
 from typing import Union
 
 from perception_eval.common.evaluation_task import EvaluationTask
+
+if TYPE_CHECKING:
+    from perception_eval.object import ObjectType
 
 
 class FrameID(Enum):
@@ -89,6 +93,19 @@ class FrameID(Enum):
             return FrameID.MAP
         else:
             raise ValueError(f"Unexpected task: {task}")
+
+
+def is_same_frame_id(object1: ObjectType, object2: ObjectType) -> bool:
+    """Returns `True` if the both objects has same frame id.
+
+    Args:
+        object1 (ObjectType): An object.
+        object2 (ObjectType): An object.
+
+    Returns:
+        bool: `True` if the frame id is same.
+    """
+    return object1.frame_id == object2.frame_id
 
 
 class Visibility(Enum):

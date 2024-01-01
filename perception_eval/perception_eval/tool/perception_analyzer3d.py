@@ -121,19 +121,19 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             scenario_obj: Optional[Dict[str, Any]] = yaml.safe_load(scenario_file)
 
         p_cfg: Dict[str, Any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
-        eval_cfg_dict: Dict[str, Any] = p_cfg["evaluation_config_dict"]
+        config_dict: Dict[str, Any] = p_cfg["evaluation_config_dict"]
 
-        eval_cfg_dict["label_prefix"] = "autoware"
+        config_dict["label_prefix"] = "autoware"
 
-        evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
+        config = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
-            frame_id="base_link" if eval_cfg_dict["evaluation_task"] == "detection" else "map",
+            frame_id="base_link" if config_dict["evaluation_task"] == "detection" else "map",
             result_root_directory=result_root_directory,
-            evaluation_config_dict=eval_cfg_dict,
+            config_dict=config_dict,
             load_raw_data=False,
         )
 
-        return cls(evaluation_config, num_area_division)
+        return cls(config, num_area_division)
 
     @property
     def columns(self) -> List[str]:

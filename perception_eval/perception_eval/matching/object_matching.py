@@ -53,6 +53,11 @@ class MatchingMode(Enum):
     def __str__(self) -> str:
         return self.value
 
+    @classmethod
+    def from_str(cls, name: str) -> MatchingMode:
+        assert name in cls.__members__, f"{name} is not enum member"
+        return cls.__members__[name]
+
 
 class MatchingMethod(ABC):
     """A base class for matching method class.
