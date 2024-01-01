@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from .matching_policy import MatchingPolicy
 from .object_matching import CenterDistanceMatching
 from .object_matching import IOU2dMatching
 from .object_matching import IOU3dMatching
@@ -20,6 +21,7 @@ from .object_matching import MatchingMode
 from .object_matching import PlaneDistanceMatching
 
 __all__ = (
+    "MatchingPolicy",
     "CenterDistanceMatching",
     "IOU2dMatching",
     "IOU3dMatching",

@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
     from perception_eval.config import PerceptionEvaluationConfig
     from perception_eval.dataset import FrameGroundTruth
+    from perception_eval.matching import MatchingPolicy
     from perception_eval.object import ObjectType
     from perception_eval.result import DynamicObjectWithPerceptionResult
     from perception_eval.result import PerceptionFrameConfig
@@ -65,6 +66,10 @@ class PerceptionEvaluationManager(EvaluationMangerBase):
     @property
     def target_labels(self) -> List[LabelType]:
         return self.config.target_labels
+
+    @property
+    def matching_policy(self) -> MatchingPolicy:
+        return self.config.matching_policy
 
     @property
     def metrics_config(self):
@@ -170,8 +175,7 @@ class PerceptionEvaluationManager(EvaluationMangerBase):
             estimated_objects=estimated_objects,
             ground_truth_objects=frame_ground_truth.objects,
             target_labels=self.target_labels,
-            # allow_matching_unknown=self.label_param["allow_matching_unknown"], TODO
-            # matchable_thresholds=self.filtering_params["max_matchable_radii"],
+            matching_policy=self.matching_policy,
         )
 
         if self.filter_param.target_uuids is not None:

@@ -70,11 +70,11 @@ class PerceptionLSimMoc:
             "iou_2d_thresholds": [0.5, 0.5, 0.5, 0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
             "iou_3d_thresholds": [0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
             "min_point_numbers": [0, 0, 0, 0],
-            "max_matchable_radii": 5.0,  # = [5.0, 5.0, 5.0, 5.0]
+            "matching_label_policy": "strict",
+            "matchable_thresholds": [5.0, 5.0, 5.0, 5.0],
             # label parameters
             "label_prefix": "autoware",
             "merge_similar_labels": False,
-            "allow_matching_unknown": True,
         }
 
         evaluation_config = PerceptionEvaluationConfig(

@@ -88,19 +88,19 @@ class SensingVisualizer:
             scenario_obj: Optional[Dict[str, any]] = yaml.safe_load(scenario_file)
 
         s_cfg: Dict[str, any] = scenario_obj["Evaluation"]["SensingEvaluationConfig"]
-        eval_cfg_dict: Dict[str, any] = s_cfg["evaluation_config_dict"]
+        config_dict: Dict[str, any] = s_cfg["evaluation_config_dict"]
 
-        eval_cfg_dict["label_prefix"] = "autoware"
+        config_dict["label_prefix"] = "autoware"
 
-        evaluation_config: SensingEvaluationConfig = SensingEvaluationConfig(
+        config: SensingEvaluationConfig = SensingEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id="base_link",
             result_root_directory=result_root_directory,
-            evaluation_config_dict=eval_cfg_dict,
+            config_dict=config_dict,
             load_raw_data=False,
         )
 
-        return cls(evaluation_config, **kwargs)
+        return cls(config, **kwargs)
 
     @property
     def config(self) -> SensingEvaluationConfig:

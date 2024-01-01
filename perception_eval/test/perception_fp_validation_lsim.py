@@ -41,10 +41,10 @@ class FPValidationLsimMoc:
             "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
             "max_x_position": 102.4,
             "max_y_position": 102.4,
-            "max_matchable_radii": [5.0, 3.0, 3.0, 3.0],
+            "matching_label_policy": "strict",
+            "matchable_thresholds": [5.0, 3.0, 3.0, 3.0],
             "merge_similar_labels": False,
             "label_prefix": "autoware",
-            "allow_matching_unknown": True,
         }
 
         evaluation_config = PerceptionEvaluationConfig(

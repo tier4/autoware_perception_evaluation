@@ -14,27 +14,31 @@
 
 from __future__ import annotations
 
-from typing import Callable
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import LabelType
+from perception_eval.common.label import is_same_label
+from perception_eval.common.schema import is_same_frame_id
 from perception_eval.common.status import MatchingStatus
-from perception_eval.common.threshold import get_label_threshold
 from perception_eval.matching import CenterDistanceMatching
 from perception_eval.matching import IOU2dMatching
 from perception_eval.matching import IOU3dMatching
-from perception_eval.matching import MatchingMethod
 from perception_eval.matching import MatchingMode
+from perception_eval.matching import MatchingPolicy
 from perception_eval.matching import PlaneDistanceMatching
 from perception_eval.object import distance_objects
 from perception_eval.object import distance_objects_bev
 from perception_eval.object import DynamicObject
 from perception_eval.object import DynamicObject2D
-from perception_eval.object import ObjectType
+
+if TYPE_CHECKING:
+    from perception_eval.common.label import LabelType
+    from perception_eval.matching import MatchingMethod
+    from perception_eval.object import ObjectType
 
 
 class DynamicObjectWithPerceptionResult:
@@ -258,10 +262,7 @@ class DynamicObjectWithPerceptionResult:
         Returns:
             bool: Whether label is correct
         """
-        if self.ground_truth_object:
-            return self.estimated_object.semantic_label == self.ground_truth_object.semantic_label
-        else:
-            return False
+        return is_same_label(self.estimated_object, self.ground_truth_object) if self.ground_truth_object else False
 
 
 def get_object_results(
@@ -269,9 +270,7 @@ def get_object_results(
     estimated_objects: List[ObjectType],
     ground_truth_objects: List[ObjectType],
     target_labels: Optional[List[LabelType]] = None,
-    allow_matching_unknown: bool = True,
-    matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
-    matchable_thresholds: Optional[List[float]] = None,
+    matching_policy: MatchingPolicy = MatchingPolicy(),
 ) -> List[DynamicObjectWithPerceptionResult]:
     """Returns list of DynamicObjectWithPerceptionResult.
 
@@ -306,15 +305,7 @@ def get_object_results(
     if evaluation_task == EvaluationTask.CLASSIFICATION2D:
         return _get_object_results_with_id(estimated_objects, ground_truth_objects)
 
-    matching_method_module, maximize = _get_matching_module(matching_mode)
-    score_table = _get_score_table(
-        estimated_objects,
-        ground_truth_objects,
-        allow_matching_unknown,
-        matching_method_module,
-        target_labels,
-        matchable_thresholds,
-    )
+    score_table = _get_score_table(estimated_objects, ground_truth_objects, target_labels, matching_policy)
 
     # assign correspond GT to estimated objects
     object_results: List[DynamicObjectWithPerceptionResult] = []
@@ -327,7 +318,7 @@ def get_object_results(
 
         est_idx, gt_idx = (
             np.unravel_index(np.nanargmax(score_table), score_table.shape)
-            if maximize
+            if matching_policy.maximize
             else np.unravel_index(np.nanargmin(score_table), score_table.shape)
         )
 
@@ -377,8 +368,8 @@ def _get_object_results_with_id(
                 )
             if (
                 est_object.uuid == gt_object.uuid
-                and est_object.semantic_label == gt_object.semantic_label
-                and est_object.frame_id == gt_object.frame_id
+                and is_same_label(est_object, gt_object)
+                and is_same_frame_id(est_object, gt_object)
             ):
                 object_results.append(
                     DynamicObjectWithPerceptionResult(
@@ -418,41 +409,11 @@ def _get_fp_object_results(
     return object_results
 
 
-def _get_matching_module(matching_mode: MatchingMode) -> Tuple[Callable, bool]:
-    """Returns the matching function and boolean flag whether choose maximum value or not.
-
-    Args:
-        matching_mode (MatchingMode): MatchingMode instance.
-
-    Returns:
-        matching_method_module (Callable): MatchingMethod instance.
-        maximize (bool): Whether much bigger is better.
-    """
-    if matching_mode == MatchingMode.CENTERDISTANCE:
-        matching_method_module: CenterDistanceMatching = CenterDistanceMatching
-        maximize: bool = False
-    elif matching_mode == MatchingMode.PLANEDISTANCE:
-        matching_method_module: PlaneDistanceMatching = PlaneDistanceMatching
-        maximize: bool = False
-    elif matching_mode == MatchingMode.IOU2D:
-        matching_method_module: IOU2dMatching = IOU2dMatching
-        maximize: bool = True
-    elif matching_mode == MatchingMode.IOU3D:
-        matching_method_module: IOU3dMatching = IOU3dMatching
-        maximize: bool = True
-    else:
-        raise ValueError(f"Unsupported matching mode: {matching_mode}")
-
-    return matching_method_module, maximize
-
-
 def _get_score_table(
     estimated_objects: List[ObjectType],
     ground_truth_objects: List[ObjectType],
-    allow_matching_unknown: bool,
-    matching_method_module: Callable,
-    target_labels: Optional[List[LabelType]],
-    matchable_thresholds: Optional[List[float]],
+    target_labels: List[LabelType],
+    matching_policy: MatchingPolicy,
 ) -> np.ndarray:
     """Returns score table, in shape (num_estimation, num_ground_truth).
 
@@ -471,27 +432,9 @@ def _get_score_table(
     num_row: int = len(estimated_objects)
     num_col: int = len(ground_truth_objects)
     score_table = np.full((num_row, num_col), np.nan)
-    for i, est_obj in enumerate(estimated_objects):
-        for j, gt_obj in enumerate(ground_truth_objects):
-            if gt_obj.semantic_label.is_fp():
-                is_label_ok = True
-            elif allow_matching_unknown:
-                is_label_ok = est_obj.semantic_label == gt_obj.semantic_label or est_obj.semantic_label.is_unknown()
-            else:
-                is_label_ok = est_obj.semantic_label == gt_obj.semantic_label
-
-            is_same_frame_id = est_obj.frame_id == gt_obj.frame_id
-
-            if is_label_ok and is_same_frame_id:
-                threshold: Optional[float] = get_label_threshold(
-                    gt_obj.semantic_label, target_labels, matchable_thresholds
-                )
-
-                matching_method: MatchingMethod = matching_method_module(
-                    estimated_object=est_obj, ground_truth_object=gt_obj
-                )
-
-                if threshold is None or (threshold is not None and matching_method.is_better_than(threshold)):
-                    score_table[i, j] = matching_method.value
+    for i, estimation in enumerate(estimated_objects):
+        for j, ground_truth in enumerate(ground_truth_objects):
+            if matching_policy.is_matchable(estimation, ground_truth):
+                score_table[i, j] = matching_policy.get_matching_score(estimation, ground_truth, target_labels)
 
     return score_table

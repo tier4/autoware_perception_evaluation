@@ -24,6 +24,7 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import SemanticLabel
 from perception_eval.matching import MatchingMode
+from perception_eval.matching import MatchingPolicy
 from perception_eval.matching.objects_filter import divide_objects
 from perception_eval.matching.objects_filter import divide_objects_to_num
 from perception_eval.matching.objects_filter import divide_tp_fp_objects
@@ -189,12 +190,7 @@ class TestObjectsFilter(unittest.TestCase):
             # TP: (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2]), (Est[3], GT[3])
             # FP:
             # Given no diff_distance, all estimated_objects are tp.
-            (
-                0.0,
-                np.array([(0, 0), (1, 1), (2, 2), (3, 3)]),
-                np.array([]),
-                {},
-            ),
+            (0.0, np.array([(0, 0), (1, 1), (2, 2), (3, 3)]), np.array([]), {}),
             # (2)
             # TP: (Est[1], GT[1]), (Est[2], GT[2])
             # FP: (Est[0], None), (Est[3], None)
@@ -267,6 +263,7 @@ class TestObjectsFilter(unittest.TestCase):
                     evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
+                    matching_policy=MatchingPolicy(label_policy="ALLOW_UNKNOWN"),
                 )
                 tp_results, fp_results = get_positive_objects(
                     object_results,
@@ -473,6 +470,7 @@ class TestObjectsFilter(unittest.TestCase):
                     evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
+                    matching_policy=MatchingPolicy(label_policy="ALLOW_UNKNOWN"),
                 )
                 tp_results, fp_results = divide_tp_fp_objects(
                     object_results,
@@ -485,7 +483,7 @@ class TestObjectsFilter(unittest.TestCase):
                 self.assertEqual(
                     len(tp_results),
                     len(ans_tp_pair_idx),
-                    f"Number of elements are not same, out: {len(tp_results)}, ans: {len(ans_fp_pair_idx)}",
+                    f"[{n + 1}]: Number of elements are not same, out: {len(tp_results)}, ans: {len(ans_tp_pair_idx)}",
                 )
                 for i, tp_result_ in enumerate(tp_results):
                     self.assertIn(
@@ -504,7 +502,7 @@ class TestObjectsFilter(unittest.TestCase):
                 self.assertEqual(
                     len(fp_results),
                     len(ans_fp_pair_idx),
-                    f"Number of elements are not same, out: {len(fp_results)}, ans: {len(ans_fp_pair_idx)}",
+                    f"[{n + 1}]: Number of elements are not same, out: {len(fp_results)}, ans: {len(ans_fp_pair_idx)}",
                 )
                 for j, fp_result_ in enumerate(fp_results):
                     self.assertIn(
@@ -644,6 +642,7 @@ class TestObjectsFilter(unittest.TestCase):
                     evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
+                    matching_policy=MatchingPolicy(label_policy="ALLOW_UNKNOWN"),
                 )
                 tp_results, _ = divide_tp_fp_objects(
                     object_results,
