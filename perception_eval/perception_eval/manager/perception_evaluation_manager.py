@@ -37,8 +37,8 @@ if TYPE_CHECKING:
     from perception_eval.dataset import FrameGroundTruth
     from perception_eval.matching import MatchingPolicy
     from perception_eval.object import ObjectType
-    from perception_eval.result import DynamicObjectWithPerceptionResult
     from perception_eval.result import PerceptionFrameConfig
+    from perception_eval.result import PerceptionObjectResult
     from perception_eval.visualization import PerceptionVisualizerType
 
 
@@ -141,7 +141,7 @@ class PerceptionEvaluationManager(EvaluationMangerBase):
         self,
         estimated_objects: List[ObjectType],
         frame_ground_truth: FrameGroundTruth,
-    ) -> Tuple[List[DynamicObjectWithPerceptionResult], FrameGroundTruth]:
+    ) -> Tuple[List[PerceptionObjectResult], FrameGroundTruth]:
         """Returns filtered list of DynamicObjectResult and FrameGroundTruth instance.
 
         First of all, filter `estimated_objects` and `frame_ground_truth`.
@@ -153,7 +153,7 @@ class PerceptionEvaluationManager(EvaluationMangerBase):
             frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
 
         Returns:
-            object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results list.
+            object_results (List[PerceptionObjectResult]): Filtered object results list.
             frame_ground_truth (FrameGroundTruth): Filtered FrameGroundTruth instance.
         """
         estimated_objects = filter_objects(

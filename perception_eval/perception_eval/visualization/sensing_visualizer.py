@@ -30,8 +30,8 @@ from matplotlib.transforms import Affine2D
 import numpy as np
 from perception_eval.config import SensingEvaluationConfig
 from perception_eval.object import DynamicObject
-from perception_eval.result import DynamicObjectWithSensingResult
 from perception_eval.result import SensingFrameResult
+from perception_eval.result import SensingObjectResult
 from perception_eval.visualization.color import ColorMap
 from PIL import Image
 from PIL.Image import Image as PILImage
@@ -276,7 +276,7 @@ class SensingVisualizer:
 
     def plot_objects(
         self,
-        objects: Union[List[DynamicObject], List[DynamicObjectWithSensingResult]],
+        objects: Union[List[DynamicObject], List[SensingObjectResult]],
         axes: Optional[Axes] = None,
         color: Union[str, np.ndarray] = "red",
     ) -> Axes:
@@ -291,7 +291,7 @@ class SensingVisualizer:
         ```
 
         Args:
-            objects (Union[List[DynamicObject], DynamicObjectWithSensingResult]): The list of object being visualized.
+            objects (Union[List[DynamicObject], SensingObjectResult]): The list of object being visualized.
             axes (Optional[Axes]): The Axes instance. If not specified, new Axes is created. Defaults to None.
             color (Union[str, np.ndarray]): The name of color, red/green/blue/yellow/cyan/black. Defaults to None.
                 If not be specified, red is used.
@@ -305,7 +305,7 @@ class SensingVisualizer:
         edge_color = self.__cmap.get_simple(color) if isinstance(color, str) else color
 
         for object_ in objects:
-            if isinstance(object_, DynamicObjectWithSensingResult):
+            if isinstance(object_, SensingObjectResult):
                 pointcloud: np.ndarray = object_.inside_pointcloud
                 nearest_point: Optional[np.ndarray] = object_.nearest_point
                 object_: DynamicObject = object_.ground_truth_object

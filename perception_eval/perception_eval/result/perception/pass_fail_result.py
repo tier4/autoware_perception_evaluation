@@ -27,8 +27,8 @@ import perception_eval.matching.objects_filter as objects_filter
 if TYPE_CHECKING:
     from perception_eval.object import ObjectType
 
-    from .perception_frame_config import PerceptionFrameConfig
-    from .perception_result import DynamicObjectWithPerceptionResult
+    from .frame_config import PerceptionFrameConfig
+    from .object_result import PerceptionObjectResult
 
 
 class PassFailResult:
@@ -38,8 +38,8 @@ class PassFailResult:
         frame_config (PerceptionFrameConfig): Critical object filter config.
         tn_objects (List[ObjectType]): TN ground truth objects list.
         fn_objects (List[ObjectType]): FN ground truth objects list.
-        fp_object_results (List[DynamicObjectWithPerceptionResult]): FP object results list.
-        tp_object_results (List[DynamicObjectWithPerceptionResult]): TP object results list.
+        fp_object_results (List[PerceptionObjectResult]): FP object results list.
+        tp_object_results (List[PerceptionObjectResult]): TP object results list.
 
     Args:
         unix_time (int): UNIX timestamp.
@@ -65,18 +65,18 @@ class PassFailResult:
         self.critical_ground_truth_objects: List[ObjectType] = []
         self.tn_objects: List[ObjectType] = []
         self.fn_objects: List[ObjectType] = []
-        self.fp_object_results: List[DynamicObjectWithPerceptionResult] = []
-        self.tp_object_results: List[DynamicObjectWithPerceptionResult] = []
+        self.fp_object_results: List[PerceptionObjectResult] = []
+        self.tp_object_results: List[PerceptionObjectResult] = []
 
     def evaluate(
         self,
-        object_results: List[DynamicObjectWithPerceptionResult],
+        object_results: List[PerceptionObjectResult],
         critical_ground_truth_objects: List[ObjectType],
     ) -> None:
         """Evaluate object results' pass fail.
 
         Args:
-            object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
+            object_results (List[PerceptionObjectResult]): Object results list.
             ros_critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects
                 must be evaluated at current frame.
         """
@@ -131,19 +131,19 @@ class PassFailResult:
 
     def __get_positive_object_results(
         self,
-        object_results: List[DynamicObjectWithPerceptionResult],
+        object_results: List[PerceptionObjectResult],
         critical_ground_truth_objects: List[ObjectType],
-    ) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
+    ) -> Tuple[List[PerceptionObjectResult], List[PerceptionObjectResult]]:
         """Get TP and FP object results list from `object_results`.
 
         Args:
-            object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
+            object_results (List[PerceptionObjectResult]): Object results list.
             critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects
                 must be evaluated at current frame.
 
         Returns:
-            List[DynamicObjectWithPerceptionResult]: TP object results.
-            List[DynamicObjectWithPerceptionResult]: FP object results.
+            List[PerceptionObjectResult]: TP object results.
+            List[PerceptionObjectResult]: FP object results.
         """
         tp_object_results, fp_object_results = objects_filter.get_positive_objects(
             object_results=object_results,
@@ -155,12 +155,12 @@ class PassFailResult:
         )
 
         # filter by critical_ground_truth_objects
-        tp_critical_results: List[DynamicObjectWithPerceptionResult] = [
+        tp_critical_results: List[PerceptionObjectResult] = [
             tp_result
             for tp_result in tp_object_results
             if tp_result.ground_truth_object in critical_ground_truth_objects
         ]
-        fp_critical_results: List[DynamicObjectWithPerceptionResult] = [
+        fp_critical_results: List[PerceptionObjectResult] = [
             fp_result
             for fp_result in fp_object_results
             if fp_result.ground_truth_object in critical_ground_truth_objects

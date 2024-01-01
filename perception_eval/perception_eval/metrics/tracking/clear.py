@@ -29,7 +29,7 @@ from ..detection.tp_metrics import TPMetricsAp
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
     from perception_eval.matching import MatchingMode
-    from perception_eval.result import DynamicObjectWithPerceptionResult
+    from perception_eval.result import PerceptionObjectResult
 
     from ..detection.tp_metrics import TPMetrics
 
@@ -58,7 +58,7 @@ class CLEAR(_TrackingMetricsBase):
         results (OrderedDict[str, Any]): The dict to keep scores.
 
     Args:
-        object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results for each frames.
+        object_results (List[List[PerceptionObjectResult]]): The list of object results for each frames.
         num_ground_truth (int): The number of ground truth.
         target_labels (List[LabelType]): The list of target labels.
         matching_mode (MatchingMode): Matching mode class.
@@ -78,7 +78,7 @@ class CLEAR(_TrackingMetricsBase):
 
     def __init__(
         self,
-        object_results: List[List[DynamicObjectWithPerceptionResult]],
+        object_results: List[List[PerceptionObjectResult]],
         num_ground_truth: int,
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
@@ -102,7 +102,7 @@ class CLEAR(_TrackingMetricsBase):
         self.objects_results_num: int = 0
 
         for i, cur_object_results in enumerate(object_results[1:], 1):
-            prev_object_results: List[DynamicObjectWithPerceptionResult] = object_results[i - 1]
+            prev_object_results: List[PerceptionObjectResult] = object_results[i - 1]
             self.objects_results_num += len(cur_object_results)
 
             # Calculate TP/FP/IDSwitch and total matching score in TP at frame t
@@ -156,14 +156,14 @@ class CLEAR(_TrackingMetricsBase):
 
     def _calculate_tp_fp(
         self,
-        cur_object_results: List[DynamicObjectWithPerceptionResult],
-        prev_object_results: List[DynamicObjectWithPerceptionResult],
+        cur_object_results: List[PerceptionObjectResult],
+        prev_object_results: List[PerceptionObjectResult],
     ) -> Tuple[float, float, int, float]:
         """Calculate matching compared with previous object results.
 
         Args:
-            cur_object_results (List[List[DynamicObjectWithPerceptionResult]]): Object results list at current frame.
-            prev_object_results (List[List[DynamicObjectWithPerceptionResult]]): Object results list at previous frame.
+            cur_object_results (List[List[PerceptionObjectResult]]): Object results list at current frame.
+            prev_object_results (List[List[PerceptionObjectResult]]): Object results list at previous frame.
 
         Returns:
             tp (float): Total value of TP. If matching is True, num_tp += 1.0.
@@ -233,10 +233,7 @@ class CLEAR(_TrackingMetricsBase):
         return tp, fp, num_id_switch, tp_matching_score
 
     @staticmethod
-    def _is_id_switched(
-        cur_object_result: DynamicObjectWithPerceptionResult,
-        prev_object_result: DynamicObjectWithPerceptionResult,
-    ) -> bool:
+    def _is_id_switched(cur_object_result: PerceptionObjectResult, prev_object_result: PerceptionObjectResult) -> bool:
         """Check whether current and previous object result have switched ID for TP pairs.
 
         NOTE:
@@ -244,8 +241,8 @@ class CLEAR(_TrackingMetricsBase):
             GT ID is unique between the different labels.
 
         Args:
-            cur_object_result (DynamicObjectWithPerceptionResult): Object result at current frame.
-            prev_object_result (DynamicObjectWithPerceptionResult): Object result at previous frame.
+            cur_object_result (PerceptionObjectResult): Object result at current frame.
+            prev_object_result (PerceptionObjectResult): Object result at previous frame.
 
         Returns:
             bool: Return True if ID is switched.
@@ -278,15 +275,15 @@ class CLEAR(_TrackingMetricsBase):
 
     @staticmethod
     def _is_same_match(
-        cur_object_result: DynamicObjectWithPerceptionResult,
-        prev_object_result: DynamicObjectWithPerceptionResult,
+        cur_object_result: PerceptionObjectResult,
+        prev_object_result: PerceptionObjectResult,
     ) -> bool:
         """Check whether current and previous object result have same matching pair.
         When previous or current GT is None(=FP), return False regardless the ID of estimated.
 
         Args:
-            cur_object_result (DynamicObjectWithPerceptionResult): Object result at current frame.
-            prev_object_result (DynamicObjectWithPerceptionResult):Object result at previous frame.
+            cur_object_result (PerceptionObjectResult): Object result at current frame.
+            prev_object_result (PerceptionObjectResult):Object result at previous frame.
 
         Returns:
             bool: Return True if both estimated and GT ID are same.

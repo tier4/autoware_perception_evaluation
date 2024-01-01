@@ -25,7 +25,7 @@ from .tp_metrics import TPMetricsAph
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
     from perception_eval.matching import MatchingMode
-    from perception_eval.result import DynamicObjectWithPerceptionResult
+    from perception_eval.result import PerceptionObjectResult
 
 
 class Map:
@@ -37,7 +37,7 @@ class Map:
         map (float): mAP value.
 
     Args:
-        object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results
+        object_results (List[List[PerceptionObjectResult]]): The list of object results
         target_labels (List[LabelType]): Target labels to evaluate mAP
         matching_mode (MatchingMode): Matching mode like distance between the center of
             the object, 3d IoU.
@@ -50,7 +50,7 @@ class Map:
 
     def __init__(
         self,
-        object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]],
+        object_results_dict: Dict[LabelType, List[PerceptionObjectResult]],
         num_ground_truth_dict: Dict[LabelType, int],
         target_labels: List[LabelType],
         matching_mode: MatchingMode,

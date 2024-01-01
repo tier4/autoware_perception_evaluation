@@ -28,8 +28,8 @@ from perception_eval.matching import MatchingMode
 from perception_eval.matching.objects_filter import filter_objects
 from perception_eval.metrics.tracking.clear import CLEAR
 from perception_eval.object import DynamicObject
-from perception_eval.result import DynamicObjectWithPerceptionResult
 from perception_eval.result import get_object_results
+from perception_eval.result import PerceptionObjectResult
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -392,7 +392,7 @@ class TestCLEAR(unittest.TestCase):
         ) in enumerate(patterns):
             with self.subTest(f"Test calculate TP/FP: {n + 1}"):
                 # Previous estimated objects
-                prev_object_results: Optional[List[DynamicObjectWithPerceptionResult]] = []
+                prev_object_results: Optional[List[PerceptionObjectResult]] = []
 
                 if prev_diff_trans is not None:
                     # Translate previous estimated objects
@@ -465,7 +465,7 @@ class TestCLEAR(unittest.TestCase):
                 )
 
                 # Current object results
-                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                cur_object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
@@ -646,7 +646,7 @@ class TestCLEAR(unittest.TestCase):
                 )
 
                 # Current object results
-                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                cur_object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
@@ -830,7 +830,7 @@ class TestCLEAR(unittest.TestCase):
                 )
 
                 # Current object results
-                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                cur_object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,

@@ -28,7 +28,7 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.object import DynamicObject2D
-from perception_eval.result import DynamicObjectWithPerceptionResult
+from perception_eval.result import PerceptionObjectResult
 import yaml
 
 from .perception_analyzer_base import PerceptionAnalyzerBase
@@ -130,7 +130,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
 
     def format2dict(
         self,
-        object_result: Union[DynamicObject2D, DynamicObjectWithPerceptionResult],
+        object_result: Union[DynamicObject2D, PerceptionObjectResult],
         status: MatchingStatus,
         frame_num: int,
         *args,
@@ -139,14 +139,14 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         """Format objects to dict.
 
         Args:
-            object_results (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): List of objects or object results.
+            object_results (List[Union[DynamicObject, PerceptionObjectResult]]): List of objects or object results.
             status (MatchingStatus): Object's status.
             frame_num (int): Number of frame.
 
         Returns:
             Dict[str, Dict[str, Any]]
         """
-        if isinstance(object_result, DynamicObjectWithPerceptionResult):
+        if isinstance(object_result, PerceptionObjectResult):
             gt: Optional[DynamicObject2D] = object_result.ground_truth_object
             estimation: DynamicObject2D = object_result.estimated_object
         elif isinstance(object_result, DynamicObject2D):

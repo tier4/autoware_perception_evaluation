@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from perception_eval.object import ObjectType
 
 
-class DynamicObjectWithPerceptionResult:
+class PerceptionObjectResult:
     """Object result class for perception evaluation.
 
     Attributes:
@@ -271,7 +271,7 @@ def get_object_results(
     ground_truth_objects: List[ObjectType],
     target_labels: Optional[List[LabelType]] = None,
     matching_policy: MatchingPolicy = MatchingPolicy(),
-) -> List[DynamicObjectWithPerceptionResult]:
+) -> List[PerceptionObjectResult]:
     """Returns list of DynamicObjectWithPerceptionResult.
 
     For classification, matching objects their uuid.
@@ -308,7 +308,7 @@ def get_object_results(
     score_table = _get_score_table(estimated_objects, ground_truth_objects, target_labels, matching_policy)
 
     # assign correspond GT to estimated objects
-    object_results: List[DynamicObjectWithPerceptionResult] = []
+    object_results: List[PerceptionObjectResult] = []
     estimated_objects_ = estimated_objects.copy()
     ground_truth_objects_ = ground_truth_objects.copy()
     num_estimation: int = score_table.shape[0]
@@ -327,7 +327,7 @@ def get_object_results(
         gt_obj_: ObjectType = ground_truth_objects_.pop(gt_idx)
         score_table = np.delete(score_table, obj=est_idx, axis=0)
         score_table = np.delete(score_table, obj=gt_idx, axis=1)
-        object_result_ = DynamicObjectWithPerceptionResult(
+        object_result_ = PerceptionObjectResult(
             estimated_object=est_obj_,
             ground_truth_object=gt_obj_,
         )
@@ -345,7 +345,7 @@ def get_object_results(
 def _get_object_results_with_id(
     estimated_objects: List[DynamicObject2D],
     ground_truth_objects: List[DynamicObject2D],
-) -> List[DynamicObjectWithPerceptionResult]:
+) -> List[PerceptionObjectResult]:
     """Returns the list of DynamicObjectWithPerceptionResult considering their uuids.
 
     This function is used in 2D classification evaluation.
@@ -355,9 +355,9 @@ def _get_object_results_with_id(
         ground_truth_objects (List[DynamicObject2D]): Ground truth objects list.
 
     Returns:
-        object_results (List[DynamicObjectWithPerceptionEvaluation]): Object results list.
+        object_results (List[PerceptionObjectResult]): Object results list.
     """
-    object_results: List[DynamicObjectWithPerceptionResult] = []
+    object_results: List[PerceptionObjectResult] = []
     estimated_objects_ = estimated_objects.copy()
     ground_truth_objects_ = ground_truth_objects.copy()
     for est_object in estimated_objects:
@@ -372,7 +372,7 @@ def _get_object_results_with_id(
                 and is_same_frame_id(est_object, gt_object)
             ):
                 object_results.append(
-                    DynamicObjectWithPerceptionResult(
+                    PerceptionObjectResult(
                         estimated_object=est_object,
                         ground_truth_object=gt_object,
                     )
@@ -389,7 +389,7 @@ def _get_object_results_with_id(
 
 def _get_fp_object_results(
     estimated_objects: List[ObjectType],
-) -> List[DynamicObjectWithPerceptionResult]:
+) -> List[PerceptionObjectResult]:
     """Returns the list of DynamicObjectWithPerceptionResult that have no ground truth.
 
     Args:
@@ -398,9 +398,9 @@ def _get_fp_object_results(
     Returns:
         object_results (List[DynamicObjectWithPerceptionResult]): FP object results list.
     """
-    object_results: List[DynamicObjectWithPerceptionResult] = []
+    object_results: List[PerceptionObjectResult] = []
     for est_obj_ in estimated_objects:
-        object_result_ = DynamicObjectWithPerceptionResult(
+        object_result_ = PerceptionObjectResult(
             estimated_object=est_obj_,
             ground_truth_object=None,
         )

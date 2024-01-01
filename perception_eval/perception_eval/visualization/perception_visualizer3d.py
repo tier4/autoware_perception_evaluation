@@ -32,8 +32,8 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.schema import FrameID
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.object import DynamicObject
-from perception_eval.result import DynamicObjectWithPerceptionResult
 from perception_eval.result import PerceptionFrameResult
+from perception_eval.result import PerceptionObjectResult
 from perception_eval.util.math import rotation_matrix_to_euler
 from perception_eval.visualization.color import ColorMap
 from PIL import Image
@@ -336,7 +336,7 @@ class PerceptionVisualizer3D:
 
     def plot_objects(
         self,
-        objects: Union[List[DynamicObject], List[DynamicObjectWithPerceptionResult]],
+        objects: Union[List[DynamicObject], List[PerceptionObjectResult]],
         is_ground_truth: bool,
         axes: Optional[Axes] = None,
         label: Optional[str] = None,
@@ -354,7 +354,7 @@ class PerceptionVisualizer3D:
         ```
 
         Args:
-            objects (Union[List[DynamicObject], DynamicObjectWithPerceptionResult]): The list of object being visualized.
+            objects (Union[List[DynamicObject], PerceptionObjectResult]): The list of object being visualized.
             is_ground_truth (bool): Whether ground truth object is.
             axes (Optional[Axes]): The Axes instance. If not specified, new Axes is created. Defaults to None.
             label (str): The label of object type, e.g. TP/FP/FP. Defaults to None.
@@ -372,7 +372,7 @@ class PerceptionVisualizer3D:
 
         cropped_pointcloud = []
         for object_ in objects:
-            if isinstance(object_, DynamicObjectWithPerceptionResult):
+            if isinstance(object_, PerceptionObjectResult):
                 if is_ground_truth:
                     object_: DynamicObject = object_.ground_truth_object
                 else:

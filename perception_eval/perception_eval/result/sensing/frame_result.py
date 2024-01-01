@@ -20,8 +20,8 @@ import numpy as np
 from perception_eval.common.point import crop_pointcloud
 from perception_eval.object import DynamicObject
 
-from .sensing_frame_config import SensingFrameConfig
-from .sensing_result import DynamicObjectWithSensingResult
+from .frame_config import SensingFrameConfig
+from .object_result import SensingObjectResult
 
 
 class SensingFrameResult:
@@ -35,10 +35,10 @@ class SensingFrameResult:
         sensing_frame_config (SensingFrameConfig): Configuration of sensing evaluation at current frame.
         unix_time (int): Unix time [us].
         frame_name (str): The name of frame.
-        detection_success_results (list[DynamicObjectWithSensingResult]): Container for succeeded results
+        detection_success_results (list[SensingObjectResult]): Container for succeeded results
             in detection area.
-        detection_fail_results (list[DynamicObjectWithSensingResult]): Container for failed results in detection area.
-        detection_warning_results (List[DynamicObjectWithSensingResult]): Container for warned results
+        detection_fail_results (list[SensingObjectResult]): Container for failed results in detection area.
+        detection_warning_results (List[SensingObjectResult]): Container for warned results
             in detection area. This is used when objects are occluded.
         pointcloud_failed_non_detection (List[numpy.ndarray]): Container for array of detected pointcloud
             in non-detection area.
@@ -63,9 +63,9 @@ class SensingFrameResult:
         self.frame_number: int = frame_number
 
         # Containers for results
-        self.detection_success_results: List[DynamicObjectWithSensingResult] = []
-        self.detection_fail_results: List[DynamicObjectWithSensingResult] = []
-        self.detection_warning_results: List[DynamicObjectWithSensingResult] = []
+        self.detection_success_results: List[SensingObjectResult] = []
+        self.detection_fail_results: List[SensingObjectResult] = []
+        self.detection_warning_results: List[SensingObjectResult] = []
         self.pointcloud_failed_non_detection: List[np.ndarray] = []
 
     def evaluate_frame(
@@ -110,7 +110,7 @@ class SensingFrameResult:
 
         for ground_truth_object in ground_truth_objects:
             scale_factor_: float = self.sensing_frame_config.get_scale_factor(ground_truth_object.get_distance())
-            sensing_result: DynamicObjectWithSensingResult = DynamicObjectWithSensingResult(
+            sensing_result = SensingObjectResult(
                 ground_truth_object,
                 pointcloud_for_detection,
                 scale_factor=scale_factor_,

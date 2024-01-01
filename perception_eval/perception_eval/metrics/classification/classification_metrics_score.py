@@ -23,7 +23,7 @@ from .accuracy import ClassificationAccuracy
 
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
-    from perception_eval.result import DynamicObjectWithPerceptionResult
+    from perception_eval.result import PerceptionObjectResult
 
 
 class ClassificationMetricsScore:
@@ -33,16 +33,16 @@ class ClassificationMetricsScore:
         self.accuracies (List[ClassificationAccuracy]): List of ClassificationAccuracy instances.
 
     Args:
-        object_results_dict (Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]]):
-            Dict that are list of DynamicObjectWithPerceptionResult mapped by their labels.
-        num_ground_truth_dict (Dict[LabelType, int]): Dict that are number of DynamicObjectWithPerceptionResult
+        object_results_dict (Dict[LabelType, List[List[PerceptionObjectResult]]]):
+            Dict that are list of PerceptionObjectResult mapped by their labels.
+        num_ground_truth_dict (Dict[LabelType, int]): Dict that are number of PerceptionObjectResult
             mapped by their labels.
         target_labels (List[LabelType]): Target labels list.
     """
 
     def __init__(
         self,
-        object_results_dict: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
+        object_results_dict: Dict[LabelType, List[List[PerceptionObjectResult]]],
         num_ground_truth_dict: Dict[LabelType, int],
         target_labels: List[LabelType],
     ) -> None:

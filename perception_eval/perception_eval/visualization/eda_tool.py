@@ -30,7 +30,7 @@ from perception_eval.matching.objects_filter import divide_tp_fp_objects
 from perception_eval.matching.objects_filter import filter_object_results
 from perception_eval.matching.objects_filter import get_fn_objects
 from perception_eval.object import DynamicObject
-from perception_eval.result import DynamicObjectWithPerceptionResult
+from perception_eval.result import PerceptionObjectResult
 from plotly import graph_objects as go
 from plotly.graph_objs import Figure
 from plotly.subplots import make_subplots
@@ -55,15 +55,15 @@ class EDAVisualizer:
 
     def __init__(
         self,
-        objects: Union[List[DynamicObject], List[DynamicObjectWithPerceptionResult]],
+        objects: Union[List[DynamicObject], List[PerceptionObjectResult]],
         save_dir: str,
         show: bool = False,
     ) -> None:
         """[summary]
 
         Args:
-            objects (Union[List[DynamicObject], List[DynamicObjectWithPerceptionResult]]):
-                    estimated objects(List[DynamicObject]) or ground truth objects(List[DynamicObjectWithPerceptionResult]]) which you want to visualize
+            objects (Union[List[DynamicObject], List[PerceptionObjectResult]]):
+                    estimated objects(List[DynamicObject]) or ground truth objects(List[PerceptionObjectResult]]) which you want to visualize
             save_dir (str):
                     save directory for each graph. If there is no directory in save_dir, make directory.
             show (bool): Whether show visualized figures. Defaults to False.
@@ -74,15 +74,13 @@ class EDAVisualizer:
             os.makedirs(save_dir, exist_ok=True)
         self.show: show = show
 
-    def objects_to_df(
-        self, objects: Union[List[DynamicObject], List[DynamicObjectWithPerceptionResult]]
-    ) -> pd.DataFrame:
+    def objects_to_df(self, objects: Union[List[DynamicObject], List[PerceptionObjectResult]]) -> pd.DataFrame:
         """[summary]
-        Convert List[DynamicObject] or List[DynamicObjectWithPerceptionResult]] to pd.DataFrame.
+        Convert List[DynamicObject] or List[PerceptionObjectResult]] to pd.DataFrame.
 
         Args:
-            objects (Union[List[DynamicObject], List[DynamicObjectWithPerceptionResult]]):
-                    estimated objects(List[DynamicObject]) or ground truth objects(List[DynamicObjectWithPerceptionResult]]) which you want to visualize
+            objects (Union[List[DynamicObject], List[PerceptionObjectResult]]):
+                    estimated objects(List[DynamicObject]) or ground truth objects(List[PerceptionObjectResult]]) which you want to visualize
 
         Returns:
             df (pd.DataFrame):
@@ -110,7 +108,7 @@ class EDAVisualizer:
             )
             df["distance_2d"] = np.sqrt((df["x"]) ** 2 + (df["y"]) ** 2)
 
-        elif isinstance(objects[0], DynamicObjectWithPerceptionResult):
+        elif isinstance(objects[0], PerceptionObjectResult):
             self.is_gt = False
 
             names = np.stack(
@@ -441,14 +439,12 @@ class EDAManager:
         for object_name, ground_truth_objects in ground_truth_object_dict.items():
             self.visualize(ground_truth_objects, object_name, is_gt=True)
 
-    def visualize_estimated_objects(
-        self, estimated_object_dict: Dict[str, List[DynamicObjectWithPerceptionResult]]
-    ) -> None:
+    def visualize_estimated_objects(self, estimated_object_dict: Dict[str, List[PerceptionObjectResult]]) -> None:
         """[summary]
         visualize estimated objects
 
         Args:
-            estimated_object_dict (Dict[str, List[DynamicObjectWithPerceptionResult]]]):
+            estimated_object_dict (Dict[str, List[PerceptionObjectResult]]]):
                     Key of dict is name of object. This is used in directory name for saving graphs.
                     Value is list of estimated object.
         """
@@ -458,7 +454,7 @@ class EDAManager:
 
     def visualize_evaluated_results(
         self,
-        object_results: List[DynamicObjectWithPerceptionResult],
+        object_results: List[PerceptionObjectResult],
         ground_truth_objects: List[DynamicObject],
         matching_mode: MatchingMode,
         matching_threshold: float,
@@ -468,7 +464,7 @@ class EDAManager:
         visualize TP, FP, FN objects and FP objects with high confidence
 
         Args:
-            object_results (List[DynamicObjectWithPerceptionResult]):
+            object_results (List[PerceptionObjectResult]):
                     list of estimated object
             ground_truth_objects (List[DynamicObject]):
                     list of ground truth object
@@ -527,7 +523,7 @@ class EDAManager:
 
     def visualize(
         self,
-        objects: Union[List[DynamicObject], List[DynamicObjectWithPerceptionResult]],
+        objects: Union[List[DynamicObject], List[PerceptionObjectResult]],
         objects_name: str,
         is_gt: bool,
     ) -> None:
@@ -535,8 +531,8 @@ class EDAManager:
         visualize objects
 
         Args:
-            objects (Union[List[DynamicObject], List[DynamicObjectWithPerceptionResult]]):
-                    estimated objects(List[DynamicObject]) or ground truth objects(List[DynamicObjectWithPerceptionResult]]) which you want to visualize
+            objects (Union[List[DynamicObject], List[PerceptionObjectResult]]):
+                    estimated objects(List[DynamicObject]) or ground truth objects(List[PerceptionObjectResult]]) which you want to visualize
             objects_name (str):
                     name of object. This is used in directory name for saving graphs.
             is_gt (bool):

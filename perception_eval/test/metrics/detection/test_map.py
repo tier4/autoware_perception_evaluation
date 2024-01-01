@@ -27,8 +27,8 @@ from perception_eval.matching.objects_filter import divide_objects_to_num
 from perception_eval.matching.objects_filter import filter_objects
 from perception_eval.metrics.detection.map import Map
 from perception_eval.object import DynamicObject
-from perception_eval.result import DynamicObjectWithPerceptionResult
 from perception_eval.result import get_object_results
+from perception_eval.result import PerceptionObjectResult
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -95,12 +95,12 @@ class TestMap(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
 
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
-                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[PerceptionObjectResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -174,12 +174,12 @@ class TestMap(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
 
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
-                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[PerceptionObjectResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -231,12 +231,12 @@ class TestMap(unittest.TestCase):
             min_point_numbers=self.min_point_numbers,
         )
 
-        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        object_results: List[PerceptionObjectResult] = get_object_results(
             evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )
-        object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+        object_results_dict: Dict[AutowareLabel, List[PerceptionObjectResult]] = divide_objects(
             object_results,
             self.target_labels,
         )
@@ -302,13 +302,13 @@ class TestMap(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
 
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
 
-                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[PerceptionObjectResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -382,12 +382,12 @@ class TestMap(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
 
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
-                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[PerceptionObjectResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -438,12 +438,12 @@ class TestMap(unittest.TestCase):
             max_y_position_list=self.max_y_position_list,
             min_point_numbers=self.min_point_numbers,
         )
-        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        object_results: List[PerceptionObjectResult] = get_object_results(
             evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )
-        object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+        object_results_dict: Dict[AutowareLabel, List[PerceptionObjectResult]] = divide_objects(
             object_results,
             self.target_labels,
         )
@@ -509,12 +509,12 @@ class TestMap(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
 
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
-                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[PerceptionObjectResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -588,12 +588,12 @@ class TestMap(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
 
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
-                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[PerceptionObjectResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -645,13 +645,13 @@ class TestMap(unittest.TestCase):
             min_point_numbers=self.min_point_numbers,
         )
 
-        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        object_results: List[PerceptionObjectResult] = get_object_results(
             evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )
 
-        object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+        object_results_dict: Dict[AutowareLabel, List[PerceptionObjectResult]] = divide_objects(
             object_results,
             self.target_labels,
         )
@@ -717,13 +717,13 @@ class TestMap(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
 
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
 
-                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[PerceptionObjectResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -796,13 +796,13 @@ class TestMap(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                     min_point_numbers=self.min_point_numbers,
                 )
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
 
-                object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+                object_results_dict: Dict[AutowareLabel, List[PerceptionObjectResult]] = divide_objects(
                     object_results,
                     self.target_labels,
                 )
@@ -876,12 +876,12 @@ class TestMap(unittest.TestCase):
             min_point_numbers=self.min_point_numbers,
         )
 
-        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        object_results: List[PerceptionObjectResult] = get_object_results(
             evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )
-        object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+        object_results_dict: Dict[AutowareLabel, List[PerceptionObjectResult]] = divide_objects(
             object_results,
             self.target_labels,
         )

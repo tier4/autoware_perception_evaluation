@@ -25,7 +25,7 @@ from .clear import CLEAR
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
     from perception_eval.matching import MatchingMode
-    from perception_eval.result import DynamicObjectWithPerceptionResult
+    from perception_eval.result import PerceptionObjectResult
 
 
 class TrackingMetricsScore:
@@ -39,7 +39,7 @@ class TrackingMetricsScore:
         clears (List[CLEAR]): List of CLEAR instances.
 
     Args:
-        object_results_dict (Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]):
+        object_results_dict (Dict[LabelType, List[List[PerceptionObjectResult]]):
             Dict that items are object results list mapped by their labels.
         num_ground_truth (int): Number of ground truths.
         target_labels (List[LabelType]): Target labels list.
@@ -49,7 +49,7 @@ class TrackingMetricsScore:
 
     def __init__(
         self,
-        object_results_dict: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
+        object_results_dict: Dict[LabelType, List[List[PerceptionObjectResult]]],
         num_ground_truth_dict: Dict[LabelType, int],
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
