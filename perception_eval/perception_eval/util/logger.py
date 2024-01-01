@@ -17,7 +17,7 @@ import logging
 import os
 
 
-def CustomTextFormatter():
+def get_custom_formatter() -> logging.Formatter:
     """[summary]
     Custom Formatter
     """
@@ -60,7 +60,7 @@ def configure_logger(
     # make directory
     os.makedirs(log_file_directory, exist_ok=True)
 
-    formatter = CustomTextFormatter()
+    formatter = get_custom_formatter()
 
     logger = logging.getLogger(logger_name)
     logger.handlers.clear()
@@ -79,7 +79,7 @@ def configure_logger(
     log_file_path = os.path.join(log_file_directory, time)
     file_handler = logging.FileHandler(filename=log_file_path, encoding="utf-8")
     file_handler.setLevel(file_log_level)
-    file_formatter = CustomTextFormatter()
+    file_formatter = get_custom_formatter()
     file_handler.setFormatter(file_formatter)
     logger.addHandler(file_handler)
 

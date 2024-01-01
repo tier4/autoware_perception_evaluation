@@ -21,7 +21,7 @@ import unittest
 from perception_eval.matching import IOU2dMatching
 from perception_eval.matching.object_matching import _get_area_intersection
 from perception_eval.object import DynamicObject
-from perception_eval.util.debug import get_objects_with_difference
+from perception_eval.util import get_objects_with_difference
 
 
 class TestIou2dMatching(unittest.TestCase):

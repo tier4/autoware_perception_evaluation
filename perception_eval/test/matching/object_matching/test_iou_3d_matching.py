@@ -21,7 +21,7 @@ from perception_eval.matching import IOU3dMatching
 from perception_eval.matching.object_matching import _get_height_intersection
 from perception_eval.matching.object_matching import _get_volume_intersection
 from perception_eval.object import DynamicObject
-from perception_eval.util.debug import get_objects_with_difference
+from perception_eval.util import get_objects_with_difference
 
 
 class TestIou3dMatching(unittest.TestCase):

@@ -25,7 +25,7 @@ from perception_eval.dataset import FrameGroundTruth
 from perception_eval.manager import SensingEvaluationManager
 from perception_eval.result import SensingFrameConfig
 from perception_eval.result import SensingFrameResult
-from perception_eval.util.logger_config import configure_logger
+from perception_eval.util import configure_logger
 
 
 class SensingLSimMoc:

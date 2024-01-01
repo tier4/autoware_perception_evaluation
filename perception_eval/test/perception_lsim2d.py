@@ -25,8 +25,8 @@ from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.manager import PerceptionEvaluationManager
 from perception_eval.result import PerceptionFrameConfig
 from perception_eval.tool import PerceptionAnalyzer2D
-from perception_eval.util.debug import get_objects_with_difference2d
-from perception_eval.util.logger_config import configure_logger
+from perception_eval.util import configure_logger
+from perception_eval.util import get_objects_with_difference2d
 
 if TYPE_CHECKING:
     from perception_eval.metrics import MetricsScore

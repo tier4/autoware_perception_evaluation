@@ -25,9 +25,9 @@ from perception_eval.manager import PerceptionEvaluationManager
 from perception_eval.result import PerceptionFrameConfig
 from perception_eval.result import PerceptionFrameResult
 from perception_eval.tool import PerceptionAnalyzer3D
-from perception_eval.util.debug import format_class_for_log
-from perception_eval.util.debug import get_objects_with_difference
-from perception_eval.util.logger_config import configure_logger
+from perception_eval.util import configure_logger
+from perception_eval.util import format_class_for_log
+from perception_eval.util import get_objects_with_difference
 
 if TYPE_CHECKING:
     from perception_eval.metrics import MetricsScore

@@ -22,7 +22,7 @@ import numpy as np
 from perception_eval.object import distance_objects
 from perception_eval.object import distance_objects_bev
 from perception_eval.object import DynamicObject
-from perception_eval.util.debug import get_objects_with_difference
+from perception_eval.util import get_objects_with_difference
 from shapely.geometry import Polygon
 
 

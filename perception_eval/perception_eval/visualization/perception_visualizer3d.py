@@ -34,7 +34,7 @@ from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.object import DynamicObject
 from perception_eval.result import PerceptionFrameResult
 from perception_eval.result import PerceptionObjectResult
-from perception_eval.util.math import rotation_matrix_to_euler
+from perception_eval.util import rotation_matrix_to_euler
 from perception_eval.visualization.color import ColorMap
 from PIL import Image
 from PIL.Image import Image as PILImage

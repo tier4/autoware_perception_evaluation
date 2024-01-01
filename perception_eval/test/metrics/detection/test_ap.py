@@ -34,7 +34,7 @@ from perception_eval.metrics.detection.tp_metrics import TPMetricsAph
 from perception_eval.object import DynamicObject
 from perception_eval.result import get_object_results
 from perception_eval.result import PerceptionObjectResult
-from perception_eval.util.debug import get_objects_with_difference
+from perception_eval.util import get_objects_with_difference
 
 
 class AnswerAP:

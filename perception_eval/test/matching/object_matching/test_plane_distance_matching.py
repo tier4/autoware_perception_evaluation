@@ -20,7 +20,7 @@ import unittest
 
 from perception_eval.matching import PlaneDistanceMatching
 from perception_eval.object import DynamicObject
-from perception_eval.util.debug import get_objects_with_difference
+from perception_eval.util import get_objects_with_difference
 
 
 class TestPlaneDistanceMatching(unittest.TestCase):
