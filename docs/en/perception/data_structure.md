@@ -32,7 +32,7 @@
 
 ### `<class> PerceptionFrameResult(...)`
 
-For the details, see [perception_eval/result/perception/perception_frame_result.py](../../../perception_eval/perception_eval/result/perception/perception_frame_result.py)
+For the details, see [perception_eval/result/perception/frame_result.py](../../../perception_eval/perception_eval/result/perception/frame_result.py)
 
 - Initialization
 
@@ -118,7 +118,7 @@ For the details, see [perception_eval/result/perception/perception_frame_result.
 
 Call `<func> get_object_results(...)` function to generate a set of matching pairs `List[DynamicObjectWithPerceptionResult]` from a set of Estimated objects `List[ObjectType]`and a set of GT objects `List[ObjectType]`.
 
-For the details，see [perception_eval/result/perception/perception_result.py](../../../perception_eval/perception_eval/result/perception/perception_result.py)
+For the details，see [perception_eval/result/perception/object_result.py](../../../perception_eval/perception_eval/result/perception/object_result.py)
 
 ```python
 from perception_eval.evaluation.result.object_results import get_object_results
