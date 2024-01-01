@@ -15,7 +15,7 @@
 from test.util.dummy_object import make_dummy_data
 
 import numpy as np
-from perception_eval.result import DynamicObjectWithSensingResult
+from perception_eval.result import SensingObjectResult
 
 
 def test_get_nearest_point():
@@ -25,7 +25,7 @@ def test_get_nearest_point():
     objects, _ = make_dummy_data()
     pointcloud: np.ndarray = np.array([[0.5, 1.0, 1.0], [0.8, -1.0, 1.0], [-1.2, 1.0, 1.0]])
     for i, obj in enumerate(objects):
-        result = DynamicObjectWithSensingResult(
+        result = SensingObjectResult(
             obj,
             pointcloud,
             scale_factor=1.0,

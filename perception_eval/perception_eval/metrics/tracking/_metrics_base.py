@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
     from perception_eval.matching import MatchingMode
-    from perception_eval.result import DynamicObjectWithPerceptionResult
+    from perception_eval.result import PerceptionObjectResult
 
     from ..detection.tp_metrics import TPMetrics
 
@@ -75,8 +75,8 @@ class _TrackingMetricsBase(ABC):
     @abstractmethod
     def _calculate_tp_fp(
         self,
-        cur_object_results: List[DynamicObjectWithPerceptionResult],
-        prev_object_results: List[DynamicObjectWithPerceptionResult],
+        cur_object_results: List[PerceptionObjectResult],
+        prev_object_results: List[PerceptionObjectResult],
     ) -> Any:
         pass
 

@@ -24,7 +24,7 @@ from perception_eval.common.status import MatchingStatus
 import perception_eval.matching.objects_filter as objects_filter
 import perception_eval.metrics as metrics
 
-from .perception_pass_fail_result import PassFailResult
+from .pass_fail_result import PassFailResult
 
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
@@ -32,15 +32,15 @@ if TYPE_CHECKING:
     from perception_eval.metrics import MetricsScoreConfig
     from perception_eval.object import ObjectType
 
-    from .perception_frame_config import PerceptionFrameConfig
-    from .perception_result import DynamicObjectWithPerceptionResult
+    from .frame_config import PerceptionFrameConfig
+    from .object_result import PerceptionObjectResult
 
 
 class PerceptionFrameResult:
     """The result for 1 frame (the pair of estimated objects and ground truth objects)
 
     Attributes:
-        object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results to each estimated object.
+        object_results (List[PerceptionObjectResult]): Filtered object results to each estimated object.
         frame_ground_truth (FrameGroundTruth): Filtered ground truth of frame.
         frame_number (int): The file name of frame in the datasets.
         unix_time (int): The unix time for frame [us].
@@ -49,7 +49,7 @@ class PerceptionFrameResult:
         pass_fail_result (PassFailResult): Pass fail results.
 
     Args:
-        object_results (List[DynamicObjectWithPerceptionResult]): The list of object result.
+        object_results (List[PerceptionObjectResult]): The list of object result.
         frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
         metrics_config (MetricsScoreConfig): Metrics config class.
         critical_object_filter_config (CriticalObjectFilterConfig): Critical object filter config.
@@ -63,7 +63,7 @@ class PerceptionFrameResult:
         unix_time: int,
         frame_config: PerceptionFrameConfig,
         metrics_config: MetricsScoreConfig,
-        object_results: List[DynamicObjectWithPerceptionResult],
+        object_results: List[PerceptionObjectResult],
         frame_ground_truth: FrameGroundTruth,
     ) -> None:
         self.unix_time = unix_time
@@ -121,7 +121,7 @@ class PerceptionFrameResult:
                 previous_results_dict = objects_filter.divide_objects(
                     previous_result.object_results, self.target_labels
                 )
-            tracking_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = object_results_dict.copy()
+            tracking_results: Dict[LabelType, List[PerceptionObjectResult]] = object_results_dict.copy()
             for label, prev_results in previous_results_dict.items():
                 tracking_results[label] = [prev_results, tracking_results[label]]
             self.metrics_score.evaluate_tracking(tracking_results, num_ground_truth_dict)

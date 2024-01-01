@@ -29,8 +29,8 @@ from perception_eval.matching.objects_filter import divide_objects_to_num
 from perception_eval.matching.objects_filter import filter_objects
 from perception_eval.metrics.tracking.tracking_metrics_score import TrackingMetricsScore
 from perception_eval.object import DynamicObject
-from perception_eval.result import DynamicObjectWithPerceptionResult
 from perception_eval.result import get_object_results
+from perception_eval.result import PerceptionObjectResult
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -142,7 +142,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
                 # Previous object results
-                prev_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                prev_object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=prev_estimated_objects,
                     ground_truth_objects=prev_ground_truth_objects,
@@ -177,7 +177,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
                 # Current object results
-                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                cur_object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
@@ -256,7 +256,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
                 # Previous object results
-                prev_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                prev_object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=prev_estimated_objects,
                     ground_truth_objects=prev_ground_truth_objects,
@@ -294,7 +294,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
                 # Current object results
-                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                cur_object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
@@ -380,7 +380,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
                 # Previous object results
-                prev_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                prev_object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=prev_estimated_objects,
                     ground_truth_objects=prev_ground_truth_objects,
@@ -415,7 +415,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
                 # Current object results
-                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                cur_object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,

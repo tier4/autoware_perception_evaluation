@@ -28,8 +28,8 @@ from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
 from perception_eval.matching import MatchingMode
 from perception_eval.object import DynamicObject
-from perception_eval.result import DynamicObjectWithPerceptionResult
 from perception_eval.result import get_object_results
+from perception_eval.result import PerceptionObjectResult
 from perception_eval.util.debug import get_objects_with_difference
 from perception_eval.visualization.eda_tool import EDAManager
 from perception_eval.visualization.eda_tool import EDAVisualizer
@@ -44,7 +44,7 @@ class TestEDAVisualizer:
     Attributes:
         self.dummy_estimated_objects (List[DynamicObject]): dummy estimated objects.
         self.dummy_ground_truth_objects (List[DynamicObject]): dummy ground truth objects.
-        self.object_results (List[DynamicObjectWithPerceptionResult]): dummy object results.
+        self.object_results (List[PerceptionObjectResult]): dummy object results.
         self.class_names (List[str]): names of class you want to visualize.
         self.ranges_xy (List[Union[int, float]]): distances in x-y plane.
         self.xylim_dict (Dict[str, List[float]]): xlim, ylim for visualization. e.g. xlim_dict['car'] is [xmin, xmax] for car
@@ -70,7 +70,7 @@ class TestEDAVisualizer:
 
     evaluation_task: EvaluationTask = EvaluationTask.DETECTION
 
-    object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+    object_results: List[PerceptionObjectResult] = get_object_results(
         evaluation_task=evaluation_task,
         estimated_objects=dummy_estimated_objects,
         ground_truth_objects=dummy_ground_truth_objects,
@@ -99,7 +99,7 @@ class TestEDAVisualizer:
 
     def test_objects_to_df_for_object_results(self, save_dir: str):
         """[summary]
-        Check if fields exist in DataFrame when input is List[DynamicObjectWithPerceptionResult]]
+        Check if fields exist in DataFrame when input is List[PerceptionObjectResult]]
 
         Args:
             save_dir (str):
@@ -190,7 +190,7 @@ class TestEDAVisualizer:
 
     def test_hist2d_object_num_points_for_each_class_for_object_results(self, save_dir: str):
         """[summary]
-        Check if error raises when hist2d_object_num_points_for_each_class is used for List[DynamicObjectWithPerceptionResult]
+        Check if error raises when hist2d_object_num_points_for_each_class is used for List[PerceptionObjectResult]
 
         Args:
             save_dir (str):
@@ -398,7 +398,7 @@ class TestEDAManager:
 
     evaluation_task: EvaluationTask = EvaluationTask.DETECTION
 
-    object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+    object_results: List[PerceptionObjectResult] = get_object_results(
         evaluation_task=evaluation_task,
         estimated_objects=dummy_estimated_objects,
         ground_truth_objects=dummy_ground_truth_objects,
@@ -461,7 +461,7 @@ class TestEDAManager:
         """[summary]
         Check if visualized results of estimated_objects are generated.
         """
-        estimated_object_dict: Dict[str, List[DynamicObjectWithPerceptionResult]] = {
+        estimated_object_dict: Dict[str, List[PerceptionObjectResult]] = {
             "object_results": self.object_results,
         }
 

@@ -24,7 +24,7 @@ from ._metrics_base import _TrackingMetricsBase
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
     from perception_eval.matching import MatchingMode
-    from perception_eval.result import DynamicObjectWithPerceptionResult
+    from perception_eval.result import PerceptionObjectResult
 
     from ..detection.tp_metrics import TPMetrics
     from ..detection.tp_metrics import TPMetricsAp
@@ -47,7 +47,7 @@ class HOTA(_TrackingMetricsBase):
 
     def __init__(
         self,
-        object_results: List[List[DynamicObjectWithPerceptionResult]],
+        object_results: List[List[PerceptionObjectResult]],
         num_ground_truth: int,
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
@@ -63,7 +63,7 @@ class HOTA(_TrackingMetricsBase):
             If evaluate all frames, index 0 is empty list.
 
         Args:
-            object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results for each frames.
+            object_results (List[List[PerceptionObjectResult]]): The list of object results for each frames.
             num_ground_truth (int): The number of ground truth.
             target_labels (List[LabelType]): The list of target labels.
             matching_mode: (MatchingMode): Matching mode class.
@@ -99,15 +99,15 @@ class HOTA(_TrackingMetricsBase):
 
     def _calculate_tp_fp(
         self,
-        cur_object_results: List[DynamicObjectWithPerceptionResult],
-        prev_object_results: List[DynamicObjectWithPerceptionResult],
+        cur_object_results: List[PerceptionObjectResult],
+        prev_object_results: List[PerceptionObjectResult],
     ) -> Any:
         """Calculate TP/FP and TPA/FPA
 
         Args:
             cur_object_results
-            prev_object_results (List[DynamicObjectWithPerceptionResult])
-            prev_object_results (List[DynamicObjectWithPerceptionResult])
+            prev_object_results (List[PerceptionObjectResult])
+            prev_object_results (List[PerceptionObjectResult])
             matching_threshold (float)
         Returns:
             tp_list (List[float])

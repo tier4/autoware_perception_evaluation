@@ -44,8 +44,8 @@ from perception_eval.matching.objects_filter import divide_objects
 from perception_eval.matching.objects_filter import divide_objects_to_num
 from perception_eval.metrics.metrics import MetricsScore
 from perception_eval.object import ObjectType
-from perception_eval.result import DynamicObjectWithPerceptionResult
 from perception_eval.result import PerceptionFrameResult
+from perception_eval.result import PerceptionObjectResult
 from tqdm import tqdm
 
 from .utils import get_metrics_info
@@ -597,7 +597,7 @@ class PerceptionAnalyzerBase(ABC):
 
     def format2df(
         self,
-        object_results: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
+        object_results: List[Union[ObjectType, PerceptionObjectResult]],
         status: MatchingStatus,
         frame_num: int,
         start: int = 0,
@@ -606,7 +606,7 @@ class PerceptionAnalyzerBase(ABC):
         """Format objects to pandas.DataFrame.
 
         Args:
-            object_results (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]): List of objects or object results.
+            object_results (List[Union[ObjectType, PerceptionObjectResult]]): List of objects or object results.
             status (MatchingStatus): Object's status.
             frame_num (int): Number of frame.
             start (int): Number of the first index. Defaults to 0.
@@ -629,7 +629,7 @@ class PerceptionAnalyzerBase(ABC):
     @abstractmethod
     def format2dict(
         self,
-        object_result: Union[ObjectType, DynamicObjectWithPerceptionResult],
+        object_result: Union[ObjectType, PerceptionObjectResult],
         status: MatchingStatus,
         frame_num: int,
         ego2map: Optional[np.ndarray] = None,
@@ -637,7 +637,7 @@ class PerceptionAnalyzerBase(ABC):
         """Format objects to dict.
 
         Args:
-            object_results (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]): List of objects or object results.
+            object_results (List[Union[ObjectType, PerceptionObjectResult]]): List of objects or object results.
             status (MatchingStatus): Object's status.
             frame_num (int): Number of frame.
             ego2map (Optional[np.ndarray]): Matrix to transform from ego coords to map coords. Defaults to None.

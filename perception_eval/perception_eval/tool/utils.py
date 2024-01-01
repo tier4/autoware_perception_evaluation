@@ -32,8 +32,8 @@ from perception_eval.matching.objects_filter import filter_object_results
 from perception_eval.matching.objects_filter import filter_objects
 from perception_eval.metrics import MetricsScore
 from perception_eval.object import DynamicObject
-from perception_eval.result import DynamicObjectWithPerceptionResult
 from perception_eval.result import PerceptionFrameResult
+from perception_eval.result import PerceptionObjectResult
 
 
 class PlotAxes(Enum):
@@ -265,7 +265,7 @@ def generate_area_points(
 
 
 def get_area_idx(
-    object_result: Union[DynamicObject, DynamicObjectWithPerceptionResult],
+    object_result: Union[DynamicObject, PerceptionObjectResult],
     upper_rights: np.ndarray,
     bottom_lefts: np.ndarray,
     ego2map: Optional[np.ndarray] = None,
@@ -273,7 +273,7 @@ def get_area_idx(
     """Returns the index of area.
 
     Args:
-        object_result (Union[DynamicObject, DynamicObjectWithPerceptionResult])
+        object_result (Union[DynamicObject, PerceptionObjectResult])
         upper_rights (np.ndarray): in shape (N, 2), N is number of area division.
         bottom_lefts (np.ndarray): in shape (N, 2), N is number of area division.
         ego2map (Optional[np.ndarray]): in shape (4, 4)
@@ -284,7 +284,7 @@ def get_area_idx(
     if isinstance(object_result, DynamicObject):
         frame_id: FrameID = object_result.frame_id
         obj_xyz: np.ndarray = np.array(object_result.state.position)
-    elif isinstance(object_result, DynamicObjectWithPerceptionResult):
+    elif isinstance(object_result, PerceptionObjectResult):
         frame_id: FrameID = object_result.estimated_object.frame_id
         obj_xyz: np.ndarray = np.array(object_result.estimated_object.state.position)
     else:
@@ -329,7 +329,7 @@ def extract_area_results(
         area = [area]
 
     for frame_result in out_frame_results:
-        out_object_results: List[DynamicObjectWithPerceptionResult] = []
+        out_object_results: List[PerceptionObjectResult] = []
         out_ground_truths: List[DynamicObject] = []
         ego2map: Optional[np.ndarray] = frame_result.frame_ground_truth.ego2map
         for object_result in frame_result.object_results:

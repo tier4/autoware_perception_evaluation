@@ -34,8 +34,8 @@ from perception_eval.matching.objects_filter import get_fn_objects
 from perception_eval.matching.objects_filter import get_negative_objects
 from perception_eval.matching.objects_filter import get_positive_objects
 from perception_eval.object import DynamicObject
-from perception_eval.result import DynamicObjectWithPerceptionResult
 from perception_eval.result import get_object_results
+from perception_eval.result import PerceptionObjectResult
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -62,7 +62,7 @@ class TestObjectsFilter(unittest.TestCase):
 
     def test_filter_object_results(self):
         """[summary]
-        Test filtering DynamicObjectWithPerceptionResult to filter ground truth objects.
+        Test filtering PerceptionObjectResult to filter ground truth objects.
 
         test objects:
             4 object_results made from dummy_ground_truth_objects with diff_distance
@@ -101,7 +101,7 @@ class TestObjectsFilter(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
@@ -259,7 +259,7 @@ class TestObjectsFilter(unittest.TestCase):
                 for idx, label in label_changes.items():
                     estimated_objects[idx].semantic_label = label
 
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
@@ -338,7 +338,7 @@ class TestObjectsFilter(unittest.TestCase):
                     diff_yaw=0,
                 )
 
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
@@ -466,7 +466,7 @@ class TestObjectsFilter(unittest.TestCase):
                 for idx, label in label_change_dict.items():
                     estimated_objects[int(idx)].semantic_label = label
 
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
@@ -559,7 +559,7 @@ class TestObjectsFilter(unittest.TestCase):
                     diff_distance=(x_diff, y_diff, 0.0),
                     diff_yaw=0,
                 )
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
@@ -638,7 +638,7 @@ class TestObjectsFilter(unittest.TestCase):
                 for idx, label in label_change_dict.items():
                     estimated_objects[int(idx)].semantic_label = label
 
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
@@ -662,7 +662,7 @@ class TestObjectsFilter(unittest.TestCase):
 
     def test_filter_object_results_by_confidence(self):
         """[summary]
-        Test filtering DynamicObjectWithPerceptionResult by confidence
+        Test filtering PerceptionObjectResult by confidence
 
         test objects:
             4 object_results made from dummy_ground_truth_objects with diff_distance
@@ -686,7 +686,7 @@ class TestObjectsFilter(unittest.TestCase):
         ]
         for n, (confidence_threshold, confidence_change_dict, ans_idx) in enumerate(patterns):
             with self.subTest(f"Test filtered_object_results by confidence: {n + 1}"):
-                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                object_results: List[PerceptionObjectResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=self.dummy_ground_truth_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
@@ -707,7 +707,7 @@ class TestObjectsFilter(unittest.TestCase):
 
     def test_divide_objects(self):
         """[summary]
-        Test divide DynamicObject or DynamicObjectWithPerceptionResult by their labels as dict.
+        Test divide DynamicObject or PerceptionObjectResult by their labels as dict.
 
         test objects:
 
@@ -717,20 +717,18 @@ class TestObjectsFilter(unittest.TestCase):
         for label, objects in objects_dict.items():
             assert all([obj.semantic_label.label == label for obj in objects])
 
-        objects_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        objects_results: List[PerceptionObjectResult] = get_object_results(
             evaluation_task=self.evaluation_task,
             estimated_objects=self.dummy_ground_truth_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,
         )
-        object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
-            objects_results
-        )
+        object_results_dict: Dict[AutowareLabel, List[PerceptionObjectResult]] = divide_objects(objects_results)
         for label, object_results in object_results_dict.items():
             assert all([obj_result.estimated_object.semantic_label.label == label for obj_result in object_results])
 
     def test_divide_objects_to_num(self):
         """[summary]
-        Test divide the number of DynamicObject or DynamicObjectWithPerceptionResult by their labels as dict.
+        Test divide the number of DynamicObject or PerceptionObjectResult by their labels as dict.
 
         test objects:
 
@@ -749,7 +747,7 @@ class TestObjectsFilter(unittest.TestCase):
         for label, num in objects_num_dict.items():
             assert ans[label] == num, f"{ans[label]}, {num}"
 
-        objects_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+        objects_results: List[PerceptionObjectResult] = get_object_results(
             evaluation_task=self.evaluation_task,
             estimated_objects=self.dummy_ground_truth_objects,
             ground_truth_objects=self.dummy_ground_truth_objects,

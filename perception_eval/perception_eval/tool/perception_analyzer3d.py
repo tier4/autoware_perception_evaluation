@@ -27,7 +27,7 @@ import pandas as pd
 from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.object import DynamicObject
-from perception_eval.result import DynamicObjectWithPerceptionResult
+from perception_eval.result import PerceptionObjectResult
 from perception_eval.util.math import get_pose_transform_matrix
 from perception_eval.util.math import rotation_matrix_to_euler
 import yaml
@@ -194,7 +194,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
     def format2dict(
         self,
-        object_result: Union[DynamicObject, DynamicObjectWithPerceptionResult],
+        object_result: Union[DynamicObject, PerceptionObjectResult],
         status: MatchingStatus,
         frame_num: int,
         ego2map: Optional[np.ndarray] = None,
@@ -202,7 +202,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """Format objects to dict.
 
         Args:
-            object_results (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): List of objects or object results.
+            object_results (List[Union[DynamicObject, PerceptionObjectResult]]): List of objects or object results.
             status (MatchingStatus): Object's status.
             frame_num (int): Number of frame.
             ego2map (Optional[np.ndarray]): Matrix to transform from ego coords to map coords. Defaults to None.
@@ -210,7 +210,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         Returns:
             Dict[str, Dict[str, Any]]
         """
-        if isinstance(object_result, DynamicObjectWithPerceptionResult):
+        if isinstance(object_result, PerceptionObjectResult):
             gt: Optional[DynamicObject] = object_result.ground_truth_object
             estimation: DynamicObject = object_result.estimated_object
             gt_point1, gt_point2 = object_result.plane_distance.ground_truth_nn_plane

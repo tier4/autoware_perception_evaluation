@@ -27,7 +27,7 @@ from .tracking import TrackingMetricsScore
 
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
-    from perception_eval.result import DynamicObjectWithPerceptionResult
+    from perception_eval.result import PerceptionObjectResult
 
 
 class MetricsScore:
@@ -124,14 +124,14 @@ class MetricsScore:
 
     def evaluate_detection(
         self,
-        object_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]],
+        object_results: Dict[LabelType, List[PerceptionObjectResult]],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
         """[summary]
         Calculate detection metrics
 
         Args:
-            object_results (Dict[LabelType, List[DynamicObjectWithPerceptionResult]]): The dict of object result
+            object_results (Dict[LabelType, List[PerceptionObjectResult]]): The dict of object result
         """
         if self.tracking_config is None:
             self.__num_gt += sum(num_ground_truth.values())
@@ -180,7 +180,7 @@ class MetricsScore:
 
     def evaluate_tracking(
         self,
-        object_results: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
+        object_results: Dict[LabelType, List[List[PerceptionObjectResult]]],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
         """[summary]
@@ -192,7 +192,7 @@ class MetricsScore:
             In case of evaluating multi frame, [[], [t1], [t2], ..., [tn]]
 
         Args:
-            object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object result for each frame.
+            object_results (List[List[PerceptionObjectResult]]): The list of object result for each frame.
         """
         self.__num_gt += sum(num_ground_truth.values())
 
@@ -237,20 +237,20 @@ class MetricsScore:
 
     def evaluate_prediction(
         self,
-        object_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]],
+        object_results: Dict[LabelType, List[PerceptionObjectResult]],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
         """[summary]
         Calculate prediction metrics
 
         Args:
-            object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
+            object_results (List[PerceptionObjectResult]): The list of object result
         """
         pass
 
     def evaluate_classification(
         self,
-        object_results: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
+        object_results: Dict[LabelType, List[List[PerceptionObjectResult]]],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
         self.__num_gt += sum(num_ground_truth.values())
