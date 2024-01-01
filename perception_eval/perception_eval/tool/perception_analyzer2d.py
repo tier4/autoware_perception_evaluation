@@ -90,22 +90,20 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             scenario_obj: Optional[Dict[str, Any]] = yaml.safe_load(scenario_file)
 
         p_cfg: Dict[str, Any] = scenario_obj["Evaluation"]["PerceptionEvaluationConfig"]
-        eval_cfg_dict: Dict[str, Any] = p_cfg["evaluation_config_dict"]
+        config_dict: Dict[str, Any] = p_cfg["evaluation_config_dict"]
 
-        eval_cfg_dict["label_prefix"] = (
-            "traffic_light" if eval_cfg_dict["UseCaseName"] == "traffic_light" else "autoware"
-        )
+        config_dict["label_prefix"] = "traffic_light" if config_dict["UseCaseName"] == "traffic_light" else "autoware"
         camera_types: Dict[str, int] = scenario_obj["Evaluation"]["Conditions"]["TargetCameras"]
 
-        evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
+        config = PerceptionEvaluationConfig(
             dataset_paths=[""],  # dummy path
             frame_id=list(camera_types.keys()),
             result_root_directory=result_root_directory,
-            evaluation_config_dict=eval_cfg_dict,
+            config_dict=config_dict,
             load_raw_data=False,
         )
 
-        return cls(evaluation_config)
+        return cls(config)
 
     @property
     def columns(self) -> List[str]:
