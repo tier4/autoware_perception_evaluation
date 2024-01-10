@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,25 +37,15 @@ if TYPE_CHECKING:
 
 
 class PerceptionFrameResult:
-    """The result for 1 frame (the pair of estimated objects and ground truth objects)
-
-    Attributes:
-        object_results (List[PerceptionObjectResult]): Filtered object results to each estimated object.
-        frame_ground_truth (FrameGroundTruth): Filtered ground truth of frame.
-        frame_number (int): The file name of frame in the datasets.
-        unix_time (int): The unix time for frame [us].
-        target_labels (List[AutowareLabel]): The list of target label.
-        metrics_score (MetricsScore): Metrics score results.
-        pass_fail_result (PassFailResult): Pass fail results.
+    """Frame level result for perception evaluation.
 
     Args:
-        object_results (List[PerceptionObjectResult]): The list of object result.
-        frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
-        metrics_config (MetricsScoreConfig): Metrics config class.
-        critical_object_filter_config (CriticalObjectFilterConfig): Critical object filter config.
-        frame_pass_fail_config (PerceptionPassFailConfig): Frame pass fail config.
-        unix_time (int): The unix time for frame [us]
-        target_labels (List[AutowareLabel]): The list of target label.
+    -----
+        unix_time (int): Unix timestamp.
+        frame_config (PerceptionFrameConfig): Frame level configuration.
+        metrics_config (MetricsScoreConfig): Configuration for metrics score.
+        object_results (List[PerceptionObjectResult]): List of object results.
+        frame_ground_truth (FrameGroundTruth): Ground truth at one frame.
     """
 
     def __init__(
@@ -99,10 +89,17 @@ class PerceptionFrameResult:
         previous_result: Optional[PerceptionFrameResult] = None,
     ) -> None:
         """
-        Evaluate a frame from the pair of estimated objects and ground truth objects
+        Evaluate one frame.
+
+        Internally, this method runs the following.
+        1. Calculate metrics score if corresponding metrics config exists.
+        2. Evaluate pass fail result.
+
         Args:
-            ros_critical_ground_truth_objects (List[ObjectType]): The list of Ground truth objects filtered by ROS node.
-            previous_result (Optional[PerceptionFrameResult]): The previous frame result. If None, set it as empty list []. Defaults to None.
+        -----
+            critical_ground_truth_objects (List[ObjectType]): List of ground truth objects.
+            previous_result (Optional[PerceptionFrameResult]): If the previous result exist
+                it should be input to perform time series evaluation. Defaults to None.
         """
         # Divide objects by label to dict
         object_results_dict = objects_filter.divide_objects(self.object_results, self.target_labels)
@@ -140,10 +137,12 @@ def get_object_status(frame_results: List[PerceptionFrameResult]) -> List[Ground
     """Returns the number of TP/FP/TN/FN ratios per frame as tuple.
 
     Args:
+    -----
         frame_results (List[PerceptionFrameResult]): List of frame results.
 
     Returns:
-        List[GroundTruthStatus]: Sequence of matching status ratios for each GT.
+    --------
+        List[GroundTruthStatus]: List of matching status ratios for each GT.
     """
     status_infos: List[GroundTruthStatus] = []
     for frame_result in frame_results:
