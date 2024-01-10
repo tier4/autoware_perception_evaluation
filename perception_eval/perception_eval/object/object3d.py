@@ -38,17 +38,12 @@ if TYPE_CHECKING:
 class ObjectState:
     """Object state class.
 
-    Attributes:
-        position (Tuple[float, float, float]): (center_x, center_y, center_z)[m].
-        orientation (Quaternion) : Quaternion instance.
-        size (Tuple[float, float, float]): Bounding box size, (wx, wy, wz)[m].
-        velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz)[m/s].
-
     Args:
-        position (Tuple[float, float, float]): (center_x, center_y, center_z)[m].
+    -----
+        position (Tuple[float, float, float]): (center_x, center_y, center_z) [m].
         orientation (Quaternion) : Quaternion instance.
         shape (Shape): Shape instance.
-        velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz)[m/s].
+        velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz) [m/s].
     """
 
     def __init__(
@@ -80,6 +75,7 @@ class DynamicObject:
     """Dynamic object class for 3D object.
 
     Attributes:
+    -----------
         unix_time (int) : Unix time [us].
         frame_id (FrameID): FrameID instance, where 3D objects are with respect, BASE_LINK or MAP.
 
@@ -102,6 +98,7 @@ class DynamicObject:
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
 
     Args:
+    -----
         unix_time (int): Unix time [us].
         frame_id (FrameID): FrameID instance, where 3D objects are with respect, BASE_LINK or MAP.
         position (Tuple[float, float, float]): (center_x, center_y, center_z)[m].
@@ -198,9 +195,11 @@ class DynamicObject:
         it causes error.
 
         Args:
+        -----
             other (Optional[DynamicObject]): Another object.
 
         Returns:
+        --------
             bool
         """
         if other is None:
@@ -217,10 +216,12 @@ class DynamicObject:
         """Get the 3d distance to the object from ego vehicle in bird eye view.
 
         Args:
-            ego2map (Optional[numpy.ndarray]):4x4 Transform matrix
+        -----
+            ego2map (Optional[numpy.ndarray]): 4x4 Transform matrix
                 from base_link coordinate system to map coordinate system.
 
         Returns:
+        --------
             float: The 3d distance to the object from ego vehicle in bird eye view.
         """
         if self.frame_id == FrameID.BASE_LINK:
@@ -236,10 +237,12 @@ class DynamicObject:
         """Get the 2d distance to the object from ego vehicle in bird eye view.
 
         Args:
+        -----
             ego2map (Optional[numpy.ndarray]):4x4 Transform matrix
                 from base_link coordinate system to map coordinate system.
 
         Returns:
+        --------
             float: The 2d distance to the object from ego vehicle in bird eye view.
         """
         if self.frame_id == FrameID.BASE_LINK:
@@ -255,10 +258,12 @@ class DynamicObject:
         """Get the object heading from ego vehicle in bird eye view.
 
         Args:
+        -----
             ego2map (Optional[numpy.ndarray]):4x4 Transform matrix.
                 from base_link coordinate system to map coordinate system.
 
         Returns:
+        --------
             float: The heading (radian)
         """
         if self.frame_id == FrameID.MAP:
@@ -280,9 +285,11 @@ class DynamicObject:
         """Get the bounding box corners.
 
         Args:
+        -----
             scale (float): Scale factor to scale the corners. Defaults to 1.0.
 
         Returns:
+        --------
             corners (numpy.ndarray): Objects corners array.
         """
         # NOTE: This is with respect to base_link or map coordinate system.
@@ -299,17 +306,18 @@ class DynamicObject:
         return corners
 
     def get_footprint(self, scale: float = 1.0) -> Polygon:
-        """[summary]
-        Get footprint polygon from an object with respect ot base_link or map coordinate system.
+        """Get footprint polygon from an object with respect ot base_link or map coordinate system.
 
         Args:
             scale (float): Scale factor for footprint. Defaults to 1.0.
 
         Returns:
+        --------
             Polygon: The footprint polygon of object with respect to base_link or map coordinate system.
                 It consists of 4 corner 2d position of the object and  start and end points are same point.
                 ((x0, y0, 0), (x1, y1, 0), (x2, y2, 0), (x3, y3, 0), (x0, y0, 0))
         Notes:
+        ------
             center_position: (xc, yc)
             vector_center_to_corners[0]: (x0 - xc, y0 - yc)
         """
@@ -333,6 +341,7 @@ class DynamicObject:
         """Get the position error between myself and other. If other is None, returns None.
 
         Returns:
+        --------
             err_x (float): x-axis position error[m].
             err_y (float): y-axis position error[m].
             err_z (float): z-axis position error[m].
@@ -351,6 +360,7 @@ class DynamicObject:
         """Get the heading error between myself and other. If other is None, returns None.
 
         Returns:
+        --------
             err_x (float): Roll error[rad], in [-pi, pi].
             err_y (float): Pitch error[rad], in [-pi, pi].
             err_z (float): Yaw error[rad], in [-pi, pi].
@@ -383,6 +393,7 @@ class DynamicObject:
         If other is None, returns None. Also, velocity of myself or other is None, returns None too.
 
         Returns:
+        --------
             err_vx (float): x-axis velocity error[m/s].
             err_vy (float): y-axis velocity error[m/s].
             err_vz (float): z-axis velocity error[m/s].
@@ -403,6 +414,7 @@ class DynamicObject:
         """Get area of object BEV.
 
         Returns:
+        --------
             float: Area of footprint.
         """
         return self.state.footprint.area
@@ -411,6 +423,7 @@ class DynamicObject:
         """Get volume of bounding box.
 
         Returns:
+        --------
             float: Box volume.
         """
         return self.get_area_bev() * self.state.size[2]
@@ -427,11 +440,13 @@ class DynamicObject:
         Otherwise, returns pointcloud array outside of box.
 
         Args:
+        -----
             pointcloud (np.ndarray): The Array of pointcloud, in shape (N, 3).
             bbox_scale (float): Scale factor for bounding box. Defaults to 1.0.
             inside (bool): Whether crop inside pointcloud or outside. Defaults to True.
 
         Returns:
+        --------
             numpy.ndarray: Pointcloud array inside or outside box.
         """
         corners: np.ndarray = self.get_corners(scale=bbox_scale)
@@ -445,10 +460,12 @@ class DynamicObject:
         """Calculate the number of pointcloud inside of own bounding box.
 
         Args:
+        -----
             pointcloud (np.ndarray): The Array of pointcloud, in shape (N, 3).
             bbox_scale (float): Scale factor for bounding box. Defaults to 1.0.
 
         Returns:
+        --------
             int: Number of points inside of the own box.
         """
         inside_pointcloud: np.ndarray = self.crop_pointcloud(pointcloud, bbox_scale)
@@ -477,12 +494,14 @@ class DynamicObject:
         """Set object state from positions, orientations, sizes, and twists.
 
         Args:
+        -----
             positions (Optional[List[Tuple[float, float, float]]]): Sequence of positions. Defaults to None.
             orientations (Optional[List[Quaternion]], optional): Sequence of orientations. Defaults to None.
             sizes (Optional[List[Tuple[float, float, float]]]): Sequence of boxes sizes. Defaults to None.
             twists (Optional[List[Tuple[float, float, float]]]): Sequence of velocities. Defaults to None.
 
         Returns:
+        --------
             Optional[List[ObjectState]]: The list of ObjectState
         """
         if positions is None or orientations is None:
