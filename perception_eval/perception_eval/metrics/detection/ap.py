@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,21 +39,8 @@ if TYPE_CHECKING:
 class Ap:
     """AP class.
 
-    Attributes:
-        ap (float): AP (Average Precision) score.
-        matching_average (Optional[float]): Average of matching score.
-            If there are no object results, this variable is None.
-        matching_mode (MatchingMode): MatchingMode instance.
-        matching_threshold (List[float]): Thresholds list for matching.
-        matching_standard_deviation (Optional[float]): Standard deviation of matching score.
-            If there are no object results, this variable is None.
-        target_labels (List[LabelType]): Target labels list.
-        tp_metrics (TPMetrics): Mode of TP metrics.
-        ground_truth_objects_num (int): Number ground truths.
-        tp_list (List[float]): List of the number of TP objects ordered by their confidences.
-        fp_list (List[float]): List of the number of FP objects ordered by their confidences.
-
     Args:
+    -----
         tp_metrics (TPMetrics): Mode of TP (True positive) metrics.
         object_results (List[List[PerceptionObjectResult]]): Object results list.
         num_ground_truth (int): Number of ground truths.
@@ -115,16 +102,13 @@ class Ap:
             matching_mode=self.matching_mode,
         )
 
-    def save_precision_recall_graph(
-        self,
-        result_directory: str,
-        frame_name: str,
-    ) -> None:
-        """[summary]
-        Save visualization image of precision and recall curve.
+    def save_precision_recall_graph(self, result_directory: str, frame_name: str) -> None:
+        """Save visualization image of precision and recall curve.
+
         The circle points represent original values and the square points represent interpolated ones.
 
         Args:
+        -----
             result_directory (str): The directory path to save images.
             frame_name (str): The frame name.
         """
@@ -161,16 +145,15 @@ class Ap:
         plt.ylabel("Precision")
         plt.savefig(file_path)
 
-    def get_precision_recall_list(
-        self,
-    ) -> Tuple[List[float], List[float]]:
-        """[summary]
-        Calculate precision recall.
+    def get_precision_recall_list(self) -> Tuple[List[float], List[float]]:
+        """Calculate precision recall.
 
         Returns:
+        --------
             Tuple[List[float], List[float]]: tp_list and fp_list
 
         Example:
+        --------
             state
                 self.tp_list = [1, 1, 2, 3]
                 self.fp_list = [0, 1, 1, 1]
@@ -194,13 +177,15 @@ class Ap:
         self,
         precision_list: List[float],
         recall_list: List[float],
-    ):
-        """[summary]
-        Interpolate precision and recall with maximum precision value per recall bins.
+    ) -> Tuple[List[float], List[float]]:
+        """Interpolates precision and recall with maximum precision value per recall bins.
 
         Args:
-            precision_list (List[float])
-            recall_list (List[float])
+            precision_list (List[float]): List of precisions.
+            recall_list (List[float]): List of recalls.
+
+        Returns:
+            Tuple[List[float], List[float]]: List of max precisions and recalls.
         """
         max_precision_list: List[float] = [precision_list[-1]]
         max_precision_recall_list: List[float] = [recall_list[-1]]
@@ -221,20 +206,22 @@ class Ap:
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
         object_results: List[PerceptionObjectResult],
     ) -> Tuple[List[float], List[float]]:
-        """
-        Calculate TP (true positive) and FP (false positive).
+        """Calculates TP (true positive) and FP (false positive).
 
         Args:
+        -----
             tp_metrics (TPMetrics): The mode of TP (True positive) metrics
             object_results (List[PerceptionObjectResult]): the list of objects with result
 
         Return:
+        -------
             Tuple[tp_list, fp_list]
 
             tp_list (List[float]): the list of TP ordered by object confidence
             fp_list (List[float]): the list of FP ordered by object confidence
 
         Example:
+        --------
             whether object label is correct [True, False, True, True]
             return
                 tp_list = [1, 1, 2, 3]
@@ -282,22 +269,20 @@ class Ap:
 
         return tp_list, fp_list
 
-    def _calculate_ap(
-        self,
-        precision_list: List[float],
-        recall_list: List[float],
-    ) -> float:
-        """[summary]
-        Calculate AP (average precision)
+    def _calculate_ap(self, precision_list: List[float], recall_list: List[float]) -> float:
+        """Calculates AP (average precision).
 
         Args:
+        -----
             precision_list (List[float]): The list of precision
             recall_list (List[float]): The list of recall
 
         Returns:
+        --------
             float: AP
 
         Example:
+        --------
             precision_list = [1.0, 0.5, 0.67, 0.75]
             recall_list = [0.25, 0.25, 0.5, 0.75]
 
@@ -329,14 +314,15 @@ class Ap:
         object_results: List[PerceptionObjectResult],
         matching_mode: MatchingMode,
     ) -> Tuple[Optional[float], Optional[float]]:
-        """[summary]
-        Calculate average and standard deviation.
+        """Calculates average and standard deviation.
 
         Args:
+        -----
             object_results (List[PerceptionObjectResult]): The object results
             matching_mode (MatchingMode): [description]
 
         Returns:
+        --------
             Tuple[float, float]: [description]
         """
 
@@ -352,10 +338,13 @@ class Ap:
 
     @staticmethod
     def _get_flat_str(str_list: List[str]) -> str:
-        """
-        Example:
-            a = _get_flat_str([aaa, bbb, ccc])
-            print(a) # aaa_bbb_ccc
+        """Flattens list of strings.
+
+        Args:
+            str_list (List[str]): List of strings.
+
+        Returns:
+            str: [aa, bb, cc] is flattened to aa_bb_cc.
         """
         output = ""
         for one_str in str_list:

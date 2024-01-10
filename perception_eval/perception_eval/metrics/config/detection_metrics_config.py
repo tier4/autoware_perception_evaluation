@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,14 +28,6 @@ if TYPE_CHECKING:
 
 class DetectionMetricsConfig(_MetricsConfigBase):
     """Configuration class for detection evaluation metrics.
-
-    Attributes:
-        evaluation_task (EvaluationTask.DETECTION)
-        target_labels (List[LabelType]): Target labels list.
-        center_distance_thresholds (List[float]): Thresholds list of center distance matching.
-        plane_distance_thresholds (List[float]): Threshold list of plane distance matching.
-        iou_2d_thresholds (List[float]): Thresholds list of 2d iou matching.
-        iou_3d_thresholds (List[float]): Thresholds list of 3d iou matching.
 
     Args:
         target_labels (List[LabelType]): Target labels list.

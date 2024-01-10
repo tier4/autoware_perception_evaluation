@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,19 +33,8 @@ if TYPE_CHECKING:
 class MetricsScore:
     """Metrics score class.
 
-    Attributes:
-        detection_config (Optional[DetectionMetricsConfig]): Config for detection evaluation.
-        tracking_config (Optional[DetectionMetricsConfig]): Config for tracking evaluation.
-        prediction_config (Optional[PredictionMetricsConfig]): Config for prediction evaluation.
-        classification_config (Optional[ClassificationMetricsConfig]): Config for classification evaluation.
-        evaluation_task (EvaluationTask): EvaluationTask instance.
-        maps (List[Map]): List of mAP instances. Each mAP is different from threshold
-                               for matching (ex. IoU 0.3).
-        tracking_scores (List[TrackingMetricsScore]): List of TrackingMetricsScore instances.
-        prediction_scores (List[TODO]): TBD
-        classification_score (List[ClassificationMetricsScore]): List of ClassificationMetricsScore instances.
-
     Args:
+    -----
         config (MetricsScoreConfig): MetricsScoreConfig instance.
         used_frame: List[int]: List of frame numbers loaded to evaluate.
     """
@@ -127,10 +116,10 @@ class MetricsScore:
         object_results: Dict[LabelType, List[PerceptionObjectResult]],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
-        """[summary]
-        Calculate detection metrics
+        """Calculate detection metrics
 
         Args:
+        -----
             object_results (Dict[LabelType, List[PerceptionObjectResult]]): The dict of object result
         """
         if self.tracking_config is None:
@@ -183,8 +172,7 @@ class MetricsScore:
         object_results: Dict[LabelType, List[List[PerceptionObjectResult]]],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
-        """[summary]
-        Calculate tracking metrics.
+        """Calculate tracking metrics.
 
         NOTE:
             object_results and ground_truth_objects must be nested list.
@@ -192,6 +180,7 @@ class MetricsScore:
             In case of evaluating multi frame, [[], [t1], [t2], ..., [tn]]
 
         Args:
+        -----
             object_results (List[List[PerceptionObjectResult]]): The list of object result for each frame.
         """
         self.__num_gt += sum(num_ground_truth.values())
@@ -240,10 +229,10 @@ class MetricsScore:
         object_results: Dict[LabelType, List[PerceptionObjectResult]],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
-        """[summary]
-        Calculate prediction metrics
+        """Calculate prediction metrics.
 
         Args:
+        -----
             object_results (List[PerceptionObjectResult]): The list of object result
         """
         pass
@@ -253,6 +242,13 @@ class MetricsScore:
         object_results: Dict[LabelType, List[List[PerceptionObjectResult]]],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
+        """Calculates classification metrics score.
+
+        Args:
+        -----
+            object_results (Dict[LabelType, List[List[PerceptionObjectResult]]]): Object results.
+            num_ground_truth (Dict[LabelType, int]): The number of ground truths.
+        """
         self.__num_gt += sum(num_ground_truth.values())
         classification_score_ = ClassificationMetricsScore(
             object_results_dict=object_results,
