@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,12 +31,8 @@ if TYPE_CHECKING:
 class Map:
     """mAP metrics score class.
 
-    Attributes:
-        map_config (MapConfig): The config for mAP calculation.
-        aps (List[Ap]): The list of AP (Average Precision) for each label.
-        map (float): mAP value.
-
     Args:
+    -----
         object_results (List[List[PerceptionObjectResult]]): The list of object results
         target_labels (List[LabelType]): Target labels to evaluate mAP
         matching_mode (MatchingMode): Matching mode like distance between the center of
@@ -100,6 +96,7 @@ class Map:
         """__str__ method
 
         Returns:
+        --------
             str: Formatted string.
         """
 

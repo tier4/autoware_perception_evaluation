@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,22 +34,12 @@ class Roi:
     TODO:
     - Support multi roi input for Blinker and BrakeLamp objects.
 
-    Attributes:
-        offset (Tuple[int, int]): Top-left pixels from (0, 0), (x, y) order.
-        size (Tuple[int, int]): Size of ROI, (width, height) order.
-        center (Tuple[int, int]): Center of ROI, (x, y) order.
-        height (int): Height of ROI.
-        width (int): Width  of ROI.
-        area (int): Area of ROI.
-
     Args:
+    -----
         roi (Tuple[int, int, int, int]): (xmin, ymin, width, height) of ROI.
     """
 
-    def __init__(
-        self,
-        roi: Tuple[int, int, int, int],
-    ) -> None:
+    def __init__(self, roi: Tuple[int, int, int, int]) -> None:
         if len(roi) != 4:
             raise ValueError("`roi` must be 4 length int array.")
 
@@ -109,17 +99,9 @@ class Roi:
 class DynamicObject2D:
     """Dynamic object class for 2D object.
 
-    Attributes:
-        unix_time (int): Unix time[us].
-        frame_id (FrameID): FrameID instance, where 2D objects are with respect, related to CAM_**.
-        semantic_score (float): Object's confidence [0, 1].
-        semantic_label (Label): Object's Label.
-        roi (Optional[Roi]): ROI in image. For classification, None is OK. Defaults to None.
-        uuid (Optional[str]): Unique ID. For traffic light objects, set lane ID. Defaults to None.
-        visibility (Optional[Visibility]): Visibility status. Defaults to None.
-
     Args:
-        unix_time (int): Unix time[us].
+    -----
+        unix_time (int): Unix time [us].
         frame_id (FrameID): FrameID instance, where 2D objects are with respect, related to CAM_**.
         semantic_score (float): Object's confidence [0, 1].
         semantic_label (Label): Object's Label.
@@ -152,7 +134,8 @@ class DynamicObject2D:
         """Returns the corners of bounding box in pixel.
 
         Returns:
-            numpy.ndarray: (top_left, top_right, bottom_right, bottom_left), in shape (4, 2).
+        --------
+            np.ndarray: (top_left, top_right, bottom_right, bottom_left), in shape (4, 2).
         """
         assert self.roi is not None, "self.roi is None."
         return self.roi.corners
@@ -161,6 +144,7 @@ class DynamicObject2D:
         """Returns the area of bounding box in pixel.
 
         Returns:
+        --------
             int: Area of bounding box[px].
         """
         assert self.roi is not None, "self.roi is None."
@@ -170,6 +154,7 @@ class DynamicObject2D:
         """Returns the corners as polygon.
 
         Returns:
+        --------
             Polygon: Corners as Polygon. ((x0, y0), ..., (x0, y0))
         """
         assert self.roi is not None, "self.roi is None."

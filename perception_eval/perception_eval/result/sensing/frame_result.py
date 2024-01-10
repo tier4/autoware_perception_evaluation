@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,17 +44,13 @@ class SensingFrameResult:
             in non-detection area.
 
     Args:
-        sensing_frame_config (SensingFrameConfig): The configuration of sensing evaluation.
+    -----
+        sensing_frame_config (SensingFrameConfig): Frame level configuration for sensing evaluation.
         unix_time (int): Unix time [us].
-        frame_name (str): Frame name in string.
+        frame_number (int): Number of frame.
     """
 
-    def __init__(
-        self,
-        sensing_frame_config: SensingFrameConfig,
-        unix_time: int,
-        frame_number: int,
-    ) -> None:
+    def __init__(self, sensing_frame_config: SensingFrameConfig, unix_time: int, frame_number: int) -> None:
         # Config
         self.sensing_frame_config = sensing_frame_config
 
@@ -77,6 +73,7 @@ class SensingFrameResult:
         """Evaluate each object at current frame.
 
         Args:
+        -----
             ground_truth_objects (list[DynamicObject]): Ground truth objects list.
             pointcloud_for_detection (numpy.ndarray): Array of pointcloud in detection area.
             pointcloud_for_non_detection (List[numpy.ndarray]): List of pointcloud array in non-detection area.
@@ -101,6 +98,7 @@ class SensingFrameResult:
         If the object is occluded, the result is appended to `self.detection_warning_results`.
 
         Args:
+        -----
             ground_truth_objects (list[DynamicObject]): Ground truth objects list.
             pointcloud_for_detection (numpy.ndarray): Array of pointcloud in detection area.
         """
@@ -136,6 +134,7 @@ class SensingFrameResult:
         `self.pointcloud_failed_non_detection`.
 
         Args:
+        -----
             ground_truth_objects (list[DynamicObject]): Ground truth objects list.
             pointcloud_for_non_detection (list[numpy.ndarray]): List of pointcloud array in non-detection area.
         """

@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,11 +27,7 @@ if TYPE_CHECKING:
 
 
 class TPMetrics(metaclass=ABCMeta):
-    """Tp metrics meta class
-
-    Attributes:
-        mode (str): TP metrics name.
-    """
+    """Tp metrics meta class"""
 
     mode: str
 
@@ -52,12 +48,7 @@ class TPMetrics(metaclass=ABCMeta):
 
 
 class TPMetricsAp(TPMetrics):
-    """
-    Ap metrics class
-
-    Attributes:
-        mode (str): TP metrics name that is TPMetricsAp.
-    """
+    """Ap metrics class."""
 
     mode: str = "TPMetricsAp"
 
@@ -76,12 +67,7 @@ class TPMetricsAp(TPMetrics):
 
 
 class TPMetricsAph(TPMetrics):
-    """
-    Aph metrics class
-
-    Attributes:
-        mode (str): TP metrics name that is TPMetricsAph.
-    """
+    """Aph metrics class."""
 
     mode: str = "TPMetricsAph"
 
@@ -119,11 +105,7 @@ class TPMetricsAph(TPMetrics):
 
 
 class TPMetricsConfidence(TPMetrics):
-    """Confidence TP class.
-
-    Attributes:
-        mode (str): TP metrics name that is TPMetricsConfidence.
-    """
+    """Confidence TP class."""
 
     mode: str = "TPMetricsConfidence"
 

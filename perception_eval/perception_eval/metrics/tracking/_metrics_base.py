@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,15 +34,8 @@ if TYPE_CHECKING:
 class _TrackingMetricsBase(ABC):
     """Abstract base class for tracking metrics.
 
-    Attributes:
-        num_ground_truth (int): Number of ground truths.
-        target_labels (List[LabelType]): Target labels list.
-        matching_mode (MatchingMode): MatchingMode instance.
-        matching_threshold_list (List[float]): Thresholds list for matching.
-        metrics_field (Optional[List[str]]): Filed name of target metrics. If it is not specified, default supported metrics are used.
-        support_metrics (List[str]): List of supported metrics names.
-
     Args:
+    -----
         num_ground_truth (int): Number of ground truths.
         target_labels (List[LabelType]): Target labels list.
         matching_mode (MatchingMode): MatchingMode instance.
@@ -95,12 +88,15 @@ class _TrackingMetricsBase(ABC):
         If `metrics_field=None`, returns default supported metrics.
 
         Args:
+        -----
             metrics_field (Optional[List[str]]): The list of executing metrics field.
 
         Returns:
+        --------
             metrics_field (List[str])
 
         Raises:
+        -------
             ValueError: If input metrics field is unsupported.
         """
         if metrics_field is None:
@@ -143,13 +139,16 @@ class _TrackingMetricsBase(ABC):
         """Calculate precision recall.
 
         Args:
+        -----
             tp_list (List[float]): TP results list.
             ground_truth_objects_num (int): Number of ground truths.
 
         Returns:
+        --------
             Tuple[List[float], List[float]]: tp_list and fp_list
 
         Examples:
+        ---------
             >>> tp_list = [1, 1, 2, 3]
             >>> ground_truth_num = 4
             >>> precision_list, recall_list = self.get_precision_recall(tp_list, ground_truth_num)

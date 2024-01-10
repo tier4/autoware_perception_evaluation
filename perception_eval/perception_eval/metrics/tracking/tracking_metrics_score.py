@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,12 +33,8 @@ class TrackingMetricsScore:
 
     Length of input `target_labels` and `matching_threshold_list` must be same.
 
-    Attributes:
-        target_labels: (List[LabelType]): Target labels list.
-        matching_mode (MatchingMode): MatchingMode instance.
-        clears (List[CLEAR]): List of CLEAR instances.
-
     Args:
+    -----
         object_results_dict (Dict[LabelType, List[List[PerceptionObjectResult]]):
             Dict that items are object results list mapped by their labels.
         num_ground_truth (int): Number of ground truths.
@@ -78,6 +74,7 @@ class TrackingMetricsScore:
         """Summing up multi CLEAR result.
 
         Returns:
+        --------
             mota (float): MOTA score.
             motp (float): MOTP score.
             num_id_switch (int): The number of ID switched.

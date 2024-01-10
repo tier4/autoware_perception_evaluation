@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ class _MetricsConfigBase(ABC):
     Then, threshold for car objects is 1.0. threshold for bike objects is 0.5. threshold for pedestrian object is 0.5.
 
     Args:
+    -----
         target_labels (List[LabelType]): Target labels list.
         center_distance_thresholds (List[List[float]]):
                 Thresholds List of center distance. Defaults to None.
