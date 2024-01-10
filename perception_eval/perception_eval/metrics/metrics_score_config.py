@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,16 +36,9 @@ if TYPE_CHECKING:
 class MetricsScoreConfig:
     """A configuration class for each evaluation task metrics.
 
-    Attributes:
-        detection_config (Optional[DetectionMetricsConfig]): Config for detection evaluation.
-        tracking_config (Optional[DetectionMetricsConfig]): Config for tracking evaluation.
-        prediction_config (Optional[PredictionMetricsConfig]): Config for prediction evaluation.
-        classification_config (Optional[ClassificationMetricsConfig]): Config for classification evaluation.
-        evaluation_task (EvaluationTask): EvaluationTask instance.
-
     Args:
-        evaluation_task (EvaluationTask): EvaluationTask instance.
-        **cfg: Configuration data.
+    -----
+        params (PerceptionMetricsParam): Parameters for metrics score.
     """
 
     def __init__(self, params: PerceptionMetricsParam) -> None:
@@ -81,10 +74,16 @@ class MetricsScoreConfig:
         """Check if input parameters are valid.
 
         Args:
+        -----
             config (_MetricsConfigBase): Metrics score instance.
             params (PerceptionMetricsParam): Parameters for metrics.
 
+        Returns:
+        --------
+            Dict[str, Any]: Extracted params.
+
         Raises:
+        -------
             KeyError: When got invalid parameter names.
         """
         input_params_dict = params.as_dict()

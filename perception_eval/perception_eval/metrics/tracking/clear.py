@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,21 +43,8 @@ class CLEAR(_TrackingMetricsBase):
 
     NOTE: MT, ML, PT is under construction.
 
-    Attributes:
-        target_labels (List[LabelType]): The list of target label.
-        matching_mode (MatchingMode): The target matching mode.
-        metrics_field (Optional[List[str]]): The list of target metrics name. If not specified, set default supported metrics.
-        ground_truth_objects_num (int): The number of ground truth.
-        support_metrics (List[str]): The list of supported metrics name. (["MOTA", "MOTP"])
-        tp (float): The total value/number of TP.
-        fp (float): The total value/number of FP.
-        id_switch (int): The total number of ID switch.
-        tp_matching_score (float): The total value of matching score in TP.
-        mota (float): MOTA score.
-        motp (float): MOTP score.
-        results (OrderedDict[str, Any]): The dict to keep scores.
-
     Args:
+    -----
         object_results (List[List[PerceptionObjectResult]]): The list of object results for each frames.
         num_ground_truth (int): The number of ground truth.
         target_labels (List[LabelType]): The list of target labels.
@@ -138,6 +125,7 @@ class CLEAR(_TrackingMetricsBase):
             if the number of GT is 0, MOTA returns inf and if the TP score is 0, MOTP returns inf.
 
         Returns:
+        --------
             mota (float): MOTA score.
             motp (float): MOTP score.
         """
@@ -162,10 +150,12 @@ class CLEAR(_TrackingMetricsBase):
         """Calculate matching compared with previous object results.
 
         Args:
+        -----
             cur_object_results (List[List[PerceptionObjectResult]]): Object results list at current frame.
             prev_object_results (List[List[PerceptionObjectResult]]): Object results list at previous frame.
 
         Returns:
+        --------
             tp (float): Total value of TP. If matching is True, num_tp += 1.0.
             fp (float): Total value of FP. If matching is False, num_fp += 1.0.
             num_id_switch (int): Total number of ID switch. If matching is switched compared with previous result, num_id_switch += 1.
@@ -241,10 +231,12 @@ class CLEAR(_TrackingMetricsBase):
             GT ID is unique between the different labels.
 
         Args:
+        -----
             cur_object_result (PerceptionObjectResult): Object result at current frame.
             prev_object_result (PerceptionObjectResult): Object result at previous frame.
 
         Returns:
+        --------
             bool: Return True if ID is switched.
         """
         # current GT = None -> FP
@@ -282,10 +274,12 @@ class CLEAR(_TrackingMetricsBase):
         When previous or current GT is None(=FP), return False regardless the ID of estimated.
 
         Args:
+        -----
             cur_object_result (PerceptionObjectResult): Object result at current frame.
             prev_object_result (PerceptionObjectResult):Object result at previous frame.
 
         Returns:
+        --------
             bool: Return True if both estimated and GT ID are same.
         """
         if cur_object_result.ground_truth_object is None or prev_object_result.ground_truth_object is None:

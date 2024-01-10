@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,26 +30,7 @@ if TYPE_CHECKING:
 
 
 class PerceptionFrameConfig:
-    """
-    Config class for critical object filter
-
-    Attributes:
-        self.target_labels (List[str]): Target list
-        self.max_x_position_list (Optional[List[float]]):
-            Maximum x position threshold list for each label. Defaults to None.
-        self.max_y_position_list (Optional[List[float]]):
-            Maximum y position threshold list for each label. Defaults to None.
-        self.max_distance_list (Optional[List[float]]]):
-            Maximum distance threshold list for each label. Defaults to None.
-        self.min_distance_list (Optional[List[float]]):
-            Minimum distance threshold list for object. Defaults to None.
-        self.min_point_numbers (Optional[List[int]]):
-            Minimum number of points to be included in object's box. Defaults to None.
-        self.confidence_threshold_list (Optional[List[float]]):
-            The list of confidence threshold for each label. Defaults to None.
-        self.target_uuids (Optional[List[str]]): The list of target uuid. Defaults to None.
-        self.filtering_params: (Dict[str, Any]): The container of filtering parameters.
-    """
+    """Frame level configuration for perception evaluation."""
 
     def __init__(
         self,
@@ -67,8 +48,9 @@ class PerceptionFrameConfig:
     ) -> None:
         """
         Args:
+        -----
             evaluator_config (PerceptionEvaluationConfig): Evaluation config
-            target_labels (List[str]): The list of target label.
+            target_labels (List[Union[str, LabelType]): The list of target labels.
             max_x_position_list (Optional[List[float]]):
                 Maximum x position threshold list for each label. Defaults to None.
             max_y_position_list (Optional[List[float]]):
@@ -82,6 +64,8 @@ class PerceptionFrameConfig:
             confidence_threshold_list (Optional[List[float]]):
                 The list of confidence threshold for each label. Defaults to None.
             target_uuids (Optional[List[str]]): The list of target uuid. Defaults to None.
+            ignore_attributes (Optional[List[str]]): The list of attribute names to ignore. Defaults to None.
+            success_thresholds (Optional[List[float]]): The list of thresholds to be success. Defaults to None.
         """
         self.evaluation_task = evaluator_config.evaluation_task
         if all([isinstance(label, str) for label in target_labels]):
@@ -110,6 +94,18 @@ class PerceptionFrameConfig:
 
     @classmethod
     def from_eval_cfg(cls, eval_cfg: PerceptionEvaluationConfig) -> PerceptionFrameConfig:
+        """Constructs from scene level configuration.
+
+        This method should be used if frame level configuration was not specified by user.
+
+        Args:
+        -----
+            eval_cfg (PerceptionEvaluationConfig): Scene level configuration.
+
+        Returns:
+        --------
+            PerceptionFrameConfig: Frame level configuration.
+        """
         if eval_cfg.evaluation_task.is_3d():
             success_thresholds = eval_cfg.metrics_param.plane_distance_thresholds
         else:

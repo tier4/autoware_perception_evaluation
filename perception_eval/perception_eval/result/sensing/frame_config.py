@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,14 +17,10 @@ from typing import Optional
 
 
 class SensingFrameConfig:
-    """Config class for sensing detection evaluation per frame.
-
-    Attributes:
-        box_scale_0m (float): Scale factor for bounding box at 0m.
-        box_scale_100m (float): Scale factor for bounding box at 100m.
-        min_points_threshold (int): The minimum number of points should be detected in bounding box.
+    """Frame level configuration for sensing evaluation.
 
     Args:
+    -----
         target_uuids (Optional[List[str]]): List of target uuids to be filtered.
         box_scale_0m (float): Scale factor for bounding box at 0m.
         box_scale_100m (float): Scale factor for bounding box at 100m.
@@ -52,9 +48,11 @@ class SensingFrameConfig:
             scale = ((box_scale_100m - box_scale_0m) / (100 - 0)) * (distance - 0) + box_scale_0m
 
         Args:
+        -----
             distance (float): The distance from vehicle to target bounding box.
 
         Returns:
+        --------
             float: Calculated scale factor.
         """
         return self.scale_slope_ * distance + self.box_scale_0m

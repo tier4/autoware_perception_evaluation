@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2022-2024 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,17 +42,15 @@ if TYPE_CHECKING:
 
 
 class PerceptionObjectResult:
-    """Object result class for perception evaluation.
+    """Object level result for perception evaluation.
 
-    Attributes:
+    This class consists of the pair of estimated and ground truth objects.
+    In case of ground truth object is `None`, it means the estimated object is FP regardless of the matching score.
+
+    Args:
+    -----
         estimated_object (ObjectType): Estimated object.
-        ground_truth_object (Optional[ObjectType]): Ground truth object.
-        is_label_correct (bool): Whether the label both of `estimated_object` and `ground_truth_object` are same.
-        center_distance (Optional[CenterDistanceMatching]): CenterDistanceMatching instance.
-        plane_distance (Optional[PlaneDistanceMatching]): PlaneDistanceMatching instance.
-            In 2D evaluation, this is None.
-        iou_2d (IOU2dMatching): IOU2dMatching instance.
-        iou_3d (IOU3dMatching): IOU3dMatching instance. In 2D evaluation, this is None.
+        ground_truth_object (Optional[ObjectType]): Ground truth object. `None` is allowed.
     """
 
     def __init__(
@@ -60,13 +58,6 @@ class PerceptionObjectResult:
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
     ) -> None:
-        """[summary]
-        Evaluation result for an object estimated object.
-
-        Args:
-            estimated_object (ObjectType): The estimated object by inference like CenterPoint
-            ground_truth_objects (Optional[ObjectType]): The list of Ground truth objects
-        """
         if ground_truth_object is not None:
             assert type(estimated_object) is type(
                 ground_truth_object
@@ -108,11 +99,22 @@ class PerceptionObjectResult:
     ) -> Tuple[MatchingStatus, Optional[MatchingStatus]]:
         """Returns matching status both of estimation and GT as `tuple`.
 
+        In case of the ground truth is `None`, the status of GT is `None` and estimation is FP.
+        Otherwise, the status is determined by the following rules.
+        1. The matching score is better than the threshold:
+            a. Evaluation task is FP validation:    (FP, TN)
+            b. Otherwise:                           (TP, TP)
+        2. Otherwise:
+            a. Evaluation task is FP validation:    (FP, FP)
+            b. Otherwise:                           (FP, FN)
+
         Args:
-            matching_mode (MatchingMode): Matching policy.
+        -----
+            matching_mode (MatchingMode): Matching mode.
             matching_threshold (float): Matching threshold.
 
         Returns:
+        --------
             Tuple[MatchingStatus, Optional[MatchingStatus]]: Matching status of estimation and GT.
         """
         if self.ground_truth_object is None:
@@ -131,24 +133,18 @@ class PerceptionObjectResult:
                 else (MatchingStatus.FP, MatchingStatus.FN)
             )
 
-    def is_result_correct(
-        self,
-        matching_mode: MatchingMode,
-        matching_threshold: Optional[float],
-    ) -> bool:
-        """The function judging whether the result is target or not.
-        Return `False`, if label of GT is "FP" and matching.
+    def is_result_correct(self, matching_mode: MatchingMode, matching_threshold: Optional[float]) -> bool:
+        """The method judging whether the result is target or not.
+
+        Returns `False`, if label of GT is "FP" and matching.
 
         Args:
-            matching_mode (MatchingMode):
-                    The matching mode to evaluate.
-            matching_threshold (float):
-                    The matching threshold to evaluate.
-                    For example, if matching_mode = IOU3d and matching_threshold = 0.5,
-                    and IoU of the object is higher than "matching_threshold",
-                    this function appends to return objects.
+        -----
+            matching_mode (MatchingMode): The matching mode to evaluate.
+            matching_threshold (float): The matching threshold to evaluate.
 
         Returns:
+        --------
             bool: If label is correct and satisfy matching threshold, return True
         """
         if self.ground_truth_object is None:
@@ -167,15 +163,18 @@ class PerceptionObjectResult:
         return not is_matching if self.ground_truth_object.semantic_label.is_fp() else is_matching
 
     def get_matching(self, matching_mode: MatchingMode) -> Optional[MatchingMethod]:
-        """Get MatchingMethod instance with corresponding MatchingMode.
+        """Returns the matching module for corresponding matching mode.
+
+        Note that,
+            - 2D detection/tracking tasks, input `PLANEDISTANCE` and `IOU3D` return `None`.
+            - 2D classification task, all return `None`.
 
         Args:
-            matching_mode (MatchingMode): MatchingMode instance.
-
-        Raises:
-            NotImplementedError: When unexpected MatchingMode is input.
+        -----
+            matching_mode (MatchingMode): The matching mode.
 
         Returns:
+        --------
             Optional[MatchingMethod]: Corresponding MatchingMethods instance.
         """
         if matching_mode == MatchingMode.CENTERDISTANCE:
@@ -187,16 +186,17 @@ class PerceptionObjectResult:
         elif matching_mode == MatchingMode.IOU3D:
             return self.iou_3d
         else:
-            raise NotImplementedError
+            raise NotImplementedError(f"Unexpected matching mode: {matching_mode}")
 
     @property
     def distance_error_bev(self) -> Optional[float]:
-        """Get error center distance between ground truth and estimated object in BEV space.
+        """Returns the center distance error in BEV coords between estimation and GT.
 
-        If `self.ground_truth_object=None`, returns None.
+        If GT is `None` returns `None`.
 
         Returns:
-            Optional[float]: error center distance between ground truth and estimated object.
+        --------
+            Optional[float]: Calculated error [m].
         """
         if self.ground_truth_object is None:
             return None
@@ -204,12 +204,13 @@ class PerceptionObjectResult:
 
     @property
     def distance_error(self) -> Optional[float]:
-        """Get error center distance between ground truth and estimated object.
+        """Returns the center distance error in BEV coords between estimation and GT.
 
-        If `self.ground_truth_object=None`, returns None.
+        If GT is `None` returns `None`.
 
         Returns:
-            Optional[float]: error center distance between ground truth and estimated object.
+        --------
+            Optional[float]: Calculated error [m].
         """
         if self.ground_truth_object is None:
             return None
@@ -217,41 +218,36 @@ class PerceptionObjectResult:
 
     @property
     def position_error(self) -> Optional[Tuple[float, float, float]]:
-        """Get the position error vector from estimated to ground truth object.
+        """Returns the position error vector from estimated to ground truth object.
 
-        If `self.ground_truth_object=None`, returns None.
+        If GT is `None` returns `None`.
 
         Returns:
-            float: x-axis position error[m].
-            float: y-axis position error[m].
-            float: z-axis position error[m].
+        --------
+            Optional[Tuple[float, float, float]]: Errors ordering (x, y, z) [m].
         """
         return self.estimated_object.get_position_error(self.ground_truth_object)
 
     @property
     def heading_error(self) -> Optional[Tuple[float, float, float]]:
-        """Get the heading error vector from estimated to ground truth object.
+        """Returns the heading error vector from estimated to ground truth object.
 
-        If `self.ground_truth_object=None`, returns None.
+        If GT is `None` returns `None`.
 
         Returns:
-            float: Roll error, in [-pi, pi].
-            float: Pitch error, in [-pi, pi].
-            float: Yaw error, in [-pi, pi].
+            Optional[Tuple[float, float, float]]: Errors ordering (roll, pitch, yaw) [rad] in `[-pi, pi]`.
         """
         return self.estimated_object.get_heading_error(self.ground_truth_object)
 
     @property
     def velocity_error(self) -> Optional[Tuple[float, float, float]]:
-        """Get the velocity error vector from estimated to ground truth object.
+        """Returns the velocity error vector from estimated to ground truth object.
 
-        If `self.ground_truth_object=None`, returns None.
+        If GT is `None` returns `None`.
         Also, velocity of estimated or ground truth object is None, returns None too.
 
         Returns:
-            float: x-axis velocity error[m/s].
-            float: y-axis velocity error[m/s].
-            float: z-axis velocity error[m/s].
+            Optional[Tuple[float, float, float]]: Errors ordering (x, y, z) [m/s].
         """
         return self.estimated_object.get_velocity_error(self.ground_truth_object)
 
@@ -272,7 +268,7 @@ def get_object_results(
     target_labels: Optional[List[LabelType]] = None,
     matching_policy: MatchingPolicy = MatchingPolicy(),
 ) -> List[PerceptionObjectResult]:
-    """Returns list of DynamicObjectWithPerceptionResult.
+    """Returns list of object results.
 
     For classification, matching objects their uuid.
     Otherwise, matching them depending on their center distance by default.
@@ -281,14 +277,16 @@ def get_object_results(
     Otherwise, they all are FP.
 
     Args:
+    -----
         evaluation_task (EvaluationTask): Evaluation task.
-        estimated_objects (List[ObjectType]): Estimated objects list.
-        ground_truth_objects (List[ObjectType]): Ground truth objects list.
-        matching_mode (MatchingMode): MatchingMode instance.
-        matchable_thresholds (Optional[List[float]]): Thresholds to be
+        estimated_objects (List[ObjectType]): List of estimated objects.
+        ground_truth_objects (List[ObjectType]): List of ground truth objects.
+        target_labels (Optional[List[LabelType]]): List of target labels to match. Defaults to None.
+        matching_policy (MatchingPolicy): Policy of matching.
 
     Returns:
-        object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
+    --------
+        object_results (List[PerceptionObjectResult]): List of object results.
     """
     # There is no estimated object (= all FN)
     if not estimated_objects:
@@ -346,16 +344,18 @@ def _get_object_results_with_id(
     estimated_objects: List[DynamicObject2D],
     ground_truth_objects: List[DynamicObject2D],
 ) -> List[PerceptionObjectResult]:
-    """Returns the list of DynamicObjectWithPerceptionResult considering their uuids.
+    """Returns the list of object results considering their uuids.
 
     This function is used in 2D classification evaluation.
 
     Args:
-        estimated_objects (List[DynamicObject2D]): Estimated objects list.
-        ground_truth_objects (List[DynamicObject2D]): Ground truth objects list.
+    -----
+        estimated_objects (List[DynamicObject2D]): List of estimated objects.
+        ground_truth_objects (List[DynamicObject2D]): List of ground truth objects.
 
     Returns:
-        object_results (List[PerceptionObjectResult]): Object results list.
+    --------
+        object_results (List[PerceptionObjectResult]): List of object results.
     """
     object_results: List[PerceptionObjectResult] = []
     estimated_objects_ = estimated_objects.copy()
@@ -387,26 +387,18 @@ def _get_object_results_with_id(
     return object_results
 
 
-def _get_fp_object_results(
-    estimated_objects: List[ObjectType],
-) -> List[PerceptionObjectResult]:
-    """Returns the list of DynamicObjectWithPerceptionResult that have no ground truth.
+def _get_fp_object_results(estimated_objects: List[ObjectType]) -> List[PerceptionObjectResult]:
+    """Returns the list of FP object results that have no ground truth.
 
     Args:
-        estimated_objects (List[ObjectType]): Estimated objects list.
+    -----
+        estimated_objects (List[ObjectType]): List of object results.
 
     Returns:
-        object_results (List[DynamicObjectWithPerceptionResult]): FP object results list.
+    --------
+        List[PerceptionObjectResult]: List of FP object results.
     """
-    object_results: List[PerceptionObjectResult] = []
-    for est_obj_ in estimated_objects:
-        object_result_ = PerceptionObjectResult(
-            estimated_object=est_obj_,
-            ground_truth_object=None,
-        )
-        object_results.append(object_result_)
-
-    return object_results
+    return [PerceptionObjectResult(est, None) for est in estimated_objects]
 
 
 def _get_score_table(
@@ -418,17 +410,15 @@ def _get_score_table(
     """Returns score table, in shape (num_estimation, num_ground_truth).
 
     Args:
+    -----
         estimated_objects (List[ObjectType]): Estimated objects list.
         ground_truth_objects (List[ObjectType]): Ground truth objects list.
-        allow_matching_unknown (bool): Indicates whether allow to match with unknown label.
-        matching_method_module (Callable): MatchingMethod instance.
-        target_labels (Optional[List[LabelType]]): Target labels to be evaluated.
-        matching_thresholds (Optional[List[float]]): List of thresholds
+        target_labels (List[LabelType]): Target labels to be evaluated.
+        matching_policy (MatchingPolicy): Policy of matching.
 
     Returns:
-        score_table (numpy.ndarray): in shape (num_estimation, num_ground_truth).
+        np.ndarray: Array in shape (num_estimation, num_ground_truth).
     """
-    # fill matching score table, in shape (NumEst, NumGT)
     num_row: int = len(estimated_objects)
     num_col: int = len(ground_truth_objects)
     score_table = np.full((num_row, num_col), np.nan)

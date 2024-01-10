@@ -29,10 +29,8 @@ if TYPE_CHECKING:
 class ClassificationMetricsScore:
     """Metrics score class for classification evaluation.
 
-    Attributes:
-        self.accuracies (List[ClassificationAccuracy]): List of ClassificationAccuracy instances.
-
     Args:
+    -----
         object_results_dict (Dict[LabelType, List[List[PerceptionObjectResult]]]):
             Dict that are list of PerceptionObjectResult mapped by their labels.
         num_ground_truth_dict (Dict[LabelType, int]): Dict that are number of PerceptionObjectResult
@@ -62,6 +60,7 @@ class ClassificationMetricsScore:
         """Summarize all ClassificationAccuracy.
 
         Returns:
+        --------
             accuracy (float): Accuracy score. When `num_est+num_gt-num_tp=0`, this is float('inf').
             precision (float): Precision score. When `num_gt+num_fp=0`, this is float('inf').
             recall (float): Recall score. When `num_gt=0`, this is float('inf').
