@@ -24,14 +24,14 @@ from typing import TYPE_CHECKING
 from perception_eval.common.threshold import get_label_threshold
 
 from ._metrics_base import _TrackingMetricsBase
-from ..detection.tp_metrics import TPMetricsAp
+from ..tp_metrics import TPMetricsAp
 
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
     from perception_eval.matching import MatchingMode
     from perception_eval.result import PerceptionObjectResult
 
-    from ..detection.tp_metrics import TPMetrics
+    from ..tp_metrics import TPMetrics
 
 
 class CLEAR(_TrackingMetricsBase):

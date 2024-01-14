@@ -19,8 +19,8 @@ from typing import List
 from typing import TYPE_CHECKING
 
 from .ap import Ap
-from .tp_metrics import TPMetricsAp
-from .tp_metrics import TPMetricsAph
+from ..tp_metrics import TPMetricsAp
+from ..tp_metrics import TPMetricsAph
 
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType

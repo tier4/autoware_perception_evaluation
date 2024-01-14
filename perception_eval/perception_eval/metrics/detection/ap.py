@@ -32,8 +32,8 @@ if TYPE_CHECKING:
     from perception_eval.matching import MatchingMode
     from perception_eval.result import PerceptionObjectResult
 
-    from .tp_metrics import TPMetricsAp
-    from .tp_metrics import TPMetricsAph
+    from ..tp_metrics import TPMetricsAp
+    from ..tp_metrics import TPMetricsAph
 
 
 class Ap:

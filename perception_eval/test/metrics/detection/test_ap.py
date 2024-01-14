@@ -29,8 +29,8 @@ from perception_eval.common.label import AutowareLabel
 from perception_eval.matching import MatchingMode
 from perception_eval.matching.objects_filter import filter_objects
 from perception_eval.metrics.detection.ap import Ap
-from perception_eval.metrics.detection.tp_metrics import TPMetricsAp
-from perception_eval.metrics.detection.tp_metrics import TPMetricsAph
+from perception_eval.metrics.tp_metrics import TPMetricsAp
+from perception_eval.metrics.tp_metrics import TPMetricsAph
 from perception_eval.object import DynamicObject
 from perception_eval.result import get_object_results
 from perception_eval.result import PerceptionObjectResult
