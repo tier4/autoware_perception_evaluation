@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from perception_eval.matching import MatchingMode
     from perception_eval.result import PerceptionObjectResult
 
-    from ..detection.tp_metrics import TPMetrics
+    from ..tp_metrics import TPMetrics
 
 
 class _TrackingMetricsBase(ABC):
