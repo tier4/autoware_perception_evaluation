@@ -23,12 +23,12 @@ from typing import Optional
 from typing import Tuple
 from typing import TYPE_CHECKING
 
+from ..tp_metrics import TPMetricsAp
+
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
     from perception_eval.matching import MatchingMode
     from perception_eval.result import PerceptionObjectResult
-
-    from ..tp_metrics import TPMetrics
 
 
 class _TrackingMetricsBase(ABC):
@@ -40,11 +40,9 @@ class _TrackingMetricsBase(ABC):
         target_labels (List[LabelType]): Target labels list.
         matching_mode (MatchingMode): MatchingMode instance.
         matching_threshold_list (List[float]): Thresholds list for matching.
-        tp_metrics (TPMetrics): TPMetrics instance.
-        metrics_field (Optional[List[str]]: The list of target sub metrics.
     """
 
-    _support_metrics: List[str] = []
+    metrics: List[str]
 
     @abstractmethod
     def __init__(
@@ -53,17 +51,12 @@ class _TrackingMetricsBase(ABC):
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
         matching_threshold_list: List[float],
-        tp_metrics: TPMetrics,
-        metrics_field: Optional[List[str]],
     ) -> None:
         self._num_ground_truth: int = num_ground_truth
         self._target_labels: List[LabelType] = target_labels
         self._matching_mode: MatchingMode = matching_mode
         self._matching_threshold_list = matching_threshold_list
-        self._tp_metrics: TPMetrics = tp_metrics
-
-        # Check if metrics field is supported.
-        self._metrics_filed: List[str] = self._check_metrics(metrics_field)
+        self._tp_metrics = TPMetricsAp()
 
     @abstractmethod
     def _calculate_tp_fp(
@@ -77,10 +70,6 @@ class _TrackingMetricsBase(ABC):
     @abstractmethod
     def results(self) -> Dict[str, float]:
         pass
-
-    @property
-    def support_metrics(self) -> List[str]:
-        return self._support_metrics
 
     def _check_metrics(self, metrics_field: Optional[List[str]]) -> List[str]:
         """Check if specified metrics is supported.
@@ -100,10 +89,10 @@ class _TrackingMetricsBase(ABC):
             ValueError: If input metrics field is unsupported.
         """
         if metrics_field is None:
-            return self.support_metrics
+            return self.metrics
 
-        if set(metrics_field) > set(self.support_metrics):
-            raise ValueError(f"Unsupported metrics: {set(metrics_field) - set(self.support_metrics)}")
+        if set(metrics_field) > set(self.metrics):
+            raise ValueError(f"Unsupported metrics: {set(metrics_field) - set(self.metrics)}")
 
         return metrics_field
 
@@ -124,12 +113,8 @@ class _TrackingMetricsBase(ABC):
         return self._matching_threshold_list
 
     @property
-    def tp_metrics(self) -> TPMetrics:
+    def tp_metrics(self) -> TPMetricsAp:
         return self._tp_metrics
-
-    @property
-    def metrics_field(self) -> List[str]:
-        return self._metrics_filed
 
     def get_precision_recall_list(
         self,
