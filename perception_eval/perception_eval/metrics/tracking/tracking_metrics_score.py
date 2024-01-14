@@ -15,12 +15,13 @@
 from __future__ import annotations
 
 from ctypes import Union
+from typing import Any
 from typing import Dict
 from typing import List
-from typing import Tuple
 from typing import TYPE_CHECKING
 
 from .clear import CLEAR
+from .clear import sum_clear
 
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
@@ -70,34 +71,10 @@ class TrackingMetricsScore:
             )
             self.clears.append(clear_)
 
-    def _sum_clear(self) -> Tuple[float, float, int]:
-        """Summing up multi CLEAR result.
-
-        Returns:
-        --------
-            mota (float): MOTA score.
-            motp (float): MOTP score.
-            num_id_switch (int): The number of ID switched.
-        """
-        mota: float = 0.0
-        motp: float = 0.0
-        num_gt: int = 0
-        num_tp: int = 0
-        num_id_switch: int = 0
-        for clear in self.clears:
-            if clear.mota != float("inf"):
-                mota += clear.mota * clear.num_ground_truth
-            if clear.motp != float("inf"):
-                motp += clear.motp * clear.tp
-            num_gt += clear.num_ground_truth
-            num_tp += int(clear.tp)
-            num_id_switch += clear.id_switch
-
-        mota = float("inf") if num_gt == 0 else mota / num_gt
-        mota = max(0.0, mota)
-        # NOTE: If tp_metrics is not TPMetricsAP this calculation cause bug
-        motp = float("inf") if num_tp == 0 else motp / num_tp
-        return mota, motp, num_id_switch
+    def summarize(self) -> Dict[str, Any]:
+        ret = {}
+        ret.update(sum_clear(self.clears))
+        return ret
 
     def __str__(self) -> str:
         """__str__ method
@@ -106,28 +83,30 @@ class TrackingMetricsScore:
             str: Formatted string.
         """
         str_: str = "\n"
+
         # === Total ===
+        summary = self.summarize()
         # CLEAR
-        mota, motp, id_switch = self._sum_clear()
-        str_ += f"[TOTAL] MOTA: {mota:.3f}, MOTP: {motp:.3f}, ID switch: {id_switch:d} "
+        str_ += f"[TOTAL] MOTA: {summary['MOTA']:.3f}, MOTP: {summary['MOTP']:.3f}, IDSW: {summary['IDSW']:d} "
+
         str_ += f"({self.matching_mode.value})\n"
         # === For each label ===
         # --- Table ---
         str_ += "\n"
         # --- Label ----
         str_ += "|      Label |"
-        # CLEAR
         for clear in self.clears:
-            str_ += f" {clear.target_labels[0]}({clear.matching_threshold_list[0]}) | "
+            str_ += f" {clear.target_labels}({clear.matching_threshold_list[0]}) | "
+
         str_ += "\n"
         str_ += "| :--------: |"
         for _ in self.clears:
             str_ += " :---: |"
         str_ += "\n"
-        for field_name in self.clears[0].metrics_field:
-            str_ += f"|   {field_name} |"
+        for name in CLEAR.metrics:
+            str_ += f"|   {name} |"
             for clear_ in self.clears:
-                score: Union[int, float] = clear_.results[field_name]
+                score: Union[int, float] = clear_.results[name]
                 if isinstance(score, int):
                     str_ += f" {score:d} |"
                 else:

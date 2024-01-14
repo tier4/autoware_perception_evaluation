@@ -195,17 +195,17 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     cur_ground_truth_objects, self.target_labels
                 )
 
-                tracking_score: TrackingMetricsScore = TrackingMetricsScore(
+                tracking_score = TrackingMetricsScore(
                     object_results_dict=object_results_dict,
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )
-                mota, motp, id_switch = tracking_score._sum_clear()
-                self.assertAlmostEqual(mota, ans_mota)
-                self.assertAlmostEqual(motp, ans_motp)
-                self.assertEqual(id_switch, ans_id_switch)
+                summary = tracking_score.summarize()
+                self.assertAlmostEqual(summary["MOTA"], ans_mota)
+                self.assertAlmostEqual(summary["MOTP"], ans_motp)
+                self.assertEqual(summary["IDSW"], ans_id_switch)
 
     def test_center_distance_translation_difference(self):
         """[summary]
