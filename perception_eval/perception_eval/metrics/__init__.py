@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .metrics import MetricsScore
+from .metrics_score import MetricsScore
 from .metrics_score_config import MetricsScoreConfig
 
 __all__ = ("MetricsScore", "MetricsScoreConfig")

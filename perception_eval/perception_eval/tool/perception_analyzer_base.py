@@ -42,7 +42,7 @@ from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.matching.objects_filter import divide_objects
 from perception_eval.matching.objects_filter import divide_objects_to_num
-from perception_eval.metrics.metrics import MetricsScore
+from perception_eval.metrics.metrics_score import MetricsScore
 from perception_eval.object import ObjectType
 from perception_eval.result import PerceptionFrameResult
 from perception_eval.result import PerceptionObjectResult
