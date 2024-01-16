@@ -18,6 +18,7 @@ from typing import List
 from typing import Optional
 
 from perception_eval.common.dataset import FrameGroundTruth
+from perception_eval.common.dataset import get_interpolated_now_frame
 from perception_eval.common.dataset import get_now_frame
 from perception_eval.common.dataset import load_all_datasets
 from perception_eval.config import EvaluationConfigType
@@ -104,7 +105,7 @@ class _EvaluationMangerBase(ABC):
             Optional[FrameGroundTruth]: FrameGroundTruth instance at current frame.
                 If there is no corresponding ground truth, returns None.
         """
-        ground_truth_now_frame: FrameGroundTruth = get_now_frame(
+        ground_truth_now_frame: FrameGroundTruth = get_interpolated_now_frame(
             ground_truth_frames=self.ground_truth_frames,
             unix_time=unix_time,
             threshold_min_time=threshold_min_time,
