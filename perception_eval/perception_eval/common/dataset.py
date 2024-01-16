@@ -34,6 +34,8 @@ from perception_eval.common.geometry import interpolate_object_list
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
+from perception_eval.util.math import get_pose_transform_matrix
+from pyquaternion import Quaternion
 from tqdm import tqdm
 
 
@@ -359,7 +361,7 @@ def interpolate_ground_truth_frames(
     after_frame: FrameGroundTruth,
     unix_time: int,
 ):
-    """Interpolate ground truth frame with lienar interpolation.
+    """Interpolate ground truth frame with lienear interpolation.
 
     Args:
         before_frame (FrameGroundTruth): input frame1
@@ -370,16 +372,21 @@ def interpolate_ground_truth_frames(
     ego2map = interpolate_hopmogeneous_matrix(
         before_frame.ego2map, after_frame.ego2map, before_frame.unix_time, after_frame.unix_time, unix_time
     )
+    original_frame: str = before_frame.frame_name  # assume "map" or "base_link"
+    assert original_frame in ["map", "base_link"]
 
-    # TODO: if frame is base_link, need to interpolate with global coordinate
+    # TODO: Need refactor for simplicity
+    # if frame is base_link, need to interpolate with global coordinate
     # 1. convert object list to global
-    # 2. interpolate
-    # 3. convert object list to base_link
+    before_frame_objects = convert_objects_to_global(before_frame.objects, before_frame.ego2map)
+    after_frame_objects = convert_objects_to_global(after_frame.objects, after_frame.ego2map)
 
-    # interpolate objects
+    # 2. interpolate objects
     object_list = interpolate_object_list(
-        before_frame.objects, after_frame.objects, before_frame.unix_time, after_frame.unix_time, unix_time
+        before_frame_objects, after_frame_objects, before_frame.unix_time, after_frame.unix_time, unix_time
     )
+    # 3. convert object list to base_link
+    object_list = convert_objects_to_base_link(object_list, ego2map)
 
     # interpolate raw data
     output_frame = deepcopy(before_frame)
@@ -387,3 +394,75 @@ def interpolate_ground_truth_frames(
     output_frame.objects = object_list
     output_frame.unix_time = unix_time
     return output_frame
+
+
+def convert_objects_to_global(
+    object_list: List[ObjectType],
+    ego2map: np.ndarray,
+) -> List[ObjectType]:
+    """Convert object list to global coordinate.
+
+    Args:
+        object_list (List[ObjectType]): object list
+        ego2map (np.ndarray): ego2map matrix
+
+    Returns:
+        List[ObjectType]: object list in global coordinate
+    """
+    output_object_list = []
+    for object in object_list:
+        if object.frame_id == "map":
+            output_object_list.append(deepcopy(object))
+            continue
+        elif object.frame_id == "base_link":
+            src: np.ndarray = get_pose_transform_matrix(
+                position=object.state.position,
+                rotation=object.state.orientation.rotation_matrix,
+            )
+            dst: np.ndarray = ego2map.dot(src)
+            updated_position: np.ndarray = tuple(dst[:3, 3].flatten())
+            updated_rotation: np.ndarray = Quaternion(dst[:3, :3])
+            output_object = deepcopy(object)
+            output_object.state.position = updated_position
+            output_object.state.orientation = updated_rotation
+            output_object.frame_id = "map"
+            output_object_list.append(output_object)
+        else:
+            raise NotImplementedError(f"Unexpected frame_id: {object.frame_id}")
+    return output_object_list
+
+
+def convert_objects_to_base_link(
+    object_list: List[ObjectType],
+    ego2map: np.ndarray,
+) -> List[ObjectType]:
+    """Convert object list to base_link coordinate.
+
+    Args:
+        object_list (List[ObjectType]): object list
+        ego2map (np.ndarray): ego2map matrix
+
+    Returns:
+        List[ObjectType]: object list in base_link coordinate
+    """
+    output_object_list = []
+    for object in object_list:
+        if object.frame_id == "base_link":
+            output_object_list.append(deepcopy(object))
+            continue
+        elif object.frame_id == "map":
+            src: np.ndarray = get_pose_transform_matrix(
+                position=object.state.position,
+                rotation=object.state.orientation.rotation_matrix,
+            )
+            dst: np.ndarray = np.linalg.inv(ego2map).dot(src)
+            updated_position: np.ndarray = tuple(dst[:3, 3].flatten())
+            updated_rotation: np.ndarray = Quaternion(dst[:3, :3])
+            output_object = deepcopy(object)
+            output_object.state.position = updated_position
+            output_object.state.orientation = updated_rotation
+            output_object.frame_id = "base_link"
+            output_object_list.append(output_object)
+        else:
+            raise NotImplementedError(f"Unexpected frame_id: {object.frame_id}")
+    return output_object_list
