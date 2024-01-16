@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import deepcopy
 import logging
 from typing import Any
 from typing import Dict
@@ -28,6 +29,8 @@ from perception_eval.common import ObjectType
 from perception_eval.common.dataset_utils import _sample_to_frame
 from perception_eval.common.dataset_utils import _sample_to_frame_2d
 from perception_eval.common.evaluation_task import EvaluationTask
+from perception_eval.common.geometry import interpolate_hopmogeneous_matrix
+from perception_eval.common.geometry import interpolate_object_list
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
@@ -288,3 +291,99 @@ def get_now_frame(
         return None
     else:
         return ground_truth_now_frame
+
+
+def get_interpolated_now_frame(
+    ground_truth_frames: List[FrameGroundTruth],
+    unix_time: int,
+    threshold_min_time: int,
+) -> Optional[FrameGroundTruth]:
+    """Get interpolated ground truth frame in specified unix time.
+
+    Args:
+        ground_truth_frames (List[FrameGroundTruth]): FrameGroundTruth instance list.
+        unix_time (int): Unix time [us].
+        threshold_min_time (int): Min time for unix time difference [us].
+
+    Returns:
+        Optional[FrameGroundTruth]:
+                The ground truth frame whose unix time is most close to args unix time
+                from dataset.
+                If the difference time between unix time parameter and the most close time
+                ground truth frame is larger than threshold_min_time, return None.
+
+    Examples:
+        >>> ground_truth_frames = load_all_datasets(...)
+        >>> get_now_frame(ground_truth_frames, 1624157578750212, 7500)
+        <perception_eval.common.dataset.FrameGroundTruth object at 0x7f66040c36a0>
+    """
+    # extract closest two frames
+    before_frame = None
+    after_frame = None
+    dt_before = 0.0
+    dt_after = 0.0
+    for ground_truth_frame in ground_truth_frames:
+        diff_time = unix_time - ground_truth_frame.unix_time
+        if diff_time > 0:
+            before_frame = ground_truth_frame
+            dt_before = diff_time
+        else:
+            after_frame = ground_truth_frame
+            dt_after = -diff_time
+        if before_frame is not None and after_frame is not None:
+            break
+
+    # disable frame if time difference is too large
+    if dt_before > threshold_min_time:
+        before_frame = None
+    if dt_after > threshold_min_time:
+        after_frame = None
+
+    # check frame availability
+    if before_frame is None and after_frame is None:
+        logging.info(f"No frame is available for interpolation")
+        return None
+    elif before_frame is None:
+        logging.info(f"Only after frame is available for interpolation")
+        return after_frame
+    elif after_frame is None:
+        logging.info(f"Only before frame is available for interpolation")
+        return before_frame
+    else:
+        # do interpolation
+        return interpolate_ground_truth_frames(before_frame, after_frame, unix_time)
+
+
+def interpolate_ground_truth_frames(
+    before_frame: FrameGroundTruth,
+    after_frame: FrameGroundTruth,
+    unix_time: int,
+):
+    """Interpolate ground truth frame with lienar interpolation.
+
+    Args:
+        before_frame (FrameGroundTruth): input frame1
+        after_frame (FrameGroundTruth): input frame2
+        unix_time (int): target time
+    """
+    # interpolate ego2map
+    ego2map = interpolate_hopmogeneous_matrix(
+        before_frame.ego2map, after_frame.ego2map, before_frame.unix_time, after_frame.unix_time, unix_time
+    )
+
+    # TODO: if frame is base_link, need to interpolate with global coordinate
+    # 1. convert object list to global
+    # 2. interpolate
+    # 3. convert object list to base_link
+
+    # interpolate objects
+    object_list = interpolate_object_list(
+        before_frame.objects, after_frame.objects, before_frame.unix_time, after_frame.unix_time, unix_time
+    )
+
+    # interpolate raw data
+    output_frame = deepcopy(before_frame)
+    output_frame.ego2map = ego2map
+    output_frame.objects = object_list
+    output_frame.unix_time = unix_time
+    return output_frame
