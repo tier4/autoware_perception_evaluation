@@ -45,18 +45,18 @@ def interpolate_hopmogeneous_matrix(
     assert matrix_1.shape == (4, 4)
     R1 = matrix_1[:3, :3]
     R2 = matrix_2[:3, :3]
-    t1 = matrix_1[:3, 3]
-    t2 = matrix_2[:3, 3]
+    T1 = matrix_1[:3, 3]
+    T2 = matrix_2[:3, 3]
     # interpolation
-    t = t1 + (t2 - t1) * (t - t1) / (t2 - t1)
+    T = T1 + (T2 - T1) * (t - t1) / (t2 - t1)
     q1 = Quaternion(matrix=R1)
     q2 = Quaternion(matrix=R2)
-    q = q1.slerp(q2, (t - t1) / (t2 - t1))
+    q = Quaternion.slerp(q1, q2, (t - t1) / (t2 - t1))
     R = q.rotation_matrix
     # put them together
     matrix = np.eye(4)
     matrix[:3, :3] = R
-    matrix[:3, 3] = t
+    matrix[:3, 3] = T
     return matrix
 
 
@@ -80,7 +80,7 @@ def interpolate_quaternion(quat_1: Quaternion, quat_2: Quaternion, t1: float, t2
     """Interpolate a quaternion between two given times to a specific time."""
     assert t1 <= t <= t2
     alpha = (t - t1) / (t2 - t1)
-    interpolated_quat = quat_1.slerp(quat_2, alpha)
+    interpolated_quat = quat_1.slerp(quat_1, quat_2, alpha)
     return interpolated_quat
 
 
@@ -125,20 +125,20 @@ def interpolate_object_list(
     for object1 in object_list1:
         found: bool = False
         for object2 in object_list2:
-            if object1.id == object2.id:
+            if object1.uuid == object2.uuid:
                 output_object_list.append(interpolate_object(object1, object2, t1, t2, t))
-                id_list.append(object1.id)
+                id_list.append(object1.uuid)
                 found = True
                 break
         # not found in object_list2
         if not found:
             output_object_list.append(deepcopy(object1))
-            id_list.append(object1.id)
+            id_list.append(object1.uuid)
 
     for object2 in object_list2:
-        if object2.id not in id_list:
+        if object2.uuid not in id_list:
             output_object_list.append(deepcopy(object2))
-            id_list.append(object2.id)
+            id_list.append(object2.uuid)
 
     return output_object_list
 
@@ -173,7 +173,7 @@ def interpolate_dynamicobject(
     Returns: DynamicObject: The interpolated object.
     """
     assert t1 <= t <= t2
-    assert object_1.id == object_2.id
+    assert object_1.uuid == object_2.uuid
     # 面倒なので基本的にcopyで済ます
     # TODO: 他の要素も補間する
     output_object = deepcopy(object_1)

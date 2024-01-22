@@ -326,7 +326,7 @@ def get_interpolated_now_frame(
     dt_after = 0.0
     for ground_truth_frame in ground_truth_frames:
         diff_time = unix_time - ground_truth_frame.unix_time
-        if diff_time > 0:
+        if diff_time >= 0:
             before_frame = ground_truth_frame
             dt_before = diff_time
         else:
@@ -372,8 +372,6 @@ def interpolate_ground_truth_frames(
     ego2map = interpolate_hopmogeneous_matrix(
         before_frame.ego2map, after_frame.ego2map, before_frame.unix_time, after_frame.unix_time, unix_time
     )
-    original_frame: str = before_frame.frame_name  # assume "map" or "base_link"
-    assert original_frame in ["map", "base_link"]
 
     # TODO: Need refactor for simplicity
     # if frame is base_link, need to interpolate with global coordinate
@@ -386,7 +384,7 @@ def interpolate_ground_truth_frames(
         before_frame_objects, after_frame_objects, before_frame.unix_time, after_frame.unix_time, unix_time
     )
     # 3. convert object list to base_link
-    object_list = convert_objects_to_base_link(object_list, ego2map)
+    # object_list = convert_objects_to_base_link(object_list, ego2map)
 
     # interpolate raw data
     output_frame = deepcopy(before_frame)
@@ -457,7 +455,7 @@ def convert_objects_to_base_link(
             )
             dst: np.ndarray = np.linalg.inv(ego2map).dot(src)
             updated_position: np.ndarray = tuple(dst[:3, 3].flatten())
-            updated_rotation: np.ndarray = Quaternion(dst[:3, :3])
+            updated_rotation: Quaternion = Quaternion(matrix=dst[:3, :3])
             output_object = deepcopy(object)
             output_object.state.position = updated_position
             output_object.state.orientation = updated_rotation
