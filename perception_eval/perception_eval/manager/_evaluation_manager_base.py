@@ -92,7 +92,7 @@ class _EvaluationMangerBase(ABC):
         self,
         unix_time: int,
         threshold_min_time: int = 75000,
-        interpolate_ground_truth: bool = True,
+        interpolate_ground_truth: bool = False,
     ) -> Optional[FrameGroundTruth]:
         """Returns a FrameGroundTruth instance that has the closest timestamp with `unix_time`.
 
