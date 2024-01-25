@@ -196,5 +196,10 @@ def interpolate_dynamic_object2d(
          object_2 (DynamicObject2D): An object
     Returns: DynamicObject2D: The interpolated object.
     """
-    # TODO: implement
-    pass
+    # TODO: Do interpolation if needed
+    assert t1 <= t <= t2
+    if t > np.mean([t1, t2]):
+        output_object = deepcopy(object_2)
+    else:
+        output_object = deepcopy(object_1)
+    return output_object
