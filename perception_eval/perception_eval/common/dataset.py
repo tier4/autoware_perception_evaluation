@@ -29,7 +29,7 @@ from perception_eval.common import ObjectType
 from perception_eval.common.dataset_utils import _sample_to_frame
 from perception_eval.common.dataset_utils import _sample_to_frame_2d
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.geometry import interpolate_hopmogeneous_matrix
+from perception_eval.common.geometry import interpolate_homogeneous_matrix
 from perception_eval.common.geometry import interpolate_object_list
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.object import DynamicObject
@@ -362,7 +362,7 @@ def interpolate_ground_truth_frames(
     after_frame: FrameGroundTruth,
     unix_time: int,
 ):
-    """Interpolate ground truth frame with lienear interpolation.
+    """Interpolate ground truth frame with linear interpolation.
 
     Args:
         before_frame (FrameGroundTruth): input frame1
@@ -370,7 +370,7 @@ def interpolate_ground_truth_frames(
         unix_time (int): target time
     """
     # interpolate ego2map
-    ego2map = interpolate_hopmogeneous_matrix(
+    ego2map = interpolate_homogeneous_matrix(
         before_frame.ego2map, after_frame.ego2map, before_frame.unix_time, after_frame.unix_time, unix_time
     )
 

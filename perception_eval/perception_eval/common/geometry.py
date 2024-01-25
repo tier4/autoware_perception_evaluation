@@ -30,7 +30,7 @@ from pyquaternion import Quaternion
 ObjectType = Union[DynamicObject, DynamicObject2D]
 
 
-def interpolate_hopmogeneous_matrix(
+def interpolate_homogeneous_matrix(
     matrix_1: np.ndarray, matrix_2: np.ndarray, t1: float, t2: float, t: float
 ) -> np.ndarray:
     """[summary]
@@ -94,12 +94,15 @@ def interpolate_state(state_1: ObjectState, state_2: ObjectState, t1: float, t2:
     """
     assert t1 <= t <= t2
     # state has position, Orientation, shape, velocity
-    interp_position = tuple(interpolate_list(state_1.position, state_2.position, t1, t2, t))
-    interp_orientation = interpolate_quaternion(state_1.orientation, state_2.orientation, t1, t2, t)
-    interp_shape = state_1.shape  # shape will not change
-    interp_velocity = tuple(interpolate_list(state_1.velocity, state_2.velocity, t1, t2, t))
+    interpolated_position = tuple(interpolate_list(state_1.position, state_2.position, t1, t2, t))
+    interpolated_orientation = interpolate_quaternion(state_1.orientation, state_2.orientation, t1, t2, t)
+    interpolated_shape = state_1.shape  # shape will not change
+    interpolated_velocity = tuple(interpolate_list(state_1.velocity, state_2.velocity, t1, t2, t))
     return ObjectState(
-        position=interp_position, orientation=interp_orientation, shape=interp_shape, velocity=interp_velocity
+        position=interpolated_position,
+        orientation=interpolated_orientation,
+        shape=interpolated_shape,
+        velocity=interpolated_velocity,
     )
 
 
@@ -155,14 +158,14 @@ def interpolate_object(object_1: ObjectType, object_2: ObjectType, t1: float, t2
         raise TypeError(f"objects' type must be same, but got {type(object_1) and {type(object_2)}}")
 
     if isinstance(object_1, DynamicObject):
-        return interpolate_dynamicobject(object_1, object_2, t1, t2, t)
+        return interpolate_dynamic_object(object_1, object_2, t1, t2, t)
     elif isinstance(object_1, DynamicObject2D):
-        return interpolate_dynamicobject2d(object_1, object_2, t1, t2, t)
+        return interpolate_dynamic_object2d(object_1, object_2, t1, t2, t)
     else:
         raise TypeError(f"object type must be DynamicObject or DynamicObject2D, but got {type(object_1)}")
 
 
-def interpolate_dynamicobject(
+def interpolate_dynamic_object(
     object_1: DynamicObject, object_2: DynamicObject, t1: float, t2: float, t: float
 ) -> DynamicObject:
     """[summary]
@@ -177,13 +180,13 @@ def interpolate_dynamicobject(
     # 面倒なので基本的にcopyで済ます
     # TODO: 他の要素も補間する
     output_object = deepcopy(object_1)
-    interp_state = interpolate_state(object_1.state, object_2.state, t1, t2, t)
-    output_object.state = interp_state
+    interpolated_state = interpolate_state(object_1.state, object_2.state, t1, t2, t)
+    output_object.state = interpolated_state
     output_object.unix_time = int(t)
     return output_object
 
 
-def interpolate_dynamicobject2d(
+def interpolate_dynamic_object2d(
     object_1: DynamicObject2D, object_2: DynamicObject2D, t1: float, t2: float, t: float
 ) -> DynamicObject2D:
     """[summary]
