@@ -301,6 +301,7 @@ def get_interpolated_now_frame(
     threshold_min_time: int,
 ) -> Optional[FrameGroundTruth]:
     """Get interpolated ground truth frame in specified unix time.
+    It searches before and after frames which satisfy the time difference condition and if found both, interpolate them.
 
     Args:
         ground_truth_frames (List[FrameGroundTruth]): FrameGroundTruth instance list.
@@ -316,7 +317,7 @@ def get_interpolated_now_frame(
 
     Examples:
         >>> ground_truth_frames = load_all_datasets(...)
-        >>> get_now_frame(ground_truth_frames, 1624157578750212, 7500)
+        >>> get_interpolated_now_frame(ground_truth_frames, 1624157578750212, 7500)
         <perception_eval.common.dataset.FrameGroundTruth object at 0x7f66040c36a0>
     """
     # extract closest two frames
