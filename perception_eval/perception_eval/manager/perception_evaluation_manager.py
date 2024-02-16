@@ -216,5 +216,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             pass
         if self.evaluator_config.metrics_config.classification_config is not None:
             scene_metrics_score.evaluate_classification(all_frame_results, all_num_gt)
+        if self.annotation_less_result:
+            scene_metrics_score.evaluate_annotation_less(self.annotation_less_result)
 
         return scene_metrics_score

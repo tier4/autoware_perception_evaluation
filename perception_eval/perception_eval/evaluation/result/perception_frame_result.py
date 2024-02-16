@@ -86,6 +86,7 @@ class PerceptionFrameResult:
             frame_pass_fail_config=frame_pass_fail_config,
             ego2map=frame_ground_truth.ego2map,
         )
+        self.annotation_less_result
 
     def evaluate_frame(
         self,

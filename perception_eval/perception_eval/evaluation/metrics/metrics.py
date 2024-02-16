@@ -172,6 +172,11 @@ class MetricsScore:
                     matching_threshold_list=plane_distance_threshold_,
                 )
                 self.maps.append(map_)
+    
+    def evaluate_detection_anotation_less()
+        
+        yaw_ = Yaw(kfdjfhsjhfjdh)
+        self.yaws.append(yaw_)
 
     def evaluate_tracking(
         self,
