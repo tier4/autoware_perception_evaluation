@@ -288,6 +288,7 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
         (AutowareLabel.CAR, "vehicle.fire"),
         (AutowareLabel.CAR, "vehicle.ambulance"),
         (AutowareLabel.PEDESTRIAN, "pedestrian"),
+        (AutowareLabel.PEDESTRIAN, "stroller"),
         (AutowareLabel.PEDESTRIAN, "pedestrian.adult"),
         (AutowareLabel.PEDESTRIAN, "pedestrian.child"),
         (AutowareLabel.PEDESTRIAN, "pedestrian.construction_worker"),
@@ -318,6 +319,7 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
             (AutowareLabel.CAR, "trailer"),
             (AutowareLabel.CAR, "vehicle.trailer"),
             (AutowareLabel.BICYCLE, "motorbike"),
+            (AutowareLabel.BICYCLE, "motorcycle"),
             (AutowareLabel.BICYCLE, "vehicle.motorcycle"),
         ]
     else:
@@ -330,6 +332,7 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
             (AutowareLabel.TRUCK, "trailer"),
             (AutowareLabel.TRUCK, "vehicle.trailer"),
             (AutowareLabel.MOTORBIKE, "motorbike"),
+            (AutowareLabel.MOTORBIKE, "motorcycle"),
             (AutowareLabel.MOTORBIKE, "vehicle.motorcycle"),
         ]
     return pair_list
