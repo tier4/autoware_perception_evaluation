@@ -37,6 +37,9 @@ class FrameID(Enum):
     CAM_TRAFFIC_LIGHT_NEAR = "cam_traffic_light_near"
     CAM_TRAFFIC_LIGHT_FAR = "cam_traffic_light_far"
 
+    # Integrated TLR camera frame
+    TRAFFIC_LIGHT = "traffic_light"
+
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, str):
             return self.value == __o
