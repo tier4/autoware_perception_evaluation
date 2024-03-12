@@ -16,11 +16,10 @@ from abc import ABC
 from abc import abstractmethod
 from enum import Enum
 import math
-from typing import Callable
-from typing import List
 from typing import Optional
 from typing import Tuple
 
+import numpy as np
 from perception_eval.common import distance_objects
 from perception_eval.common import distance_points_bev
 from perception_eval.common import ObjectType
@@ -239,36 +238,37 @@ class PlaneDistanceMatching(MatchingMethod):
         if ground_truth_object is None:
             return None
 
-        # Get corner_points of estimated object from footprint
-        pr_footprint_polygon: Polygon = estimated_object.get_footprint()
-        pr_corner_points: List[Tuple[float, float, float]] = polygon_to_list(pr_footprint_polygon)
+        # Get corner points of estimated object from footprint
+        est_footprint: Polygon = estimated_object.get_footprint()
+        est_corners = np.array(polygon_to_list(est_footprint))
 
-        # Get corner_points of ground truth object from footprint
-        gt_footprint_polygon: Polygon = ground_truth_object.get_footprint()
-        gt_corner_points: List[Tuple[float, float, float]] = polygon_to_list(gt_footprint_polygon)
+        # Get corner points of ground truth object from footprint
+        gt_footprint: Polygon = ground_truth_object.get_footprint()
+        gt_corners = np.array(polygon_to_list(gt_footprint))
 
-        # Sort by 2d distance
-        lambda_func: Callable[[Tuple[float, float, float]], float] = lambda x: math.hypot(x[0], x[1])
-        pr_corner_points.sort(key=lambda_func)
-        gt_corner_points.sort(key=lambda_func)
+        # Calculate min distance from ego vehicle
+        # TODO: for objects with respect to map coords need to transform to base link coords
+        gt_distances: np.ndarray = np.linalg.norm(gt_corners[:, :2], axis=1)
+        sort_idx = np.argsort(gt_distances)
 
-        pr_left_point, pr_right_point = get_point_left_right(pr_corner_points[0], pr_corner_points[1])
-        gt_left_point, gt_right_point = get_point_left_right(gt_corner_points[0], gt_corner_points[1])
+        gt_corners = gt_corners[sort_idx]
+        est_corners = est_corners[sort_idx]
 
-        # Calculate plane distance
-        distance_left_point: float = abs(distance_points_bev(pr_left_point, gt_left_point))
-        distance_right_point: float = abs(distance_points_bev(pr_right_point, gt_right_point))
-        distance_squared: float = distance_left_point**2 + distance_right_point**2
-        plane_distance: float = math.sqrt(distance_squared / 2.0)
+        est_plane_points = est_corners[:2].tolist()
+        gt_plane_points = gt_corners[:2].tolist()
+        est_left_point, est_right_point = get_point_left_right(est_plane_points[0], est_plane_points[1])
+        gt_left_point, gt_right_point = get_point_left_right(gt_plane_points[0], gt_plane_points[1])
 
-        self.ground_truth_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
-            gt_left_point,
-            gt_right_point,
-        )
-        self.estimated_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
-            pr_left_point,
-            pr_right_point,
-        )
+        distance_left_point: float = distance_points_bev(est_left_point, gt_left_point)
+        distance_right_point: float = distance_points_bev(est_right_point, gt_right_point)
+        distance_squared = distance_left_point**2 + distance_right_point**2
+        plane_distance = math.sqrt(0.5 * distance_squared)
+        # NOTE: round because the distance become 0.9999999... expecting 1.0
+        plane_distance = round(plane_distance, 10)
+
+        self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
+        self.estimated_nn_plane = (est_left_point, est_right_point)
+
         return plane_distance
 
 
