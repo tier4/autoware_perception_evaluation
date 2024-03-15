@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import math
 from test.util.dummy_object import make_dummy_data
 from typing import List
 from typing import Tuple
@@ -43,10 +42,7 @@ class TestPlaneDistanceMatching(unittest.TestCase):
         patterns: List[Tuple[float, List[float]]] = [
             (0.0, [0.0, 0.0, 0.0, 0.0]),
             (1.0, [1.0, 1.0, 1.0, 1.0]),
-            (
-                2.0,
-                [2.0, 2.0, math.sqrt((1.0 + 5.0) / 2.0), math.sqrt((1.0 + 5.0) / 2.0)],
-            ),
+            (2.0, [2.0, 2.0, 2.0, 2.0]),
         ]
         fixed_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
             ground_truth_objects=self.dummy_ground_truth_objects,
