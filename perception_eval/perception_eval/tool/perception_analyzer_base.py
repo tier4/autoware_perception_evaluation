@@ -474,6 +474,70 @@ class PerceptionAnalyzerBase(ABC):
         logging.warning("There is no DataFrame to be able to analyze.")
         return None, None
 
+    def add_frame(self, frame: PerceptionFrameResult) -> pd.DataFrame:
+        """Add single frame result and update DataFrame.
+
+        Args:
+            frame (PerceptionFrameResult): Single frame result.
+
+        Returns:
+            pd.DataFrame:
+        """
+        start = len(self.df) // 2
+        concat: List[pd.DataFrame] = []
+        if len(self) > 0:
+            concat.append(self.df)
+        self.__ego2maps[str(self.num_scene)][str(frame.frame_name)] = frame.frame_ground_truth.ego2map
+
+        tp_df = self.format2df(
+            frame.pass_fail_result.tp_object_results,
+            status=MatchingStatus.TP,
+            start=start,
+            frame_num=int(frame.frame_name),
+            ego2map=frame.frame_ground_truth.ego2map,
+        )
+        if len(tp_df) > 0:
+            start += len(tp_df) // 2
+            concat.append(tp_df)
+
+        fp_df = self.format2df(
+            frame.pass_fail_result.fp_object_results,
+            status=MatchingStatus.FP,
+            start=start,
+            frame_num=int(frame.frame_name),
+            ego2map=frame.frame_ground_truth.ego2map,
+        )
+        if len(fp_df) > 0:
+            start += len(fp_df) // 2
+            concat.append(fp_df)
+
+        tn_df = self.format2df(
+            frame.pass_fail_result.tn_objects,
+            status=MatchingStatus.TN,
+            start=start,
+            frame_num=int(frame.frame_name),
+            ego2map=frame.frame_ground_truth.ego2map,
+        )
+        if len(tn_df) > 0:
+            start += len(tn_df) // 2
+            concat.append(tn_df)
+
+        fn_df = self.format2df(
+            frame.pass_fail_result.fn_objects,
+            status=MatchingStatus.FN,
+            start=start,
+            frame_num=int(frame.frame_name),
+            ego2map=frame.frame_ground_truth.ego2map,
+        )
+        if len(fn_df) > 0:
+            start += len(fn_df) // 2
+            concat.append(fn_df)
+
+        if len(concat) > 0:
+            self.__df = pd.concat(concat)
+
+        return self.__df
+
     def add(self, frame_results: List[PerceptionFrameResult]) -> pd.DataFrame:
         """Add frame results and update DataFrame.
 
@@ -484,64 +548,12 @@ class PerceptionAnalyzerBase(ABC):
             pandas.DataFrame
         """
         self.__num_scene += 1
-        start = len(self.df) // 2
-        self.__ego2maps[str(self.num_scene)] = {}
-        for frame in tqdm(frame_results, "Updating DataFrame"):
-            concat: List[pd.DataFrame] = []
-            if len(self) > 0:
-                concat.append(self.df)
-
-            self.__ego2maps[str(self.num_scene)][str(frame.frame_name)] = frame.frame_ground_truth.ego2map
-
-            tp_df = self.format2df(
-                frame.pass_fail_result.tp_object_results,
-                status=MatchingStatus.TP,
-                start=start,
-                frame_num=int(frame.frame_name),
-                ego2map=frame.frame_ground_truth.ego2map,
-            )
-            if len(tp_df) > 0:
-                start += len(tp_df) // 2
-                concat.append(tp_df)
-
-            fp_df = self.format2df(
-                frame.pass_fail_result.fp_object_results,
-                status=MatchingStatus.FP,
-                start=start,
-                frame_num=int(frame.frame_name),
-                ego2map=frame.frame_ground_truth.ego2map,
-            )
-            if len(fp_df) > 0:
-                start += len(fp_df) // 2
-                concat.append(fp_df)
-
-            tn_df = self.format2df(
-                frame.pass_fail_result.tn_objects,
-                status=MatchingStatus.TN,
-                start=start,
-                frame_num=int(frame.frame_name),
-                ego2map=frame.frame_ground_truth.ego2map,
-            )
-            if len(tn_df) > 0:
-                start += len(tn_df) // 2
-                concat.append(tn_df)
-
-            fn_df = self.format2df(
-                frame.pass_fail_result.fn_objects,
-                status=MatchingStatus.FN,
-                start=start,
-                frame_num=int(frame.frame_name),
-                ego2map=frame.frame_ground_truth.ego2map,
-            )
-            if len(fn_df) > 0:
-                start += len(fn_df) // 2
-                concat.append(fn_df)
-
-            if len(concat) > 0:
-                self.__df = pd.concat(concat)
-
         self.__frame_results[self.num_scene] = frame_results
         self.__num_frame += len(frame_results)
+
+        self.__ego2maps[str(self.num_scene)] = {}
+        for frame in tqdm(frame_results, "Updating DataFrame"):
+            self.add_frame(frame)
 
         return self.__df
 
