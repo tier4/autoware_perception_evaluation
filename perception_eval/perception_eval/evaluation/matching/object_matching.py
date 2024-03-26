@@ -23,9 +23,11 @@ import numpy as np
 from perception_eval.common import distance_objects
 from perception_eval.common import distance_points_bev
 from perception_eval.common import ObjectType
+from perception_eval.common.geometry import transform_map2ego
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import get_point_left_right
 from perception_eval.common.point import polygon_to_list
+from perception_eval.common.schema import FrameID
 from shapely.geometry import Polygon
 
 
@@ -66,16 +68,14 @@ class MatchingMethod(ABC):
     mode: MatchingMode
 
     @abstractmethod
-    def __init__(
-        self,
-        estimated_object: ObjectType,
-        ground_truth_object: Optional[ObjectType],
-    ) -> None:
+    def __init__(self, estimated_object: ObjectType, ground_truth_object: Optional[ObjectType], **kwargs) -> None:
         if ground_truth_object is not None:
             assert type(estimated_object) == type(ground_truth_object)
+
         self.value: Optional[float] = self._calculate_matching_score(
             estimated_object=estimated_object,
             ground_truth_object=ground_truth_object,
+            **kwargs,
         )
 
     @abstractmethod
@@ -83,6 +83,7 @@ class MatchingMethod(ABC):
         self,
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
+        **kwargs,
     ) -> Optional[float]:
         pass
 
@@ -121,11 +122,7 @@ class CenterDistanceMatching(MatchingMethod):
 
     mode: MatchingMode = MatchingMode.CENTERDISTANCE
 
-    def __init__(
-        self,
-        estimated_object: ObjectType,
-        ground_truth_object: Optional[ObjectType],
-    ) -> None:
+    def __init__(self, estimated_object: ObjectType, ground_truth_object: Optional[ObjectType], **kwargs) -> None:
         super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
 
     def is_better_than(
@@ -194,10 +191,13 @@ class PlaneDistanceMatching(MatchingMethod):
         self,
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
+        ego2map: Optional[np.ndarray] = None,
     ) -> None:
         self.ground_truth_nn_plane: Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float]]] = None
         self.estimated_nn_plane: Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float]]] = None
-        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
+        if estimated_object.frame_id == FrameID.MAP:
+            assert ego2map is not None, "ego2map must be specified for map frame objects in PlaneDistanceMatching."
+        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object, ego2map=ego2map)
 
     def is_better_than(
         self,
@@ -222,6 +222,7 @@ class PlaneDistanceMatching(MatchingMethod):
         self,
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
+        ego2map: Optional[np.ndarray],
     ) -> Optional[float]:
         """Calculate plane distance between estimation and ground truth and NN planes.
 
@@ -247,8 +248,12 @@ class PlaneDistanceMatching(MatchingMethod):
         gt_corners = np.array(polygon_to_list(gt_footprint, include_first=True))
 
         # Calculate min distance from ego vehicle
-        # TODO: for objects with respect to map coords need to transform to base link coords
-        gt_distances: np.ndarray = np.linalg.norm(gt_corners[:-1, :2], axis=1)
+        if ground_truth_object.frame_id == FrameID.MAP:
+            tmp_corners = np.array([transform_map2ego(c, ego2map) for c in gt_corners])
+            gt_min_points = 0.5 * (tmp_corners[:-1, :2] + tmp_corners[1:, :2])
+        else:
+            gt_min_points = 0.5 * (gt_corners[:-1, :2] + gt_corners[1:, :2])
+        gt_distances: np.ndarray = np.linalg.norm(gt_min_points, axis=1)
 
         min_plane_distance = float("inf")
         min_indices = np.where(gt_distances == gt_distances.min())[0]
@@ -290,11 +295,7 @@ class IOU2dMatching(MatchingMethod):
 
     mode: MatchingMode = MatchingMode.IOU2D
 
-    def __init__(
-        self,
-        estimated_object: ObjectType,
-        ground_truth_object: Optional[ObjectType],
-    ) -> None:
+    def __init__(self, estimated_object: ObjectType, ground_truth_object: Optional[ObjectType], **kwargs) -> None:
         super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
 
     def is_better_than(
@@ -377,11 +378,7 @@ class IOU3dMatching(MatchingMethod):
 
     mode: MatchingMode = MatchingMode.IOU3D
 
-    def __init__(
-        self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
-    ) -> None:
+    def __init__(self, estimated_object: DynamicObject, ground_truth_object: Optional[DynamicObject], **kwargs) -> None:
         super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
 
     def is_better_than(

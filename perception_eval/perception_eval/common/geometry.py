@@ -19,11 +19,8 @@ from typing import Union
 
 import numpy as np
 from perception_eval.common.object2d import DynamicObject2D
-from perception_eval.common.object2d import Roi
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.object import ObjectState
-from perception_eval.common.point import distance_points
-from perception_eval.common.point import distance_points_bev
 from pyquaternion import Quaternion
 
 # Type aliases
@@ -203,3 +200,19 @@ def interpolate_dynamic_object2d(
     else:
         output_object = deepcopy(object_1)
     return output_object
+
+
+def transform_map2ego(position: Tuple[float, float, float], ego2map: np.ndarray) -> Tuple[float, float, float]:
+    """Transform map coordinates to base link coordinates.
+
+    Args:
+        position (Tuple[float, float, float]): Source xyz position w.r.t map coordinates.
+        ego2map (np.ndarray): Matrix to transform base link to map coordinates.
+
+    Returns:
+        Tuple[float, float, float]: Transformed xyz position.
+    """
+    assert len(position) == 3
+    src = np.append(position, 1.0)
+    dst = np.linalg.inv(ego2map).dot(src)[:3]
+    return tuple(dst.tolist())

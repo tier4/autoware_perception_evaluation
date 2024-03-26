@@ -773,8 +773,8 @@ class TestMap(unittest.TestCase):
             (-3 * math.pi / 4, 0.0, 0.0),
         ]
 
-        for i, (diff_yaw, ans_map, ans_maph) in enumerate(patterns):
-            with self.subTest(f"Test mAP and mAPH with plane distance matching for yaw difference. {i}"):
+        for diff_yaw, ans_map, ans_maph in patterns:
+            with self.subTest("Test mAP and mAPH with plane distance matching for yaw difference."):
                 diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(0.0, 0.0, 0.0),
@@ -818,8 +818,8 @@ class TestMap(unittest.TestCase):
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
                 )
-                self.assertAlmostEqual(map.map, ans_map, msg=f"{i}")
-                self.assertAlmostEqual(map.maph, ans_maph, msg=f"{i}")
+                self.assertAlmostEqual(map.map, ans_map)
+                self.assertAlmostEqual(map.maph, ans_maph)
 
     def test_map_plane_distance_random_objects(self):
         """[summary]

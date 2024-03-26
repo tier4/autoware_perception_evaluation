@@ -55,6 +55,7 @@ class DynamicObjectWithPerceptionResult:
         self,
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
+        ego2map: Optional[np.ndarray] = None,
     ) -> None:
         """[summary]
         Evaluation result for an object estimated object.
@@ -62,6 +63,7 @@ class DynamicObjectWithPerceptionResult:
         Args:
             estimated_object (ObjectType): The estimated object by inference like CenterPoint
             ground_truth_objects (Optional[ObjectType]): The list of Ground truth objects
+            ego2map (Optional[np.ndarray]): Matrix to transform from base link coords to map coords. Defaults to None.
         """
         if ground_truth_object is not None:
             assert type(estimated_object) == type(
@@ -92,6 +94,7 @@ class DynamicObjectWithPerceptionResult:
             self.plane_distance: PlaneDistanceMatching = PlaneDistanceMatching(
                 self.estimated_object,
                 self.ground_truth_object,
+                ego2map=ego2map,
             )
         else:
             self.iou_3d = None
@@ -272,6 +275,7 @@ def get_object_results(
     allow_matching_unknown: bool = True,
     matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
     matchable_thresholds: Optional[List[float]] = None,
+    ego2map: Optional[np.ndarray] = None,
 ) -> List[DynamicObjectWithPerceptionResult]:
     """Returns list of DynamicObjectWithPerceptionResult.
 
@@ -287,6 +291,7 @@ def get_object_results(
         ground_truth_objects (List[ObjectType]): Ground truth objects list.
         matching_mode (MatchingMode): MatchingMode instance.
         matchable_thresholds (Optional[List[float]]): Thresholds to be
+        ego2map (Optional[np.ndarray]): Matrix to transform from base link coords to map coords. Defaults to None.
 
     Returns:
         object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
@@ -297,7 +302,7 @@ def get_object_results(
 
     # There is no GT and not FP validation (= all FP)
     if not ground_truth_objects and evaluation_task.is_fp_validation() is False:
-        return _get_fp_object_results(estimated_objects)
+        return _get_fp_object_results(estimated_objects, ego2map)
 
     assert isinstance(
         ground_truth_objects[0], type(estimated_objects[0])
@@ -314,6 +319,7 @@ def get_object_results(
         matching_method_module,
         target_labels,
         matchable_thresholds,
+        ego2map,
     )
 
     # assign correspond GT to estimated objects
@@ -339,6 +345,7 @@ def get_object_results(
         object_result_ = DynamicObjectWithPerceptionResult(
             estimated_object=est_obj_,
             ground_truth_object=gt_obj_,
+            ego2map=ego2map,
         )
         object_results.append(object_result_)
 
@@ -346,7 +353,7 @@ def get_object_results(
     # when there are rest of estimated objects, they all are FP.
     # Otherwise, they all are ignored
     if len(estimated_objects_) > 0 and evaluation_task.is_fp_validation() is False:
-        object_results += _get_fp_object_results(estimated_objects_)
+        object_results += _get_fp_object_results(estimated_objects_, ego2map)
 
     return object_results
 
@@ -384,6 +391,7 @@ def _get_object_results_with_id(
                     DynamicObjectWithPerceptionResult(
                         estimated_object=est_object,
                         ground_truth_object=gt_object,
+                        ego2map=None,
                     )
                 )
                 estimated_objects_.remove(est_object)
@@ -391,18 +399,20 @@ def _get_object_results_with_id(
 
     # when there are rest of estimated objects, they all are FP.
     if len(estimated_objects_) > 0:
-        object_results += _get_fp_object_results(estimated_objects_)
+        object_results += _get_fp_object_results(estimated_objects_, None)
 
     return object_results
 
 
 def _get_fp_object_results(
     estimated_objects: List[ObjectType],
+    ego2map: Optional[np.ndarray] = None,
 ) -> List[DynamicObjectWithPerceptionResult]:
     """Returns the list of DynamicObjectWithPerceptionResult that have no ground truth.
 
     Args:
         estimated_objects (List[ObjectType]): Estimated objects list.
+        ego2map (Optional[np.ndarray]): Matrix to transform from base link coords to map coords. Defaults to None.
 
     Returns:
         object_results (List[DynamicObjectWithPerceptionResult]): FP object results list.
@@ -412,6 +422,7 @@ def _get_fp_object_results(
         object_result_: DynamicObjectWithPerceptionResult = DynamicObjectWithPerceptionResult(
             estimated_object=est_obj_,
             ground_truth_object=None,
+            ego2map=ego2map,
         )
         object_results.append(object_result_)
 
@@ -453,6 +464,7 @@ def _get_score_table(
     matching_method_module: Callable,
     target_labels: Optional[List[LabelType]],
     matchable_thresholds: Optional[List[float]],
+    ego2map: Optional[np.ndarray],
 ) -> np.ndarray:
     """Returns score table, in shape (num_estimation, num_ground_truth).
 
@@ -462,7 +474,8 @@ def _get_score_table(
         allow_matching_unknown (bool): Indicates whether allow to match with unknown label.
         matching_method_module (Callable): MatchingMethod instance.
         target_labels (Optional[List[LabelType]]): Target labels to be evaluated.
-        matching_thresholds (Optional[List[float]]): List of thresholds
+        matching_thresholds (Optional[List[float]]): List of thresholds.
+        ego2map (Optional[np.ndarray]): Matrix to transform from base link coords to map coords.
 
     Returns:
         score_table (numpy.ndarray): in shape (num_estimation, num_ground_truth).
@@ -489,7 +502,7 @@ def _get_score_table(
                 )
 
                 matching_method: MatchingMethod = matching_method_module(
-                    estimated_object=est_obj, ground_truth_object=gt_obj
+                    estimated_object=est_obj, ground_truth_object=gt_obj, ego2map=ego2map
                 )
 
                 if threshold is None or (threshold is not None and matching_method.is_better_than(threshold)):
