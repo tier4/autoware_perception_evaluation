@@ -257,10 +257,13 @@ class PlaneDistanceMatching(MatchingMethod):
 
         min_plane_distance = float("inf")
         min_indices = np.where(gt_distances == gt_distances.min())[0]
+        num_corners = len(gt_corners)
         for idx in min_indices:
             idx = idx.item()
-            gt_plane = gt_corners[idx : idx + 2].tolist()
-            est_plane = est_corners[idx : idx + 2].tolist()
+            # NOTE: end of corner is the first point
+            indices = [idx, idx + 1] if idx != num_corners - 1 else [0, 1]
+            gt_plane = gt_corners[indices].tolist()
+            est_plane = est_corners[indices].tolist()
             est_left_point, est_right_point = get_point_left_right(est_plane[0], est_plane[1])
             gt_left_point, gt_right_point = get_point_left_right(gt_plane[0], gt_plane[1])
 
