@@ -760,21 +760,21 @@ class TestMap(unittest.TestCase):
             (0.0, 1.0, 1.0),
             # Given vertical diff_yaw, maph is 0.5**2 times map
             # since precision and recall of maph is 0.5 times those of map.
-            (math.pi / 2.0, 1.0, 0.25),
-            (-math.pi / 2.0, 1.0, 0.25),
+            (math.pi / 2.0, 0.0, 0.0),
+            (-math.pi / 2.0, 0.0, 0.0),
             # Given opposite direction, maph is 0.0.
-            (math.pi, 1.0, 0.0),
+            (math.pi, 0.0, 0.0),
             (-math.pi, 0.0, 0.0),
             # Given diff_yaw is pi/4, maph is 0.75**2 times map
             (math.pi / 4, 1.0, 0.5625),
             (-math.pi / 4, 1.0, 0.5625),
             # Given diff_yaw is 3*pi/4, maph is 0.25**2 times map
-            (3 * math.pi / 4, 1.0, 0.0625),
-            (-3 * math.pi / 4, 1.0, 0.0625),
+            (3 * math.pi / 4, 0.0, 0.0),
+            (-3 * math.pi / 4, 0.0, 0.0),
         ]
 
-        for diff_yaw, ans_map, ans_maph in patterns:
-            with self.subTest("Test mAP and mAPH with plane distance matching for yaw difference."):
+        for i, (diff_yaw, ans_map, ans_maph) in enumerate(patterns):
+            with self.subTest(f"Test mAP and mAPH with plane distance matching for yaw difference. {i}"):
                 diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(0.0, 0.0, 0.0),
@@ -818,8 +818,8 @@ class TestMap(unittest.TestCase):
                     matching_mode=MatchingMode.PLANEDISTANCE,
                     matching_threshold_list=[1.0, 1.0, 1.0, 1.0],
                 )
-                self.assertAlmostEqual(map.map, ans_map)
-                self.assertAlmostEqual(map.maph, ans_maph)
+                self.assertAlmostEqual(map.map, ans_map, msg=f"{i}")
+                self.assertAlmostEqual(map.maph, ans_maph, msg=f"{i}")
 
     def test_map_plane_distance_random_objects(self):
         """[summary]

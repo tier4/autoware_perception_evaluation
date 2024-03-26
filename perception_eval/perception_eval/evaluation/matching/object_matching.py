@@ -240,36 +240,38 @@ class PlaneDistanceMatching(MatchingMethod):
 
         # Get corner points of estimated object from footprint
         est_footprint: Polygon = estimated_object.get_footprint()
-        est_corners = np.array(polygon_to_list(est_footprint))
+        est_corners = np.array(polygon_to_list(est_footprint, include_first=True))
 
         # Get corner points of ground truth object from footprint
         gt_footprint: Polygon = ground_truth_object.get_footprint()
-        gt_corners = np.array(polygon_to_list(gt_footprint))
+        gt_corners = np.array(polygon_to_list(gt_footprint, include_first=True))
 
         # Calculate min distance from ego vehicle
         # TODO: for objects with respect to map coords need to transform to base link coords
-        gt_distances: np.ndarray = np.linalg.norm(gt_corners[:, :2], axis=1)
-        sort_idx = np.argsort(gt_distances)
+        gt_distances: np.ndarray = np.linalg.norm(gt_corners[:-1, :2], axis=1)
 
-        gt_corners = gt_corners[sort_idx]
-        est_corners = est_corners[sort_idx]
+        min_plane_distance = float("inf")
+        min_indices = np.where(gt_distances == gt_distances.min())[0]
+        for idx in min_indices:
+            idx = idx.item()
+            gt_plane = gt_corners[idx : idx + 2].tolist()
+            est_plane = est_corners[idx : idx + 2].tolist()
+            est_left_point, est_right_point = get_point_left_right(est_plane[0], est_plane[1])
+            gt_left_point, gt_right_point = get_point_left_right(gt_plane[0], gt_plane[1])
 
-        est_plane_points = est_corners[:2].tolist()
-        gt_plane_points = gt_corners[:2].tolist()
-        est_left_point, est_right_point = get_point_left_right(est_plane_points[0], est_plane_points[1])
-        gt_left_point, gt_right_point = get_point_left_right(gt_plane_points[0], gt_plane_points[1])
+            distance_left_point: float = distance_points_bev(est_left_point, gt_left_point)
+            distance_right_point: float = distance_points_bev(est_right_point, gt_right_point)
+            distance_squared = distance_left_point**2 + distance_right_point**2
+            plane_distance = math.sqrt(0.5 * distance_squared)
+            # NOTE: round because the distance become 0.9999999... expecting 1.0
+            plane_distance = round(plane_distance, 10)
 
-        distance_left_point: float = distance_points_bev(est_left_point, gt_left_point)
-        distance_right_point: float = distance_points_bev(est_right_point, gt_right_point)
-        distance_squared = distance_left_point**2 + distance_right_point**2
-        plane_distance = math.sqrt(0.5 * distance_squared)
-        # NOTE: round because the distance become 0.9999999... expecting 1.0
-        plane_distance = round(plane_distance, 10)
+            if plane_distance < min_plane_distance:
+                self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
+                self.estimated_nn_plane = (est_left_point, est_right_point)
+                min_plane_distance = plane_distance
 
-        self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
-        self.estimated_nn_plane = (est_left_point, est_right_point)
-
-        return plane_distance
+        return min_plane_distance
 
 
 class IOU2dMatching(MatchingMethod):
