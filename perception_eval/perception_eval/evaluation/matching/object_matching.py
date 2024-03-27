@@ -16,17 +16,18 @@ from abc import ABC
 from abc import abstractmethod
 from enum import Enum
 import math
-from typing import Callable
-from typing import List
 from typing import Optional
 from typing import Tuple
 
+import numpy as np
 from perception_eval.common import distance_objects
 from perception_eval.common import distance_points_bev
 from perception_eval.common import ObjectType
+from perception_eval.common.geometry import transform_map2ego
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import get_point_left_right
 from perception_eval.common.point import polygon_to_list
+from perception_eval.common.schema import FrameID
 from shapely.geometry import Polygon
 
 
@@ -67,16 +68,14 @@ class MatchingMethod(ABC):
     mode: MatchingMode
 
     @abstractmethod
-    def __init__(
-        self,
-        estimated_object: ObjectType,
-        ground_truth_object: Optional[ObjectType],
-    ) -> None:
+    def __init__(self, estimated_object: ObjectType, ground_truth_object: Optional[ObjectType], **kwargs) -> None:
         if ground_truth_object is not None:
             assert type(estimated_object) == type(ground_truth_object)
+
         self.value: Optional[float] = self._calculate_matching_score(
             estimated_object=estimated_object,
             ground_truth_object=ground_truth_object,
+            **kwargs,
         )
 
     @abstractmethod
@@ -84,6 +83,7 @@ class MatchingMethod(ABC):
         self,
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
+        **kwargs,
     ) -> Optional[float]:
         pass
 
@@ -122,11 +122,7 @@ class CenterDistanceMatching(MatchingMethod):
 
     mode: MatchingMode = MatchingMode.CENTERDISTANCE
 
-    def __init__(
-        self,
-        estimated_object: ObjectType,
-        ground_truth_object: Optional[ObjectType],
-    ) -> None:
+    def __init__(self, estimated_object: ObjectType, ground_truth_object: Optional[ObjectType], **kwargs) -> None:
         super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
 
     def is_better_than(
@@ -195,10 +191,13 @@ class PlaneDistanceMatching(MatchingMethod):
         self,
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
+        ego2map: Optional[np.ndarray] = None,
     ) -> None:
         self.ground_truth_nn_plane: Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float]]] = None
         self.estimated_nn_plane: Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float]]] = None
-        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
+        if estimated_object.frame_id == FrameID.MAP:
+            assert ego2map is not None, "ego2map must be specified for map frame objects in PlaneDistanceMatching."
+        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object, ego2map=ego2map)
 
     def is_better_than(
         self,
@@ -223,6 +222,7 @@ class PlaneDistanceMatching(MatchingMethod):
         self,
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
+        ego2map: Optional[np.ndarray],
     ) -> Optional[float]:
         """Calculate plane distance between estimation and ground truth and NN planes.
 
@@ -239,37 +239,64 @@ class PlaneDistanceMatching(MatchingMethod):
         if ground_truth_object is None:
             return None
 
-        # Get corner_points of estimated object from footprint
-        pr_footprint_polygon: Polygon = estimated_object.get_footprint()
-        pr_corner_points: List[Tuple[float, float, float]] = polygon_to_list(pr_footprint_polygon)
+        # Get corner points of estimated object from footprint
+        est_footprint: Polygon = estimated_object.get_footprint()
+        est_corners = np.array(polygon_to_list(est_footprint, include_first=True))
 
-        # Get corner_points of ground truth object from footprint
-        gt_footprint_polygon: Polygon = ground_truth_object.get_footprint()
-        gt_corner_points: List[Tuple[float, float, float]] = polygon_to_list(gt_footprint_polygon)
+        # Get corner points of ground truth object from footprint
+        gt_footprint: Polygon = ground_truth_object.get_footprint()
+        gt_corners = np.array(polygon_to_list(gt_footprint, include_first=True))
 
-        # Sort by 2d distance
-        lambda_func: Callable[[Tuple[float, float, float]], float] = lambda x: math.hypot(x[0], x[1])
-        pr_corner_points.sort(key=lambda_func)
-        gt_corner_points.sort(key=lambda_func)
+        # Calculate min distance from ego vehicle
+        if ground_truth_object.frame_id == FrameID.MAP:
+            tmp_gt_corners = np.array([transform_map2ego(c, ego2map) for c in gt_corners])
+            gt_mid_points = 0.5 * (tmp_gt_corners[:-1, :2] + tmp_gt_corners[1:, :2])
+        else:
+            gt_mid_points = 0.5 * (gt_corners[:-1, :2] + gt_corners[1:, :2])
+        gt_distances: np.ndarray = np.linalg.norm(gt_mid_points, axis=1)
 
-        pr_left_point, pr_right_point = get_point_left_right(pr_corner_points[0], pr_corner_points[1])
-        gt_left_point, gt_right_point = get_point_left_right(gt_corner_points[0], gt_corner_points[1])
+        min_plane_distance = float("inf")
+        gt_min_indices = np.where(gt_distances == gt_distances.min())[0]
+        # NOTE: end of corner is the first point
+        num_gt_corners = len(gt_corners) - 1
+        num_est_corners = len(est_corners) - 1
+        for gt_idx in gt_min_indices:
+            gt_idx = gt_idx.item()
+            gt_indices = [gt_idx, gt_idx + 1] if gt_idx != num_gt_corners - 1 else [gt_idx, 0]
+            gt_plane = gt_corners[gt_indices].tolist()
+            if num_gt_corners != num_est_corners:
+                tmp_est_corners = np.array([transform_map2ego(c, ego2map) for c in est_corners])
+                est_mid_points = 0.5 * (tmp_est_corners[:-1, :2] + tmp_est_corners[1:, :2])
+                est_distances = np.linalg.norm(est_mid_points, axis=1)
+                est_candidate_idx = np.where(est_distances == est_distances.min())[0]
+                est_min_indices = []
+                for ei in est_candidate_idx:
+                    if ei != num_est_corners - 1:
+                        est_min_indices.append([ei, ei + 1])
+                    else:
+                        est_min_indices.append([ei, 0])
+            else:
+                est_min_indices = [gt_indices]
 
-        # Calculate plane distance
-        distance_left_point: float = abs(distance_points_bev(pr_left_point, gt_left_point))
-        distance_right_point: float = abs(distance_points_bev(pr_right_point, gt_right_point))
-        distance_squared: float = distance_left_point**2 + distance_right_point**2
-        plane_distance: float = math.sqrt(distance_squared / 2.0)
+            for est_indices in est_min_indices:
+                est_plane = est_corners[est_indices].tolist()
 
-        self.ground_truth_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
-            gt_left_point,
-            gt_right_point,
-        )
-        self.estimated_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
-            pr_left_point,
-            pr_right_point,
-        )
-        return plane_distance
+                est_left_point, est_right_point = get_point_left_right(est_plane[0], est_plane[1])
+                gt_left_point, gt_right_point = get_point_left_right(gt_plane[0], gt_plane[1])
+
+                distance_left_point: float = distance_points_bev(est_left_point, gt_left_point)
+                distance_right_point: float = distance_points_bev(est_right_point, gt_right_point)
+                distance_squared = distance_left_point**2 + distance_right_point**2
+                plane_distance = math.sqrt(0.5 * distance_squared)
+                # NOTE: round because the distance become 0.9999999... expecting 1.0
+                plane_distance = round(plane_distance, 10)
+
+                if plane_distance < min_plane_distance:
+                    self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
+                    self.estimated_nn_plane = (est_left_point, est_right_point)
+                    min_plane_distance = plane_distance
+
+        return min_plane_distance
 
 
 class IOU2dMatching(MatchingMethod):
@@ -288,11 +315,7 @@ class IOU2dMatching(MatchingMethod):
 
     mode: MatchingMode = MatchingMode.IOU2D
 
-    def __init__(
-        self,
-        estimated_object: ObjectType,
-        ground_truth_object: Optional[ObjectType],
-    ) -> None:
+    def __init__(self, estimated_object: ObjectType, ground_truth_object: Optional[ObjectType], **kwargs) -> None:
         super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
 
     def is_better_than(
@@ -375,11 +398,7 @@ class IOU3dMatching(MatchingMethod):
 
     mode: MatchingMode = MatchingMode.IOU3D
 
-    def __init__(
-        self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
-    ) -> None:
+    def __init__(self, estimated_object: DynamicObject, ground_truth_object: Optional[DynamicObject], **kwargs) -> None:
         super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
 
     def is_better_than(

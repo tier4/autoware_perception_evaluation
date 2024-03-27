@@ -273,6 +273,7 @@ class TestObjectsFilter(unittest.TestCase):
                     self.target_labels,
                     self.matching_mode,
                     self.matching_threshold_list,
+                    ego2map=None,
                 )
                 # TP
                 self.assertEqual(

@@ -210,6 +210,7 @@ def get_positive_objects(
     target_labels: List[Label],
     matching_mode: Optional[MatchingMode] = None,
     matching_threshold_list: Optional[List[float]] = None,
+    ego2map: Optional[np.ndarray] = None,
 ) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
     """Returns TP (True Positive) and FP (False Positive) object results as `tuple`.
 
@@ -221,6 +222,7 @@ def get_positive_objects(
         matching_mode (Optional[MatchingMode]): Matching policy, i.e. center or plane distance, iou.
         matching_threshold_list (Optional[List[float]]): List of matching thresholds,
             each element corresponds to target label.
+        ego2map (Optional[np.ndarray]): Matrix to transform base link coords to map coords. Defaults to None.
 
     Returns:
         tp_object_results (List[DynamicObjectWithPerceptionResult]): List of TP.
@@ -249,6 +251,7 @@ def get_positive_objects(
                     DynamicObjectWithPerceptionResult(
                         object_result.estimated_object,
                         None,
+                        ego2map=ego2map,
                     )
                 )
             else:
@@ -289,9 +292,11 @@ def get_negative_objects(
     non_candidates: List[ObjectType] = []
     for object_result in object_results:
         matching_threshold: Optional[float] = get_label_threshold(
-            object_result.ground_truth_object.semantic_label
-            if object_result.ground_truth_object is not None
-            else object_result.estimated_object.semantic_label,
+            (
+                object_result.ground_truth_object.semantic_label
+                if object_result.ground_truth_object is not None
+                else object_result.estimated_object.semantic_label
+            ),
             target_labels,
             matching_threshold_list,
         )

@@ -150,10 +150,13 @@ class PassFailResult:
         tp_object_results, fp_object_results = get_positive_objects(
             object_results=object_results,
             target_labels=self.frame_pass_fail_config.target_labels,
-            matching_mode=MatchingMode.IOU2D
-            if self.frame_pass_fail_config.evaluation_task.is_2d()
-            else MatchingMode.PLANEDISTANCE,
+            matching_mode=(
+                MatchingMode.IOU2D
+                if self.frame_pass_fail_config.evaluation_task.is_2d()
+                else MatchingMode.PLANEDISTANCE
+            ),
             matching_threshold_list=self.frame_pass_fail_config.matching_threshold_list,
+            ego2map=self.ego2map,
         )
 
         # filter by critical_ground_truth_objects
