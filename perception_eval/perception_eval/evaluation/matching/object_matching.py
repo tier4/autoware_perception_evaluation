@@ -249,35 +249,52 @@ class PlaneDistanceMatching(MatchingMethod):
 
         # Calculate min distance from ego vehicle
         if ground_truth_object.frame_id == FrameID.MAP:
-            tmp_corners = np.array([transform_map2ego(c, ego2map) for c in gt_corners])
-            gt_min_points = 0.5 * (tmp_corners[:-1, :2] + tmp_corners[1:, :2])
+            tmp_gt_corners = np.array([transform_map2ego(c, ego2map) for c in gt_corners])
+            gt_mid_points = 0.5 * (tmp_gt_corners[:-1, :2] + tmp_gt_corners[1:, :2])
         else:
-            gt_min_points = 0.5 * (gt_corners[:-1, :2] + gt_corners[1:, :2])
-        gt_distances: np.ndarray = np.linalg.norm(gt_min_points, axis=1)
+            gt_mid_points = 0.5 * (gt_corners[:-1, :2] + gt_corners[1:, :2])
+        gt_distances: np.ndarray = np.linalg.norm(gt_mid_points, axis=1)
 
         min_plane_distance = float("inf")
-        min_indices = np.where(gt_distances == gt_distances.min())[0]
-        num_corners = len(gt_corners)
-        for idx in min_indices:
-            idx = idx.item()
-            # NOTE: end of corner is the first point
-            indices = [idx, idx + 1] if idx != num_corners - 1 else [0, 1]
-            gt_plane = gt_corners[indices].tolist()
-            est_plane = est_corners[indices].tolist()
-            est_left_point, est_right_point = get_point_left_right(est_plane[0], est_plane[1])
-            gt_left_point, gt_right_point = get_point_left_right(gt_plane[0], gt_plane[1])
+        gt_min_indices = np.where(gt_distances == gt_distances.min())[0]
+        # NOTE: end of corner is the first point
+        num_gt_corners = len(gt_corners) - 1
+        num_est_corners = len(est_corners) - 1
+        for gt_idx in gt_min_indices:
+            gt_idx = gt_idx.item()
+            gt_indices = [gt_idx, gt_idx + 1] if gt_idx != num_gt_corners - 1 else [gt_idx, 0]
+            gt_plane = gt_corners[gt_indices].tolist()
+            if num_gt_corners != num_est_corners:
+                tmp_est_corners = np.array([transform_map2ego(c, ego2map) for c in est_corners])
+                est_mid_points = 0.5 * (tmp_est_corners[:-1, :2] + tmp_est_corners[1:, :2])
+                est_distances = np.linalg.norm(est_mid_points, axis=1)
+                est_candidate_idx = np.where(est_distances == est_distances.min())[0]
+                est_min_indices = []
+                for ei in est_candidate_idx:
+                    if ei != num_est_corners - 1:
+                        est_min_indices.append([ei, ei + 1])
+                    else:
+                        est_min_indices.append([ei, 0])
+            else:
+                est_min_indices = [gt_indices]
 
-            distance_left_point: float = distance_points_bev(est_left_point, gt_left_point)
-            distance_right_point: float = distance_points_bev(est_right_point, gt_right_point)
-            distance_squared = distance_left_point**2 + distance_right_point**2
-            plane_distance = math.sqrt(0.5 * distance_squared)
-            # NOTE: round because the distance become 0.9999999... expecting 1.0
-            plane_distance = round(plane_distance, 10)
+            for est_indices in est_min_indices:
+                est_plane = est_corners[est_indices].tolist()
 
-            if plane_distance < min_plane_distance:
-                self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
-                self.estimated_nn_plane = (est_left_point, est_right_point)
-                min_plane_distance = plane_distance
+                est_left_point, est_right_point = get_point_left_right(est_plane[0], est_plane[1])
+                gt_left_point, gt_right_point = get_point_left_right(gt_plane[0], gt_plane[1])
+
+                distance_left_point: float = distance_points_bev(est_left_point, gt_left_point)
+                distance_right_point: float = distance_points_bev(est_right_point, gt_right_point)
+                distance_squared = distance_left_point**2 + distance_right_point**2
+                plane_distance = math.sqrt(0.5 * distance_squared)
+                # NOTE: round because the distance become 0.9999999... expecting 1.0
+                plane_distance = round(plane_distance, 10)
+
+                if plane_distance < min_plane_distance:
+                    self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
+                    self.estimated_nn_plane = (est_left_point, est_right_point)
+                    min_plane_distance = plane_distance
 
         return min_plane_distance
 
