@@ -240,7 +240,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         if len(df) > 0:
             ratio_df = self.summarize_ratio(df=df)
             confusion_matrix_df = self.get_confusion_matrix(df=df)
-            metrics_df = self.summarize_score(scene=kwargs.get("scene"), **kwargs)
+            metrics_df = self.summarize_score(scene=kwargs.get("scene"))
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
             return score_df, confusion_matrix_df
 
