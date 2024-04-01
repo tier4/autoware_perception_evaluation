@@ -37,6 +37,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
+
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.status import MatchingStatus
@@ -46,7 +48,6 @@ from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.metrics import MetricsScore
-from tqdm import tqdm
 
 from .utils import get_metrics_info
 from .utils import PlotAxes
@@ -192,7 +193,7 @@ class PerceptionAnalyzerBase(ABC):
         for key, item in kwargs.items():
             if item is None:
                 continue
-            if isinstance(item, Iterable):
+            if not isinstance(item, str) and isinstance(item, Iterable):
                 cur_mask = df[key].isin(item)
             else:
                 cur_mask = df[key] == item
