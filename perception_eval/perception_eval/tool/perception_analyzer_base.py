@@ -560,13 +560,13 @@ class PerceptionAnalyzerBase(ABC):
         Returns:
             pandas.DataFrame
         """
-        self.__num_scene += 1
         self.__frame_results[self.num_scene] = frame_results
         self.__num_frame += len(frame_results)
 
         self.__ego2maps[str(self.num_scene)] = {}
         for frame in tqdm(frame_results, "Updating DataFrame"):
             self.add_frame(frame)
+        self.__num_scene += 1
 
         return self.__df
 
