@@ -118,6 +118,7 @@ python3 test/perception_field_analysis.py -r ${BASE_FOLDER} -s ${BASE_FOLDER}/${
 ### Implementation Example
 
 1. X-axis: X-coordinate, Y-axis: Y-coordinate, Quantity: True Positive Rate
+
    ```python
    # Define axes
    grid_axis_xy: np.ndarray = np.array([-90, -65, -55, -45, -35, -25, -15, -5, 5, 15, 25, 35, 45, 55, 65, 90])
@@ -134,11 +135,12 @@ python3 test/perception_field_analysis.py -r ${BASE_FOLDER} -s ${BASE_FOLDER}/${
    plots.add(PerceptionFieldPlot("XY_ratio_tp", "True Positive rate [-]"))
    plots.last.plot_mesh_map(error_field, error_field.ratio_tp, vmin=0, vmax=1)
    plots.last.set_axes(error_field)
-   ```  
+   ```
+
    <img src="../../fig/perception/plot_field_XY_ratio_tp.png" width=800>
 
-
 2. X-axis: Distance, Y-axis: Position Error, Quantity: Sample Count (log)
+
    ```python
    # Define X axis
    axis_dist: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="length", data_label="dist", name="Distance")
@@ -164,8 +166,9 @@ python3 test/perception_field_analysis.py -r ${BASE_FOLDER} -s ${BASE_FOLDER}/${
    plots.last.plot_mesh_map(error_field_range, numb_log, **kwargs)
    plots.last.set_axes(error_field_range)
    ```
+
    <img src="../../fig/perception/plot_field_dist_delta-error_numb_log.png" width=800>
-   
+
 ## (Grid) point Analysis
 
 This analysis method is utilize all of the object as points.
