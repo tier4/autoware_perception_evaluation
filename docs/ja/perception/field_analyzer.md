@@ -115,6 +115,57 @@ python3 test/perception_field_analysis.py -r ${BASE_FOLDER} -s ${BASE_FOLDER}/${
    plots.save()
    ```
 
+### 実装例
+
+1. X軸：X座標、Y軸：Y座標、量：真陽率
+   ```python
+   # Define axes
+   grid_axis_xy: np.ndarray = np.array([-90, -65, -55, -45, -35, -25, -15, -5, 5, 15, 25, 35, 45, 55, 65, 90])
+   axis_x: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="length", data_label="x")
+   axis_y: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="length", data_label="y")
+   axis_x.set_grid_axis(grid_axis_xy)
+   axis_y.set_grid_axis(grid_axis_xy)
+
+   # Analyze 2D xy grid
+   error_field, _ = analyzer.analyze_xy(axis_x, axis_y, **kwargs)
+
+   # plots
+   plots: PerceptionFieldPlots = PerceptionFieldPlots(plot_dir)
+   plots.add(PerceptionFieldPlot("XY_ratio_tp", "True Positive rate [-]"))
+   plots.last.plot_mesh_map(error_field, error_field.ratio_tp, vmin=0, vmax=1)
+   plots.last.set_axes(error_field)
+   ```  
+   <img src="../../fig/perception/plot_field_XY_ratio_tp.png" width=800>
+
+
+2. X軸：距離、Y軸：距離誤差、量：サンプル数(log)
+   ```python
+   # Define X axis
+   axis_dist: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="length", data_label="dist", name="Distance")
+   grid_axis_dist: np.ndarray = np.arange(0, 105, 10)
+   axis_dist.set_grid_axis(grid_axis_dist)
+
+   # Define Y axis
+   axis_error_delta: PerceptionFieldAxis = PerceptionFieldAxis(
+               quantity_type="length", data_label="error_delta", name="Position Error"
+           )
+   grid_axis_error: np.ndarray = np.arange(0, 8.0, 0.5)
+   axis_error_delta.set_grid_axis(grid_axis_error)
+
+   # Analyze Dist-error grid
+   error_field_range, _ = analyzer.analyze_xy(axis_dist, axis_error_delta, **kwargs)
+   numb = error_field_range.num
+   numb[numb == 0] = np.nan
+   numb_log = np.log10(field.num)
+
+   # plots
+   plots: PerceptionFieldPlots = PerceptionFieldPlots(plot_dir)
+   plots.add(PerceptionFieldPlot("dist_delta-error_numb_log", "Samples [-]"))
+   plots.last.plot_mesh_map(error_field_range, numb_log, **kwargs)
+   plots.last.set_axes(error_field_range)
+   ```
+   <img src="../../fig/perception/plot_field_dist_delta-error_numb_log.png" width=800>
+
 ## (グリッド) ポイント解析
 
 この解析方法では、すべてのオブジェクトをポイントとして利用します。
