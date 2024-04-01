@@ -463,7 +463,11 @@ class PerceptionAnalyzerBase(ABC):
         if len(df) > 0:
             ratio_df = self.summarize_ratio(df=df)
             error_df = self.summarize_error(df=df)
-            metrics_df = self.summarize_score(scene=kwargs.get("scene"), **kwargs)
+            if "scene" in kwargs.keys():
+                scene = kwargs.pop("scene")
+            else:
+                scene = None
+            metrics_df = self.summarize_score(scene=scene, **kwargs)
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
             return score_df, error_df
 
@@ -697,7 +701,7 @@ class PerceptionAnalyzerBase(ABC):
                 data["FN"][i] = self.get_num_fn(label=label) / num_ground_truth
         return pd.DataFrame(data, index=self.all_labels)
 
-    def summarize_score(self, scene: Optional[Union[int, List[int]]] = None) -> pd.DataFrame:
+    def summarize_score(self, scene: Optional[Union[int, List[int]]] = None, *args, **kwargs) -> pd.DataFrame:
         """Summarize MetricsScore.
 
         Args:
