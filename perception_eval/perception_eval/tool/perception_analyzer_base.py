@@ -366,7 +366,10 @@ class PerceptionAnalyzerBase(ABC):
         for key, item in kwargs.items():
             if item is None:
                 continue
-            df = df[df[key] == item]
+            elif not isinstance(item, str) and isinstance(item, Iterable):
+                df = df[df[key].isin(item)]
+            else:
+                df = df[df[key] == item]
         return df
 
     def get_estimation(self, df: Optional[pd.DataFrame] = None, **kwargs) -> pd.DataFrame:
@@ -384,7 +387,10 @@ class PerceptionAnalyzerBase(ABC):
         for key, item in kwargs.items():
             if item is None:
                 continue
-            df = df[df[key] == item]
+            elif not isinstance(item, str) and isinstance(item, Iterable):
+                df = df[df[key].isin(item)]
+            else:
+                df = df[df[key] == item]
 
         return df
 
@@ -771,7 +777,7 @@ class PerceptionAnalyzerBase(ABC):
             title = "Number of Objects @all"
             filename = "all"
         else:
-            title: str = f"Num Object @{str(self.all_labels)}"
+            title: str = "Num Object "
             filename: str = ""
             for key, item in kwargs.items():
                 title += f"@{key.upper()}:{item} "
