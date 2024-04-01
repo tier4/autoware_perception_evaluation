@@ -154,6 +154,10 @@ python3 test/perception_field_analysis.py -r ${BASE_FOLDER} -s ${BASE_FOLDER}/${
    grid_axis_error: np.ndarray = np.arange(0, 8.0, 0.5)
    axis_error_delta.set_grid_axis(grid_axis_error)
 
+   # Additional process for "dist" and "error_delta"
+   analyzer.add_additional_column()
+   analyzer.add_error_columns()
+
    # Analyze Dist-error grid
    error_field_range, _ = analyzer.analyze_xy(axis_dist, axis_error_delta, **kwargs)
    numb = error_field_range.num
