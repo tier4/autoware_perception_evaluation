@@ -186,18 +186,17 @@ class PerceptionAnalyzerBase(ABC):
         Returns:
             pd.DataFrame: Filtered DataFrame.
         """
-        df = self.df.copy()
+        df = self.df
 
         mask = np.ones(len(self), dtype=np.bool8)
         for key, item in kwargs.items():
             if item is None:
                 continue
-            for i, group in df.groupby(level=0):
-                if isinstance(item, Iterable):
-                    cur_mask = group[key].isin(item).any()
-                else:
-                    cur_mask = (group[key] == item).any()
-                mask[2 * i : 2 * i + 2] *= cur_mask
+            if isinstance(item, Iterable):
+                cur_mask = df[key].isin(item)
+            else:
+                cur_mask = df[key] == item
+            mask *= cur_mask.groupby(level=0).any().repeat(2).values
 
         df = df[mask]
 
@@ -560,13 +559,13 @@ class PerceptionAnalyzerBase(ABC):
         Returns:
             pandas.DataFrame
         """
-        self.__num_scene += 1
         self.__frame_results[self.num_scene] = frame_results
         self.__num_frame += len(frame_results)
 
         self.__ego2maps[str(self.num_scene)] = {}
         for frame in tqdm(frame_results, "Updating DataFrame"):
             self.add_frame(frame)
+        self.__num_scene += 1
 
         return self.__df
 
