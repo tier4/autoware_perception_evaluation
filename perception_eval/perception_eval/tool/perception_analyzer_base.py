@@ -193,7 +193,7 @@ class PerceptionAnalyzerBase(ABC):
         for key, item in kwargs.items():
             if item is None:
                 continue
-            if not isinstance(item, str) and isinstance(item, Iterable):
+            elif not isinstance(item, str) and isinstance(item, Iterable):
                 cur_mask = df[key].isin(item)
             else:
                 cur_mask = df[key] == item
