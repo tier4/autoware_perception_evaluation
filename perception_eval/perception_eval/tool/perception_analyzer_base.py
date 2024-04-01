@@ -37,6 +37,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
+
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.status import MatchingStatus
@@ -46,7 +48,6 @@ from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.metrics import MetricsScore
-from tqdm import tqdm
 
 from .utils import get_metrics_info
 from .utils import PlotAxes
@@ -560,13 +561,13 @@ class PerceptionAnalyzerBase(ABC):
         Returns:
             pandas.DataFrame
         """
-        self.__num_scene += 1
         self.__frame_results[self.num_scene] = frame_results
         self.__num_frame += len(frame_results)
 
         self.__ego2maps[str(self.num_scene)] = {}
         for frame in tqdm(frame_results, "Updating DataFrame"):
             self.add_frame(frame)
+        self.__num_scene += 1
 
         return self.__df
 
