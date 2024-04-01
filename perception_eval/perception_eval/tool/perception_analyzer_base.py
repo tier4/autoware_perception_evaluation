@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from abc import ABC
 from abc import abstractmethod
+from collections.abc import Iterable
 import logging
 from numbers import Number
 import os
@@ -47,7 +48,6 @@ from perception_eval.evaluation.matching.objects_filter import divide_objects_to
 from perception_eval.evaluation.metrics.metrics import MetricsScore
 from tqdm import tqdm
 
-from .utils import filter_df
 from .utils import get_metrics_info
 from .utils import PlotAxes
 from .utils import setup_axis
@@ -178,8 +178,33 @@ class PerceptionAnalyzerBase(ABC):
         Returns:
             pandas.DataFrame: Selected DataFrame.
         """
-        df = self.df
-        return filter_df(df, *args, **kwargs)
+        return self.filter(*args, **kwargs)
+
+    def filter(self, *args, **kwargs) -> pd.DataFrame:
+        """
+
+        Returns:
+            pd.DataFrame: Filtered DataFrame.
+        """
+        df = self.df.copy()
+
+        mask = np.ones(len(self), dtype=np.bool8)
+        for key, item in kwargs.items():
+            if item is None:
+                continue
+            for i, group in df.groupby(level=0):
+                if isinstance(item, Iterable):
+                    cur_mask = group[key].isin(item).any()
+                else:
+                    cur_mask = (group[key] == item).any()
+                mask[2 * i : 2 * i + 2] *= cur_mask
+
+        df = df[mask]
+
+        if args:
+            df = df[list(args)]
+
+        return df
 
     def sortby(
         self,
@@ -449,7 +474,8 @@ class PerceptionAnalyzerBase(ABC):
 
         return metrics_score
 
-    def analyze(self, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
+    @abstractmethod
+    def analyze(self, *args, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
         """Analyze TP/FP/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
 
         Args:
@@ -459,20 +485,71 @@ class PerceptionAnalyzerBase(ABC):
             score_df (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
             error_df (Optional[pandas.DataFrame]): DataFrame of errors.
         """
-        df: pd.DataFrame = self.get(**kwargs)
-        if len(df) > 0:
-            ratio_df = self.summarize_ratio(df=df)
-            error_df = self.summarize_error(df=df)
-            if "scene" in kwargs.keys():
-                scene = kwargs.pop("scene")
-            else:
-                scene = None
-            metrics_df = self.summarize_score(scene=scene, **kwargs)
-            score_df = pd.concat([ratio_df, metrics_df], axis=1)
-            return score_df, error_df
+        pass
 
-        logging.warning("There is no DataFrame to be able to analyze.")
-        return None, None
+    def add_frame(self, frame: PerceptionFrameResult) -> pd.DataFrame:
+        """Add single frame result and update DataFrame.
+
+        Args:
+            frame (PerceptionFrameResult): Single frame result.
+
+        Returns:
+            pd.DataFrame:
+        """
+        start = len(self.df) // 2
+        concat: List[pd.DataFrame] = []
+        if len(self) > 0:
+            concat.append(self.df)
+        self.__ego2maps[str(self.num_scene)][str(frame.frame_name)] = frame.frame_ground_truth.ego2map
+
+        tp_df = self.format2df(
+            frame.pass_fail_result.tp_object_results,
+            status=MatchingStatus.TP,
+            start=start,
+            frame_num=int(frame.frame_name),
+            ego2map=frame.frame_ground_truth.ego2map,
+        )
+        if len(tp_df) > 0:
+            start += len(tp_df) // 2
+            concat.append(tp_df)
+
+        fp_df = self.format2df(
+            frame.pass_fail_result.fp_object_results,
+            status=MatchingStatus.FP,
+            start=start,
+            frame_num=int(frame.frame_name),
+            ego2map=frame.frame_ground_truth.ego2map,
+        )
+        if len(fp_df) > 0:
+            start += len(fp_df) // 2
+            concat.append(fp_df)
+
+        tn_df = self.format2df(
+            frame.pass_fail_result.tn_objects,
+            status=MatchingStatus.TN,
+            start=start,
+            frame_num=int(frame.frame_name),
+            ego2map=frame.frame_ground_truth.ego2map,
+        )
+        if len(tn_df) > 0:
+            start += len(tn_df) // 2
+            concat.append(tn_df)
+
+        fn_df = self.format2df(
+            frame.pass_fail_result.fn_objects,
+            status=MatchingStatus.FN,
+            start=start,
+            frame_num=int(frame.frame_name),
+            ego2map=frame.frame_ground_truth.ego2map,
+        )
+        if len(fn_df) > 0:
+            start += len(fn_df) // 2
+            concat.append(fn_df)
+
+        if len(concat) > 0:
+            self.__df = pd.concat(concat)
+
+        return self.__df
 
     def add(self, frame_results: List[PerceptionFrameResult]) -> pd.DataFrame:
         """Add frame results and update DataFrame.
@@ -484,64 +561,12 @@ class PerceptionAnalyzerBase(ABC):
             pandas.DataFrame
         """
         self.__num_scene += 1
-        start = len(self.df) // 2
-        self.__ego2maps[str(self.num_scene)] = {}
-        for frame in tqdm(frame_results, "Updating DataFrame"):
-            concat: List[pd.DataFrame] = []
-            if len(self) > 0:
-                concat.append(self.df)
-
-            self.__ego2maps[str(self.num_scene)][str(frame.frame_name)] = frame.frame_ground_truth.ego2map
-
-            tp_df = self.format2df(
-                frame.pass_fail_result.tp_object_results,
-                status=MatchingStatus.TP,
-                start=start,
-                frame_num=int(frame.frame_name),
-                ego2map=frame.frame_ground_truth.ego2map,
-            )
-            if len(tp_df) > 0:
-                start += len(tp_df) // 2
-                concat.append(tp_df)
-
-            fp_df = self.format2df(
-                frame.pass_fail_result.fp_object_results,
-                status=MatchingStatus.FP,
-                start=start,
-                frame_num=int(frame.frame_name),
-                ego2map=frame.frame_ground_truth.ego2map,
-            )
-            if len(fp_df) > 0:
-                start += len(fp_df) // 2
-                concat.append(fp_df)
-
-            tn_df = self.format2df(
-                frame.pass_fail_result.tn_objects,
-                status=MatchingStatus.TN,
-                start=start,
-                frame_num=int(frame.frame_name),
-                ego2map=frame.frame_ground_truth.ego2map,
-            )
-            if len(tn_df) > 0:
-                start += len(tn_df) // 2
-                concat.append(tn_df)
-
-            fn_df = self.format2df(
-                frame.pass_fail_result.fn_objects,
-                status=MatchingStatus.FN,
-                start=start,
-                frame_num=int(frame.frame_name),
-                ego2map=frame.frame_ground_truth.ego2map,
-            )
-            if len(fn_df) > 0:
-                start += len(fn_df) // 2
-                concat.append(fn_df)
-
-            if len(concat) > 0:
-                self.__df = pd.concat(concat)
-
         self.__frame_results[self.num_scene] = frame_results
         self.__num_frame += len(frame_results)
+
+        self.__ego2maps[str(self.num_scene)] = {}
+        for frame in tqdm(frame_results, "Updating DataFrame"):
+            self.add_frame(frame)
 
         return self.__df
 

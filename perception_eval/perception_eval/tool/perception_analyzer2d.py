@@ -226,7 +226,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         return {"ground_truth": gt_ret, "estimation": est_ret}
 
     def analyze(self, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
-        """[summary]
+        """
         Analyze TP/FP/TN/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
 
         Args:

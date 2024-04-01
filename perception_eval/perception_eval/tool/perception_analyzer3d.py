@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 import logging
 from typing import Any
 from typing import Dict
@@ -33,6 +34,7 @@ import yaml
 
 from .perception_analyzer_base import PerceptionAnalyzerBase
 from .utils import extract_area_results
+from .utils import filter_frame_by_distance
 from .utils import generate_area_points
 from .utils import get_area_idx
 from .utils import get_metrics_info
@@ -153,6 +155,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             "uuid",
             "num_points",
             "status",
+            "distance",
             "area",
             "frame",
             "scene",
@@ -276,6 +279,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 uuid=gt.uuid,
                 num_points=gt.pointcloud_num,
                 status=status,
+                distance=np.linalg.norm([gt_x, gt_y]).item(),
                 area=area,
                 frame=frame_num,
                 scene=self.num_scene,
@@ -323,6 +327,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 uuid=estimation.uuid,
                 num_points=np.nan,
                 status=status,
+                distance=np.linalg.norm([est_x, est_y]).item(),
                 area=area,
                 frame=frame_num,
                 scene=self.num_scene,
@@ -331,6 +336,61 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             est_ret = {k: None for k in self.keys()}
 
         return {"ground_truth": gt_ret, "estimation": est_ret}
+
+    def filter_by_distance(self, distance: Iterable[float], df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        """Filter DataFrame by min, max distances.
+
+        Args:
+            distance (Iterable[float]): Range of distance ordering (min, max). The range must be min < max.
+            df (Optional[pd.DataFrame], optional): Target DataFrame. If `None`, `self.df` will be used. Defaults to None.
+
+        Returns:
+            pd.DataFrame: Filtered DataFrame.
+        """
+        assert len(distance) == 2, "distance must be (min, max)"
+        assert distance[0] < distance[1], f"distance must be (min, max) and min < max, but got {distance}"
+
+        if df is None:
+            df = self.df
+
+        mask = np.array(
+            [
+                [np.logical_and(distance[0] <= group["distance"], group["distance"] < distance[1]).any()] * 2
+                for _, group in df.groupby(level=0)
+            ]
+        ).reshape(-1)
+        return df[mask]
+
+    def analyze(
+        self,
+        scene: Optional[int] = None,
+        distance: Optional[Iterable[float]] = None,
+        area: Optional[int] = None,
+        **kwargs,
+    ) -> np.Tuple[pd.DataFrame | None]:
+        if scene is not None:
+            kwargs.update({"scene": scene})
+        if area is not None:
+            kwargs.update({"area": area})
+
+        df: pd.DataFrame = self.get(**kwargs)
+
+        if len(df) > 0:
+            if distance is not None:
+                df = self.filter_by_distance(distance, df)
+
+            ratio_df = self.summarize_ratio(df=df)
+            error_df = self.summarize_error(df=df)
+            if "scene" in kwargs.keys():
+                scene = kwargs.pop("scene")
+            else:
+                scene = None
+            metrics_df = self.summarize_score(scene=scene, distance=distance, area=area)
+            score_df = pd.concat([ratio_df, metrics_df], axis=1)
+            return score_df, error_df
+
+        logging.warning("There is no DataFrame to be able to analyze.")
+        return None, None
 
     def summarize_error(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """Calculate mean, sigma, RMS, max and min of error.
@@ -399,14 +459,17 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
     def summarize_score(
         self,
         scene: Optional[Union[int, List[int]]] = None,
+        distance: Optional[Iterable[float]] = None,
         area: Optional[int] = None,
     ) -> pd.DataFrame:
         """Summarize MetricsScore.
 
         Args:
-            area (Optional[int]): Number of area. If it is not specified, calculate metrics score for all areas.
-                Defaults to None.
             scene (Optional[int]): Number of scene. If it is not specified, calculate metrics score for all scenes.
+                Defaults to None.
+            min_distance (Optional[float]): Min distance range. Defaults to None.
+            max_distance (Optional[float]): Max distance range. Defaults to None.
+            area (Optional[int]): Number of area. If it is not specified, calculate metrics score for all areas.
                 Defaults to None.
 
         Returns:
@@ -417,6 +480,11 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         else:
             scene: List[int] = [scene] if isinstance(scene, int) else scene
             frame_results = [x for k, v in self.frame_results.items() if k in scene for x in v]
+
+        if distance is not None:
+            assert isinstance(distance, Iterable) and len(distance) == 2
+            min_distance, max_distance = distance
+            frame_results = [filter_frame_by_distance(frame, min_distance, max_distance) for frame in frame_results]
 
         if area is not None:
             frame_results = extract_area_results(
