@@ -512,7 +512,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
         Args:
             uuid (str): Target object's uuid.
-            columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "vx", "vy"].
+            columns (Union[str, List[str]]): Target column name.
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             status (Optional[int]): Target status TP/FP/TN/FN. If not specified, plot all status. Defaults to None.
@@ -544,7 +545,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """Plot states for each time/distance estimated and GT object in TP.
 
         Args:
-            columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
+            columns (Union[str, List[str]]): Target column name.
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "distance"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             heatmap (bool): Whether overlay heatmap. Defaults to False.
@@ -555,7 +557,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().plot_error(columns=columns, mode=mode, heatmap=heatmap, show=show, bins=bins, **kwargs)
 
@@ -569,12 +571,12 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
         Args:
             column (Union[str, List[str]]): Target column name.
-                Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "distance"].
                 If you want plot multiple column for one image, use List[str].
             show (bool): Whether show the plotted figure. Defaults to False.
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().box_plot(columns=columns, show=show, **kwargs)

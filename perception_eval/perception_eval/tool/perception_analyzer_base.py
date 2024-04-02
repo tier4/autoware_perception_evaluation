@@ -667,7 +667,10 @@ class PerceptionAnalyzerBase(ABC):
                 N is number of TP, M is dimensions.
         """
         expects: Set[str] = set(self.state_columns)
-        keys: Set[str] = set([column]) if isinstance(column, str) else set(column)
+        if isinstance(column, str):
+            column = [column]
+        keys: Set[str] = set(column)
+
         if keys > expects:
             raise ValueError(f"Unexpected keys: {column}, expected: {expects}")
 
@@ -675,25 +678,28 @@ class PerceptionAnalyzerBase(ABC):
             df = self.df
 
         df_ = df[df["status"] == "TP"]
-        if isinstance(column, list):
-            df_arr: np.ndarray = np.concatenate(
-                [np.array(df_[col].to_list()) for col in column],
-                axis=-1,
-            )
-        else:
-            df_arr: np.ndarray = np.array(df_[column])
-        gt_vals = df_arr[::2]
-        est_vals = df_arr[1::2]
-        err: np.ndarray = gt_vals - est_vals
-        if remove_nan:
-            err = err[~np.isnan(err)]
+        errors = []
+        for col in column:
+            df_arr = np.array(df_[["x", "y"]]) if col == "distance" else np.array(df_[col])
+            gt_vals = df_arr[::2]
+            est_vals = df_arr[1::2]
+            err: np.ndarray = gt_vals - est_vals
+            if remove_nan:
+                err = err[~np.isnan(err)]
 
-        if column == "yaw":
-            # Clip err from [-2pi, 2pi] to [-pi, pi]
-            err[err > np.pi] = -2 * np.pi + err[err > np.pi]
-            err[err < -np.pi] = 2 * np.pi + err[err < -np.pi]
+            if col == "yaw":
+                # Clip err from [-2pi, 2pi] to [-pi, pi]
+                err[err > np.pi] = -2 * np.pi + err[err > np.pi]
+                err[err < -np.pi] = 2 * np.pi + err[err < -np.pi]
+            elif col == "distance":
+                err = np.linalg.norm(err, axis=1)
+            errors.append(errors)
+        errors = np.stack(errors, axis=1)
 
-        return err
+        if len(column) == 1:
+            errors = errors.reshape(-1)
+
+        return errors
 
     @abstractmethod
     def summarize_error(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
