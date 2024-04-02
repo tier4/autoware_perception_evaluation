@@ -540,6 +540,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         columns: Union[str, List[str]],
         mode: PlotAxes = PlotAxes.TIME,
         heatmap: bool = False,
+        project: bool = False,
         show: bool = False,
         bins: int = 50,
         **kwargs,
@@ -552,6 +553,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             heatmap (bool): Whether overlay heatmap. Defaults to False.
+            project (bool): Whether to project heatmap on 2D. This argument is only used for heatmap plot.
+                Defaults to False.
             show (bool): Whether show the plotted figure. Defaults to False.
             bins (int): Bin size to plot heatmap. Defaults to 50.
             **kwargs: Specify if you want to plot for the specific conditions.
@@ -561,7 +564,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             columns: List[str] = [columns]
         if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
-        return super().plot_error(columns=columns, mode=mode, heatmap=heatmap, show=show, bins=bins, **kwargs)
+        return super().plot_error(
+            columns=columns, mode=mode, heatmap=heatmap, project=project, show=show, bins=bins, **kwargs
+        )
 
     def box_plot(
         self,

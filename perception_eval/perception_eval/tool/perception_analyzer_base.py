@@ -712,7 +712,7 @@ class PerceptionAnalyzerBase(ABC):
             errors.append(err)
 
         if len(column) == 1:
-            errors = np.array(errors)
+            errors = np.array(errors).reshape(-1)
         else:
             errors = np.stack(errors, axis=1)
 
@@ -959,6 +959,7 @@ class PerceptionAnalyzerBase(ABC):
         columns: Union[str, List[str]],
         mode: PlotAxes = PlotAxes.TIME,
         heatmap: bool = False,
+        project: bool = False,
         show: bool = False,
         bins: int = 50,
         **kwargs,
@@ -972,6 +973,8 @@ class PerceptionAnalyzerBase(ABC):
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             heatmap (bool): Whether overlay heatmap. Defaults to False.
+            project (bool): Whether to project heatmap on 2D. This argument is only used for 3D heatmap plot.
+                Defaults to False.
             show (bool): Whether show the plotted figure. Defaults to False.
             bins (int): Bin size to plot heatmap. Defaults to 50.
             **kwargs: Specify if you want to plot for the specific conditions.
@@ -986,6 +989,8 @@ class PerceptionAnalyzerBase(ABC):
         if len(tp_index) == 0:
             logging.warning("There is no TP object. Could not calculate error.")
             return
+
+        project *= heatmap  # if heatmap=False, always project=False
 
         tp_df = self.df.loc[tp_index]
 
@@ -1006,7 +1011,7 @@ class PerceptionAnalyzerBase(ABC):
                 xlabel=xlabel,
                 ylabel=ylabel,
                 title=title,
-                projection=mode.projection,
+                projection=None if project else mode.projection,
             )
 
             mode.setup_axis(ax, **kwargs)
@@ -1021,12 +1026,18 @@ class PerceptionAnalyzerBase(ABC):
                 else:
                     ax.scatter(axes, err)
             else:
-                ax.set_zlabel(f"err_{col}")
+                if not project:
+                    ax.set_zlabel(f"err_{col}")
                 non_nan = ~np.isnan(err) * ~np.isnan(axes).any(0)
                 xaxes, yaxes = axes[:, non_nan]
                 err = err[non_nan]
                 if heatmap:
-                    ax.scatter(xaxes, yaxes, err, c=err, cmap=cm.jet)
+                    if project:
+                        # TODO(ktro2828): This is wrong projection
+                        hist, x_edges, y_edges = np.histogram2d(xaxes, yaxes, bins=bins, weights=err)
+                        ax.pcolormesh(x_edges, y_edges, hist, cmap=cm.jet)
+                    else:
+                        ax.scatter(xaxes, yaxes, err, c=err, cmap=cm.jet)
                     color_map = cm.ScalarMappable(cmap=cm.jet)
                     color_map.set_array([err])
                     plt.colorbar(color_map)
