@@ -174,6 +174,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             "vy",
             "nn_point1",
             "nn_point2",
+            "nn_plane",
+            "distance",
         ]
 
     @property
@@ -446,7 +448,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             data["width"] = _summarize("width", df_)
             data["vx"] = _summarize("vx", df_)
             data["vy"] = _summarize("vy", df_)
-            data["nn_plane"] = _summarize(["nn_point1", "nn_point2"], df_)
+            data["nn_plane"] = _summarize("nn_plane", df_)
             all_data[str(label)] = data
 
         ret_df = pd.DataFrame.from_dict(
@@ -513,7 +515,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         Args:
             uuid (str): Target object's uuid.
             columns (Union[str, List[str]]): Target column name.
-                Options: ["x", "y", "yaw", "width", "length", "vx", "vy"].
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "nn_point1", "nn_point2", "distance"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             status (Optional[int]): Target status TP/FP/TN/FN. If not specified, plot all status. Defaults to None.
@@ -522,7 +524,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "nn_point1", "nn_point2", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().plot_state(
             uuid=uuid,
@@ -546,7 +548,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
         Args:
             columns (Union[str, List[str]]): Target column name.
-                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "distance"].
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             heatmap (bool): Whether overlay heatmap. Defaults to False.
@@ -557,7 +559,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "distance"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().plot_error(columns=columns, mode=mode, heatmap=heatmap, show=show, bins=bins, **kwargs)
 
@@ -571,12 +573,12 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
         Args:
             column (Union[str, List[str]]): Target column name.
-                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "distance"].
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"].
                 If you want plot multiple column for one image, use List[str].
             show (bool): Whether show the plotted figure. Defaults to False.
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "distance"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().box_plot(columns=columns, show=show, **kwargs)

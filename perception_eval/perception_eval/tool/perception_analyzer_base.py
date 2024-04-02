@@ -680,7 +680,18 @@ class PerceptionAnalyzerBase(ABC):
         df_ = df[df["status"] == "TP"]
         errors = []
         for col in column:
-            df_arr = np.array(df_[["x", "y"]]) if col == "distance" else np.array(df_[col])
+            if col == "distance":
+                df_arr = np.array(df_[["x", "y"]])  # (N, 2)
+            elif col == "nn_plane":
+                df_arr = np.stack(
+                    (
+                        df_["nn_point1"].tolist(),
+                        df_["nn_point2"].tolist(),
+                    ),
+                    axis=1,
+                )  # (N, 2, 3)
+            else:
+                df_arr = np.array(df_[col])
             gt_vals = df_arr[::2]
             est_vals = df_arr[1::2]
             err: np.ndarray = gt_vals - est_vals
@@ -692,12 +703,18 @@ class PerceptionAnalyzerBase(ABC):
                 err[err > np.pi] = -2 * np.pi + err[err > np.pi]
                 err[err < -np.pi] = 2 * np.pi + err[err < -np.pi]
             elif col == "distance":
+                err = err.reshape(-1, 2)
                 err = np.linalg.norm(err, axis=1)
-            errors.append(errors)
-        errors = np.stack(errors, axis=1)
+            elif col == "nn_plane":
+                err = err.reshape(-1, 2, 3)
+                err = np.linalg.norm(err, axis=2)
+                err = np.mean(err, axis=1)
+            errors.append(err)
 
         if len(column) == 1:
-            errors = errors.reshape(-1)
+            errors = np.array(errors)
+        else:
+            errors = np.stack(errors, axis=1)
 
         return errors
 
