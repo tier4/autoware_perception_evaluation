@@ -37,6 +37,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
+
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.status import MatchingStatus
@@ -46,7 +48,6 @@ from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.metrics import MetricsScore
-from tqdm import tqdm
 
 from .utils import get_metrics_info
 from .utils import PlotAxes
@@ -653,9 +654,7 @@ class PerceptionAnalyzerBase(ABC):
         df: Optional[pd.DataFrame] = None,
         remove_nan: bool = False,
     ) -> np.ndarray:
-        """Calculate specified column's error for TP.
-
-        TODO: plot not only TP status, but also matched objects FP/TN.
+        """Calculate specified column's error for TP/TN and matched FP.
 
         Args:
             column (Union[str, List[str]]): name of column
@@ -677,7 +676,7 @@ class PerceptionAnalyzerBase(ABC):
         if df is None:
             df = self.df
 
-        df_ = df[df["status"] == "TP"]
+        df_ = df[df["status"].isin(["TP", "FP", "TN"])]
         errors = []
         for col in column:
             if col == "distance":
@@ -964,12 +963,10 @@ class PerceptionAnalyzerBase(ABC):
         bins: int = 50,
         **kwargs,
     ) -> None:
-        """Plot states for each time/distance estimated and GT object in TP.
-
-        TODO: plot not only TP status, but also matched objects FP/TN.
+        """Plot error between estimated and GT object in TP/TN and matched FP.
 
         Args:
-            columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
+            columns (Union[str, List[str]]): Target column name.
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             heatmap (bool): Whether overlay heatmap. Defaults to False.
@@ -983,16 +980,16 @@ class PerceptionAnalyzerBase(ABC):
         if isinstance(columns, str):
             columns: List[str] = [columns]
 
-        tp_gt_df = self.get_ground_truth(status="TP", **kwargs)
-        tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
+        gt_df = self.get_ground_truth(status=["TP", "FP", "TN"], **kwargs)
+        index = pd.unique(gt_df.index.get_level_values(level=0))
 
-        if len(tp_index) == 0:
-            logging.warning("There is no TP object. Could not calculate error.")
+        if len(index) == 0:
+            logging.warning("There is no TP/FP/TN object. Could not calculate error.")
             return
 
         project *= heatmap  # if heatmap=False, always project=False
 
-        tp_df = self.df.loc[tp_index]
+        tp_df = self.df.loc[index]
 
         num_cols = len(columns)
         fig: Figure = plt.figure(figsize=(8 * num_cols, 8))
@@ -1016,7 +1013,7 @@ class PerceptionAnalyzerBase(ABC):
 
             mode.setup_axis(ax, **kwargs)
             err: np.ndarray = self.calculate_error(col, df=tp_df)
-            axes: np.ndarray = mode.get_axes(tp_gt_df)
+            axes: np.ndarray = mode.get_axes(gt_df)
             if mode.is_2d():
                 non_nan = ~np.isnan(err) * ~np.isnan(axes)
                 axes = axes[non_nan]

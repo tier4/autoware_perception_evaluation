@@ -24,13 +24,14 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+import yaml
+
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.util.math import get_pose_transform_matrix
 from perception_eval.util.math import rotation_matrix_to_euler
-import yaml
 
 from .perception_analyzer_base import PerceptionAnalyzerBase
 from .utils import extract_area_results
@@ -433,13 +434,13 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             if label == "ALL":
                 df_ = df
             else:
-                tp_gt_df = self.get_ground_truth(status="TP", label=label)
-                tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
-                if len(tp_index) == 0:
-                    logging.warning(f"There is no TP object for {label}.")
+                gt_df = self.get_ground_truth(status=["TP", "FP", "TN"], label=label)
+                index = pd.unique(gt_df.index.get_level_values(level=0))
+                if len(index) == 0:
+                    logging.warning(f"There is no TP/FP/TN object for {label}.")
                     df_ = pd.DataFrame()
                 else:
-                    df_ = self.df.loc[tp_index]
+                    df_ = self.df.loc[index]
 
             data["x"] = _summarize("x", df_)
             data["y"] = _summarize("y", df_)
