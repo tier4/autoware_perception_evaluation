@@ -269,7 +269,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 y=gt_y,
                 width=gt_w,
                 length=gt_l,
-                hight=gt_h,
+                height=gt_h,
                 yaw=gt_yaw,
                 vx=gt_vx,
                 vy=gt_vy,
