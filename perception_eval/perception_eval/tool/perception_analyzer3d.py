@@ -268,7 +268,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 y=gt_y,
                 width=gt_w,
                 length=gt_l,
-                hight=gt_h,
+                height=gt_h,
                 yaw=gt_yaw,
                 vx=gt_vx,
                 vy=gt_vy,
@@ -280,7 +280,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 confidence=gt.semantic_score,
                 uuid=gt.uuid,
                 num_points=gt.pointcloud_num,
-                status=status,
+                status=str(status),
                 distance=np.linalg.norm([gt_x, gt_y]).item(),
                 area=area,
                 frame=frame_num,
@@ -328,7 +328,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 confidence=estimation.semantic_score,
                 uuid=estimation.uuid,
                 num_points=np.nan,
-                status=status,
+                status=str(status),
                 distance=np.linalg.norm([est_x, est_y]).item(),
                 area=area,
                 frame=frame_num,
@@ -433,7 +433,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             if label == "ALL":
                 df_ = df
             else:
-                gt_df = self.get_ground_truth(status=["TP", "FP", "TN"], label=label)
+                gt_df = self.get_ground_truth(df=df, status=["TP", "FP", "TN"], label=label)
                 index = pd.unique(gt_df.index.get_level_values(level=0))
                 if len(index) == 0:
                     logging.warning(f"There is no TP/FP/TN object for {label}.")

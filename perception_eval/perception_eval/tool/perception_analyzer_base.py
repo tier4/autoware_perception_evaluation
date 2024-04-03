@@ -1187,6 +1187,8 @@ class PerceptionAnalyzerBase(ABC):
         fig.savefig(osp.join(self.plot_directory, f"{filename}.png"))
         if show:
             plt.show()
+        else:
+            plt.close()
 
 
 def _get_min_value(value1: np.ndarray, value2: np.ndarray) -> float:

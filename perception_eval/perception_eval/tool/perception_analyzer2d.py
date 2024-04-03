@@ -285,7 +285,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             if label == "ALL":
                 df_ = df
             else:
-                gt_df = self.get_ground_truth(status=["TP", "FP", "TN"], label=label)
+                gt_df = self.get_ground_truth(df=df, status=["TP", "FP", "TN"], label=label)
                 index = pd.unique(gt_df.index.get_level_values(level=0))
                 if len(index) == 0:
                     logging.warning(f"There is no TP/FP/TN object for {label}.")
