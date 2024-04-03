@@ -37,6 +37,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
+
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.status import MatchingStatus
@@ -46,7 +48,6 @@ from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.metrics import MetricsScore
-from tqdm import tqdm
 
 from .utils import get_metrics_info
 from .utils import PlotAxes
@@ -264,7 +265,7 @@ class PerceptionAnalyzerBase(ABC):
         Returns:
             int: The number of ground truths.
         """
-        df_ = self.get_ground_truth(**kwargs)
+        df_ = self.get_ground_truth(df=df, **kwargs)
         return len(df_)
 
     def get_num_estimation(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
@@ -723,12 +724,12 @@ class PerceptionAnalyzerBase(ABC):
         for i, label in enumerate(self.all_labels):
             if label == "ALL":
                 label = None
-            num_ground_truth: int = self.get_num_ground_truth(label=label)
+            num_ground_truth: int = self.get_num_ground_truth(df=df, label=label)
             if num_ground_truth > 0:
-                data["TP"][i] = self.get_num_tp(label=label) / num_ground_truth
-                data["FP"][i] = self.get_num_fp(label=label) / num_ground_truth
-                data["TN"][i] = self.get_num_tn(label=label) / num_ground_truth
-                data["FN"][i] = self.get_num_fn(label=label) / num_ground_truth
+                data["TP"][i] = self.get_num_tp(df=df, label=label) / num_ground_truth
+                data["FP"][i] = self.get_num_fp(df=df, label=label) / num_ground_truth
+                data["TN"][i] = self.get_num_tn(df=df, label=label) / num_ground_truth
+                data["FN"][i] = self.get_num_fn(df=df, label=label) / num_ground_truth
         return pd.DataFrame(data, index=self.all_labels)
 
     def summarize_score(self, scene: Optional[Union[int, List[int]]] = None, *args, **kwargs) -> pd.DataFrame:
