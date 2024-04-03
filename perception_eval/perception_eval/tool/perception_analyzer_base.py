@@ -264,7 +264,7 @@ class PerceptionAnalyzerBase(ABC):
         Returns:
             int: The number of ground truths.
         """
-        df_ = self.get_ground_truth(**kwargs)
+        df_ = self.get_ground_truth(df=df, **kwargs)
         return len(df_)
 
     def get_num_estimation(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
@@ -723,12 +723,12 @@ class PerceptionAnalyzerBase(ABC):
         for i, label in enumerate(self.all_labels):
             if label == "ALL":
                 label = None
-            num_ground_truth: int = self.get_num_ground_truth(label=label)
+            num_ground_truth: int = self.get_num_ground_truth(df=df, label=label)
             if num_ground_truth > 0:
-                data["TP"][i] = self.get_num_tp(label=label) / num_ground_truth
-                data["FP"][i] = self.get_num_fp(label=label) / num_ground_truth
-                data["TN"][i] = self.get_num_tn(label=label) / num_ground_truth
-                data["FN"][i] = self.get_num_fn(label=label) / num_ground_truth
+                data["TP"][i] = self.get_num_tp(df=df, label=label) / num_ground_truth
+                data["FP"][i] = self.get_num_fp(df=df, label=label) / num_ground_truth
+                data["TN"][i] = self.get_num_tn(df=df, label=label) / num_ground_truth
+                data["FN"][i] = self.get_num_fn(df=df, label=label) / num_ground_truth
         return pd.DataFrame(data, index=self.all_labels)
 
     def summarize_score(self, scene: Optional[Union[int, List[int]]] = None, *args, **kwargs) -> pd.DataFrame:
