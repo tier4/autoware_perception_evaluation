@@ -376,11 +376,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             kwargs.update({"area": area})
 
         df: pd.DataFrame = self.get(**kwargs)
+        if distance is not None:
+            df = self.filter_by_distance(distance, df)
 
         if len(df) > 0:
-            if distance is not None:
-                df = self.filter_by_distance(distance, df)
-
             ratio_df = self.summarize_ratio(df=df)
             error_df = self.summarize_error(df=df)
             if "scene" in kwargs.keys():
@@ -390,9 +389,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             metrics_df = self.summarize_score(scene=scene, distance=distance, area=area)
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
             return score_df, error_df
-
-        logging.warning("There is no DataFrame to be able to analyze.")
-        return None, None
+        else:
+            logging.warning("There is no DataFrame to be able to analyze.")
+            return None, None
 
     def summarize_error(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """Calculate mean, sigma, RMS, max and min of error.
