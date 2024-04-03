@@ -174,6 +174,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             "vy",
             "nn_point1",
             "nn_point2",
+            "nn_plane",
+            "distance",
         ]
 
     @property
@@ -431,13 +433,13 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             if label == "ALL":
                 df_ = df
             else:
-                tp_gt_df = self.get_ground_truth(status="TP", label=label)
-                tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
-                if len(tp_index) == 0:
-                    logging.warning(f"There is no TP object for {label}.")
+                gt_df = self.get_ground_truth(status=["TP", "FP", "TN"], label=label)
+                index = pd.unique(gt_df.index.get_level_values(level=0))
+                if len(index) == 0:
+                    logging.warning(f"There is no TP/FP/TN object for {label}.")
                     df_ = pd.DataFrame()
                 else:
-                    df_ = self.df.loc[tp_index]
+                    df_ = self.df.loc[index]
 
             data["x"] = _summarize("x", df_)
             data["y"] = _summarize("y", df_)
@@ -446,7 +448,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             data["width"] = _summarize("width", df_)
             data["vx"] = _summarize("vx", df_)
             data["vy"] = _summarize("vy", df_)
-            data["nn_plane"] = _summarize(["nn_point1", "nn_point2"], df_)
+            data["nn_plane"] = _summarize("nn_plane", df_)
             all_data[str(label)] = data
 
         ret_df = pd.DataFrame.from_dict(
@@ -512,7 +514,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
         Args:
             uuid (str): Target object's uuid.
-            columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "vx", "vy"].
+            columns (Union[str, List[str]]): Target column name.
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "nn_point1", "nn_point2", "distance"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             status (Optional[int]): Target status TP/FP/TN/FN. If not specified, plot all status. Defaults to None.
@@ -521,7 +524,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "nn_point1", "nn_point2", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().plot_state(
             uuid=uuid,
@@ -537,6 +540,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         columns: Union[str, List[str]],
         mode: PlotAxes = PlotAxes.TIME,
         heatmap: bool = False,
+        project: bool = False,
         show: bool = False,
         bins: int = 50,
         **kwargs,
@@ -544,10 +548,13 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """Plot states for each time/distance estimated and GT object in TP.
 
         Args:
-            columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
+            columns (Union[str, List[str]]): Target column name.
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             heatmap (bool): Whether overlay heatmap. Defaults to False.
+            project (bool): Whether to project heatmap on 2D. This argument is only used for heatmap plot.
+                Defaults to False.
             show (bool): Whether show the plotted figure. Defaults to False.
             bins (int): Bin size to plot heatmap. Defaults to 50.
             **kwargs: Specify if you want to plot for the specific conditions.
@@ -555,9 +562,11 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
-        return super().plot_error(columns=columns, mode=mode, heatmap=heatmap, show=show, bins=bins, **kwargs)
+        return super().plot_error(
+            columns=columns, mode=mode, heatmap=heatmap, project=project, show=show, bins=bins, **kwargs
+        )
 
     def box_plot(
         self,
@@ -569,12 +578,12 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
         Args:
             column (Union[str, List[str]]): Target column name.
-                Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"].
                 If you want plot multiple column for one image, use List[str].
             show (bool): Whether show the plotted figure. Defaults to False.
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().box_plot(columns=columns, show=show, **kwargs)
