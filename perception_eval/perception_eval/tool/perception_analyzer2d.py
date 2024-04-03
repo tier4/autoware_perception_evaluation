@@ -24,12 +24,13 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+import yaml
+
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
-import yaml
 
 from .perception_analyzer_base import PerceptionAnalyzerBase
 from .utils import PlotAxes
@@ -285,7 +286,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             if label == "ALL":
                 df_ = df
             else:
-                gt_df = self.get_ground_truth(status=["TP", "FP", "TN"], label=label)
+                gt_df = self.get_ground_truth(df=df, status=["TP", "FP", "TN"], label=label)
                 index = pd.unique(gt_df.index.get_level_values(level=0))
                 if len(index) == 0:
                     logging.warning(f"There is no TP/FP/TN object for {label}.")
