@@ -24,13 +24,14 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+import yaml
+
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.util.math import get_pose_transform_matrix
 from perception_eval.util.math import rotation_matrix_to_euler
-import yaml
 
 from .perception_analyzer_base import PerceptionAnalyzerBase
 from .utils import extract_area_results
@@ -376,11 +377,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             kwargs.update({"area": area})
 
         df: pd.DataFrame = self.get(**kwargs)
+        if distance is not None:
+            df = self.filter_by_distance(distance, df)
 
         if len(df) > 0:
-            if distance is not None:
-                df = self.filter_by_distance(distance, df)
-
             ratio_df = self.summarize_ratio(df=df)
             error_df = self.summarize_error(df=df)
             if "scene" in kwargs.keys():
@@ -390,9 +390,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             metrics_df = self.summarize_score(scene=scene, distance=distance, area=area)
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
             return score_df, error_df
-
-        logging.warning("There is no DataFrame to be able to analyze.")
-        return None, None
+        else:
+            logging.warning("There is no DataFrame to be able to analyze.")
+            return None, None
 
     def summarize_error(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """Calculate mean, sigma, RMS, max and min of error.
