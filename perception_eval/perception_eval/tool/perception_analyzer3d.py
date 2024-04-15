@@ -24,6 +24,8 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+import yaml
+
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
@@ -31,7 +33,6 @@ from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.util.math import get_pose_transform_matrix
 from perception_eval.util.math import rotation_matrix_to_euler
-import yaml
 
 from .perception_analyzer_base import PerceptionAnalyzerBase
 from .utils import extract_area_results
@@ -535,7 +536,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         Args:
             uuid (str): Target object's uuid.
             columns (Union[str, List[str]]): Target column name.
-                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "nn_point1", "nn_point2", "distance"].
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "distance"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             status (Optional[int]): Target status TP/FP/TN/FN. If not specified, plot all status. Defaults to None.
@@ -544,7 +545,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "nn_point1", "nn_point2", "distance"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().plot_state(
             uuid=uuid,
