@@ -535,7 +535,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         Args:
             uuid (str): Target object's uuid.
             columns (Union[str, List[str]]): Target column name.
-                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "nn_point1", "nn_point2", "distance"].
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "distance"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             status (Optional[int]): Target status TP/FP/TN/FN. If not specified, plot all status. Defaults to None.
@@ -544,7 +544,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "nn_point1", "nn_point2", "distance"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().plot_state(
             uuid=uuid,
