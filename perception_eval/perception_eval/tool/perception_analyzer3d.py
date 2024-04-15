@@ -25,6 +25,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
@@ -247,7 +248,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             else:
                 gt_vx, gt_vy = np.nan, np.nan
 
-            if self.config.frame_ids[0] == "map":
+            if gt.frame_id == FrameID.MAP:
                 src: np.ndarray = get_pose_transform_matrix(
                     position=gt.state.position,
                     rotation=gt.state.orientation.rotation_matrix,
@@ -295,7 +296,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             else:
                 est_vx, est_vy = np.nan, np.nan
 
-            if self.config.frame_ids[0] == "map":
+            if estimation.frame_id == FrameID.MAP:
                 src: np.ndarray = get_pose_transform_matrix(
                     position=estimation.state.position,
                     rotation=estimation.state.orientation.rotation_matrix,
