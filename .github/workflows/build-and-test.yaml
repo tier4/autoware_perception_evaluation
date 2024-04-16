@@ -17,74 +17,39 @@ env:
   POETRY_VERSION: '1.5.1'
 
 jobs:
-  setup:
+  unittest:
     runs-on: ubuntu-20.04
     continue-on-error: true
     strategy:
       matrix:
         python-version: ["3.7.11", "3.8", "3.9", "3.10"]
-    outputs:
-      PYTHON_VERSION: ${{ steps.setup-python.outputs.python-version }}
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        id: setup-python
+      - uses: ./.github/actions/install
         with:
           python-version: ${{ matrix.python-version }}
-
-  unittest:
-    runs-on: ubuntu-20.04
-    continue-on-error: true
-    needs: setup
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v3
-        id: poetry-cache
-        with:
-          path: .cache/pypoetry
-          key: ${{ runner.os }}-python-${{ needs.setup.outputs.PYTHON_VERSION }}-poetry-${{ env.POETRY_VERSION }}
-
-      - name: Install dependencies
-        run: |
-          : # NOTE: In Python3.7.11, failed to install poetry>=1.6.1
-          curl -sSL https://install.python-poetry.org | POETRY_VERSION=${{ env.POETRY_VERSION}} python -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          poetry install
-        if: steps.poetry-cache.outputs.cache-hit != 'true'
 
       - name: Run test
         run: |
           cd perception_eval
           poetry run python -m pytest
 
-  mocktest:
+  mock-test:
     runs-on: ubuntu-20.04
     continue-on-error: true
-    needs: setup
     strategy:
       matrix:
+        python-version: ["3.7.11", "3.8", "3.9", "3.10"]
         lsim-task:
           [test.perception_lsim, test.sensing_lsim, test.perception_lsim2d]
         visualization-task: [test.eda]
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v3
-        id: poetry-cache
+      - uses: ./.github/actions/install
         with:
-          path: .cache/pypoetry
-          key: ${{ runner.os }}-python-${{ needs.setup.outputs.PYTHON_VERSION }}-poetry-${{ env.POETRY_VERSION }}
+          python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: |
-            : # NOTE: In Python3.7.11, failed to install poetry>=1.6.1
-            curl -sSL https://install.python-poetry.org | POETRY_VERSION=${{ env.POETRY_VERSION}} python -
-            echo "$HOME/.local/bin" >> $GITHUB_PATH
-            poetry install -vvv
-        if: steps.poetry-cache.outputs.cache-hit != 'true'
 
       - name: Run test
         run: |

@@ -1,0 +1,29 @@
+name: poetry-install
+description: "Install dependencies with poetry if no cache was hit"
+
+inputs:
+  python-version:
+    description: "Python version"
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Setup python ${{ inputs.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install dependencies
+      run: |
+        curl -sSL https://install.python-poetry.org | python -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        poetry install -vvv
+      if: steps.poetry-cache.outputs.cache-hit != 'true'
+      shell: bash
+
+    - name: Cache artifacts
+      uses: actions/cache@v4
+      with:
+        path: .cache/pypoetry
+        key: ${{ runner.os }}-python-${{ inputs.python-version }}-poetry-${{ inputs.poetry-version }}
