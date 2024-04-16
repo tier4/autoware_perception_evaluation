@@ -17,7 +17,7 @@ env:
   POETRY_VERSION: '1.5.1'
 
 jobs:
-  unittest:
+  build-and-test:
     runs-on: ubuntu-20.04
     continue-on-error: true
     strategy:
@@ -25,34 +25,21 @@ jobs:
         python-version: ["3.7.11", "3.8", "3.9", "3.10"]
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/install
+
+      - name: Install dependencies
+        uses: ./.github/actions/install
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Run test
+      - name: Run unittest
         run: |
           cd perception_eval
           poetry run python -m pytest
 
-  mock-test:
-    runs-on: ubuntu-20.04
-    continue-on-error: true
-    strategy:
-      matrix:
-        python-version: ["3.7.11", "3.8", "3.9", "3.10"]
-        lsim-task:
-          [test.perception_lsim, test.sensing_lsim, test.perception_lsim2d]
-        visualization-task: [test.eda]
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/install
-        with:
-          python-version: ${{ matrix.python-version }}
-
-
-      - name: Run test
+      - name: Run mock test
         run: |
           cd perception_eval
-          poetry run python -m ${{ matrix.lsim-task }} test/sample_data/ --use_tmpdir
-          poetry run python -m ${{ matrix.visualization-task }} test/sample_data/
+          poetry run python -m test.perception_lsim test/sample_data/ --use_tmpdir
+          poetry run python -m test.perception_lsim2d test/sample_data/ --use_tmpdir
+          poetry run python -m test.sensing_lsim test/sample_data/ --use_tmpdir
+          poetry run python -m test.eda test/sample_data/
