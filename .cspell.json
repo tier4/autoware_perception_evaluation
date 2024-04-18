@@ -1,4 +1,7 @@
 {
+  "ignorePaths": [
+    "./perception_eval/test/sample_data/**"
+  ],
   "words": [
     "3dfield",
     "allclose",
