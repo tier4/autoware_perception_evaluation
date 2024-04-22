@@ -1,11 +1,13 @@
 name: Check spelling
 
 on:
-  pull_request:
+  pull_request_target:
+    types: [opened, edited]
 
 jobs:
   spellcheck:
     runs-on: ubuntu-latest
+    timeout-minutes: 1
     steps:
       - name: Check out code
         uses: actions/checkout@v3

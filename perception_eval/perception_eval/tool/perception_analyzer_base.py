@@ -264,7 +264,7 @@ class PerceptionAnalyzerBase(ABC):
         Returns:
             int: The number of ground truths.
         """
-        df_ = self.get_ground_truth(**kwargs)
+        df_ = self.get_ground_truth(df=df, **kwargs)
         return len(df_)
 
     def get_num_estimation(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
@@ -653,9 +653,7 @@ class PerceptionAnalyzerBase(ABC):
         df: Optional[pd.DataFrame] = None,
         remove_nan: bool = False,
     ) -> np.ndarray:
-        """Calculate specified column's error for TP.
-
-        TODO: plot not only TP status, but also matched objects FP/TN.
+        """Calculate specified column's error for TP/TN and matched FP.
 
         Args:
             column (Union[str, List[str]]): name of column
@@ -667,33 +665,56 @@ class PerceptionAnalyzerBase(ABC):
                 N is number of TP, M is dimensions.
         """
         expects: Set[str] = set(self.state_columns)
-        keys: Set[str] = set([column]) if isinstance(column, str) else set(column)
+        if isinstance(column, str):
+            column = [column]
+        keys: Set[str] = set(column)
+
         if keys > expects:
             raise ValueError(f"Unexpected keys: {column}, expected: {expects}")
 
         if df is None:
             df = self.df
 
-        df_ = df[df["status"] == "TP"]
-        if isinstance(column, list):
-            df_arr: np.ndarray = np.concatenate(
-                [np.array(df_[col].to_list()) for col in column],
-                axis=-1,
-            )
+        df_ = df[df["status"].isin(["TP", "FP", "TN"])]
+        errors = []
+        for col in column:
+            if col == "distance":
+                df_arr = np.array(df_[["x", "y"]])  # (N, 2)
+            elif col == "nn_plane":
+                df_arr = np.stack(
+                    (
+                        df_["nn_point1"].tolist(),
+                        df_["nn_point2"].tolist(),
+                    ),
+                    axis=1,
+                )  # (N, 2, 3)
+            else:
+                df_arr = np.array(df_[col])
+            gt_vals = df_arr[::2]
+            est_vals = df_arr[1::2]
+            err: np.ndarray = gt_vals - est_vals
+            if remove_nan:
+                err = err[~np.isnan(err)]
+
+            if col == "yaw":
+                # Clip err from [-2pi, 2pi] to [-pi, pi]
+                err[err > np.pi] = -2 * np.pi + err[err > np.pi]
+                err[err < -np.pi] = 2 * np.pi + err[err < -np.pi]
+            elif col == "distance":
+                err = err.reshape(-1, 2)
+                err = np.linalg.norm(err, axis=1)
+            elif col == "nn_plane":
+                err = err.reshape(-1, 2, 3)
+                err = np.linalg.norm(err, axis=2)
+                err = np.mean(err, axis=1)
+            errors.append(err)
+
+        if len(column) == 1:
+            errors = np.array(errors).reshape(-1)
         else:
-            df_arr: np.ndarray = np.array(df_[column])
-        gt_vals = df_arr[::2]
-        est_vals = df_arr[1::2]
-        err: np.ndarray = gt_vals - est_vals
-        if remove_nan:
-            err = err[~np.isnan(err)]
+            errors = np.stack(errors, axis=1)
 
-        if column == "yaw":
-            # Clip err from [-2pi, 2pi] to [-pi, pi]
-            err[err > np.pi] = -2 * np.pi + err[err > np.pi]
-            err[err < -np.pi] = 2 * np.pi + err[err < -np.pi]
-
-        return err
+        return errors
 
     @abstractmethod
     def summarize_error(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
@@ -723,12 +744,12 @@ class PerceptionAnalyzerBase(ABC):
         for i, label in enumerate(self.all_labels):
             if label == "ALL":
                 label = None
-            num_ground_truth: int = self.get_num_ground_truth(label=label)
+            num_ground_truth: int = self.get_num_ground_truth(df=df, label=label)
             if num_ground_truth > 0:
-                data["TP"][i] = self.get_num_tp(label=label) / num_ground_truth
-                data["FP"][i] = self.get_num_fp(label=label) / num_ground_truth
-                data["TN"][i] = self.get_num_tn(label=label) / num_ground_truth
-                data["FN"][i] = self.get_num_fn(label=label) / num_ground_truth
+                data["TP"][i] = self.get_num_tp(df=df, label=label) / num_ground_truth
+                data["FP"][i] = self.get_num_fp(df=df, label=label) / num_ground_truth
+                data["TN"][i] = self.get_num_tn(df=df, label=label) / num_ground_truth
+                data["FN"][i] = self.get_num_fn(df=df, label=label) / num_ground_truth
         return pd.DataFrame(data, index=self.all_labels)
 
     def summarize_score(self, scene: Optional[Union[int, List[int]]] = None, *args, **kwargs) -> pd.DataFrame:
@@ -936,19 +957,20 @@ class PerceptionAnalyzerBase(ABC):
         columns: Union[str, List[str]],
         mode: PlotAxes = PlotAxes.TIME,
         heatmap: bool = False,
+        project: bool = False,
         show: bool = False,
         bins: int = 50,
         **kwargs,
     ) -> None:
-        """Plot states for each time/distance estimated and GT object in TP.
-
-        TODO: plot not only TP status, but also matched objects FP/TN.
+        """Plot error between estimated and GT object in TP/TN and matched FP.
 
         Args:
-            columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
+            columns (Union[str, List[str]]): Target column name.
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             heatmap (bool): Whether overlay heatmap. Defaults to False.
+            project (bool): Whether to project heatmap on 2D. This argument is only used for 3D heatmap plot.
+                Defaults to False.
             show (bool): Whether show the plotted figure. Defaults to False.
             bins (int): Bin size to plot heatmap. Defaults to 50.
             **kwargs: Specify if you want to plot for the specific conditions.
@@ -957,14 +979,16 @@ class PerceptionAnalyzerBase(ABC):
         if isinstance(columns, str):
             columns: List[str] = [columns]
 
-        tp_gt_df = self.get_ground_truth(status="TP", **kwargs)
-        tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
+        gt_df = self.get_ground_truth(status=["TP", "FP", "TN"], **kwargs)
+        index = pd.unique(gt_df.index.get_level_values(level=0))
 
-        if len(tp_index) == 0:
-            logging.warning("There is no TP object. Could not calculate error.")
+        if len(index) == 0:
+            logging.warning("There is no TP/FP/TN object. Could not calculate error.")
             return
 
-        tp_df = self.df.loc[tp_index]
+        project *= heatmap  # if heatmap=False, always project=False
+
+        tp_df = self.df.loc[index]
 
         num_cols = len(columns)
         fig: Figure = plt.figure(figsize=(8 * num_cols, 8))
@@ -983,12 +1007,12 @@ class PerceptionAnalyzerBase(ABC):
                 xlabel=xlabel,
                 ylabel=ylabel,
                 title=title,
-                projection=mode.projection,
+                projection=None if project else mode.projection,
             )
 
             mode.setup_axis(ax, **kwargs)
             err: np.ndarray = self.calculate_error(col, df=tp_df)
-            axes: np.ndarray = mode.get_axes(tp_gt_df)
+            axes: np.ndarray = mode.get_axes(gt_df)
             if mode.is_2d():
                 non_nan = ~np.isnan(err) * ~np.isnan(axes)
                 axes = axes[non_nan]
@@ -998,12 +1022,18 @@ class PerceptionAnalyzerBase(ABC):
                 else:
                     ax.scatter(axes, err)
             else:
-                ax.set_zlabel(f"err_{col}")
+                if not project:
+                    ax.set_zlabel(f"err_{col}")
                 non_nan = ~np.isnan(err) * ~np.isnan(axes).any(0)
                 xaxes, yaxes = axes[:, non_nan]
                 err = err[non_nan]
                 if heatmap:
-                    ax.scatter(xaxes, yaxes, err, c=err, cmap=cm.jet)
+                    if project:
+                        # TODO(ktro2828): This is wrong projection
+                        hist, x_edges, y_edges = np.histogram2d(xaxes, yaxes, bins=bins, weights=err)
+                        ax.pcolormesh(x_edges, y_edges, hist, cmap=cm.jet)
+                    else:
+                        ax.scatter(xaxes, yaxes, err, c=err, cmap=cm.jet)
                     color_map = cm.ScalarMappable(cmap=cm.jet)
                     color_map.set_array([err])
                     plt.colorbar(color_map)
@@ -1157,8 +1187,8 @@ class PerceptionAnalyzerBase(ABC):
         fig.savefig(osp.join(self.plot_directory, f"{filename}.png"))
         if show:
             plt.show()
-        fig.clear()
-        plt.close()
+        else:
+            plt.close()
 
 
 def _get_min_value(value1: np.ndarray, value2: np.ndarray) -> float:
