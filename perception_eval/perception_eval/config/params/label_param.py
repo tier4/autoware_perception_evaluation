@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from dataclasses import asdict
 from dataclasses import dataclass
 from typing import Any
 from typing import Dict
+
+from .base import BaseParam
 
 __all__ = ("LabelParam",)
 
 
 @dataclass
-class LabelParam:
+class LabelParam(BaseParam):
     label_prefix: str
     merge_similar_labels: bool = False
     count_label_number: bool = True
@@ -20,6 +21,3 @@ class LabelParam:
         merge_similar_labels: bool = cfg.get("merge_similar_labels", False)
         count_label_number: bool = cfg.get("count_label_number", True)
         return cls(label_prefix, merge_similar_labels, count_label_number)
-
-    def as_dict(self) -> Dict[str, Any]:
-        return asdict(self)

@@ -19,6 +19,8 @@ from typing import Sequence
 from typing import Tuple
 from typing import Union
 
+from perception_eval.common.evaluation_task import EvaluationTask
+
 from .evaluation_config_base import EvaluationConfigBase
 from .params import SensingFilterParam
 from .params import SensingMetricsParam
@@ -27,25 +29,6 @@ from .params import SensingMetricsParam
 class SensingEvaluationConfig(EvaluationConfigBase):
     """The class of config for sensing evaluation.
 
-    Directory structure to save log and visualization result is following
-    - result_root_directory/
-        ├── log_directory/
-        └── visualization_directory/
-
-    Attributes:
-        dataset_paths (List[str]): Dataset paths list.
-        frame_ids (List[FrameID]): List of FrameID instances, where objects are with respect.
-        result_root_directory (str): Directory path to save result.
-        log_directory (str): Directory Directory path to save log.
-        visualization_directory (str): Directory path to save visualization result.
-        label_converter (LabelConverter): LabelConverter instance.
-        evaluation_task (EvaluationTask): EvaluationTask instance.
-        label_prefix (str): Prefix of label type. Choose from [`autoware", `traffic_light`]. Defaults to autoware.
-        load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
-        target_labels (List[LabelType]): Target labels list.
-        filtering_params (Dict[str, Any]): Filtering parameters.
-        metrics_params (Dict[str, Any]): Metrics parameters.
-
     Args:
         dataset_paths (List[str]): Dataset paths list.
         frame_id (Union[str, Sequence[str]]): FrameID(s) in string, where objects are with respect.
@@ -53,8 +36,6 @@ class SensingEvaluationConfig(EvaluationConfigBase):
         config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
     """
-
-    _support_tasks: List[str] = ["sensing"]
 
     def __init__(
         self,
@@ -72,7 +53,12 @@ class SensingEvaluationConfig(EvaluationConfigBase):
             load_raw_data=load_raw_data,
         )
 
-    def _extract_params(self, cfg: Dict[str, Any]) -> Tuple[SensingFilterParam, SensingMetricsParam]:
+    def _validate_task(self, task: str | EvaluationTask) -> bool:
+        if isinstance(task, str):
+            task = EvaluationTask.from_value(task)
+        return task.is_sensing()
+
+    def _build_params(self, cfg: Dict[str, Any]) -> Tuple[SensingFilterParam, SensingMetricsParam]:
         filter_param = SensingFilterParam.from_dict(cfg)
         metrics_param = SensingMetricsParam.from_dict(cfg)
         return filter_param, metrics_param

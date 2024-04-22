@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from abc import ABC
-from abc import abstractmethod
-from dataclasses import asdict
 from dataclasses import dataclass
 from typing import Any
 from typing import Dict
@@ -13,29 +10,16 @@ from typing import TYPE_CHECKING
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.threshold import set_thresholds
 
+from .base import BaseParam
+
 if TYPE_CHECKING:
     from perception_eval.common.label import LabelType
 
 __all__ = ("PerceptionFilterParam", "SensingFilterParam")
 
 
-class FilterParamBase(ABC):
-    @classmethod
-    @abstractmethod
-    def from_dict(
-        cls,
-        cfg: Dict[str, Any],
-        evaluation_task: EvaluationTask,
-        target_labels: List[LabelType],
-    ) -> FilterParamBase:
-        pass
-
-    def as_dict(self) -> Dict[str, Any]:
-        return asdict(self)
-
-
 @dataclass
-class PerceptionFilterParam(FilterParamBase):
+class PerceptionFilterParam(BaseParam):
     evaluation_task: EvaluationTask
     target_labels: List[LabelType]
     max_x_position_list: Optional[List[float]] = None
@@ -48,12 +32,9 @@ class PerceptionFilterParam(FilterParamBase):
     ignore_attributes: Optional[List[str]] = None
 
     @classmethod
-    def from_dict(
-        cls,
-        cfg: Dict[str, Any],
-        evaluation_task: EvaluationTask,
-        target_labels: List[LabelType],
-    ) -> PerceptionFilterParam:
+    def from_dict(cls, cfg: Dict[str, Any]) -> PerceptionFilterParam:
+        evaluation_task: EvaluationTask = cfg["evaluation_task"]
+        target_labels: List[LabelType] = cfg["target_labels"]
         max_x_position: Optional[float] = cfg.get("max_x_position")
         max_y_position: Optional[float] = cfg.get("max_y_position")
         max_distance: Optional[float] = cfg.get("max_distance")
@@ -104,10 +85,10 @@ class PerceptionFilterParam(FilterParamBase):
 
 
 @dataclass
-class SensingFilterParam(FilterParamBase):
+class SensingFilterParam(BaseParam):
     target_uuids: Optional[List[str]] = None
 
     @classmethod
-    def from_dict(cls, cfg: Dict[str, Any], **kwargs) -> SensingFilterParam:
+    def from_dict(cls, cfg: Dict[str, Any]) -> SensingFilterParam:
         target_uuids: Optional[List[str]] = cfg.get("target_uuids")
         return cls(target_uuids)

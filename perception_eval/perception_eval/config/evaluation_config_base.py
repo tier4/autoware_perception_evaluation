@@ -49,29 +49,6 @@ class EvaluationConfigBase(ABC):
         ├── log_directory/
         └── visualization_directory/
 
-    Attributes:
-        dataset_paths (List[str]): Dataset paths list.
-        frame_ids (List[FrameID]): List of FrameID instances, where objects are with respect.
-        result_root_directory (str): Directory path to save result.
-        log_directory (str): Directory Directory path to save log.
-        visualization_directory (str): Directory path to save visualization result.
-        label_converter (LabelConverter): LabelConverter instance.
-        evaluation_task (EvaluationTask): EvaluationTask instance.
-        load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
-        target_labels (List[LabelType]): Target labels list.
-
-    properties:
-        support_tasks (List[str]): The list of supported task of EvaluationManager.
-            PerceptionEvaluationManager: [
-                "detection",
-                "tracking",
-                "prediction",
-                "detection2d",
-                "tracking2d",
-                "classification2d"
-            ]
-            SensingEvaluationManager: ["sensing"]
-
     Args:
         dataset_paths (List[str]): Dataset paths list.
         frame_id (Union[str, Sequence[str]]): FrameID(s) in string, where objects are with respect.
@@ -79,8 +56,6 @@ class EvaluationConfigBase(ABC):
         evaluation_config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
     """
-
-    _support_tasks: List[str] = []
 
     @abstractmethod
     def __init__(
@@ -92,30 +67,25 @@ class EvaluationConfigBase(ABC):
         load_raw_data: bool = False,
     ) -> None:
         super().__init__()
-        # Check tasks are supported
-        self.evaluation_task: EvaluationTask = self._check_tasks(config_dict)
-
-        # Labels
-        self.label_param = LabelParam.from_dict(config_dict)
-        self.label_converter = LabelConverter(
-            self.evaluation_task,
-            merge_similar_labels=self.label_param.merge_similar_labels,
-            label_prefix=self.label_param.label_prefix,
-            count_label_number=self.label_param.count_label_number,
-        )
-        self.target_labels = set_target_lists(config_dict.get("target_labels"), self.label_converter)
-        self.filter_param, self.metrics_param = self._extract_params(config_dict)
-
-        # dataset
         self.dataset_paths: List[str] = dataset_paths
+        self.load_raw_data: bool = load_raw_data
 
+        # convert string to object
+        self.evaluation_task: EvaluationTask = self._load_task(config_dict)
+        self.label_param = LabelParam.from_dict(config_dict)
+        self.label_converter = LabelConverter(self.evaluation_task, **self.label_param.as_dict())
+        self.target_labels = set_target_lists(config_dict.get("target_labels"), self.label_converter)
+        config_dict["evaluation_task"] = self.evaluation_task
+        config_dict["target_labels"] = self.target_labels
+
+        self.filter_param, self.metrics_param = self._build_params(config_dict)
+
+        # frame id
         self.frame_ids: List[FrameID] = (
             [FrameID.from_value(frame_id)] if isinstance(frame_id, str) else [FrameID.from_value(f) for f in frame_id]
         )
         if self.evaluation_task.is_3d() and len(self.frame_ids) != 1:
             raise ValueError(f"For 3D task, FrameID must be 1, but got {len(self.frame_ids)}")
-
-        self.load_raw_data: bool = load_raw_data
 
         # directory
         time = "{0:%Y%m%d_%H%M%S}".format(datetime.datetime.now())
@@ -131,7 +101,7 @@ class EvaluationConfigBase(ABC):
     def support_tasks(self) -> List[str]:
         return self._support_tasks
 
-    def _check_tasks(self, cfg: Dict[str, Any]) -> EvaluationTask:
+    def _load_task(self, cfg: Dict[str, Any]) -> EvaluationTask:
         """Check if specified tasks are supported.
 
         Args:
@@ -144,16 +114,21 @@ class EvaluationConfigBase(ABC):
             ValueError: If the keys of input config are unsupported.
         """
         task_name: str = cfg["evaluation_task"]
-        if task_name not in self.support_tasks:
+        if not self._validate_task(task_name):
             raise ValueError(f"Unsupported task: {task_name}\nSupported tasks: {self.support_tasks}")
         return set_task(task_name)
 
     @abstractmethod
-    def _extract_params(self, cfg: Dict[str, Any]) -> Tuple[FilterParamType, MetricsParamType]:
+    def _validate_task(self, task: str | EvaluationTask) -> bool:
+        pass
+
+    @abstractmethod
+    def _build_params(self, cfg: Dict[str, Any]) -> Tuple[FilterParamType, MetricsParamType]:
         """
+        Build parameters from config dict.
 
         Args:
-            evaluation_config_dict (Dict[str, Any]): _description_
+            cfg (Dict[str, Any]):
 
         Returns:
             Tuple[FilterParamType, MetricsParamType]: _description_
@@ -167,3 +142,12 @@ class EvaluationConfigBase(ABC):
     @property
     def visualization_directory(self) -> str:
         return self.__visualization_directory
+
+    def dump_label_params(self) -> Dict[str, Any]:
+        return self.label_param.as_dict()
+
+    def dump_filter_params(self) -> Dict[str, Any]:
+        return self.filter_param.as_dict()
+
+    def dump_metrics_params(self) -> Dict[str, Any]:
+        return self.metrics_param.as_dict()

@@ -75,6 +75,21 @@ class EvaluationTask(Enum):
     def is_2d(self) -> bool:
         return not self.is_3d()
 
+    def is_perception(self) -> bool:
+        return self in (
+            EvaluationTask.DETECTION,
+            EvaluationTask.TRACKING,
+            EvaluationTask.PREDICTION,
+            EvaluationTask.FP_VALIDATION,
+            EvaluationTask.DETECTION2D,
+            EvaluationTask.TRACKING2D,
+            EvaluationTask.CLASSIFICATION2D,
+            EvaluationTask.FP_VALIDATION2D,
+        )
+
+    def is_sensing(self) -> bool:
+        return self == EvaluationTask.SENSING
+
     def is_fp_validation(self) -> bool:
         """Indicates whether evaluation task is FP validation.
 

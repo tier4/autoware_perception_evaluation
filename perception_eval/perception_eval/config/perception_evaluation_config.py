@@ -19,6 +19,7 @@ from typing import Sequence
 from typing import Tuple
 from typing import Union
 
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.matching import MatchingPolicy
 from perception_eval.metrics import MetricsScoreConfig
 
@@ -30,26 +31,6 @@ from .params import PerceptionMetricsParam
 class PerceptionEvaluationConfig(EvaluationConfigBase):
     """Configuration class for perception evaluation.
 
-    Directory structure to save log and visualization result is following
-    - result_root_directory/
-        ├── log_directory/
-        └── visualization_directory/
-
-    Attributes:
-        dataset_paths (List[str]): Dataset paths list.
-        frame_ids (List[FrameID]): List of FrameID instance, where objects are with respect.
-        result_root_directory (str): Directory path to save result.
-        log_directory (str): Directory Directory path to save log.
-        visualization_directory (str): Directory path to save visualization result.
-        label_converter (LabelConverter): LabelConverter instance.
-        evaluation_task (EvaluationTask): EvaluationTask instance.
-        label_prefix (str): Prefix of label type. Choose from [`autoware", `traffic_light`]. Defaults to autoware.
-        load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
-        target_labels (List[LabelType]): Target labels list.
-        filtering_params (Dict[str, Any]): Filtering parameters.
-        metrics_params (Dict[str, Any]): Metrics parameters.
-        metrics_config (MetricsScoreConfig): MetricsScoreConfig instance.
-
     Args:
         dataset_paths (List[str]): Dataset paths list.
         frame_id (Union[str, Sequence[str]]): FrameID(s) in string, where objects are with respect.
@@ -57,17 +38,6 @@ class PerceptionEvaluationConfig(EvaluationConfigBase):
         config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
     """
-
-    _support_tasks: List[str] = [
-        "detection2d",
-        "tracking2d",
-        "classification2d",
-        "fp_validation2d",
-        "detection",
-        "tracking",
-        "prediction",
-        "fp_validation",
-    ]
 
     def __init__(
         self,
@@ -89,7 +59,12 @@ class PerceptionEvaluationConfig(EvaluationConfigBase):
 
         self.metrics_config = MetricsScoreConfig(self.metrics_param)
 
-    def _extract_params(self, cfg: Dict[str, Any]) -> Tuple[PerceptionFilterParam, PerceptionMetricsParam]:
-        filter_param = PerceptionFilterParam.from_dict(cfg, self.evaluation_task, self.target_labels)
-        metrics_param = PerceptionMetricsParam.from_dict(cfg, self.evaluation_task, self.target_labels)
+    def _validate_task(self, task: str | EvaluationTask) -> bool:
+        if isinstance(task, str):
+            task = EvaluationTask.from_value(task)
+        return task.is_perception()
+
+    def _build_params(self, cfg: Dict[str, Any]) -> Tuple[PerceptionFilterParam, PerceptionMetricsParam]:
+        filter_param = PerceptionFilterParam.from_dict(cfg)
+        metrics_param = PerceptionMetricsParam.from_dict(cfg)
         return filter_param, metrics_param
