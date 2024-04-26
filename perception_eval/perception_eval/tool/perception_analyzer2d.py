@@ -226,7 +226,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         return {"ground_truth": gt_ret, "estimation": est_ret}
 
     def analyze(self, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
-        """[summary]
+        """
         Analyze TP/FP/TN/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
 
         Args:
@@ -240,7 +240,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         if len(df) > 0:
             ratio_df = self.summarize_ratio(df=df)
             confusion_matrix_df = self.get_confusion_matrix(df=df)
-            metrics_df = self.summarize_score(scene=kwargs.get("scene"), **kwargs)
+            metrics_df = self.summarize_score(scene=kwargs.get("scene"))
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
             return score_df, confusion_matrix_df
 
@@ -285,13 +285,13 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             if label == "ALL":
                 df_ = df
             else:
-                tp_gt_df = self.get_ground_truth(status="TP", label=label)
-                tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
-                if len(tp_index) == 0:
-                    logging.warning(f"There is no TP object for {label}.")
+                gt_df = self.get_ground_truth(df=df, status=["TP", "FP", "TN"], label=label)
+                index = pd.unique(gt_df.index.get_level_values(level=0))
+                if len(index) == 0:
+                    logging.warning(f"There is no TP/FP/TN object for {label}.")
                     df_ = pd.DataFrame()
                 else:
-                    df_ = self.df.loc[tp_index]
+                    df_ = self.df.loc[index]
 
             data["x"] = _summarize("x", df_)
             data["y"] = _summarize("y", df_)
@@ -333,7 +333,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
     def plot_num_object(
         self,
         show: bool = False,
-        bins: int = 1.0,
+        bins: int = 1,
         **kwargs,
     ) -> None:
         """Plot the number of objects per confidence.
@@ -367,7 +367,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         self,
         status: Union[str, MatchingStatus],
         show: bool = False,
-        bins: float = 1.0,
+        bins: float = 1,
         **kwargs,
     ) -> None:
         """Plot TP/FP/TN/FN ratio per confidence.

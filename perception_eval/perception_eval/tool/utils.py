@@ -29,6 +29,8 @@ import numpy as np
 import pandas as pd
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
+from perception_eval.evaluation.matching.objects_filter import filter_object_results
+from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.metrics import MetricsScore
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
@@ -50,7 +52,7 @@ class PlotAxes(Enum):
         POSITION: X-axis is x[m], y-axis is y[m].
         VELOCITY: X-axis is vx[m/s], y-axis is vy[m/s].
         SIZE: X-axis is width[m], y-axis is height[m](2D) or length[m](3D).
-        POLAR: X-axis is theta[rad], y-axis is r[m]
+        POLAR: X-axis is theta[deg], y-axis is r[m]
     """
 
     FRAME = "frame"
@@ -122,6 +124,7 @@ class PlotAxes(Enum):
             distances: np.ndarray = np.linalg.norm(df[["x", "y"]], axis=1)
             thetas: np.ndarray = np.arctan2(df["x"], df["y"])
             thetas[thetas > np.pi] = thetas[thetas > np.pi] - 2.0 * np.pi
+            thetas = np.rad2deg(thetas)
             axes: np.ndarray = np.stack([thetas, distances], axis=0)
         else:
             raise TypeError(f"Unexpected mode: {self}")
@@ -151,32 +154,32 @@ class PlotAxes(Enum):
         elif self == PlotAxes.VELOCITY:
             return "vx [m/s]", "vy [m/s]"
         elif self == PlotAxes.POLAR:
-            return "theta [rad]", "r [m]"
+            return "theta [deg]", "r [m]"
 
-    def get_bins(self) -> Union[float, Tuple[float, float]]:
+    def get_bins(self) -> Union[int, Tuple[int, int]]:
         """Returns default bins.
 
         Returns:
-            Union[float, Tuple[float, float]]
+            Union[int, Tuple[int, int]]
         """
         if self == PlotAxes.FRAME:
-            return 1.0
+            return 1
         elif self == PlotAxes.TIME:
-            return 1.0
+            return 1
         elif self in (PlotAxes.DISTANCE, PlotAxes.X, PlotAxes.Y):
             return 10
         elif self in (PlotAxes.VX, PlotAxes.VY):
-            return 1.0
+            return 1
         elif self == PlotAxes.CONFIDENCE:
-            return 1.0
+            return 1
         elif self == PlotAxes.POSITION:
             return (10, 10)
         elif self == PlotAxes.SIZE:
-            return (5.0, 5.0)
+            return (5, 5)
         elif self == PlotAxes.VELOCITY:
-            return (1.0, 1.0)
+            return (1, 1)
         elif self == PlotAxes.POLAR:
-            return (0.2, 10)
+            return (5, 10)
 
     def setup_axis(self, ax: plt.Axes, **kwargs) -> None:
         """Setup axis limits and grid interval to plt.Axes.
@@ -328,11 +331,9 @@ def extract_area_results(
     for frame_result in out_frame_results:
         out_object_results: List[DynamicObjectWithPerceptionResult] = []
         out_ground_truths: List[DynamicObject] = []
-        frame_id: str = frame_result.frame_ground_truth.frame_id
         ego2map: Optional[np.ndarray] = frame_result.frame_ground_truth.ego2map
         for object_result in frame_result.object_results:
             object_result_area: int = get_area_idx(
-                frame_id,
                 object_result,
                 upper_rights,
                 bottom_lefts,
@@ -342,7 +343,6 @@ def extract_area_results(
                 out_object_results.append(object_result)
         for ground_truth in frame_result.frame_ground_truth.objects:
             ground_truth_area: int = get_area_idx(
-                frame_id,
                 ground_truth,
                 upper_rights,
                 bottom_lefts,
@@ -357,7 +357,7 @@ def extract_area_results(
     return out_frame_results
 
 
-def setup_axis(ax: plt.Axes, **kwargs) -> None:
+def setup_axis(ax: Union[plt.Axes, np.ndarray], **kwargs) -> None:
     """[summary]
     Setup axis limits and grid interval to plt.Axes.
 
@@ -368,22 +368,26 @@ def setup_axis(ax: plt.Axes, **kwargs) -> None:
             ylim (Union[float, Sequence]): If use sequence, (left, right) order. Defaults to None.
             grid_interval (float): Interval of grid. Defaults to None.
     """
-    ax.grid()
-    if kwargs.get("xlim"):
-        xlim: Union[float, Sequence] = kwargs.pop("xlim")
-        if isinstance(xlim, float):
-            ax.set_xlim(-xlim, xlim)
-        elif isinstance(xlim, (list, tuple)):
-            ax.set_xlim(xlim[0], xlim[1])
-    if kwargs.get("ylim"):
-        ylim: Union[float, Sequence] = kwargs.pop("ylim")
-        if isinstance(ylim, float):
-            ax.set_ylim(-ylim, ylim)
-        elif isinstance(ylim, (list, tuple)):
-            ax.set_ylim(ylim[0], ylim[1])
+    if isinstance(ax, np.ndarray):
+        for ax_ in ax:
+            setup_axis(ax_, **kwargs)
+    else:
+        ax.grid()
+        if kwargs.get("xlim"):
+            xlim: Union[float, Sequence] = kwargs.pop("xlim")
+            if isinstance(xlim, float):
+                ax.set_xlim(-xlim, xlim)
+            elif isinstance(xlim, (list, tuple)):
+                ax.set_xlim(xlim[0], xlim[1])
+        if kwargs.get("ylim"):
+            ylim: Union[float, Sequence] = kwargs.pop("ylim")
+            if isinstance(ylim, float):
+                ax.set_ylim(-ylim, ylim)
+            elif isinstance(ylim, (list, tuple)):
+                ax.set_ylim(ylim[0], ylim[1])
 
-    if kwargs.get("grid_interval"):
-        ax.grid(lw=kwargs.pop("grid_interval"))
+        if kwargs.get("grid_interval"):
+            ax.grid(lw=kwargs.pop("grid_interval"))
 
 
 def get_metrics_info(metrics_score: MetricsScore) -> Dict[str, Any]:
@@ -462,29 +466,31 @@ def get_aligned_timestamp(df: pd.DataFrame) -> np.ndarray:
     return np.array(scene_axes)
 
 
-def filter_df(df: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
-    """[summary]
-    Filter DataFrame with args and kwargs.
+def filter_frame_by_distance(
+    frame: PerceptionFrameResult,
+    min_distance: Optional[float],
+    max_distance: Optional[float],
+) -> PerceptionFrameResult:
+    ret_frame = deepcopy(frame)
 
-    Args:
-        df (pandas.DataFrame): Source DataFrame.
-        *args
-        **kwargs
+    min_distance_list = [min_distance] * len(ret_frame.target_labels)
+    max_distance_list = [max_distance] * len(ret_frame.target_labels)
 
-    Returns:
-        df_ (pandas.DataFrame): Filtered DataFrame.
-    """
-    df_ = df
+    ret_frame.object_results = filter_object_results(
+        ret_frame.object_results,
+        target_labels=ret_frame.target_labels,
+        max_distance_list=max_distance_list,
+        min_distance_list=min_distance_list,
+        ego2map=ret_frame.frame_ground_truth.ego2map,
+    )
+    ret_frame.frame_ground_truth.objects = filter_objects(
+        ret_frame.frame_ground_truth.objects,
+        is_gt=True,
+        target_labels=ret_frame.target_labels,
+        max_distance_list=max_distance_list,
+        min_distance_list=min_distance_list,
+        ego2map=ret_frame.frame_ground_truth.ego2map,
+    )
+    ret_frame.evaluate_frame(ret_frame.frame_ground_truth.objects)
 
-    for key, item in kwargs.items():
-        if item is None:
-            continue
-        if isinstance(item, (list, tuple)):
-            df_ = df_[df_[key].isin(item)]
-        else:
-            df_ = df_[df_[key] == item]
-
-    if args:
-        df_ = df_[list(args)]
-
-    return df_
+    return ret_frame

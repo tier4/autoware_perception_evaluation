@@ -23,8 +23,10 @@
 | `AutowareLabel.BICYCLE`    |  "bicycle"   | bicycle                                |
 |                            |              | vehicle.bicycle                        |
 | `AutowareLabel.MOTORBIKE`  | "motorbike"  | motorbike                              |
+|                            |              | motorcycle                             |
 |                            |              | vehicle.motorcycle                     |
 | `AutowareLabel.PEDESTRIAN` | "pedestrian" | pedestrian                             |
+|                            |              | stroller                               |
 |                            |              | pedestrian.adult                       |
 |                            |              | pedestrian.child                       |
 |                            |              | pedestrian.construction_worker         |
@@ -68,10 +70,12 @@
 |                            |              | vehicle.bus                            |
 |                            |              | vehicle.bus (bendy & rigid)            |
 | `AutowareLabel.BICYCLE`    |  "bicycle"   | bicycle                                |
+|                            |              | motorcycle                             |
 |                            |              | vehicle.bicycle                        |
 |                            |              | motorbike                              |
 |                            |              | vehicle.motorcycle                     |
 | `AutowareLabel.PEDESTRIAN` | "pedestrian" | pedestrian                             |
+|                            |              | stroller                               |
 |                            |              | pedestrian.adult                       |
 |                            |              | pedestrian.child                       |
 |                            |              | pedestrian.construction_worker         |

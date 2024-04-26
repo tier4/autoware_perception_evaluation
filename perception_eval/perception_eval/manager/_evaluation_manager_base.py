@@ -18,6 +18,7 @@ from typing import List
 from typing import Optional
 
 from perception_eval.common.dataset import FrameGroundTruth
+from perception_eval.common.dataset import get_interpolated_now_frame
 from perception_eval.common.dataset import get_now_frame
 from perception_eval.common.dataset import load_all_datasets
 from perception_eval.config import EvaluationConfigType
@@ -91,6 +92,7 @@ class _EvaluationMangerBase(ABC):
         self,
         unix_time: int,
         threshold_min_time: int = 75000,
+        interpolate_ground_truth: bool = False,
     ) -> Optional[FrameGroundTruth]:
         """Returns a FrameGroundTruth instance that has the closest timestamp with `unix_time`.
 
@@ -104,12 +106,22 @@ class _EvaluationMangerBase(ABC):
             Optional[FrameGroundTruth]: FrameGroundTruth instance at current frame.
                 If there is no corresponding ground truth, returns None.
         """
-        ground_truth_now_frame: FrameGroundTruth = get_now_frame(
-            ground_truth_frames=self.ground_truth_frames,
-            unix_time=unix_time,
-            threshold_min_time=threshold_min_time,
-        )
-        return ground_truth_now_frame
+        if not interpolate_ground_truth:
+            # search closest frame
+            ground_truth_now_frame: FrameGroundTruth = get_now_frame(
+                ground_truth_frames=self.ground_truth_frames,
+                unix_time=unix_time,
+                threshold_min_time=threshold_min_time,
+            )
+            return ground_truth_now_frame
+        else:
+            # search closest frame and interpolate if both before and after frames exist
+            ground_truth_now_frame: FrameGroundTruth = get_interpolated_now_frame(
+                ground_truth_frames=self.ground_truth_frames,
+                unix_time=unix_time,
+                threshold_min_time=threshold_min_time,
+            )
+            return ground_truth_now_frame
 
     def visualize_all(self) -> None:
         """Visualize object result in BEV space for all frames."""
