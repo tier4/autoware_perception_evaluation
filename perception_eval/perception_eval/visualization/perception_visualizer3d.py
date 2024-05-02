@@ -28,12 +28,6 @@ from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 from matplotlib.transforms import Affine2D
 import numpy as np
-from PIL import Image
-from PIL.Image import Image as PILImage
-from pyquaternion import Quaternion
-from tqdm import tqdm
-import yaml
-
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
@@ -42,6 +36,11 @@ from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.visualization.color import ColorMap
+from PIL import Image
+from PIL.Image import Image as PILImage
+from pyquaternion import Quaternion
+from tqdm import tqdm
+import yaml
 
 
 class PerceptionVisualizer3D:

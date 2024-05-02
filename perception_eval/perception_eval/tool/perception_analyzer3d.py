@@ -24,8 +24,6 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-import yaml
-
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
@@ -33,6 +31,7 @@ from perception_eval.common.transform import TransformDict
 from perception_eval.common.transform import TransformKey
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+import yaml
 
 from .perception_analyzer_base import PerceptionAnalyzerBase
 from .utils import extract_area_results

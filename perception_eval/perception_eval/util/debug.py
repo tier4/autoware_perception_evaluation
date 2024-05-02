@@ -19,8 +19,6 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-from pyquaternion.quaternion import Quaternion
-
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import Label
 from perception_eval.common.label import LabelType
@@ -29,6 +27,7 @@ from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.shape import Shape
 from perception_eval.common.transform import TransformDict
+from pyquaternion.quaternion import Quaternion
 
 
 def format_class_for_log(

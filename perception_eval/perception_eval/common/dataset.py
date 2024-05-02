@@ -25,8 +25,6 @@ from nuimages import NuImages
 import numpy as np
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
-from tqdm import tqdm
-
 from perception_eval.common import ObjectType
 from perception_eval.common.dataset_utils import _sample_to_frame
 from perception_eval.common.dataset_utils import _sample_to_frame_2d
@@ -39,6 +37,7 @@ from perception_eval.common.schema import FrameID
 from perception_eval.common.transform import HomogeneousMatrix
 from perception_eval.common.transform import TransformDict
 from perception_eval.common.transform import TransformKey
+from tqdm import tqdm
 
 
 class FrameGroundTruth:

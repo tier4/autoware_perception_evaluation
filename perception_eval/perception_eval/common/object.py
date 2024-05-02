@@ -20,9 +20,6 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
-from pyquaternion import Quaternion
-from shapely.geometry import Polygon
-
 from perception_eval.common.label import Label
 from perception_eval.common.point import crop_pointcloud
 from perception_eval.common.point import polygon_to_list
@@ -31,6 +28,8 @@ from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
 from perception_eval.common.transform import TransformDict
+from pyquaternion import Quaternion
+from shapely.geometry import Polygon
 
 
 class ObjectState:

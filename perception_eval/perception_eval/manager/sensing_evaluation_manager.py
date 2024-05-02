@@ -17,7 +17,6 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
-
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import crop_pointcloud

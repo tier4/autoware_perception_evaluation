@@ -68,7 +68,8 @@ class TransformDict:
         return f"{type(self).__name__}({self.__matrices})"
 
     @overload
-    def transform(self, key: TransformKeyType, position: ArrayLike) -> ArrayLike: ...
+    def transform(self, key: TransformKeyType, position: ArrayLike) -> ArrayLike:
+        ...
 
     @overload
     def transform(
@@ -76,10 +77,12 @@ class TransformDict:
         key: TransformKeyType,
         position: ArrayLike,
         rotation: RotationType,
-    ) -> Tuple[ArrayLike, Quaternion]: ...
+    ) -> Tuple[ArrayLike, Quaternion]:
+        ...
 
     @overload
-    def transform(self, key: TransformKeyType, matrix: HomogeneousMatrix) -> HomogeneousMatrix: ...
+    def transform(self, key: TransformKeyType, matrix: HomogeneousMatrix) -> HomogeneousMatrix:
+        ...
 
     def transform(self, key: TransformKeyType, *args: TransformArgType, **kwargs: TransformArgType) -> TransformArgType:
         """
@@ -383,13 +386,16 @@ class HomogeneousMatrix:
         return self.__extract_position_and_rotation_from_matrix(ret_mat)
 
     @overload
-    def transform(self, position: ArrayLike) -> NDArray: ...
+    def transform(self, position: ArrayLike) -> NDArray:
+        ...
 
     @overload
-    def transform(self, position: ArrayLike, rotation: RotationType) -> Tuple[NDArray, Quaternion]: ...
+    def transform(self, position: ArrayLike, rotation: RotationType) -> Tuple[NDArray, Quaternion]:
+        ...
 
     @overload
-    def transform(self, matrix: HomogeneousMatrix) -> HomogeneousMatrix: ...
+    def transform(self, matrix: HomogeneousMatrix) -> HomogeneousMatrix:
+        ...
 
     def transform(self, *args, **kwargs) -> TransformArgType:
         """Transform with specified position, rotation or homogeneous matrix.
