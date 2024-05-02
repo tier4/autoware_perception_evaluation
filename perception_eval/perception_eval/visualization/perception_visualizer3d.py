@@ -28,19 +28,20 @@ from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 from matplotlib.transforms import Affine2D
 import numpy as np
-from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.object import DynamicObject
-from perception_eval.common.schema import FrameID
-from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation import PerceptionFrameResult
-from perception_eval.util.math import rotation_matrix_to_euler
-from perception_eval.visualization.color import ColorMap
 from PIL import Image
 from PIL.Image import Image as PILImage
 from pyquaternion import Quaternion
 from tqdm import tqdm
 import yaml
+
+from perception_eval.common.evaluation_task import EvaluationTask
+from perception_eval.common.object import DynamicObject
+from perception_eval.common.schema import FrameID
+from perception_eval.common.transform import HomogeneousMatrix
+from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation import PerceptionFrameResult
+from perception_eval.visualization.color import ColorMap
 
 
 class PerceptionVisualizer3D:
@@ -213,10 +214,8 @@ class PerceptionVisualizer3D:
         axes.set_ylabel("y [m]")
 
         # Plot ego vehicle position
-        axes = self._plot_ego(
-            ego2map=frame_result.frame_ground_truth.ego2map,
-            axes=axes,
-        )
+        ego2map = frame_result.frame_ground_truth.transforms.get((FrameID.BASE_LINK, FrameID.MAP))
+        axes = self._plot_ego(ego2map=ego2map, axes=axes)
 
         pointcloud: Optional[np.ndarray] = (
             frame_result.frame_ground_truth.raw_data["lidar"] if self.config.load_raw_data else None
@@ -291,14 +290,14 @@ class PerceptionVisualizer3D:
 
     def _plot_ego(
         self,
-        ego2map: np.ndarray,
+        ego2map: Optional[HomogeneousMatrix],
         axes: Optional[Axes] = None,
         size: Tuple[float, float] = (5.0, 2.5),
     ) -> Axes:
         """Plot ego vehicle.
 
         Args:
-            ego2map (np.ndarray): The 4x4 array of transform matrix from ego coords system to map coords system.
+            ego2map (HomogeneousMatrix): The 4x4 array of transform matrix from ego coords system to map coords system.
             axes (Axes): The Axes instance.
             size (Tuple[float, float]): The size of box, (length, width). Defaults to (5.0, 2.5).
 
@@ -309,17 +308,19 @@ class PerceptionVisualizer3D:
             axes: Axes = plt.subplot()
 
         ego_color: np.ndarray = self.__cmap.get_simple("black")
-        ego_xy: np.ndarray = np.array((0.0, 0.0)) if self.config.frame_ids[0] == FrameID.BASE_LINK else ego2map[:2, 3]
-        box_width: float = size[0]
-        box_height: float = size[1]
+        if self.config.frame_ids[0] == FrameID.BASE_LINK:
+            ego_xy = np.zeros(2)
+            yaw = 0.0
+        else:
+            assert ego2map is not None
+            ego_xy = ego2map.position[:2]
+            yaw, _, _ = ego2map.yaw_pitch_roll
 
         plt.xlim([-self.xlim + ego_xy[0], self.xlim + ego_xy[0]])
         plt.ylim([-self.ylim + ego_xy[1], self.ylim + ego_xy[1]])
 
+        box_width, box_height = size
         box_bottom_left: np.ndarray = ego_xy - (np.array(size) / 2.0)
-        yaw: float = (
-            0.0 if self.config.frame_ids[0] == FrameID.BASE_LINK else rotation_matrix_to_euler(ego2map[:3, :3])[2]
-        )
 
         transform: Affine2D = Affine2D().rotate_around(ego_xy[0], ego_xy[1], yaw) + axes.transData
         box: Rectangle = Rectangle(

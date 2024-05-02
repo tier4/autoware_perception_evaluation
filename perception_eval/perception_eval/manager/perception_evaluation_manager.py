@@ -156,14 +156,14 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         estimated_objects = filter_objects(
             objects=estimated_objects,
             is_gt=False,
-            ego2map=frame_ground_truth.ego2map,
+            transforms=frame_ground_truth.transforms,
             **self.filtering_params,
         )
 
         frame_ground_truth.objects = filter_objects(
             objects=frame_ground_truth.objects,
             is_gt=True,
-            ego2map=frame_ground_truth.ego2map,
+            transforms=frame_ground_truth.transforms,
             **self.filtering_params,
         )
 
@@ -179,7 +179,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         if self.evaluator_config.filtering_params.get("target_uuids"):
             object_results = filter_object_results(
                 object_results=object_results,
-                ego2map=frame_ground_truth.ego2map,
+                transforms=frame_ground_truth.transforms,
                 target_uuids=self.filtering_params["target_uuids"],
             )
         return object_results, frame_ground_truth

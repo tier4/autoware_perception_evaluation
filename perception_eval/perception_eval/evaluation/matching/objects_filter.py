@@ -19,7 +19,6 @@ from typing import Tuple
 from typing import Union
 import warnings
 
-import numpy as np
 from perception_eval.common import ObjectType
 from perception_eval.common.label import CommonLabel
 from perception_eval.common.label import Label
@@ -29,6 +28,7 @@ from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.common.threshold import LabelThreshold
+from perception_eval.common.transform import TransformDict
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
 
@@ -44,7 +44,7 @@ def filter_object_results(
     min_point_numbers: Optional[List[int]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
     target_uuids: Optional[str] = None,
-    ego2map: Optional[np.ndarray] = None,
+    transforms: Optional[TransformDict] = None,
     *args,
     **kwargs,
 ) -> List[DynamicObjectWithPerceptionResult]:
@@ -87,8 +87,6 @@ def filter_object_results(
             Keep all `object_results` that their each uuid is in `target_uuids`
             only considering their `ground_truth_object`.
             Defaults to None.
-        ego2map (Optional[numpy.ndarray]): Array of 4x4 matrix to transform objects' coordinates from ego to map.
-            This is only needed when `frame_id=map`. Defaults to None.
 
     Returns:
         filtered_object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results list.
@@ -104,7 +102,7 @@ def filter_object_results(
             max_distance_list=max_distance_list,
             min_distance_list=min_distance_list,
             confidence_threshold_list=confidence_threshold_list,
-            ego2map=ego2map,
+            transforms=transforms,
         )
         if is_target and object_result.ground_truth_object:
             is_target = is_target and _is_target_object(
@@ -118,7 +116,7 @@ def filter_object_results(
                 min_distance_list=min_distance_list,
                 min_point_numbers=min_point_numbers,
                 target_uuids=target_uuids,
-                ego2map=ego2map,
+                transforms=transforms,
             )
         elif target_uuids and object_result.ground_truth_object is None:
             is_target = False
@@ -141,7 +139,7 @@ def filter_objects(
     min_point_numbers: Optional[List[int]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
     target_uuids: Optional[List[str]] = None,
-    ego2map: Optional[np.ndarray] = None,
+    transforms: Optional[TransformDict] = None,
     *args,
     **kwargs,
 ) -> List[ObjectType]:
@@ -178,8 +176,6 @@ def filter_objects(
         target_uuids (Optional[List[str]]): Filter target list of ground truths' uuids.
             Keep all `objects` that their each uuid is in `target_uuids`. This is only used when `is_gt=True`.
             Defaults to None.
-        ego2map (Optional[numpy.ndarray]): Array of 4x4 matrix to transform objects' coordinates from ego to map.
-            This is only needed when `frame_id=map`. Defaults to None.
 
     Returns:
         List[ObjectType]: Filtered objects.
@@ -198,7 +194,7 @@ def filter_objects(
             min_point_numbers=min_point_numbers,
             target_uuids=target_uuids,
             confidence_threshold_list=confidence_threshold_list,
-            ego2map=ego2map,
+            transforms=transforms,
         )
         if is_target:
             filtered_objects.append(object_)
@@ -289,9 +285,11 @@ def get_negative_objects(
     non_candidates: List[ObjectType] = []
     for object_result in object_results:
         matching_threshold: Optional[float] = get_label_threshold(
-            object_result.ground_truth_object.semantic_label
-            if object_result.ground_truth_object is not None
-            else object_result.estimated_object.semantic_label,
+            (
+                object_result.ground_truth_object.semantic_label
+                if object_result.ground_truth_object is not None
+                else object_result.estimated_object.semantic_label
+            ),
             target_labels,
             matching_threshold_list,
         )
@@ -470,7 +468,7 @@ def _is_target_object(
     confidence_threshold_list: Optional[List[float]] = None,
     min_point_numbers: Optional[List[int]] = None,
     target_uuids: Optional[List[str]] = None,
-    ego2map: Optional[np.ndarray] = None,
+    transforms: Optional[TransformDict] = None,
 ) -> bool:
     """Judge whether the input `dynamic_object` is target or not.
 
@@ -502,8 +500,6 @@ def _is_target_object(
             Keep all `dynamic_objects` that their confidence is bigger than `confidence_threshold`. Defaults to None.
         target_uuids (Optional[List[str]]): Filter target list of ground truths' uuids.
             Keep all `dynamic_objects` that their each uuid is in `target_uuids`. Defaults to None.
-        ego2map (Optional[numpy.ndarray]): Array of 4x4 matrix to transform objects' coordinates from ego to map.
-            This is only needed when `frame_id=map`. Defaults to None.
 
     Returns:
         bool: If the object is filter target, return True
@@ -548,12 +544,12 @@ def _is_target_object(
         is_target = is_target and dynamic_object.semantic_score > confidence_threshold
 
     if isinstance(dynamic_object, DynamicObject):
-        position_: Tuple[float, float, float] = dynamic_object.state.position
-        if dynamic_object.frame_id == FrameID.MAP:
-            assert ego2map is not None, "When frame_id is map, ego2map must be specified"
-            pos_arr: np.ndarray = np.append(position_, 1.0)
-            position_ = tuple(np.linalg.inv(ego2map).dot(pos_arr)[:3].tolist())
-        bev_distance_: float = dynamic_object.get_distance_bev(ego2map)
+        if dynamic_object.frame_id != FrameID.BASE_LINK:
+            position_ = transforms.transform(
+                (dynamic_object.frame_id, FrameID.BASE_LINK), dynamic_object.state.position
+            )
+        else:
+            position_ = dynamic_object.state.position
 
         if is_target and max_x_position_list is not None:
             max_x_position = (
@@ -571,6 +567,7 @@ def _is_target_object(
             )
             is_target = is_target and abs(position_[1]) < max_y_position
 
+        bev_distance_: float = dynamic_object.get_distance_bev(transforms)
         if is_target and max_distance_list is not None:
             max_distance = (
                 max_distance_list[0]

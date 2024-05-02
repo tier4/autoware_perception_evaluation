@@ -25,6 +25,8 @@ from nuimages import NuImages
 import numpy as np
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
+from tqdm import tqdm
+
 from perception_eval.common import ObjectType
 from perception_eval.common.dataset_utils import _sample_to_frame
 from perception_eval.common.dataset_utils import _sample_to_frame_2d
@@ -34,48 +36,34 @@ from perception_eval.common.geometry import interpolate_object_list
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
-from perception_eval.util.math import get_pose_transform_matrix
-from pyquaternion import Quaternion
-from tqdm import tqdm
+from perception_eval.common.transform import HomogeneousMatrix
+from perception_eval.common.transform import TransformDict
+from perception_eval.common.transform import TransformKey
 
 
 class FrameGroundTruth:
-    """
-    Ground truth data per frame
-
-    Attributes:
-        unix_time (float): The unix time for the frame [us].
-        frame_name (str): The file name for the frame.
-        objects (List[DynamicObject]): Objects data.
-        pointcloud (Optional[numpy.ndarray], optional):
-                Pointcloud data. Defaults to None, but if you want to visualize dataset,
-                you should load pointcloud data.
-        transform_matrix (Optional[np.ndarray]): The numpy array to transform position.
-        objects (List[ObjectType]): Objects data.
-        ego2map (Optional[np.ndarray]): The numpy array to transform position.
-        raw_data (Optional[Dict[str, numpy.ndarray]]): Raw data for each sensor modality.
-
-    Args:
-        unix_time (int): The unix time for the frame [us]
-        frame_name (str): The file name for the frame
-        objects (List[DynamicObject]): Objects data.
-        ego2map (Optional[np.ndarray]): The array of 4x4 matrix.
-            Transform position with respect to vehicle coord system to map one.
-        raw_data (Optional[Dict[str, numpy.ndarray]]): Raw data for each sensor modality.
-    """
+    """Ground truth data at a single frame."""
 
     def __init__(
         self,
         unix_time: int,
         frame_name: str,
         objects: List[DynamicObject],
-        ego2map: Optional[np.ndarray] = None,
+        transforms: Optional[TransformDict] = None,
         raw_data: Optional[Dict[str, np.ndarray]] = None,
     ) -> None:
+        """
+        Args:
+            unix_time (int): Current unix time.
+            frame_name (str): The file name
+            objects (list[DynamicObject]): Ground truth objects.
+            transforms (TransformDict | None, optional): 4x4 transform matrices. Defaults to None.
+            raw_data (dict[str, np.ndarray] | None, optional): Raw data for each sensor. Defaults to None.
+        """
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
         self.objects: List[ObjectType] = objects
-        self.ego2map: Optional[np.ndarray] = ego2map
+        self.transforms = TransformDict() if transforms is None else transforms
         self.raw_data: Optional[Dict[str, np.ndarray]] = raw_data
 
 
@@ -344,13 +332,13 @@ def get_interpolated_now_frame(
 
     # check frame availability
     if before_frame is None and after_frame is None:
-        logging.info(f"No frame is available for interpolation")
+        logging.info("No frame is available for interpolation")
         return None
     elif before_frame is None:
-        logging.info(f"Only after frame is available for interpolation")
+        logging.info("Only after frame is available for interpolation")
         return after_frame
     elif after_frame is None:
-        logging.info(f"Only before frame is available for interpolation")
+        logging.info("Only before frame is available for interpolation")
         return before_frame
     else:
         # do interpolation
@@ -370,15 +358,19 @@ def interpolate_ground_truth_frames(
         unix_time (int): target time
     """
     # interpolate ego2map
-    ego2map = interpolate_homogeneous_matrix(
-        before_frame.ego2map, after_frame.ego2map, before_frame.unix_time, after_frame.unix_time, unix_time
+    ego2map_key = TransformKey(FrameID.BASE_LINK, FrameID.MAP)
+    before_frame_ego2map = before_frame.transforms[ego2map_key]
+    after_frame_ego2map = after_frame.transforms[ego2map_key]
+    ego2map_matrix = interpolate_homogeneous_matrix(
+        before_frame_ego2map, after_frame_ego2map, before_frame.unix_time, after_frame.unix_time, unix_time
     )
+    ego2map = HomogeneousMatrix.from_matrix(ego2map_matrix, src=FrameID.BASE_LINK, dst=FrameID.MAP)
 
     # TODO: Need refactor for simplicity
     # if frame is base_link, need to interpolate with global coordinate
     # 1. convert object list to global
-    before_frame_objects = convert_objects_to_global(before_frame.objects, before_frame.ego2map)
-    after_frame_objects = convert_objects_to_global(after_frame.objects, after_frame.ego2map)
+    before_frame_objects = convert_objects_to_global(before_frame.objects, before_frame_ego2map)
+    after_frame_objects = convert_objects_to_global(after_frame.objects, after_frame_ego2map)
 
     # 2. interpolate objects
     object_list = interpolate_object_list(
@@ -389,21 +381,18 @@ def interpolate_ground_truth_frames(
 
     # interpolate raw data
     output_frame = deepcopy(before_frame)
-    output_frame.ego2map = ego2map
+    output_frame.transforms[ego2map_key] = ego2map
     output_frame.objects = object_list
     output_frame.unix_time = unix_time
     return output_frame
 
 
-def convert_objects_to_global(
-    object_list: List[ObjectType],
-    ego2map: np.ndarray,
-) -> List[ObjectType]:
+def convert_objects_to_global(object_list: List[ObjectType], ego2map: HomogeneousMatrix) -> List[ObjectType]:
     """Convert object list to global coordinate.
 
     Args:
         object_list (List[ObjectType]): object list
-        ego2map (np.ndarray): ego2map matrix
+        ego2map (HoMogeneousMatrix): ego2map matrix
 
     Returns:
         List[ObjectType]: object list in global coordinate
@@ -412,15 +401,8 @@ def convert_objects_to_global(
     for object in object_list:
         if object.frame_id == "map":
             output_object_list.append(deepcopy(object))
-            continue
         elif object.frame_id == "base_link":
-            src: np.ndarray = get_pose_transform_matrix(
-                position=object.state.position,
-                rotation=object.state.orientation.rotation_matrix,
-            )
-            dst: np.ndarray = ego2map.dot(src)
-            updated_position: np.ndarray = tuple(dst[:3, 3].flatten())
-            updated_rotation: np.ndarray = Quaternion(dst[:3, :3])
+            updated_position, updated_rotation = ego2map.transform(object.state.position, object.state.orientation)
             output_object = deepcopy(object)
             output_object.state.position = updated_position
             output_object.state.orientation = updated_rotation
@@ -431,15 +413,12 @@ def convert_objects_to_global(
     return output_object_list
 
 
-def convert_objects_to_base_link(
-    object_list: List[ObjectType],
-    ego2map: np.ndarray,
-) -> List[ObjectType]:
+def convert_objects_to_base_link(object_list: List[ObjectType], ego2map: HomogeneousMatrix) -> List[ObjectType]:
     """Convert object list to base_link coordinate.
 
     Args:
         object_list (List[ObjectType]): object list
-        ego2map (np.ndarray): ego2map matrix
+        ego2map (HomogeneousMatrix): ego2map matrix
 
     Returns:
         List[ObjectType]: object list in base_link coordinate
@@ -448,15 +427,12 @@ def convert_objects_to_base_link(
     for object in object_list:
         if object.frame_id == "base_link":
             output_object_list.append(deepcopy(object))
-            continue
         elif object.frame_id == "map":
-            src: np.ndarray = get_pose_transform_matrix(
+            map2ego = ego2map.inv()
+            updated_position, updated_rotation = map2ego.transform(
                 position=object.state.position,
                 rotation=object.state.orientation.rotation_matrix,
             )
-            dst: np.ndarray = np.linalg.inv(ego2map).dot(src)
-            updated_position: np.ndarray = tuple(dst[:3, 3].flatten())
-            updated_rotation: Quaternion = Quaternion(matrix=dst[:3, :3])
             output_object = deepcopy(object)
             output_object.state.position = updated_position
             output_object.state.orientation = updated_rotation

@@ -20,6 +20,9 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
+from pyquaternion import Quaternion
+from shapely.geometry import Polygon
+
 from perception_eval.common.label import Label
 from perception_eval.common.point import crop_pointcloud
 from perception_eval.common.point import polygon_to_list
@@ -27,9 +30,7 @@ from perception_eval.common.schema import FrameID
 from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
-from perception_eval.util.math import rotation_matrix_to_euler
-from pyquaternion import Quaternion
-from shapely.geometry import Polygon
+from perception_eval.common.transform import TransformDict
 
 
 class ObjectState:
@@ -210,64 +211,56 @@ class DynamicObject:
             eq = eq and self.state.orientation == other.state.orientation  # type: ignore
             return eq
 
-    def get_distance(self, ego2map: Optional[np.ndarray] = None) -> float:
+    def get_distance(self, transforms: Optional[TransformDict] = None) -> float:
         """Get the 3d distance to the object from ego vehicle in bird eye view.
 
         Args:
-            ego2map (Optional[numpy.ndarray]):4x4 Transform matrix
-                from base_link coordinate system to map coordinate system.
 
         Returns:
             float: The 3d distance to the object from ego vehicle in bird eye view.
         """
         if self.frame_id == FrameID.BASE_LINK:
-            return np.linalg.norm(self.state.position)
+            position = self.state.position
+        else:
+            if transforms is None:
+                raise ValueError("transforms must be specified.")
+            position = transforms.transform((self.frame_id, FrameID.BASE_LINK), self.state.position)
+        return np.linalg.norm(position)
 
-        if ego2map is None:
-            raise RuntimeError("For objects with respect to map coordinate system, ego2map must be specified.")
-
-        pos_arr: np.ndarray = np.append(self.state.position, 1.0)
-        return np.linalg.norm(np.linalg.inv(ego2map).dot(pos_arr)[:3])
-
-    def get_distance_bev(self, ego2map: Optional[np.ndarray] = None) -> float:
+    def get_distance_bev(self, transforms: Optional[TransformDict] = None) -> float:
         """Get the 2d distance to the object from ego vehicle in bird eye view.
 
         Args:
-            ego2map (Optional[numpy.ndarray]):4x4 Transform matrix
-                from base_link coordinate system to map coordinate system.
 
         Returns:
             float: The 2d distance to the object from ego vehicle in bird eye view.
         """
         if self.frame_id == FrameID.BASE_LINK:
-            return math.hypot(self.state.position[0], self.state.position[1])
+            position = self.state.position
+        else:
+            if transforms is None:
+                raise ValueError("transforms must be specified.")
+            position = transforms.transform((self.frame_id, FrameID.BASE_LINK), self.state.position)
+        return math.hypot(position[0], position[1])
 
-        if ego2map is None:
-            raise RuntimeError("For objects with respect to map coordinate system, ego2map must be specified.")
-
-        pos_arr: np.ndarray = np.append(self.state.position, 1.0)
-        return np.linalg.norm(np.linalg.inv(ego2map).dot(pos_arr)[:2])
-
-    def get_heading_bev(self, ego2map: Optional[np.ndarray] = None) -> float:
+    def get_heading_bev(self, transforms: Optional[TransformDict] = None) -> float:
         """Get the object heading from ego vehicle in bird eye view.
 
         Args:
-            ego2map (Optional[numpy.ndarray]):4x4 Transform matrix.
-                from base_link coordinate system to map coordinate system.
 
         Returns:
             float: The heading (radian)
         """
-        if self.frame_id == FrameID.MAP:
-            if ego2map is None:
-                raise RuntimeError("For objects with respect to map coordinate system, ego2map must be specified.")
-            src: np.ndarray = np.eye(4, 4)
-            src[:3, :3] = self.state.orientation.rotation_matrix
-            src[:3, 3] = self.state.position
-            dst: np.ndarray = np.linalg.inv(ego2map).dot(src)
-            rots: float = rotation_matrix_to_euler(dst[:3, :3])[-1].item()
-        else:
+        if self.frame_id == FrameID.BASE_LINK:
             rots: float = self.state.orientation.radians
+        else:
+            if transforms is None:
+                raise ValueError("transforms must be specified.")
+            _, rotation = transforms.transform(
+                (self.frame_id, FrameID.BASE_LINK), self.state.position, self.state.orientation
+            )
+            rots, _, _ = rotation.yaw_pitch_roll
+
         trans_rots: float = -rots - math.pi / 2
         trans_rots = float(np.where(trans_rots > math.pi, trans_rots - 2 * math.pi, trans_rots))
         trans_rots = float(np.where(trans_rots < -math.pi, trans_rots + 2 * math.pi, trans_rots))

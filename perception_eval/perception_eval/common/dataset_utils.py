@@ -27,6 +27,9 @@ import numpy as np
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
 from nuscenes.utils.data_classes import Box
+from PIL import Image
+from pyquaternion.quaternion import Quaternion
+
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import Label
 from perception_eval.common.label import LabelConverter
@@ -38,8 +41,8 @@ from perception_eval.common.schema import FrameID
 from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
-from PIL import Image
-from pyquaternion.quaternion import Quaternion
+from perception_eval.common.transform import HomogeneousMatrix
+from perception_eval.common.transform import TransformDict
 
 from . import dataset
 
@@ -136,7 +139,7 @@ def _sample_to_frame(
         unix_time=unix_time_,
         frame_name=frame_name,
         objects=objects_,
-        ego2map=ego2map,
+        transforms=TransformDict([ego2map]),
         raw_data=raw_data,
     )
     return frame
@@ -232,26 +235,22 @@ def _get_sample_boxes(
     nusc: NuScenes,
     frame_data: Dict[str, Any],
     frame_id: str,
-    use_sensor_frame: bool = True,
-) -> Tuple[str, List[Box], np.ndarray]:
-    """Get bbox from frame data.
+    use_sensor_frame: bool = False,
+) -> Tuple[str, List[Box], HomogeneousMatrix]:
+    """Get the lidar raw data path, boxes and transform matrix.
 
     Args:
-        nusc (NuScenes): NuScenes instance.
-        frame_data (Dict[str, Any]): Set of frame record.
-        frame_id (FrameID): FrameID instance, where 3D objects are with respect, BASE_LINK or MAP.
-        use_sensor_frame (bool): Whether use sensor frame. Defaults to True.
-
-    Returns:
-        lidar_path (str): File path of lidar pointcloud.
-        object_boxes (List[Box]): A list of boxes.
-        ego2map (np.ndarray): 4x4 transformation matrix.
+        nusc (NuScenes): `NuScenes` instance.
+        frame_data (dict[str, Any]):
+        frame_id (str): Frame ID where loaded boxes are with respect to.
+        use_sensor_frame (bool, optional): Whether to use sensor frame as the origin. Defaults to True.
 
     Raises:
-        ValueError: If got unexpected frame_id except of base_link or map.
+        ValueError: Expecting `BASE_LINK` or `MAP` for the target `frame_id`.
+
+    Returns:
+        Tuple[str, List[Box], HomogeneousMatrix]: Path to lidar raw data, boxes and a transform matrix.
     """
-    lidar_path: str
-    object_boxes: List[Box]
     if frame_id == FrameID.BASE_LINK:
         # Get boxes moved to ego vehicle coord system.
         lidar_path, object_boxes, _ = nusc.get_sample_data(frame_data["token"])
@@ -260,24 +259,25 @@ def _get_sample_boxes(
         lidar_path = nusc.get_sample_data_path(frame_data["token"])
         object_boxes = nusc.get_boxes(frame_data["token"])
     else:
-        raise ValueError(f"Expected frame_id base_link or map, but got {frame_id}")
+        raise ValueError(f"Expected frame id is `BASE_LINK` or `MAP`, but got {frame_id}")
 
-    # Get a sensor2map transform matrix
-    vehicle2map = np.eye(4, dtype=np.float64)
-    vehicle_pose = nusc.get("ego_pose", frame_data["ego_pose_token"])
-    vehicle2map[:3, :3] = Quaternion(vehicle_pose["rotation"]).rotation_matrix
-    vehicle2map[:3, 3] = vehicle_pose["translation"]
+    # Get a ego2map transform matrix
+    ego_record = nusc.get("ego_pose", frame_data["ego_pose_token"])
+    ego_position = np.array(ego_record["translation"])
+    ego_rotation = Quaternion(ego_record["rotation"])
+    ego2map = HomogeneousMatrix(ego_position, ego_rotation, src=FrameID.BASE_LINK, dst=FrameID.MAP)
 
     if use_sensor_frame:
-        sensor2vehicle = np.eye(4)
-        sensor_pose = nusc.get("calibrated_sensor", frame_data["calibrated_sensor_token"])
-        sensor2vehicle[:3, :3] = Quaternion(sensor_pose["rotation"]).rotation_matrix
-        sensor2vehicle[:3, 3] = sensor_pose["translation"]
-        ego2map: np.ndarray = vehicle2map.dot(sensor2vehicle)
+        cs_record = nusc.get("calibrated_sensor", frame_data["calibrated_sensor_token"])
+        sensor_position = cs_record["translation"]
+        sensor_rotation = Quaternion(cs_record["rotation"])
+        sensor_record = nusc.get("sensor", cs_record["sensor_token"])
+        sensor_frame_id = FrameID.from_value(sensor_record["channel"])
+        ego2sensor = HomogeneousMatrix(sensor_position, sensor_rotation, src=FrameID.BASE_LINK, dst=sensor_frame_id)
+        sensor2map = ego2sensor.inv().dot(ego2map)
+        return lidar_path, object_boxes, sensor2map
     else:
-        ego2map: np.ndarray = vehicle2map
-
-    return lidar_path, object_boxes, ego2map
+        return lidar_path, object_boxes, ego2map
 
 
 def _get_box_velocity(

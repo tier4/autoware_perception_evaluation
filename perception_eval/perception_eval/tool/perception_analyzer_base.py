@@ -37,16 +37,19 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
+
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
+from perception_eval.common.transform import TransformDict
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.metrics import MetricsScore
-from tqdm import tqdm
 
 from .utils import get_metrics_info
 from .utils import PlotAxes
@@ -95,7 +98,7 @@ class PerceptionAnalyzerBase(ABC):
         self.__num_scene: int = 0
         self.__num_frame: int = 0
         self.__frame_results: Dict[int, List[PerceptionFrameResult]] = {}
-        self.__ego2maps: Dict[str, Dict[str, np.ndarray]] = {}
+        self.__transforms: Dict[str, Dict[str, TransformDict]] = {}
         self.__df: pd.DataFrame = pd.DataFrame(columns=self.columns)
 
     @classmethod
@@ -435,9 +438,20 @@ class PerceptionAnalyzerBase(ABC):
             scene (int): Number of scene.
             frame (int): Number of frame.
         Returns:
-            numpy.ndarray: In shape (4, 4).
+            np.ndarray: 4x4 transform matrix.
         """
-        return self.__ego2maps[str(scene)][str(frame)]
+        transforms = self.get_transforms(scene, frame)
+        return transforms[(FrameID.BASE_LINK, FrameID.MAP)].matrix
+
+    def get_transforms(self, scene: int, frame: int) -> TransformDict:
+        """Return transform matrix container at the specified scene and frame.
+        Args:
+            scene (int): Number of scene.
+            frame (int): Number of frame.
+        Returns:
+            TransformDict: Transform matrix container.
+        """
+        return self.__transforms[str(scene)][str(frame)]
 
     def __len__(self) -> int:
         return len(self.df)
@@ -505,14 +519,14 @@ class PerceptionAnalyzerBase(ABC):
         concat: List[pd.DataFrame] = []
         if len(self) > 0:
             concat.append(self.df)
-        self.__ego2maps[str(self.num_scene)][str(frame.frame_name)] = frame.frame_ground_truth.ego2map
+        self.__transforms[str(self.num_scene)][str(frame.frame_name)] = frame.frame_ground_truth.transforms
 
         tp_df = self.format2df(
             frame.pass_fail_result.tp_object_results,
             status=MatchingStatus.TP,
             start=start,
             frame_num=int(frame.frame_name),
-            ego2map=frame.frame_ground_truth.ego2map,
+            transforms=frame.frame_ground_truth.transforms,
         )
         if len(tp_df) > 0:
             start += len(tp_df) // 2
@@ -523,7 +537,7 @@ class PerceptionAnalyzerBase(ABC):
             status=MatchingStatus.FP,
             start=start,
             frame_num=int(frame.frame_name),
-            ego2map=frame.frame_ground_truth.ego2map,
+            transforms=frame.frame_ground_truth.transforms,
         )
         if len(fp_df) > 0:
             start += len(fp_df) // 2
@@ -534,7 +548,7 @@ class PerceptionAnalyzerBase(ABC):
             status=MatchingStatus.TN,
             start=start,
             frame_num=int(frame.frame_name),
-            ego2map=frame.frame_ground_truth.ego2map,
+            transforms=frame.frame_ground_truth.transforms,
         )
         if len(tn_df) > 0:
             start += len(tn_df) // 2
@@ -545,7 +559,7 @@ class PerceptionAnalyzerBase(ABC):
             status=MatchingStatus.FN,
             start=start,
             frame_num=int(frame.frame_name),
-            ego2map=frame.frame_ground_truth.ego2map,
+            transforms=frame.frame_ground_truth.transforms,
         )
         if len(fn_df) > 0:
             start += len(fn_df) // 2
@@ -568,7 +582,7 @@ class PerceptionAnalyzerBase(ABC):
         self.__frame_results[self.num_scene] = frame_results
         self.__num_frame += len(frame_results)
 
-        self.__ego2maps[str(self.num_scene)] = {}
+        self.__transforms[str(self.num_scene)] = {}
         for frame in tqdm(frame_results, "Updating DataFrame"):
             self.add_frame(frame)
         self.__num_scene += 1
@@ -601,7 +615,7 @@ class PerceptionAnalyzerBase(ABC):
         status: MatchingStatus,
         frame_num: int,
         start: int = 0,
-        ego2map: Optional[np.ndarray] = None,
+        transforms: Optional[TransformDict] = None,
     ) -> pd.DataFrame:
         """Format objects to pandas.DataFrame.
 
@@ -610,14 +624,13 @@ class PerceptionAnalyzerBase(ABC):
             status (MatchingStatus): Object's status.
             frame_num (int): Number of frame.
             start (int): Number of the first index. Defaults to 0.
-            ego2map (Optional[np.ndarray]): Matrix to transform from ego coords to map coords. Defaults to None.
 
         Returns:
             df (pandas.DataFrame)
         """
         rets: Dict[int, Dict[str, Any]] = {}
         for i, obj_result in enumerate(object_results, start=start):
-            rets[i] = self.format2dict(obj_result, status, frame_num, ego2map)
+            rets[i] = self.format2dict(obj_result, status, frame_num, transforms)
 
         df = pd.DataFrame.from_dict(
             {(i, j): rets[i][j] for i in rets.keys() for j in rets[i].keys()},
@@ -632,7 +645,7 @@ class PerceptionAnalyzerBase(ABC):
         object_result: Union[DynamicObject, DynamicObjectWithPerceptionResult],
         status: MatchingStatus,
         frame_num: int,
-        ego2map: Optional[np.ndarray] = None,
+        transforms: Optional[TransformDict] = None,
     ) -> Dict[str, Dict[str, Any]]:
         """Format objects to dict.
 
@@ -640,7 +653,6 @@ class PerceptionAnalyzerBase(ABC):
             object_results (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): List of objects or object results.
             status (MatchingStatus): Object's status.
             frame_num (int): Number of frame.
-            ego2map (Optional[np.ndarray]): Matrix to transform from ego coords to map coords. Defaults to None.
 
         Returns:
             Dict[str, Dict[str, Any]]

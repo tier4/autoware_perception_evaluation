@@ -27,8 +27,11 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
+from perception_eval.common.transform import TransformDict
+from perception_eval.common.transform import TransformKey
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.metrics import MetricsScore
@@ -268,7 +271,7 @@ def get_area_idx(
     object_result: Union[DynamicObject, DynamicObjectWithPerceptionResult],
     upper_rights: np.ndarray,
     bottom_lefts: np.ndarray,
-    ego2map: Optional[np.ndarray] = None,
+    transforms: TransformDict,
 ) -> Optional[int]:
     """Returns the index of area.
 
@@ -276,32 +279,24 @@ def get_area_idx(
         object_result (Union[DynamicObject, DynamicObjectWithPerceptionResult])
         upper_rights (np.ndarray): in shape (N, 2), N is number of area division.
         bottom_lefts (np.ndarray): in shape (N, 2), N is number of area division.
-        ego2map (Optional[np.ndarray]): in shape (4, 4)
 
     Returns:
         area_idx (Optional[int]): If the position is out of range, returns None.
     """
     if isinstance(object_result, DynamicObject):
         frame_id: FrameID = object_result.frame_id
-        obj_xyz: np.ndarray = np.array(object_result.state.position)
+        position: np.ndarray = np.array(object_result.state.position)
     elif isinstance(object_result, DynamicObjectWithPerceptionResult):
         frame_id: FrameID = object_result.estimated_object.frame_id
-        obj_xyz: np.ndarray = np.array(object_result.estimated_object.state.position)
+        position: np.ndarray = np.array(object_result.estimated_object.state.position)
     else:
         raise TypeError(f"Unexpected object type: {type(object_result)}")
 
-    if frame_id == FrameID.MAP:
-        if ego2map is None:
-            raise RuntimeError("When frame id is map, ego2map must be specified.")
-        obj_xyz: np.ndarray = np.append(obj_xyz, 1.0)
-        obj_xy = np.linalg.inv(ego2map).dot(obj_xyz)[:2]
-    elif frame_id == "base_link":
-        obj_xy = obj_xyz[:2]
-    else:
-        raise ValueError(f"Unexpected frame_id: {frame_id}")
+    transform_key = TransformKey(frame_id, FrameID.BASE_LINK)
+    x, y, _ = transforms.transform(transform_key, position)
 
-    is_x_inside: np.ndarray = (obj_xy[0] < upper_rights[:, 0]) * (obj_xy[0] > bottom_lefts[:, 0])
-    is_y_inside: np.ndarray = (obj_xy[1] > upper_rights[:, 1]) * (obj_xy[1] < bottom_lefts[:, 1])
+    is_x_inside: np.ndarray = (x < upper_rights[:, 0]) * (x > bottom_lefts[:, 0])
+    is_y_inside: np.ndarray = (y > upper_rights[:, 1]) * (y < bottom_lefts[:, 1])
     if any(is_x_inside * is_y_inside) is False:
         return None
     area_idx: int = np.where(is_x_inside * is_y_inside)[0].item()
@@ -331,13 +326,13 @@ def extract_area_results(
     for frame_result in out_frame_results:
         out_object_results: List[DynamicObjectWithPerceptionResult] = []
         out_ground_truths: List[DynamicObject] = []
-        ego2map: Optional[np.ndarray] = frame_result.frame_ground_truth.ego2map
+        transforms = frame_result.frame_ground_truth.transforms
         for object_result in frame_result.object_results:
             object_result_area: int = get_area_idx(
                 object_result,
                 upper_rights,
                 bottom_lefts,
-                ego2map,
+                transforms,
             )
             if object_result_area in area:
                 out_object_results.append(object_result)
@@ -346,7 +341,7 @@ def extract_area_results(
                 ground_truth,
                 upper_rights,
                 bottom_lefts,
-                ego2map,
+                transforms,
             )
             if ground_truth_area in area:
                 out_ground_truths.append(ground_truth)
@@ -481,7 +476,7 @@ def filter_frame_by_distance(
         target_labels=ret_frame.target_labels,
         max_distance_list=max_distance_list,
         min_distance_list=min_distance_list,
-        ego2map=ret_frame.frame_ground_truth.ego2map,
+        transforms=ret_frame.frame_ground_truth.transforms,
     )
     ret_frame.frame_ground_truth.objects = filter_objects(
         ret_frame.frame_ground_truth.objects,
@@ -489,7 +484,7 @@ def filter_frame_by_distance(
         target_labels=ret_frame.target_labels,
         max_distance_list=max_distance_list,
         min_distance_list=min_distance_list,
-        ego2map=ret_frame.frame_ground_truth.ego2map,
+        transforms=ret_frame.frame_ground_truth.transforms,
     )
     ret_frame.evaluate_frame(ret_frame.frame_ground_truth.objects)
 

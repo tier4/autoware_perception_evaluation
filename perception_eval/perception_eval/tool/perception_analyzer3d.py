@@ -24,14 +24,15 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+import yaml
+
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
+from perception_eval.common.transform import TransformDict
+from perception_eval.common.transform import TransformKey
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
-from perception_eval.util.math import get_pose_transform_matrix
-from perception_eval.util.math import rotation_matrix_to_euler
-import yaml
 
 from .perception_analyzer_base import PerceptionAnalyzerBase
 from .utils import extract_area_results
@@ -196,7 +197,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         object_result: Union[DynamicObject, DynamicObjectWithPerceptionResult],
         status: MatchingStatus,
         frame_num: int,
-        ego2map: Optional[np.ndarray] = None,
+        transforms: Optional[TransformDict] = None,
     ) -> Dict[str, Dict[str, Any]]:
         """Format objects to dict.
 
@@ -204,7 +205,6 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             object_results (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): List of objects or object results.
             status (MatchingStatus): Object's status.
             frame_num (int): Number of frame.
-            ego2map (Optional[np.ndarray]): Matrix to transform from ego coords to map coords. Defaults to None.
 
         Returns:
             Dict[str, Dict[str, Any]]
@@ -239,7 +239,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             object_result=object_result,
             upper_rights=self.upper_rights,
             bottom_lefts=self.bottom_lefts,
-            ego2map=ego2map,
+            transforms=transforms,
         )
 
         if gt:
@@ -248,27 +248,16 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             else:
                 gt_vx, gt_vy = np.nan, np.nan
 
-            if gt.frame_id == FrameID.MAP:
-                gt_center_mat: np.ndarray = get_pose_transform_matrix(
-                    position=gt.state.position,
-                    rotation=gt.state.orientation.rotation_matrix,
-                )
-                gt_center_mat: np.ndarray = np.linalg.inv(ego2map).dot(gt_center_mat)
-                gt_x, gt_y = gt_center_mat[:2, 3]
-                gt_yaw = rotation_matrix_to_euler(gt_center_mat[:3, :3])[-1].item()
-                gt_point1_mat = get_pose_transform_matrix(
-                    position=gt_point1,
-                    rotation=gt.state.orientation.rotation_matrix,
-                )
-                gt_point1 = np.linalg.inv(ego2map).dot(gt_point1_mat)[:3, 3]
-                gt_point2_mat = get_pose_transform_matrix(
-                    position=gt_point2,
-                    rotation=gt.state.orientation.rotation_matrix,
-                )
-                gt_point2 = np.linalg.inv(ego2map).dot(gt_point2_mat)[:3, 3]
-            else:
-                gt_x, gt_y = gt.state.position[:2]
-                gt_yaw = gt.state.orientation.yaw_pitch_roll[0]
+            transform_key = TransformKey(gt.frame_id, FrameID.BASE_LINK)
+            gt_position, gt_rotation = transforms.transform(
+                transform_key,
+                gt.state.position,
+                gt.state.orientation,
+            )
+            gt_x, gt_y, _ = gt_position
+            gt_yaw, _, _ = gt_rotation.yaw_pitch_roll
+            gt_point1 = transforms.transform(transform_key, gt_point1)
+            gt_point2 = transforms.transform(transform_key, gt_point2)
 
             gt_w, gt_l, gt_h = gt.state.size
 
@@ -306,27 +295,16 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             else:
                 est_vx, est_vy = np.nan, np.nan
 
-            if estimation.frame_id == FrameID.MAP:
-                est_center_mat: np.ndarray = get_pose_transform_matrix(
-                    position=estimation.state.position,
-                    rotation=estimation.state.orientation.rotation_matrix,
-                )
-                est_center_mat: np.ndarray = np.linalg.inv(ego2map).dot(est_center_mat)
-                est_x, est_y = est_center_mat[:2, 3]
-                est_yaw = rotation_matrix_to_euler(est_center_mat[:3, :3])[-1].item()
-                est_point1_mat = get_pose_transform_matrix(
-                    position=est_point1,
-                    rotation=estimation.state.orientation.rotation_matrix,
-                )
-                est_point1 = np.linalg.inv(ego2map).dot(est_point1_mat)[:3, 3]
-                est_point2_mat = get_pose_transform_matrix(
-                    position=est_point2,
-                    rotation=estimation.state.orientation.rotation_matrix,
-                )
-                est_point2 = np.linalg.inv(ego2map).dot(est_point2_mat)[:3, 3]
-            else:
-                est_x, est_y = estimation.state.position[:2]
-                est_yaw = estimation.state.orientation.yaw_pitch_roll[0]
+            transform_key = TransformKey(estimation.frame_id, FrameID.BASE_LINK)
+            est_position, est_rotation = transforms.transform(
+                transform_key,
+                estimation.state.position,
+                estimation.state.orientation,
+            )
+            est_x, est_y, _ = est_position
+            est_yaw, _, _ = est_rotation.yaw_pitch_roll
+            est_point1 = transforms.transform(transform_key, est_point1)
+            est_point2 = transforms.transform(transform_key, est_point2)
 
             est_w, est_l, est_h = estimation.state.size
 

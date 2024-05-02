@@ -26,6 +26,8 @@ class FrameID(Enum):
     # 3D
     BASE_LINK = "base_link"
     MAP = "map"
+    LIDAR_CONCAT = "lidar_concat"
+    LIDAR = "lidar"
 
     # 2D
     CAM_FRONT = "cam_front"
@@ -36,6 +38,9 @@ class FrameID(Enum):
     CAM_BACK_RIGHT = "cam_back_right"
     CAM_TRAFFIC_LIGHT_NEAR = "cam_traffic_light_near"
     CAM_TRAFFIC_LIGHT_FAR = "cam_traffic_light_far"
+
+    def __hash__(self) -> int:
+        return hash(self.value)
 
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, str):
