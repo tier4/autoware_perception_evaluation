@@ -146,22 +146,25 @@ class PerceptionVisualizer3D:
         self,
         frame_results: List[PerceptionFrameResult],
         filename: Optional[str] = None,
+        render_track: bool = False,
         cache_figure: bool = False,
     ) -> None:
         """Visualize all frames in BEV space.
 
         Args:
             frame_results (List[PerceptionFrameResult]): The list of PerceptionFrameResult.
-            save_html (bool): Wether save image as html. Defaults to False.
-            animation (bool): Whether create animation as gif. Defaults to False.
-            cache_figure (bool): Whether cache figure for each frame. Defaults to False.
+            filename (Optional[str]): Path to save rendering results. Defaults to None.
+            render_track (bool): Whether to render object tracks. Defaults to False.
+            cache_figure (bool): Whether to cache figure for each frame. Defaults to False.
         """
         if self.config.evaluation_task == EvaluationTask.TRACKING:
             self.__tracked_paths = {}
 
         frame_result_: PerceptionFrameResult
         for frame_result_ in tqdm(frame_results, desc="Visualize results for each frame"):
-            self.__axes: Axes = self.visualize_frame(frame_result=frame_result_, axes=self.__axes)
+            self.__axes: Axes = self.visualize_frame(
+                frame_result=frame_result_, axes=self.__axes, render_track=render_track
+            )
             if cache_figure is False:
                 self.__axes.clear()
 
@@ -190,6 +193,7 @@ class PerceptionVisualizer3D:
         self,
         frame_result: PerceptionFrameResult,
         axes: Optional[Axes] = None,
+        render_track: bool = False,
     ) -> Axes:
         """Visualize a frame result in BEV space.
 
@@ -203,6 +207,7 @@ class PerceptionVisualizer3D:
         Args:
             frame_result (PerceptionFrameResult)
             axes (Optional[Axes]): The Axes instance. Defaults to None.
+            render_track (bool): Whether to render object tracks. Defaults to False.
         """
         if axes is None:
             axes: Axes = plt.subplot()
@@ -229,6 +234,7 @@ class PerceptionVisualizer3D:
             label="TP est",
             color="blue",
             pointcloud=pointcloud,
+            render_track=render_track,
         )
         handles.append(Patch(color="blue", label="TP est"))
 
@@ -239,6 +245,7 @@ class PerceptionVisualizer3D:
             label="TP GT",
             color="red",
             pointcloud=pointcloud,
+            render_track=render_track,
         )
         handles.append(Patch(color="red", label="TP GT"))
 
@@ -249,6 +256,7 @@ class PerceptionVisualizer3D:
             label="FP",
             color="cyan",
             pointcloud=pointcloud,
+            render_track=render_track,
         )
         handles.append(Patch(color="cyan", label="FP"))
 
@@ -259,6 +267,7 @@ class PerceptionVisualizer3D:
             label="TN",
             color="purple",
             pointcloud=pointcloud,
+            render_track=render_track,
         )
         handles.append(Patch(color="purple", label="TN"))
 
@@ -269,6 +278,7 @@ class PerceptionVisualizer3D:
             label="FN",
             color="orange",
             pointcloud=pointcloud,
+            render_track=render_track,
         )
         handles.append(Patch(color="orange", label="FN"))
 
@@ -342,6 +352,7 @@ class PerceptionVisualizer3D:
         label: Optional[str] = None,
         color: Optional[str] = None,
         pointcloud: Optional[np.ndarray] = None,
+        render_track: bool = False,
     ) -> Axes:
         """Plot objects in BEV space.
 
@@ -360,6 +371,8 @@ class PerceptionVisualizer3D:
             label (str): The label of object type, e.g. TP/FP/FP. Defaults to None.
             color (Optional[str]): The name of color, red/green/blue/yellow/cyan/black. Defaults to None.
                 If not be specified, red is used.
+            pointcloud (Optional[np.ndarray]): Pointcloud. Defaults to None.
+            render_track (bool): Whether to render object tracks. Defaults to False.
 
         Returns:
             axes (Axes): The Axes instance.
@@ -416,7 +429,7 @@ class PerceptionVisualizer3D:
                 )
 
             # tracked path
-            if self.config.evaluation_task == EvaluationTask.TRACKING:
+            if self.config.evaluation_task == EvaluationTask.TRACKING and render_track:
                 axes = self._plot_tracked_path(object_, is_ground_truth, axes=axes)
 
             # predicted path
