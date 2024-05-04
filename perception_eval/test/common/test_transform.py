@@ -34,11 +34,13 @@ def test_homogeneous_matrix():
 
 
 def test_transform_dict():
-    matrices = [
-        HomogeneousMatrix((1, 0, 0), (1, 0, 0, 0), src=FrameID.BASE_LINK, dst=FrameID.MAP),
-        HomogeneousMatrix((2, 0, 0), (1, 0, 0, 0), src=FrameID.LIDAR, dst=FrameID.BASE_LINK),
-    ]
-    transforms = TransformDict(matrices)
+    ego2map = HomogeneousMatrix((1, 0, 0), (1, 0, 0, 0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
+    transforms = TransformDict(ego2map)
+
     key1 = TransformKey(FrameID.BASE_LINK, FrameID.MAP)
     pos1 = transforms.transform(key1, (1, 0, 0))
     assert np.allclose(pos1, np.array((2, 0, 0)))
+
+    key2 = TransformKey(FrameID.MAP, FrameID.BASE_LINK)
+    pos2 = transforms.transform(key2, (1, 0, 0))
+    assert np.allclose(pos2, np.zeros(3))

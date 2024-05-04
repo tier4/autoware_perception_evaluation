@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from typing import Iterator
-from typing import List
 from typing import Optional
 from typing import overload
+from typing import Sequence
 from typing import Tuple
 from typing import TypeVar
 from typing import Union
@@ -20,11 +20,28 @@ FrameIDType = TypeVar("FrameIDType", str, FrameID)
 
 
 class TransformDict:
-    def __init__(self, matrices: Optional[List[HomogeneousMatrix]] = None) -> None:
+    @overload
+    def __init__(self, matrix: HomogeneousMatrix) -> None:
+        ...
+
+    @overload
+    def __init__(self, matrices: Sequence[HomogeneousMatrix]) -> None:
+        ...
+
+    @overload
+    def __init__(self, matrix=None) -> None:
+        ...
+
+    def __init__(self, matrices: TransformDictArgType = None) -> None:
         if matrices is None:
             self.__matrices = []
+        elif isinstance(matrices, HomogeneousMatrix):
+            self.__matrices = [matrices]
+        elif isinstance(matrices, (list, tuple)):
+            self.__matrices = list(matrices)
         else:
-            self.__matrices = matrices
+            raise TypeError(f"Expected HomogeneousMatrix, sequence of them or None, but got: {type(matrices)}")
+
         self.__data = {TransformKey(mat.src, mat.dst): mat for mat in self.__matrices}
 
     @staticmethod
@@ -106,7 +123,7 @@ class TransformDict:
         Examples:
         ---------
             >>> matrix = HomogeneousMatrix((1.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
-            >>> transforms = TransformDict([matrix])
+            >>> transforms = TransformDict(matrix)
             # Use registered transform matrix
             ## specify only position
             >>> key = TransformKey(FrameID.BASE_LINK, FrameID.MAP)
@@ -155,7 +172,9 @@ class TransformDict:
                     return kwargs["matrix"]
                 else:
                     raise KeyError(f"Unexpected keys are detected: {list(kwargs.keys())}")
-            elif s in (1, 2):
+            elif s == 1:
+                return args[0]
+            elif s == 2:
                 return args
             else:
                 raise ValueError(f"Unexpected number of arguments {s}")
@@ -470,3 +489,4 @@ class HomogeneousMatrix:
 
 
 TransformArgType = TypeVar("TransformArgType", HomogeneousMatrix, NDArray, Tuple[NDArray, Quaternion])
+TransformDictArgType = TypeVar("TransformDictArgType", HomogeneousMatrix, Sequence[HomogeneousMatrix], None)

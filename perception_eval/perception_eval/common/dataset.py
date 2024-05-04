@@ -36,6 +36,7 @@ from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.common.transform import HomogeneousMatrix
 from perception_eval.common.transform import TransformDict
+from perception_eval.common.transform import TransformDictArgType
 from perception_eval.common.transform import TransformKey
 from tqdm import tqdm
 
@@ -48,7 +49,7 @@ class FrameGroundTruth:
         unix_time: int,
         frame_name: str,
         objects: List[DynamicObject],
-        transforms: Optional[TransformDict] = None,
+        transforms: TransformDictArgType = None,
         raw_data: Optional[Dict[str, np.ndarray]] = None,
     ) -> None:
         """
@@ -62,7 +63,7 @@ class FrameGroundTruth:
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
         self.objects: List[ObjectType] = objects
-        self.transforms = TransformDict() if transforms is None else transforms
+        self.transforms = TransformDict(transforms)
         self.raw_data: Optional[Dict[str, np.ndarray]] = raw_data
 
 
