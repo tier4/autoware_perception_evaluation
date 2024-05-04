@@ -90,20 +90,10 @@ def _sample_to_frame(
         raise ValueError("lidar data isn't found")
     frame_data = nusc.get("sample_data", lidar_path_token)
 
-    lidar_path, object_boxes, ego2map = _get_sample_boxes(nusc, frame_data, frame_id)
-    transforms = _load_sensor_info(nusc)
-    transforms.append(ego2map)
-
-    # pointcloud
-    raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
-    if load_raw_data:
-        assert lidar_path.endswith(".bin"), f"Error: Unsupported filetype {lidar_path}"
-        pointcloud: np.ndarray = np.fromfile(lidar_path, dtype=np.float32)
-        # The Other modalities would be used, (e.g. radar)
-        raw_data["lidar"] = pointcloud.reshape(-1, 5)[:, :4]
+    _, object_boxes, raw_data = _get_sample_boxes(nusc, frame_data, frame_id, load_raw_data)
+    transforms = _get_transforms(nusc, frame_data)
 
     objects_: List[DynamicObject] = []
-
     for object_box in object_boxes:
         sample_annotation_: dict = nusc.get("sample_annotation", object_box.token)
         instance_token_: str = sample_annotation_["instance_token"]
@@ -233,9 +223,12 @@ def _convert_nuscenes_box_to_dynamic_object(
 
 
 def _get_sample_boxes(
-    nusc: NuScenes, frame_data: Dict[str, Any], frame_id: str
-) -> Tuple[str, List[Box], HomogeneousMatrix]:
-    """Get the lidar raw data path, boxes and transform matrix.
+    nusc: NuScenes,
+    frame_data: Dict[str, Any],
+    frame_id: str,
+    load_raw_data: bool = False,
+) -> Tuple[str, List[Box]]:
+    """Get the lidar raw data path, boxes.
 
     Args:
         nusc (NuScenes): `NuScenes` instance.
@@ -246,7 +239,7 @@ def _get_sample_boxes(
         ValueError: Expecting `BASE_LINK` or `MAP` for the target `frame_id`.
 
     Returns:
-        tuple[str, list[Box], HomogeneousMatrix]: Path to lidar raw data, boxes and a transform matrix.
+        tuple[str, list[Box]]: Path to lidar raw data, boxes and a transform matrix.
     """
     if frame_id == FrameID.BASE_LINK:
         # Get boxes moved to ego vehicle coord system.
@@ -258,24 +251,42 @@ def _get_sample_boxes(
     else:
         raise ValueError(f"Expected frame id is `BASE_LINK` or `MAP`, but got {frame_id}")
 
+    # pointcloud
+    raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
+    if load_raw_data:
+        assert lidar_path.endswith(".bin"), f"Error: Unsupported filetype {lidar_path}"
+        pointcloud: np.ndarray = np.fromfile(lidar_path, dtype=np.float32)
+        # The Other modalities would be used, (e.g. radar)
+        raw_data["lidar"] = pointcloud.reshape(-1, 5)[:, :4]
+
+    return lidar_path, object_boxes, raw_data
+
+
+def _get_transforms(nusc: NuScenes, sample_data: Dict[str, Any]) -> List[HomogeneousMatrix]:
+    """Load transform matrices.
+
+    Args:
+        nusc (NuScenes): NuScenes instance.
+        sample_data(dict[str, Any]): Sample data record.
+
+    Returns:
+        List[HomogeneousMatrix]: List of matrices transforming position from sensor coordinate to map coordinate.
+    """
     # Get a ego2map transform matrix
-    ego_record = nusc.get("ego_pose", frame_data["ego_pose_token"])
+    ego_record = nusc.get("ego_pose", sample_data["ego_pose_token"])
     ego_position = np.array(ego_record["translation"])
     ego_rotation = Quaternion(ego_record["rotation"])
     ego2map = HomogeneousMatrix(ego_position, ego_rotation, src=FrameID.BASE_LINK, dst=FrameID.MAP)
 
-    return lidar_path, object_boxes, ego2map
-
-
-def _load_sensor_info(nusc: NuScenes) -> List[HomogeneousMatrix]:
-    matrices = []
+    matrices = [ego2map]
     for cs_record in nusc.calibrated_sensor:
         sensor_position = cs_record["translation"]
         sensor_rotation = Quaternion(cs_record["rotation"])
         sensor_record = nusc.get("sensor", cs_record["sensor_token"])
         sensor_frame_id = FrameID.from_value(sensor_record["channel"])
         ego2sensor = HomogeneousMatrix(sensor_position, sensor_rotation, src=FrameID.BASE_LINK, dst=sensor_frame_id)
-        matrices.append(ego2sensor)
+        sensor2map = ego2sensor.inv().dot(ego2map)
+        matrices.extend((ego2sensor, sensor2map))
     return matrices
 
 

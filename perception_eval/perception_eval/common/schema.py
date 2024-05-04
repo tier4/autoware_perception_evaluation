@@ -26,8 +26,16 @@ class FrameID(Enum):
     # 3D
     BASE_LINK = "base_link"
     MAP = "map"
+
     LIDAR_CONCAT = "lidar_concat"
-    LIDAR = "lidar"
+    LIDAR_TOP = "lidar_top"
+
+    RADAR_FRONT = "radar_front"
+    RADAR_FRONT_RIGHT = "radar_front_right"
+    RADAR_FRONT_LEFT = "radar_front_left"
+    RADAR_BACK = "RADAR_BACK"
+    RADAR_BACK_RIGHT = "radar_back_right"
+    RADAR_BACK_LEFT = "radar_back_left"
 
     # 2D
     CAM_FRONT = "cam_front"

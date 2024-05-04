@@ -255,8 +255,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             )
             gt_x, gt_y, _ = gt_position
             gt_yaw, _, _ = gt_rotation.yaw_pitch_roll
-            gt_point1 = transforms.transform(transform_key, gt_point1)
-            gt_point2 = transforms.transform(transform_key, gt_point2)
+            if gt_point1 is not None:
+                gt_point1 = transforms.transform(transform_key, gt_point1)
+            if gt_point2 is not None:
+                gt_point2 = transforms.transform(transform_key, gt_point2)
 
             gt_w, gt_l, gt_h = gt.state.size
 
@@ -302,8 +304,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             )
             est_x, est_y, _ = est_position
             est_yaw, _, _ = est_rotation.yaw_pitch_roll
-            est_point1 = transforms.transform(transform_key, est_point1)
-            est_point2 = transforms.transform(transform_key, est_point2)
+            if est_point1 is not None:
+                est_point1 = transforms.transform(transform_key, est_point1)
+            if est_point2 is not None:
+                est_point2 = transforms.transform(transform_key, est_point2)
 
             est_w, est_l, est_h = estimation.state.size
 
