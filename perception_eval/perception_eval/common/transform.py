@@ -20,9 +20,12 @@ FrameIDType = TypeVar("FrameIDType", str, FrameID)
 
 
 class TransformDict:
-    def __init__(self, matrices: List[HomogeneousMatrix] = []) -> None:
-        self.__matrices = matrices
-        self.__data = {TransformKey(mat.src, mat.dst): mat for mat in matrices}
+    def __init__(self, matrices: Optional[List[HomogeneousMatrix]] = None) -> None:
+        if matrices is None:
+            self.__matrices = []
+        else:
+            self.__matrices = matrices
+        self.__data = {TransformKey(mat.src, mat.dst): mat for mat in self.__matrices}
 
     @staticmethod
     def load_key(src: FrameIDType, dst: FrameIDType) -> TransformKey:
@@ -92,15 +95,13 @@ class TransformDict:
 
         Raises:
         -------
-            ValueError: _description_
-            ValueError: _description_
-            KeyError: _description_
-            ValueError: _description_
-            KeyError: _description_
+            ValueError | KeyError: Expecting `transform(position)`, `transform(position, rotation)` or `transform(matrix)`.
 
         Returns:
         --------
-            TransformArgType: _description_
+            TransformArgType: Return `NDArray` if the input is `position: ArrayLike`,
+                `(NDArray, Quaternion)` if the input is `position: ArrayLike, rotation: RotationType` or
+                `HomogeneousMatrix` if the input is `matrix: HomogeneousMatrix`.
 
         Examples:
         ---------
@@ -320,7 +321,7 @@ class HomogeneousMatrix:
             HomogeneousMatrix: Result of dot product.
         """
         if self.dst != other.src:
-            raise ValueError(f"self.dst != other.src: {self.dst=}, {other.src=}")
+            raise ValueError(f"self.dst != other.src: self.dst={self.dst}, other.src={other.src}")
 
         ret_mat = self.matrix.dot(other.matrix)
         position, rotation = self.__extract_position_and_rotation_from_matrix(ret_mat)
