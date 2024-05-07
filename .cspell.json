@@ -106,6 +106,8 @@
     "tmpdir",
     "tqdm",
     "trafficcone",
+    "tril",
+    "triu",
     "Uetake",
     "umax",
     "umin",
