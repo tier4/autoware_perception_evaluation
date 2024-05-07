@@ -38,6 +38,8 @@ from perception_eval.common.schema import FrameID
 from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
+from perception_eval.common.transform import HomogeneousMatrix
+from perception_eval.common.transform import TransformDict
 from PIL import Image
 from pyquaternion.quaternion import Quaternion
 
@@ -88,18 +90,10 @@ def _sample_to_frame(
         raise ValueError("lidar data isn't found")
     frame_data = nusc.get("sample_data", lidar_path_token)
 
-    lidar_path, object_boxes, ego2map = _get_sample_boxes(nusc, frame_data, frame_id)
-
-    # pointcloud
-    raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
-    if load_raw_data:
-        assert lidar_path.endswith(".bin"), f"Error: Unsupported filetype {lidar_path}"
-        pointcloud: np.ndarray = np.fromfile(lidar_path, dtype=np.float32)
-        # The Other modalities would be used, (e.g. radar)
-        raw_data["lidar"] = pointcloud.reshape(-1, 5)[:, :4]
+    _, object_boxes, raw_data = _get_sample_boxes(nusc, frame_data, frame_id, load_raw_data)
+    transforms = _get_transforms(nusc, frame_data)
 
     objects_: List[DynamicObject] = []
-
     for object_box in object_boxes:
         sample_annotation_: dict = nusc.get("sample_annotation", object_box.token)
         instance_token_: str = sample_annotation_["instance_token"]
@@ -136,7 +130,7 @@ def _sample_to_frame(
         unix_time=unix_time_,
         frame_name=frame_name,
         objects=objects_,
-        ego2map=ego2map,
+        transforms=transforms,
         raw_data=raw_data,
     )
     return frame
@@ -232,26 +226,21 @@ def _get_sample_boxes(
     nusc: NuScenes,
     frame_data: Dict[str, Any],
     frame_id: str,
-    use_sensor_frame: bool = True,
-) -> Tuple[str, List[Box], np.ndarray]:
-    """Get bbox from frame data.
+    load_raw_data: bool = False,
+) -> Tuple[str, List[Box]]:
+    """Get the lidar raw data path, boxes.
 
     Args:
-        nusc (NuScenes): NuScenes instance.
-        frame_data (Dict[str, Any]): Set of frame record.
-        frame_id (FrameID): FrameID instance, where 3D objects are with respect, BASE_LINK or MAP.
-        use_sensor_frame (bool): Whether use sensor frame. Defaults to True.
-
-    Returns:
-        lidar_path (str): File path of lidar pointcloud.
-        object_boxes (List[Box]): A list of boxes.
-        ego2map (np.ndarray): 4x4 transformation matrix.
+        nusc (NuScenes): `NuScenes` instance.
+        frame_data (dict[str, Any]):
+        frame_id (str): Frame ID where loaded boxes are with respect to.
 
     Raises:
-        ValueError: If got unexpected frame_id except of base_link or map.
+        ValueError: Expecting `BASE_LINK` or `MAP` for the target `frame_id`.
+
+    Returns:
+        tuple[str, list[Box]]: Path to lidar raw data, boxes and a transform matrix.
     """
-    lidar_path: str
-    object_boxes: List[Box]
     if frame_id == FrameID.BASE_LINK:
         # Get boxes moved to ego vehicle coord system.
         lidar_path, object_boxes, _ = nusc.get_sample_data(frame_data["token"])
@@ -260,24 +249,45 @@ def _get_sample_boxes(
         lidar_path = nusc.get_sample_data_path(frame_data["token"])
         object_boxes = nusc.get_boxes(frame_data["token"])
     else:
-        raise ValueError(f"Expected frame_id base_link or map, but got {frame_id}")
+        raise ValueError(f"Expected frame id is `BASE_LINK` or `MAP`, but got {frame_id}")
 
-    # Get a sensor2map transform matrix
-    vehicle2map = np.eye(4, dtype=np.float64)
-    vehicle_pose = nusc.get("ego_pose", frame_data["ego_pose_token"])
-    vehicle2map[:3, :3] = Quaternion(vehicle_pose["rotation"]).rotation_matrix
-    vehicle2map[:3, 3] = vehicle_pose["translation"]
+    # pointcloud
+    raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
+    if load_raw_data:
+        assert lidar_path.endswith(".bin"), f"Error: Unsupported filetype {lidar_path}"
+        pointcloud: np.ndarray = np.fromfile(lidar_path, dtype=np.float32)
+        # The Other modalities would be used, (e.g. radar)
+        raw_data["lidar"] = pointcloud.reshape(-1, 5)[:, :4]
 
-    if use_sensor_frame:
-        sensor2vehicle = np.eye(4)
-        sensor_pose = nusc.get("calibrated_sensor", frame_data["calibrated_sensor_token"])
-        sensor2vehicle[:3, :3] = Quaternion(sensor_pose["rotation"]).rotation_matrix
-        sensor2vehicle[:3, 3] = sensor_pose["translation"]
-        ego2map: np.ndarray = vehicle2map.dot(sensor2vehicle)
-    else:
-        ego2map: np.ndarray = vehicle2map
+    return lidar_path, object_boxes, raw_data
 
-    return lidar_path, object_boxes, ego2map
+
+def _get_transforms(nusc: NuScenes, sample_data: Dict[str, Any]) -> List[HomogeneousMatrix]:
+    """Load transform matrices.
+
+    Args:
+        nusc (NuScenes): NuScenes instance.
+        sample_data(dict[str, Any]): Sample data record.
+
+    Returns:
+        List[HomogeneousMatrix]: List of matrices transforming position from sensor coordinate to map coordinate.
+    """
+    # Get a ego2map transform matrix
+    ego_record = nusc.get("ego_pose", sample_data["ego_pose_token"])
+    ego_position = np.array(ego_record["translation"])
+    ego_rotation = Quaternion(ego_record["rotation"])
+    ego2map = HomogeneousMatrix(ego_position, ego_rotation, src=FrameID.BASE_LINK, dst=FrameID.MAP)
+
+    matrices = [ego2map]
+    for cs_record in nusc.calibrated_sensor:
+        sensor_position = cs_record["translation"]
+        sensor_rotation = Quaternion(cs_record["rotation"])
+        sensor_record = nusc.get("sensor", cs_record["sensor_token"])
+        sensor_frame_id = FrameID.from_value(sensor_record["channel"])
+        ego2sensor = HomogeneousMatrix(sensor_position, sensor_rotation, src=FrameID.BASE_LINK, dst=sensor_frame_id)
+        sensor2map = ego2sensor.inv().dot(ego2map)
+        matrices.extend((ego2sensor, sensor2map))
+    return matrices
 
 
 def _get_box_velocity(

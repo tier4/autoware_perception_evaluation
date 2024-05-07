@@ -153,7 +153,7 @@ if __name__ == "__main__":
             diff_distance=(1.0, 0.0, 0.2),
             diff_yaw=0.2,
             is_confidence_with_distance=True,
-            ego2map=ground_truth_frame.ego2map,
+            transforms=ground_truth_frame.transforms,
             label_candidates=[
                 AutowareLabel.CAR,
                 AutowareLabel.BICYCLE,

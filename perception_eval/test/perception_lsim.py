@@ -195,7 +195,7 @@ if __name__ == "__main__":
             diff_yaw=0.2,
             is_confidence_with_distance=True,
             label_to_unknown_rate=0.5,
-            ego2map=ground_truth_frame.ego2map,
+            transforms=ground_truth_frame.transforms,
         )
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
@@ -268,7 +268,7 @@ if __name__ == "__main__":
             diff_yaw=0.0,
             is_confidence_with_distance=True,
             label_to_unknown_rate=0.5,
-            ego2map=ground_truth_frame.ego2map,
+            transforms=ground_truth_frame.transforms,
         )
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
