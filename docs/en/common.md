@@ -45,13 +45,13 @@
 
 ### [`<class> FrameGroundTruth(...)`](../../perception_eval/perception_eval/common/dataset.py)
 
-| Argument     |           type            | Description                                   |
-| :----------- | :-----------------------: | :-------------------------------------------- |
-| `unix_time`  |           `int`           | Unix time.                                    |
-| `frame_name` |           `str`           | Name of frame.                                |
-| `objects`    |    `List[ObjectType]`     | List of ground truth objects.                 |
-| `transforms` |      `TransformDict`      | A container holding transformation matrices.  |
-| `raw_data`   | `Optional[numpy.ndarray]` | Array of pointcloud/image. (Defaults to None) |
+| Argument     |                type                | Description                                                        |
+| :----------- | :--------------------------------: | :----------------------------------------------------------------- |
+| `unix_time`  |               `int`                | Unix time.                                                         |
+| `frame_name` |               `str`                | Name of frame.                                                     |
+| `objects`    |         `List[ObjectType]`         | List of ground truth objects.                                      |
+| `transforms` |          `TransformDict`           | A container holding transformation matrices.                       |
+| `raw_data`   | `Optional[Dict[FrameID, NDArray]]` | Array of pointcloud/image at each sensor frame. (Defaults to None) |
 
 ### [`<func> load_all_datasets(...) -> List[FrameGroundTruth]`](../../perception_eval/perception_eval/common/dataset.py)
 

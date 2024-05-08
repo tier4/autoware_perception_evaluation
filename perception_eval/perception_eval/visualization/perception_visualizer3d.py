@@ -28,6 +28,7 @@ from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 from matplotlib.transforms import Affine2D
 import numpy as np
+from numpy.typing import NDArray
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
@@ -220,10 +221,7 @@ class PerceptionVisualizer3D:
         # Plot ego vehicle position
         ego2map = frame_result.frame_ground_truth.transforms.get((FrameID.BASE_LINK, FrameID.MAP))
         axes = self._plot_ego(ego2map=ego2map, axes=axes)
-
-        pointcloud: Optional[np.ndarray] = (
-            frame_result.frame_ground_truth.raw_data["lidar"] if self.config.load_raw_data else None
-        )
+        pointcloud = self._get_raw_data(frame_result, ego2map)
 
         # Plot objects
         handles: List[Patch] = []
@@ -296,6 +294,40 @@ class PerceptionVisualizer3D:
         self.__animation_frames.append(frame)
 
         return axes
+
+    def _get_raw_data(
+        self,
+        frame_result: PerceptionFrameResult,
+        ego2map: Optional[HomogeneousMatrix] = None,
+    ) -> Optional[NDArray]:
+        """Return pointcloud if `config.load_raw_data=True`, otherwise returns `None`.
+
+        Args:
+            frame_result (PerceptionFrameResult): A frame result.
+
+        Returns:
+            Optional[NDArray]: Pointcloud or None.
+        """
+        if self.config.load_raw_data:
+            raw_data = frame_result.frame_ground_truth.raw_data
+            assert raw_data
+            if FrameID.LIDAR_CONCAT in raw_data:
+                pointcloud = raw_data[FrameID.LIDAR_CONCAT]
+            elif FrameID.LIDAR_TOP in raw_data:
+                pointcloud = raw_data[FrameID.LIDAR_TOP]
+            else:
+                pointcloud = None
+        else:
+            pointcloud = None
+
+        if pointcloud is not None and self.config.frame_ids[0] == FrameID.MAP:
+            # TODO: add support of handing batch positions in HomogeneousMatrix
+            num_point = len(pointcloud)
+            src = np.tile(np.eye(4), reps=(num_point, 1, 1))
+            src[:, :3, 3] = pointcloud[:, :3]
+            dst = src.dot(ego2map.matrix)
+            pointcloud[:, :3] = dst[:, :3, 3]
+        return pointcloud
 
     def _plot_ego(
         self,
