@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import os.path as osp
 from typing import Any
 from typing import Dict
 from typing import List
@@ -24,6 +25,7 @@ from typing import Union
 
 from nuimages import NuImages
 import numpy as np
+from numpy.typing import NDArray
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
 from nuscenes.utils.data_classes import Box
@@ -39,7 +41,6 @@ from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
 from perception_eval.common.transform import HomogeneousMatrix
-from perception_eval.common.transform import TransformDict
 from PIL import Image
 from pyquaternion.quaternion import Quaternion
 
@@ -83,15 +84,15 @@ def _sample_to_frame(
     # frame information
     unix_time_ = sample["timestamp"]
     if "LIDAR_TOP" in sample["data"]:
-        lidar_path_token = sample["data"]["LIDAR_TOP"]
+        sample_data_token = sample["data"]["LIDAR_TOP"]
     elif "LIDAR_CONCAT" in sample["data"]:
-        lidar_path_token = sample["data"]["LIDAR_CONCAT"]
+        sample_data_token = sample["data"]["LIDAR_CONCAT"]
     else:
         raise ValueError("lidar data isn't found")
-    frame_data = nusc.get("sample_data", lidar_path_token)
 
-    _, object_boxes, raw_data = _get_sample_boxes(nusc, frame_data, frame_id, load_raw_data)
-    transforms = _get_transforms(nusc, frame_data)
+    object_boxes = _get_sample_boxes(nusc, sample_data_token, frame_id)
+    transforms = _get_transforms(nusc, sample_data_token)
+    raw_data = _load_raw_data(nusc, sample_token) if load_raw_data else None
 
     objects_: List[DynamicObject] = []
     for object_box in object_boxes:
@@ -222,57 +223,44 @@ def _convert_nuscenes_box_to_dynamic_object(
     return dynamic_object
 
 
-def _get_sample_boxes(
-    nusc: NuScenes,
-    frame_data: Dict[str, Any],
-    frame_id: str,
-    load_raw_data: bool = False,
-) -> Tuple[str, List[Box]]:
+def _get_sample_boxes(nusc: NuScenes, sample_data_token: str, frame_id: FrameID) -> List[Box]:
     """Get the lidar raw data path, boxes.
 
     Args:
         nusc (NuScenes): `NuScenes` instance.
-        frame_data (dict[str, Any]):
-        frame_id (str): Frame ID where loaded boxes are with respect to.
+        sample_data_token (str): Sample data token.
+        frame_id (FrameID): Frame ID where loaded boxes are with respect to.
 
     Raises:
         ValueError: Expecting `BASE_LINK` or `MAP` for the target `frame_id`.
 
     Returns:
-        tuple[str, list[Box]]: Path to lidar raw data, boxes and a transform matrix.
+        list[Box]: Boxes.
     """
     if frame_id == FrameID.BASE_LINK:
         # Get boxes moved to ego vehicle coord system.
-        lidar_path, object_boxes, _ = nusc.get_sample_data(frame_data["token"])
+        _, boxes, _ = nusc.get_sample_data(sample_data_token)
     elif frame_id == FrameID.MAP:
         # Get boxes map based coord system.
-        lidar_path = nusc.get_sample_data_path(frame_data["token"])
-        object_boxes = nusc.get_boxes(frame_data["token"])
+        boxes = nusc.get_boxes(sample_data_token)
     else:
         raise ValueError(f"Expected frame id is `BASE_LINK` or `MAP`, but got {frame_id}")
 
-    # pointcloud
-    raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
-    if load_raw_data:
-        assert lidar_path.endswith(".bin"), f"Error: Unsupported filetype {lidar_path}"
-        pointcloud: np.ndarray = np.fromfile(lidar_path, dtype=np.float32)
-        # The Other modalities would be used, (e.g. radar)
-        raw_data["lidar"] = pointcloud.reshape(-1, 5)[:, :4]
-
-    return lidar_path, object_boxes, raw_data
+    return boxes
 
 
-def _get_transforms(nusc: NuScenes, sample_data: Dict[str, Any]) -> List[HomogeneousMatrix]:
+def _get_transforms(nusc: NuScenes, sample_data_token: str) -> List[HomogeneousMatrix]:
     """Load transform matrices.
 
     Args:
         nusc (NuScenes): NuScenes instance.
-        sample_data(dict[str, Any]): Sample data record.
+        sample_data_token (str): Sample data token.
 
     Returns:
         List[HomogeneousMatrix]: List of matrices transforming position from sensor coordinate to map coordinate.
     """
     # Get a ego2map transform matrix
+    sample_data = nusc.get("sample_data", sample_data_token)
     ego_record = nusc.get("ego_pose", sample_data["ego_pose_token"])
     ego_position = np.array(ego_record["translation"])
     ego_rotation = Quaternion(ego_record["rotation"])
@@ -288,6 +276,29 @@ def _get_transforms(nusc: NuScenes, sample_data: Dict[str, Any]) -> List[Homogen
         sensor2map = ego2sensor.inv().dot(ego2map)
         matrices.extend((ego2sensor, sensor2map))
     return matrices
+
+
+def _load_raw_data(nusc: NuScenes, sample_token: str) -> Dict[FrameID, NDArray]:
+    """Load raw data for each sensor frame.
+
+    Args:
+        nusc (NuScenes): NuScenes instance.
+        sample_token (str): Sample token.
+
+    Returns:
+        Dict[FrameID, NDArray]: Raw data at each sensor frame.
+    """
+    sample = nusc.get("sample", sample_token)
+    output: Dict[FrameID, NDArray] = {}
+    for sensor_name, sample_data_token in sample["data"].items():
+        frame_id = FrameID.from_value(sensor_name)
+        filepath: str = nusc.get_sample_data_path(sample_data_token)
+        if osp.basename(filepath).endswith("bin"):
+            raw_data = np.fromfile(filepath, dtype=np.float32).reshape(-1, 5)[:, :4]
+        else:
+            raw_data = np.array(Image.open(filepath), dtype=np.uint8)
+        output[frame_id] = raw_data
+    return output
 
 
 def _get_box_velocity(
@@ -487,14 +498,10 @@ def _sample_to_frame_2d(
             sample_data_tokens.append(sample_data_token)
             frame_id_mapping[sample_data_token] = frame_id_
 
-    raw_data: Optional[Dict[str, np.ndarray]] = {} if load_raw_data else None
     if load_raw_data:
-        for sensor_name, sample_data_token in nusc_sample["data"].items():
-            if (label_converter.label_type == TrafficLightLabel and "TRAFFIC_LIGHT" in sensor_name) or (
-                "CAM" in sensor_name and "TRAFFIC_LIGHT" not in sensor_name
-            ):
-                img_path: str = nusc.get_sample_data_path(sample_data_token)
-                raw_data[sensor_name.lower()] = np.array(Image.open(img_path), dtype=np.uint8)
+        raw_data = _load_raw_data(nusc, sample_token)
+    else:
+        raw_data = None
 
     object_annotations: List[Dict[str, Any]] = [
         ann for ann in nuim.object_ann if ann["sample_data_token"] in sample_data_tokens
