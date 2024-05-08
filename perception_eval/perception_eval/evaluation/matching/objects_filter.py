@@ -23,6 +23,7 @@ from perception_eval.common import ObjectType
 from perception_eval.common.label import CommonLabel
 from perception_eval.common.label import Label
 from perception_eval.common.label import LabelType
+from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
@@ -543,14 +544,13 @@ def _is_target_object(
         )
         is_target = is_target and dynamic_object.semantic_score > confidence_threshold
 
-    if isinstance(dynamic_object, DynamicObject):
-        if dynamic_object.frame_id != FrameID.BASE_LINK:
-            position_ = transforms.transform(
-                (dynamic_object.frame_id, FrameID.BASE_LINK), dynamic_object.state.position
-            )
-        else:
-            position_ = dynamic_object.state.position
+    if dynamic_object.state.position is not None:
+        position_ = transforms.transform((dynamic_object.frame_id, FrameID.BASE_LINK), dynamic_object.state.position)
+        bev_distance_ = dynamic_object.get_distance_bev(transforms)
+    else:
+        position_ = bev_distance_ = None
 
+    if position_ is not None:
         if is_target and max_x_position_list is not None:
             max_x_position = (
                 max_x_position_list[0]
@@ -567,7 +567,7 @@ def _is_target_object(
             )
             is_target = is_target and abs(position_[1]) < max_y_position
 
-        bev_distance_: float = dynamic_object.get_distance_bev(transforms)
+    if bev_distance_ is not None:
         if is_target and max_distance_list is not None:
             max_distance = (
                 max_distance_list[0]

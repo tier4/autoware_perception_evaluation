@@ -27,6 +27,7 @@ from perception_eval.evaluation.result.perception_frame_config import Perception
 from perception_eval.manager import PerceptionEvaluationManager
 from perception_eval.tool import PerceptionAnalyzer2D
 from perception_eval.util.debug import get_objects_with_difference2d
+from perception_eval.util.debug import get_random_position_map
 from perception_eval.util.logger_config import configure_logger
 
 
@@ -54,14 +55,22 @@ class PerceptionLSimMoc:
             raise ValueError(f"Unexpected evaluation task: {evaluation_task}")
 
         # If target_labels = None, all labels will be evaluated.
-        evaluation_config_dict.update(
-            dict(
-                target_labels=["green", "red", "yellow", "unknown"]
-                if label_prefix == "traffic_light"
-                else ["car", "bicycle", "pedestrian", "motorbike"],
-                ignore_attributes=["cycle_state.without_rider"] if label_prefix == "autoware" else None,
+        if self.label_prefix == "autoware":
+            evaluation_config_dict.update(
+                dict(
+                    target_labels=["car", "bicycle", "pedestrian", "motorbike"],
+                    ignore_attributes=["cycle_state.without_rider"],
+                )
             )
-        )
+        elif self.label_prefix == "traffic_light":
+            evaluation_config_dict.update(
+                dict(
+                    target_labels=["green", "red", "yellow", "unknown"],
+                    max_distance=150.0,
+                    min_distance=0.0,
+                )
+            )
+
         evaluation_config_dict.update(
             dict(
                 allow_matching_unknown=True,
@@ -76,7 +85,7 @@ class PerceptionLSimMoc:
             frame_id=camera_type,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
-            load_raw_data=True,
+            load_raw_data=False,
         )
 
         _ = configure_logger(
@@ -95,19 +104,27 @@ class PerceptionLSimMoc:
         # 現frameに対応するGround truthを取得
         ground_truth_now_frame = self.evaluator.get_ground_truth_now_frame(unix_time)
 
+        # 1 frameの評価
+        if self.label_prefix == "traffic_light":
+            target_labels = ["green", "red", "yellow", "unknown"]
+            ignore_attributes = None  # example
+            # set position from map which hash position of corresponding uuid.
+            position_uuid_map = get_random_position_map(ground_truth_now_frame)
+            for obj in ground_truth_frame.objects:
+                position = position_uuid_map[obj.uuid]
+                obj.set_position(position)
+        elif self.label_prefix == "autoware":
+            target_labels = ["car", "bicycle", "pedestrian", "motorbike"]
+            ignore_attributes = ["cycle_state.without_rider"]  # example
+        else:
+            raise ValueError(f"Unexpected label prefix: {self.label_prefix}")
+
         # [Option] ROS側でやる（Map情報・Planning結果を用いる）UC評価objectを選別
         # ros_critical_ground_truth_objects : List[DynamicObject] = custom_critical_object_filter(
         #   ground_truth_now_frame.objects
         # )
         ros_critical_ground_truth_objects = ground_truth_now_frame.objects
 
-        # 1 frameの評価
-        target_labels = (
-            ["green", "red", "yellow", "unknown"]
-            if self.label_prefix == "traffic_light"
-            else ["car", "bicycle", "pedestrian", "motorbike"]
-        )
-        ignore_attributes = ["cycle_state.without_rider"] if self.label_prefix == "autoware" else None
         matching_threshold_list = None if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5]
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam

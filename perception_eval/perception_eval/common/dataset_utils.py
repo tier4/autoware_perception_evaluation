@@ -91,7 +91,7 @@ def _sample_to_frame(
         raise ValueError("lidar data isn't found")
 
     object_boxes = _get_sample_boxes(nusc, sample_data_token, frame_id)
-    transforms = _get_transforms(nusc, sample_data_token)
+    transforms = _get_transforms(nusc, sample_data_token, evaluation_task, label_converter.label_type)
     raw_data = _load_raw_data(nusc, sample_token) if load_raw_data else None
 
     objects_: List[DynamicObject] = []
@@ -251,6 +251,7 @@ def _get_sample_boxes(nusc: NuScenes, sample_data_token: str, frame_id: FrameID)
 
 def _get_transforms(nusc: NuScenes, sample_data_token: str) -> List[HomogeneousMatrix]:
     """Load transform matrices.
+    Additionally, for traffic light cameras, add transforms from BASE_LINK to TRAFFIC_LIGHT.
 
     Args:
         nusc (NuScenes): NuScenes instance.
@@ -275,6 +276,14 @@ def _get_transforms(nusc: NuScenes, sample_data_token: str) -> List[HomogeneousM
         ego2sensor = HomogeneousMatrix(sensor_position, sensor_rotation, src=FrameID.BASE_LINK, dst=sensor_frame_id)
         sensor2map = ego2sensor.inv().dot(ego2map)
         matrices.extend((ego2sensor, sensor2map))
+        # TODO: A transform BASE_LINK->TRAFFIC_LIGHT would be overwritten if the dataset contains multiple TLR cameras.
+        if "CAM_TRAFFIC_LIGHT" in sensor_frame_id.value.upper():
+            ego2tlr = HomogeneousMatrix(
+                sensor_position, sensor_rotation, src=FrameID.BASE_LINK, dst=FrameID.TRAFFIC_LIGHT
+            )
+            tlr2map = ego2tlr.inv().dot(ego2map)
+            matrices.extend((ego2tlr, tlr2map))
+
     return matrices
 
 
@@ -477,26 +486,18 @@ def _sample_to_frame_2d(
 
     sample_data_tokens: List[str] = []
     frame_id_mapping: Dict[str, FrameID] = {}
+    transforms = None
     for frame_id_ in frame_ids:
-        # TODO update
-        scene_descriptions: List[str] = nusc.get("scene", sample["scene_token"])["description"].split(", ")
-        if "regulatory_element" in scene_descriptions:
-            for camera_type in (
-                FrameID.CAM_TRAFFIC_LIGHT_FAR.value.upper(),
-                FrameID.CAM_TRAFFIC_LIGHT_NEAR.value.upper(),
-            ):
-                if nusc_sample["data"].get(camera_type) is None:
-                    continue
-                sample_data_token = nusc_sample["data"][camera_type]
-                sample_data_tokens.append(sample_data_token)
-                frame_id_mapping[sample_data_token] = FrameID.TRAFFIC_LIGHT
-        else:
-            camera_type: str = frame_id_.value.upper()
-            if nusc_sample["data"].get(camera_type) is None:
-                continue
-            sample_data_token = nusc_sample["data"][camera_type]
-            sample_data_tokens.append(sample_data_token)
-            frame_id_mapping[sample_data_token] = frame_id_
+        camera_type: str = frame_id_.value.upper()
+        if nusc_sample["data"].get(camera_type) is None:
+            continue
+        sample_data_token = nusc_sample["data"][camera_type]
+        sample_data_tokens.append(sample_data_token)
+        frame_id_mapping[sample_data_token] = frame_id_
+
+        sd_record = nusc.get("sample_data", sample_data_token)
+        if sd_record["is_key_frame"]:
+            transforms = _get_transforms(nusc, sample_data_token)
 
     if load_raw_data:
         raw_data = _load_raw_data(nusc, sample_token)
@@ -556,6 +557,7 @@ def _sample_to_frame_2d(
         unix_time=unix_time,
         frame_name=frame_name,
         objects=objects_,
+        transforms=transforms,
         raw_data=raw_data,
     )
 
@@ -567,7 +569,7 @@ def _merge_duplicated_traffic_lights(
     objects: List[DynamicObject2D],
     uuids: List[str],
 ) -> List[DynamicObject2D]:
-    """Merge traffic light objects which have same uuid.
+    """Merge traffic light objects which have same uuids and set its frame id as `FrameID.TRAFFIC_LIGHT`.
 
     Args:
         unix_time (int): Current unix timestamp.
@@ -596,7 +598,7 @@ def _merge_duplicated_traffic_lights(
             assert semantic_label.label != TrafficLightLabel.UNKNOWN
         merged_object = DynamicObject2D(
             unix_time=unix_time,
-            frame_id=candidates[0].frame_id,
+            frame_id=FrameID.TRAFFIC_LIGHT,
             semantic_score=1.0,
             semantic_label=semantic_label,
             roi=None,
@@ -604,5 +606,4 @@ def _merge_duplicated_traffic_lights(
             visibility=None,
         )
         ret_objects.append(merged_object)
-    assert len(ret_objects) == len(set([obj.uuid for obj in ret_objects]))
     return ret_objects
