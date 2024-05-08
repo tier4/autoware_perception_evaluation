@@ -22,7 +22,7 @@ from typing import Sequence
 from typing import Union
 
 from nuimages import NuImages
-import numpy as np
+from numpy.typing import NDArray
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
 from perception_eval.common import ObjectType
@@ -50,7 +50,7 @@ class FrameGroundTruth:
         frame_name: str,
         objects: List[DynamicObject],
         transforms: TransformDictArgType = None,
-        raw_data: Optional[Dict[str, np.ndarray]] = None,
+        raw_data: Optional[Dict[FrameID, NDArray]] = None,
     ) -> None:
         """
         Args:
@@ -58,13 +58,13 @@ class FrameGroundTruth:
             frame_name (str): The file name
             objects (list[DynamicObject]): Ground truth objects.
             transforms (TransformDict | None, optional): 4x4 transform matrices. Defaults to None.
-            raw_data (dict[str, np.ndarray] | None, optional): Raw data for each sensor. Defaults to None.
+            raw_data (dict[FrameID, NDArray] | None, optional): Raw data for each sensor. Defaults to None.
         """
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
         self.objects: List[ObjectType] = objects
         self.transforms = TransformDict(transforms)
-        self.raw_data: Optional[Dict[str, np.ndarray]] = raw_data
+        self.raw_data = raw_data
 
 
 def load_all_datasets(

@@ -21,6 +21,7 @@ from typing import Tuple
 
 import numpy as np
 from perception_eval.common.dataset import FrameGroundTruth
+from perception_eval.common.schema import FrameID
 from perception_eval.config import SensingEvaluationConfig
 from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
 from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
@@ -187,9 +188,17 @@ if __name__ == "__main__":
     ]
     num_frames = len(sensing_lsim.evaluator.ground_truth_frames)
     for ground_truth_frame in sensing_lsim.evaluator.ground_truth_frames:
+        raw_data = ground_truth_frame.raw_data
+        if FrameID.LIDAR_CONCAT in raw_data:
+            pointcloud = raw_data[FrameID.LIDAR_CONCAT]
+        elif FrameID.LIDAR_TOP in raw_data:
+            pointcloud = raw_data[FrameID.LIDAR_TOP]
+        else:
+            raise ValueError("Pointcloud from LIDAR_CONCAT or LIDAR_TOP must be loaded")
+
         frame_result: SensingFrameResult = sensing_lsim.callback(
             ground_truth_frame.unix_time,
-            ground_truth_frame.raw_data["lidar"],
+            pointcloud,
             non_detection_areas,
         )
 
