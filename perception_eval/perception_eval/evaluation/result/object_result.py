@@ -55,6 +55,7 @@ class DynamicObjectWithPerceptionResult:
         self,
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
+        allow_matching_unknown: bool,
     ) -> None:
         """[summary]
         Evaluation result for an object estimated object.
@@ -64,12 +65,13 @@ class DynamicObjectWithPerceptionResult:
             ground_truth_objects (Optional[ObjectType]): The list of Ground truth objects
         """
         if ground_truth_object is not None:
-            assert type(estimated_object) == type(
-                ground_truth_object
+            assert isinstance(
+                estimated_object, type(ground_truth_object)
             ), f"Input objects type must be same, but got {type(estimated_object)} and {type(ground_truth_object)}"
 
         self.estimated_object: ObjectType = estimated_object
         self.ground_truth_object: Optional[ObjectType] = ground_truth_object
+        self.allow_matching_unknown = allow_matching_unknown
 
         if isinstance(self.estimated_object, DynamicObject2D) and self.estimated_object.roi is None:
             self.center_distance = None
@@ -160,7 +162,11 @@ class DynamicObjectWithPerceptionResult:
 
         is_matching: bool = matching.is_better_than(matching_threshold)
         # Whether both label is true and matching is true
-        return not is_matching if self.ground_truth_object.semantic_label.is_fp() else is_matching
+        return (
+            not is_matching
+            if self.ground_truth_object.semantic_label.is_fp()
+            else is_matching and self.is_label_correct
+        )
 
     def get_matching(self, matching_mode: MatchingMode) -> Optional[MatchingMethod]:
         """Get MatchingMethod instance with corresponding MatchingMode.
@@ -259,7 +265,11 @@ class DynamicObjectWithPerceptionResult:
             bool: Whether label is correct
         """
         if self.ground_truth_object:
-            return self.estimated_object.semantic_label == self.ground_truth_object.semantic_label
+            return (
+                True
+                if self.allow_matching_unknown and self.estimated_object.semantic_label.is_unknown()
+                else self.estimated_object.semantic_label == self.ground_truth_object.semantic_label
+            )
         else:
             return False
 
@@ -285,6 +295,9 @@ def get_object_results(
         evaluation_task (EvaluationTask): Evaluation task.
         estimated_objects (List[ObjectType]): Estimated objects list.
         ground_truth_objects (List[ObjectType]): Ground truth objects list.
+        target_labels (Optional[List[LabelType]]): List of labels.
+        allow_matching_unknown (bool): Whether to allow to match estimated objects which are unknown and GTs.
+            Defaults to True.
         matching_mode (MatchingMode): MatchingMode instance.
         matchable_thresholds (Optional[List[float]]): Thresholds to be
 
@@ -297,7 +310,7 @@ def get_object_results(
 
     # There is no GT and not FP validation (= all FP)
     if not ground_truth_objects and evaluation_task.is_fp_validation() is False:
-        return _get_fp_object_results(estimated_objects)
+        return _get_fp_object_results(estimated_objects, allow_matching_unknown)
 
     assert isinstance(
         ground_truth_objects[0], type(estimated_objects[0])
@@ -316,37 +329,64 @@ def get_object_results(
         matchable_thresholds,
     )
 
-    # assign correspond GT to estimated objects
+    scores = score_table[..., 0]
+    is_valid = score_table[..., 1]
+    masked_scores = np.where(is_valid, scores, np.nan)
+
     object_results: List[DynamicObjectWithPerceptionResult] = []
     estimated_objects_: List[ObjectType] = estimated_objects.copy()
     ground_truth_objects_: List[ObjectType] = ground_truth_objects.copy()
-    num_estimation: int = score_table.shape[0]
+    # 1. Matching the nearest estimated objects and GTs which have the same label
+    num_estimation, *_ = score_table.shape
     for _ in range(num_estimation):
-        if np.isnan(score_table).all():
+        if np.isnan(masked_scores).all():
             break
 
         est_idx, gt_idx = (
-            np.unravel_index(np.nanargmax(score_table), score_table.shape)
+            np.unravel_index(np.nanargmax(masked_scores), masked_scores.shape)
             if maximize
-            else np.unravel_index(np.nanargmin(score_table), score_table.shape)
+            else np.unravel_index(np.nanargmin(masked_scores), masked_scores.shape)
         )
 
-        # remove corresponding estimated and GT objects
-        est_obj_: ObjectType = estimated_objects_.pop(est_idx)
-        gt_obj_: ObjectType = ground_truth_objects_.pop(gt_idx)
-        score_table = np.delete(score_table, obj=est_idx, axis=0)
-        score_table = np.delete(score_table, obj=gt_idx, axis=1)
-        object_result_ = DynamicObjectWithPerceptionResult(
-            estimated_object=est_obj_,
-            ground_truth_object=gt_obj_,
+        est_obj = estimated_objects_.pop(est_idx)
+        gt_obj = ground_truth_objects_.pop(gt_idx)
+        result = DynamicObjectWithPerceptionResult(est_obj, gt_obj, allow_matching_unknown)
+        object_results.append(result)
+
+        # Remove corresponding estimated objects and GTs from the score table.
+        masked_scores = np.delete(masked_scores, est_idx, axis=0)
+        masked_scores = np.delete(masked_scores, gt_idx, axis=1)
+
+        score_table = np.delete(score_table, est_idx, axis=0)
+        score_table = np.delete(score_table, gt_idx, axis=1)
+
+    # 2. Matching the nearest estimated objects and GTs regardless of their label
+    rest_scores = score_table[..., 0]
+    num_rest_estimation, *_ = score_table.shape
+    for _ in range(num_rest_estimation):
+        if np.isnan(rest_scores).all():
+            break
+
+        est_idx, gt_idx = (
+            np.unravel_index(np.nanargmax(rest_scores), rest_scores.shape)
+            if maximize
+            else np.unravel_index(np.nanargmin(rest_scores), rest_scores.shape)
         )
-        object_results.append(object_result_)
+
+        est_obj = estimated_objects_.pop(est_idx)
+        gt_obj = ground_truth_objects_.pop(gt_idx)
+        result = DynamicObjectWithPerceptionResult(est_obj, gt_obj, allow_matching_unknown)
+        object_results.append(result)
+
+        # Remove corresponding estimated objects and GTs from the score table
+        rest_scores = np.delete(rest_scores, est_idx, axis=0)
+        rest_scores = np.delete(rest_scores, gt_idx, axis=1)
 
     # In case of evaluation task is not FP validation,
     # when there are rest of estimated objects, they all are FP.
     # Otherwise, they all are ignored
     if len(estimated_objects_) > 0 and evaluation_task.is_fp_validation() is False:
-        object_results += _get_fp_object_results(estimated_objects_)
+        object_results += _get_fp_object_results(estimated_objects_, allow_matching_unknown)
 
     return object_results
 
@@ -384,6 +424,7 @@ def _get_object_results_with_id(
                     DynamicObjectWithPerceptionResult(
                         estimated_object=est_object,
                         ground_truth_object=gt_object,
+                        allow_matching_unknown=False,
                     )
                 )
                 estimated_objects_.remove(est_object)
@@ -391,13 +432,14 @@ def _get_object_results_with_id(
 
     # when there are rest of estimated objects, they all are FP.
     if len(estimated_objects_) > 0:
-        object_results += _get_fp_object_results(estimated_objects_)
+        object_results += _get_fp_object_results(estimated_objects_, False)
 
     return object_results
 
 
 def _get_fp_object_results(
     estimated_objects: List[ObjectType],
+    allow_matching_unknown: bool,
 ) -> List[DynamicObjectWithPerceptionResult]:
     """Returns the list of DynamicObjectWithPerceptionResult that have no ground truth.
 
@@ -412,6 +454,7 @@ def _get_fp_object_results(
         object_result_: DynamicObjectWithPerceptionResult = DynamicObjectWithPerceptionResult(
             estimated_object=est_obj_,
             ground_truth_object=None,
+            allow_matching_unknown=allow_matching_unknown,
         )
         object_results.append(object_result_)
 
@@ -454,7 +497,8 @@ def _get_score_table(
     target_labels: Optional[List[LabelType]],
     matchable_thresholds: Optional[List[float]],
 ) -> np.ndarray:
-    """Returns score table, in shape (num_estimation, num_ground_truth).
+    """Returns score table, in shape `(num_estimation, num_ground_truth, 2)`.
+    Each element represents `(score, is_same_label)`.
 
     Args:
         estimated_objects (List[ObjectType]): Estimated objects list.
@@ -465,15 +509,14 @@ def _get_score_table(
         matching_thresholds (Optional[List[float]]): List of thresholds
 
     Returns:
-        score_table (numpy.ndarray): in shape (num_estimation, num_ground_truth).
+        score_table (numpy.ndarray): in shape (num_estimation, num_ground_truth, 2).
     """
     # fill matching score table, in shape (NumEst, NumGT)
     num_row: int = len(estimated_objects)
     num_col: int = len(ground_truth_objects)
-    score_table: np.ndarray = np.full((num_row, num_col), np.nan)
+    score_table: np.ndarray = np.full((num_row, num_col, 2), (np.nan, False))
     for i, est_obj in enumerate(estimated_objects):
         for j, gt_obj in enumerate(ground_truth_objects):
-            is_label_ok: bool = False
             if gt_obj.semantic_label.is_fp():
                 is_label_ok = True
             elif allow_matching_unknown:
@@ -483,7 +526,7 @@ def _get_score_table(
 
             is_same_frame_id: bool = est_obj.frame_id == gt_obj.frame_id
 
-            if is_label_ok and is_same_frame_id:
+            if is_same_frame_id:
                 threshold: Optional[float] = get_label_threshold(
                     gt_obj.semantic_label, target_labels, matchable_thresholds
                 )
@@ -493,6 +536,6 @@ def _get_score_table(
                 )
 
                 if threshold is None or (threshold is not None and matching_method.is_better_than(threshold)):
-                    score_table[i, j] = matching_method.value
+                    score_table[i, j] = (matching_method.value, is_label_ok)
 
     return score_table

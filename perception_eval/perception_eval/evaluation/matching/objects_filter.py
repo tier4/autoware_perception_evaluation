@@ -245,6 +245,7 @@ def get_positive_objects(
                     DynamicObjectWithPerceptionResult(
                         object_result.estimated_object,
                         None,
+                        object_result.allow_matching_unknown,
                     )
                 )
             else:

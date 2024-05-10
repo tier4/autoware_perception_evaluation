@@ -47,16 +47,16 @@ class TestObjectResult(unittest.TestCase):
         """
         patterns: List[Tuple[DiffTranslation, List[Tuple[int, Optional[int]]]]] = [
             # (1)
-            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[0], None)
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[0], GT[2])
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                [(0, 0), (1, 1), (2, None)],
+                [(0, 0), (1, 1), (2, 2)],
             ),
             # (2)
-            # (Est[0], None), (Est[1], GT[1]), (Est[0], GT[0])
+            # (Est[0], GT[2]), (Est[1], GT[1]), (Est[2], GT[0])
             (
                 DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
-                [(0, None), (1, 1), (2, 0)],
+                [(0, 2), (1, 1), (2, 0)],
             ),
         ]
         for n, (diff_trans, ans_pair_index) in enumerate(patterns):
