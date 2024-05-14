@@ -544,7 +544,10 @@ def _is_target_object(
         )
         is_target = is_target and dynamic_object.semantic_score > confidence_threshold
 
-    if dynamic_object.state.position is not None:
+    if transforms is None and dynamic_object.frame_id == FrameID.BASE_LINK:
+        position_ = dynamic_object.state.position
+        bev_distance_ = dynamic_object.get_distance_bev()
+    elif dynamic_object.state.position is not None and transforms is not None:
         position_ = transforms.transform((dynamic_object.frame_id, FrameID.BASE_LINK), dynamic_object.state.position)
         bev_distance_ = dynamic_object.get_distance_bev(transforms)
     else:

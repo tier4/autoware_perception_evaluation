@@ -91,7 +91,7 @@ def _sample_to_frame(
         raise ValueError("lidar data isn't found")
 
     object_boxes = _get_sample_boxes(nusc, sample_data_token, frame_id)
-    transforms = _get_transforms(nusc, sample_data_token, evaluation_task, label_converter.label_type)
+    transforms = _get_transforms(nusc, sample_data_token)
     raw_data = _load_raw_data(nusc, sample_token) if load_raw_data else None
 
     objects_: List[DynamicObject] = []
