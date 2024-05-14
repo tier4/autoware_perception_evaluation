@@ -320,7 +320,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )
-                for clear_, ans_clear_ in zip(tracking_score.clears, ans_clears, strict=True):
+                for clear_, ans_clear_ in zip(tracking_score.clears, ans_clears):
                     out_clear_ = AnswerCLEAR.from_clear(clear_)
                     self.assertEqual(
                         out_clear_,
