@@ -493,7 +493,7 @@ class PerceptionAnalyzerBase(ABC):
         return metrics_score
 
     @abstractmethod
-    def analyze(self, *args, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
+    def analyze(self, *args, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame], Optional[pd.DataFrame]]:
         """Analyze TP/FP/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
 
         Args:
@@ -502,6 +502,7 @@ class PerceptionAnalyzerBase(ABC):
         Returns:
             score_df (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
             error_df (Optional[pandas.DataFrame]): DataFrame of errors.
+            confusion_matrix_df (Optional[pandas.DataFrame]): DataFrame of the confusion matrix.
         """
         pass
 
@@ -783,6 +784,30 @@ class PerceptionAnalyzerBase(ABC):
         data: Dict[str, Any] = get_metrics_info(metrics_score)
 
         return pd.DataFrame(data, index=self.all_labels)
+
+    def get_confusion_matrix(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        """Returns confusion matrix as DataFrame.
+
+        Args:
+            df (Optional[pd.DataFrame]): Specify if you want to use filtered DataFrame. Defaults to None.
+
+        Returns:
+            pd.DataFrame: Confusion matrix.
+        """
+        gt_df, est_df = self.get_pair_results(df)
+
+        target_labels: List[str] = self.target_labels.copy()
+        if self.config.label_params["allow_matching_unknown"] and "unknown" not in target_labels:
+            target_labels.append("unknown")
+
+        gt_indices: np.ndarray = gt_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
+        est_indices: np.ndarray = est_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
+
+        num_classes = len(target_labels)
+        indices = num_classes * gt_indices + est_indices
+        matrix: np.ndarray = np.bincount(indices, minlength=num_classes**2)
+        matrix = matrix.reshape(num_classes, num_classes)
+        return pd.DataFrame(data=matrix, index=target_labels, columns=target_labels)
 
     def plot_num_object(
         self,

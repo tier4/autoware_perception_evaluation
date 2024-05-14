@@ -20,6 +20,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 import numpy as np
@@ -371,7 +372,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         distance: Optional[Iterable[float]] = None,
         area: Optional[int] = None,
         **kwargs,
-    ) -> np.Tuple[pd.DataFrame | None]:
+    ) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame], Optional[pd.DataFrame]]:
         if scene is not None:
             kwargs.update({"scene": scene})
         if area is not None:
@@ -390,10 +391,11 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 scene = None
             metrics_df = self.summarize_score(scene=scene, distance=distance, area=area)
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
-            return score_df, error_df
+            confusion_matrix_df = self.get_confusion_matrix(df=df)
+            return score_df, error_df, confusion_matrix_df
         else:
             logging.warning("There is no DataFrame to be able to analyze.")
-            return None, None
+            return None, None, None
 
     def summarize_error(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """Calculate mean, sigma, RMS, max and min of error.
