@@ -22,6 +22,7 @@ from perception_eval.common.transform import TransformDict
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import filter_objects
+from perception_eval.evaluation.matching.objects_filter import filter_unintended_object_results
 from perception_eval.evaluation.matching.objects_filter import get_negative_objects
 from perception_eval.evaluation.matching.objects_filter import get_positive_objects
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
@@ -159,14 +160,7 @@ class PassFailResult:
         )
 
         # filter by critical_ground_truth_objects
-        tp_critical_results: List[DynamicObjectWithPerceptionResult] = [
-            tp_result
-            for tp_result in tp_object_results
-            if tp_result.ground_truth_object in critical_ground_truth_objects
-        ]
-        fp_critical_results: List[DynamicObjectWithPerceptionResult] = [
-            fp_result
-            for fp_result in fp_object_results
-            if fp_result.ground_truth_object in critical_ground_truth_objects
-        ]
+        tp_critical_results = filter_unintended_object_results(tp_object_results, critical_ground_truth_objects)
+        fp_critical_results = filter_unintended_object_results(fp_object_results, critical_ground_truth_objects)
+
         return tp_critical_results, fp_critical_results

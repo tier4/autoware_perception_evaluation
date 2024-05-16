@@ -25,6 +25,7 @@ from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
+from perception_eval.evaluation.matching.objects_filter import filter_unintended_object_results
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
@@ -182,6 +183,9 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
                 transforms=frame_ground_truth.transforms,
                 target_uuids=self.filtering_params["target_uuids"],
             )
+
+        object_results = filter_unintended_object_results(object_results, frame_ground_truth.objects)
+
         return object_results, frame_ground_truth
 
     def get_scene_result(self) -> MetricsScore:
