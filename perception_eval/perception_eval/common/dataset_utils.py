@@ -272,9 +272,9 @@ def _get_transforms(nusc: NuScenes, sample_data_token: str) -> List[HomogeneousM
         sensor_rotation = Quaternion(cs_record["rotation"])
         sensor_record = nusc.get("sensor", cs_record["sensor_token"])
         sensor_frame_id = FrameID.from_value(sensor_record["channel"])
-        ego2sensor = HomogeneousMatrix(sensor_position, sensor_rotation, src=FrameID.BASE_LINK, dst=sensor_frame_id)
-        sensor2map = ego2sensor.inv().dot(ego2map)
-        matrices.extend((ego2sensor, sensor2map))
+        sensor2ego = HomogeneousMatrix(sensor_position, sensor_rotation, src=sensor_frame_id, dst=FrameID.BASE_LINK)
+        sensor2map = ego2map.dot(sensor2ego)
+        matrices.extend((sensor2ego, sensor2map))
     return matrices
 
 
