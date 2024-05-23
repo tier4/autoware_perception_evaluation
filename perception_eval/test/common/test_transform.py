@@ -50,13 +50,44 @@ def test_homogenous_matrix_dot():
         ),
     )
     assert np.allclose(cam2map.position, np.array([3, 3, 3]))  # cam position in map coords
-    assert np.allclose(cam2map.rotation, np.eye(3))  # cam rotation matrix in map coords
+    assert np.allclose(cam2map.rotation_matrix, np.eye(3))  # cam rotation matrix in map coords
     assert cam2map.src == FrameID.CAM_FRONT
     assert cam2map.dst == FrameID.MAP
 
 
 def test_homogenous_matrix_inv():
-    pass
+    matrix = np.array(
+        [
+            [0.70710678, -0.70710678, 0.0, 1.0],
+            [0.70710678, 0.70710678, 0.0, 2.0],
+            [0.0, 0.0, 1.0, 3.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+    ego2map = HomogeneousMatrix.from_matrix(matrix, FrameID.BASE_LINK, FrameID.MAP)
+    inv = ego2map.inv()
+    assert np.allclose(
+        inv.matrix,
+        np.array(
+            [
+                [0.70710678, 0.70710678, 0.0, -2.12132034],
+                [-0.70710678, 0.70710678, 0.0, -0.70710678],
+                [0.0, 0.0, 1.0, -3.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        ),
+    )
+    assert np.allclose(inv.position, np.array([-2.12132034, -0.70710678, -3.0]))
+    assert np.allclose(
+        inv.rotation_matrix,
+        np.array(
+            [
+                [0.70710678, 0.70710678, 0.0],
+                [-0.70710678, 0.70710678, 0.0],
+                [0.0, 0.0, 1.0],
+            ]
+        ),
+    )
 
 
 def test_transform_dict():

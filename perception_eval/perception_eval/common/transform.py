@@ -373,13 +373,13 @@ class HomogeneousMatrix:
 
         Args:
         -----
-            matrix (HomogeneousMatrix): A `HomogeneousMatrix` instance, which `matrix.src` frame id must be same with `self.dst`.
+            matrix (HomogeneousMatrix): A `HomogeneousMatrix` instance, which `matrix.dst` frame id must be same with `self.src`.
 
         Returns:
         --------
             HomogeneousMatrix: Result of a dot product.
         """
-        return self.dot(matrix)
+        return matrix.dot(self)
 
     def __transform_position(self, position: ArrayLike) -> NDArray:
         """Transform with the specified 3D position ordering `(x, y, z)`.
@@ -455,17 +455,18 @@ class HomogeneousMatrix:
             >>> matrix.transform(position=(1.0, 0.0, 0.0), rotation=(1.0, 0.0, 0.0, 0.0))
             (array([2., 0., 0.]), Quaternion(1.0, 0.0, 0.0, 0.0))
             # specify homogeneous matrix
-            >>> other = HomogeneousMatrix((-1.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0), src=FrameID.MAP, dst=FrameID.BASE_LINK)
-            >>> matrix.transform(other).matrix
-            array([[1., 0., 0., 0.],
-                   [0., 1., 0., 0.],
-                   [0., 0., 1., 0.],
-                   [0., 0., 0., 1.]])
-            >>> matrix.transform(matrix=other).matrix
-            array([[1., 0., 0., 0.],
-                   [0., 1., 0., 0.],
-                   [0., 0., 1., 0.],
-                   [0., 0., 0., 1.]])
+            >>> ego2map = HomogeneousMatrix((1.0, 1.0, 1.0), (1.0, 0.0, 0.0, 0.0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
+            >>> cam2ego = HomogeneousMatrix((2.0, 2.0, 2.0), (1.0, 0.0, 0.0, 0.0), src=FrameID.CAM_FRONT, dst=FrameID.BASE_LINK)
+            >>> cam2map = cam2ego.transform(ego2map)
+            >>> cam2map.matrix
+                array([[1., 0., 0., 3.],
+                       [0., 1., 0., 3.],
+                       [0., 0., 1., 3.],
+                       [0., 0., 0., 1.]])
+            >>> cam2map.src
+                <FrameID.CAM_FRONT: 'cam_front'>
+            >>> cam2map.dst
+                <FrameID.MAP: 'map'>
         """
         s = len(args)
         if s == 0:
