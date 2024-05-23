@@ -29,6 +29,9 @@ from numpy.typing import NDArray
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
 from nuscenes.utils.data_classes import Box
+from PIL import Image
+from pyquaternion.quaternion import Quaternion
+
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import Label
 from perception_eval.common.label import LabelConverter
@@ -41,8 +44,6 @@ from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
 from perception_eval.common.transform import HomogeneousMatrix
-from PIL import Image
-from pyquaternion.quaternion import Quaternion
 
 from . import dataset
 
@@ -268,21 +269,27 @@ def _get_transforms(nusc: NuScenes, sample_data_token: str) -> List[HomogeneousM
     ego2map = HomogeneousMatrix(ego_position, ego_rotation, src=FrameID.BASE_LINK, dst=FrameID.MAP)
 
     matrices = [ego2map]
+    tlr_avg_pos: List[NDArray] = []
+    tlr_avg_quat: List[Quaternion] = []
     for cs_record in nusc.calibrated_sensor:
         sensor_position = cs_record["translation"]
         sensor_rotation = Quaternion(cs_record["rotation"])
         sensor_record = nusc.get("sensor", cs_record["sensor_token"])
         sensor_frame_id = FrameID.from_value(sensor_record["channel"])
-        ego2sensor = HomogeneousMatrix(sensor_position, sensor_rotation, src=FrameID.BASE_LINK, dst=sensor_frame_id)
-        sensor2map = ego2sensor.inv().dot(ego2map)
-        matrices.extend((ego2sensor, sensor2map))
-        # TODO: A transform BASE_LINK->TRAFFIC_LIGHT would be overwritten if the dataset contains multiple TLR cameras.
+        sensor2ego = HomogeneousMatrix(sensor_position, sensor_rotation, src=sensor_frame_id, dst=FrameID.BASE_LINK)
+        sensor2map = ego2map.dot(sensor2ego)
+        matrices.extend((sensor2ego, sensor2map))
         if "CAM_TRAFFIC_LIGHT" in sensor_frame_id.value.upper():
-            ego2tlr = HomogeneousMatrix(
-                sensor_position, sensor_rotation, src=FrameID.BASE_LINK, dst=FrameID.TRAFFIC_LIGHT
-            )
-            tlr2map = ego2tlr.inv().dot(ego2map)
-            matrices.extend((ego2tlr, tlr2map))
+            tlr_avg_pos.append(sensor_position)
+            tlr_avg_quat.append(sensor_rotation)
+
+    # NOTE: Average positions and rotations are used for matrices of cameras related to TLR.
+    if len(tlr_avg_pos) > 0 and len(tlr_avg_quat) > 0:
+        tlr_cam_pos: NDArray = np.mean(tlr_avg_pos, axis=0)
+        tlr_cam_rot: Quaternion = sum(tlr_avg_quat) / sum(tlr_avg_quat).norm
+        tlr2ego = HomogeneousMatrix(tlr_cam_pos, tlr_cam_rot, src=FrameID.TRAFFIC_LIGHT, dst=FrameID.BASE_LINK)
+        tlr2map = ego2map.dot(tlr2ego)
+        matrices.extend((tlr2ego, tlr2map))
 
     return matrices
 

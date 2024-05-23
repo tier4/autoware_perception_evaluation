@@ -1,11 +1,12 @@
 import numpy as np
+
 from perception_eval.common.schema import FrameID
 from perception_eval.common.transform import HomogeneousMatrix
 from perception_eval.common.transform import TransformDict
 from perception_eval.common.transform import TransformKey
 
 
-def test_homogeneous_matrix():
+def test_homogeneous_matrix_transform():
     ego2map = HomogeneousMatrix((1, 0, 0), (1, 0, 0, 0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
     pos1 = ego2map.transform((1, 0, 0))
     assert np.allclose(pos1, np.array((2, 0, 0)))
@@ -31,6 +32,31 @@ def test_homogeneous_matrix():
     assert np.allclose(mat2.matrix, np.eye(4))
     assert np.allclose(mat2.position, np.zeros(3))
     assert np.allclose(mat2.rotation_matrix, np.eye(3))
+
+
+def test_homogenous_matrix_dot():
+    ego2map = HomogeneousMatrix((1, 1, 1), (1, 0, 0, 0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
+    cam2ego = HomogeneousMatrix((2, 2, 2), (1, 0, 0, 0), src=FrameID.CAM_FRONT, dst=FrameID.BASE_LINK)
+    cam2map = ego2map.dot(cam2ego)
+    assert np.allclose(
+        cam2map.matrix,
+        np.array(
+            [
+                [1, 0, 0, 3],
+                [0, 1, 0, 3],
+                [0, 0, 1, 3],
+                [0, 0, 0, 1],
+            ],
+        ),
+    )
+    assert np.allclose(cam2map.position, np.array([3, 3, 3]))  # cam position in map coords
+    assert np.allclose(cam2map.rotation, np.eye(3))  # cam rotation matrix in map coords
+    assert cam2map.src == FrameID.CAM_FRONT
+    assert cam2map.dst == FrameID.MAP
+
+
+def test_homogenous_matrix_inv():
+    pass
 
 
 def test_transform_dict():

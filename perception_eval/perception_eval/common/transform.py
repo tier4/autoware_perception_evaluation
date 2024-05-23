@@ -333,18 +333,29 @@ class HomogeneousMatrix:
 
         Raises:
         -------
-            ValueError: Expecting `self.dst` and `other.src` frame id is same.
+            ValueError: Expecting `self.src` and `other.dst` frame id is same.
 
         Returns:
         --------
             HomogeneousMatrix: Result of dot product.
+
+        Examples:
+        ---------
+            >>> ego2map = HomogeneousMatrix((1.0, 1.0, 1.0), (1.0, 0.0, 0.0, 0.0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
+            >>> cam2ego = HomogeneousMatrix((2.0, 2.0, 2.0), (1.0, 0.0, 0.0, 0.0), src=FrameID.CAM_FRONT, dst=FrameID.BASE_LINK)
+            >>> cam2map = ego2map.dot(cam2ego)
+            >>> cam2map.matrix
+                array([[1., 0., 0., 3.],
+                       [0., 1., 0., 3.],
+                       [0., 0., 1., 3.],
+                       [0., 0., 0., 1.]])
         """
-        if self.dst != other.src:
-            raise ValueError(f"self.dst != other.src: self.dst={self.dst}, other.src={other.src}")
+        if self.src != other.dst:
+            raise ValueError(f"self.src != other.dst: self.src={self.src}, other.dst={other.dst}")
 
         ret_mat = self.matrix.dot(other.matrix)
         position, rotation = self.__extract_position_and_rotation_from_matrix(ret_mat)
-        return HomogeneousMatrix(position, rotation, src=self.src, dst=other.dst)
+        return HomogeneousMatrix(position, rotation, src=other.src, dst=self.dst)
 
     def inv(self) -> HomogeneousMatrix:
         """Return an inverse matrix.
