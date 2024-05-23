@@ -29,9 +29,6 @@ from numpy.typing import NDArray
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
 from nuscenes.utils.data_classes import Box
-from PIL import Image
-from pyquaternion.quaternion import Quaternion
-
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import Label
 from perception_eval.common.label import LabelConverter
@@ -44,6 +41,8 @@ from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
 from perception_eval.common.transform import HomogeneousMatrix
+from PIL import Image
+from pyquaternion.quaternion import Quaternion
 
 from . import dataset
 
