@@ -20,7 +20,6 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
-
 from perception_eval.common import distance_objects
 from perception_eval.common import distance_objects_bev
 from perception_eval.common import DynamicObject
