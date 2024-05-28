@@ -15,16 +15,21 @@
 from enum import Enum
 import pprint
 import random
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
 
+import numpy as np
+from numpy.typing import ArrayLike
+from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import Label
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.schema import FrameID
 from perception_eval.common.shape import Shape
 from perception_eval.common.transform import TransformDict
 from pyquaternion.quaternion import Quaternion
@@ -263,3 +268,21 @@ def get_objects_with_difference2d(
             )
         )
     return output_objects
+
+
+def get_random_position_map(frame_ground_truth: FrameGroundTruth) -> Dict[str, ArrayLike]:
+    """Return a container storing positions of corresponding uuids randomly.
+
+    The positions are computed as ego position + random * 100.0.
+
+    Args:
+        frame_ground_truth (FrameGroundTruth):
+
+    Returns:
+        Dict[str, ArrayLike]: Position map.
+    """
+    output: Dict[str, ArrayLike] = {}
+    ego2map = frame_ground_truth.transforms[(FrameID.BASE_LINK, FrameID.MAP)]
+    for obj in frame_ground_truth.objects:
+        output[obj.uuid] = np.random.rand(3) * 100.0 + ego2map.position
+    return output

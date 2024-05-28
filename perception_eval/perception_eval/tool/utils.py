@@ -462,13 +462,30 @@ def get_aligned_timestamp(df: pd.DataFrame) -> np.ndarray:
 
 def filter_frame_by_distance(
     frame: PerceptionFrameResult,
-    min_distance: Optional[float],
-    max_distance: Optional[float],
+    min_distance: Optional[float] = None,
+    max_distance: Optional[float] = None,
 ) -> PerceptionFrameResult:
+    """Filter frame results by distance.
+
+    Args:
+        frame (PerceptionFrameResult): Frame result.
+        min_distance (Optional[float], optional): Min distance range. Defaults to None.
+        max_distance (Optional[float], optional): Max distance range. Defaults to None.
+
+    Returns:
+        PerceptionFrameResult: Filtered frame results.
+    """
     ret_frame = deepcopy(frame)
 
-    min_distance_list = [min_distance] * len(ret_frame.target_labels)
-    max_distance_list = [max_distance] * len(ret_frame.target_labels)
+    if min_distance is not None:
+        min_distance_list = [min_distance] * len(ret_frame.target_labels)
+    else:
+        min_distance_list = None
+
+    if max_distance is not None:
+        max_distance_list = [max_distance] * len(ret_frame.target_labels)
+    else:
+        max_distance_list = None
 
     ret_frame.object_results = filter_object_results(
         ret_frame.object_results,

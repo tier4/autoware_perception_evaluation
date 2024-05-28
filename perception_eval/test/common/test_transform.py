@@ -5,7 +5,7 @@ from perception_eval.common.transform import TransformDict
 from perception_eval.common.transform import TransformKey
 
 
-def test_homogeneous_matrix():
+def test_homogeneous_matrix_transform():
     ego2map = HomogeneousMatrix((1, 0, 0), (1, 0, 0, 0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
     pos1 = ego2map.transform((1, 0, 0))
     assert np.allclose(pos1, np.array((2, 0, 0)))

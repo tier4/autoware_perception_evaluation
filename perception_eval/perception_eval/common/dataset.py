@@ -32,7 +32,6 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.geometry import interpolate_homogeneous_matrix
 from perception_eval.common.geometry import interpolate_object_list
 from perception_eval.common.label import LabelConverter
-from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.common.transform import HomogeneousMatrix
 from perception_eval.common.transform import TransformDict
@@ -48,7 +47,7 @@ class FrameGroundTruth:
         self,
         unix_time: int,
         frame_name: str,
-        objects: List[DynamicObject],
+        objects: List[ObjectType],
         transforms: TransformDictArgType = None,
         raw_data: Optional[Dict[FrameID, NDArray]] = None,
     ) -> None:
@@ -56,7 +55,7 @@ class FrameGroundTruth:
         Args:
             unix_time (int): Current unix time.
             frame_name (str): The file name
-            objects (list[DynamicObject]): Ground truth objects.
+            objects (list[ObjectType]): Ground truth objects.
             transforms (TransformDict | None, optional): 4x4 transform matrices. Defaults to None.
             raw_data (dict[FrameID, NDArray] | None, optional): Raw data for each sensor. Defaults to None.
         """
