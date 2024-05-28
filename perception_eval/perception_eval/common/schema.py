@@ -48,7 +48,7 @@ class FrameID(Enum):
     CAM_TRAFFIC_LIGHT_FAR = "cam_traffic_light_far"
 
     # Integrated TLR camera frame
-    TRAFFIC_LIGHT = "traffic_light"
+    CAM_TRAFFIC_LIGHT = "cam_traffic_light"
 
     def __hash__(self) -> int:
         return hash(self.value)

@@ -20,6 +20,7 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
+
 from perception_eval.common import distance_objects
 from perception_eval.common import distance_objects_bev
 from perception_eval.common import DynamicObject
@@ -396,7 +397,9 @@ def _get_object_results_with_id(
                 ground_truth_objects_.remove(gt_object)
 
     # when there are rest of estimated objects, they all are FP.
-    if len(estimated_objects_) > 0 and not any([est.frame_id == FrameID.TRAFFIC_LIGHT for est in estimated_objects_]):
+    if len(estimated_objects_) > 0 and not any(
+        [est.frame_id == FrameID.CAM_TRAFFIC_LIGHT for est in estimated_objects_]
+    ):
         object_results += _get_fp_object_results(estimated_objects_)
 
     return object_results

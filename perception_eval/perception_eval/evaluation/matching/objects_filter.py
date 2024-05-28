@@ -553,8 +553,6 @@ def _is_target_object(
     else:
         position_ = bev_distance_ = None
 
-    print(f"{position_=}, {bev_distance_=}")
-
     if position_ is not None:
         if is_target and max_x_position_list is not None:
             max_x_position = (

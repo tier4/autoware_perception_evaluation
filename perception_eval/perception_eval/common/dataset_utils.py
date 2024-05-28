@@ -286,7 +286,7 @@ def _get_transforms(nusc: NuScenes, sample_data_token: str) -> List[HomogeneousM
     if len(tlr_avg_pos) > 0 and len(tlr_avg_quat) > 0:
         tlr_cam_pos: NDArray = np.mean(tlr_avg_pos, axis=0)
         tlr_cam_rot: Quaternion = sum(tlr_avg_quat) / sum(tlr_avg_quat).norm
-        tlr2ego = HomogeneousMatrix(tlr_cam_pos, tlr_cam_rot, src=FrameID.TRAFFIC_LIGHT, dst=FrameID.BASE_LINK)
+        tlr2ego = HomogeneousMatrix(tlr_cam_pos, tlr_cam_rot, src=FrameID.CAM_TRAFFIC_LIGHT, dst=FrameID.BASE_LINK)
         tlr2map = ego2map.dot(tlr2ego)
         matrices.extend((tlr2ego, tlr2map))
 
@@ -575,7 +575,7 @@ def _merge_duplicated_traffic_lights(
     objects: List[DynamicObject2D],
     uuids: List[str],
 ) -> List[DynamicObject2D]:
-    """Merge traffic light objects which have same uuids and set its frame id as `FrameID.TRAFFIC_LIGHT`.
+    """Merge traffic light objects which have same uuids and set its frame id as `FrameID.CAM_TRAFFIC_LIGHT`.
 
     Args:
         unix_time (int): Current unix timestamp.
@@ -604,7 +604,7 @@ def _merge_duplicated_traffic_lights(
             assert semantic_label.label != TrafficLightLabel.UNKNOWN
         merged_object = DynamicObject2D(
             unix_time=unix_time,
-            frame_id=FrameID.TRAFFIC_LIGHT,
+            frame_id=FrameID.CAM_TRAFFIC_LIGHT,
             semantic_score=1.0,
             semantic_label=semantic_label,
             roi=None,
