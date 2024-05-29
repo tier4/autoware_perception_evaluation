@@ -17,6 +17,7 @@ import logging
 import tempfile
 from typing import List
 
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import PerceptionFrameResult
@@ -95,7 +96,10 @@ class PerceptionLSimMoc:
         estimated_objects: List[DynamicObject],
     ) -> None:
         # 現frameに対応するGround truthを取得
-        ground_truth_now_frame = self.evaluator.get_ground_truth_now_frame(unix_time)
+        interpolate = not self.evaluator.evaluation_task == EvaluationTask.DETECTION
+        ground_truth_now_frame = self.evaluator.get_ground_truth_now_frame(
+            unix_time, interpolate_ground_truth=interpolate
+        )
 
         # [Option] ROS側でやる（Map情報・Planning結果を用いる）UC評価objectを選別
         # ros_critical_ground_truth_objects : List[DynamicObject] = custom_critical_object_filter(
