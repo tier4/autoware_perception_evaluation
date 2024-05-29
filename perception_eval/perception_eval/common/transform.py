@@ -244,6 +244,10 @@ class HomogeneousMatrix:
         return cls(position, rotation, src, dst)
 
     @property
+    def shape(self):
+        return self.matrix.shape
+
+    @property
     def yaw_pitch_roll(self) -> Tuple[float, float, float]:
         """Get the equivalent (yaw, pitch, roll) angles in radius.
 

@@ -361,7 +361,11 @@ def interpolate_ground_truth_frames(
     before_frame_ego2map = before_frame.transforms[ego2map_key]
     after_frame_ego2map = after_frame.transforms[ego2map_key]
     ego2map_matrix = interpolate_homogeneous_matrix(
-        before_frame_ego2map, after_frame_ego2map, before_frame.unix_time, after_frame.unix_time, unix_time
+        before_frame_ego2map.matrix,
+        after_frame_ego2map.matrix,
+        before_frame.unix_time,
+        after_frame.unix_time,
+        unix_time,
     )
     ego2map = HomogeneousMatrix.from_matrix(ego2map_matrix, src=FrameID.BASE_LINK, dst=FrameID.MAP)
 
