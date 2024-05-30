@@ -16,6 +16,7 @@ from abc import ABC
 from abc import abstractmethod
 from enum import Enum
 import math
+from typing import Callable
 from typing import Optional
 from typing import Tuple
 
@@ -25,7 +26,9 @@ from perception_eval.common import distance_points_bev
 from perception_eval.common import ObjectType
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import get_point_left_right
+from perception_eval.common.point import get_point_left_right_index
 from perception_eval.common.point import polygon_to_list
+from perception_eval.common.shape import ShapeType
 from shapely.geometry import Polygon
 
 
@@ -246,18 +249,31 @@ class PlaneDistanceMatching(MatchingMethod):
         gt_footprint: Polygon = ground_truth_object.get_footprint()
         gt_corners = np.array(polygon_to_list(gt_footprint))
 
-        # Calculate min distance from ego vehicle
-        # TODO: for objects with respect to map coords need to transform to base link coords
-        gt_distances: np.ndarray = np.linalg.norm(gt_corners[:, :2], axis=1)
-        sort_idx = np.argsort(gt_distances)
+        if (
+            estimated_object.state.shape_type == ShapeType.POLYGON
+            or ground_truth_object.state.shape_type == ShapeType.POLYGON
+        ):
+            # Sort by 2d distance
+            lambda_func: Callable[[Tuple[float, float, float]], float] = lambda x: math.hypot(x[0], x[1])
+            est_corners.sort(key=lambda_func)
+            gt_corners.sort(key=lambda_func)
 
-        gt_corners = gt_corners[sort_idx]
-        est_corners = est_corners[sort_idx]
+            est_left_point, est_right_point = get_point_left_right(est_corners[0], est_corners[1])
+            gt_left_point, gt_right_point = get_point_left_right(gt_corners[0], gt_corners[1])
+        else:
+            # Calculate min distance from ego vehicle
+            # TODO: for objects with respect to map coords need to transform to base link coords
+            gt_distances: np.ndarray = np.linalg.norm(gt_corners[:, :2], axis=1)
+            sort_idx = np.argsort(gt_distances)
 
-        est_plane_points = est_corners[:2].tolist()
-        gt_plane_points = gt_corners[:2].tolist()
-        est_left_point, est_right_point = get_point_left_right(est_plane_points[0], est_plane_points[1])
-        gt_left_point, gt_right_point = get_point_left_right(gt_plane_points[0], gt_plane_points[1])
+            gt_corners = gt_corners[sort_idx]
+            est_corners = est_corners[sort_idx]
+
+            est_plane_points = est_corners[:2].tolist()
+            gt_plane_points = gt_corners[:2].tolist()
+            left_idx, right_idx = get_point_left_right_index(gt_plane_points[0], gt_plane_points[1])
+            gt_left_point, gt_right_point = gt_plane_points[left_idx], gt_plane_points[right_idx]
+            est_left_point, est_right_point = est_plane_points[left_idx], est_plane_points[right_idx]
 
         distance_left_point: float = distance_points_bev(est_left_point, gt_left_point)
         distance_right_point: float = distance_points_bev(est_right_point, gt_right_point)

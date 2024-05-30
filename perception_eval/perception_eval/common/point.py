@@ -165,7 +165,31 @@ def get_point_left_right(
     if not (len(point_1) > 2 and len(point_2) > 2):
         raise RuntimeError(f"The length of a point is {len(point_1)} and {len(point_2)}, they must be greater than 2.")
     cross_product = point_1[0] * point_2[1] - point_1[1] * point_2[0]
+    # NOTE: Guard edge cases like cross_product=-5.551115123125784e-17
+    cross_product = round(cross_product, 10)
     if cross_product < 0:
         return (point_1, point_2)
     else:
         return (point_2, point_1)
+
+
+def get_point_left_right_index(
+    point_1: Tuple[float, float, float],
+    point_2: Tuple[float, float, float],
+) -> Tuple[Tuple[float, float, float]]:
+    """Examine the 2D geometric location of a point1 and a point2.
+    Args:
+        point_1 (Tuple[float, float, float]): A point
+        point_2 (Tuple[float, float, float]): A point
+    Returns:
+        Tuple[int, int]: Returns indices [left_point, right_point].
+    """
+    if not (len(point_1) > 2 and len(point_2) > 2):
+        raise RuntimeError(f"The length of a point is {len(point_1)} and {len(point_2)}, they must be greater than 2.")
+    cross_product = point_1[0] * point_2[1] - point_1[1] * point_2[0]
+    # NOTE: Guard edge cases like cross_product=-5.551115123125784e-17
+    cross_product = round(cross_product, 10)
+    if cross_product < 0:
+        return (0, 1)
+    else:
+        return (1, 0)
