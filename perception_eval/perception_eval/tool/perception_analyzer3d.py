@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 import logging
 from typing import Any
 from typing import Dict
@@ -24,15 +25,17 @@ from typing import Union
 import numpy as np
 import pandas as pd
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
+from perception_eval.common.transform import TransformDict
+from perception_eval.common.transform import TransformKey
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
-from perception_eval.util.math import get_pose_transform_matrix
-from perception_eval.util.math import rotation_matrix_to_euler
 import yaml
 
 from .perception_analyzer_base import PerceptionAnalyzerBase
 from .utils import extract_area_results
+from .utils import filter_frame_by_distance
 from .utils import generate_area_points
 from .utils import get_area_idx
 from .utils import get_metrics_info
@@ -153,6 +156,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             "uuid",
             "num_points",
             "status",
+            "distance",
             "area",
             "frame",
             "scene",
@@ -171,6 +175,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             "vy",
             "nn_point1",
             "nn_point2",
+            "nn_plane",
+            "distance",
         ]
 
     @property
@@ -190,7 +196,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         object_result: Union[DynamicObject, DynamicObjectWithPerceptionResult],
         status: MatchingStatus,
         frame_num: int,
-        ego2map: Optional[np.ndarray] = None,
+        transforms: Optional[TransformDict] = None,
     ) -> Dict[str, Dict[str, Any]]:
         """Format objects to dict.
 
@@ -198,7 +204,6 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             object_results (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): List of objects or object results.
             status (MatchingStatus): Object's status.
             frame_num (int): Number of frame.
-            ego2map (Optional[np.ndarray]): Matrix to transform from ego coords to map coords. Defaults to None.
 
         Returns:
             Dict[str, Dict[str, Any]]
@@ -233,7 +238,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             object_result=object_result,
             upper_rights=self.upper_rights,
             bottom_lefts=self.bottom_lefts,
-            ego2map=ego2map,
+            transforms=transforms,
         )
 
         if gt:
@@ -242,17 +247,18 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             else:
                 gt_vx, gt_vy = np.nan, np.nan
 
-            if self.config.frame_ids[0] == "map":
-                src: np.ndarray = get_pose_transform_matrix(
-                    position=gt.state.position,
-                    rotation=gt.state.orientation.rotation_matrix,
-                )
-                dst: np.ndarray = np.linalg.inv(ego2map).dot(src)
-                gt_x, gt_y = dst[:2, 3]
-                gt_yaw = rotation_matrix_to_euler(dst[:3, :3])[-1].item()
-            else:
-                gt_x, gt_y = gt.state.position[:2]
-                gt_yaw = gt.state.orientation.yaw_pitch_roll[0]
+            transform_key = TransformKey(gt.frame_id, FrameID.BASE_LINK)
+            gt_position, gt_rotation = transforms.transform(
+                transform_key,
+                gt.state.position,
+                gt.state.orientation,
+            )
+            gt_x, gt_y, _ = gt_position
+            gt_yaw, _, _ = gt_rotation.yaw_pitch_roll
+            if gt_point1 is not None:
+                gt_point1 = transforms.transform(transform_key, gt_point1)
+            if gt_point2 is not None:
+                gt_point2 = transforms.transform(transform_key, gt_point2)
 
             gt_w, gt_l, gt_h = gt.state.size
 
@@ -263,7 +269,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 y=gt_y,
                 width=gt_w,
                 length=gt_l,
-                hight=gt_h,
+                height=gt_h,
                 yaw=gt_yaw,
                 vx=gt_vx,
                 vy=gt_vy,
@@ -275,7 +281,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 confidence=gt.semantic_score,
                 uuid=gt.uuid,
                 num_points=gt.pointcloud_num,
-                status=status,
+                status=str(status),
+                distance=np.linalg.norm([gt_x, gt_y]).item(),
                 area=area,
                 frame=frame_num,
                 scene=self.num_scene,
@@ -289,17 +296,18 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             else:
                 est_vx, est_vy = np.nan, np.nan
 
-            if self.config.frame_ids[0] == "map":
-                src: np.ndarray = get_pose_transform_matrix(
-                    position=estimation.state.position,
-                    rotation=estimation.state.orientation.rotation_matrix,
-                )
-                dst: np.ndarray = np.linalg.inv(ego2map).dot(src)
-                est_x, est_y = dst[:2, 3]
-                est_yaw = rotation_matrix_to_euler(dst[:3, :3])[-1].item()
-            else:
-                est_x, est_y = estimation.state.position[:2]
-                est_yaw = estimation.state.orientation.yaw_pitch_roll[0]
+            transform_key = TransformKey(estimation.frame_id, FrameID.BASE_LINK)
+            est_position, est_rotation = transforms.transform(
+                transform_key,
+                estimation.state.position,
+                estimation.state.orientation,
+            )
+            est_x, est_y, _ = est_position
+            est_yaw, _, _ = est_rotation.yaw_pitch_roll
+            if est_point1 is not None:
+                est_point1 = transforms.transform(transform_key, est_point1)
+            if est_point2 is not None:
+                est_point2 = transforms.transform(transform_key, est_point2)
 
             est_w, est_l, est_h = estimation.state.size
 
@@ -322,7 +330,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 confidence=estimation.semantic_score,
                 uuid=estimation.uuid,
                 num_points=np.nan,
-                status=status,
+                status=str(status),
+                distance=np.linalg.norm([est_x, est_y]).item(),
                 area=area,
                 frame=frame_num,
                 scene=self.num_scene,
@@ -331,6 +340,60 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             est_ret = {k: None for k in self.keys()}
 
         return {"ground_truth": gt_ret, "estimation": est_ret}
+
+    def filter_by_distance(self, distance: Iterable[float], df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        """Filter DataFrame by min, max distances.
+
+        Args:
+            distance (Iterable[float]): Range of distance ordering (min, max). The range must be min < max.
+            df (Optional[pd.DataFrame], optional): Target DataFrame. If `None`, `self.df` will be used. Defaults to None.
+
+        Returns:
+            pd.DataFrame: Filtered DataFrame.
+        """
+        assert len(distance) == 2, "distance must be (min, max)"
+        assert distance[0] < distance[1], f"distance must be (min, max) and min < max, but got {distance}"
+
+        if df is None:
+            df = self.df
+
+        mask = np.array(
+            [
+                [np.logical_and(distance[0] <= group["distance"], group["distance"] < distance[1]).any()] * 2
+                for _, group in df.groupby(level=0)
+            ]
+        ).reshape(-1)
+        return df[mask]
+
+    def analyze(
+        self,
+        scene: Optional[int] = None,
+        distance: Optional[Iterable[float]] = None,
+        area: Optional[int] = None,
+        **kwargs,
+    ) -> np.Tuple[pd.DataFrame | None]:
+        if scene is not None:
+            kwargs.update({"scene": scene})
+        if area is not None:
+            kwargs.update({"area": area})
+
+        df: pd.DataFrame = self.get(**kwargs)
+        if distance is not None:
+            df = self.filter_by_distance(distance, df)
+
+        if len(df) > 0:
+            ratio_df = self.summarize_ratio(df=df)
+            error_df = self.summarize_error(df=df)
+            if "scene" in kwargs.keys():
+                scene = kwargs.pop("scene")
+            else:
+                scene = None
+            metrics_df = self.summarize_score(scene=scene, distance=distance, area=area)
+            score_df = pd.concat([ratio_df, metrics_df], axis=1)
+            return score_df, error_df
+        else:
+            logging.warning("There is no DataFrame to be able to analyze.")
+            return None, None
 
     def summarize_error(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """Calculate mean, sigma, RMS, max and min of error.
@@ -371,13 +434,13 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             if label == "ALL":
                 df_ = df
             else:
-                tp_gt_df = self.get_ground_truth(status="TP", label=label)
-                tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
-                if len(tp_index) == 0:
-                    logging.warning(f"There is no TP object for {label}.")
+                gt_df = self.get_ground_truth(df=df, status=["TP", "FP", "TN"], label=label)
+                index = pd.unique(gt_df.index.get_level_values(level=0))
+                if len(index) == 0:
+                    logging.warning(f"There is no TP/FP/TN object for {label}.")
                     df_ = pd.DataFrame()
                 else:
-                    df_ = self.df.loc[tp_index]
+                    df_ = self.df.loc[index]
 
             data["x"] = _summarize("x", df_)
             data["y"] = _summarize("y", df_)
@@ -386,7 +449,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             data["width"] = _summarize("width", df_)
             data["vx"] = _summarize("vx", df_)
             data["vy"] = _summarize("vy", df_)
-            data["nn_plane"] = _summarize(["nn_point1", "nn_point2"], df_)
+            data["nn_plane"] = _summarize("nn_plane", df_)
             all_data[str(label)] = data
 
         ret_df = pd.DataFrame.from_dict(
@@ -399,14 +462,17 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
     def summarize_score(
         self,
         scene: Optional[Union[int, List[int]]] = None,
+        distance: Optional[Iterable[float]] = None,
         area: Optional[int] = None,
     ) -> pd.DataFrame:
         """Summarize MetricsScore.
 
         Args:
-            area (Optional[int]): Number of area. If it is not specified, calculate metrics score for all areas.
-                Defaults to None.
             scene (Optional[int]): Number of scene. If it is not specified, calculate metrics score for all scenes.
+                Defaults to None.
+            min_distance (Optional[float]): Min distance range. Defaults to None.
+            max_distance (Optional[float]): Max distance range. Defaults to None.
+            area (Optional[int]): Number of area. If it is not specified, calculate metrics score for all areas.
                 Defaults to None.
 
         Returns:
@@ -417,6 +483,11 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         else:
             scene: List[int] = [scene] if isinstance(scene, int) else scene
             frame_results = [x for k, v in self.frame_results.items() if k in scene for x in v]
+
+        if distance is not None:
+            assert isinstance(distance, Iterable) and len(distance) == 2
+            min_distance, max_distance = distance
+            frame_results = [filter_frame_by_distance(frame, min_distance, max_distance) for frame in frame_results]
 
         if area is not None:
             frame_results = extract_area_results(
@@ -444,7 +515,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
         Args:
             uuid (str): Target object's uuid.
-            columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "vx", "vy"].
+            columns (Union[str, List[str]]): Target column name.
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "distance"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             status (Optional[int]): Target status TP/FP/TN/FN. If not specified, plot all status. Defaults to None.
@@ -453,7 +525,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().plot_state(
             uuid=uuid,
@@ -469,6 +541,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         columns: Union[str, List[str]],
         mode: PlotAxes = PlotAxes.TIME,
         heatmap: bool = False,
+        project: bool = False,
         show: bool = False,
         bins: int = 50,
         **kwargs,
@@ -476,10 +549,13 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """Plot states for each time/distance estimated and GT object in TP.
 
         Args:
-            columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
+            columns (Union[str, List[str]]): Target column name.
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             heatmap (bool): Whether overlay heatmap. Defaults to False.
+            project (bool): Whether to project heatmap on 2D. This argument is only used for heatmap plot.
+                Defaults to False.
             show (bool): Whether show the plotted figure. Defaults to False.
             bins (int): Bin size to plot heatmap. Defaults to 50.
             **kwargs: Specify if you want to plot for the specific conditions.
@@ -487,9 +563,11 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
-        return super().plot_error(columns=columns, mode=mode, heatmap=heatmap, show=show, bins=bins, **kwargs)
+        return super().plot_error(
+            columns=columns, mode=mode, heatmap=heatmap, project=project, show=show, bins=bins, **kwargs
+        )
 
     def box_plot(
         self,
@@ -501,12 +579,12 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
         Args:
             column (Union[str, List[str]]): Target column name.
-                Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"].
                 If you want plot multiple column for one image, use List[str].
             show (bool): Whether show the plotted figure. Defaults to False.
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().box_plot(columns=columns, show=show, **kwargs)

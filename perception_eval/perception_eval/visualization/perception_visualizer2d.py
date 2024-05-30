@@ -31,6 +31,7 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.object2d import DynamicObject2D
+from perception_eval.common.schema import FrameID
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation import PerceptionFrameResult
@@ -115,10 +116,10 @@ class PerceptionVisualizer2D:
         self.label_type: Union[AutowareLabel, TrafficLightLabel] = self.__config.label_converter.label_type
 
         if self.label_type == TrafficLightLabel:
-            self.camera_names: Tuple[str] = ("cam_traffic_light_near", "cam_traffic_light_far")
+            cameras = ("cam_traffic_light_near", "cam_traffic_light_far")
             fig, axes = plt.subplots(1, 2, figsize=self.__figsize, gridspec_kw=dict(wspace=0))
         elif self.label_type == AutowareLabel:
-            self.camera_names: Tuple[str] = (
+            cameras = (
                 "cam_front_left",
                 "cam_front",
                 "cam_front_right",
@@ -129,6 +130,9 @@ class PerceptionVisualizer2D:
             fig, axes = plt.subplots(2, 3, figsize=self.__figsize, gridspec_kw=dict(wspace=0))
         else:
             raise TypeError(f"Unexpected label type: {self.label_type}")
+
+        self.cameras = [FrameID.from_value(name) for name in cameras]
+
         return fig, axes
 
     @property
@@ -191,8 +195,8 @@ class PerceptionVisualizer2D:
         self.__figure.set_figheight(height)
         self.__figsize = (width, height)
 
-    def __get_axes_idx(self, key: str) -> Tuple[int, int]:
-        i: int = self.camera_names.index(key)
+    def __get_axes_idx(self, key: FrameID) -> Tuple[int, int]:
+        i: int = self.cameras.index(key)
         row, col = (0, i) if self.label_type == TrafficLightLabel else (i // 3, i - (3 * (i // 3)))
         return row, col
 
@@ -220,22 +224,23 @@ class PerceptionVisualizer2D:
         if axes is None:
             axes = self.__axes
 
-        if frame_result.frame_ground_truth.raw_data is None:
+        raw_data = frame_result.frame_ground_truth.raw_data
+        if raw_data is None:
             raise RuntimeError("`raw_data`: must be loaded.")
         else:
-            for i, camera_name in enumerate(self.camera_names):
-                img: Optional[np.ndarray] = frame_result.frame_ground_truth.raw_data.get(camera_name)
+            for i, camera in enumerate(self.cameras):
+                img: Optional[np.ndarray] = raw_data.get(camera)
                 if self.label_type == TrafficLightLabel:
                     if img is not None:
                         axes[i].imshow(img)
                     axes[i].set_axis_off()
-                    axes[i].set_title(f"{camera_name}")
+                    axes[i].set_title(f"{camera}")
                 else:
                     row, col = (i // 3, i - (3 * (i // 3)))
                     if img is not None:
                         axes[row, col].imshow(img)
                     axes[row, col].set_axis_off()
-                    axes[row, col].set_title(f"{camera_name}")
+                    axes[row, col].set_title(f"{camera}")
 
         frame_number: str = frame_result.frame_ground_truth.frame_name
         self.__figure.suptitle(f"Frame: {frame_number}")
@@ -352,7 +357,7 @@ class PerceptionVisualizer2D:
                 fill=False,
                 label=box_text,
             )
-            row, col = self.__get_axes_idx(object_.frame_id.value)
+            row, col = self.__get_axes_idx(object_.frame_id)
             if self.label_type == TrafficLightLabel:
                 axes[col].add_patch(box)
                 axes[col].text(*box_bottom_left, s=box_text, fontsize="x-small", color=edge_color)

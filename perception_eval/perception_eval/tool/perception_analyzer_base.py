@@ -16,7 +16,9 @@ from __future__ import annotations
 
 from abc import ABC
 from abc import abstractmethod
+from collections.abc import Iterable
 import logging
+from numbers import Number
 import os
 import os.path as osp
 import pickle
@@ -37,7 +39,9 @@ import numpy as np
 import pandas as pd
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
+from perception_eval.common.transform import TransformDict
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation import PerceptionFrameResult
@@ -46,7 +50,6 @@ from perception_eval.evaluation.matching.objects_filter import divide_objects_to
 from perception_eval.evaluation.metrics.metrics import MetricsScore
 from tqdm import tqdm
 
-from .utils import filter_df
 from .utils import get_metrics_info
 from .utils import PlotAxes
 from .utils import setup_axis
@@ -94,7 +97,7 @@ class PerceptionAnalyzerBase(ABC):
         self.__num_scene: int = 0
         self.__num_frame: int = 0
         self.__frame_results: Dict[int, List[PerceptionFrameResult]] = {}
-        self.__ego2maps: Dict[str, Dict[str, np.ndarray]] = {}
+        self.__transforms: Dict[str, Dict[str, TransformDict]] = {}
         self.__df: pd.DataFrame = pd.DataFrame(columns=self.columns)
 
     @classmethod
@@ -177,8 +180,32 @@ class PerceptionAnalyzerBase(ABC):
         Returns:
             pandas.DataFrame: Selected DataFrame.
         """
+        return self.filter(*args, **kwargs)
+
+    def filter(self, *args, **kwargs) -> pd.DataFrame:
+        """
+
+        Returns:
+            pd.DataFrame: Filtered DataFrame.
+        """
         df = self.df
-        return filter_df(df, *args, **kwargs)
+
+        mask = np.ones(len(self), dtype=np.bool8)
+        for key, item in kwargs.items():
+            if item is None:
+                continue
+            elif not isinstance(item, str) and isinstance(item, Iterable):
+                cur_mask = df[key].isin(item)
+            else:
+                cur_mask = df[key] == item
+            mask *= cur_mask.groupby(level=0).any().repeat(2).values
+
+        df = df[mask]
+
+        if args:
+            df = df[list(args)]
+
+        return df
 
     def sortby(
         self,
@@ -239,7 +266,7 @@ class PerceptionAnalyzerBase(ABC):
         Returns:
             int: The number of ground truths.
         """
-        df_ = self.get_ground_truth(**kwargs)
+        df_ = self.get_ground_truth(df=df, **kwargs)
         return len(df_)
 
     def get_num_estimation(self, df: Optional[pd.DataFrame] = None, **kwargs) -> int:
@@ -340,7 +367,10 @@ class PerceptionAnalyzerBase(ABC):
         for key, item in kwargs.items():
             if item is None:
                 continue
-            df = df[df[key] == item]
+            elif not isinstance(item, str) and isinstance(item, Iterable):
+                df = df[df[key].isin(item)]
+            else:
+                df = df[df[key] == item]
         return df
 
     def get_estimation(self, df: Optional[pd.DataFrame] = None, **kwargs) -> pd.DataFrame:
@@ -358,7 +388,10 @@ class PerceptionAnalyzerBase(ABC):
         for key, item in kwargs.items():
             if item is None:
                 continue
-            df = df[df[key] == item]
+            elif not isinstance(item, str) and isinstance(item, Iterable):
+                df = df[df[key].isin(item)]
+            else:
+                df = df[df[key] == item]
 
         return df
 
@@ -404,9 +437,20 @@ class PerceptionAnalyzerBase(ABC):
             scene (int): Number of scene.
             frame (int): Number of frame.
         Returns:
-            numpy.ndarray: In shape (4, 4).
+            np.ndarray: 4x4 transform matrix.
         """
-        return self.__ego2maps[str(scene)][str(frame)]
+        transforms = self.get_transforms(scene, frame)
+        return transforms[(FrameID.BASE_LINK, FrameID.MAP)].matrix
+
+    def get_transforms(self, scene: int, frame: int) -> TransformDict:
+        """Return transform matrix container at the specified scene and frame.
+        Args:
+            scene (int): Number of scene.
+            frame (int): Number of frame.
+        Returns:
+            TransformDict: Transform matrix container.
+        """
+        return self.__transforms[str(scene)][str(frame)]
 
     def __len__(self) -> int:
         return len(self.df)
@@ -448,7 +492,8 @@ class PerceptionAnalyzerBase(ABC):
 
         return metrics_score
 
-    def analyze(self, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
+    @abstractmethod
+    def analyze(self, *args, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
         """Analyze TP/FP/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
 
         Args:
@@ -458,16 +503,71 @@ class PerceptionAnalyzerBase(ABC):
             score_df (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
             error_df (Optional[pandas.DataFrame]): DataFrame of errors.
         """
-        df: pd.DataFrame = self.get(**kwargs)
-        if len(df) > 0:
-            ratio_df = self.summarize_ratio(df=df)
-            error_df = self.summarize_error(df=df)
-            metrics_df = self.summarize_score(scene=kwargs.get("scene"), **kwargs)
-            score_df = pd.concat([ratio_df, metrics_df], axis=1)
-            return score_df, error_df
+        pass
 
-        logging.warning("There is no DataFrame to be able to analyze.")
-        return None, None
+    def add_frame(self, frame: PerceptionFrameResult) -> pd.DataFrame:
+        """Add single frame result and update DataFrame.
+
+        Args:
+            frame (PerceptionFrameResult): Single frame result.
+
+        Returns:
+            pd.DataFrame:
+        """
+        start = len(self.df) // 2
+        concat: List[pd.DataFrame] = []
+        if len(self) > 0:
+            concat.append(self.df)
+        self.__transforms[str(self.num_scene)][str(frame.frame_name)] = frame.frame_ground_truth.transforms
+
+        tp_df = self.format2df(
+            frame.pass_fail_result.tp_object_results,
+            status=MatchingStatus.TP,
+            start=start,
+            frame_num=int(frame.frame_name),
+            transforms=frame.frame_ground_truth.transforms,
+        )
+        if len(tp_df) > 0:
+            start += len(tp_df) // 2
+            concat.append(tp_df)
+
+        fp_df = self.format2df(
+            frame.pass_fail_result.fp_object_results,
+            status=MatchingStatus.FP,
+            start=start,
+            frame_num=int(frame.frame_name),
+            transforms=frame.frame_ground_truth.transforms,
+        )
+        if len(fp_df) > 0:
+            start += len(fp_df) // 2
+            concat.append(fp_df)
+
+        tn_df = self.format2df(
+            frame.pass_fail_result.tn_objects,
+            status=MatchingStatus.TN,
+            start=start,
+            frame_num=int(frame.frame_name),
+            transforms=frame.frame_ground_truth.transforms,
+        )
+        if len(tn_df) > 0:
+            start += len(tn_df) // 2
+            concat.append(tn_df)
+
+        fn_df = self.format2df(
+            frame.pass_fail_result.fn_objects,
+            status=MatchingStatus.FN,
+            start=start,
+            frame_num=int(frame.frame_name),
+            transforms=frame.frame_ground_truth.transforms,
+        )
+        if len(fn_df) > 0:
+            start += len(fn_df) // 2
+            concat.append(fn_df)
+
+        if len(concat) > 0:
+            self.__df = pd.concat(concat)
+
+        return self.__df
 
     def add(self, frame_results: List[PerceptionFrameResult]) -> pd.DataFrame:
         """Add frame results and update DataFrame.
@@ -478,65 +578,13 @@ class PerceptionAnalyzerBase(ABC):
         Returns:
             pandas.DataFrame
         """
-        self.__num_scene += 1
-        start = len(self.df) // 2
-        self.__ego2maps[str(self.num_scene)] = {}
-        for frame in tqdm(frame_results, "Updating DataFrame"):
-            concat: List[pd.DataFrame] = []
-            if len(self) > 0:
-                concat.append(self.df)
-
-            self.__ego2maps[str(self.num_scene)][str(frame.frame_name)] = frame.frame_ground_truth.ego2map
-
-            tp_df = self.format2df(
-                frame.pass_fail_result.tp_object_results,
-                status=MatchingStatus.TP,
-                start=start,
-                frame_num=int(frame.frame_name),
-                ego2map=frame.frame_ground_truth.ego2map,
-            )
-            if len(tp_df) > 0:
-                start += len(tp_df) // 2
-                concat.append(tp_df)
-
-            fp_df = self.format2df(
-                frame.pass_fail_result.fp_object_results,
-                status=MatchingStatus.FP,
-                start=start,
-                frame_num=int(frame.frame_name),
-                ego2map=frame.frame_ground_truth.ego2map,
-            )
-            if len(fp_df) > 0:
-                start += len(fp_df) // 2
-                concat.append(fp_df)
-
-            tn_df = self.format2df(
-                frame.pass_fail_result.tn_objects,
-                status=MatchingStatus.TN,
-                start=start,
-                frame_num=int(frame.frame_name),
-                ego2map=frame.frame_ground_truth.ego2map,
-            )
-            if len(tn_df) > 0:
-                start += len(tn_df) // 2
-                concat.append(tn_df)
-
-            fn_df = self.format2df(
-                frame.pass_fail_result.fn_objects,
-                status=MatchingStatus.FN,
-                start=start,
-                frame_num=int(frame.frame_name),
-                ego2map=frame.frame_ground_truth.ego2map,
-            )
-            if len(fn_df) > 0:
-                start += len(fn_df) // 2
-                concat.append(fn_df)
-
-            if len(concat) > 0:
-                self.__df = pd.concat(concat)
-
         self.__frame_results[self.num_scene] = frame_results
         self.__num_frame += len(frame_results)
+
+        self.__transforms[str(self.num_scene)] = {}
+        for frame in tqdm(frame_results, "Updating DataFrame"):
+            self.add_frame(frame)
+        self.__num_scene += 1
 
         return self.__df
 
@@ -566,7 +614,7 @@ class PerceptionAnalyzerBase(ABC):
         status: MatchingStatus,
         frame_num: int,
         start: int = 0,
-        ego2map: Optional[np.ndarray] = None,
+        transforms: Optional[TransformDict] = None,
     ) -> pd.DataFrame:
         """Format objects to pandas.DataFrame.
 
@@ -575,14 +623,13 @@ class PerceptionAnalyzerBase(ABC):
             status (MatchingStatus): Object's status.
             frame_num (int): Number of frame.
             start (int): Number of the first index. Defaults to 0.
-            ego2map (Optional[np.ndarray]): Matrix to transform from ego coords to map coords. Defaults to None.
 
         Returns:
             df (pandas.DataFrame)
         """
         rets: Dict[int, Dict[str, Any]] = {}
         for i, obj_result in enumerate(object_results, start=start):
-            rets[i] = self.format2dict(obj_result, status, frame_num, ego2map)
+            rets[i] = self.format2dict(obj_result, status, frame_num, transforms)
 
         df = pd.DataFrame.from_dict(
             {(i, j): rets[i][j] for i in rets.keys() for j in rets[i].keys()},
@@ -597,7 +644,7 @@ class PerceptionAnalyzerBase(ABC):
         object_result: Union[DynamicObject, DynamicObjectWithPerceptionResult],
         status: MatchingStatus,
         frame_num: int,
-        ego2map: Optional[np.ndarray] = None,
+        transforms: Optional[TransformDict] = None,
     ) -> Dict[str, Dict[str, Any]]:
         """Format objects to dict.
 
@@ -605,7 +652,6 @@ class PerceptionAnalyzerBase(ABC):
             object_results (List[Union[DynamicObject, DynamicObjectWithPerceptionResult]]): List of objects or object results.
             status (MatchingStatus): Object's status.
             frame_num (int): Number of frame.
-            ego2map (Optional[np.ndarray]): Matrix to transform from ego coords to map coords. Defaults to None.
 
         Returns:
             Dict[str, Dict[str, Any]]
@@ -618,9 +664,7 @@ class PerceptionAnalyzerBase(ABC):
         df: Optional[pd.DataFrame] = None,
         remove_nan: bool = False,
     ) -> np.ndarray:
-        """Calculate specified column's error for TP.
-
-        TODO: plot not only TP status, but also matched objects FP/TN.
+        """Calculate specified column's error for TP/TN and matched FP.
 
         Args:
             column (Union[str, List[str]]): name of column
@@ -632,33 +676,56 @@ class PerceptionAnalyzerBase(ABC):
                 N is number of TP, M is dimensions.
         """
         expects: Set[str] = set(self.state_columns)
-        keys: Set[str] = set([column]) if isinstance(column, str) else set(column)
+        if isinstance(column, str):
+            column = [column]
+        keys: Set[str] = set(column)
+
         if keys > expects:
             raise ValueError(f"Unexpected keys: {column}, expected: {expects}")
 
         if df is None:
             df = self.df
 
-        df_ = df[df["status"] == "TP"]
-        if isinstance(column, list):
-            df_arr: np.ndarray = np.concatenate(
-                [np.array(df_[col].to_list()) for col in column],
-                axis=-1,
-            )
+        df_ = df[df["status"].isin(["TP", "FP", "TN"])]
+        errors = []
+        for col in column:
+            if col == "distance":
+                df_arr = np.array(df_[["x", "y"]])  # (N, 2)
+            elif col == "nn_plane":
+                df_arr = np.stack(
+                    (
+                        df_["nn_point1"].tolist(),
+                        df_["nn_point2"].tolist(),
+                    ),
+                    axis=1,
+                )  # (N, 2, 3)
+            else:
+                df_arr = np.array(df_[col])
+            gt_vals = df_arr[::2]
+            est_vals = df_arr[1::2]
+            err: np.ndarray = gt_vals - est_vals
+            if remove_nan:
+                err = err[~np.isnan(err)]
+
+            if col == "yaw":
+                # Clip err from [-2pi, 2pi] to [-pi, pi]
+                err[err > np.pi] = -2 * np.pi + err[err > np.pi]
+                err[err < -np.pi] = 2 * np.pi + err[err < -np.pi]
+            elif col == "distance":
+                err = err.reshape(-1, 2)
+                err = np.linalg.norm(err, axis=1)
+            elif col == "nn_plane":
+                err = err.reshape(-1, 2, 3)
+                err = np.linalg.norm(err, axis=2)
+                err = np.mean(err, axis=1)
+            errors.append(err)
+
+        if len(column) == 1:
+            errors = np.array(errors).reshape(-1)
         else:
-            df_arr: np.ndarray = np.array(df_[column])
-        gt_vals = df_arr[::2]
-        est_vals = df_arr[1::2]
-        err: np.ndarray = gt_vals - est_vals
-        if remove_nan:
-            err = err[~np.isnan(err)]
+            errors = np.stack(errors, axis=1)
 
-        if column == "yaw":
-            # Clip err from [-2pi, 2pi] to [-pi, pi]
-            err[err > np.pi] = -2 * np.pi + err[err > np.pi]
-            err[err < -np.pi] = 2 * np.pi + err[err < -np.pi]
-
-        return err
+        return errors
 
     @abstractmethod
     def summarize_error(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
@@ -688,15 +755,15 @@ class PerceptionAnalyzerBase(ABC):
         for i, label in enumerate(self.all_labels):
             if label == "ALL":
                 label = None
-            num_ground_truth: int = self.get_num_ground_truth(label=label)
+            num_ground_truth: int = self.get_num_ground_truth(df=df, label=label)
             if num_ground_truth > 0:
-                data["TP"][i] = self.get_num_tp(label=label) / num_ground_truth
-                data["FP"][i] = self.get_num_fp(label=label) / num_ground_truth
-                data["TN"][i] = self.get_num_tn(label=label) / num_ground_truth
-                data["FN"][i] = self.get_num_fn(label=label) / num_ground_truth
+                data["TP"][i] = self.get_num_tp(df=df, label=label) / num_ground_truth
+                data["FP"][i] = self.get_num_fp(df=df, label=label) / num_ground_truth
+                data["TN"][i] = self.get_num_tn(df=df, label=label) / num_ground_truth
+                data["FN"][i] = self.get_num_fn(df=df, label=label) / num_ground_truth
         return pd.DataFrame(data, index=self.all_labels)
 
-    def summarize_score(self, scene: Optional[Union[int, List[int]]] = None) -> pd.DataFrame:
+    def summarize_score(self, scene: Optional[Union[int, List[int]]] = None, *args, **kwargs) -> pd.DataFrame:
         """Summarize MetricsScore.
 
         Args:
@@ -720,17 +787,20 @@ class PerceptionAnalyzerBase(ABC):
     def plot_num_object(
         self,
         mode: PlotAxes = PlotAxes.DISTANCE,
+        bins: Optional[Union[int, Tuple[int, int]]] = None,
+        heatmap: bool = False,
         show: bool = False,
-        bins: Optional[float] = None,
         **kwargs,
     ) -> None:
         """Plot the number of objects for each time/distance range with histogram.
 
         Args:
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.DISTANCE (1-dimensional).
+            bins (Optional[Union[int, Tuple[int, int]]]): The interval of time/distance.
+                If not specified, 0.1[s] for time and 0.5[m] for distance will be use. Defaults to None.
+            heatmap (bool): Whether to visualize heatmap of the number of objects for corresponding axes.
+                The heatmap can be visualized only 3D axes. Defaults to False.
             show (bool): Whether show the plotted figure. Defaults to False.
-            bins (float): The interval of time/distance. If not specified, 0.1[s] for time and 0.5[m] for distance will be use.
-                Defaults to None.
             **kwargs: Specify if you want to plot for the specific conditions.
                 For example, label, area, frame or scene.
         """
@@ -738,7 +808,7 @@ class PerceptionAnalyzerBase(ABC):
             title = "Number of Objects @all"
             filename = "all"
         else:
-            title: str = f"Num Object @{str(self.all_labels)}"
+            title: str = "Num Object "
             filename: str = ""
             for key, item in kwargs.items():
                 title += f"@{key.upper()}:{item} "
@@ -753,41 +823,59 @@ class PerceptionAnalyzerBase(ABC):
             xlabel, ylabel = mode.get_label()
 
         fig: Figure = plt.figure(figsize=(16, 8))
-        ax: Union[Axes, Axes3D] = fig.add_subplot(
-            xlabel=xlabel,
-            ylabel=ylabel,
-            title="Number of samples",
-            projection=mode.projection,
-        )
+        if mode.is_3d() and heatmap:
+            filename += "_heatmap"
+            ax = fig.subplots(nrows=1, ncols=2)
+        else:
+            ax: Union[Axes, Axes3D] = fig.add_subplot(
+                xlabel=xlabel,
+                ylabel=ylabel,
+                title="Number of samples",
+                projection=mode.projection if not heatmap else None,
+            )
         mode.setup_axis(ax, **kwargs)
         gt_axes = mode.get_axes(self.get_ground_truth(**kwargs))
         est_axes = mode.get_axes(self.get_estimation(**kwargs))
 
+        if bins is None:
+            bins = mode.get_bins()
+
         if mode.is_2d():
+            assert isinstance(bins, Number), f"For 2D plot, bins must be number but got {type(bins)}"
             min_value = 0 if mode == PlotAxes.CONFIDENCE else _get_min_value(gt_axes, est_axes)
             max_value = 100 if mode == PlotAxes.CONFIDENCE else _get_max_value(gt_axes, est_axes)
-            step = bins if bins else mode.get_bins()
-            hist_bins = np.arange(min_value, max_value + step, step)
+            hist_bins = np.arange(min_value, max_value + bins, bins)
             gt_hist, xaxis = np.histogram(gt_axes, bins=hist_bins)
             est_hist, _ = np.histogram(est_axes, bins=hist_bins)
-            width = step if mode == PlotAxes.CONFIDENCE else 0.25 * ((max_value - min_value) / step)
+            width = bins if mode == PlotAxes.CONFIDENCE else 0.25 * ((max_value - min_value) / bins)
             ax.bar(xaxis[:-1] - 0.5 * width, gt_hist, width, label="GT")
             ax.bar(xaxis[:-1] + 0.5 * width, est_hist, width, label="Estimation")
         else:
-            ax.set_zlabel("Number of samples")
             gt_xaxes, gt_yaxes = gt_axes[:, ~np.isnan(gt_axes).any(0)]
             est_xaxes, est_yaxes = est_axes[:, ~np.isnan(est_axes).any(0)]
-            gt_hist, gt_x_edges, gt_y_edges = np.histogram2d(gt_xaxes, gt_yaxes)
-            est_hist, est_x_edges, est_y_edges = np.histogram2d(est_xaxes, est_yaxes)
-            gt_x, gt_y = np.meshgrid(gt_x_edges[:-1], gt_y_edges[:-1])
-            est_x, est_y = np.meshgrid(est_x_edges[:-1], est_y_edges[:-1])
-            if bins is not None and isinstance(bins, float):
-                bins = (bins, bins)
-            dx, dy = mode.get_bins() if bins is None else bins
-            dx *= 0.5
-            dy *= 0.5
-            ax.bar3d(gt_x.ravel(), gt_y.ravel(), 0, dx, dy, gt_hist.ravel(), alpha=0.6)
-            ax.bar3d(est_x.ravel(), est_y.ravel(), 0, dx, dy, est_hist.ravel(), alpha=0.6)
+
+            bins = int(bins) if isinstance(bins, Number) else (int(bins[0]), int(bins[1]))
+            gt_hist, gt_x_edges, gt_y_edges = np.histogram2d(gt_xaxes, gt_yaxes, bins=bins)
+            est_hist, est_x_edges, est_y_edges = np.histogram2d(est_xaxes, est_yaxes, bins=bins)
+            if heatmap:
+                gt_extent = [gt_x_edges[0], gt_x_edges[-1], gt_y_edges[0], gt_y_edges[-1]]
+                est_extent = [est_x_edges[0], est_x_edges[-1], est_y_edges[0], est_y_edges[-1]]
+
+                ax[0].set_title("GT")
+                ax[1].set_title("Estimation")
+                gt_img = ax[0].imshow(gt_hist, extent=gt_extent)
+                fig.colorbar(gt_img, ax=ax[0])
+                est_img = ax[1].imshow(est_hist, extent=est_extent)
+                fig.colorbar(est_img, ax=ax[1])
+            else:
+                ax.set_zlabel("Number of samples")
+                gt_x, gt_y = np.meshgrid(gt_x_edges[:-1], gt_y_edges[:-1])
+                est_x, est_y = np.meshgrid(est_x_edges[:-1], est_y_edges[:-1])
+                dx, dy = (bins, bins) if isinstance(bins, Number) else bins
+                dx *= 0.5
+                dy *= 0.5
+                ax.bar3d(gt_x.ravel(), gt_y.ravel(), 0, dx, dy, gt_hist.ravel(), alpha=0.6)
+                ax.bar3d(est_x.ravel(), est_y.ravel(), 0, dx, dy, est_hist.ravel(), alpha=0.6)
 
         self.__post_process_figure(
             fig=fig,
@@ -880,19 +968,20 @@ class PerceptionAnalyzerBase(ABC):
         columns: Union[str, List[str]],
         mode: PlotAxes = PlotAxes.TIME,
         heatmap: bool = False,
+        project: bool = False,
         show: bool = False,
         bins: int = 50,
         **kwargs,
     ) -> None:
-        """Plot states for each time/distance estimated and GT object in TP.
-
-        TODO: plot not only TP status, but also matched objects FP/TN.
+        """Plot error between estimated and GT object in TP/TN and matched FP.
 
         Args:
-            columns (Union[str, List[str]]): Target column name. Options: ["x", "y", "yaw", "w", "l", "vx", "vy"].
+            columns (Union[str, List[str]]): Target column name.
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             heatmap (bool): Whether overlay heatmap. Defaults to False.
+            project (bool): Whether to project heatmap on 2D. This argument is only used for 3D heatmap plot.
+                Defaults to False.
             show (bool): Whether show the plotted figure. Defaults to False.
             bins (int): Bin size to plot heatmap. Defaults to 50.
             **kwargs: Specify if you want to plot for the specific conditions.
@@ -901,14 +990,16 @@ class PerceptionAnalyzerBase(ABC):
         if isinstance(columns, str):
             columns: List[str] = [columns]
 
-        tp_gt_df = self.get_ground_truth(status="TP", **kwargs)
-        tp_index = pd.unique(tp_gt_df.index.get_level_values(level=0))
+        gt_df = self.get_ground_truth(status=["TP", "FP", "TN"], **kwargs)
+        index = pd.unique(gt_df.index.get_level_values(level=0))
 
-        if len(tp_index) == 0:
-            logging.warning("There is no TP object. Could not calculate error.")
+        if len(index) == 0:
+            logging.warning("There is no TP/FP/TN object. Could not calculate error.")
             return
 
-        tp_df = self.df.loc[tp_index]
+        project *= heatmap  # if heatmap=False, always project=False
+
+        tp_df = self.df.loc[index]
 
         num_cols = len(columns)
         fig: Figure = plt.figure(figsize=(8 * num_cols, 8))
@@ -927,12 +1018,12 @@ class PerceptionAnalyzerBase(ABC):
                 xlabel=xlabel,
                 ylabel=ylabel,
                 title=title,
-                projection=mode.projection,
+                projection=None if project else mode.projection,
             )
 
             mode.setup_axis(ax, **kwargs)
             err: np.ndarray = self.calculate_error(col, df=tp_df)
-            axes: np.ndarray = mode.get_axes(tp_gt_df)
+            axes: np.ndarray = mode.get_axes(gt_df)
             if mode.is_2d():
                 non_nan = ~np.isnan(err) * ~np.isnan(axes)
                 axes = axes[non_nan]
@@ -942,12 +1033,18 @@ class PerceptionAnalyzerBase(ABC):
                 else:
                     ax.scatter(axes, err)
             else:
-                ax.set_zlabel(f"err_{col}")
+                if not project:
+                    ax.set_zlabel(f"err_{col}")
                 non_nan = ~np.isnan(err) * ~np.isnan(axes).any(0)
                 xaxes, yaxes = axes[:, non_nan]
                 err = err[non_nan]
                 if heatmap:
-                    ax.scatter(xaxes, yaxes, err, c=err, cmap=cm.jet)
+                    if project:
+                        # TODO(ktro2828): This is wrong projection
+                        hist, x_edges, y_edges = np.histogram2d(xaxes, yaxes, bins=bins, weights=err)
+                        ax.pcolormesh(x_edges, y_edges, hist, cmap=cm.jet)
+                    else:
+                        ax.scatter(xaxes, yaxes, err, c=err, cmap=cm.jet)
                     color_map = cm.ScalarMappable(cmap=cm.jet)
                     color_map.set_array([err])
                     plt.colorbar(color_map)
@@ -1101,8 +1198,8 @@ class PerceptionAnalyzerBase(ABC):
         fig.savefig(osp.join(self.plot_directory, f"{filename}.png"))
         if show:
             plt.show()
-        fig.clear()
-        plt.close()
+        else:
+            plt.close()
 
 
 def _get_min_value(value1: np.ndarray, value2: np.ndarray) -> float:

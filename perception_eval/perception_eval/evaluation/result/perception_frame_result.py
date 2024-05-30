@@ -84,7 +84,7 @@ class PerceptionFrameResult:
             frame_number=frame_ground_truth.frame_name,
             critical_object_filter_config=critical_object_filter_config,
             frame_pass_fail_config=frame_pass_fail_config,
-            ego2map=frame_ground_truth.ego2map,
+            transforms=frame_ground_truth.transforms,
         )
 
     def evaluate_frame(

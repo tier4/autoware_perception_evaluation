@@ -51,13 +51,13 @@
 
 フレームごとの GT オブジェクトの集合のクラス．
 
-| Argument     |           type            | Description                                                                    |
-| :----------- | :-----------------------: | :----------------------------------------------------------------------------- |
-| `unix_time`  |           `int`           | Unix time.                                                                     |
-| `frame_name` |           `str`           | フレーム名.                                                                    |
-| `objects`    |    `List[ObjectType]`     | GT オブジェクトのリスト.                                                       |
-| `ego2map`    | `Optional[numpy.ndarray]` | オブジェクトの座標系を base_link から map に変換する 4x4 行列. (Default: None) |
-| `raw_data`   | `Optional[numpy.ndarray]` | 点群または画像. (Default: None)                                                |
+| Argument     |                type                | Description                                       |
+| :----------- | :--------------------------------: | :------------------------------------------------ |
+| `unix_time`  |               `int`                | Unix time.                                        |
+| `frame_name` |               `str`                | フレーム名.                                       |
+| `objects`    |         `List[ObjectType]`         | GT オブジェクトのリスト.                          |
+| `transforms` |          `TransformDict`           | 座標変換行列を保持するコンテナ.                   |
+| `raw_data`   | `Optional[Dict[FrameID, NDArray]]` | 各センサの取得した点群または画像. (Default: None) |
 
 ### [`<func> load_all_datasets(...) -> List[FrameGroundTruth]`](../../perception_eval/perception_eval/common/dataset.py)
 

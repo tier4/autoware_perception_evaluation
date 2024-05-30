@@ -339,7 +339,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
     | `CONFIDENCE` | Confidence of estimation[GT=1.0](0, 1). |
     | `POSITION`   | xy position[m] from ego vehicle.        |
     | `VELOCITY`   | xy velocity[m/s].                       |
-    | `POLAR`      | polar coordinates, (theta[rad], r[m]).  |
+    | `POLAR`      | polar coordinates, (theta[deg], r[m]).  |
 
 - `<func> plot_state(...) -> None`
 
@@ -381,11 +381,12 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
   - Plot number of objects by distance from `base_link` in histogram
 
-  | Arguments |    type    | Mandatory | Description                                      |
-  | :-------- | :--------: | :-------: | :----------------------------------------------- |
-  | `mode`    | `PlotAxes` |    No     | Target plot axes. (Defaults=`PlotAxes.DISTANCE`) |
-  | `bin`     |  `float`   |    No     | Bin of distance. (Defaults=`0.5`)                |
-  | `show`    |   `bool`   |    No     | Whether sho plot result.(Defaults=`False`)       |
+  | Arguments |    type    | Mandatory | Description                                           |
+  | :-------- | :--------: | :-------: | :---------------------------------------------------- |
+  | `mode`    | `PlotAxes` |    No     | Target plot axes. (Defaults=`PlotAxes.DISTANCE`)      |
+  | `bins`    |   `int`    |    No     | Number of bins. (Defaults=`1`)                        |
+  | `heatmap` |   `bool`   |    No     | Whether to plot heatmap (3D only). (Defaults=`False`) |
+  | `show`    |   `bool`   |    No     | Whether sho plot result.(Defaults=`False`)            |
 
   ```python
   # Plot the number of all objects
@@ -393,11 +394,6 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
   ```
 
   <img src="../../fig/perception/plot_num_object_by_distance.png" width=800 height=400>
-
-## Known issues / Limitations
-
-- `PerceptionAnalyzer3D()` only supports 3D evaluation.
-  <img src="../../fig/perception/plot_num_object_by_distance.png" width=800>
 
 - `<func> box_plot(...) -> None`
 
@@ -414,6 +410,11 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
   ```
 
   <img src="../../fig/perception/box_plot_xy.png" width=400>
+
+## Known issues / Limitations
+
+- `PerceptionAnalyzer3D()` only supports 3D evaluation.
+  <img src="../../fig/perception/plot_num_object_by_distance.png" width=800>
 
 ## [`<class> Gmm(...)`](../../../perception_eval/perception_eval/tool/gmm.py)
 

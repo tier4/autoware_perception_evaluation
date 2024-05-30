@@ -17,6 +17,7 @@ import logging
 import tempfile
 from typing import List
 
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import PerceptionFrameResult
@@ -95,7 +96,10 @@ class PerceptionLSimMoc:
         estimated_objects: List[DynamicObject],
     ) -> None:
         # 現frameに対応するGround truthを取得
-        ground_truth_now_frame = self.evaluator.get_ground_truth_now_frame(unix_time)
+        interpolate = not self.evaluator.evaluation_task == EvaluationTask.DETECTION
+        ground_truth_now_frame = self.evaluator.get_ground_truth_now_frame(
+            unix_time, interpolate_ground_truth=interpolate
+        )
 
         # [Option] ROS側でやる（Map情報・Planning結果を用いる）UC評価objectを選別
         # ros_critical_ground_truth_objects : List[DynamicObject] = custom_critical_object_filter(
@@ -195,7 +199,7 @@ if __name__ == "__main__":
             diff_yaw=0.2,
             is_confidence_with_distance=True,
             label_to_unknown_rate=0.5,
-            ego2map=ground_truth_frame.ego2map,
+            transforms=ground_truth_frame.transforms,
         )
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
@@ -268,7 +272,7 @@ if __name__ == "__main__":
             diff_yaw=0.0,
             is_confidence_with_distance=True,
             label_to_unknown_rate=0.5,
-            ego2map=ground_truth_frame.ego2map,
+            transforms=ground_truth_frame.transforms,
         )
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:

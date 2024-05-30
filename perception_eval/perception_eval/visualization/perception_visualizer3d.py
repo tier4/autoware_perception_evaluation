@@ -28,13 +28,14 @@ from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 from matplotlib.transforms import Affine2D
 import numpy as np
+from numpy.typing import NDArray
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
+from perception_eval.common.transform import HomogeneousMatrix
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation import PerceptionFrameResult
-from perception_eval.util.math import rotation_matrix_to_euler
 from perception_eval.visualization.color import ColorMap
 from PIL import Image
 from PIL.Image import Image as PILImage
@@ -146,22 +147,25 @@ class PerceptionVisualizer3D:
         self,
         frame_results: List[PerceptionFrameResult],
         filename: Optional[str] = None,
+        render_track: bool = False,
         cache_figure: bool = False,
     ) -> None:
         """Visualize all frames in BEV space.
 
         Args:
             frame_results (List[PerceptionFrameResult]): The list of PerceptionFrameResult.
-            save_html (bool): Wether save image as html. Defaults to False.
-            animation (bool): Whether create animation as gif. Defaults to False.
-            cache_figure (bool): Whether cache figure for each frame. Defaults to False.
+            filename (Optional[str]): Path to save rendering results. Defaults to None.
+            render_track (bool): Whether to render object tracks. Defaults to False.
+            cache_figure (bool): Whether to cache figure for each frame. Defaults to False.
         """
         if self.config.evaluation_task == EvaluationTask.TRACKING:
             self.__tracked_paths = {}
 
         frame_result_: PerceptionFrameResult
         for frame_result_ in tqdm(frame_results, desc="Visualize results for each frame"):
-            self.__axes: Axes = self.visualize_frame(frame_result=frame_result_, axes=self.__axes)
+            self.__axes: Axes = self.visualize_frame(
+                frame_result=frame_result_, axes=self.__axes, render_track=render_track
+            )
             if cache_figure is False:
                 self.__axes.clear()
 
@@ -190,6 +194,7 @@ class PerceptionVisualizer3D:
         self,
         frame_result: PerceptionFrameResult,
         axes: Optional[Axes] = None,
+        render_track: bool = False,
     ) -> Axes:
         """Visualize a frame result in BEV space.
 
@@ -203,6 +208,7 @@ class PerceptionVisualizer3D:
         Args:
             frame_result (PerceptionFrameResult)
             axes (Optional[Axes]): The Axes instance. Defaults to None.
+            render_track (bool): Whether to render object tracks. Defaults to False.
         """
         if axes is None:
             axes: Axes = plt.subplot()
@@ -213,14 +219,9 @@ class PerceptionVisualizer3D:
         axes.set_ylabel("y [m]")
 
         # Plot ego vehicle position
-        axes = self._plot_ego(
-            ego2map=frame_result.frame_ground_truth.ego2map,
-            axes=axes,
-        )
-
-        pointcloud: Optional[np.ndarray] = (
-            frame_result.frame_ground_truth.raw_data["lidar"] if self.config.load_raw_data else None
-        )
+        ego2map = frame_result.frame_ground_truth.transforms.get((FrameID.BASE_LINK, FrameID.MAP))
+        axes = self._plot_ego(ego2map=ego2map, axes=axes)
+        pointcloud = self._get_raw_data(frame_result, ego2map)
 
         # Plot objects
         handles: List[Patch] = []
@@ -231,6 +232,7 @@ class PerceptionVisualizer3D:
             label="TP est",
             color="blue",
             pointcloud=pointcloud,
+            render_track=render_track,
         )
         handles.append(Patch(color="blue", label="TP est"))
 
@@ -241,6 +243,7 @@ class PerceptionVisualizer3D:
             label="TP GT",
             color="red",
             pointcloud=pointcloud,
+            render_track=render_track,
         )
         handles.append(Patch(color="red", label="TP GT"))
 
@@ -251,6 +254,7 @@ class PerceptionVisualizer3D:
             label="FP",
             color="cyan",
             pointcloud=pointcloud,
+            render_track=render_track,
         )
         handles.append(Patch(color="cyan", label="FP"))
 
@@ -261,6 +265,7 @@ class PerceptionVisualizer3D:
             label="TN",
             color="purple",
             pointcloud=pointcloud,
+            render_track=render_track,
         )
         handles.append(Patch(color="purple", label="TN"))
 
@@ -271,6 +276,7 @@ class PerceptionVisualizer3D:
             label="FN",
             color="orange",
             pointcloud=pointcloud,
+            render_track=render_track,
         )
         handles.append(Patch(color="orange", label="FN"))
 
@@ -289,16 +295,50 @@ class PerceptionVisualizer3D:
 
         return axes
 
+    def _get_raw_data(
+        self,
+        frame_result: PerceptionFrameResult,
+        ego2map: Optional[HomogeneousMatrix] = None,
+    ) -> Optional[NDArray]:
+        """Return pointcloud if `config.load_raw_data=True`, otherwise returns `None`.
+
+        Args:
+            frame_result (PerceptionFrameResult): A frame result.
+
+        Returns:
+            Optional[NDArray]: Pointcloud or None.
+        """
+        if self.config.load_raw_data:
+            raw_data = frame_result.frame_ground_truth.raw_data
+            assert raw_data
+            if FrameID.LIDAR_CONCAT in raw_data:
+                pointcloud = raw_data[FrameID.LIDAR_CONCAT]
+            elif FrameID.LIDAR_TOP in raw_data:
+                pointcloud = raw_data[FrameID.LIDAR_TOP]
+            else:
+                pointcloud = None
+        else:
+            pointcloud = None
+
+        if pointcloud is not None and self.config.frame_ids[0] == FrameID.MAP:
+            # TODO: add support of handing batch positions in HomogeneousMatrix
+            num_point = len(pointcloud)
+            src = np.tile(np.eye(4), reps=(num_point, 1, 1))
+            src[:, :3, 3] = pointcloud[:, :3]
+            dst = src.dot(ego2map.matrix)
+            pointcloud[:, :3] = dst[:, :3, 3]
+        return pointcloud
+
     def _plot_ego(
         self,
-        ego2map: np.ndarray,
+        ego2map: Optional[HomogeneousMatrix],
         axes: Optional[Axes] = None,
         size: Tuple[float, float] = (5.0, 2.5),
     ) -> Axes:
         """Plot ego vehicle.
 
         Args:
-            ego2map (np.ndarray): The 4x4 array of transform matrix from ego coords system to map coords system.
+            ego2map (HomogeneousMatrix): The 4x4 array of transform matrix from ego coords system to map coords system.
             axes (Axes): The Axes instance.
             size (Tuple[float, float]): The size of box, (length, width). Defaults to (5.0, 2.5).
 
@@ -309,17 +349,19 @@ class PerceptionVisualizer3D:
             axes: Axes = plt.subplot()
 
         ego_color: np.ndarray = self.__cmap.get_simple("black")
-        ego_xy: np.ndarray = np.array((0.0, 0.0)) if self.config.frame_ids[0] == FrameID.BASE_LINK else ego2map[:2, 3]
-        box_width: float = size[0]
-        box_height: float = size[1]
+        if self.config.frame_ids[0] == FrameID.BASE_LINK:
+            ego_xy = np.zeros(2)
+            yaw = 0.0
+        else:
+            assert ego2map is not None
+            ego_xy = ego2map.position[:2]
+            yaw, _, _ = ego2map.yaw_pitch_roll
 
         plt.xlim([-self.xlim + ego_xy[0], self.xlim + ego_xy[0]])
         plt.ylim([-self.ylim + ego_xy[1], self.ylim + ego_xy[1]])
 
+        box_width, box_height = size
         box_bottom_left: np.ndarray = ego_xy - (np.array(size) / 2.0)
-        yaw: float = (
-            0.0 if self.config.frame_ids[0] == FrameID.BASE_LINK else rotation_matrix_to_euler(ego2map[:3, :3])[2]
-        )
 
         transform: Affine2D = Affine2D().rotate_around(ego_xy[0], ego_xy[1], yaw) + axes.transData
         box: Rectangle = Rectangle(
@@ -342,6 +384,7 @@ class PerceptionVisualizer3D:
         label: Optional[str] = None,
         color: Optional[str] = None,
         pointcloud: Optional[np.ndarray] = None,
+        render_track: bool = False,
     ) -> Axes:
         """Plot objects in BEV space.
 
@@ -360,6 +403,8 @@ class PerceptionVisualizer3D:
             label (str): The label of object type, e.g. TP/FP/FP. Defaults to None.
             color (Optional[str]): The name of color, red/green/blue/yellow/cyan/black. Defaults to None.
                 If not be specified, red is used.
+            pointcloud (Optional[np.ndarray]): Pointcloud. Defaults to None.
+            render_track (bool): Whether to render object tracks. Defaults to False.
 
         Returns:
             axes (Axes): The Axes instance.
@@ -416,7 +461,7 @@ class PerceptionVisualizer3D:
                 )
 
             # tracked path
-            if self.config.evaluation_task == EvaluationTask.TRACKING:
+            if self.config.evaluation_task == EvaluationTask.TRACKING and render_track:
                 axes = self._plot_tracked_path(object_, is_ground_truth, axes=axes)
 
             # predicted path
