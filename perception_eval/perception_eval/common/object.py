@@ -50,27 +50,27 @@ class ObjectState:
 
     def __init__(
         self,
-        position: Tuple[float, float, float],
-        orientation: Quaternion,
-        shape: Shape,
+        position: Optional[Tuple[float, float, float]],
+        orientation: Optional[Quaternion],
+        shape: Optional[Shape],
         velocity: Optional[Tuple[float, float, float]],
     ) -> None:
-        self.position: Tuple[float, float, float] = position
-        self.orientation: Quaternion = orientation
-        self.shape: Shape = shape
-        self.velocity: Optional[Tuple[float, float, float]] = velocity
+        self.position = position
+        self.orientation = orientation
+        self.shape = shape
+        self.velocity = velocity
 
     @property
-    def shape_type(self) -> ShapeType:
-        return self.shape.type
+    def shape_type(self) -> Optional[ShapeType]:
+        return self.shape.type if self.shape is not None else None
 
     @property
     def size(self) -> Tuple[float, float, float]:
-        return self.shape.size
+        return self.shape.size if self.shape is not None else None
 
     @property
     def footprint(self) -> Polygon:
-        return self.shape.footprint
+        return self.shape.footprint if self.shape is not None else None
 
 
 class DynamicObject:

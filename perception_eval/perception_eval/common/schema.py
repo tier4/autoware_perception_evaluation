@@ -29,6 +29,7 @@ class FrameID(Enum):
 
     LIDAR_CONCAT = "lidar_concat"
     LIDAR_TOP = "lidar_top"
+    OBJECT = "object"
 
     RADAR_FRONT = "radar_front"
     RADAR_FRONT_RIGHT = "radar_front_right"
@@ -46,6 +47,9 @@ class FrameID(Enum):
     CAM_BACK_RIGHT = "cam_back_right"
     CAM_TRAFFIC_LIGHT_NEAR = "cam_traffic_light_near"
     CAM_TRAFFIC_LIGHT_FAR = "cam_traffic_light_far"
+
+    # Integrated TLR camera frame
+    CAM_TRAFFIC_LIGHT = "cam_traffic_light"
 
     def __hash__(self) -> int:
         return hash(self.value)
