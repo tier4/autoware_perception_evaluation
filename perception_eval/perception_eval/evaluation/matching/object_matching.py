@@ -16,7 +16,6 @@ from abc import ABC
 from abc import abstractmethod
 from enum import Enum
 import math
-from typing import Callable
 from typing import Optional
 from typing import Tuple
 
@@ -25,7 +24,6 @@ from perception_eval.common import distance_objects
 from perception_eval.common import distance_points_bev
 from perception_eval.common import ObjectType
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.point import get_point_left_right
 from perception_eval.common.point import get_point_left_right_index
 from perception_eval.common.point import polygon_to_list
 from perception_eval.common.shape import ShapeType
@@ -229,7 +227,10 @@ class PlaneDistanceMatching(MatchingMethod):
         """Calculate plane distance between estimation and ground truth and NN planes.
 
         This function also set NN plane attributes for estimation and ground truth.
-        If input `ground_truth_object=None`, it always returns None,
+        If input `ground_truth_object=None`, it always returns None.
+
+        If the shapes of both estimated object and GT are BOUNDING_BOX, calculates plane distance.
+        Otherwise, calculates center distance in BEV.
 
         Args:
             estimated_object (DynamicObject): Estimated object.
@@ -250,17 +251,9 @@ class PlaneDistanceMatching(MatchingMethod):
         gt_corners = np.array(polygon_to_list(gt_footprint))
 
         if (
-            estimated_object.state.shape_type == ShapeType.POLYGON
-            or ground_truth_object.state.shape_type == ShapeType.POLYGON
+            estimated_object.state.shape_type == ShapeType.BOUNDING_BOX
+            and ground_truth_object.state.shape_type == ShapeType.BOUNDING_BOX
         ):
-            # Sort by 2d distance
-            lambda_func: Callable[[Tuple[float, float, float]], float] = lambda x: math.hypot(x[0], x[1])
-            est_corners.sort(key=lambda_func)
-            gt_corners.sort(key=lambda_func)
-
-            est_left_point, est_right_point = get_point_left_right(est_corners[0], est_corners[1])
-            gt_left_point, gt_right_point = get_point_left_right(gt_corners[0], gt_corners[1])
-        else:
             # Calculate min distance from ego vehicle
             # TODO: for objects with respect to map coords need to transform to base link coords
             gt_distances: np.ndarray = np.linalg.norm(gt_corners[:, :2], axis=1)
@@ -274,18 +267,22 @@ class PlaneDistanceMatching(MatchingMethod):
             left_idx, right_idx = get_point_left_right_index(gt_plane_points[0], gt_plane_points[1])
             gt_left_point, gt_right_point = gt_plane_points[left_idx], gt_plane_points[right_idx]
             est_left_point, est_right_point = est_plane_points[left_idx], est_plane_points[right_idx]
-
-        distance_left_point: float = distance_points_bev(est_left_point, gt_left_point)
-        distance_right_point: float = distance_points_bev(est_right_point, gt_right_point)
-        distance_squared = distance_left_point**2 + distance_right_point**2
-        plane_distance = math.sqrt(0.5 * distance_squared)
-        # NOTE: round because the distance become 0.9999999... expecting 1.0
-        plane_distance = round(plane_distance, 10)
+            distance_left_point: float = distance_points_bev(est_left_point, gt_left_point)
+            distance_right_point: float = distance_points_bev(est_right_point, gt_right_point)
+            distance_squared = distance_left_point**2 + distance_right_point**2
+            plane_distance = math.sqrt(0.5 * distance_squared)
+            # NOTE: round because the distance become 0.9999999... expecting 1.0
+            distance = round(plane_distance, 10)
+        else:
+            # Sort by 2d distance
+            est_left_point, est_right_point = None, None
+            gt_left_point, gt_right_point = None, None
+            distance = distance_points_bev(estimated_object.state.position, ground_truth_object.state.position)
 
         self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
         self.estimated_nn_plane = (est_left_point, est_right_point)
 
-        return plane_distance
+        return distance
 
 
 class IOU2dMatching(MatchingMethod):
