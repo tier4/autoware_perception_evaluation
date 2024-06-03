@@ -202,26 +202,6 @@ def filter_objects(
     return filtered_objects
 
 
-def filter_unintended_object_results(
-    object_results: List[DynamicObjectWithPerceptionResult],
-    ground_truth_objects: List[ObjectType],
-) -> List[DynamicObjectWithPerceptionResult]:
-    """Filter out object results which its GT is not contained in input GTs.
-    This function exists in order to filter out unintended FP results.
-
-    TODO:
-        Add support of a feature that only filters out unintended FPs except of ghost objects.
-
-    Args:
-        object_results (List[DynamicObjectWithPerceptionResult]): List of object results.
-        ground_truth_objects (List[ObjectType]): List of GTs.
-
-    Returns:
-        List[DynamicObjectWithPerceptionResult]: Filtered out object results
-    """
-    return [result for result in object_results if result.ground_truth_object in ground_truth_objects]
-
-
 def get_positive_objects(
     object_results: List[DynamicObjectWithPerceptionResult],
     target_labels: List[Label],
