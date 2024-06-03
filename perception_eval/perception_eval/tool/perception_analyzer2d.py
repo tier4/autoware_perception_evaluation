@@ -326,6 +326,8 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
 
         num_classes = len(target_labels)
         indices = num_classes * gt_indices + est_indices
+        if len(indices) == 0:
+            return pd.DataFrame()
         matrix: np.ndarray = np.bincount(indices, minlength=num_classes**2)
         matrix = matrix.reshape(num_classes, num_classes)
         return pd.DataFrame(data=matrix, index=target_labels, columns=target_labels)
