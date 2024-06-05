@@ -686,24 +686,31 @@ class PerceptionAnalyzerBase(ABC):
         if df is None:
             df = self.df
 
-        df_ = df[df["status"].isin(["TP", "FP", "TN"])]
+        gt_df, est_df = self.get_pair_results(df[df["status"].isin(["TP", "FP", "TN"])])
         errors = []
         for col in column:
             if col == "distance":
-                df_arr = np.array(df_[["x", "y"]])  # (N, 2)
+                gt_arr = np.array(gt_df[["x", "y"]])  # (N, 2)
+                est_arr = np.array(est_df[["x", "y"]])
             elif col == "nn_plane":
-                df_arr = np.stack(
+                gt_arr = np.stack(
                     (
-                        df_["nn_point1"].tolist(),
-                        df_["nn_point2"].tolist(),
+                        gt_df["nn_point1"].tolist(),
+                        gt_df["nn_point2"].tolist(),
+                    ),
+                    axis=1,
+                )  # (N, 2, 3)
+                est_arr = np.stack(
+                    (
+                        est_df["nn_point1"].tolist(),
+                        est_df["nn_point2"].tolist(),
                     ),
                     axis=1,
                 )  # (N, 2, 3)
             else:
-                df_arr = np.array(df_[col])
-            gt_vals = df_arr[::2]
-            est_vals = df_arr[1::2]
-            err: np.ndarray = gt_vals - est_vals
+                gt_arr = np.array(gt_df[col])
+                est_arr = np.array(est_df[col])
+            err: np.ndarray = gt_arr - est_arr
             if remove_nan:
                 err = err[~np.isnan(err)]
 

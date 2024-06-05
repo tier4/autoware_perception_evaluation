@@ -170,6 +170,9 @@ class CenterDistanceMatching(MatchingMethod):
         return distance_objects(estimated_object, ground_truth_object)
 
 
+_PlanePointType = Tuple[Optional[Tuple[float, float, float]], Optional[Tuple[float, float, float]]]
+
+
 class PlaneDistanceMatching(MatchingMethod):
     """A class for matching objects by plane distance.
 
@@ -196,8 +199,8 @@ class PlaneDistanceMatching(MatchingMethod):
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> None:
-        self.ground_truth_nn_plane: Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float]]] = None
-        self.estimated_nn_plane: Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float]]] = None
+        self.ground_truth_nn_plane: _PlanePointType = (None, None)
+        self.estimated_nn_plane: _PlanePointType = (None, None)
         super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
 
     def is_better_than(
