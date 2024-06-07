@@ -358,11 +358,9 @@ def _get_box_velocity(
     pos_first = np.array(first["translation"], dtype=np.float64)
     pos_diff = pos_last - pos_first
 
-    object2map = np.eye(4, dtype=np.float64)
-    object2map[:3, :3] = Quaternion(first["rotation"]).rotation_matrix
-    object2map[3, :3] = first["translation"]
-
-    pos_diff: np.ndarray = np.linalg.inv(object2map).dot((pos_diff[0], pos_diff[1], pos_diff[2], 1.0))[:3]
+    # Transform position displacement coords from map to object -> just rotate
+    object2map = HomogeneousMatrix((0.0, 0.0, 0.0), first["rotation"], src=FrameID.OBJECT, dst=FrameID.MAP)
+    pos_diff: NDArray = object2map.inv().transform(pos_diff)
 
     time_last: float = 1e-6 * nusc.get("sample", last["sample_token"])["timestamp"]
     time_first: float = 1e-6 * nusc.get("sample", first["sample_token"])["timestamp"]

@@ -26,6 +26,7 @@ class FrameID(Enum):
     # 3D
     BASE_LINK = "base_link"
     MAP = "map"
+    OBJECT = "object"
 
     LIDAR_CONCAT = "lidar_concat"
     LIDAR_TOP = "lidar_top"
