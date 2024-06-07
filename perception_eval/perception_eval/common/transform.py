@@ -21,15 +21,28 @@ FrameIDType = TypeVar("FrameIDType", str, FrameID)
 
 class TransformDict:
     @overload
+    def __init__(self) -> None:
+        """Construct instance registering nothing."""
+        ...
+
+    @overload
     def __init__(self, matrix: HomogeneousMatrix) -> None:
+        """Construct instance registering a matrix.
+
+        Args:
+        -----
+            matrix (Optional[HomogeneousMatrix], optional): `HomogeneousMatrix` instance. Defaults to None.
+        """
         ...
 
     @overload
     def __init__(self, matrices: Sequence[HomogeneousMatrix]) -> None:
-        ...
+        """Construct instance registering matrices.
 
-    @overload
-    def __init__(self, matrix=None) -> None:
+        Args:
+        -----
+            matrices (Sequence[HomogeneousMatrix]): Sequence of `HomogeneousMatrix`.
+        """
         ...
 
     def __init__(self, matrices: TransformDictArgType = None) -> None:
@@ -89,6 +102,27 @@ class TransformDict:
 
     @overload
     def transform(self, key: TransformKeyType, position: ArrayLike) -> ArrayLike:
+        """Transform position.
+
+        Args:
+        -----
+            key (TransformKeyType): Pair of coordinates `(src, dst)`.
+            position (ArrayLike): 3D position.
+
+        Returns:
+        --------
+            ArrayLike: Transformed position.
+
+        Examples:
+        ---------
+            >>> # register matrix(s)
+            >>> matrix = HomogeneousMatrix((1.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
+            >>> transforms = TransformDict(matrix)
+            >>> # transform: base_link -> map
+            >>> key = TransformKey(FrameID.BASE_LINK, FrameID.MAP)
+            >>> transforms.transform(key, (1.0, 0.0, 0.0))
+            array([2., 0., 0.])
+        """
         ...
 
     @overload
@@ -98,17 +132,66 @@ class TransformDict:
         position: ArrayLike,
         rotation: RotationType,
     ) -> Tuple[ArrayLike, Quaternion]:
+        """Transform position and rotation.
+
+        Args:
+        -----
+            key (TransformKeyType): Pair of coordinates `(src, dst)`.
+            position (ArrayLike): 3D position.
+            rotation (RotationType): Quaternion or 3x3 rotation matrix.
+
+        Returns:
+        --------
+            Tuple[ArrayLike, Quaternion]: Transformed position and quaternion.
+
+        Examples:
+        ---------
+            >>> # register matrix(s)
+            >>> matrix = HomogeneousMatrix((1.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
+            >>> transforms = TransformDict(matrix)
+            >>> # transform: base_link -> map
+            >>> key = TransformKey(FrameID.BASE_LINK, FrameID.MAP)
+            >>> transforms.transform(key, (-1.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0))
+            (array([0., 0., 0.]), Quaternion(1.0, 0.0, 0.0, 0.0))
+        """
         ...
 
     @overload
     def transform(self, key: TransformKeyType, matrix: HomogeneousMatrix) -> HomogeneousMatrix:
+        """Transform another `HomogeneousMatrix`.
+
+        Args:
+        -----
+            key (TransformKeyType): Pair of coordinates `(src, dst)`.
+            matrix (HomogeneousMatrix): `HomogeneousMatrix` instance.
+
+        Returns:
+        --------
+            HomogeneousMatrix: Transformed matrix.
+
+        Examples:
+        ---------
+            >>> # register matrix(s)
+            >>> matrix = HomogeneousMatrix((1.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
+            >>> transforms = TransformDict(matrix)
+            >>>
+            >>> other = HomogeneousMatrix((-1.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0), src=FrameID.MAP, dst=FrameID.BASE_LINK)
+            >>>
+            >>> # transform: base_link -> map
+            >>> key = TransformKey(FrameID.BASE_LINK, FrameID.MAP)
+            >>> transforms.transform(key, other)
+            array([[1., 0., 0., 0.],
+                   [0., 1., 0., 0.],
+                   [0., 0., 1., 0.],
+                   [0., 0., 0., 1.]])
+        """
         ...
 
     def transform(self, key: TransformKeyType, *args: TransformArgType, **kwargs: TransformArgType) -> TransformArgType:
         """
         Args:
         -----
-            key (TransformKeyType): _description_
+            key (TransformKeyType): Pair of coordinates `(src, dst)`.
 
         Raises:
         -------
@@ -119,34 +202,6 @@ class TransformDict:
             TransformArgType: Return `NDArray` if the input is `position: ArrayLike`,
                 `(NDArray, Quaternion)` if the input is `position: ArrayLike, rotation: RotationType` or
                 `HomogeneousMatrix` if the input is `matrix: HomogeneousMatrix`.
-
-        Examples:
-        ---------
-            >>> matrix = HomogeneousMatrix((1.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
-            >>> transforms = TransformDict(matrix)
-            # Use registered transform matrix
-            ## specify only position
-            >>> key = TransformKey(FrameID.BASE_LINK, FrameID.MAP)
-            >>> transforms.transform(key, (1.0, 0.0, 0.0))
-            array([2., 0., 0.])
-            ## specify position and rotation
-            >>> transforms.transform(key, (1.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0))
-            (array([2., 0., 0.]), Quaternion(1.0, 0.0, 0.0, 0.0))
-            ## specify homogeneous matrix
-            >>> other = HomogeneousMatrix(key, (-1.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0), src=FrameID.MAP, dst=FrameID.BASE_LINK)
-            >>> matrix.transform(other).matrix
-            array([[1., 0., 0., 0.],
-                   [0., 1., 0., 0.],
-                   [0., 0., 1., 0.],
-                   [0., 0., 0., 1.]])
-            # Inverse transform matrix is not registered but can use it
-            >>> key = TransformKey(FrameID.MAP, FrameID.MAP)
-            >>> transforms.transform(key, (1.0, 0.0, 0.))
-            array([0., 0., 0.])
-            # If source and destination frame id is same, return input value
-            >>> key = TransformKey(FrameID.BASE_LINK, FrameID.BASE_LINK)
-            >>> transforms.transform(key, [1.0, 0.0, 0.0])
-            array([1., 0., 0.])
         """
         if not isinstance(key, TransformKey):
             src, dst = key
@@ -220,6 +275,7 @@ class HomogeneousMatrix:
     def __init__(self, position: ArrayLike, rotation: RotationType, src: FrameIDType, dst: FrameIDType) -> None:
         """
         Args:
+        -----
             position (ArrayLike): 3D position ordering `(x, y, z)`.
             rotation (ArrayLike | Quaternion): Rotation quaternion, which is ordering `(w, x, y, z)`, or matrix in the shape 3x3 or 4x4.
             src (str | FrameID]): Source frame ID.
@@ -422,28 +478,15 @@ class HomogeneousMatrix:
 
     @overload
     def transform(self, position: ArrayLike) -> NDArray:
-        ...
+        """Transform position.
 
-    @overload
-    def transform(self, position: ArrayLike, rotation: RotationType) -> Tuple[NDArray, Quaternion]:
-        ...
-
-    @overload
-    def transform(self, matrix: HomogeneousMatrix) -> HomogeneousMatrix:
-        ...
-
-    def transform(self, *args, **kwargs) -> TransformArgType:
-        """Transform with specified position, rotation or homogeneous matrix.
-
-        Raises:
-        -------
-            KeyError: Unexpected kwargs are specified.
-            ValueError: Unexpected number of arguments are specified, expecting 1 or 2.
-            TypeError: Unexpected type is input.
+        Args:
+        -----
+            position (ArrayLike): 3D position.
 
         Returns:
         --------
-            TransformReturnType: Transform result(s).
+            NDArray: Transformed position.
 
         Examples:
         ---------
@@ -453,12 +496,44 @@ class HomogeneousMatrix:
             array([2., 0., 0.])
             >>> matrix.transform(position=(1, 0, 0))
             array([2., 0., 0.])
-            # specify position and rotation
+        """
+        ...
+
+    @overload
+    def transform(self, position: ArrayLike, rotation: RotationType) -> Tuple[NDArray, Quaternion]:
+        """Transform position and rotation.
+
+        Args:
+        -----
+            position (ArrayLike): 3D position.
+            rotation (RotationType): Quaternion or 3x3 rotation matrix.
+
+        Returns:
+        --------
+            Tuple[NDArray, Quaternion]: Transformed position and quaternion.
+
+        Examples:
+        ---------
+            >>> matrix = HomogeneousMatrix((1.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
             >>> matrix.transform((1.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0))
             (array([2., 0., 0.]), Quaternion(1.0, 0.0, 0.0, 0.0))
             >>> matrix.transform(position=(1.0, 0.0, 0.0), rotation=(1.0, 0.0, 0.0, 0.0))
             (array([2., 0., 0.]), Quaternion(1.0, 0.0, 0.0, 0.0))
-            # specify homogeneous matrix
+        """
+        ...
+
+    @overload
+    def transform(self, matrix: HomogeneousMatrix) -> HomogeneousMatrix:
+        """Transform another matrix.
+
+        Args:
+            matrix (HomogeneousMatrix): `HomogenousMatrix` instance, which `matrix.dst` frame id must be same with `self.src`.
+
+        Returns:
+            HomogeneousMatrix: Transformed matrix.
+
+        Examples:
+        ---------
             >>> ego2map = HomogeneousMatrix((1.0, 1.0, 1.0), (1.0, 0.0, 0.0, 0.0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
             >>> cam2ego = HomogeneousMatrix((2.0, 2.0, 2.0), (1.0, 0.0, 0.0, 0.0), src=FrameID.CAM_FRONT, dst=FrameID.BASE_LINK)
             >>> cam2map = cam2ego.transform(ego2map)
@@ -471,6 +546,21 @@ class HomogeneousMatrix:
                 <FrameID.CAM_FRONT: 'cam_front'>
             >>> cam2map.dst
                 <FrameID.MAP: 'map'>
+        """
+        ...
+
+    def transform(self, *args, **kwargs) -> TransformArgType:
+        """Transform specified position, rotation or homogeneous matrix.
+
+        Raises:
+        -------
+            KeyError: Unexpected kwargs are specified, only "position", "rotation", "matrix" is allowed.
+            ValueError: Unexpected number of arguments are specified, expecting 1 or 2.
+            TypeError: Unexpected type is input.
+
+        Returns:
+        --------
+            TransformReturnType: Transform result(s).
         """
         s = len(args)
         if s == 0:
