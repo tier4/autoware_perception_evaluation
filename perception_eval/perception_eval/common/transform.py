@@ -593,6 +593,97 @@ class HomogeneousMatrix:
         else:
             raise ValueError(f"Unexpected number of arguments {s}")
 
+    def __rotate_position(self, position: ArrayLike) -> NDArray:
+        return self.rotation_matrix.dot(position)
+
+    def __rotate_position_and_rotation(self, position: ArrayLike, rotation: RotationType) -> Tuple[NDArray, Quaternion]:
+        src_matrix = self.__generate_homogeneous_matrix((0, 0, 0), self.rotation)
+        tgt_matrix = self.__generate_homogeneous_matrix(position, rotation)
+        ret_mat = src_matrix.dot(tgt_matrix)
+        return self.__extract_position_and_rotation_from_matrix(ret_mat)
+
+    def __rotate_matrix(self, matrix: HomogeneousMatrix) -> HomogeneousMatrix:
+        src_mat = HomogeneousMatrix((0, 0, 0), self.rotation, self.src, self.dst)
+        return src_mat.dot(matrix)
+
+    @overload
+    def rotate(self, position: ArrayLike) -> NDArray:
+        """Rotate position.
+
+        Args:
+        -----
+            position (ArrayLike): 3D position.
+
+        Returns:
+        --------
+            NDArray: Rotated position.
+        """
+        ...
+
+    @overload
+    def rotate(self, position: ArrayLike, rotation: RotationType) -> Tuple[NDArray, Quaternion]:
+        """Rotate position and rotation.
+
+        Args:
+        -----
+            position (ArrayLike): 3D position.
+            rotation (RotationType): Quaternion or 3x3 rotation matrix.
+
+        Returns:
+        --------
+            Tuple[NDArray, Quaternion]: Rotated position and quaternion.
+        """
+        ...
+
+    @overload
+    def rotate(self, matrix: HomogeneousMatrix) -> HomogeneousMatrix:
+        """Rotate another matrix.
+
+        Args:
+            matrix (HomogeneousMatrix): `HomogeneousMatrix` instance.
+
+        Returns:
+            HomogeneousMatrix: Rotated matrix.
+        """
+        ...
+
+    def rotate(self, *args, **kwargs) -> TransformArgType:
+        """Rotate position, rotation or matrix.
+
+        Returns:
+            TransformArgType: Rotated result.
+        """
+        s = len(args)
+        if s == 0:
+            if not kwargs:
+                raise ValueError("At least 1 argument specified")
+
+            if "position" in kwargs:
+                position = kwargs["position"]
+                if "matrix" in kwargs:
+                    raise ValueError("Cannot specify `position` and `matrix` at the same time.")
+                elif "rotation" in kwargs:
+                    rotation = kwargs["rotation"]
+                    return self.__rotate_position_and_rotation(position, rotation)
+                else:
+                    return self.__rotate_position(position)
+            elif "matrix" in kwargs:
+                matrix = kwargs["matrix"]
+                return self.__rotate_matrix(matrix)
+            else:
+                raise KeyError(f"Unexpected keys are detected: {list(kwargs.keys())}")
+        elif s == 1:
+            arg = args[0]
+            if isinstance(arg, HomogeneousMatrix):
+                return self.__rotate_matrix(matrix=arg)
+            else:
+                return self.__rotate_position(position=arg)
+        elif s == 2:
+            position, rotation = args
+            return self.__rotate_position_and_rotation(position, rotation)
+        else:
+            raise ValueError(f"Unexpected number of arguments {s}")
+
 
 TransformArgType = TypeVar("TransformArgType", HomogeneousMatrix, NDArray, Tuple[NDArray, Quaternion])
 TransformDictArgType = TypeVar("TransformDictArgType", HomogeneousMatrix, Sequence[HomogeneousMatrix], None)

@@ -89,6 +89,25 @@ def test_homogenous_matrix_inv():
     )
 
 
+def test_homogeneous_matrix_rotate():
+    ego2map = HomogeneousMatrix((1, 0, 0), (1, 0, 0, 0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
+    pos = ego2map.rotate((2, 0, 0))
+    assert np.allclose(pos, np.array((2, 0, 0)))
+
+    pos, rot = ego2map.rotate((2, 0, 0), (1, 0, 0, 0))
+    assert np.allclose(pos, np.array((2, 0, 0)))
+    assert np.allclose(
+        rot.rotation_matrix,
+        np.array(
+            [
+                [1, 0, 0],
+                [0, 1, 0],
+                [0, 0, 1],
+            ]
+        ),
+    )
+
+
 def test_transform_dict():
     ego2map = HomogeneousMatrix((1, 0, 0), (1, 0, 0, 0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
     transforms = TransformDict(ego2map)
