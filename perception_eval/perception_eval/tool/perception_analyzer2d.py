@@ -19,7 +19,6 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 import numpy as np
@@ -31,6 +30,7 @@ from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 import yaml
 
+from .perception_analyzer_base import PerceptionAnalysisResult
 from .perception_analyzer_base import PerceptionAnalyzerBase
 from .utils import PlotAxes
 
@@ -225,7 +225,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
 
         return {"ground_truth": gt_ret, "estimation": est_ret}
 
-    def analyze(self, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame], Optional[pd.DataFrame]]:
+    def analyze(self, **kwargs) -> PerceptionAnalysisResult:
         df: pd.DataFrame = self.get(**kwargs)
         if len(df) > 0:
             ratio_df = self.summarize_ratio(df=df)
@@ -233,10 +233,10 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             confusion_matrix_df = self.get_confusion_matrix(df=df)
             metrics_df = self.summarize_score(scene=kwargs.get("scene"))
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
-            return score_df, error_df, confusion_matrix_df
+            return PerceptionAnalysisResult(score_df, error_df, confusion_matrix_df)
 
         logging.warning("There is no DataFrame to be able to analyze.")
-        return None, None, None
+        return PerceptionAnalysisResult()
 
     def summarize_error(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """Calculate mean, sigma, RMS, max and min of error.

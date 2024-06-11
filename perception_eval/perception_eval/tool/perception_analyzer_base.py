@@ -17,6 +17,7 @@ from __future__ import annotations
 from abc import ABC
 from abc import abstractmethod
 from collections.abc import Iterable
+from dataclasses import dataclass
 import logging
 from numbers import Number
 import os
@@ -53,6 +54,13 @@ from tqdm import tqdm
 from .utils import get_metrics_info
 from .utils import PlotAxes
 from .utils import setup_axis
+
+
+@dataclass
+class PerceptionAnalysisResult:
+    score: pd.DataFrame | None = None
+    error: pd.DataFrame | None = None
+    confusion_matrix: pd.DataFrame | None = None
 
 
 class PerceptionAnalyzerBase(ABC):
@@ -493,16 +501,17 @@ class PerceptionAnalyzerBase(ABC):
         return metrics_score
 
     @abstractmethod
-    def analyze(self, *args, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame], Optional[pd.DataFrame]]:
+    def analyze(self, *args, **kwargs) -> PerceptionAnalysisResult:
         """Analyze TP/FP/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
 
         Args:
             **kwargs: Specify scene, frame, area or uuid.
 
         Returns:
-            score_df (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
-            error_df (Optional[pandas.DataFrame]): DataFrame of errors.
-            confusion_matrix_df (Optional[pandas.DataFrame]): DataFrame of the confusion matrix.
+            PerceptionAnalysisResult:
+                score (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
+                error (Optional[pandas.DataFrame]): DataFrame of errors.
+                confusion_matrix (Optional[pandas.DataFrame]): DataFrame of the confusion matrix.
         """
         pass
 

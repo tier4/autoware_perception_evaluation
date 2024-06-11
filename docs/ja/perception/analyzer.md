@@ -89,15 +89,15 @@ analyzer.add_from_pkl(pickle_path)
 `PerceptionAnalyzer3D.analyze()`によって各領域に対する解析結果が算出される．N 番目に追加した scene についてのみの解析結果を求めるには，`analyzer.analyze(scene=N)`とすることで解析結果が得られる．
 
 ```python
->>> score_df, error_df = analyzer.analyze()
->>> print(score_df)
+>>> result = analyzer.analyze()
+>>> print(result.score)
                     TP   FP        FN  AP(Center Distance 3d [m])  APH(Center Distance 3d [m])  AP(IoU BEV)  APH(IoU BEV)  AP(IoU 3D)  APH(IoU 3D)  AP(Plane Distance [m])  APH(Plane Distance [m])
 ALL         0.992003  0.0  0.007997                    0.972918                     0.970923     0.972918      0.970923    0.972918     0.970923                0.972918                 0.970923
 car         1.000000  0.0  0.000000                    1.000000                     0.999460     1.000000      0.999460    1.000000     0.999460                1.000000                 0.999460
 bicycle     0.958561  0.0  0.041439                    1.000000                     1.000000     1.000000      1.000000    1.000000     1.000000                1.000000                 1.000000
 pedestrian  0.991278  0.0  0.008722                    0.900682                     0.896454     0.900682      0.896454    0.900682     0.896454                0.900682                 0.896454
 
->>> print(error_df)
+>>> print(result.error)
 ALL        x         1.394186  1.588129  7.605266e-01  2.300000  0.285734
            y         0.459921  0.611391  4.028307e-01  1.017925  0.000000
            yaw       0.188019  0.218617  1.115459e-01  0.390857  0.006516
