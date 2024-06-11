@@ -1160,7 +1160,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_threshold_list=[0.1],
+                    matching_threshold_list=[1.0],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
