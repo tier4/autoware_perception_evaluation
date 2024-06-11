@@ -764,8 +764,10 @@ class PerceptionAnalyzerBase(ABC):
                 label = None
             num_ground_truth: int = self.get_num_ground_truth(df=df, label=label)
             if num_ground_truth > 0:
-                data["TP"][i] = self.get_num_tp(df=df, label=label) / num_ground_truth
-                data["FP"][i] = self.get_num_fp(df=df, label=label) / num_ground_truth
+                num_tp = self.get_num_tp(df=df, label=label)
+                num_fp = self.get_num_fp(df=df, label=label)
+                data["TP"][i] = num_tp / num_ground_truth
+                data["FP"][i] = num_fp / (num_tp + num_fp)  # False Discovery Rate
                 data["TN"][i] = self.get_num_tn(df=df, label=label) / num_ground_truth
                 data["FN"][i] = self.get_num_fn(df=df, label=label) / num_ground_truth
         return pd.DataFrame(data, index=self.all_labels)
@@ -1165,7 +1167,9 @@ class PerceptionAnalyzerBase(ABC):
                     if status == "TP":
                         ratios.append(np.sum(est_df_["status"] == status) / num_gt)
                     elif status == "FP":
-                        ratios.append(1 - (np.sum(est_df_["status"] == "TP") / num_gt))
+                        num_tp = np.sum(est_df_["status"] == "TP")
+                        num_fp = np.sum(est_df_["status"] == status)
+                        ratios.append(num_fp / (num_tp + num_fp))  # False Discovery Rate
                     elif status == "TN":
                         ratios.append(np.sum(gt_df["status"] == status) / num_gt)
                     elif status == "FN":
