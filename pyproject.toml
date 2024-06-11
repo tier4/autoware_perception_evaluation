@@ -1,7 +1,7 @@
 # cspell: ignore Shunsuke Miura, Shintaro Tomie
 [tool.poetry]
 name = "perception_eval"
-version = "1.1.10"
+version = "1.2.2"
 description = ""
 authors = [
   "Satoshi Tanaka <satoshi.tanaka@tier4.jp>",

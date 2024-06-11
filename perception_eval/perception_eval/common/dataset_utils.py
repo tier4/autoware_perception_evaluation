@@ -251,6 +251,7 @@ def _get_sample_boxes(nusc: NuScenes, sample_data_token: str, frame_id: FrameID)
 
 def _get_transforms(nusc: NuScenes, sample_data_token: str) -> List[HomogeneousMatrix]:
     """Load transform matrices.
+    Additionally, for traffic light cameras, add transforms from BASE_LINK to TRAFFIC_LIGHT.
 
     Args:
         nusc (NuScenes): NuScenes instance.
@@ -267,14 +268,28 @@ def _get_transforms(nusc: NuScenes, sample_data_token: str) -> List[HomogeneousM
     ego2map = HomogeneousMatrix(ego_position, ego_rotation, src=FrameID.BASE_LINK, dst=FrameID.MAP)
 
     matrices = [ego2map]
+    tlr_avg_pos: List[NDArray] = []
+    tlr_avg_quat: List[Quaternion] = []
     for cs_record in nusc.calibrated_sensor:
         sensor_position = cs_record["translation"]
         sensor_rotation = Quaternion(cs_record["rotation"])
         sensor_record = nusc.get("sensor", cs_record["sensor_token"])
         sensor_frame_id = FrameID.from_value(sensor_record["channel"])
-        ego2sensor = HomogeneousMatrix(sensor_position, sensor_rotation, src=FrameID.BASE_LINK, dst=sensor_frame_id)
-        sensor2map = ego2sensor.inv().dot(ego2map)
-        matrices.extend((ego2sensor, sensor2map))
+        sensor2ego = HomogeneousMatrix(sensor_position, sensor_rotation, src=sensor_frame_id, dst=FrameID.BASE_LINK)
+        sensor2map = ego2map.dot(sensor2ego)
+        matrices.extend((sensor2ego, sensor2map))
+        if "CAM_TRAFFIC_LIGHT" in sensor_frame_id.value.upper():
+            tlr_avg_pos.append(sensor_position)
+            tlr_avg_quat.append(sensor_rotation)
+
+    # NOTE: Average positions and rotations are used for matrices of cameras related to TLR.
+    if len(tlr_avg_pos) > 0 and len(tlr_avg_quat) > 0:
+        tlr_cam_pos: NDArray = np.mean(tlr_avg_pos, axis=0)
+        tlr_cam_rot: Quaternion = sum(tlr_avg_quat) / sum(tlr_avg_quat).norm
+        tlr2ego = HomogeneousMatrix(tlr_cam_pos, tlr_cam_rot, src=FrameID.CAM_TRAFFIC_LIGHT, dst=FrameID.BASE_LINK)
+        tlr2map = ego2map.dot(tlr2ego)
+        matrices.extend((tlr2ego, tlr2map))
+
     return matrices
 
 
@@ -477,19 +492,31 @@ def _sample_to_frame_2d(
 
     sample_data_tokens: List[str] = []
     frame_id_mapping: Dict[str, FrameID] = {}
-    raw_data: Optional[Dict[FrameID, np.ndarray]] = {} if load_raw_data else None
-    for frame_id in frame_ids:
-        camera_type: str = frame_id.value.upper()
+    transforms = None
+    for frame_id_ in frame_ids:
+        camera_type: str = frame_id_.value.upper()
+        if nusc_sample["data"].get(camera_type) is None:
+            continue
         sample_data_token = nusc_sample["data"][camera_type]
         sample_data_tokens.append(sample_data_token)
-        frame_id_mapping[sample_data_token] = frame_id
-    raw_data = _load_raw_data(nusc, sample_token)
+        frame_id_mapping[sample_data_token] = frame_id_
+
+        sd_record = nusc.get("sample_data", sample_data_token)
+        if sd_record["is_key_frame"]:
+            transforms = _get_transforms(nusc, sample_data_token)
+
+    if load_raw_data:
+        raw_data = _load_raw_data(nusc, sample_token)
+    else:
+        raw_data = None
 
     object_annotations: List[Dict[str, Any]] = [
         ann for ann in nuim.object_ann if ann["sample_data_token"] in sample_data_tokens
     ]
 
     objects_: List[DynamicObject2D] = []
+    # used to merge multiple traffic lights with same regulatory element ID
+    uuids: List[str] = []
     for ann in object_annotations:
         if evaluation_task in (EvaluationTask.DETECTION2D, EvaluationTask.TRACKING2D):
             bbox: List[float] = ann["bbox"]
@@ -507,14 +534,16 @@ def _sample_to_frame_2d(
         semantic_label: LabelType = label_converter.convert_label(category_info["name"], attributes)
 
         if label_converter.label_type == TrafficLightLabel:
+            # NOTE: Check whether Regulatory Element is used
+            # in scene.json => description: "TLR, regulatory_element"
             for instance_record in nusc.instance:
                 if instance_record["token"] == ann["instance_token"]:
                     instance_name: str = instance_record["instance_name"]
                     uuid: str = instance_name.split(":")[-1]
+                    break
+            uuids.append(uuid)
         else:
             uuid: str = ann["instance_token"]
-
-        visibility = None
 
         object_: DynamicObject2D = DynamicObject2D(
             unix_time=unix_time,
@@ -523,15 +552,64 @@ def _sample_to_frame_2d(
             semantic_label=semantic_label,
             roi=roi,
             uuid=uuid,
-            visibility=visibility,
+            visibility=None,
         )
         objects_.append(object_)
+
+    if label_converter.label_type == TrafficLightLabel and evaluation_task == EvaluationTask.CLASSIFICATION2D:
+        objects_ = _merge_duplicated_traffic_lights(unix_time, objects_, uuids)
 
     frame = dataset.FrameGroundTruth(
         unix_time=unix_time,
         frame_name=frame_name,
         objects=objects_,
+        transforms=transforms,
         raw_data=raw_data,
     )
 
     return frame
+
+
+def _merge_duplicated_traffic_lights(
+    unix_time: int,
+    objects: List[DynamicObject2D],
+    uuids: List[str],
+) -> List[DynamicObject2D]:
+    """Merge traffic light objects which have same uuids and set its frame id as `FrameID.CAM_TRAFFIC_LIGHT`.
+
+    Args:
+        unix_time (int): Current unix timestamp.
+        objects (List[DynamicObject2D]): List of traffic light objects.
+            It can contain the multiple traffic lights with same uuid.
+        uuids (List[str]): List of uuids.
+
+    Returns:
+        List[DynamicObject2D]: List of merged results.
+    """
+    uuids = set(uuids)
+    ret_objects: List[DynamicObject2D] = []
+    for uuid in uuids:
+        candidates = [obj for obj in objects if obj.uuid == uuid]
+        candidate_labels = [obj.semantic_label for obj in candidates]
+        if all([label == candidate_labels[0] for label in candidate_labels]):
+            # all unknown or not unknown
+            semantic_label = candidate_labels[0]
+        else:
+            unique_labels = set([obj.semantic_label.label for obj in candidates])
+            assert len(unique_labels) == 2, (
+                "If the same regulatory element ID is assigned to multiple traffic lights, "
+                f"it must annotated with only two labels: (unknown, another one). But got, {unique_labels}"
+            )
+            semantic_label = [label for label in candidate_labels if label.label != TrafficLightLabel.UNKNOWN][0]
+            assert semantic_label.label != TrafficLightLabel.UNKNOWN
+        merged_object = DynamicObject2D(
+            unix_time=unix_time,
+            frame_id=FrameID.CAM_TRAFFIC_LIGHT,
+            semantic_score=1.0,
+            semantic_label=semantic_label,
+            roi=None,
+            uuid=uuid,
+            visibility=None,
+        )
+        ret_objects.append(merged_object)
+    return ret_objects

@@ -14,16 +14,12 @@
 
 from copy import deepcopy
 from typing import List
-from typing import Tuple
 from typing import Union
 
 import numpy as np
 from perception_eval.common.object2d import DynamicObject2D
-from perception_eval.common.object2d import Roi
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.object import ObjectState
-from perception_eval.common.point import distance_points
-from perception_eval.common.point import distance_points_bev
 from pyquaternion import Quaternion
 
 # Type aliases
