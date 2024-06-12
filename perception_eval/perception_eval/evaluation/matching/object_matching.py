@@ -21,6 +21,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
+import numpy as np
 from perception_eval.common import distance_objects
 from perception_eval.common import distance_points_bev
 from perception_eval.common import ObjectType
@@ -170,7 +171,7 @@ class CenterDistanceMatching(MatchingMethod):
         return distance_objects(estimated_object, ground_truth_object)
 
 
-_PlanePointType = Tuple[Optional[Tuple[float, float, float]], Optional[Tuple[float, float, float]]]
+_PlanePointType = Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]]
 
 
 class PlaneDistanceMatching(MatchingMethod):
@@ -199,8 +200,8 @@ class PlaneDistanceMatching(MatchingMethod):
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> None:
-        self.ground_truth_nn_plane: _PlanePointType = (None, None)
-        self.estimated_nn_plane: _PlanePointType = (None, None)
+        self.ground_truth_nn_plane: _PlanePointType = ((np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan))
+        self.estimated_nn_plane: _PlanePointType = ((np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan))
         super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
 
     def is_better_than(
