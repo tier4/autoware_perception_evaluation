@@ -170,7 +170,7 @@ class CenterDistanceMatching(MatchingMethod):
         return distance_objects(estimated_object, ground_truth_object)
 
 
-_PlanePointType = Tuple[Optional[Tuple[float, float, float]], Optional[Tuple[float, float, float]]]
+_PlanePointType = Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]]
 
 
 class PlaneDistanceMatching(MatchingMethod):
@@ -182,9 +182,9 @@ class PlaneDistanceMatching(MatchingMethod):
     Attributes:
         mode (MatchingMode): Matching mode that is `MatchingMode.PLANEDISTANCE`.
         value (Optional[float]): Plane distance[m].
-        ground_truth_nn_plane (Optional[Tuple[Tuple[float, float]]]):
+        ground_truth_nn_plane (_PlanePointType):
             Vertices of NN plane of ground truth object ((x1, y1), (x2, y2)).
-        estimated_nn_plane (Optional[Tuple[Tuple[float, float]]])]:
+        estimated_nn_plane (_PlanePointType):
             Vertices of NN plane for estimation ((x1, y1), (x2, y2)).
 
     Args:
@@ -199,8 +199,8 @@ class PlaneDistanceMatching(MatchingMethod):
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
     ) -> None:
-        self.ground_truth_nn_plane: _PlanePointType = (None, None)
-        self.estimated_nn_plane: _PlanePointType = (None, None)
+        self.ground_truth_nn_plane: _PlanePointType = ((np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan))
+        self.estimated_nn_plane: _PlanePointType = ((np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan))
         super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
 
     def is_better_than(
@@ -276,14 +276,10 @@ class PlaneDistanceMatching(MatchingMethod):
             plane_distance = math.sqrt(0.5 * distance_squared)
             # NOTE: round because the distance become 0.9999999... expecting 1.0
             distance = round(plane_distance, 10)
+            self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
+            self.estimated_nn_plane = (est_left_point, est_right_point)
         else:
-            # Sort by 2d distance
-            est_left_point, est_right_point = None, None
-            gt_left_point, gt_right_point = None, None
             distance = distance_points_bev(estimated_object.state.position, ground_truth_object.state.position)
-
-        self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
-        self.estimated_nn_plane = (est_left_point, est_right_point)
 
         return distance
 
