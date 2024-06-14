@@ -202,7 +202,7 @@ class TestObjectsFilter(unittest.TestCase):
             (
                 0.0,
                 np.array([(0, 0), (1, 1), (2, 2)]),
-                np.array([(3, None)]),
+                np.array([(3, 3)]),
                 {
                     0: Label(AutowareLabel.UNKNOWN, "unknown", []),
                     3: Label(AutowareLabel.ANIMAL, "animal", []),
@@ -225,7 +225,7 @@ class TestObjectsFilter(unittest.TestCase):
             (
                 1.5,
                 np.array([(2, 0), (1, 1), (3, 3)]),
-                np.array([(0, None)]),
+                np.array([(0, 2)]),
                 {2: Label(AutowareLabel.UNKNOWN, "unknown", [])},
             ),
             # (5)
@@ -235,7 +235,7 @@ class TestObjectsFilter(unittest.TestCase):
             (
                 1.5,
                 np.array([(2, 0), (1, 1), (3, 3)]),
-                np.array([(0, None)]),
+                np.array([(0, 2)]),
                 {2: Label(AutowareLabel.CAR, "car", [])},
             ),
             # (6)
@@ -403,7 +403,7 @@ class TestObjectsFilter(unittest.TestCase):
             (
                 0.0,
                 np.array([(0, 0), (1, 1), (2, 2)]),
-                np.array([(3, None)]),
+                np.array([(3, 3)]),
                 {
                     "0": Label(AutowareLabel.UNKNOWN, "unknown", []),
                     "3": Label(AutowareLabel.ANIMAL, "animal", []),
@@ -426,7 +426,7 @@ class TestObjectsFilter(unittest.TestCase):
             (
                 1.5,
                 np.array([(2, 0), (1, 1), (3, 3)]),
-                np.array([(0, None)]),
+                np.array([(0, 2)]),
                 {"2": Label(AutowareLabel.UNKNOWN, "unknown", [])},
             ),
             # (5)
@@ -436,7 +436,7 @@ class TestObjectsFilter(unittest.TestCase):
             (
                 1.5,
                 np.array([(2, 0), (1, 1), (3, 3)]),
-                np.array([(0, None)]),
+                np.array([(0, 2)]),
                 {"2": Label(AutowareLabel.CAR, "car", [])},
             ),
             # (6)
@@ -485,44 +485,42 @@ class TestObjectsFilter(unittest.TestCase):
                 self.assertEqual(
                     len(tp_results),
                     len(ans_tp_pair_idx),
-                    f"Number of elements are not same, out: {len(tp_results)}, ans: {len(ans_fp_pair_idx)}",
+                    f"[{n + 1}] Number of TPs are not same, out: {len(tp_results)}, ans: {len(ans_tp_pair_idx)}",
                 )
                 for i, tp_result_ in enumerate(tp_results):
                     self.assertIn(
                         tp_result_.estimated_object,
                         estimated_objects,
-                        f"TP estimated objects[{i}]",
+                        f"[{n + 1}] TP estimated objects[{i}]",
                     )
                     est_idx: int = estimated_objects.index(tp_result_.estimated_object)
                     gt_idx: int = ans_tp_pair_idx[ans_tp_pair_idx[:, 0] == est_idx][0, 1]
                     self.assertEqual(
-                        tp_result_.ground_truth_object,
-                        self.dummy_ground_truth_objects[gt_idx],
+                        tp_result_.ground_truth_object, self.dummy_ground_truth_objects[gt_idx], f"[{n + 1}]"
                     )
 
                 # FP
                 self.assertEqual(
                     len(fp_results),
                     len(ans_fp_pair_idx),
-                    f"Number of elements are not same, out: {len(fp_results)}, ans: {len(ans_fp_pair_idx)}",
+                    f"[{n + 1}] Number of FPs are not same, out: {len(fp_results)}, ans: {len(ans_fp_pair_idx)}",
                 )
                 for j, fp_result_ in enumerate(fp_results):
                     self.assertIn(
                         fp_result_.estimated_object,
                         estimated_objects,
-                        f"FP estimated objects[{j}]",
+                        f"[{n + 1}] FP estimated objects[{j}]",
                     )
                     est_idx: int = estimated_objects.index(fp_result_.estimated_object)
                     gt_idx: Optional[int] = ans_fp_pair_idx[ans_fp_pair_idx[:, 0] == est_idx][0, 1]
                     if gt_idx is None:
                         self.assertIsNone(
                             fp_result_.ground_truth_object,
-                            "ground truth must be None",
+                            "[{n + 1}]ground truth must be None",
                         )
                     else:
                         self.assertEqual(
-                            fp_result_.ground_truth_object,
-                            self.dummy_ground_truth_objects[gt_idx],
+                            fp_result_.ground_truth_object, self.dummy_ground_truth_objects[gt_idx], f"[{n + 1}]"
                         )
 
     def test_get_fn_objects(self):

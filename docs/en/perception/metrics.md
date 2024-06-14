@@ -251,7 +251,7 @@
 
 ## Matching
 
-- A class of the way of matching estimation and GT
+- A Class to represent the method of matching estimation and GT
   - For the details, see [perception_eval/evaluation/matching/object_matching.py](../../../perception_eval/perception_eval/evaluation/matching/object_matching.py)
 
 | Matching Method    | Value                                                                 |
@@ -261,10 +261,10 @@
 | IoU 3D             | IoU 3D score between two objects                                      |
 | Plane Distance     | Nearest plane distance between two objects(explain the details below) |
 
-- A Condition of matching is following. Center Distance 3D is used as default.
+- We match estimated objects and GTs by the following policy:
 
-1. Same label
-2. Matching the nearest estimation and GT primary.
+1. Matching the nearest estimated objects and GTs which have the same label primary.
+2. Matching the nearest estimated objects and GTs regardless of their label.
 
 <img src="../../fig/perception/object_matching1.svg">
 
