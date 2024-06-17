@@ -419,6 +419,9 @@ class PerceptionAnalyzerBase(ABC):
         if df is None:
             df = self.df
 
+        if len(df) < 2:
+            return pd.DataFrame(), pd.DataFrame()
+
         gt_df = df.xs("ground_truth", level=1)
         est_df = df.xs("estimation", level=1)
         valid_idx = np.bitwise_and(~gt_df["status"].isnull(), ~est_df["status"].isnull())
@@ -697,6 +700,10 @@ class PerceptionAnalyzerBase(ABC):
             df = self.df
 
         gt_df, est_df = self.get_pair_results(df[df["status"].isin(["TP", "FP", "TN"])])
+
+        if gt_df.empty or est_df.empty:
+            return np.empty(0)
+
         errors = []
         for col in column:
             if col == "distance":
