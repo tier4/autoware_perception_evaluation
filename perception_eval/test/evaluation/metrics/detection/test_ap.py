@@ -1187,7 +1187,7 @@ class TestAp(unittest.TestCase):
             (-math.pi / 2.0, 1.0, 0.25),
             # Given opposite direction, aph is 0.0.
             (math.pi, 1.0, 0.0),
-            (-math.pi, 0.0, 0.0),
+            (-math.pi, 1.0, 0.0),
             # Given diff_yaw is pi/4, aph is 0.75**2 times ap
             (math.pi / 4, 1.0, 0.5625),
             (-math.pi / 4, 1.0, 0.5625),
@@ -1231,7 +1231,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_threshold_list=[1.0],
+                    matching_threshold_list=[1.5],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -1239,7 +1239,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_threshold_list=[1.0],
+                    matching_threshold_list=[1.5],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)

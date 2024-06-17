@@ -696,24 +696,31 @@ class PerceptionAnalyzerBase(ABC):
         if df is None:
             df = self.df
 
-        df_ = df[df["status"].isin(["TP", "FP", "TN"])]
+        gt_df, est_df = self.get_pair_results(df[df["status"].isin(["TP", "FP", "TN"])])
         errors = []
         for col in column:
             if col == "distance":
-                df_arr = np.array(df_[["x", "y"]])  # (N, 2)
+                gt_arr = np.array(gt_df[["x", "y"]])  # (N, 2)
+                est_arr = np.array(est_df[["x", "y"]])
             elif col == "nn_plane":
-                df_arr = np.stack(
+                gt_arr = np.stack(
                     (
-                        df_["nn_point1"].tolist(),
-                        df_["nn_point2"].tolist(),
+                        gt_df["nn_point1"].tolist(),
+                        gt_df["nn_point2"].tolist(),
+                    ),
+                    axis=1,
+                )  # (N, 2, 3)
+                est_arr = np.stack(
+                    (
+                        est_df["nn_point1"].tolist(),
+                        est_df["nn_point2"].tolist(),
                     ),
                     axis=1,
                 )  # (N, 2, 3)
             else:
-                df_arr = np.array(df_[col])
-            gt_vals = df_arr[::2]
-            est_vals = df_arr[1::2]
-            err: np.ndarray = gt_vals - est_vals
+                gt_arr = np.array(gt_df[col])
+                est_arr = np.array(est_df[col])
+            err: np.ndarray = gt_arr - est_arr
             if remove_nan:
                 err = err[~np.isnan(err)]
 
@@ -767,8 +774,10 @@ class PerceptionAnalyzerBase(ABC):
                 label = None
             num_ground_truth: int = self.get_num_ground_truth(df=df, label=label)
             if num_ground_truth > 0:
-                data["TP"][i] = self.get_num_tp(df=df, label=label) / num_ground_truth
-                data["FP"][i] = self.get_num_fp(df=df, label=label) / num_ground_truth
+                num_tp = self.get_num_tp(df=df, label=label)
+                num_fp = self.get_num_fp(df=df, label=label)
+                data["TP"][i] = num_tp / num_ground_truth
+                data["FP"][i] = num_fp / (num_tp + num_fp)  # False Discovery Rate
                 data["TN"][i] = self.get_num_tn(df=df, label=label) / num_ground_truth
                 data["FN"][i] = self.get_num_fn(df=df, label=label) / num_ground_truth
         return pd.DataFrame(data, index=self.all_labels)
@@ -794,7 +803,7 @@ class PerceptionAnalyzerBase(ABC):
 
         return pd.DataFrame(data, index=self.all_labels)
 
-    def get_confusion_matrix(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+    def get_confusion_matrix(self, df: Optional[pd.DataFrame] = None) -> Optional[pd.DataFrame]:
         """Returns confusion matrix as DataFrame.
 
         Args:
@@ -814,6 +823,8 @@ class PerceptionAnalyzerBase(ABC):
 
         num_classes = len(target_labels)
         indices = num_classes * gt_indices + est_indices
+        if len(indices) == 0:
+            return None
         matrix: np.ndarray = np.bincount(indices, minlength=num_classes**2)
         matrix = matrix.reshape(num_classes, num_classes)
         return pd.DataFrame(data=matrix, index=target_labels, columns=target_labels)
@@ -1192,7 +1203,9 @@ class PerceptionAnalyzerBase(ABC):
                     if status == "TP":
                         ratios.append(np.sum(est_df_["status"] == status) / num_gt)
                     elif status == "FP":
-                        ratios.append(1 - (np.sum(est_df_["status"] == "TP") / num_gt))
+                        num_tp = np.sum(est_df_["status"] == "TP")
+                        num_fp = np.sum(est_df_["status"] == status)
+                        ratios.append(num_fp / (num_tp + num_fp))  # False Discovery Rate
                     elif status == "TN":
                         ratios.append(np.sum(gt_df["status"] == status) / num_gt)
                     elif status == "FN":

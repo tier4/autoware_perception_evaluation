@@ -226,12 +226,12 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 gt: DynamicObject = object_result
             else:
                 raise ValueError(f"For DynamicObject status must be in FP/TN/FN, but got {status}")
-            gt_point1, gt_point2 = None, None
-            est_point1, est_point2 = None, None
+            gt_point1, gt_point2 = (np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan)
+            est_point1, est_point2 = (np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan)
         elif object_result is None:
             gt, estimation = None, None
-            gt_point1, gt_point2 = None, None
-            est_point1, est_point2 = None, None
+            gt_point1, gt_point2 = (np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan)
+            est_point1, est_point2 = (np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan)
         else:
             raise TypeError(f"Unexpected object type: {type(object_result)}")
 
@@ -256,9 +256,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             )
             gt_x, gt_y, _ = gt_position
             gt_yaw, _, _ = gt_rotation.yaw_pitch_roll
-            if gt_point1 is not None:
+            if not np.isnan(gt_point1).all():
                 gt_point1 = transforms.transform(transform_key, gt_point1)
-            if gt_point2 is not None:
+            if not np.isnan(gt_point2).all():
                 gt_point2 = transforms.transform(transform_key, gt_point2)
 
             gt_w, gt_l, gt_h = gt.state.size
@@ -289,7 +289,12 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 scene=self.num_scene,
             )
         else:
-            gt_ret = {k: None for k in self.keys()}
+            gt_ret = {}
+            for key in self.keys():
+                if key in ("nn_point1", "nn_point2"):
+                    gt_ret[key] = (np.nan, np.nan, np.nan)
+                else:
+                    gt_ret[key] = None
 
         if estimation:
             if estimation.state.velocity is not None:
@@ -305,9 +310,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             )
             est_x, est_y, _ = est_position
             est_yaw, _, _ = est_rotation.yaw_pitch_roll
-            if est_point1 is not None:
+            if not np.isnan(est_point1).all():
                 est_point1 = transforms.transform(transform_key, est_point1)
-            if est_point2 is not None:
+            if not np.isnan(est_point2).all():
                 est_point2 = transforms.transform(transform_key, est_point2)
 
             est_w, est_l, est_h = estimation.state.size
@@ -338,7 +343,12 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 scene=self.num_scene,
             )
         else:
-            est_ret = {k: None for k in self.keys()}
+            est_ret = {}
+            for key in self.keys():
+                if key in ("nn_point1", "nn_point2"):
+                    est_ret[key] = (np.nan, np.nan, np.nan)
+                else:
+                    est_ret[key] = None
 
         return {"ground_truth": gt_ret, "estimation": est_ret}
 
