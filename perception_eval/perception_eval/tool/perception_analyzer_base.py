@@ -17,6 +17,7 @@ from __future__ import annotations
 from abc import ABC
 from abc import abstractmethod
 from collections.abc import Iterable
+from dataclasses import dataclass
 import logging
 from numbers import Number
 import os
@@ -53,6 +54,13 @@ from tqdm import tqdm
 from .utils import get_metrics_info
 from .utils import PlotAxes
 from .utils import setup_axis
+
+
+@dataclass
+class PerceptionAnalysisResult:
+    score: pd.DataFrame | None = None
+    error: pd.DataFrame | None = None
+    confusion_matrix: pd.DataFrame | None = None
 
 
 class PerceptionAnalyzerBase(ABC):
@@ -411,6 +419,9 @@ class PerceptionAnalyzerBase(ABC):
         if df is None:
             df = self.df
 
+        if len(df) < 2:
+            return pd.DataFrame(), pd.DataFrame()
+
         gt_df = df.xs("ground_truth", level=1)
         est_df = df.xs("estimation", level=1)
         valid_idx = np.bitwise_and(~gt_df["status"].isnull(), ~est_df["status"].isnull())
@@ -493,15 +504,17 @@ class PerceptionAnalyzerBase(ABC):
         return metrics_score
 
     @abstractmethod
-    def analyze(self, *args, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
+    def analyze(self, *args, **kwargs) -> PerceptionAnalysisResult:
         """Analyze TP/FP/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
 
         Args:
             **kwargs: Specify scene, frame, area or uuid.
 
         Returns:
-            score_df (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
-            error_df (Optional[pandas.DataFrame]): DataFrame of errors.
+            PerceptionAnalysisResult:
+                score (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
+                error (Optional[pandas.DataFrame]): DataFrame of errors.
+                confusion_matrix (Optional[pandas.DataFrame]): DataFrame of the confusion matrix.
         """
         pass
 
@@ -687,6 +700,10 @@ class PerceptionAnalyzerBase(ABC):
             df = self.df
 
         gt_df, est_df = self.get_pair_results(df[df["status"].isin(["TP", "FP", "TN"])])
+
+        if gt_df.empty or est_df.empty:
+            return np.empty(0)
+
         errors = []
         for col in column:
             if col == "distance":
@@ -792,6 +809,32 @@ class PerceptionAnalyzerBase(ABC):
         data: Dict[str, Any] = get_metrics_info(metrics_score)
 
         return pd.DataFrame(data, index=self.all_labels)
+
+    def get_confusion_matrix(self, df: Optional[pd.DataFrame] = None) -> Optional[pd.DataFrame]:
+        """Returns confusion matrix as DataFrame.
+
+        Args:
+            df (Optional[pd.DataFrame]): Specify if you want to use filtered DataFrame. Defaults to None.
+
+        Returns:
+            pd.DataFrame: Confusion matrix.
+        """
+        gt_df, est_df = self.get_pair_results(df)
+
+        target_labels: List[str] = self.target_labels.copy()
+        if self.config.label_params["allow_matching_unknown"] and "unknown" not in target_labels:
+            target_labels.append("unknown")
+
+        gt_indices: np.ndarray = gt_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
+        est_indices: np.ndarray = est_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
+
+        num_classes = len(target_labels)
+        indices = num_classes * gt_indices + est_indices
+        if len(indices) == 0:
+            return None
+        matrix: np.ndarray = np.bincount(indices, minlength=num_classes**2)
+        matrix = matrix.reshape(num_classes, num_classes)
+        return pd.DataFrame(data=matrix, index=target_labels, columns=target_labels)
 
     def plot_num_object(
         self,
