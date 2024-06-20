@@ -150,7 +150,7 @@ def interpolate_object(object_1: ObjectType, object_2: ObjectType, t1: float, t2
          object_2 (ObjectType): An object
     Returns: ObjectType: The interpolated object.
     """
-    if type(object_1) != type(object_2):
+    if not isinstance(object_1, type(object_2)):
         raise TypeError(f"objects' type must be same, but got {type(object_1) and {type(object_2)}}")
 
     if isinstance(object_1, DynamicObject):
