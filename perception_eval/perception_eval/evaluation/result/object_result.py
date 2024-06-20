@@ -35,6 +35,7 @@ from perception_eval.common.transform import TransformDict
 from perception_eval.evaluation.matching import CenterDistanceMatching
 from perception_eval.evaluation.matching import IOU2dMatching
 from perception_eval.evaluation.matching import IOU3dMatching
+from perception_eval.evaluation.matching import MatchingLabelPolicy
 from perception_eval.evaluation.matching import MatchingMethod
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching import PlaneDistanceMatching
@@ -58,7 +59,7 @@ class DynamicObjectWithPerceptionResult:
         self,
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
-        allow_matching_unknown: bool,
+        matching_label_policy: MatchingLabelPolicy = MatchingLabelPolicy.DEFAULT,
         transforms: Optional[TransformDict] = None,
     ) -> None:
         """[summary]
@@ -67,6 +68,7 @@ class DynamicObjectWithPerceptionResult:
         Args:
             estimated_object (ObjectType): The estimated object by inference like CenterPoint
             ground_truth_objects (Optional[ObjectType]): The list of Ground truth objects
+            matching_label_policy (MatchingLabelPolicy, optional): Matching policy considering labels between estimation and GT.
         """
         if ground_truth_object is not None:
             assert isinstance(
@@ -75,7 +77,7 @@ class DynamicObjectWithPerceptionResult:
 
         self.estimated_object: ObjectType = estimated_object
         self.ground_truth_object: Optional[ObjectType] = ground_truth_object
-        self.allow_matching_unknown = allow_matching_unknown
+        self.matching_label_policy = matching_label_policy
 
         if isinstance(self.estimated_object, DynamicObject2D) and self.estimated_object.roi is None:
             self.center_distance = None
@@ -270,11 +272,7 @@ class DynamicObjectWithPerceptionResult:
             bool: Whether label is correct
         """
         if self.ground_truth_object:
-            return (
-                True
-                if self.allow_matching_unknown and self.estimated_object.semantic_label.is_unknown()
-                else self.estimated_object.semantic_label == self.ground_truth_object.semantic_label
-            )
+            return self.matching_label_policy.is_matchable(self.estimated_object, self.ground_truth_object)
         else:
             return False
 
@@ -284,7 +282,7 @@ def get_object_results(
     estimated_objects: List[ObjectType],
     ground_truth_objects: List[ObjectType],
     target_labels: Optional[List[LabelType]] = None,
-    allow_matching_unknown: bool = True,
+    matching_label_policy: MatchingLabelPolicy = MatchingLabelPolicy.DEFAULT,
     matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
     matchable_thresholds: Optional[List[float]] = None,
     transforms: Optional[TransformDict] = None,
@@ -302,8 +300,8 @@ def get_object_results(
         estimated_objects (List[ObjectType]): Estimated objects list.
         ground_truth_objects (List[ObjectType]): Ground truth objects list.
         target_labels (Optional[List[LabelType]]): List of labels.
-        allow_matching_unknown (bool): Whether to allow to match estimated objects which are unknown and GTs.
-            Defaults to True.
+        matching_label_policy (MatchingLabelPolicy, optional): Policy of matching objects.
+            Defaults to MatchingLabelPolicy.DEFAULT.
         matching_mode (MatchingMode): MatchingMode instance.
         matchable_thresholds (Optional[List[float]]): Thresholds to be
 
@@ -337,7 +335,7 @@ def get_object_results(
     score_table: np.ndarray = _get_score_table(
         estimated_objects,
         ground_truth_objects,
-        allow_matching_unknown,
+        matching_label_policy,
         matching_method_module,
         target_labels,
         matchable_thresholds,
@@ -365,7 +363,7 @@ def get_object_results(
 
         est_obj = estimated_objects_.pop(est_idx)
         gt_obj = ground_truth_objects_.pop(gt_idx)
-        result = DynamicObjectWithPerceptionResult(est_obj, gt_obj, allow_matching_unknown, transforms=transforms)
+        result = DynamicObjectWithPerceptionResult(est_obj, gt_obj, matching_label_policy, transforms=transforms)
         object_results.append(result)
 
         # Remove corresponding estimated objects and GTs from the score table.
@@ -390,7 +388,7 @@ def get_object_results(
 
         est_obj = estimated_objects_.pop(est_idx)
         gt_obj = ground_truth_objects_.pop(gt_idx)
-        result = DynamicObjectWithPerceptionResult(est_obj, gt_obj, allow_matching_unknown, transforms=transforms)
+        result = DynamicObjectWithPerceptionResult(est_obj, gt_obj, matching_label_policy, transforms=transforms)
         object_results.append(result)
 
         # Remove corresponding estimated objects and GTs from the score table
@@ -432,11 +430,7 @@ def _get_object_results_with_id(
                 )
             if est_object.uuid == gt_object.uuid and est_object.frame_id == gt_object.frame_id:
                 object_results.append(
-                    DynamicObjectWithPerceptionResult(
-                        estimated_object=est_object,
-                        ground_truth_object=gt_object,
-                        allow_matching_unknown=False,
-                    )
+                    DynamicObjectWithPerceptionResult(estimated_object=est_object, ground_truth_object=gt_object)
                 )
                 estimated_objects_.remove(est_object)
                 ground_truth_objects_.remove(gt_object)
@@ -484,11 +478,7 @@ def _get_object_results_for_tlr(
                 and gt_object in ground_truth_objects_
             ):
                 object_results.append(
-                    DynamicObjectWithPerceptionResult(
-                        estimated_object=est_object,
-                        ground_truth_object=gt_object,
-                        allow_matching_unknown=False,
-                    )
+                    DynamicObjectWithPerceptionResult(estimated_object=est_object, ground_truth_object=gt_object)
                 )
                 estimated_objects_.remove(est_object)
                 ground_truth_objects_.remove(gt_object)
@@ -510,11 +500,7 @@ def _get_object_results_for_tlr(
                 and gt_object in ground_truth_objects_
             ):
                 object_results.append(
-                    DynamicObjectWithPerceptionResult(
-                        estimated_object=est_object,
-                        ground_truth_object=gt_object,
-                        allow_matching_unknown=False,
-                    )
+                    DynamicObjectWithPerceptionResult(estimated_object=est_object, ground_truth_object=gt_object)
                 )
                 estimated_objects_.remove(est_object)
                 ground_truth_objects_.remove(gt_object)
@@ -532,11 +518,7 @@ def _get_fp_object_results(estimated_objects: List[ObjectType]) -> List[DynamicO
     """
     object_results: List[DynamicObjectWithPerceptionResult] = []
     for est_obj_ in estimated_objects:
-        object_result_: DynamicObjectWithPerceptionResult = DynamicObjectWithPerceptionResult(
-            estimated_object=est_obj_,
-            ground_truth_object=None,
-            allow_matching_unknown=False,
-        )
+        object_result_ = DynamicObjectWithPerceptionResult(estimated_object=est_obj_, ground_truth_object=None)
         object_results.append(object_result_)
 
     return object_results
@@ -573,7 +555,7 @@ def _get_matching_module(matching_mode: MatchingMode) -> Tuple[Callable, bool]:
 def _get_score_table(
     estimated_objects: List[ObjectType],
     ground_truth_objects: List[ObjectType],
-    allow_matching_unknown: bool,
+    matching_label_policy: MatchingLabelPolicy,
     matching_method_module: Callable,
     target_labels: Optional[List[LabelType]],
     matchable_thresholds: Optional[List[float]],
@@ -585,7 +567,7 @@ def _get_score_table(
     Args:
         estimated_objects (List[ObjectType]): Estimated objects list.
         ground_truth_objects (List[ObjectType]): Ground truth objects list.
-        allow_matching_unknown (bool): Indicates whether allow to match with unknown label.
+        matching_label_policy (MatchingLabelPolicy): Indicates whether allow to match with unknown label or any.
         matching_method_module (Callable): MatchingMethod instance.
         target_labels (Optional[List[LabelType]]): Target labels to be evaluated.
         matching_thresholds (Optional[List[float]]): List of thresholds
@@ -599,13 +581,6 @@ def _get_score_table(
     score_table: np.ndarray = np.full((num_row, num_col, 2), (np.nan, False))
     for i, est_obj in enumerate(estimated_objects):
         for j, gt_obj in enumerate(ground_truth_objects):
-            if gt_obj.semantic_label.is_fp():
-                is_label_ok = True
-            elif allow_matching_unknown:
-                is_label_ok = est_obj.semantic_label == gt_obj.semantic_label or est_obj.semantic_label.is_unknown()
-            else:
-                is_label_ok = est_obj.semantic_label == gt_obj.semantic_label
-
             is_same_frame_id: bool = est_obj.frame_id == gt_obj.frame_id
 
             if is_same_frame_id:
@@ -618,6 +593,7 @@ def _get_score_table(
                 )
 
                 if threshold is None or (threshold is not None and matching_method.is_better_than(threshold)):
+                    is_label_ok = matching_label_policy.is_matchable(est_obj, gt_obj)
                     score_table[i, j] = (matching_method.value, is_label_ok)
 
     return score_table

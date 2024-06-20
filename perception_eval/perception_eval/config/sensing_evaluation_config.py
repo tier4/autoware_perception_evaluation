@@ -76,7 +76,6 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
         l_params: Dict[str, Any] = {
             "label_prefix": e_cfg.get("label_prefix", "autoware"),
             "merge_similar_labels": e_cfg.get("merge_similar_labels", False),
-            "allow_matching_unknown": True,
             "count_label_number": e_cfg.get("count_label_number", True),
         }
         return l_params
