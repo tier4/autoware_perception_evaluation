@@ -19,6 +19,7 @@ from typing import Tuple
 import unittest
 
 from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.evaluation.matching import MatchingLabelPolicy
 
 
 class TestPerceptionEvaluationConfig(unittest.TestCase):
@@ -60,3 +61,45 @@ class TestPerceptionEvaluationConfig(unittest.TestCase):
                         result_root_directory="/tmp",
                         evaluation_config_dict=evaluation_config_dict,
                     )
+
+    def test_matching_label_policy(self) -> None:
+        """Test if `MatchingLabelPolicy` is set as expected."""
+        evaluation_config_dict = {
+            "evaluation_task": "detection",
+            "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+            "max_x_position": 102.4,
+            "max_y_position": 102.4,
+            "center_distance_thresholds": [
+                [1.0, 1.0, 1.0, 1.0],
+                [2.0, 2.0, 2.0, 2.0],
+            ],
+            "plane_distance_thresholds": [2.0, 3.0],
+            "iou_bev_thresholds": [0.5],
+            "iou_3d_thresholds": [0.5],
+            "min_point_numbers": [0, 0, 0, 0],
+            "label_prefix": "autoware",
+            "merge_similar_labels": False,
+        }
+        # patterns: (policy, expect)
+        patterns: List[Tuple[Dict[str, Any], MatchingLabelPolicy]] = [
+            ({}, MatchingLabelPolicy.DEFAULT),
+            ({"allow_matching_unknown": False}, MatchingLabelPolicy.DEFAULT),
+            ({"allow_matching_unknown": True}, MatchingLabelPolicy.ALLOW_UNKNOWN),
+            ({"matching_label_policy": "DEFAULT"}, MatchingLabelPolicy.DEFAULT),
+            ({"matching_label_policy": "default"}, MatchingLabelPolicy.DEFAULT),
+            ({"matching_label_policy": "ALLOW_UNKNOWN"}, MatchingLabelPolicy.ALLOW_UNKNOWN),
+            ({"matching_label_policy": "allow_unknown"}, MatchingLabelPolicy.ALLOW_UNKNOWN),
+            ({"matching_label_policy": "ALLOW_ANY"}, MatchingLabelPolicy.ALLOW_ANY),
+            ({"matching_label_policy": "allow_any"}, MatchingLabelPolicy.ALLOW_ANY),
+        ]
+        for n, (policy, expect) in enumerate(patterns):
+            with self.subTest(f"Test case: {n + 1}"):
+                evaluation_config_dict.update(policy)
+                config = PerceptionEvaluationConfig(
+                    dataset_paths="/tmp",
+                    frame_id="base_link",
+                    result_root_directory="/tmp",
+                    evaluation_config_dict=evaluation_config_dict,
+                )
+
+                assert expect == config.label_params["matching_label_policy"], f"Fail@{n + 1}"
