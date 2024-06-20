@@ -27,6 +27,7 @@ from perception_eval.common import ObjectType
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import get_point_left_right_index
 from perception_eval.common.point import polygon_to_list
+from perception_eval.common.schema import FrameID
 from perception_eval.common.shape import ShapeType
 from perception_eval.common.transform import TransformDict
 from shapely.geometry import Polygon
@@ -69,7 +70,8 @@ class MatchingMethod(ABC):
     mode: MatchingMode
 
     @overload
-    def __init__(self, estimated_object: ObjectType, ground_truth_object: Optional[ObjectType]) -> None: ...
+    def __init__(self, estimated_object: ObjectType, ground_truth_object: Optional[ObjectType]) -> None:
+        ...
 
     @overload
     def __init__(
@@ -77,7 +79,8 @@ class MatchingMethod(ABC):
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
         transforms: Optional[TransformDict] = None,
-    ) -> None: ...
+    ) -> None:
+        ...
 
     def __init__(
         self,
@@ -270,8 +273,17 @@ class PlaneDistanceMatching(MatchingMethod):
             and ground_truth_object.state.shape_type == ShapeType.BOUNDING_BOX
         ):
             # Calculate min distance from ego vehicle
-            # TODO: for objects with respect to map coords need to transform to base link coords
-            gt_distances: np.ndarray = np.linalg.norm(gt_corners[:, :2], axis=1)
+            if ground_truth_object.frame_id != FrameID.BASE_LINK:
+                assert transforms is not None, f"`transforms` must be specified for {ground_truth_object.frame_id}"
+                gt_corners_base_link = np.array(
+                    [
+                        transforms.transform((ground_truth_object.frame_id, FrameID.BASE_LINK), corner)
+                        for corner in gt_corners
+                    ]
+                )
+                gt_distances = np.linalg.norm(gt_corners_base_link[:, :2], axis=1)
+            else:
+                gt_distances = gt_distances = np.linalg.norm(gt_corners[:, :2], axis=1)
             sort_idx = np.argsort(gt_distances)
 
             gt_corners = gt_corners[sort_idx]
