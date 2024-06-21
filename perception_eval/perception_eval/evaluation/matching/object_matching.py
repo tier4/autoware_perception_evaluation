@@ -73,7 +73,7 @@ class MatchingMethod(ABC):
         ground_truth_object: Optional[ObjectType],
     ) -> None:
         if ground_truth_object is not None:
-            assert type(estimated_object) == type(ground_truth_object)
+            assert isinstance(estimated_object, type(ground_truth_object))
         self.value: Optional[float] = self._calculate_matching_score(
             estimated_object=estimated_object,
             ground_truth_object=ground_truth_object,
