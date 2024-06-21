@@ -19,11 +19,11 @@ from typing import Tuple
 from typing import Union
 import warnings
 
+import numpy as np
 from perception_eval.common import ObjectType
 from perception_eval.common.label import CommonLabel
 from perception_eval.common.label import Label
 from perception_eval.common.label import LabelType
-from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
@@ -246,6 +246,7 @@ def get_positive_objects(
                     DynamicObjectWithPerceptionResult(
                         object_result.estimated_object,
                         None,
+                        object_result.allow_matching_unknown,
                     )
                 )
             else:
@@ -516,6 +517,7 @@ def _is_target_object(
         any([label == CommonLabel.UNKNOWN for label in target_labels]) if target_labels is not None else False
     )
 
+    # use special threshold for unknown labeled estimations
     use_unknown_threshold: bool = is_unknown_estimation and not is_contained_unknown
 
     label_threshold = LabelThreshold(
@@ -556,7 +558,7 @@ def _is_target_object(
     if position_ is not None:
         if is_target and max_x_position_list is not None:
             max_x_position = (
-                max_x_position_list[0]
+                np.mean(max_x_position_list)
                 if use_unknown_threshold
                 else label_threshold.get_label_threshold(max_x_position_list)
             )
@@ -564,7 +566,7 @@ def _is_target_object(
 
         if is_target and max_y_position_list is not None:
             max_y_position = (
-                max_y_position_list[0]
+                np.mean(max_y_position_list)
                 if use_unknown_threshold
                 else label_threshold.get_label_threshold(max_y_position_list)
             )
@@ -573,7 +575,7 @@ def _is_target_object(
     if bev_distance_ is not None:
         if is_target and max_distance_list is not None:
             max_distance = (
-                max_distance_list[0]
+                np.mean(max_distance_list)
                 if use_unknown_threshold
                 else label_threshold.get_label_threshold(max_distance_list)
             )
@@ -581,7 +583,7 @@ def _is_target_object(
 
         if is_target and min_distance_list is not None:
             min_distance = (
-                min_distance_list[0]
+                np.mean(min_distance_list)
                 if use_unknown_threshold
                 else label_threshold.get_label_threshold(min_distance_list)
             )

@@ -29,7 +29,6 @@ class FrameID(Enum):
 
     LIDAR_CONCAT = "lidar_concat"
     LIDAR_TOP = "lidar_top"
-    OBJECT = "object"
 
     RADAR_FRONT = "radar_front"
     RADAR_FRONT_RIGHT = "radar_front_right"

@@ -33,6 +33,7 @@ from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 import yaml
 
+from .perception_analyzer_base import PerceptionAnalysisResult
 from .perception_analyzer_base import PerceptionAnalyzerBase
 from .utils import extract_area_results
 from .utils import filter_frame_by_distance
@@ -225,12 +226,12 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 gt: DynamicObject = object_result
             else:
                 raise ValueError(f"For DynamicObject status must be in FP/TN/FN, but got {status}")
-            gt_point1, gt_point2 = None, None
-            est_point1, est_point2 = None, None
+            gt_point1, gt_point2 = (np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan)
+            est_point1, est_point2 = (np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan)
         elif object_result is None:
             gt, estimation = None, None
-            gt_point1, gt_point2 = None, None
-            est_point1, est_point2 = None, None
+            gt_point1, gt_point2 = (np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan)
+            est_point1, est_point2 = (np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan)
         else:
             raise TypeError(f"Unexpected object type: {type(object_result)}")
 
@@ -255,9 +256,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             )
             gt_x, gt_y, _ = gt_position
             gt_yaw, _, _ = gt_rotation.yaw_pitch_roll
-            if gt_point1 is not None:
+            if not np.isnan(gt_point1).all():
                 gt_point1 = transforms.transform(transform_key, gt_point1)
-            if gt_point2 is not None:
+            if not np.isnan(gt_point2).all():
                 gt_point2 = transforms.transform(transform_key, gt_point2)
 
             gt_w, gt_l, gt_h = gt.state.size
@@ -288,7 +289,12 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 scene=self.num_scene,
             )
         else:
-            gt_ret = {k: None for k in self.keys()}
+            gt_ret = {}
+            for key in self.keys():
+                if key in ("nn_point1", "nn_point2"):
+                    gt_ret[key] = (np.nan, np.nan, np.nan)
+                else:
+                    gt_ret[key] = None
 
         if estimation:
             if estimation.state.velocity is not None:
@@ -304,9 +310,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             )
             est_x, est_y, _ = est_position
             est_yaw, _, _ = est_rotation.yaw_pitch_roll
-            if est_point1 is not None:
+            if not np.isnan(est_point1).all():
                 est_point1 = transforms.transform(transform_key, est_point1)
-            if est_point2 is not None:
+            if not np.isnan(est_point2).all():
                 est_point2 = transforms.transform(transform_key, est_point2)
 
             est_w, est_l, est_h = estimation.state.size
@@ -337,7 +343,12 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 scene=self.num_scene,
             )
         else:
-            est_ret = {k: None for k in self.keys()}
+            est_ret = {}
+            for key in self.keys():
+                if key in ("nn_point1", "nn_point2"):
+                    est_ret[key] = (np.nan, np.nan, np.nan)
+                else:
+                    est_ret[key] = None
 
         return {"ground_truth": gt_ret, "estimation": est_ret}
 
@@ -371,7 +382,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         distance: Optional[Iterable[float]] = None,
         area: Optional[int] = None,
         **kwargs,
-    ) -> np.Tuple[pd.DataFrame | None]:
+    ) -> PerceptionAnalysisResult:
         if scene is not None:
             kwargs.update({"scene": scene})
         if area is not None:
@@ -390,10 +401,11 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 scene = None
             metrics_df = self.summarize_score(scene=scene, distance=distance, area=area)
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
-            return score_df, error_df
+            confusion_matrix_df = self.get_confusion_matrix(df=df)
+            return PerceptionAnalysisResult(score_df, error_df, confusion_matrix_df)
         else:
             logging.warning("There is no DataFrame to be able to analyze.")
-            return None, None
+            return PerceptionAnalysisResult()
 
     def summarize_error(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """Calculate mean, sigma, RMS, max and min of error.

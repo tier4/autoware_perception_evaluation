@@ -131,18 +131,24 @@ def crop_pointcloud(
     return pointcloud[idx]
 
 
-def polygon_to_list(polygon: Polygon) -> List[Tuple[float, float, float]]:
+def polygon_to_list(polygon: Polygon, include_first: bool = False) -> List[Tuple[float, float, float]]:
     """Convert polygon to list.
 
-    Polygon: [(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x0, y0, z0)]
-    List: [(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3)]
+    `Polygon: [(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x0, y0, z0)]`
+
+    if `include_first=True`:
+        `List: [(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x0, y0, z0)]`
+    otherwise:
+        `List: [(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3)]`
 
     Args:
         polygon (Polygon): Polygon
+        include_first (bool): The flag whether to include the first element. Defaults to False.
     Returns:
         List[Tuple[float, float, float]]: List of coordinates
     """
-    return list(polygon.exterior.coords)[:-1]
+    corners = list(polygon.exterior.coords)
+    return corners if include_first else corners[:-1]
 
 
 def get_point_left_right(
@@ -159,7 +165,31 @@ def get_point_left_right(
     if not (len(point_1) > 2 and len(point_2) > 2):
         raise RuntimeError(f"The length of a point is {len(point_1)} and {len(point_2)}, they must be greater than 2.")
     cross_product = point_1[0] * point_2[1] - point_1[1] * point_2[0]
+    # NOTE: Guard edge cases like cross_product=-5.551115123125784e-17
+    cross_product = round(cross_product, 10)
     if cross_product < 0:
         return (point_1, point_2)
     else:
         return (point_2, point_1)
+
+
+def get_point_left_right_index(
+    point_1: Tuple[float, float, float],
+    point_2: Tuple[float, float, float],
+) -> Tuple[Tuple[float, float, float]]:
+    """Examine the 2D geometric location of a point1 and a point2.
+    Args:
+        point_1 (Tuple[float, float, float]): A point
+        point_2 (Tuple[float, float, float]): A point
+    Returns:
+        Tuple[int, int]: Returns indices [left_point, right_point].
+    """
+    if not (len(point_1) > 2 and len(point_2) > 2):
+        raise RuntimeError(f"The length of a point is {len(point_1)} and {len(point_2)}, they must be greater than 2.")
+    cross_product = point_1[0] * point_2[1] - point_1[1] * point_2[0]
+    # NOTE: Guard edge cases like cross_product=-5.551115123125784e-17
+    cross_product = round(cross_product, 10)
+    if cross_product < 0:
+        return (0, 1)
+    else:
+        return (1, 0)

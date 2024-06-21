@@ -158,15 +158,4 @@ class PassFailResult:
             matching_threshold_list=self.frame_pass_fail_config.matching_threshold_list,
         )
 
-        # filter by critical_ground_truth_objects
-        tp_critical_results: List[DynamicObjectWithPerceptionResult] = [
-            tp_result
-            for tp_result in tp_object_results
-            if tp_result.ground_truth_object in critical_ground_truth_objects
-        ]
-        fp_critical_results: List[DynamicObjectWithPerceptionResult] = [
-            fp_result
-            for fp_result in fp_object_results
-            if fp_result.ground_truth_object in critical_ground_truth_objects
-        ]
-        return tp_critical_results, fp_critical_results
+        return tp_object_results, fp_object_results

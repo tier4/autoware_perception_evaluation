@@ -17,6 +17,7 @@ from __future__ import annotations
 from abc import ABC
 from abc import abstractmethod
 from collections.abc import Iterable
+from dataclasses import dataclass
 import logging
 from numbers import Number
 import os
@@ -53,6 +54,13 @@ from tqdm import tqdm
 from .utils import get_metrics_info
 from .utils import PlotAxes
 from .utils import setup_axis
+
+
+@dataclass
+class PerceptionAnalysisResult:
+    score: pd.DataFrame | None = None
+    error: pd.DataFrame | None = None
+    confusion_matrix: pd.DataFrame | None = None
 
 
 class PerceptionAnalyzerBase(ABC):
@@ -411,6 +419,9 @@ class PerceptionAnalyzerBase(ABC):
         if df is None:
             df = self.df
 
+        if len(df) < 2:
+            return pd.DataFrame(), pd.DataFrame()
+
         gt_df = df.xs("ground_truth", level=1)
         est_df = df.xs("estimation", level=1)
         valid_idx = np.bitwise_and(~gt_df["status"].isnull(), ~est_df["status"].isnull())
@@ -493,15 +504,17 @@ class PerceptionAnalyzerBase(ABC):
         return metrics_score
 
     @abstractmethod
-    def analyze(self, *args, **kwargs) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
+    def analyze(self, *args, **kwargs) -> PerceptionAnalysisResult:
         """Analyze TP/FP/FN ratio, metrics score, error. If there is no DataFrame to be able to analyze returns None.
 
         Args:
             **kwargs: Specify scene, frame, area or uuid.
 
         Returns:
-            score_df (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
-            error_df (Optional[pandas.DataFrame]): DataFrame of errors.
+            PerceptionAnalysisResult:
+                score (Optional[pandas.DataFrame]): DataFrame of TP/FP/FN ratios and metrics scores.
+                error (Optional[pandas.DataFrame]): DataFrame of errors.
+                confusion_matrix (Optional[pandas.DataFrame]): DataFrame of the confusion matrix.
         """
         pass
 
@@ -686,24 +699,35 @@ class PerceptionAnalyzerBase(ABC):
         if df is None:
             df = self.df
 
-        df_ = df[df["status"].isin(["TP", "FP", "TN"])]
+        gt_df, est_df = self.get_pair_results(df[df["status"].isin(["TP", "FP", "TN"])])
+
+        if gt_df.empty or est_df.empty:
+            return np.empty(0)
+
         errors = []
         for col in column:
             if col == "distance":
-                df_arr = np.array(df_[["x", "y"]])  # (N, 2)
+                gt_arr = np.array(gt_df[["x", "y"]])  # (N, 2)
+                est_arr = np.array(est_df[["x", "y"]])
             elif col == "nn_plane":
-                df_arr = np.stack(
+                gt_arr = np.stack(
                     (
-                        df_["nn_point1"].tolist(),
-                        df_["nn_point2"].tolist(),
+                        gt_df["nn_point1"].tolist(),
+                        gt_df["nn_point2"].tolist(),
+                    ),
+                    axis=1,
+                )  # (N, 2, 3)
+                est_arr = np.stack(
+                    (
+                        est_df["nn_point1"].tolist(),
+                        est_df["nn_point2"].tolist(),
                     ),
                     axis=1,
                 )  # (N, 2, 3)
             else:
-                df_arr = np.array(df_[col])
-            gt_vals = df_arr[::2]
-            est_vals = df_arr[1::2]
-            err: np.ndarray = gt_vals - est_vals
+                gt_arr = np.array(gt_df[col])
+                est_arr = np.array(est_df[col])
+            err: np.ndarray = gt_arr - est_arr
             if remove_nan:
                 err = err[~np.isnan(err)]
 
@@ -757,8 +781,11 @@ class PerceptionAnalyzerBase(ABC):
                 label = None
             num_ground_truth: int = self.get_num_ground_truth(df=df, label=label)
             if num_ground_truth > 0:
-                data["TP"][i] = self.get_num_tp(df=df, label=label) / num_ground_truth
-                data["FP"][i] = self.get_num_fp(df=df, label=label) / num_ground_truth
+                num_tp = self.get_num_tp(df=df, label=label)
+                num_fp = self.get_num_fp(df=df, label=label)
+                num_det = num_tp + num_fp  # If all FN, num_det = 0
+                data["TP"][i] = num_tp / num_ground_truth
+                data["FP"][i] = num_fp / num_det if num_det != 0 else 0.0  # False Discovery Rate
                 data["TN"][i] = self.get_num_tn(df=df, label=label) / num_ground_truth
                 data["FN"][i] = self.get_num_fn(df=df, label=label) / num_ground_truth
         return pd.DataFrame(data, index=self.all_labels)
@@ -783,6 +810,32 @@ class PerceptionAnalyzerBase(ABC):
         data: Dict[str, Any] = get_metrics_info(metrics_score)
 
         return pd.DataFrame(data, index=self.all_labels)
+
+    def get_confusion_matrix(self, df: Optional[pd.DataFrame] = None) -> Optional[pd.DataFrame]:
+        """Returns confusion matrix as DataFrame.
+
+        Args:
+            df (Optional[pd.DataFrame]): Specify if you want to use filtered DataFrame. Defaults to None.
+
+        Returns:
+            pd.DataFrame: Confusion matrix.
+        """
+        gt_df, est_df = self.get_pair_results(df)
+
+        target_labels: List[str] = self.target_labels.copy()
+        if "unknown" not in target_labels:
+            target_labels.append("unknown")
+
+        gt_indices: np.ndarray = gt_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
+        est_indices: np.ndarray = est_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
+
+        num_classes = len(target_labels)
+        indices = num_classes * gt_indices + est_indices
+        if len(indices) == 0:
+            return None
+        matrix: np.ndarray = np.bincount(indices, minlength=num_classes**2)
+        matrix = matrix.reshape(num_classes, num_classes)
+        return pd.DataFrame(data=matrix, index=target_labels, columns=target_labels)
 
     def plot_num_object(
         self,
@@ -1158,7 +1211,9 @@ class PerceptionAnalyzerBase(ABC):
                     if status == "TP":
                         ratios.append(np.sum(est_df_["status"] == status) / num_gt)
                     elif status == "FP":
-                        ratios.append(1 - (np.sum(est_df_["status"] == "TP") / num_gt))
+                        num_tp = np.sum(est_df_["status"] == "TP")
+                        num_fp = np.sum(est_df_["status"] == status)
+                        ratios.append(num_fp / (num_tp + num_fp))  # False Discovery Rate
                     elif status == "TN":
                         ratios.append(np.sum(gt_df["status"] == status) / num_gt)
                     elif status == "FN":
