@@ -783,8 +783,9 @@ class PerceptionAnalyzerBase(ABC):
             if num_ground_truth > 0:
                 num_tp = self.get_num_tp(df=df, label=label)
                 num_fp = self.get_num_fp(df=df, label=label)
+                num_det = num_tp + num_fp  # If all FN, num_det = 0
                 data["TP"][i] = num_tp / num_ground_truth
-                data["FP"][i] = num_fp / (num_tp + num_fp)  # False Discovery Rate
+                data["FP"][i] = num_fp / num_det if num_det != 0 else 0.0  # False Discovery Rate
                 data["TN"][i] = self.get_num_tn(df=df, label=label) / num_ground_truth
                 data["FN"][i] = self.get_num_fn(df=df, label=label) / num_ground_truth
         return pd.DataFrame(data, index=self.all_labels)
@@ -822,7 +823,7 @@ class PerceptionAnalyzerBase(ABC):
         gt_df, est_df = self.get_pair_results(df)
 
         target_labels: List[str] = self.target_labels.copy()
-        if self.config.label_params["allow_matching_unknown"] and "unknown" not in target_labels:
+        if "unknown" not in target_labels:
             target_labels.append("unknown")
 
         gt_indices: np.ndarray = gt_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
