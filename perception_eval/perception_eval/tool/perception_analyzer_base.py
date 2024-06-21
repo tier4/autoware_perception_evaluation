@@ -822,7 +822,7 @@ class PerceptionAnalyzerBase(ABC):
         gt_df, est_df = self.get_pair_results(df)
 
         target_labels: List[str] = self.target_labels.copy()
-        if self.config.label_params["allow_matching_unknown"] and "unknown" not in target_labels:
+        if "unknown" not in target_labels:
             target_labels.append("unknown")
 
         gt_indices: np.ndarray = gt_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
