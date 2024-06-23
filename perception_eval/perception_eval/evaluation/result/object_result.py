@@ -31,6 +31,7 @@ from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
+from perception_eval.common.transform import TransformDict
 from perception_eval.evaluation.matching import CenterDistanceMatching
 from perception_eval.evaluation.matching import IOU2dMatching
 from perception_eval.evaluation.matching import IOU3dMatching
@@ -58,6 +59,7 @@ class DynamicObjectWithPerceptionResult:
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
         allow_matching_unknown: bool,
+        transforms: Optional[TransformDict] = None,
     ) -> None:
         """[summary]
         Evaluation result for an object estimated object.
@@ -96,6 +98,7 @@ class DynamicObjectWithPerceptionResult:
             self.plane_distance: PlaneDistanceMatching = PlaneDistanceMatching(
                 self.estimated_object,
                 self.ground_truth_object,
+                transforms=transforms,
             )
         else:
             self.iou_3d = None
@@ -284,6 +287,7 @@ def get_object_results(
     allow_matching_unknown: bool = True,
     matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
     matchable_thresholds: Optional[List[float]] = None,
+    transforms: Optional[TransformDict] = None,
 ) -> List[DynamicObjectWithPerceptionResult]:
     """Returns list of DynamicObjectWithPerceptionResult.
 
@@ -337,6 +341,7 @@ def get_object_results(
         matching_method_module,
         target_labels,
         matchable_thresholds,
+        transforms,
     )
 
     scores = score_table[..., 0]
@@ -572,6 +577,7 @@ def _get_score_table(
     matching_method_module: Callable,
     target_labels: Optional[List[LabelType]],
     matchable_thresholds: Optional[List[float]],
+    transforms: Optional[TransformDict],
 ) -> np.ndarray:
     """Returns score table, in shape `(num_estimation, num_ground_truth, 2)`.
     Each element represents `(score, is_same_label)`.
@@ -608,7 +614,7 @@ def _get_score_table(
                 )
 
                 matching_method: MatchingMethod = matching_method_module(
-                    estimated_object=est_obj, ground_truth_object=gt_obj
+                    estimated_object=est_obj, ground_truth_object=gt_obj, transforms=transforms
                 )
 
                 if threshold is None or (threshold is not None and matching_method.is_better_than(threshold)):

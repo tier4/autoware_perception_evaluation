@@ -17,6 +17,7 @@ from abc import abstractmethod
 from enum import Enum
 import math
 from typing import Optional
+from typing import overload
 from typing import Tuple
 
 import numpy as np
@@ -26,7 +27,9 @@ from perception_eval.common import ObjectType
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import get_point_left_right_index
 from perception_eval.common.point import polygon_to_list
+from perception_eval.common.schema import FrameID
 from perception_eval.common.shape import ShapeType
+from perception_eval.common.transform import TransformDict
 from shapely.geometry import Polygon
 
 
@@ -66,17 +69,29 @@ class MatchingMethod(ABC):
 
     mode: MatchingMode
 
-    @abstractmethod
+    @overload
+    def __init__(self, estimated_object: ObjectType, ground_truth_object: Optional[ObjectType]) -> None:
+        ...
+
+    @overload
     def __init__(
         self,
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
+        transforms: Optional[TransformDict] = None,
+    ) -> None:
+        ...
+
+    def __init__(
+        self,
+        estimated_object: ObjectType,
+        ground_truth_object: Optional[ObjectType],
+        transforms: Optional[TransformDict] = None,
     ) -> None:
         if ground_truth_object is not None:
             assert isinstance(estimated_object, type(ground_truth_object))
         self.value: Optional[float] = self._calculate_matching_score(
-            estimated_object=estimated_object,
-            ground_truth_object=ground_truth_object,
+            estimated_object=estimated_object, ground_truth_object=ground_truth_object, transforms=transforms
         )
 
     @abstractmethod
@@ -84,6 +99,7 @@ class MatchingMethod(ABC):
         self,
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
+        transforms: Optional[TransformDict] = None,
     ) -> Optional[float]:
         pass
 
@@ -122,13 +138,6 @@ class CenterDistanceMatching(MatchingMethod):
 
     mode: MatchingMode = MatchingMode.CENTERDISTANCE
 
-    def __init__(
-        self,
-        estimated_object: ObjectType,
-        ground_truth_object: Optional[ObjectType],
-    ) -> None:
-        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
-
     def is_better_than(
         self,
         threshold_value: float,
@@ -153,6 +162,7 @@ class CenterDistanceMatching(MatchingMethod):
         self,
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
+        transforms: Optional[TransformDict] = None,
     ) -> Optional[float]:
         """Get center distance.
 
@@ -198,10 +208,13 @@ class PlaneDistanceMatching(MatchingMethod):
         self,
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
+        transforms: Optional[TransformDict] = None,
     ) -> None:
         self.ground_truth_nn_plane: _PlanePointType = ((np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan))
         self.estimated_nn_plane: _PlanePointType = ((np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan))
-        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
+        super().__init__(
+            estimated_object=estimated_object, ground_truth_object=ground_truth_object, transforms=transforms
+        )
 
     def is_better_than(
         self,
@@ -226,6 +239,7 @@ class PlaneDistanceMatching(MatchingMethod):
         self,
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
+        transforms: Optional[TransformDict] = None,
     ) -> Optional[float]:
         """Calculate plane distance between estimation and ground truth and NN planes.
 
@@ -238,6 +252,7 @@ class PlaneDistanceMatching(MatchingMethod):
         Args:
             estimated_object (DynamicObject): Estimated object.
             ground_truth_object (Optional[DynamicObject]): Ground truth object.
+            transforms (Optional[TransformDict]): Transforms.
 
         Returns:
             Optional[float]: Plane distance.
@@ -258,8 +273,17 @@ class PlaneDistanceMatching(MatchingMethod):
             and ground_truth_object.state.shape_type == ShapeType.BOUNDING_BOX
         ):
             # Calculate min distance from ego vehicle
-            # TODO: for objects with respect to map coords need to transform to base link coords
-            gt_distances: np.ndarray = np.linalg.norm(gt_corners[:, :2], axis=1)
+            if ground_truth_object.frame_id != FrameID.BASE_LINK:
+                assert transforms is not None, f"`transforms` must be specified for {ground_truth_object.frame_id}"
+                gt_corners_base_link = np.array(
+                    [
+                        transforms.transform((ground_truth_object.frame_id, FrameID.BASE_LINK), corner)
+                        for corner in gt_corners
+                    ]
+                )
+                gt_distances = np.linalg.norm(gt_corners_base_link[:, :2], axis=1)
+            else:
+                gt_distances = gt_distances = np.linalg.norm(gt_corners[:, :2], axis=1)
             sort_idx = np.argsort(gt_distances)
 
             gt_corners = gt_corners[sort_idx]
@@ -300,13 +324,6 @@ class IOU2dMatching(MatchingMethod):
 
     mode: MatchingMode = MatchingMode.IOU2D
 
-    def __init__(
-        self,
-        estimated_object: ObjectType,
-        ground_truth_object: Optional[ObjectType],
-    ) -> None:
-        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
-
     def is_better_than(
         self,
         threshold_value: float,
@@ -336,6 +353,7 @@ class IOU2dMatching(MatchingMethod):
         self,
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
+        transforms: Optional[TransformDict] = None,
     ) -> float:
         """Calculate 2D IoU score.
 
@@ -387,13 +405,6 @@ class IOU3dMatching(MatchingMethod):
 
     mode: MatchingMode = MatchingMode.IOU3D
 
-    def __init__(
-        self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
-    ) -> None:
-        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
-
     def is_better_than(
         self,
         threshold_value: float,
@@ -422,6 +433,7 @@ class IOU3dMatching(MatchingMethod):
         self,
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
+        transforms: Optional[TransformDict] = None,
     ) -> float:
         """Calculate 3D IoU score.
 
