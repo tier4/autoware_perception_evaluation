@@ -1213,7 +1213,10 @@ class PerceptionAnalyzerBase(ABC):
                     elif status == "FP":
                         num_tp = np.sum(est_df_["status"] == "TP")
                         num_fp = np.sum(est_df_["status"] == status)
-                        ratios.append(num_fp / (num_tp + num_fp))  # False Discovery Rate
+                        if num_tp + num_fp > 0:
+                            ratios.append(num_fp / (num_tp + num_fp))  # False Discovery Rate
+                        else:
+                            ratios.append(0.0)
                     elif status == "TN":
                         ratios.append(np.sum(gt_df["status"] == status) / num_gt)
                     elif status == "FN":
