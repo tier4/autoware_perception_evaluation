@@ -365,7 +365,7 @@ def get_object_results(
 
         est_obj = estimated_objects_.pop(est_idx)
         gt_obj = ground_truth_objects_.pop(gt_idx)
-        result = DynamicObjectWithPerceptionResult(est_obj, gt_obj, allow_matching_unknown)
+        result = DynamicObjectWithPerceptionResult(est_obj, gt_obj, allow_matching_unknown, transforms=transforms)
         object_results.append(result)
 
         # Remove corresponding estimated objects and GTs from the score table.
@@ -390,7 +390,7 @@ def get_object_results(
 
         est_obj = estimated_objects_.pop(est_idx)
         gt_obj = ground_truth_objects_.pop(gt_idx)
-        result = DynamicObjectWithPerceptionResult(est_obj, gt_obj, allow_matching_unknown)
+        result = DynamicObjectWithPerceptionResult(est_obj, gt_obj, allow_matching_unknown, transforms=transforms)
         object_results.append(result)
 
         # Remove corresponding estimated objects and GTs from the score table
