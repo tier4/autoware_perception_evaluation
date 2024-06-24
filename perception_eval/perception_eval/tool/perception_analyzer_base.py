@@ -406,21 +406,22 @@ class PerceptionAnalyzerBase(ABC):
     def get_pair_results(
         self,
         df: Optional[pd.DataFrame] = None,
-    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    ) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
         """Returns paired results, which means both the row of GT and estimation valid values.
 
         Args:
             df (Optional[pandas.DataFrame]): Specify if you want use filtered DataFrame. Defaults to None.
 
         Returns:
-            pandas.DataFrame: GT DataFrame.
-            pandas.DataFrame: Estimation DataFrame.
+            Optional[pandas.DataFrame]: GT DataFrame.
+            Optional[pandas.DataFrame]: Estimation DataFrame.
         """
         if df is None:
             df = self.df
 
-        if len(df) < 2:
-            return pd.DataFrame(), pd.DataFrame()
+        keys = df.index.get_level_values(level=1)
+        if not ("ground_truth" in keys and "estimation" in keys):
+            return None, None
 
         gt_df = df.xs("ground_truth", level=1)
         est_df = df.xs("estimation", level=1)
@@ -701,7 +702,7 @@ class PerceptionAnalyzerBase(ABC):
 
         gt_df, est_df = self.get_pair_results(df[df["status"].isin(["TP", "FP", "TN"])])
 
-        if gt_df.empty or est_df.empty:
+        if gt_df is None or est_df is None:
             return np.empty(0)
 
         errors = []
@@ -821,6 +822,9 @@ class PerceptionAnalyzerBase(ABC):
             pd.DataFrame: Confusion matrix.
         """
         gt_df, est_df = self.get_pair_results(df)
+
+        if gt_df is None or est_df is None:
+            return None
 
         target_labels: List[str] = self.target_labels.copy()
         if "unknown" not in target_labels:
@@ -1213,7 +1217,10 @@ class PerceptionAnalyzerBase(ABC):
                     elif status == "FP":
                         num_tp = np.sum(est_df_["status"] == "TP")
                         num_fp = np.sum(est_df_["status"] == status)
-                        ratios.append(num_fp / (num_tp + num_fp))  # False Discovery Rate
+                        if num_tp + num_fp > 0:
+                            ratios.append(num_fp / (num_tp + num_fp))  # False Discovery Rate
+                        else:
+                            ratios.append(0.0)
                     elif status == "TN":
                         ratios.append(np.sum(gt_df["status"] == status) / num_gt)
                     elif status == "FN":
