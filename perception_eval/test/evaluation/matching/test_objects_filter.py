@@ -24,6 +24,7 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import Label
 from perception_eval.common.object import DynamicObject
+from perception_eval.evaluation.matching import MatchingLabelPolicy
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
@@ -267,6 +268,7 @@ class TestObjectsFilter(unittest.TestCase):
                     evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
+                    matching_label_policy=MatchingLabelPolicy.ALLOW_UNKNOWN,
                 )
                 tp_results, fp_results = get_positive_objects(
                     object_results,
@@ -473,6 +475,7 @@ class TestObjectsFilter(unittest.TestCase):
                     evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
+                    matching_label_policy=MatchingLabelPolicy.ALLOW_UNKNOWN,
                 )
                 tp_results, fp_results = divide_tp_fp_objects(
                     object_results,
@@ -642,6 +645,7 @@ class TestObjectsFilter(unittest.TestCase):
                     evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=self.dummy_ground_truth_objects,
+                    matching_label_policy=MatchingLabelPolicy.ALLOW_UNKNOWN,
                 )
                 tp_results, _ = divide_tp_fp_objects(
                     object_results,
