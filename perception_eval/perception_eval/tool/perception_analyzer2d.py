@@ -229,7 +229,11 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
         df: pd.DataFrame = self.get(**kwargs)
         if len(df) > 0:
             ratio_df = self.summarize_ratio(df=df)
-            error_df = self.summarize_error(df=df)
+            error_df = (
+                self.summarize_error(df=df)
+                if not self.config.evaluation_task != EvaluationTask.CLASSIFICATION2D
+                else None
+            )
             confusion_matrix_df = self.get_confusion_matrix(df=df)
             metrics_df = self.summarize_score(scene=kwargs.get("scene"))
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
