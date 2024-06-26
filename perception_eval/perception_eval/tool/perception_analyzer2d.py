@@ -226,7 +226,9 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
 
         return {"ground_truth": gt_ret, "estimation": est_ret}
 
-    def analyze(self, critical_object_filter_config: CriticalObjectFilterConfig, **kwargs) -> PerceptionAnalysisResult:
+    def analyze(
+        self, critical_object_filter_config: Optional[CriticalObjectFilterConfig] = None, **kwargs
+    ) -> PerceptionAnalysisResult:
         df: pd.DataFrame = self.get(**kwargs)
         if len(df) > 0:
             ratio_df = self.summarize_ratio(df=df)
@@ -237,7 +239,7 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
             )
             confusion_matrix_df = self.get_confusion_matrix(df=df)
             metrics_df = self.summarize_score(
-                critical_object_filter_config=critical_object_filter_config, scene=kwargs.get("scene")
+                scene=kwargs.get("scene"), critical_object_filter_config=critical_object_filter_config
             )
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
             return PerceptionAnalysisResult(score_df, error_df, confusion_matrix_df)

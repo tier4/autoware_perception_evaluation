@@ -379,10 +379,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
     def analyze(
         self,
-        critical_object_filter_config: CriticalObjectFilterConfig,
         scene: Optional[int] = None,
         distance: Optional[Iterable[float]] = None,
         area: Optional[int] = None,
+        critical_object_filter_config: Optional[CriticalObjectFilterConfig] = None,
         **kwargs,
     ) -> PerceptionAnalysisResult:
         if scene is not None:
@@ -402,7 +402,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             else:
                 scene = None
             metrics_df = self.summarize_score(
-                critical_object_filter_config=critical_object_filter_config, scene=scene, distance=distance, area=area
+                scene=scene, distance=distance, area=area, critical_object_filter_config=critical_object_filter_config
             )
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
             confusion_matrix_df = self.get_confusion_matrix(df=df)
@@ -477,10 +477,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
     def summarize_score(
         self,
-        critical_object_filter_config: CriticalObjectFilterConfig,
         scene: Optional[Union[int, List[int]]] = None,
         distance: Optional[Iterable[float]] = None,
         area: Optional[int] = None,
+        critical_object_filter_config: Optional[CriticalObjectFilterConfig] = None,
     ) -> pd.DataFrame:
         """Summarize MetricsScore.
 

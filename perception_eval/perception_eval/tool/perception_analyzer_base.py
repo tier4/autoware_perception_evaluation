@@ -472,28 +472,37 @@ class PerceptionAnalyzerBase(ABC):
     def get_metrics_score(
         self,
         frame_results: List[PerceptionFrameResult],
-        critical_object_filter_config: CriticalObjectFilterConfig,
+        critical_object_filter_config: Optional[CriticalObjectFilterConfig] = None,
     ) -> MetricsScore:
         """Returns the metrics score for each evaluator
 
         Args:
             frame_results (List[PerceptionFrameResult]): List of frame results.
+            critical_object_filter_config (Optional[CriticalObjectFilterConfig]): Config for filtering critical objects.
 
         Returns:
             metrics_score (MetricsScore): The final metrics score.
         """
-        target_labels: List[LabelType] = critical_object_filter_config.target_labels
+        target_labels: List[LabelType] = (
+            critical_object_filter_config.target_labels
+            if critical_object_filter_config is not None
+            else self.config.target_labels
+        )
         scene_results = {label: [[]] for label in target_labels}
         scene_num_gt = {label: 0 for label in target_labels}
         used_frame: List[int] = []
 
         for frame in frame_results:
             obj_results_dict = divide_objects(frame.object_results, target_labels)
-            critical_frame_ground_truth_objects = filter_objects(
-                frame.frame_ground_truth.objects,
-                is_gt=True,
-                transforms=frame.frame_ground_truth.transforms,
-                **critical_object_filter_config.filtering_params,
+            critical_frame_ground_truth_objects = (
+                filter_objects(
+                    frame.frame_ground_truth.objects,
+                    is_gt=True,
+                    transforms=frame.frame_ground_truth.transforms,
+                    **critical_object_filter_config.filtering_params,
+                )
+                if critical_object_filter_config is not None
+                else frame.frame_ground_truth.objects
             )
             num_gt_dict = divide_objects_to_num(critical_frame_ground_truth_objects, target_labels)
             for label in target_labels:
@@ -805,8 +814,8 @@ class PerceptionAnalyzerBase(ABC):
 
     def summarize_score(
         self,
-        critical_object_filter_config: CriticalObjectFilterConfig,
         scene: Optional[Union[int, List[int]]] = None,
+        critical_object_filter_config: Optional[CriticalObjectFilterConfig] = None,
         *args,
         **kwargs,
     ) -> pd.DataFrame:
@@ -815,6 +824,7 @@ class PerceptionAnalyzerBase(ABC):
         Args:
             scene (Optional[int]): Number of scene. If it is not specified, calculate metrics score for all scenes.
                 Defaults to None.
+            critical_object_filter_config (Optional[CriticalObjectFilterConfig]): Config for filtering critical objects.
 
         Returns:
             pandas.DataFrame
