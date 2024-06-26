@@ -26,6 +26,8 @@ from perception_eval.common.status import MatchingStatus
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
+from perception_eval.evaluation.matching.objects_filter import filter_object_results
+from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.metrics import MetricsScoreConfig
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
@@ -98,31 +100,54 @@ class PerceptionFrameResult:
             ros_critical_ground_truth_objects (List[ObjectType]): The list of Ground truth objects filtered by ROS node.
             previous_result (Optional[PerceptionFrameResult]): The previous frame result. If None, set it as empty list []. Defaults to None.
         """
-        # Divide objects by label to dict
-        object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
-            self.object_results, self.target_labels
+        # Filter objects by critical object filter config
+        critical_object_results: List[DynamicObjectWithPerceptionResult] = filter_object_results(
+            self.object_results,
+            transform=self.frame_ground_truth.transforms,
+            **self.pass_fail_result.critical_object_filter_config.filtering_params,
         )
 
-        num_ground_truth_dict: Dict[LabelType, int] = divide_objects_to_num(
-            self.frame_ground_truth.objects, self.target_labels
+        critical_frame_ground_truth_objects = filter_objects(
+            self.frame_ground_truth.objects,
+            is_gt=True,
+            transforms=self.frame_ground_truth.transforms,
+            **self.pass_fail_result.critical_object_filter_config.filtering_params,
+        )
+
+        # Divide objects by label to dict
+        critical_object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+            critical_object_results,
+            self.pass_fail_result.critical_object_filter_config.target_labels,
+        )
+
+        # Divide each ground truth labels and count the number of each label
+        num_critical_ground_truth_dict: Dict[LabelType, int] = divide_objects_to_num(
+            critical_frame_ground_truth_objects,
+            self.pass_fail_result.critical_object_filter_config.target_labels,
         )
 
         # If evaluation task is FP validation, only evaluate pass/fail result.
         if self.metrics_score.detection_config is not None:
-            self.metrics_score.evaluate_detection(object_results_dict, num_ground_truth_dict)
+            self.metrics_score.evaluate_detection(critical_object_results_dict, num_critical_ground_truth_dict)
         if self.metrics_score.tracking_config is not None:
             if previous_result is None:
-                previous_results_dict = {label: [] for label in self.target_labels}
+                previous_results_dict = {
+                    label: [] for label in self.pass_fail_result.critical_object_filter_config.target_labels
+                }
             else:
-                previous_results_dict = divide_objects(previous_result.object_results, self.target_labels)
-            tracking_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = object_results_dict.copy()
+                previous_results_dict = divide_objects(
+                    previous_result.object_results, self.pass_fail_result.critical_object_filter_config.target_labels
+                )
+            tracking_results: Dict[
+                LabelType, List[DynamicObjectWithPerceptionResult]
+            ] = critical_object_results_dict.copy()
             for label, prev_results in previous_results_dict.items():
                 tracking_results[label] = [prev_results, tracking_results[label]]
-            self.metrics_score.evaluate_tracking(tracking_results, num_ground_truth_dict)
+            self.metrics_score.evaluate_tracking(tracking_results, num_critical_ground_truth_dict)
         if self.metrics_score.prediction_config is not None:
             pass
         if self.metrics_score.classification_config is not None:
-            self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
+            self.metrics_score.evaluate_classification(critical_object_results_dict, num_critical_ground_truth_dict)
 
         self.pass_fail_result.evaluate(
             object_results=self.object_results,

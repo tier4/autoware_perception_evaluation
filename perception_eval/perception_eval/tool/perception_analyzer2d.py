@@ -28,6 +28,7 @@ from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 import yaml
 
 from .perception_analyzer_base import PerceptionAnalysisResult
@@ -225,13 +226,15 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
 
         return {"ground_truth": gt_ret, "estimation": est_ret}
 
-    def analyze(self, **kwargs) -> PerceptionAnalysisResult:
+    def analyze(self, critical_object_filter_config: CriticalObjectFilterConfig, **kwargs) -> PerceptionAnalysisResult:
         df: pd.DataFrame = self.get(**kwargs)
         if len(df) > 0:
             ratio_df = self.summarize_ratio(df=df)
             error_df = self.summarize_error(df=df)
             confusion_matrix_df = self.get_confusion_matrix(df=df)
-            metrics_df = self.summarize_score(scene=kwargs.get("scene"))
+            metrics_df = self.summarize_score(
+                critical_object_filter_config=critical_object_filter_config, scene=kwargs.get("scene")
+            )
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
             return PerceptionAnalysisResult(score_df, error_df, confusion_matrix_df)
 

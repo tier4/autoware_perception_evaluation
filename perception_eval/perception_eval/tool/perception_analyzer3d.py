@@ -31,6 +31,7 @@ from perception_eval.common.transform import TransformDict
 from perception_eval.common.transform import TransformKey
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 import yaml
 
 from .perception_analyzer_base import PerceptionAnalysisResult
@@ -378,6 +379,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
     def analyze(
         self,
+        critical_object_filter_config: CriticalObjectFilterConfig,
         scene: Optional[int] = None,
         distance: Optional[Iterable[float]] = None,
         area: Optional[int] = None,
@@ -399,7 +401,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 scene = kwargs.pop("scene")
             else:
                 scene = None
-            metrics_df = self.summarize_score(scene=scene, distance=distance, area=area)
+            metrics_df = self.summarize_score(
+                critical_object_filter_config=critical_object_filter_config, scene=scene, distance=distance, area=area
+            )
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
             confusion_matrix_df = self.get_confusion_matrix(df=df)
             return PerceptionAnalysisResult(score_df, error_df, confusion_matrix_df)
@@ -473,6 +477,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
     def summarize_score(
         self,
+        critical_object_filter_config: CriticalObjectFilterConfig,
         scene: Optional[Union[int, List[int]]] = None,
         distance: Optional[Iterable[float]] = None,
         area: Optional[int] = None,
@@ -509,7 +514,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 bottom_lefts=self.bottom_lefts,
             )
 
-        metrics_score = self.get_metrics_score(frame_results)
+        metrics_score = self.get_metrics_score(frame_results, critical_object_filter_config)
         data: Dict[str, Any] = get_metrics_info(metrics_score)
 
         return pd.DataFrame(data, index=self.all_labels)

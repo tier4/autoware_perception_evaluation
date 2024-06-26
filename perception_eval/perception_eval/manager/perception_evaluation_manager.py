@@ -186,20 +186,29 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
 
         return object_results, frame_ground_truth
 
-    def get_scene_result(self) -> MetricsScore:
+    def get_scene_result(
+        self,
+        critical_object_filter_config: CriticalObjectFilterConfig,
+    ) -> MetricsScore:
         """Evaluate metrics score thorough a scene.
 
         Returns:
             scene_metrics_score (MetricsScore): MetricsScore instance.
         """
         # Gather objects from frame results
-        target_labels: List[LabelType] = self.target_labels
+        target_labels: List[LabelType] = critical_object_filter_config.target_labels
         all_frame_results = {label: [[]] for label in target_labels}
         all_num_gt = {label: 0 for label in target_labels}
         used_frame: List[int] = []
         for frame in self.frame_results:
             obj_result_dict = divide_objects(frame.object_results, target_labels)
-            num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, target_labels)
+            critical_frame_ground_truth_objects = filter_objects(
+                frame.frame_ground_truth.objects,
+                is_gt=True,
+                transforms=frame.frame_ground_truth.transforms,
+                **critical_object_filter_config.filtering_params,
+            )
+            num_gt_dict = divide_objects_to_num(critical_frame_ground_truth_objects, target_labels)
             for label in target_labels:
                 all_frame_results[label].append(obj_result_dict[label])
                 all_num_gt[label] += num_gt_dict[label]
