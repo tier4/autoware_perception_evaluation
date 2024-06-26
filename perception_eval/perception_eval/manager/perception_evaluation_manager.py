@@ -172,7 +172,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             estimated_objects=estimated_objects,
             ground_truth_objects=frame_ground_truth.objects,
             target_labels=self.target_labels,
-            allow_matching_unknown=self.evaluator_config.label_params["allow_matching_unknown"],
+            matching_label_policy=self.evaluator_config.label_params["matching_label_policy"],
             matchable_thresholds=self.filtering_params["max_matchable_radii"],
             transforms=frame_ground_truth.transforms,
         )

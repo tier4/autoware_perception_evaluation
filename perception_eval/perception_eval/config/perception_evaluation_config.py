@@ -24,6 +24,7 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.threshold import set_thresholds
+from perception_eval.evaluation.matching import MatchingLabelPolicy
 from perception_eval.evaluation.metrics import MetricsScoreConfig
 
 from ._evaluation_config_base import _EvaluationConfigBase
@@ -95,10 +96,18 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
     @staticmethod
     def _extract_label_params(evaluation_config_dict: Dict[str, Any]) -> Dict[str, Any]:
         e_cfg = evaluation_config_dict.copy()
+        if e_cfg.get("matching_label_policy"):
+            matching_label_policy = MatchingLabelPolicy.from_str(e_cfg.get("matching_label_policy"))
+        else:
+            allow_matching_unknown = e_cfg.get("allow_matching_unknown", False)
+            matching_label_policy = (
+                MatchingLabelPolicy.ALLOW_UNKNOWN if allow_matching_unknown else MatchingLabelPolicy.DEFAULT
+            )
+
         l_params: Dict[str, Any] = {
             "label_prefix": e_cfg["label_prefix"],
             "merge_similar_labels": e_cfg.get("merge_similar_labels", False),
-            "allow_matching_unknown": e_cfg.get("allow_matching_unknown", False),
+            "matching_label_policy": matching_label_policy,
             "count_label_number": e_cfg.get("count_label_number", True),
         }
         return l_params

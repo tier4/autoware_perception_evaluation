@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from abc import ABC
 from abc import abstractmethod
 from enum import Enum
@@ -24,6 +26,7 @@ import numpy as np
 from perception_eval.common import distance_objects
 from perception_eval.common import distance_points_bev
 from perception_eval.common import ObjectType
+from perception_eval.common.label import is_same_label
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import get_point_left_right_index
 from perception_eval.common.point import polygon_to_list
@@ -31,6 +34,43 @@ from perception_eval.common.schema import FrameID
 from perception_eval.common.shape import ShapeType
 from perception_eval.common.transform import TransformDict
 from shapely.geometry import Polygon
+
+
+class MatchingLabelPolicy(Enum):
+    DEFAULT = "DEFAULT"
+    ALLOW_UNKNOWN = "ALLOW_UNKNOWN"
+    ALLOW_ANY = "ALLOW_ANY"
+
+    @classmethod
+    def from_str(cls, name: str) -> MatchingLabelPolicy:
+        """Construct an enum member from str name.
+
+        Args:
+            name (str): Name of a member.
+
+        Returns:
+            MatchingLanePolicy: Constructed member.
+        """
+        name = name.upper()
+        assert name in cls.__members__, f"{name} is not in enum members."
+        return cls.__members__[name]
+
+    def is_matchable(self, estimation: ObjectType, ground_truth: ObjectType) -> bool:
+        """Indicate whether input estimation and GT is matchable considering their label.
+
+        Args:
+            estimation (ObjectType): Estimated object.
+            ground_truth (ObjectType): GT object.
+
+        Returns:
+            bool: Return True if they are matchable.
+        """
+        if ground_truth.semantic_label.is_fp() or self == MatchingLabelPolicy.ALLOW_ANY:
+            return True
+        elif self == MatchingLabelPolicy.ALLOW_UNKNOWN:
+            return is_same_label(estimation, ground_truth) or estimation.semantic_label.is_unknown()
+        else:  # STRICT
+            return is_same_label(estimation, ground_truth)
 
 
 class MatchingMode(Enum):
