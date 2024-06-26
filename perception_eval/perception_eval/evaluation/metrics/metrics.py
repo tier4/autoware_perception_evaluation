@@ -18,7 +18,6 @@ from typing import List
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 
 from .classification import ClassificationMetricsScore
 from .detection import Map
@@ -34,7 +33,6 @@ class MetricsScore:
         tracking_config (Optional[DetectionMetricsConfig]): Config for tracking evaluation.
         prediction_config (Optional[PredictionMetricsConfig]): Config for prediction evaluation.
         classification_config (Optional[ClassificationMetricsConfig]): Config for classification evaluation.
-        critical_object_filter_config (CriticalObjectFilterConfig): Config for critical object filter.
         evaluation_task (EvaluationTask): EvaluationTask instance.
         maps (List[Map]): List of mAP instances. Each mAP is different from threshold
                                for matching (ex. IoU 0.3).
