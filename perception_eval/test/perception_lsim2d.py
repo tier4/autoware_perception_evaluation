@@ -128,7 +128,7 @@ class PerceptionLSimMoc:
         matching_threshold_list = None if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5]
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam
-        critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
+        self.critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=target_labels,
             ignore_attributes=ignore_attributes,
@@ -145,7 +145,7 @@ class PerceptionLSimMoc:
             ground_truth_now_frame=ground_truth_now_frame,
             estimated_objects=estimated_objects,
             ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
-            critical_object_filter_config=critical_object_filter_config,
+            critical_object_filter_config=self.critical_object_filter_config,
             frame_pass_fail_config=frame_pass_fail_config,
         )
         self.visualize(frame_result)
@@ -164,7 +164,7 @@ class PerceptionLSimMoc:
         logging.info(f"Number of fails for critical objects: {num_critical_fail}")
 
         # scene metrics score
-        final_metric_score = self.evaluator.get_scene_result()
+        final_metric_score = self.evaluator.get_scene_result(self.critical_object_filter_config)
         logging.info(f"final metrics result {final_metric_score}")
         return final_metric_score
 
@@ -256,7 +256,7 @@ if __name__ == "__main__":
     # Detection performance report
     detection_analyzer = PerceptionAnalyzer2D(detection_lsim.evaluator.evaluator_config)
     detection_analyzer.add(detection_lsim.evaluator.frame_results)
-    result = detection_analyzer.analyze()
+    result = detection_analyzer.analyze(detection_lsim.critical_object_filter_config)
     if result.score is not None:
         logging.info(result.score.to_string())
     if result.error is not None:
@@ -294,7 +294,7 @@ if __name__ == "__main__":
     # Tracking performance report
     tracking_analyzer = PerceptionAnalyzer2D(tracking_lsim.evaluator.evaluator_config)
     tracking_analyzer.add(tracking_lsim.evaluator.frame_results)
-    result = tracking_analyzer.analyze()
+    result = tracking_analyzer.analyze(tracking_lsim.critical_object_filter_config)
     if result.score is not None:
         logging.info(result.score.to_string())
     if result.error is not None:
