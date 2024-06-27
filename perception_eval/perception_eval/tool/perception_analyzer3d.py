@@ -148,6 +148,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             "yaw",
             "vx",
             "vy",
+            "v_norm",
             "nn_point1",
             "nn_point2",
             "label",
@@ -174,6 +175,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             "yaw",
             "vx",
             "vy",
+            "v_norm",
             "nn_point1",
             "nn_point2",
             "nn_plane",
@@ -245,8 +247,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         if gt:
             if gt.state.velocity is not None:
                 gt_vx, gt_vy = gt.state.velocity[:2]
+                gt_v_norm = np.linalg.norm(gt.state.velocity[:2])
             else:
                 gt_vx, gt_vy = np.nan, np.nan
+                gt_v_norm = np.nan
 
             transform_key = TransformKey(gt.frame_id, FrameID.BASE_LINK)
             gt_position, gt_rotation = transforms.transform(
@@ -274,6 +278,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 yaw=gt_yaw,
                 vx=gt_vx,
                 vy=gt_vy,
+                v_norm=gt_v_norm,
                 nn_point1=gt_point1,
                 nn_point2=gt_point2,
                 label=str(gt.semantic_label.label),
@@ -299,8 +304,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         if estimation:
             if estimation.state.velocity is not None:
                 est_vx, est_vy = estimation.state.velocity[:2]
+                est_v_norm = np.linalg.norm(estimation.state.velocity[:2])
             else:
                 est_vx, est_vy = np.nan, np.nan
+                est_v_norm = np.nan
 
             transform_key = TransformKey(estimation.frame_id, FrameID.BASE_LINK)
             est_position, est_rotation = transforms.transform(
@@ -328,6 +335,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 yaw=est_yaw,
                 vx=est_vx,
                 vy=est_vy,
+                v_norm=est_v_norm,
                 nn_point1=est_point1,
                 nn_point2=est_point2,
                 label=str(estimation.semantic_label.label),
