@@ -56,11 +56,11 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         upper_rights (numpy.ndarray): Upper right points of each separated area.
         bottom_lefts (numpy.ndarray): Bottom left points of each separated area.
         columns (List[str]): List of columns in `df`.
-            `["frame_id", "timestamp", "x", "y", "width", "length", "height", "yaw", "vx", "vy", "nn_point1", "nn_point2",\
+            `["frame_id", "timestamp", "x", "y", "width", "length", "height", "yaw", "vx", "vy", "speed", "nn_point1", "nn_point2",\
                 "label", "label_name", "attributes", "confidence", "uuid", \
                 "num_points", "status", "area", "frame", "scene"]`.
         state_columns (List[str]): List of state columns in `df`.
-            `["x", "y", "width", "length", "height", "yaw", "vx", "vy", "nn_point1", "nn_point2"]`.
+            `["x", "y", "width", "length", "height", "yaw", "vx", "vy", "speed", "nn_point1", "nn_point2"]`.
         plot_directory (str): Directory path to save plot.
         frame_results (Dict[str, List[PerceptionFrameResult]]):
             Hashmap of frame results, which key is the number of scene and value is frame results.
@@ -148,6 +148,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             "yaw",
             "vx",
             "vy",
+            "speed",
             "nn_point1",
             "nn_point2",
             "label",
@@ -174,6 +175,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             "yaw",
             "vx",
             "vy",
+            "speed",
             "nn_point1",
             "nn_point2",
             "nn_plane",
@@ -245,8 +247,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         if gt:
             if gt.state.velocity is not None:
                 gt_vx, gt_vy = gt.state.velocity[:2]
+                gt_speed = np.linalg.norm(gt.state.velocity[:2])
             else:
                 gt_vx, gt_vy = np.nan, np.nan
+                gt_speed = np.nan
 
             transform_key = TransformKey(gt.frame_id, FrameID.BASE_LINK)
             gt_position, gt_rotation = transforms.transform(
@@ -274,6 +278,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 yaw=gt_yaw,
                 vx=gt_vx,
                 vy=gt_vy,
+                speed=gt_speed,
                 nn_point1=gt_point1,
                 nn_point2=gt_point2,
                 label=str(gt.semantic_label.label),
@@ -299,8 +304,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         if estimation:
             if estimation.state.velocity is not None:
                 est_vx, est_vy = estimation.state.velocity[:2]
+                est_speed = np.linalg.norm(estimation.state.velocity[:2])
             else:
                 est_vx, est_vy = np.nan, np.nan
+                est_speed = np.nan
 
             transform_key = TransformKey(estimation.frame_id, FrameID.BASE_LINK)
             est_position, est_rotation = transforms.transform(
@@ -328,6 +335,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 yaw=est_yaw,
                 vx=est_vx,
                 vy=est_vy,
+                speed=est_speed,
                 nn_point1=est_point1,
                 nn_point2=est_point2,
                 label=str(estimation.semantic_label.label),
@@ -461,6 +469,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             data["width"] = _summarize("width", df_)
             data["vx"] = _summarize("vx", df_)
             data["vy"] = _summarize("vy", df_)
+            data["speed"] = _summarize("speed", df_)
             data["nn_plane"] = _summarize("nn_plane", df_)
             all_data[str(label)] = data
 
@@ -528,7 +537,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         Args:
             uuid (str): Target object's uuid.
             columns (Union[str, List[str]]): Target column name.
-                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "distance"].
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "speed", "distance"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             status (Optional[int]): Target status TP/FP/TN/FN. If not specified, plot all status. Defaults to None.
@@ -537,7 +546,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "distance"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "speed", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().plot_state(
             uuid=uuid,
@@ -562,7 +571,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
         Args:
             columns (Union[str, List[str]]): Target column name.
-                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"].
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "speed", "nn_plane", "distance"].
                 If you want plot multiple column for one image, use List[str].
             mode (PlotAxes): Mode of plot axis. Defaults to PlotAxes.TIME (1-dimensional).
             heatmap (bool): Whether overlay heatmap. Defaults to False.
@@ -575,7 +584,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "speed", "nn_plane", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().plot_error(
             columns=columns, mode=mode, heatmap=heatmap, project=project, show=show, bins=bins, **kwargs
@@ -591,12 +600,12 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
         Args:
             column (Union[str, List[str]]): Target column name.
-                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"].
+                Options: ["x", "y", "yaw", "width", "length", "vx", "vy", "speed", "nn_plane", "distance"].
                 If you want plot multiple column for one image, use List[str].
             show (bool): Whether show the plotted figure. Defaults to False.
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "nn_plane", "distance"]):
+        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "speed", "nn_plane", "distance"]):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().box_plot(columns=columns, show=show, **kwargs)
