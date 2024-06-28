@@ -173,8 +173,8 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
                 gt_x_offset, gt_y_offset = gt.roi.offset
                 gt_width, gt_height = gt.roi.size
             else:
-                gt_x_offset, gt_y_offset = None, None
-                gt_width, gt_height = None, None
+                gt_x_offset, gt_y_offset = np.nan, np.nan
+                gt_width, gt_height = np.nan, np.nan
 
             gt_ret = dict(
                 frame_id=gt.frame_id.value,
@@ -193,15 +193,20 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
                 scene=self.num_scene,
             )
         else:
-            gt_ret = {k: None for k in self.keys()}
+            gt_ret = {}
+            for key in self.keys():
+                if key in ("gt_x_offset", "gt_y_offset", "gt_width", "gt_height"):
+                    gt_ret[key] = np.nan
+                else:
+                    gt_ret[key] = None
 
         if estimation:
             if estimation.roi is not None:
                 est_x_offset, est_y_offset = estimation.roi.offset
                 est_width, est_height = estimation.roi.size
             else:
-                est_x_offset, est_y_offset = None, None
-                est_width, est_height = None, None
+                est_x_offset, est_y_offset = np.nan, np.nan
+                est_width, est_height = np.nan, np.nan
 
             est_ret = dict(
                 frame_id=estimation.frame_id,
@@ -221,7 +226,12 @@ class PerceptionAnalyzer2D(PerceptionAnalyzerBase):
                 scene=self.num_scene,
             )
         else:
-            est_ret = {k: None for k in self.keys()}
+            est_ret = {}
+            for key in self.keys():
+                if key in ("est_x_offset", "est_y_offset", "est_width", "est_height"):
+                    est_ret[key] = np.nan
+                else:
+                    est_ret[key] = None
 
         return {"ground_truth": gt_ret, "estimation": est_ret}
 
