@@ -26,6 +26,8 @@ from perception_eval.common.status import MatchingStatus
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
+from perception_eval.evaluation.matching.objects_filter import filter_object_results
+from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.metrics import MetricsScoreConfig
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
@@ -89,22 +91,36 @@ class PerceptionFrameResult:
 
     def evaluate_frame(
         self,
-        ros_critical_ground_truth_objects: List[ObjectType],
         previous_result: Optional[PerceptionFrameResult] = None,
     ) -> None:
         """[summary]
         Evaluate a frame from the pair of estimated objects and ground truth objects
         Args:
-            ros_critical_ground_truth_objects (List[ObjectType]): The list of Ground truth objects filtered by ROS node.
             previous_result (Optional[PerceptionFrameResult]): The previous frame result. If None, set it as empty list []. Defaults to None.
         """
+        # Filter objects by critical object filter config
+        self.object_results: List[DynamicObjectWithPerceptionResult] = filter_object_results(
+            self.object_results,
+            transform=self.frame_ground_truth.transforms,
+            **self.pass_fail_result.critical_object_filter_config.filtering_params,
+        )
+
+        self.frame_ground_truth.objects = filter_objects(
+            self.frame_ground_truth.objects,
+            is_gt=True,
+            transforms=self.frame_ground_truth.transforms,
+            **self.pass_fail_result.critical_object_filter_config.filtering_params,
+        )
+
         # Divide objects by label to dict
         object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
-            self.object_results, self.target_labels
+            self.object_results,
+            self.pass_fail_result.critical_object_filter_config.target_labels,
         )
 
         num_ground_truth_dict: Dict[LabelType, int] = divide_objects_to_num(
-            self.frame_ground_truth.objects, self.target_labels
+            self.frame_ground_truth.objects,
+            self.pass_fail_result.critical_object_filter_config.target_labels,
         )
 
         # If evaluation task is FP validation, only evaluate pass/fail result.
@@ -124,10 +140,7 @@ class PerceptionFrameResult:
         if self.metrics_score.classification_config is not None:
             self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
 
-        self.pass_fail_result.evaluate(
-            object_results=self.object_results,
-            ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
-        )
+        self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
 
 
 def get_object_status(frame_results: List[PerceptionFrameResult]) -> List[GroundTruthStatus]:
