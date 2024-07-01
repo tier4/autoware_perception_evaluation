@@ -128,9 +128,13 @@ class PerceptionFrameResult:
             self.metrics_score.evaluate_detection(object_results_dict, num_ground_truth_dict)
         if self.metrics_score.tracking_config is not None:
             if previous_result is None:
-                previous_results_dict = {label: [] for label in self.target_labels}
+                previous_results_dict = {
+                    label: [] for label in self.pass_fail_result.critical_object_filter_config.target_labels
+                }
             else:
-                previous_results_dict = divide_objects(previous_result.object_results, self.target_labels)
+                previous_results_dict = divide_objects(
+                    previous_result.object_results, self.pass_fail_result.critical_object_filter_config.target_labels
+                )
             tracking_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = object_results_dict.copy()
             for label, prev_results in previous_results_dict.items():
                 tracking_results[label] = [prev_results, tracking_results[label]]
