@@ -121,9 +121,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         )
 
         if len(self.frame_results) > 0:
-            result.evaluate_frame(
-                previous_result=self.frame_results[-1],
-            )
+            result.evaluate_frame(previous_result=self.frame_results[-1])
         else:
             result.evaluate_frame()
 
