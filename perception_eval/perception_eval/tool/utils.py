@@ -502,6 +502,6 @@ def filter_frame_by_distance(
         min_distance_list=min_distance_list,
         transforms=ret_frame.frame_ground_truth.transforms,
     )
-    ret_frame.evaluate_frame(ret_frame.frame_ground_truth.objects)
+    ret_frame.evaluate_frame()
 
     return ret_frame

@@ -81,7 +81,6 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         unix_time: int,
         ground_truth_now_frame: FrameGroundTruth,
         estimated_objects: List[ObjectType],
-        ros_critical_ground_truth_objects: List[ObjectType],
         critical_object_filter_config: CriticalObjectFilterConfig,
         frame_pass_fail_config: PerceptionPassFailConfig,
     ) -> PerceptionFrameResult:
@@ -122,14 +121,9 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
         )
 
         if len(self.frame_results) > 0:
-            result.evaluate_frame(
-                ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
-                previous_result=self.frame_results[-1],
-            )
+            result.evaluate_frame(previous_result=self.frame_results[-1])
         else:
-            result.evaluate_frame(
-                ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
-            )
+            result.evaluate_frame()
 
         self.frame_results.append(result)
         return result

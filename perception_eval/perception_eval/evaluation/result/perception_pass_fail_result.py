@@ -21,7 +21,6 @@ from perception_eval.common import ObjectType
 from perception_eval.common.transform import TransformDict
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.matching.objects_filter import get_negative_objects
 from perception_eval.evaluation.matching.objects_filter import get_positive_objects
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
@@ -34,8 +33,6 @@ class PassFailResult:
     Attributes:
         critical_object_filter_config (CriticalObjectFilterConfig): Critical object filter config.
         frame_pass_fail_config (PerceptionPassFailConfig): Frame pass fail config.
-        critical_ground_truth_objects (Optional[List[DynamicObject]]): Critical ground truth objects
-            must be evaluated at current frame.
         tn_objects (List[ObjectType]): TN ground truth objects list.
         fn_objects (List[ObjectType]): FN ground truth objects list.
         fp_object_results (List[DynamicObjectWithPerceptionResult]): FP object results list.
@@ -66,7 +63,6 @@ class PassFailResult:
         self.frame_pass_fail_config: PerceptionPassFailConfig = frame_pass_fail_config
         self.transforms = transforms
 
-        self.critical_ground_truth_objects: List[ObjectType] = []
         self.tn_objects: List[ObjectType] = []
         self.fn_objects: List[ObjectType] = []
         self.fp_object_results: List[DynamicObjectWithPerceptionResult] = []
@@ -75,28 +71,20 @@ class PassFailResult:
     def evaluate(
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
-        ros_critical_ground_truth_objects: List[ObjectType],
+        ground_truth_objects: List[ObjectType],
     ) -> None:
         """Evaluate object results' pass fail.
 
         Args:
             object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
-            ros_critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects
-                must be evaluated at current frame.
+            ground_truth_objects (List[ObjectType]): Ground truth objects which must be evaluated at current frame.
         """
-        self.critical_ground_truth_objects = filter_objects(
-            objects=ros_critical_ground_truth_objects,
-            is_gt=True,
-            transforms=self.transforms,
-            **self.critical_object_filter_config.filtering_params,
-        )
         self.tp_object_results, self.fp_object_results = self.__get_positive_object_results(
             object_results=object_results,
-            critical_ground_truth_objects=self.critical_ground_truth_objects,
         )
 
         self.tn_objects, self.fn_objects = get_negative_objects(
-            self.critical_ground_truth_objects,
+            ground_truth_objects,
             object_results,
             self.frame_pass_fail_config.target_labels,
             MatchingMode.IOU2D if self.frame_pass_fail_config.evaluation_task.is_2d() else MatchingMode.PLANEDISTANCE,
@@ -134,14 +122,11 @@ class PassFailResult:
     def __get_positive_object_results(
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
-        critical_ground_truth_objects: List[ObjectType],
     ) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
         """Get TP and FP object results list from `object_results`.
 
         Args:
             object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
-            critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects
-                must be evaluated at current frame.
 
         Returns:
             List[DynamicObjectWithPerceptionResult]: TP object results.
