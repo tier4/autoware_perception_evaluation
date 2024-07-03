@@ -119,11 +119,6 @@ class PerceptionLSimMoc:
         else:
             raise ValueError(f"Unexpected label prefix: {self.label_prefix}")
 
-        # [Option] ROS側でやる（Map情報・Planning結果を用いる）UC評価objectを選別
-        # ros_critical_ground_truth_objects : List[DynamicObject] = custom_critical_object_filter(
-        #   ground_truth_now_frame.objects
-        # )
-
         matching_threshold_list = None if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5]
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam

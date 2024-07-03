@@ -92,7 +92,6 @@ for frame in datasets:
         unix_time=unix_time,
         ground_truth_now_frame=frame,
         estimated_objects=estimated_objects,
-        ros_critical_ground_truth_objects=frame.objects,
         critical_object_filter_config=critical_object_filter_config,
         frame_pass_fail_config=pass_fail_config,
     )
