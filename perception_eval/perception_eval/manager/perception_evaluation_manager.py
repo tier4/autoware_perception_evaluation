@@ -90,15 +90,13 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
 
         TODO:
         - Arrange `CriticalObjectFilterConfig` and `PerceptionPassFailConfig` to `PerceptionFrameConfig`.
-        - Allow input `PerceptionFrameConfig` and `ros_critical_ground_truth_objects` are None.
+        - Allow input `PerceptionFrameConfig` is None.
 
         Args:
             unix_time (int): Unix timestamp [us].
             ground_truth_now_frame (FrameGroundTruth): FrameGroundTruth instance that has the closest
                 timestamp with `unix_time`.
             estimated_objects (List[ObjectType]): Estimated objects list.
-            ros_critical_ground_truth_objects (List[ObjectType]): Critical ground truth objects filtered by ROS
-                node to evaluate pass fail result.
             critical_object_filter_config (CriticalObjectFilterConfig): Parameter config to filter objects.
             frame_pass_fail_config (PerceptionPassFailConfig):Parameter config to evaluate pass/fail.
 
