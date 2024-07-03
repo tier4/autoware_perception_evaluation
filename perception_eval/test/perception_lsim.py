@@ -101,12 +101,6 @@ class PerceptionLSimMoc:
             unix_time, interpolate_ground_truth=interpolate
         )
 
-        # [Option] ROS側でやる（Map情報・Planning結果を用いる）UC評価objectを選別
-        # ros_critical_ground_truth_objects : List[DynamicObject] = custom_critical_object_filter(
-        #   ground_truth_now_frame.objects
-        # )
-        ros_critical_ground_truth_objects = ground_truth_now_frame.objects
-
         # 1 frameの評価
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam

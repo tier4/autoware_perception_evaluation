@@ -62,10 +62,6 @@ class FPValidationLsimMoc:
     def callback(self, unix_time: int, estimated_objects: List[ObjectType]) -> None:
         ground_truth_now_frame = self.evaluator.get_ground_truth_now_frame(unix_time)
 
-        # Ideally, critical GT should be obtained in each frame.
-        # In this mock, set it as a copy of `ground_truth_now_frame`.
-        ros_critical_ground_truth_objects = ground_truth_now_frame.objects
-
         critical_object_filter_config = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
@@ -83,7 +79,6 @@ class FPValidationLsimMoc:
             unix_time=unix_time,
             ground_truth_now_frame=ground_truth_now_frame,
             estimated_objects=estimated_objects,
-            ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
             critical_object_filter_config=critical_object_filter_config,
             frame_pass_fail_config=frame_pass_fail_config,
         )
