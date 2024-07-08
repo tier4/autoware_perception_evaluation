@@ -141,12 +141,12 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         min_distance: Optional[float] = e_cfg.get("min_distance")
 
         num_elements: int = len(target_labels)
-        if max_x_position and max_y_position:
+        if None not in (max_x_position, max_y_position):
             max_x_position_list: List[float] = set_thresholds(max_x_position, num_elements, False)
             max_y_position_list: List[float] = set_thresholds(max_y_position, num_elements, False)
             max_distance_list = None
             min_distance_list = None
-        elif max_distance and min_distance:
+        elif None not in (max_distance, min_distance):
             max_distance_list: List[float] = set_thresholds(max_distance, num_elements, False)
             min_distance_list: List[float] = [min_distance] * len(target_labels)
             max_x_position_list = None
