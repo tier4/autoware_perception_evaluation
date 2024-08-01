@@ -173,13 +173,6 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             **self.filtering_params,
         )
 
-        if self.evaluator_config.filtering_params.get("target_uuids"):
-            object_results = filter_object_results(
-                object_results=object_results,
-                transforms=frame_ground_truth.transforms,
-                target_uuids=self.filtering_params["target_uuids"],
-            )
-
         return object_results, frame_ground_truth
 
     def get_scene_result(self) -> MetricsScore:
