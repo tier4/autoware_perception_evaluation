@@ -94,19 +94,24 @@ def filter_object_results(
     """
     filtered_object_results: List[DynamicObjectWithPerceptionResult] = []
     for object_result in object_results:
-        is_target: bool = _is_target_object(
-            dynamic_object=object_result.estimated_object,
-            is_gt=False,
-            target_labels=target_labels,
-            max_x_position_list=max_x_position_list,
-            max_y_position_list=max_y_position_list,
-            max_distance_list=max_distance_list,
-            min_distance_list=min_distance_list,
-            confidence_threshold_list=confidence_threshold_list,
-            transforms=transforms,
-        )
-        if is_target and object_result.ground_truth_object:
-            is_target = is_target and _is_target_object(
+        if object_result.ground_truth_object is None:
+            is_target: bool = (
+                _is_target_object(
+                    dynamic_object=object_result.estimated_object,
+                    is_gt=False,
+                    target_labels=target_labels,
+                    max_x_position_list=max_x_position_list,
+                    max_y_position_list=max_y_position_list,
+                    max_distance_list=max_distance_list,
+                    min_distance_list=min_distance_list,
+                    confidence_threshold_list=confidence_threshold_list,
+                    transforms=transforms,
+                )
+                if not target_uuids  # NOTE: target uuids are only valid for GT objects
+                else False
+            )
+        else:
+            is_target = _is_target_object(
                 dynamic_object=object_result.ground_truth_object,
                 is_gt=True,
                 target_labels=target_labels,
@@ -119,8 +124,6 @@ def filter_object_results(
                 target_uuids=target_uuids,
                 transforms=transforms,
             )
-        elif target_uuids and object_result.ground_truth_object is None:
-            is_target = False
 
         if is_target:
             filtered_object_results.append(object_result)

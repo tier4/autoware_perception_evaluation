@@ -133,8 +133,9 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
     ) -> Tuple[List[DynamicObjectWithPerceptionResult], FrameGroundTruth]:
         """Returns filtered list of DynamicObjectResult and FrameGroundTruth instance.
 
-        First of all, filter `estimated_objects` and `frame_ground_truth`.
+        First, filtering out `frame_ground_truth`.
         Then generate a list of DynamicObjectResult as `object_results`.
+        Next, filtering out FP object results whose ground
         Finally, filter `object_results` when `target_uuids` is specified.
 
         Args:
@@ -145,13 +146,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results list.
             frame_ground_truth (FrameGroundTruth): Filtered FrameGroundTruth instance.
         """
-        estimated_objects = filter_objects(
-            objects=estimated_objects,
-            is_gt=False,
-            transforms=frame_ground_truth.transforms,
-            **self.filtering_params,
-        )
-
+        # 1. filter out only GT objects
         frame_ground_truth.objects = filter_objects(
             objects=frame_ground_truth.objects,
             is_gt=True,
@@ -159,6 +154,8 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             **self.filtering_params,
         )
 
+        # 2. generate list of object results.
+        # NOTE: All object results that are paired estimation and GT must not be filtered out.
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
             evaluation_task=self.evaluation_task,
             estimated_objects=estimated_objects,
@@ -167,6 +164,13 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             matching_label_policy=self.evaluator_config.label_params["matching_label_policy"],
             matchable_thresholds=self.filtering_params["max_matchable_radii"],
             transforms=frame_ground_truth.transforms,
+        )
+
+        # 3. filter out FP results whose status are out of evaluation
+        object_results = filter_object_results(
+            object_results=object_results,
+            transforms=frame_ground_truth.transforms,
+            **self.filtering_params,
         )
 
         if self.evaluator_config.filtering_params.get("target_uuids"):
