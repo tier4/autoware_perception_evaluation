@@ -36,16 +36,15 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
 
 - Initialization
 
-  | Attributes           |                   type                    | Description                                                  |
-  | :------------------- | :---------------------------------------: | :----------------------------------------------------------- |
-  | `frame_name`         |                   `str`                   | Name of frame                                                |
-  | `unix_time`          |                   `int`                   | Unix time of frame                                           |
-  | `frame_id`           |                 `FrameID`                 | Frame ID instance, where coords system which objects respect |
-  | `target_labels`      |             `List[LabelType]`             | List of name of target labels                                |
-  | `object_results`     | `List[DynamicObjectWithPerceptionResult]` | List of pair of Estimation and ground truth(GT)              |
-  | `frame_ground_truth` |            `FrameGroundTruth`             | GT objects for one frame                                     |
-  | `metrics_score`      |              `MetricsScore`               | Score of metrics result                                      |
-  | `pass_fail_result`   |             `PassFailResult`              | Result of pass / fail                                        |
+  | Attributes           |                   type                    | Description                                     |
+  | :------------------- | :---------------------------------------: | :---------------------------------------------- |
+  | `frame_name`         |                   `str`                   | Name of frame                                   |
+  | `unix_time`          |                   `int`                   | Unix time of frame                              |
+  | `target_labels`      |             `List[LabelType]`             | List of name of target labels                   |
+  | `object_results`     | `List[DynamicObjectWithPerceptionResult]` | List of pair of Estimation and ground truth(GT) |
+  | `frame_ground_truth` |            `FrameGroundTruth`             | GT objects for one frame                        |
+  | `metrics_score`      |              `MetricsScore`               | Score of metrics result                         |
+  | `pass_fail_result`   |             `PassFailResult`              | Result of pass / fail                           |
 
 - Methods
 
@@ -55,23 +54,21 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
 
 - metrics_score (MetricsScore): Score of metrics result
 - pass_fail_result (PassFailResult): Result of usecase evaluation
-  - tp_objects (List[DynamicObjectWithPerceptionResult]): TP results in usecase evaluation
-  - fp_objects (List[DynamicObjectWithPerceptionResult]): TP results in usecase evaluation
+  - tp_object_results (List[DynamicObjectWithPerceptionResult]): TP results in usecase evaluation
+  - fp_object_results (List[DynamicObjectWithPerceptionResult]): FP results in usecase evaluation
   - fn_objects (List[ObjectType]): FN objects in usecase evaluation
 
 ```yaml
 [2022-08-10 10:38:11,341] [INFO] [perception_lsim.py:258 <module>] Frame result example (frame_results[0]):
 {'frame_ground_truth': {'ego2map': ' --- length of element 4 ---,',
-                        'frame_id': 'map',
                         'frame_name': '0',
                         'objects': ' --- length of element 89 ---,',
                         'pointcloud': None,
                         'unix_time': 1624164470849887},
- 'frame_id': 'map',
  'frame_name': '0',
  'metrics_score': {'detection_config': {'center_distance_thresholds': ' --- length of element 2 ---,',
                                         'iou_3d_thresholds': [' --- length of element 4 ---,'],
-                                        'iou_bev_thresholds': [' --- length of element 4 ---,'],
+                                        'iou_2d_thresholds': [' --- length of element 4 ---,'],
                                         'plane_distance_thresholds': ' --- length of element 2 ---,',
                                         'target_labels': ' --- length of element 4 ---,'},
                    'maps': ' --- length of element 6 ---,',
@@ -79,7 +76,7 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
                    'prediction_scores': [],
                    'tracking_config': {'center_distance_thresholds': ' --- length of element 2 ---,',
                                        'iou_3d_thresholds': [' --- length of element 4 ---,'],
-                                       'iou_bev_thresholds': [' --- length of element 4 ---,'],
+                                       'iou_2d_thresholds': [' --- length of element 4 ---,'],
                                        'plane_distance_thresholds': ' --- length of element 2 ---,',
                                        'target_labels': ' --- length of element 4 ---,'},
                    'tracking_scores': ' --- length of element 6 ---,'},
@@ -106,12 +103,11 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
                                                         'target_uuids': None},
                       'ego2map': ' --- length of element 4 ---,',
                       'fn_objects': ' --- length of element 17 ---,',
-                      'fp_objects_result': ' --- length of element 17 ---,',
-                      'frame_id': 'map',
+                      'fp_object_results': ' --- length of element 17 ---,',
                       'frame_pass_fail_config': {'confidence_threshold_list': None,
                                                  'matching_threshold_list': ' --- length of element 4 ---,',
                                                  'target_labels': ' --- length of element 4 ---,'},
-                      'tp_objects': ' --- length of element 22 ---,'},
+                      'tp_object_results': ' --- length of element 22 ---,'},
  'target_labels': ' --- length of element 4 ---,',
  'unix_time': 1624164470849887}
 ```
@@ -150,16 +146,15 @@ object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(est
   | `is_label_correct`    |          `bool`          | Whether the labels which estimation and GT object has are same |
   | `center_distance`     | `CenterDistanceMatching` | Distance of center between two objects                         |
   | `plane_distance`      | `PlaneDistanceMatching`  | Distance of the nearest plane between two objects              |
-  | `iou_bev`             |     `IOUBEVMatching`     | IOU score in BEV                                               |
+  | `iou_2d`              |     `IOU2DMatching`      | IOU score in 2-dimensions                                      |
   | `iou_3d`              |     `IOU3dMatching`      | IOU score in 3-dimensions                                      |
 
 - Methods
 
-  | Methods                    |     Returns      | Description                          |
-  | :------------------------- | :--------------: | :----------------------------------- |
-  | `get_matching()`           | `MatchingMethod` | Returns the corresponding matching   |
-  | `get_distance_error_bev()` |     `float`      | Returns the distance in BEV          |
-  | `is_result_correct()`      |      `bool`      | Returns the result if it is TP or FP |
+  | Methods               |     Returns      | Description                          |
+  | :-------------------- | :--------------: | :----------------------------------- |
+  | `get_matching()`      | `MatchingMethod` | Returns the corresponding matching   |
+  | `is_result_correct()` |      `bool`      | Returns the result if it is TP or FP |
 
 ```yaml
 [2022-08-09 18:56:45,237] [INFO] [perception_lsim.py:208 <module>] Object result example (frame_results[0].object_results[0]):
@@ -191,7 +186,7 @@ object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(est
                          'unix_time': 1624164470849887,
                          'uuid': '912ae043cbc5a6ad4950f5ac0e94778e'},
  'iou_3d': {'mode': 'MatchingMode.IOU3D', 'value': 0.24986054835978477},
- 'iou_bev': {'mode': 'MatchingMode.IOUBEV', 'value': 0.2878950915821158},
+ 'iou_2d': {'mode': 'MatchingMode.IOU2D', 'value': 0.2878950915821158},
  'is_label_correct': True,
  'plane_distance': {'estimated_nn_plane': [[13.02303048243653, -27.805782945059786, 0.4205253823079967],
                                            [12.151479338961119, -28.537310518275785, 0.40291816982528683]],

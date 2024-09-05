@@ -17,14 +17,19 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import warnings
 
 import numpy as np
 from perception_eval.common import ObjectType
+from perception_eval.common.label import CommonLabel
+from perception_eval.common.label import Label
 from perception_eval.common.label import LabelType
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.status import FrameID
+from perception_eval.common.schema import FrameID
+from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.common.threshold import LabelThreshold
+from perception_eval.common.transform import TransformDict
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
 
@@ -32,6 +37,7 @@ from perception_eval.evaluation.matching import MatchingMode
 def filter_object_results(
     object_results: List[DynamicObjectWithPerceptionResult],
     target_labels: Optional[List[LabelType]] = None,
+    ignore_attributes: Optional[List[str]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
     max_distance_list: Optional[List[float]] = None,
@@ -39,7 +45,9 @@ def filter_object_results(
     min_point_numbers: Optional[List[int]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
     target_uuids: Optional[str] = None,
-    ego2map: Optional[np.ndarray] = None,
+    transforms: Optional[TransformDict] = None,
+    *args,
+    **kwargs,
 ) -> List[DynamicObjectWithPerceptionResult]:
     """Filter DynamicObjectWithPerceptionResult considering both estimated and ground truth objects.
 
@@ -51,9 +59,10 @@ def filter_object_results(
 
     Args:
         object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
-        target_labels Optional[List[LabelType]]): Filter target list of labels.
+        target_labels (Optional[List[LabelType]]): Filter target list of labels.
             Keep all `object_results` that both of their `estimated_object` and `ground_truth_object`
             have same label in this list. Defaults to None.
+        ignore_attributes (Optional[List[str]]): List of attributes to be ignored. Defaults to None.
         max_x_position_list (Optional[List[float]]): Thresholds list of maximum x-axis position from ego vehicle.
             Keep all `object_results` that their each x position are in [`-max_x_position`, `max_x_position`]
             for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
@@ -79,8 +88,6 @@ def filter_object_results(
             Keep all `object_results` that their each uuid is in `target_uuids`
             only considering their `ground_truth_object`.
             Defaults to None.
-        ego2map (Optional[numpy.ndarray]): Array of 4x4 matrix to transform objects' coordinates from ego to map.
-            This is only needed when `frame_id=map`. Defaults to None.
 
     Returns:
         filtered_object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results list.
@@ -89,25 +96,28 @@ def filter_object_results(
     for object_result in object_results:
         is_target: bool = _is_target_object(
             dynamic_object=object_result.estimated_object,
+            is_gt=False,
             target_labels=target_labels,
             max_x_position_list=max_x_position_list,
             max_y_position_list=max_y_position_list,
             max_distance_list=max_distance_list,
             min_distance_list=min_distance_list,
             confidence_threshold_list=confidence_threshold_list,
-            ego2map=ego2map,
+            transforms=transforms,
         )
         if is_target and object_result.ground_truth_object:
             is_target = is_target and _is_target_object(
                 dynamic_object=object_result.ground_truth_object,
+                is_gt=True,
                 target_labels=target_labels,
+                ignore_attributes=ignore_attributes,
                 max_x_position_list=max_x_position_list,
                 max_y_position_list=max_y_position_list,
                 max_distance_list=max_distance_list,
                 min_distance_list=min_distance_list,
                 min_point_numbers=min_point_numbers,
                 target_uuids=target_uuids,
-                ego2map=ego2map,
+                transforms=transforms,
             )
         elif target_uuids and object_result.ground_truth_object is None:
             is_target = False
@@ -121,7 +131,8 @@ def filter_object_results(
 def filter_objects(
     objects: List[ObjectType],
     is_gt: bool,
-    target_labels: Optional[List[LabelType]] = None,
+    target_labels: Optional[List[Label]] = None,
+    ignore_attributes: Optional[List[str]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
     max_distance_list: Optional[List[float]] = None,
@@ -129,7 +140,9 @@ def filter_objects(
     min_point_numbers: Optional[List[int]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
     target_uuids: Optional[List[str]] = None,
-    ego2map: Optional[np.ndarray] = None,
+    transforms: Optional[TransformDict] = None,
+    *args,
+    **kwargs,
 ) -> List[ObjectType]:
     """Filter DynamicObject considering ground truth objects.
 
@@ -139,8 +152,9 @@ def filter_objects(
     Args:
         objects (List[ObjectType]: The objects you want to filter.
         is_gt (bool): Flag if input object is ground truth.
-        target_labels Optional[List[LabelType]]): Filter target list of labels.
+        target_labels Optional[List[Label]]): Filter target list of labels.
             Keep all `objects` that have same label in this list. Defaults to None.
+        attributes_ignore (Optional[List[str]]): List of attributes to be ignored. Defaults to None.
         max_x_position_list (Optional[List[float]]): Thresholds list of maximum x-axis position from ego vehicle.
             Keep all `objects` that their each x position are in [`-max_x_position`, `max_x_position`].
             Defaults to None.
@@ -163,41 +177,144 @@ def filter_objects(
         target_uuids (Optional[List[str]]): Filter target list of ground truths' uuids.
             Keep all `objects` that their each uuid is in `target_uuids`. This is only used when `is_gt=True`.
             Defaults to None.
-        ego2map (Optional[numpy.ndarray]): Array of 4x4 matrix to transform objects' coordinates from ego to map.
-            This is only needed when `frame_id=map`. Defaults to None.
 
     Returns:
-        List[Union[DynamicObject, Object2DBase]]: Filtered objects.
+        List[ObjectType]: Filtered objects.
     """
-
-    filtered_objects: List[DynamicObject] = []
+    filtered_objects: List[ObjectType] = []
     for object_ in objects:
-        if is_gt:
-            is_target: bool = _is_target_object(
-                dynamic_object=object_,
-                target_labels=target_labels,
-                max_x_position_list=max_x_position_list,
-                max_y_position_list=max_y_position_list,
-                max_distance_list=max_distance_list,
-                min_distance_list=min_distance_list,
-                min_point_numbers=min_point_numbers,
-                target_uuids=target_uuids,
-                ego2map=ego2map,
-            )
-        else:
-            is_target: bool = _is_target_object(
-                dynamic_object=object_,
-                target_labels=target_labels,
-                max_x_position_list=max_x_position_list,
-                max_y_position_list=max_y_position_list,
-                max_distance_list=max_distance_list,
-                min_distance_list=min_distance_list,
-                confidence_threshold_list=confidence_threshold_list,
-                ego2map=ego2map,
-            )
+        is_target: bool = _is_target_object(
+            dynamic_object=object_,
+            is_gt=is_gt,
+            target_labels=target_labels,
+            ignore_attributes=ignore_attributes,
+            max_x_position_list=max_x_position_list,
+            max_y_position_list=max_y_position_list,
+            max_distance_list=max_distance_list,
+            min_distance_list=min_distance_list,
+            min_point_numbers=min_point_numbers,
+            target_uuids=target_uuids,
+            confidence_threshold_list=confidence_threshold_list,
+            transforms=transforms,
+        )
         if is_target:
             filtered_objects.append(object_)
     return filtered_objects
+
+
+def get_positive_objects(
+    object_results: List[DynamicObjectWithPerceptionResult],
+    target_labels: List[Label],
+    matching_mode: Optional[MatchingMode] = None,
+    matching_threshold_list: Optional[List[float]] = None,
+) -> Tuple[List[DynamicObjectWithPerceptionResult], List[DynamicObjectWithPerceptionResult]]:
+    """Returns TP (True Positive) and FP (False Positive) object results as `tuple`.
+
+    If an object result has better matching score than the matching threshold, it is TP, otherwise FP.
+
+    Args:
+        object_results (List[DynamicObjectWithPerceptionResult]): List of matched estimation and GT objects.
+        target_labels (Optional[List[Label]]): List of labels should be evaluated.
+        matching_mode (Optional[MatchingMode]): Matching policy, i.e. center or plane distance, iou.
+        matching_threshold_list (Optional[List[float]]): List of matching thresholds,
+            each element corresponds to target label.
+
+    Returns:
+        tp_object_results (List[DynamicObjectWithPerceptionResult]): List of TP.
+        fp_object_results (List[DynamicObjectWithPerceptionResult]): List of FP.
+    """
+    tp_object_results: List[DynamicObjectWithPerceptionResult] = []
+    fp_object_results: List[DynamicObjectWithPerceptionResult] = []
+    for object_result in object_results:
+        if object_result.ground_truth_object is None:
+            fp_object_results.append(object_result)
+            continue
+
+        # in case of matching (Est, GT) = (unknown, except of unknown)
+        # use GT label
+        matching_threshold = get_label_threshold(
+            semantic_label=object_result.ground_truth_object.semantic_label,
+            target_labels=target_labels,
+            threshold_list=matching_threshold_list,
+        )
+
+        est_status, gt_status = object_result.get_status(matching_mode, matching_threshold)
+
+        if est_status == MatchingStatus.FP:
+            if gt_status == MatchingStatus.TN:
+                fp_object_results.append(
+                    DynamicObjectWithPerceptionResult(
+                        object_result.estimated_object,
+                        None,
+                        object_result.matching_label_policy,
+                    )
+                )
+            else:
+                fp_object_results.append(object_result)
+        elif est_status == MatchingStatus.TP and gt_status == MatchingStatus.TP:
+            tp_object_results.append(object_result)
+
+    return tp_object_results, fp_object_results
+
+
+def get_negative_objects(
+    ground_truth_objects: List[DynamicObject],
+    object_results: List[DynamicObjectWithPerceptionResult],
+    target_labels: List[Label],
+    matching_mode: Optional[MatchingMode] = None,
+    matching_threshold_list: Optional[List[float]] = None,
+) -> Tuple[List[DynamicObject], List[DynamicObject]]:
+    """Returns TN (True Negative) and FN (False Negative) objects as `tuple`.
+
+    If a ground truth object is contained in object results, it is TP or FP.
+    Otherwise, the label of ground truth is 'FP', which means this object should not estimated, it is TN.
+
+    Args:
+        ground_truth_objects (List[DynamicObject]): List of ground truth objects.
+        object_results (List[DynamicObjectWithPerceptionResult]): List of object results.
+        target_labels (Optional[List[Label]]): List of labels should be evaluated.
+        matching_mode (Optional[MatchingMode]): Matching policy, i.e. center or plane distance, iou.
+        matching_threshold_list (Optional[List[float]]): List of matching thresholds,
+            each element corresponds to target label.
+
+    Returns:
+        tn_objects (List[DynamicObject]): List of TN.
+        fn_objects (List[DynamicObject]): List of FN.
+    """
+    tn_objects: List[DynamicObject] = []
+    fn_objects: List[DynamicObject] = []
+
+    non_candidates: List[ObjectType] = []
+    for object_result in object_results:
+        matching_threshold: Optional[float] = get_label_threshold(
+            (
+                object_result.ground_truth_object.semantic_label
+                if object_result.ground_truth_object is not None
+                else object_result.estimated_object.semantic_label
+            ),
+            target_labels,
+            matching_threshold_list,
+        )
+        _, gt_status = object_result.get_status(matching_mode, matching_threshold)
+
+        if gt_status == MatchingStatus.TN:
+            tn_objects.append(object_result.ground_truth_object)
+        elif gt_status == MatchingStatus.FN:
+            fn_objects.append(object_result.ground_truth_object)
+
+        if gt_status is not None:
+            non_candidates.append(object_result.ground_truth_object)
+
+    for ground_truth_object in ground_truth_objects:
+        if ground_truth_object in non_candidates:
+            continue
+
+        if ground_truth_object.semantic_label.is_fp():
+            tn_objects.append(ground_truth_object)
+        else:
+            fn_objects.append(ground_truth_object)
+
+    return tn_objects, fn_objects
 
 
 def divide_tp_fp_objects(
@@ -219,7 +336,7 @@ def divide_tp_fp_objects(
 
     Args:
         object_results (List[DynamicObjectWithPerceptionResult]): The object results you want to filter
-        target_labels Optional[List[AutowareLabel]]): Target labels list.
+        target_labels Optional[List[Label]]): Target labels list.
             Get threshold value from `matching_threshold_list` at corresponding label index.
         matching_mode (Optional[MatchingMode]): MatchingMode instance.
             When `matching_threshold_list=None`, this is not have to be specified. Defaults to None.
@@ -235,12 +352,22 @@ def divide_tp_fp_objects(
         List[DynamicObjectWithPerceptionResult]]: TP object results.
         List[DynamicObjectWithPerceptionResult]]: FP object results.
     """
+    warnings.warn(
+        "`divide_tp_fp_objects()` is removed in next minor update, please use `get_positive_objects()`",
+        DeprecationWarning,
+    )
 
-    tp_objects: List[DynamicObjectWithPerceptionResult] = []
-    fp_objects: List[DynamicObjectWithPerceptionResult] = []
+    tp_object_results: List[DynamicObjectWithPerceptionResult] = []
+    fp_object_results: List[DynamicObjectWithPerceptionResult] = []
     for object_result in object_results:
-        matching_threshold_: Optional[float] = get_label_threshold(
-            semantic_label=object_result.estimated_object.semantic_label,
+        if object_result.ground_truth_object is None:
+            fp_object_results.append(object_result)
+            continue
+
+        # in case of matching (Est, GT) = (unknown, except of unknown)
+        # use GT label
+        matching_threshold_ = get_label_threshold(
+            semantic_label=object_result.ground_truth_object.semantic_label,
             target_labels=target_labels,
             threshold_list=matching_threshold_list,
         )
@@ -262,22 +389,20 @@ def divide_tp_fp_objects(
             threshold_list=confidence_threshold_list,
         )
         if confidence_threshold_ is not None:
-            is_confidence: bool = (
-                object_result.estimated_object.semantic_score > confidence_threshold_
-            )
+            is_confidence: bool = object_result.estimated_object.semantic_score > confidence_threshold_
             is_correct = is_correct and is_confidence
 
         if is_correct:
-            tp_objects.append(object_result)
+            tp_object_results.append(object_result)
         else:
-            fp_objects.append(object_result)
-    return tp_objects, fp_objects
+            fp_object_results.append(object_result)
+    return tp_object_results, fp_object_results
 
 
 def get_fn_objects(
     ground_truth_objects: List[ObjectType],
-    object_results: Optional[List[DynamicObjectWithPerceptionResult]],
-    tp_objects: Optional[List[DynamicObjectWithPerceptionResult]],
+    object_results: List[DynamicObjectWithPerceptionResult],
+    tp_object_results: List[DynamicObjectWithPerceptionResult],
 ) -> List[ObjectType]:
     """Get FN (False Negative) objects from ground truth objects by using object result.
 
@@ -286,21 +411,22 @@ def get_fn_objects(
     Args:
         ground_truth_objects (List[ObjectType]): Ground truth objects list.
         object_results (Optional[List[DynamicObjectWithPerceptionResult]]): Object results list.
-        tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results list in object results.
+        tp_object_results (Optional[List[DynamicObjectWithPerceptionResult]]): TP results list in object results.
 
     Returns:
         List[ObjectType]: FN (False Negative) objects list.
     """
-
-    if object_results is None:
-        return ground_truth_objects
+    warnings.warn(
+        "`get_fn_objects()` is removed in next minor update, please use `get_negative_objects()`",
+        DeprecationWarning,
+    )
 
     fn_objects: List[ObjectType] = []
     for ground_truth_object in ground_truth_objects:
         is_fn_object: bool = _is_fn_object(
             ground_truth_object=ground_truth_object,
             object_results=object_results,
-            tp_objects=tp_objects,
+            tp_object_results=tp_object_results,
         )
         if is_fn_object:
             fn_objects.append(ground_truth_object)
@@ -310,28 +436,33 @@ def get_fn_objects(
 def _is_fn_object(
     ground_truth_object: ObjectType,
     object_results: List[DynamicObjectWithPerceptionResult],
-    tp_objects: List[DynamicObjectWithPerceptionResult],
+    tp_object_results: List[DynamicObjectWithPerceptionResult],
 ) -> bool:
     """Judge whether ground truth object is FN (False Negative) object.
 
     Args:
         ground_truth_object (ObjectType): Ground truth object.
         object_results (List[DynamicObjectWithPerceptionResult]): object results list.
-        tp_objects (Optional[List[DynamicObjectWithPerceptionResult]]): TP results list in object results.
+        tp_object_results (List[DynamicObjectWithPerceptionResult]): TP results list in object results.
 
     Returns:
         bool: Whether ground truth object is FN (False Negative) object.
     """
-
+    warnings.warn(
+        "`_is_fn_object()` is removed in next minor update, please use `get_negative_objects()`",
+        DeprecationWarning,
+    )
     for object_result in object_results:
-        if ground_truth_object == object_result.ground_truth_object and object_result in tp_objects:
+        if ground_truth_object == object_result.ground_truth_object and object_result in tp_object_results:
             return False
     return True
 
 
 def _is_target_object(
     dynamic_object: ObjectType,
+    is_gt: bool,
     target_labels: Optional[List[LabelType]] = None,
+    ignore_attributes: Optional[List[str]] = None,
     max_x_position_list: Optional[List[float]] = None,
     max_y_position_list: Optional[List[float]] = None,
     max_distance_list: Optional[List[float]] = None,
@@ -339,7 +470,7 @@ def _is_target_object(
     confidence_threshold_list: Optional[List[float]] = None,
     min_point_numbers: Optional[List[int]] = None,
     target_uuids: Optional[List[str]] = None,
-    ego2map: Optional[np.ndarray] = None,
+    transforms: Optional[TransformDict] = None,
 ) -> bool:
     """Judge whether the input `dynamic_object` is target or not.
 
@@ -347,8 +478,10 @@ def _is_target_object(
 
     Args:
         dynamic_object (ObjectType): The dynamic object
+        is_gt (bool): Whether input object is GT or not.
         target_labels Optional[List[LabelType]]): Target labels list.
             Keep all `dynamic_object` that have same labels in this list. Defaults to None.
+        ignore_attributes (Optional[List[str]]): List of attributes to be ignored. Defaults to None.
         max_x_position_list (Optional[List[float]]): Thresholds list of maximum x-axis position from ego vehicle.
             Keep all `dynamic_object` that their each x position are in [`-max_x_position`, `max_x_position`].
             Defaults to None.
@@ -369,54 +502,98 @@ def _is_target_object(
             Keep all `dynamic_objects` that their confidence is bigger than `confidence_threshold`. Defaults to None.
         target_uuids (Optional[List[str]]): Filter target list of ground truths' uuids.
             Keep all `dynamic_objects` that their each uuid is in `target_uuids`. Defaults to None.
-        ego2map (Optional[numpy.ndarray]): Array of 4x4 matrix to transform objects' coordinates from ego to map.
-            This is only needed when `frame_id=map`. Defaults to None.
 
     Returns:
         bool: If the object is filter target, return True
     """
+    if dynamic_object.semantic_label.is_fp():
+        return True
+
+    # For estimated objected, skip filtering out if it has unknown label
+    is_unknown_estimation: bool = dynamic_object.semantic_label.is_unknown() and is_gt is False
+
+    # Whether unknown is contained in target labels
+    is_contained_unknown: bool = (
+        any([label == CommonLabel.UNKNOWN for label in target_labels]) if target_labels is not None else False
+    )
+
+    # use special threshold for unknown labeled estimations
+    use_unknown_threshold: bool = is_unknown_estimation and not is_contained_unknown
+
     label_threshold = LabelThreshold(
         semantic_label=dynamic_object.semantic_label,
         target_labels=target_labels,
     )
     is_target: bool = True
 
-    if target_labels is not None:
-        is_target = is_target and dynamic_object.semantic_label in target_labels
+    if target_labels:
+        is_target = (
+            is_target and True
+            if use_unknown_threshold
+            else is_target and dynamic_object.semantic_label.label in target_labels
+        )
+
+    if ignore_attributes is not None:
+        is_target = (
+            is_target and True
+            if use_unknown_threshold
+            else is_target and not dynamic_object.semantic_label.contains_any(ignore_attributes)
+        )
 
     if is_target and confidence_threshold_list is not None:
-        confidence_threshold = label_threshold.get_label_threshold(confidence_threshold_list)
+        confidence_threshold = (
+            0.0 if use_unknown_threshold else label_threshold.get_label_threshold(confidence_threshold_list)
+        )
         is_target = is_target and dynamic_object.semantic_score > confidence_threshold
 
-    if isinstance(dynamic_object, DynamicObject):
-        position_: Tuple[float, float, float] = dynamic_object.state.position
-        if dynamic_object.frame_id == FrameID.MAP:
-            assert ego2map is not None, "When frame_id is map, ego2map must be specified"
-            pos_arr: np.ndarray = np.append(position_, 1.0)
-            position_ = tuple(np.linalg.inv(ego2map).dot(pos_arr)[:3].tolist())
-        bev_distance_: float = dynamic_object.get_distance_bev(ego2map)
+    if transforms is None and dynamic_object.frame_id == FrameID.BASE_LINK:
+        position_ = dynamic_object.state.position
+        bev_distance_ = dynamic_object.get_distance_bev()
+    elif dynamic_object.state.position is not None and transforms is not None:
+        position_ = transforms.transform((dynamic_object.frame_id, FrameID.BASE_LINK), dynamic_object.state.position)
+        bev_distance_ = dynamic_object.get_distance_bev(transforms)
+    else:
+        position_ = bev_distance_ = None
 
+    if position_ is not None:
         if is_target and max_x_position_list is not None:
-            max_x_position = label_threshold.get_label_threshold(max_x_position_list)
+            max_x_position = (
+                np.mean(max_x_position_list)
+                if use_unknown_threshold
+                else label_threshold.get_label_threshold(max_x_position_list)
+            )
             is_target = is_target and abs(position_[0]) < max_x_position
 
         if is_target and max_y_position_list is not None:
-            max_y_position = label_threshold.get_label_threshold(max_y_position_list)
+            max_y_position = (
+                np.mean(max_y_position_list)
+                if use_unknown_threshold
+                else label_threshold.get_label_threshold(max_y_position_list)
+            )
             is_target = is_target and abs(position_[1]) < max_y_position
 
+    if bev_distance_ is not None:
         if is_target and max_distance_list is not None:
-            max_distance = label_threshold.get_label_threshold(max_distance_list)
+            max_distance = (
+                np.mean(max_distance_list)
+                if use_unknown_threshold
+                else label_threshold.get_label_threshold(max_distance_list)
+            )
             is_target = is_target and bev_distance_ < max_distance
 
         if is_target and min_distance_list is not None:
-            min_distance = label_threshold.get_label_threshold(min_distance_list)
+            min_distance = (
+                np.mean(min_distance_list)
+                if use_unknown_threshold
+                else label_threshold.get_label_threshold(min_distance_list)
+            )
             is_target = is_target and bev_distance_ > min_distance
 
-        if is_target and min_point_numbers is not None:
-            min_point_number = label_threshold.get_label_threshold(min_point_numbers)
+        if is_target and min_point_numbers is not None and is_gt:
+            min_point_number = 0 if use_unknown_threshold else label_threshold.get_label_threshold(min_point_numbers)
             is_target = is_target and dynamic_object.pointcloud_num >= min_point_number
 
-    if is_target and target_uuids is not None:
+    if is_target and target_uuids is not None and is_gt:
         assert isinstance(target_uuids, list)
         assert all([isinstance(uuid, str) for uuid in target_uuids])
         is_target = is_target and dynamic_object.uuid in target_uuids
@@ -447,10 +624,17 @@ def divide_objects(
         ret: Dict[LabelType, List[ObjectType]] = {}
 
     for obj in objects:
-        if isinstance(obj, DynamicObjectWithPerceptionResult):
-            label: LabelType = obj.estimated_object.semantic_label
-        else:
-            label: LabelType = obj.semantic_label
+        label: LabelType = (
+            obj.estimated_object.semantic_label.label
+            if isinstance(obj, DynamicObjectWithPerceptionResult)
+            else obj.semantic_label.label
+        )
+
+        if target_labels is not None and label not in target_labels:
+            if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
+                label = obj.ground_truth_object.semantic_label.label
+            else:
+                continue
 
         if label not in ret.keys():
             ret[label] = [obj]
@@ -482,9 +666,15 @@ def divide_objects_to_num(
 
     for obj in objects:
         if isinstance(obj, DynamicObjectWithPerceptionResult):
-            label: LabelType = obj.estimated_object.semantic_label
+            label: LabelType = obj.estimated_object.semantic_label.label
         else:
-            label: LabelType = obj.semantic_label
+            label: LabelType = obj.semantic_label.label
+
+        if target_labels is not None and label not in target_labels:
+            if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
+                label = obj.ground_truth_object.semantic_label.label
+            else:
+                continue
 
         if label not in ret.keys():
             ret[label] = 1

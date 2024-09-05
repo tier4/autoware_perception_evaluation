@@ -15,6 +15,7 @@
 from perception_eval.evaluation.matching.object_matching import CenterDistanceMatching
 from perception_eval.evaluation.matching.object_matching import IOU2dMatching
 from perception_eval.evaluation.matching.object_matching import IOU3dMatching
+from perception_eval.evaluation.matching.object_matching import MatchingLabelPolicy
 from perception_eval.evaluation.matching.object_matching import MatchingMethod
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.object_matching import PlaneDistanceMatching
@@ -26,4 +27,5 @@ __all__ = (
     "MatchingMethod",
     "MatchingMode",
     "PlaneDistanceMatching",
+    "MatchingLabelPolicy",
 )

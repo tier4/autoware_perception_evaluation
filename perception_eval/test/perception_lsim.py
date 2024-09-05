@@ -17,6 +17,7 @@ import logging
 import tempfile
 from typing import List
 
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import PerceptionFrameResult
@@ -24,7 +25,7 @@ from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.manager import PerceptionEvaluationManager
-from perception_eval.tool import PerceptionPerformanceAnalyzer
+from perception_eval.tool import PerceptionAnalyzer3D
 from perception_eval.util.debug import format_class_for_log
 from perception_eval.util.debug import get_objects_with_difference
 from perception_eval.util.logger_config import configure_logger
@@ -41,6 +42,7 @@ class PerceptionLSimMoc:
             "evaluation_task": evaluation_task,
             # ラベル，max x/y，マッチング閾値 (detection/tracking/predictionで共通)
             "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+            "ignore_attributes": ["cycle_state.without_rider"],
             # max x/y position or max/min distanceの指定が必要
             # # max x/y position
             "max_x_position": 102.4,
@@ -56,21 +58,28 @@ class PerceptionLSimMoc:
             "center_distance_thresholds": [
                 [1.0, 1.0, 1.0, 1.0],
                 [2.0, 2.0, 2.0, 2.0],
-            ],
+            ],  # = [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]]
             # objectごとに同じparamの場合はこのような指定が可能
-            "plane_distance_thresholds": [2.0, 3.0],
-            "iou_2d_thresholds": [0.5],
-            "iou_3d_thresholds": [0.5],
+            "plane_distance_thresholds": [
+                2.0,
+                3.0,
+            ],  # = [[2.0, 2.0, 2.0, 2.0], [3.0, 3.0, 3.0, 3.0]]
+            "iou_2d_thresholds": [0.5, 0.5, 0.5, 0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
+            "iou_3d_thresholds": [0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
             "min_point_numbers": [0, 0, 0, 0],
+            "max_matchable_radii": 5.0,  # = [5.0, 5.0, 5.0, 5.0]
+            # label parameters
+            "label_prefix": "autoware",
+            "merge_similar_labels": False,
+            "allow_matching_unknown": True,
         }
 
-        evaluation_config: PerceptionEvaluationConfig = PerceptionEvaluationConfig(
+        evaluation_config = PerceptionEvaluationConfig(
             dataset_paths=dataset_paths,
             frame_id="base_link" if evaluation_task == "detection" else "map",
-            merge_similar_labels=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
-            load_raw_data=False,
+            load_raw_data=True,
         )
 
         _ = configure_logger(
@@ -86,15 +95,11 @@ class PerceptionLSimMoc:
         unix_time: int,
         estimated_objects: List[DynamicObject],
     ) -> None:
-
         # 現frameに対応するGround truthを取得
-        ground_truth_now_frame = self.evaluator.get_ground_truth_now_frame(unix_time)
-
-        # [Option] ROS側でやる（Map情報・Planning結果を用いる）UC評価objectを選別
-        # ros_critical_ground_truth_objects : List[DynamicObject] = custom_critical_object_filter(
-        #   ground_truth_now_frame.objects
-        # )
-        ros_critical_ground_truth_objects = ground_truth_now_frame.objects
+        interpolate = not self.evaluator.evaluation_task == EvaluationTask.DETECTION
+        ground_truth_now_frame = self.evaluator.get_ground_truth_now_frame(
+            unix_time, interpolate_ground_truth=interpolate
+        )
 
         # 1 frameの評価
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
@@ -102,6 +107,7 @@ class PerceptionLSimMoc:
         critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
             target_labels=["car", "bicycle", "pedestrian", "motorbike"],
+            ignore_attributes=["cycle_state.without_rider"],
             max_x_position_list=[30.0, 30.0, 30.0, 30.0],
             max_y_position_list=[30.0, 30.0, 30.0, 30.0],
         )
@@ -116,7 +122,6 @@ class PerceptionLSimMoc:
             unix_time=unix_time,
             ground_truth_now_frame=ground_truth_now_frame,
             estimated_objects=estimated_objects,
-            ros_critical_ground_truth_objects=ros_critical_ground_truth_objects,
             critical_object_filter_config=critical_object_filter_config,
             frame_pass_fail_config=frame_pass_fail_config,
         )
@@ -127,14 +132,17 @@ class PerceptionLSimMoc:
         処理の最後に評価結果を出す
         """
 
-        # use case fail object num
-        number_use_case_fail_object: int = 0
-        for frame_results in self.evaluator.frame_results:
-            number_use_case_fail_object += frame_results.pass_fail_result.get_fail_object_num()
-        logging.info(f"final use case fail object: {number_use_case_fail_object}")
-        final_metric_score = self.evaluator.get_scene_result()
+        # number of fails for critical objects
+        num_critical_fail: int = sum(
+            map(
+                lambda frame_result: frame_result.pass_fail_result.get_num_fail(),
+                self.evaluator.frame_results,
+            )
+        )
+        logging.info(f"Number of fails for critical objects: {num_critical_fail}")
 
-        # final result
+        # scene metrics score
+        final_metric_score = self.evaluator.get_scene_result()
         logging.info(f"final metrics result {final_metric_score}")
         return final_metric_score
 
@@ -143,8 +151,8 @@ class PerceptionLSimMoc:
         Frameごとの可視化
         """
         logging.info(
-            f"{len(frame_result.pass_fail_result.tp_objects)} TP objects, "
-            f"{len(frame_result.pass_fail_result.fp_objects_result)} FP objects, "
+            f"{len(frame_result.pass_fail_result.tp_object_results)} TP objects, "
+            f"{len(frame_result.pass_fail_result.fp_object_results)} FP objects, "
             f"{len(frame_result.pass_fail_result.fn_objects)} FN objects",
         )
 
@@ -176,10 +184,11 @@ if __name__ == "__main__":
     for ground_truth_frame in detection_lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference(
             ground_truth_objects=ground_truth_frame.objects,
-            diff_distance=(2.3, 0.0, 0.2),
+            diff_distance=(1.0, 0.0, 0.2),
             diff_yaw=0.2,
             is_confidence_with_distance=True,
-            ego2map=ground_truth_frame.ego2map,
+            label_to_unknown_rate=0.5,
+            transforms=ground_truth_frame.transforms,
         )
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
@@ -217,18 +226,21 @@ if __name__ == "__main__":
         f"{format_class_for_log(detection_final_metric_score.maps[0], 100)}",
     )
 
-    # Visualize all frame results.
-    logging.info("Start visualizing detection results")
-    detection_lsim.evaluator.visualize_all()
+    if detection_lsim.evaluator.evaluator_config.load_raw_data:
+        # Visualize all frame results.
+        logging.info("Start visualizing detection results")
+        detection_lsim.evaluator.visualize_all()
 
     # Detection performance report
-    detection_analyzer = PerceptionPerformanceAnalyzer(detection_lsim.evaluator.evaluator_config)
+    detection_analyzer = PerceptionAnalyzer3D(detection_lsim.evaluator.evaluator_config)
     detection_analyzer.add(detection_lsim.evaluator.frame_results)
-    score_df, error_df = detection_analyzer.analyze()
-    if score_df is not None:
-        logging.info(score_df.to_string())
-    if error_df is not None:
-        logging.info(error_df.to_string())
+    result = detection_analyzer.analyze()
+    if result.score is not None:
+        logging.info(result.score.to_string())
+    if result.error is not None:
+        logging.info(result.error.to_string())
+    if result.confusion_matrix is not None:
+        logging.info(result.confusion_matrix.to_string())
 
     # detection_analyzer.plot_state("4bae7e75c7de70be980ce20ce8cbb642", ["x", "y"])
     # detection_analyzer.plot_error(["x", "y"])
@@ -247,10 +259,11 @@ if __name__ == "__main__":
     for ground_truth_frame in tracking_lsim.evaluator.ground_truth_frames:
         objects_with_difference = get_objects_with_difference(
             ground_truth_objects=ground_truth_frame.objects,
-            diff_distance=(2.3, 0.0, 0.2),
-            diff_yaw=0.2,
+            diff_distance=(1.0, 0.0, 0.0),
+            diff_yaw=0.0,
             is_confidence_with_distance=True,
-            ego2map=ground_truth_frame.ego2map,
+            label_to_unknown_rate=0.5,
+            transforms=ground_truth_frame.transforms,
         )
         # To avoid case of there is no object
         if len(objects_with_difference) > 0:
@@ -294,18 +307,21 @@ if __name__ == "__main__":
         f"{format_class_for_log(tracking_final_metric_score.tracking_scores[0], 100)}"
     )
 
-    # Visualize all frame results
-    logging.info("Start visualizing tracking results")
-    tracking_lsim.evaluator.visualize_all()
+    if tracking_lsim.evaluator.evaluator_config.load_raw_data:
+        # Visualize all frame results
+        logging.info("Start visualizing tracking results")
+        tracking_lsim.evaluator.visualize_all()
 
     # Tracking performance report
-    tracking_analyzer = PerceptionPerformanceAnalyzer(tracking_lsim.evaluator.evaluator_config)
+    tracking_analyzer = PerceptionAnalyzer3D(tracking_lsim.evaluator.evaluator_config)
     tracking_analyzer.add(tracking_lsim.evaluator.frame_results)
-    score_df, error_df = tracking_analyzer.analyze()
-    if score_df is not None:
-        logging.info(score_df.to_string())
-    if error_df is not None:
-        logging.info(error_df.to_string())
+    result = tracking_analyzer.analyze()
+    if result.score is not None:
+        logging.info(result.score.to_string())
+    if result.error is not None:
+        logging.info(result.error.to_string())
+    if result.confusion_matrix is not None:
+        logging.info(result.confusion_matrix.to_string())
 
     # ========================================= Prediction =========================================
     print("=" * 50 + "Start Prediction" + "=" * 50)

@@ -67,8 +67,6 @@ class MetricsScoreConfig:
         elif self.evaluation_task == EvaluationTask.CLASSIFICATION2D:
             self._check_parameters(ClassificationMetricsConfig, cfg)
             self.classification_config = ClassificationMetricsConfig(**cfg)
-        else:
-            raise KeyError(f"Unsupported perception evaluation task: {self.evaluation_task}")
 
     @staticmethod
     def _check_parameters(config: _MetricsConfigBase, params: Dict[str, Any]):

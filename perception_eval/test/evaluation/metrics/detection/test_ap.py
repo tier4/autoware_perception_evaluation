@@ -24,9 +24,10 @@ from typing import Tuple
 import unittest
 
 import numpy as np
+from perception_eval.common import DynamicObject
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
-from perception_eval.common.object import DynamicObject
-from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.detection.ap import Ap
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
@@ -142,9 +143,8 @@ class TestAp(unittest.TestCase):
         self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
-        self.target_labels: List[AutowareLabel] = [
-            AutowareLabel.CAR,
-        ]
+        self.evaluation_task: EvaluationTask = EvaluationTask.DETECTION
+        self.target_labels: List[AutowareLabel] = [AutowareLabel.CAR]
         self.max_x_position_list: List[float] = [100.0]
         self.max_y_position_list: List[float] = [100.0]
         self.min_point_numbers: List[int] = [0]
@@ -209,9 +209,7 @@ class TestAp(unittest.TestCase):
             ),
         ]
         for n, (diff_trans, ans_ap, ans_aph) in enumerate(patterns):
-            with self.subTest(
-                f"Test AP and APH with center distance matching for translation difference: {n + 1}"
-            ):
+            with self.subTest(f"Test AP and APH with center distance matching for translation difference: {n + 1}"):
                 diff_trans_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
                     diff_distance=diff_trans.diff_estimated,
@@ -241,6 +239,7 @@ class TestAp(unittest.TestCase):
                 )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_trans_estimated_objects,
                     ground_truth_objects=diff_trans_ground_truth_objects,
                 )
@@ -267,9 +266,7 @@ class TestAp(unittest.TestCase):
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
                 self.assertEqual(out_ap, ans_ap, f"out_ap = {str(out_ap)}, ans_ap = {str(ans_ap)}")
-                self.assertEqual(
-                    out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}"
-                )
+                self.assertEqual(out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}")
 
     def test_ap_center_distance_yaw_difference(self):
         """[summary]
@@ -484,9 +481,7 @@ class TestAp(unittest.TestCase):
         ]
 
         for n, (diff_yaw, ans_ap, ans_aph) in enumerate(patterns):
-            with self.subTest(
-                f"Test AP and APH with center distance matching for yaw difference: {n + 1}"
-            ):
+            with self.subTest(f"Test AP and APH with center distance matching for yaw difference: {n + 1}"):
                 diff_yaw_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
                     diff_distance=(0.0, 0.0, 0.0),
@@ -514,6 +509,7 @@ class TestAp(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_estimated_objects,
                     ground_truth_objects=diff_yaw_ground_truth_objects,
                 )
@@ -539,9 +535,7 @@ class TestAp(unittest.TestCase):
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
                 self.assertEqual(out_ap, ans_ap, f"out_ap = {str(out_ap)}, ans_ap = {str(ans_ap)}")
-                self.assertEqual(
-                    out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}"
-                )
+                self.assertEqual(out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}")
 
     def test_ap_center_distance_random_objects(self):
         """[summary]
@@ -557,9 +551,9 @@ class TestAp(unittest.TestCase):
         test patterns:
             Check if ap and aph are almost correct.
         """
-        # ap and aph is 0.0 since no MOTORBIKE in the estimated_objects
-        ans_ap: float = 0.0
-        ans_aph: float = 0.0
+        # ap and aph is nan since no MOTORBIKE in the estimated_objects
+        ans_ap: float = float("inf")
+        ans_aph: float = float("inf")
 
         # Filter objects
         dummy_estimated_objects = filter_objects(
@@ -574,6 +568,7 @@ class TestAp(unittest.TestCase):
         )
 
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )
@@ -659,9 +654,7 @@ class TestAp(unittest.TestCase):
             ),
         ]
         for n, (diff_trans, ans_ap, ans_aph) in enumerate(patterns):
-            with self.subTest(
-                f"Test AP and APH with iou bev matching for translation difference: {n + 1}"
-            ):
+            with self.subTest(f"Test AP and APH with iou bev matching for translation difference: {n + 1}"):
                 diff_trans_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
                     diff_distance=diff_trans.diff_estimated,
@@ -689,6 +682,7 @@ class TestAp(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_trans_estimated_objects,
                     ground_truth_objects=diff_trans_ground_truth_objects,
                 )
@@ -714,9 +708,7 @@ class TestAp(unittest.TestCase):
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
                 self.assertEqual(out_ap, ans_ap, f"out_ap = {str(out_ap)}, ans_ap = {str(ans_ap)}")
-                self.assertEqual(
-                    out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}"
-                )
+                self.assertEqual(out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}")
 
     def test_ap_iou_2d_yaw_difference(self):
         """[summary]
@@ -803,6 +795,7 @@ class TestAp(unittest.TestCase):
                 )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=estimated_objects,
                     ground_truth_objects=ground_truth_objects,
                 )
@@ -866,6 +859,7 @@ class TestAp(unittest.TestCase):
             min_point_numbers=self.min_point_numbers,
         )
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )
@@ -911,9 +905,7 @@ class TestAp(unittest.TestCase):
         ]
         for diff_distance, ans_ap, ans_aph in patterns:
             with self.subTest("Test AP and APH with iou 3d matching for translation difference."):
-                diff_distance_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
@@ -935,6 +927,7 @@ class TestAp(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
@@ -996,9 +989,7 @@ class TestAp(unittest.TestCase):
 
         for diff_yaw, ans_ap, ans_aph in patterns:
             with self.subTest("Test AP and APH with iou 3d matching for yaw difference."):
-                diff_yaw_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+                diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
@@ -1020,6 +1011,7 @@ class TestAp(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
@@ -1079,6 +1071,7 @@ class TestAp(unittest.TestCase):
         )
 
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )
@@ -1125,12 +1118,8 @@ class TestAp(unittest.TestCase):
             (1.0, 0.0, 0.0),
         ]
         for diff_distance, ans_ap, ans_aph in patterns:
-            with self.subTest(
-                "Test AP and APH with plane distance matching for translation difference."
-            ):
-                diff_distance_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+            with self.subTest("Test AP and APH with plane distance matching for translation difference."):
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
@@ -1152,6 +1141,7 @@ class TestAp(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
@@ -1197,7 +1187,7 @@ class TestAp(unittest.TestCase):
             (-math.pi / 2.0, 1.0, 0.25),
             # Given opposite direction, aph is 0.0.
             (math.pi, 1.0, 0.0),
-            (-math.pi, 0.0, 0.0),
+            (-math.pi, 1.0, 0.0),
             # Given diff_yaw is pi/4, aph is 0.75**2 times ap
             (math.pi / 4, 1.0, 0.5625),
             (-math.pi / 4, 1.0, 0.5625),
@@ -1208,9 +1198,7 @@ class TestAp(unittest.TestCase):
 
         for diff_yaw, ans_ap, ans_aph in patterns:
             with self.subTest("Test AP and APH with plane distance matching for yaw difference."):
-                diff_yaw_dummy_ground_truth_objects: List[
-                    DynamicObject
-                ] = get_objects_with_difference(
+                diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_ground_truth_objects,
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
@@ -1232,6 +1220,7 @@ class TestAp(unittest.TestCase):
                     min_point_numbers=self.min_point_numbers,
                 )
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
                     ground_truth_objects=dummy_ground_truth_objects,
                 )
@@ -1242,7 +1231,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_threshold_list=[1.0],
+                    matching_threshold_list=[1.5],
                 )
                 aph: Ap = Ap(
                     tp_metrics=TPMetricsAph(),
@@ -1250,7 +1239,7 @@ class TestAp(unittest.TestCase):
                     num_ground_truth=num_ground_truth,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_threshold_list=[1.0],
+                    matching_threshold_list=[1.5],
                 )
 
                 self.assertAlmostEqual(ap.ap, ans_ap)
@@ -1294,6 +1283,7 @@ class TestAp(unittest.TestCase):
         )
 
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+            evaluation_task=self.evaluation_task,
             estimated_objects=dummy_estimated_objects,
             ground_truth_objects=dummy_ground_truth_objects,
         )

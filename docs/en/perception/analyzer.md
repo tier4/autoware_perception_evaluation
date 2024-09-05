@@ -1,6 +1,6 @@
-# [`<class> PerceptionPerformanceAnalyzer(...)`](../../../perception_eval/perception_eval/tool/perception_performance_analyzer.py)
+# [`<class> PerceptionAnalyzer3D(...)`](../../../perception_eval/perception_eval/tool/perception_analyzer3d.py)
 
-Analyze based on perception results.
+Analyze results for 3D perception evaluation.
 
 ## Type of perception evaluation
 
@@ -40,20 +40,20 @@ After running driving_log_replayer, evaluation results (`List[PerceptionFrameRes
 There are two ways of initialization, 1. with `PerceptionEvaluationConfig`, or 2. with scenario file (`.yaml`).
 
 ```python
-from perception_eval.tool.perception_performance_analyzer import PerceptionPerformanceAnalyzer
+from perception_eval.tool.perception_performance_analyzer import PerceptionAnalyzer3D
 
 
 # 1. with PerceptionEvaluationConfig
 # REQUIRED:
 #   - evaluation_config <PerceptionEvaluationConfig>
 
-analyzer = PerceptionPerformanceAnalyzer(evaluation_config)
+analyzer = PerceptionAnalyzer3D(evaluation_config)
 
 # 2. with scenario file (.yaml)
 # REQUIRED:
 #   - scenario_path <str>
 
-analyzer = PerceptionPerformanceAnalyzer.from_scenario(
+analyzer = PerceptionAnalyzer3D.from_scenario(
     result_root_directory,
     scenario_path,
 )
@@ -91,15 +91,15 @@ analyzer.add_from_pkl(pickle_path)
 The methods `analyzer.analyze()` calculate the analysis score． To analyze only the Nth scene, specify `analyzer.analyze(scene=N)`.
 
 ```python
->>> score_df, error_df = analyzer.analyze()
->>> print(score_df)
+>>> result = analyzer.analyze()
+>>> print(result.score)
                     TP   FP        FN  AP(Center Distance 3d [m])  APH(Center Distance 3d [m])  AP(IoU BEV)  APH(IoU BEV)  AP(IoU 3D)  APH(IoU 3D)  AP(Plane Distance [m])  APH(Plane Distance [m])
 ALL         0.992003  0.0  0.007997                    0.972918                     0.970923     0.972918      0.970923    0.972918     0.970923                0.972918                 0.970923
 car         1.000000  0.0  0.000000                    1.000000                     0.999460     1.000000      0.999460    1.000000     0.999460                1.000000                 0.999460
 bicycle     0.958561  0.0  0.041439                    1.000000                     1.000000     1.000000      1.000000    1.000000     1.000000                1.000000                 1.000000
 pedestrian  0.991278  0.0  0.008722                    0.900682                     0.896454     0.900682      0.896454    0.900682     0.896454                0.900682                 0.896454
 
->>> print(error_df)
+>>> print(result.error)
 ALL        x         1.394186  1.588129  7.605266e-01  2.300000  0.285734
            y         0.459921  0.611391  4.028307e-01  1.017925  0.000000
            yaw       0.188019  0.218617  1.115459e-01  0.390857  0.006516
@@ -126,7 +126,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
            nn_plane  0.688891  0.893696  5.693175e-01  2.190708  0.020005
 ```
 
-## `<class> PerceptionPerformanceAnalyzer(...)`
+## `<class> PerceptionAnalyzer3D(...)`
 
 | Arguments           |             type             | Mandatory | Description                                                    |
 | :------------------ | :--------------------------: | :-------: | :------------------------------------------------------------- |
@@ -184,7 +184,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 - `get()` returns columns of DataFrame specified in `*args` and meet requirements specified in `**kwargs`.
 
 ```python
->>> analyzer = PerceptionPerformanceAnalyzer(...)
+>>> analyzer = PerceptionAnalyzer3D(...)
 
 # Example: Returns xy and uuid columns labeled as truck
 >>> analyzer.get("x", "y", "uuid", label="truck")
@@ -219,7 +219,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 |     0 | **ground_truth** |   `float`   | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `float` | `tuple[float]` | `tuple[float]` |  `str`  |   `float`    | `str`  |    `int`     |  `str`   | `int`  |  `int`  |  `int`  |
 |       | **estimation**   |
 
-- `PerceptionPerformanceAnalyzer.df` allow to show the DataFrame
+- `PerceptionAnalyzer3D.df` allow to show the DataFrame
 
 ```python
 >>> analyzer.df
@@ -339,7 +339,7 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
     | `CONFIDENCE` | Confidence of estimation[GT=1.0](0, 1). |
     | `POSITION`   | xy position[m] from ego vehicle.        |
     | `VELOCITY`   | xy velocity[m/s].                       |
-    | `POLAR`      | polar coordinates, (theta[rad], r[m]).  |
+    | `POLAR`      | polar coordinates, (theta[deg], r[m]).  |
 
 - `<func> plot_state(...) -> None`
 
@@ -381,11 +381,12 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
 
   - Plot number of objects by distance from `base_link` in histogram
 
-  | Arguments |    type    | Mandatory | Description                                      |
-  | :-------- | :--------: | :-------: | :----------------------------------------------- |
-  | `mode`    | `PlotAxes` |    No     | Target plot axes. (Defaults=`PlotAxes.DISTANCE`) |
-  | `bin`     |  `float`   |    No     | Bin of distance. (Defaults=`0.5`)                |
-  | `show`    |   `bool`   |    No     | Whether sho plot result.(Defaults=`False`)       |
+  | Arguments |    type    | Mandatory | Description                                           |
+  | :-------- | :--------: | :-------: | :---------------------------------------------------- |
+  | `mode`    | `PlotAxes` |    No     | Target plot axes. (Defaults=`PlotAxes.DISTANCE`)      |
+  | `bins`    |   `int`    |    No     | Number of bins. (Defaults=`1`)                        |
+  | `heatmap` |   `bool`   |    No     | Whether to plot heatmap (3D only). (Defaults=`False`) |
+  | `show`    |   `bool`   |    No     | Whether sho plot result.(Defaults=`False`)            |
 
   ```python
   # Plot the number of all objects
@@ -393,11 +394,6 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
   ```
 
   <img src="../../fig/perception/plot_num_object_by_distance.png" width=800 height=400>
-
-## Known issues / Limitations
-
-- `PerceptionPerformanceAnalyzer()` only supports 3D evaluation.
-  <img src="../../fig/perception/plot_num_object_by_distance.png" width=800>
 
 - `<func> box_plot(...) -> None`
 
@@ -414,6 +410,11 @@ pedestrian x         1.135335  1.324417  6.819782e-01  2.300000  0.285734
   ```
 
   <img src="../../fig/perception/box_plot_xy.png" width=400>
+
+## Known issues / Limitations
+
+- `PerceptionAnalyzer3D()` only supports 3D evaluation.
+  <img src="../../fig/perception/plot_num_object_by_distance.png" width=800>
 
 ## [`<class> Gmm(...)`](../../../perception_eval/perception_eval/tool/gmm.py)
 
@@ -444,20 +445,20 @@ And then, it predicts means of posterior distribution P(Y|X), where X represents
 
 - Returns input array of specified states and errors.
 
-| Arguments  |              type               | Mandatory | Description                               |
-| :--------- | :-----------------------------: | :-------: | :---------------------------------------- |
-| `analyzer` | `PerceptionPerformanceAnalyzer` |    Yes    | `PerceptionPerformanceAnalyzer` instance. |
-| `state`    |           `List[str]`           |    Yes    | List of target state names.               |
-| `error`    |           `List[str]`           |    Yes    | List of target error names.               |
+| Arguments  |          type          | Mandatory | Description                      |
+| :--------- | :--------------------: | :-------: | :------------------------------- |
+| `analyzer` | `PerceptionAnalyzer3D` |    Yes    | `PerceptionAnalyzer3D` instance. |
+| `state`    |      `List[str]`       |    Yes    | List of target state names.      |
+| `error`    |      `List[str]`       |    Yes    | List of target error names.      |
 
 ### Example usage
 
 ```python
-from perception_eval.tool import PerceptionPerformanceAnalyzer, Gmm, load_sample
+from perception_eval.tool import PerceptionAnalyzer3D, Gmm, load_sample
 import numpy as np
 
-# Initialize PerceptionPerformanceAnalyzer
-analyzer = PerceptionPerformanceAnalyzer(...)
+# Initialize PerceptionAnalyzer3D
+analyzer = PerceptionAnalyzer3D(...)
 
 # Load sample data, X: state, Y: error
 state = ["x", "y", "yaw", "vx", "xy"]

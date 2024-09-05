@@ -12,38 +12,81 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from abc import ABC
 from abc import abstractmethod
 from enum import Enum
 import math
-from typing import Callable
-from typing import List
 from typing import Optional
+from typing import overload
 from typing import Tuple
 
+import numpy as np
 from perception_eval.common import distance_objects
 from perception_eval.common import distance_points_bev
 from perception_eval.common import ObjectType
+from perception_eval.common.label import is_same_label
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.point import get_point_left_right
+from perception_eval.common.point import get_point_left_right_index
 from perception_eval.common.point import polygon_to_list
+from perception_eval.common.schema import FrameID
+from perception_eval.common.shape import ShapeType
+from perception_eval.common.transform import TransformDict
 from shapely.geometry import Polygon
+
+
+class MatchingLabelPolicy(Enum):
+    DEFAULT = "DEFAULT"
+    ALLOW_UNKNOWN = "ALLOW_UNKNOWN"
+    ALLOW_ANY = "ALLOW_ANY"
+
+    @classmethod
+    def from_str(cls, name: str) -> MatchingLabelPolicy:
+        """Construct an enum member from str name.
+
+        Args:
+            name (str): Name of a member.
+
+        Returns:
+            MatchingLanePolicy: Constructed member.
+        """
+        name = name.upper()
+        assert name in cls.__members__, f"{name} is not in enum members."
+        return cls.__members__[name]
+
+    def is_matchable(self, estimation: ObjectType, ground_truth: ObjectType) -> bool:
+        """Indicate whether input estimation and GT is matchable considering their label.
+
+        Args:
+            estimation (ObjectType): Estimated object.
+            ground_truth (ObjectType): GT object.
+
+        Returns:
+            bool: Return True if they are matchable.
+        """
+        if ground_truth.semantic_label.is_fp() or self == MatchingLabelPolicy.ALLOW_ANY:
+            return True
+        elif self == MatchingLabelPolicy.ALLOW_UNKNOWN:
+            return is_same_label(estimation, ground_truth) or estimation.semantic_label.is_unknown()
+        else:  # STRICT
+            return is_same_label(estimation, ground_truth)
 
 
 class MatchingMode(Enum):
     """[summary]
     The mode enum for matching algorithm.
 
-    CENTERDISTANCE: center distance in 3d
+    CENTERDISTANCE: center distance, for 3d use meter[m], 2d use pixel[px].
     IOU2D : IoU (Intersection over Union) in BEV (Bird Eye View) for 3D objects, pixel for 2D objects.
     IOU3D : IoU (Intersection over Union) in 3D
     PLANEDISTANCE: The plane distance
     """
 
-    CENTERDISTANCE = "Center Distance [m]"
+    CENTERDISTANCE = "Center Distance"
     IOU2D = "IoU 2D"
     IOU3D = "IoU 3D"
-    PLANEDISTANCE = "Plane Distance [m]"
+    PLANEDISTANCE = "Plane Distance"
 
     def __str__(self) -> str:
         return self.value
@@ -66,17 +109,29 @@ class MatchingMethod(ABC):
 
     mode: MatchingMode
 
-    @abstractmethod
+    @overload
+    def __init__(self, estimated_object: ObjectType, ground_truth_object: Optional[ObjectType]) -> None:
+        ...
+
+    @overload
     def __init__(
         self,
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
+        transforms: Optional[TransformDict] = None,
+    ) -> None:
+        ...
+
+    def __init__(
+        self,
+        estimated_object: ObjectType,
+        ground_truth_object: Optional[ObjectType],
+        transforms: Optional[TransformDict] = None,
     ) -> None:
         if ground_truth_object is not None:
-            assert type(estimated_object) == type(ground_truth_object)
+            assert isinstance(estimated_object, type(ground_truth_object))
         self.value: Optional[float] = self._calculate_matching_score(
-            estimated_object=estimated_object,
-            ground_truth_object=ground_truth_object,
+            estimated_object=estimated_object, ground_truth_object=ground_truth_object, transforms=transforms
         )
 
     @abstractmethod
@@ -84,6 +139,7 @@ class MatchingMethod(ABC):
         self,
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
+        transforms: Optional[TransformDict] = None,
     ) -> Optional[float]:
         pass
 
@@ -122,13 +178,6 @@ class CenterDistanceMatching(MatchingMethod):
 
     mode: MatchingMode = MatchingMode.CENTERDISTANCE
 
-    def __init__(
-        self,
-        estimated_object: ObjectType,
-        ground_truth_object: Optional[ObjectType],
-    ) -> None:
-        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
-
     def is_better_than(
         self,
         threshold_value: float,
@@ -153,6 +202,7 @@ class CenterDistanceMatching(MatchingMethod):
         self,
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
+        transforms: Optional[TransformDict] = None,
     ) -> Optional[float]:
         """Get center distance.
 
@@ -170,6 +220,9 @@ class CenterDistanceMatching(MatchingMethod):
         return distance_objects(estimated_object, ground_truth_object)
 
 
+_PlanePointType = Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]]
+
+
 class PlaneDistanceMatching(MatchingMethod):
     """A class for matching objects by plane distance.
 
@@ -179,9 +232,9 @@ class PlaneDistanceMatching(MatchingMethod):
     Attributes:
         mode (MatchingMode): Matching mode that is `MatchingMode.PLANEDISTANCE`.
         value (Optional[float]): Plane distance[m].
-        ground_truth_nn_plane (Optional[Tuple[Tuple[float, float]]]):
+        ground_truth_nn_plane (_PlanePointType):
             Vertices of NN plane of ground truth object ((x1, y1), (x2, y2)).
-        estimated_nn_plane (Optional[Tuple[Tuple[float, float]]])]:
+        estimated_nn_plane (_PlanePointType):
             Vertices of NN plane for estimation ((x1, y1), (x2, y2)).
 
     Args:
@@ -195,14 +248,13 @@ class PlaneDistanceMatching(MatchingMethod):
         self,
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
+        transforms: Optional[TransformDict] = None,
     ) -> None:
-        self.ground_truth_nn_plane: Optional[
-            Tuple[Tuple[float, float, float], Tuple[float, float, float]]
-        ] = None
-        self.estimated_nn_plane: Optional[
-            Tuple[Tuple[float, float, float], Tuple[float, float, float]]
-        ] = None
-        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
+        self.ground_truth_nn_plane: _PlanePointType = ((np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan))
+        self.estimated_nn_plane: _PlanePointType = ((np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan))
+        super().__init__(
+            estimated_object=estimated_object, ground_truth_object=ground_truth_object, transforms=transforms
+        )
 
     def is_better_than(
         self,
@@ -227,15 +279,20 @@ class PlaneDistanceMatching(MatchingMethod):
         self,
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
+        transforms: Optional[TransformDict] = None,
     ) -> Optional[float]:
         """Calculate plane distance between estimation and ground truth and NN planes.
 
         This function also set NN plane attributes for estimation and ground truth.
-        If input `ground_truth_object=None`, it always returns None,
+        If input `ground_truth_object=None`, it always returns None.
+
+        If the shapes of both estimated object and GT are BOUNDING_BOX, calculates plane distance.
+        Otherwise, calculates center distance in BEV.
 
         Args:
             estimated_object (DynamicObject): Estimated object.
             ground_truth_object (Optional[DynamicObject]): Ground truth object.
+            transforms (Optional[TransformDict]): Transforms.
 
         Returns:
             Optional[float]: Plane distance.
@@ -243,45 +300,52 @@ class PlaneDistanceMatching(MatchingMethod):
         if ground_truth_object is None:
             return None
 
-        # Get corner_points of estimated object from footprint
-        pr_footprint_polygon: Polygon = estimated_object.get_footprint()
-        pr_corner_points: List[Tuple[float, float, float]] = polygon_to_list(pr_footprint_polygon)
+        # Get corner points of estimated object from footprint
+        est_footprint: Polygon = estimated_object.get_footprint()
+        est_corners = np.array(polygon_to_list(est_footprint))
 
-        # Get corner_points of ground truth object from footprint
-        gt_footprint_polygon: Polygon = ground_truth_object.get_footprint()
-        gt_corner_points: List[Tuple[float, float, float]] = polygon_to_list(gt_footprint_polygon)
+        # Get corner points of ground truth object from footprint
+        gt_footprint: Polygon = ground_truth_object.get_footprint()
+        gt_corners = np.array(polygon_to_list(gt_footprint))
 
-        # Sort by 2d distance
-        lambda_func: Callable[[Tuple[float, float, float]], float] = lambda x: math.hypot(
-            x[0], x[1]
-        )
-        pr_corner_points.sort(key=lambda_func)
-        gt_corner_points.sort(key=lambda_func)
+        if (
+            estimated_object.state.shape_type == ShapeType.BOUNDING_BOX
+            and ground_truth_object.state.shape_type == ShapeType.BOUNDING_BOX
+        ):
+            # Calculate min distance from ego vehicle
+            if ground_truth_object.frame_id != FrameID.BASE_LINK:
+                assert transforms is not None, f"`transforms` must be specified for {ground_truth_object.frame_id}"
+                gt_corners_base_link = np.array(
+                    [
+                        transforms.transform((ground_truth_object.frame_id, FrameID.BASE_LINK), corner)
+                        for corner in gt_corners
+                    ]
+                )
+                gt_distances = np.linalg.norm(gt_corners_base_link[:, :2], axis=1)
+            else:
+                gt_distances = gt_distances = np.linalg.norm(gt_corners[:, :2], axis=1)
+            sort_idx = np.argsort(gt_distances)
 
-        pr_left_point, pr_right_point = get_point_left_right(
-            pr_corner_points[0], pr_corner_points[1]
-        )
-        gt_left_point, gt_right_point = get_point_left_right(
-            gt_corner_points[0], gt_corner_points[1]
-        )
+            gt_corners = gt_corners[sort_idx]
+            est_corners = est_corners[sort_idx]
 
-        # Calculate plane distance
-        distance_left_point: float = abs(distance_points_bev(pr_left_point, gt_left_point))
-        distance_right_point: float = abs(distance_points_bev(pr_right_point, gt_right_point))
-        distance_squared: float = distance_left_point**2 + distance_right_point**2
-        plane_distance: float = math.sqrt(distance_squared / 2.0)
+            est_plane_points = est_corners[:2].tolist()
+            gt_plane_points = gt_corners[:2].tolist()
+            left_idx, right_idx = get_point_left_right_index(gt_plane_points[0], gt_plane_points[1])
+            gt_left_point, gt_right_point = gt_plane_points[left_idx], gt_plane_points[right_idx]
+            est_left_point, est_right_point = est_plane_points[left_idx], est_plane_points[right_idx]
+            distance_left_point: float = distance_points_bev(est_left_point, gt_left_point)
+            distance_right_point: float = distance_points_bev(est_right_point, gt_right_point)
+            distance_squared = distance_left_point**2 + distance_right_point**2
+            plane_distance = math.sqrt(0.5 * distance_squared)
+            # NOTE: round because the distance become 0.9999999... expecting 1.0
+            distance = round(plane_distance, 10)
+            self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
+            self.estimated_nn_plane = (est_left_point, est_right_point)
+        else:
+            distance = distance_points_bev(estimated_object.state.position, ground_truth_object.state.position)
 
-        self.ground_truth_nn_plane: Tuple[
-            Tuple[float, float, float], Tuple[float, float, float]
-        ] = (
-            gt_left_point,
-            gt_right_point,
-        )
-        self.estimated_nn_plane: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = (
-            pr_left_point,
-            pr_right_point,
-        )
-        return plane_distance
+        return distance
 
 
 class IOU2dMatching(MatchingMethod):
@@ -299,13 +363,6 @@ class IOU2dMatching(MatchingMethod):
     """
 
     mode: MatchingMode = MatchingMode.IOU2D
-
-    def __init__(
-        self,
-        estimated_object: ObjectType,
-        ground_truth_object: Optional[ObjectType],
-    ) -> None:
-        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
 
     def is_better_than(
         self,
@@ -325,9 +382,7 @@ class IOU2dMatching(MatchingMethod):
         Raises:
             AssertionError: When `threshold_value` is not in [0.0, 1.0].
         """
-        assert (
-            0.0 <= threshold_value <= 1.0
-        ), f"threshold must be [0.0, 1.0], but got {threshold_value}."
+        assert 0.0 <= threshold_value <= 1.0, f"threshold must be [0.0, 1.0], but got {threshold_value}."
 
         if self.value is None:
             return False
@@ -338,6 +393,7 @@ class IOU2dMatching(MatchingMethod):
         self,
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
+        transforms: Optional[TransformDict] = None,
     ) -> float:
         """Calculate 2D IoU score.
 
@@ -389,13 +445,6 @@ class IOU3dMatching(MatchingMethod):
 
     mode: MatchingMode = MatchingMode.IOU3D
 
-    def __init__(
-        self,
-        estimated_object: DynamicObject,
-        ground_truth_object: Optional[DynamicObject],
-    ) -> None:
-        super().__init__(estimated_object=estimated_object, ground_truth_object=ground_truth_object)
-
     def is_better_than(
         self,
         threshold_value: float,
@@ -413,9 +462,7 @@ class IOU3dMatching(MatchingMethod):
         Raises:
             AssertionError: When `threshold_value` is not in [0.0, 1.0].
         """
-        assert (
-            0.0 <= threshold_value <= 1.0
-        ), f"threshold must be [0.0, 1.0], but got {threshold_value}"
+        assert 0.0 <= threshold_value <= 1.0, f"threshold must be [0.0, 1.0], but got {threshold_value}"
 
         if self.value is None:
             return False
@@ -426,6 +473,7 @@ class IOU3dMatching(MatchingMethod):
         self,
         estimated_object: DynamicObject,
         ground_truth_object: Optional[DynamicObject],
+        transforms: Optional[TransformDict] = None,
     ) -> float:
         """Calculate 3D IoU score.
 

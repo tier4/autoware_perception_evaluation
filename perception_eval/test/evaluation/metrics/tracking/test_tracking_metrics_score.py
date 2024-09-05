@@ -21,8 +21,9 @@ from typing import List
 from typing import Tuple
 import unittest
 
+from perception_eval.common import DynamicObject
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
-from perception_eval.common.object import DynamicObject
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
@@ -41,6 +42,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
         self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
+        self.evaluation_task: EvaluationTask = EvaluationTask.TRACKING
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
             AutowareLabel.BICYCLE,
@@ -64,56 +66,51 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     GT = 4
                         (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
         """
-        # patterns: (prev_diff_trans, cur_diff_trans, ans_mota, ans_motp, ans_id_switch)
+        # patterns: (PrevTrans, CurrTrans, MOTA, MOTP, IDsw)
         patterns: List[Tuple[DiffTranslation, DiffTranslation, float, float, int]] = [
             # (1)
-            # -> previous   : TP=2.0((Est[0], GT[0]), (Est[1], GT[1])), FP=1.0(Est[2])
-            #       MOTA=(1.0-1.0)/2+1.0/1+0.0/1+0.0/1=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
-            # -> current    : TP=2.0((Est[0], GT[2]), (Est[0], GT[2])), FP=1.0(Est[2])
-            #       MOTA=(1.0-1.0)/2+1.0/1+0.0/1+0.0/1=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
-            # [TOTAL]
-            #       MOTA=(0.25*4 + 0.25*4)/8=0.25, MOTP=(0.0*1+0.0*1)/2=0.0, IDsw=0
+            # -> previous   : ((Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2]))
+            #               TP: 2.0, FP: 1.0, FN: 1.0, IDsw = 0.0
+            # -> current    : ((Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2]))
+            #               TP: 2.0, FP: 1.0, FN: 1.0, IDsw = 0.0
+            #               MOTA=1.0 - (1.0 + 1.0) / 4 = 0.5, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0.0
             (
                 # prev: (trans est, trans gt)
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 # cur: (trans est, trans gt)
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                0.25,
+                0.5,
                 0.0,
                 0,
             ),
             # (2)
-            # -> previous   : TP=1.0(Est[1], GT[1]), FP=2.0(Est[0], Est[2])
-            #       MOTA=(1.0-2.0)/2->0.0, MOTP=(0.0/1.0)=0.0, IDsw=0
-            # -> current    : TP=2.0((Est[0], GT[2]), (Est[0], GT[2])), FP=1.0(Est[2])
-            #       MOTA=(2.0-1.0)/4=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
-            # [TOTAL]
-            #       MOTA=(0.25*4+0.25*4)/8=0.25, MOTP=(0.0*2+0.0*2)/4, IDsw=0
+            # -> previous   : ((Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2]))
+            #               TP: 1.0, FP: 2.0, FN: 2.0, IDsw = 0.0
+            # -> current    : ((Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2]))
+            #               TP: 2.0, FP: 1.0, FN: 1.0, IDsw = 0.0
+            #               MOTA=1.0 - (1.0 + 1.0) / 4 = 0.5, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0.0
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.5, 2.0, 0.0)),
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                0.25,
+                0.5,
                 0.0,
                 0,
             ),
             # (3)
-            # -> previous   : TP=2.0((Est[0], GT[0]), (Est[1], Est[1])), FP=1.0(Est[2])
-            #       MOTA=(2.0-1.0)/4=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
-            # -> current    : TP=2.0((Est[0], Est[2]), (Est[0], Est[2])), FP=1.0(Est[2])
-            #       MOTA=(2.0-1.0)/4=0.25, MOTP=(0.0/1.0+0.0/1.0)=0.0, IDsw=0
-            # [TOTAL]
-            #       MOTA=(0.25*4+0.25*4)/8=0.25, MOTP=(0.0*2+0.0*2)/4=0.25, IDsw=0
+            # -> previous   : ((Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2]))
+            #               TP: 1.0, FP: 2.0, FN: 2.0, IDsw = 0.0
+            # -> current    : ((Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2]))
+            #               TP: 2.0, FP: 1.0, FN: 1.0, IDsw = 0.0
+            #               MOTA=1.0 - (1.0 + 1.0) / 4 = 0.5, MOTP=(0.25 + 0.25) / 2, IDsw=0.0
             (
                 DiffTranslation((1.0, 0.0, 0.0), (0.2, 0, 0.0)),
                 DiffTranslation((0.25, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                0.25,
+                0.5,
                 0.25,
                 0,
             ),
         ]
-        for n, (prev_diff_trans, cur_diff_trans, ans_mota, ans_motp, ans_id_switch) in enumerate(
-            patterns
-        ):
+        for n, (prev_diff_trans, cur_diff_trans, ans_mota, ans_motp, ans_id_switch) in enumerate(patterns):
             with self.subTest(f"Test sum CLEAR: {n + 1}"):
                 prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
@@ -143,6 +140,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Previous object results
                 prev_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=prev_estimated_objects,
                     ground_truth_objects=prev_ground_truth_objects,
                 )
@@ -177,6 +175,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Current object results
                 cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
@@ -201,9 +200,9 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )
                 mota, motp, id_switch = tracking_score._sum_clear()
-                self.assertAlmostEqual(mota, ans_mota)
-                self.assertAlmostEqual(motp, ans_motp)
-                self.assertEqual(id_switch, ans_id_switch)
+                self.assertAlmostEqual(mota, ans_mota, msg=f"[{n + 1}] MOTA: {mota} != {ans_mota}")
+                self.assertAlmostEqual(motp, ans_motp, msg=f"[{n + 1}] MOTP: {motp} != {ans_motp}")
+                self.assertEqual(id_switch, ans_id_switch, msg=f"[{n + 1}] IDsw: {id_switch} != {ans_id_switch}")
 
     def test_center_distance_translation_difference(self):
         """[summary]
@@ -218,7 +217,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 DiffTranslation((1.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
                 (
-                    AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
+                    AnswerCLEAR(1, 1.0, 0.0, 0, 0.0, 1.0, 0.0),
                     AnswerCLEAR(1, 1.0, 0.0, 0, 0.0, 1.0, 0.0),
                     AnswerCLEAR(1, 0.0, 0.0, 0, 0.0, 0.0, float("inf")),
                     AnswerCLEAR(1, 0.0, 0.0, 0, 0.0, 0.0, float("inf")),
@@ -255,6 +254,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Previous object results
                 prev_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=prev_estimated_objects,
                     ground_truth_objects=prev_ground_truth_objects,
                 )
@@ -292,6 +292,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Current object results
                 cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
@@ -320,11 +321,11 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     matching_threshold_list=[0.5, 0.5, 0.5, 0.5],
                 )
                 for clear_, ans_clear_ in zip(tracking_score.clears, ans_clears):
-                    out_clear_: AnswerCLEAR = AnswerCLEAR.from_clear(clear_)
+                    out_clear_ = AnswerCLEAR.from_clear(clear_)
                     self.assertEqual(
                         out_clear_,
                         ans_clear_,
-                        f"out_clear = {str(out_clear_)}, ans_clear = {str(ans_clear_)}",
+                        f"\n[{n+1}]\noutput={str(out_clear_)}\n answer={str(ans_clear_)}",
                     )
 
     def test_center_distance_yaw_difference(self):
@@ -340,7 +341,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 DiffYaw(60.0, 0.0, deg2rad=True),
                 DiffYaw(0.0, 45.0, deg2rad=True),
                 (
-                    AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
+                    AnswerCLEAR(1, 1.0, 0.0, 0, 0.0, 1.0, 0.0),
                     AnswerCLEAR(1, 1.0, 0.0, 0, 0.0, 1.0, 0.0),
                     AnswerCLEAR(1, 0.0, 0.0, 0, 0.0, 0.0, float("inf")),
                     AnswerCLEAR(1, 0.0, 0.0, 0, 0.0, 0.0, float("inf")),
@@ -348,9 +349,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
             ),
         ]
         for n, (prev_diff_yaw, cur_diff_yaw, ans_clears) in enumerate(patterns):
-            with self.subTest(
-                f"Test tracking score with center distance matching translated by yaw: {n + 1}"
-            ):
+            with self.subTest(f"Test tracking score with center distance matching translated by yaw: {n + 1}"):
                 prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
                     diff_distance=(0.0, 0.0, 0.0),
@@ -379,6 +378,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Previous object results
                 prev_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=prev_estimated_objects,
                     ground_truth_objects=prev_ground_truth_objects,
                 )
@@ -413,6 +413,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
                 # Current object results
                 cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
@@ -425,9 +426,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                         cur_object_results_dict[label],
                     ]
 
-                num_ground_truth_dict = divide_objects_to_num(
-                    cur_ground_truth_objects, self.target_labels
-                )
+                num_ground_truth_dict = divide_objects_to_num(cur_ground_truth_objects, self.target_labels)
 
                 tracking_score: TrackingMetricsScore = TrackingMetricsScore(
                     object_results_dict=object_results_dict,
@@ -443,5 +442,5 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     self.assertEqual(
                         out_clear_,
                         ans_clear_,
-                        f"out_clear = {str(out_clear_)}, ans_clear = {str(ans_clear_)}",
+                        f"\n[{n+1}]\noutput={str(out_clear_)}\nanswer={str(ans_clear_)}",
                     )

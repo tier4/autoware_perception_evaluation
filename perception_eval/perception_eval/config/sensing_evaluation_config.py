@@ -15,7 +15,9 @@
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Sequence
 from typing import Tuple
+from typing import Union
 
 from ._evaluation_config_base import _EvaluationConfigBase
 
@@ -32,7 +34,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
 
     Attributes:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (FrameID): FrameID instance, where objects are with respect.
+        frame_ids (List[FrameID]): List of FrameID instances, where objects are with respect.
         result_root_directory (str): Directory path to save result.
         log_directory (str): Directory Directory path to save log.
         visualization_directory (str): Directory path to save visualization result.
@@ -46,11 +48,7 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
 
     Args:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (str): FrameID in string, where objects are with respect.
-        merge_similar_labels (bool): Whether merge similar labels.
-            If True,
-                - BUS, TRUCK, TRAILER -> CAR
-                - MOTORBIKE, CYCLIST -> BICYCLE
+        frame_id (Union[str, Sequence[str]]): FrameID(s) in string, where objects are with respect.
         result_root_directory (str): Directory path to save result.
         evaluation_config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
@@ -61,21 +59,28 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
     def __init__(
         self,
         dataset_paths: List[str],
-        frame_id: str,
-        merge_similar_labels: bool,
+        frame_id: Union[str, Sequence[str]],
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Dict[str, Any]],
         load_raw_data: bool = False,
-    ):
+    ) -> None:
         super().__init__(
             dataset_paths=dataset_paths,
             frame_id=frame_id,
-            merge_similar_labels=merge_similar_labels,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
             load_raw_data=load_raw_data,
         )
-        self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)
+
+    @staticmethod
+    def _extract_label_params(evaluation_config_dict: Dict[str, Any]) -> Dict[str, Any]:
+        e_cfg: Dict[str, Any] = evaluation_config_dict.copy()
+        l_params: Dict[str, Any] = {
+            "label_prefix": e_cfg.get("label_prefix", "autoware"),
+            "merge_similar_labels": e_cfg.get("merge_similar_labels", False),
+            "count_label_number": e_cfg.get("count_label_number", True),
+        }
+        return l_params
 
     def _extract_params(
         self,
@@ -95,4 +100,5 @@ class SensingEvaluationConfig(_EvaluationConfigBase):
             "box_scale_100m": e_cfg.get("box_scale_100m", 1.0),
             "min_points_threshold": e_cfg.get("min_points_threshold", 1),
         }
+
         return f_params, m_params

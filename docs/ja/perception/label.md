@@ -23,8 +23,10 @@
 | `AutowareLabel.BICYCLE`    |  "bicycle"   | bicycle                                |
 |                            |              | vehicle.bicycle                        |
 | `AutowareLabel.MOTORBIKE`  | "motorbike"  | motorbike                              |
+|                            |              | motorcycle                             |
 |                            |              | vehicle.motorcycle                     |
 | `AutowareLabel.PEDESTRIAN` | "pedestrian" | pedestrian                             |
+|                            |              | stroller                               |
 |                            |              | pedestrian.adult                       |
 |                            |              | pedestrian.child                       |
 |                            |              | pedestrian.construction_worker         |
@@ -68,10 +70,12 @@
 |                            |              | vehicle.bus                            |
 |                            |              | vehicle.bus (bendy & rigid)            |
 | `AutowareLabel.BICYCLE`    |  "bicycle"   | bicycle                                |
+|                            |              | motorcycle                             |
 |                            |              | vehicle.bicycle                        |
 |                            |              | motorbike                              |
 |                            |              | vehicle.motorcycle                     |
 | `AutowareLabel.PEDESTRIAN` | "pedestrian" | pedestrian                             |
+|                            |              | stroller                               |
 |                            |              | pedestrian.adult                       |
 |                            |              | pedestrian.child                       |
 |                            |              | pedestrian.construction_worker         |
@@ -93,19 +97,38 @@
 
 ## `TrafficLightLabel`
 
-| type                                   |        value         | support labels     |
-| :------------------------------------- | :------------------: | :----------------- |
-| `TrafficLightLabel.GREEN`              |       "green"        | green              |
-| `TrafficLightLabel.RED`                |        "red"         | red                |
-| `TrafficLightLabel.YELLOW`             |       "yellow"       | yellow             |
-| `TrafficLightLabel.RED_STRAIGHT`       |    "red_straight"    | red_straight       |
-| `TrafficLightLabel.RED_LEFT`           |      "red_left"      | red_left           |
-| `TrafficLightLabel.RED_left_straight`  | "red_left_straight"  | red_left_straight  |
-| `TrafficLightLabel.RED_RIGHT`          |     "red_right"      | red_right          |
-| `TrafficLightLabel.RED_RIGHT_STRAIGHT` | "red_right_straight" | red_right_straight |
-| `TrafficLightLabel.RED_RIGHT_DIAGONAL` | "red_right_diagonal" | red_right_diagonal |
-| `TrafficLightLabel.YELLOW_RIGHT`       |    "yellow_right"    | yellow_right       |
-| `TrafficLightLabel.UNKNOWN`            |      "unknown"       | unknown            |
+- `EvaluationTask.DETECTION2D` もしくは `EvaluationTask.Tracking2D`の場合
+
+  | type                              |      value      | support labels     |
+  | :-------------------------------- | :-------------: | :----------------- |
+  | `TrafficLightLabel.TRAFFIC_LIGHT` | "traffic_light" | traffic_light      |
+  | `TrafficLightLabel.TRAFFIC_LIGHT` |                 | green              |
+  | `TrafficLightLabel.TRAFFIC_LIGHT` |                 | red                |
+  | `TrafficLightLabel.TRAFFIC_LIGHT` |                 | yellow             |
+  | `TrafficLightLabel.TRAFFIC_LIGHT` |                 | red_straight       |
+  | `TrafficLightLabel.TRAFFIC_LIGHT` |                 | red_left           |
+  | `TrafficLightLabel.TRAFFIC_LIGHT` |                 | red_left_straight  |
+  | `TrafficLightLabel.TRAFFIC_LIGHT` |                 | red_right          |
+  | `TrafficLightLabel.TRAFFIC_LIGHT` |                 | red_right_straight |
+  | `TrafficLightLabel.TRAFFIC_LIGHT` |                 | red_right_diagonal |
+  | `TrafficLightLabel.TRAFFIC_LIGHT` |                 | yellow_right       |
+  | `TrafficLightLabel.UNKNOWN`       |    "unknown"    | unknown            |
+
+- `EvaluationTask.CLASSIFICATION2D`の場合
+
+  | type                                   |        value         | support labels     |
+  | :------------------------------------- | :------------------: | :----------------- |
+  | `TrafficLightLabel.GREEN`              |       "green"        | green              |
+  | `TrafficLightLabel.RED`                |        "red"         | red                |
+  | `TrafficLightLabel.YELLOW`             |       "yellow"       | yellow             |
+  | `TrafficLightLabel.RED_STRAIGHT`       |    "red_straight"    | red_straight       |
+  | `TrafficLightLabel.RED_LEFT`           |      "red_left"      | red_left           |
+  | `TrafficLightLabel.RED_LEFT_STRAIGHT`  | "red_left_straight"  | red_left_straight  |
+  | `TrafficLightLabel.RED_RIGHT`          |     "red_right"      | red_right          |
+  | `TrafficLightLabel.RED_RIGHT_STRAIGHT` | "red_right_straight" | red_right_straight |
+  | `TrafficLightLabel.RED_RIGHT_DIAGONAL` | "red_right_diagonal" | red_right_diagonal |
+  | `TrafficLightLabel.YELLOW_RIGHT`       |    "yellow_right"    | yellow_right       |
+  | `TrafficLightLabel.UNKNOWN`            |      "unknown"       | unknown            |
 
 ## [TBD]`BlinkerLabel`
 

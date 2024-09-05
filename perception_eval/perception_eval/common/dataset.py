@@ -12,74 +12,65 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import deepcopy
 import logging
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
+from typing import Union
 
 from nuimages import NuImages
-import numpy as np
+from numpy.typing import NDArray
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
 from perception_eval.common import ObjectType
 from perception_eval.common.dataset_utils import _sample_to_frame
 from perception_eval.common.dataset_utils import _sample_to_frame_2d
 from perception_eval.common.evaluation_task import EvaluationTask
+from perception_eval.common.geometry import interpolate_homogeneous_matrix
+from perception_eval.common.geometry import interpolate_object_list
 from perception_eval.common.label import LabelConverter
-from perception_eval.common.object import DynamicObject
-from perception_eval.common.status import FrameID
+from perception_eval.common.schema import FrameID
+from perception_eval.common.transform import HomogeneousMatrix
+from perception_eval.common.transform import TransformDict
+from perception_eval.common.transform import TransformDictArgType
+from perception_eval.common.transform import TransformKey
 from tqdm import tqdm
 
 
 class FrameGroundTruth:
-    """
-    Ground truth data per frame
-
-    Attributes:
-        unix_time (float): The unix time for the frame [us].
-        frame_name (str): The file name for the frame.
-        frame_id (FrameID): FrameID instance, where objects are with respect.
-        objects (List[DynamicObject]): Objects data.
-        pointcloud (Optional[numpy.ndarray], optional):
-                Pointcloud data. Defaults to None, but if you want to visualize dataset,
-                you should load pointcloud data.
-        transform_matrix (Optional[np.ndarray]): The numpy array to transform position.
-        objects (List[ObjectType]): Objects data.
-        ego2map (Optional[np.ndarray]): The numpy array to transform position.
-        raw_data (Optional[Dict[str, numpy.ndarray]]): Raw data for each sensor modality.
-
-    Args:
-        unix_time (int): The unix time for the frame [us]
-        frame_name (str): The file name for the frame
-        frame_id (FrameID): FrameID instance, where objects are with respect.
-        objects (List[DynamicObject]): Objects data.
-        ego2map (Optional[np.ndarray]): The array of 4x4 matrix.
-            Transform position with respect to vehicle coord system to map one.
-        raw_data (Optional[numpy.ndarray]): Raw data for each sensor modality.
-    """
+    """Ground truth data at a single frame."""
 
     def __init__(
         self,
         unix_time: int,
         frame_name: str,
-        frame_id: FrameID,
-        objects: List[DynamicObject],
-        ego2map: Optional[np.ndarray] = None,
-        raw_data: Optional[np.ndarray] = None,
+        objects: List[ObjectType],
+        transforms: TransformDictArgType = None,
+        raw_data: Optional[Dict[FrameID, NDArray]] = None,
     ) -> None:
+        """
+        Args:
+            unix_time (int): Current unix time.
+            frame_name (str): The file name
+            objects (list[ObjectType]): Ground truth objects.
+            transforms (TransformDict | None, optional): 4x4 transform matrices. Defaults to None.
+            raw_data (dict[FrameID, NDArray] | None, optional): Raw data for each sensor. Defaults to None.
+        """
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
-        self.frame_id: str = frame_id
         self.objects: List[ObjectType] = objects
-        self.ego2map: Optional[np.ndarray] = ego2map
-        self.raw_data: Optional[np.ndarray] = raw_data
+        self.transforms = TransformDict(transforms)
+        self.raw_data = raw_data
 
 
 def load_all_datasets(
     dataset_paths: List[str],
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
-    frame_id: FrameID,
+    frame_id: Union[FrameID, Sequence[FrameID]],
     load_raw_data: bool = False,
     path_seconds: float = 10.0,
 ) -> List[FrameGroundTruth]:
@@ -99,13 +90,23 @@ def load_all_datasets(
         List[FrameGroundTruth]: FrameGroundTruth instance list.
 
     Examples:
-        >>> converter = LabelConverter(False, "autoware")
-        >>> load_all_datasets(["./data"], EvaluationTask.DETECTION, converter, "base_link")
+        >>> evaluation_task = EvaluationTask.DETECTION
+        >>> converter = LabelConverter(evaluation_task, False, "autoware")
+        >>> load_all_datasets(["./data"], evaluation_task, converter, "base_link")
         [<perception_eval.common.dataset.FrameGroundTruth object at 0x7f66040c36a0>, ...]
     """
     logging.info(f"Start to load dataset {dataset_paths}")
+
+    if isinstance(frame_id, FrameID):
+        frame_ids: List[FrameID] = [frame_id]
+    elif isinstance(frame_id, (list, tuple)):
+        frame_ids = list(frame_id)
+    else:
+        raise TypeError(f"Unexpected frame id type: {type(frame_id)}")
+
     logging.info(
-        f"config: load_raw_data: {load_raw_data}, evaluation_task: {evaluation_task}, frame_id: {frame_id}"
+        f"config: load_raw_data: {load_raw_data}, evaluation_task: {evaluation_task}, "
+        f"frame_id: {[fr.value for fr in frame_ids]}"
     )
 
     all_datasets: List[FrameGroundTruth] = []
@@ -115,7 +116,7 @@ def load_all_datasets(
             dataset_path=dataset_path,
             evaluation_task=evaluation_task,
             label_converter=label_converter,
-            frame_id=frame_id,
+            frame_ids=frame_ids,
             load_raw_data=load_raw_data,
             path_seconds=path_seconds,
         )
@@ -127,7 +128,7 @@ def _load_dataset(
     dataset_path: str,
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
-    frame_id: FrameID,
+    frame_ids: List[FrameID],
     load_raw_data: bool,
     path_seconds: float = 10.0,
 ) -> List[FrameGroundTruth]:
@@ -137,7 +138,7 @@ def _load_dataset(
         dataset_path (str): The root path to dataset.
         evaluation_tasks (EvaluationTask): The evaluation task.
         label_converter (LabelConverter): LabelConvertor instance.
-        frame_id (FrameID): FrameID instance, where objects are with respect.
+        frame_ids (List[FrameID]): FrameID instance, where objects are with respect.
         load_raw_data (bool): Whether load pointcloud/image data.
         path_seconds (float): Time length of path in seconds. Defaults to 10.0.
 
@@ -147,9 +148,7 @@ def _load_dataset(
 
     nusc: NuScenes = NuScenes(version="annotation", dataroot=dataset_path, verbose=False)
     nuim: Optional[NuImages] = (
-        NuImages(version="annotation", dataroot=dataset_path, verbose=False)
-        if evaluation_task.is_2d()
-        else None
+        NuImages(version="annotation", dataroot=dataset_path, verbose=False) if evaluation_task.is_2d() else None
     )
     helper: PredictHelper = PredictHelper(nusc)
 
@@ -173,18 +172,19 @@ def _load_dataset(
                 sample_token=sample_token,
                 evaluation_task=evaluation_task,
                 label_converter=label_converter,
-                frame_id=frame_id,
+                frame_ids=frame_ids,
                 frame_name=str(n),
                 load_raw_data=load_raw_data,
             )
         else:
+            assert len(frame_ids) == 1, f"For 3D evaluation, only one Frame ID must be specified, but got {frame_ids}"
             frame = _sample_to_frame(
                 nusc=nusc,
                 helper=helper,
                 sample_token=sample_token,
                 evaluation_task=evaluation_task,
                 label_converter=label_converter,
-                frame_id=frame_id,
+                frame_id=frame_ids[0],
                 frame_name=str(n),
                 load_raw_data=load_raw_data,
                 path_seconds=path_seconds,
@@ -203,8 +203,8 @@ def _get_str_objects_number_info(
         str: string.
     """
     str_: str = ""
-    for label in label_converter.labels:
-        str_ += f"{label.label} (-> {label.label}): {label.num} \n"
+    for label_info in label_converter.label_infos:
+        str_ += f"{label_info.name} (-> {label_info.label}): {label_info.num} \n"
     return str_
 
 
@@ -286,3 +286,167 @@ def get_now_frame(
         return None
     else:
         return ground_truth_now_frame
+
+
+def get_interpolated_now_frame(
+    ground_truth_frames: List[FrameGroundTruth],
+    unix_time: int,
+    threshold_min_time: int,
+) -> Optional[FrameGroundTruth]:
+    """Get interpolated ground truth frame in specified unix time.
+    It searches before and after frames which satisfy the time difference condition and if found both, interpolate them.
+
+    Args:
+        ground_truth_frames (List[FrameGroundTruth]): FrameGroundTruth instance list.
+        unix_time (int): Unix time [us].
+        threshold_min_time (int): Min time for unix time difference [us].
+
+    Returns:
+        Optional[FrameGroundTruth]:
+                The ground truth frame whose unix time is most close to args unix time
+                from dataset.
+                If the difference time between unix time parameter and the most close time
+                ground truth frame is larger than threshold_min_time, return None.
+
+    Examples:
+        >>> ground_truth_frames = load_all_datasets(...)
+        >>> get_interpolated_now_frame(ground_truth_frames, 1624157578750212, 7500)
+        <perception_eval.common.dataset.FrameGroundTruth object at 0x7f66040c36a0>
+    """
+    # extract closest two frames
+    before_frame = None
+    after_frame = None
+    dt_before = 0.0
+    dt_after = 0.0
+    for ground_truth_frame in ground_truth_frames:
+        diff_time = unix_time - ground_truth_frame.unix_time
+        if diff_time >= 0:
+            before_frame = ground_truth_frame
+            dt_before = diff_time
+        else:
+            after_frame = ground_truth_frame
+            dt_after = -diff_time
+        if before_frame is not None and after_frame is not None:
+            break
+
+    # disable frame if time difference is too large
+    if dt_before > threshold_min_time:
+        before_frame = None
+    if dt_after > threshold_min_time:
+        after_frame = None
+
+    # check frame availability
+    if before_frame is None and after_frame is None:
+        logging.info("No frame is available for interpolation")
+        return None
+    elif before_frame is None:
+        logging.info("Only after frame is available for interpolation")
+        return after_frame
+    elif after_frame is None:
+        logging.info("Only before frame is available for interpolation")
+        return before_frame
+    else:
+        # do interpolation
+        return interpolate_ground_truth_frames(before_frame, after_frame, unix_time)
+
+
+def interpolate_ground_truth_frames(
+    before_frame: FrameGroundTruth,
+    after_frame: FrameGroundTruth,
+    unix_time: int,
+):
+    """Interpolate ground truth frame with linear interpolation.
+
+    Args:
+        before_frame (FrameGroundTruth): input frame1
+        after_frame (FrameGroundTruth): input frame2
+        unix_time (int): target time
+    """
+    # interpolate ego2map
+    ego2map_key = TransformKey(FrameID.BASE_LINK, FrameID.MAP)
+    before_frame_ego2map = before_frame.transforms[ego2map_key]
+    after_frame_ego2map = after_frame.transforms[ego2map_key]
+    ego2map_matrix = interpolate_homogeneous_matrix(
+        before_frame_ego2map.matrix,
+        after_frame_ego2map.matrix,
+        before_frame.unix_time,
+        after_frame.unix_time,
+        unix_time,
+    )
+    ego2map = HomogeneousMatrix.from_matrix(ego2map_matrix, src=FrameID.BASE_LINK, dst=FrameID.MAP)
+
+    # TODO: Need refactor for simplicity
+    # if frame is base_link, need to interpolate with global coordinate
+    # 1. convert object list to global
+    before_frame_objects = convert_objects_to_global(before_frame.objects, before_frame_ego2map)
+    after_frame_objects = convert_objects_to_global(after_frame.objects, after_frame_ego2map)
+
+    # 2. interpolate objects
+    object_list = interpolate_object_list(
+        before_frame_objects, after_frame_objects, before_frame.unix_time, after_frame.unix_time, unix_time
+    )
+    # 3. convert object list to base_link
+    # object_list = convert_objects_to_base_link(object_list, ego2map)
+
+    # interpolate raw data
+    output_frame = deepcopy(before_frame)
+    output_frame.transforms[ego2map_key] = ego2map
+    output_frame.objects = object_list
+    output_frame.unix_time = unix_time
+    return output_frame
+
+
+def convert_objects_to_global(object_list: List[ObjectType], ego2map: HomogeneousMatrix) -> List[ObjectType]:
+    """Convert object list to global coordinate.
+
+    Args:
+        object_list (List[ObjectType]): object list
+        ego2map (HoMogeneousMatrix): ego2map matrix
+
+    Returns:
+        List[ObjectType]: object list in global coordinate
+    """
+    output_object_list = []
+    for object in object_list:
+        if object.frame_id == "map":
+            output_object_list.append(deepcopy(object))
+        elif object.frame_id == "base_link":
+            updated_position, updated_rotation = ego2map.transform(object.state.position, object.state.orientation)
+            output_object = deepcopy(object)
+            output_object.state.position = updated_position
+            output_object.state.orientation = updated_rotation
+            output_object.frame_id = "map"
+            output_object_list.append(output_object)
+        else:
+            raise NotImplementedError(f"Unexpected frame_id: {object.frame_id}")
+    return output_object_list
+
+
+def convert_objects_to_base_link(object_list: List[ObjectType], ego2map: HomogeneousMatrix) -> List[ObjectType]:
+    """Convert object list to base_link coordinate.
+
+    Args:
+        object_list (List[ObjectType]): object list
+        ego2map (HomogeneousMatrix): ego2map matrix
+
+    Returns:
+        List[ObjectType]: object list in base_link coordinate
+    """
+    output_object_list = []
+    for object in object_list:
+        if object.frame_id == "base_link":
+            output_object_list.append(deepcopy(object))
+        elif object.frame_id == "map":
+            map2ego = ego2map.inv()
+            updated_position, updated_rotation = map2ego.transform(
+                position=object.state.position,
+                rotation=object.state.orientation.rotation_matrix,
+            )
+            output_object = deepcopy(object)
+            output_object.state.position = updated_position
+            output_object.state.orientation = updated_rotation
+            output_object.frame_id = "base_link"
+            output_object_list.append(output_object)
+        else:
+            raise NotImplementedError(f"Unexpected frame_id: {object.frame_id}")
+    return output_object_list

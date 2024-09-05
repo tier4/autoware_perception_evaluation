@@ -20,12 +20,14 @@ import os.path as osp
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Sequence
 from typing import Tuple
+from typing import Union
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.evaluation_task import set_task
 from perception_eval.common.label import LabelConverter
-from perception_eval.common.status import FrameID
+from perception_eval.common.schema import FrameID
 
 
 class _EvaluationConfigBase(ABC):
@@ -40,13 +42,12 @@ class _EvaluationConfigBase(ABC):
 
     Attributes:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (FrameID): FrameID instance, where objects are with respect.
+        frame_ids (List[FrameID]): List of FrameID instances, where objects are with respect.
         result_root_directory (str): Directory path to save result.
         log_directory (str): Directory Directory path to save log.
         visualization_directory (str): Directory path to save visualization result.
         label_converter (LabelConverter): LabelConverter instance.
         evaluation_task (EvaluationTask): EvaluationTask instance.
-        label_prefix (str): Prefix of label type. Choose from [`autoware", `traffic_light`]. Defaults to autoware.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
         target_labels (List[LabelType]): Target labels list.
 
@@ -64,14 +65,9 @@ class _EvaluationConfigBase(ABC):
 
     Args:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (str): FrameID in string, where objects are with respect.
-        merge_similar_labels (bool): Whether merge similar labels.
-            If True,
-                - BUS, TRUCK, TRAILER -> CAR
-                - MOTORBIKE, CYCLIST -> BICYCLE
+        frame_id (Union[str, Sequence[str]]): FrameID(s) in string, where objects are with respect.
         result_root_directory (str): Directory path to save result.
         evaluation_config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
-        label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
     """
 
@@ -81,11 +77,9 @@ class _EvaluationConfigBase(ABC):
     def __init__(
         self,
         dataset_paths: List[str],
-        frame_id: str,
-        merge_similar_labels: bool,
+        frame_id: Union[str, Sequence[str]],
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
-        label_prefix: str = "autoware",
         load_raw_data: bool = False,
     ) -> None:
         super().__init__()
@@ -93,12 +87,26 @@ class _EvaluationConfigBase(ABC):
         self.evaluation_task: EvaluationTask = self._check_tasks(evaluation_config_dict)
         self.evaluation_config_dict: Dict[str, Any] = evaluation_config_dict
 
+        # Labels
+        self.label_params = self._extract_label_params(evaluation_config_dict)
+        self.label_converter = LabelConverter(
+            self.evaluation_task,
+            self.label_params["merge_similar_labels"],
+            self.label_params["label_prefix"],
+            self.label_params["count_label_number"],
+        )
+
+        self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)
+
         # dataset
         self.dataset_paths: List[str] = dataset_paths
 
-        self.frame_id: FrameID = FrameID.from_value(frame_id)
-        self.merge_similar_labels: bool = merge_similar_labels
-        self.label_prefix: str = label_prefix
+        self.frame_ids: List[FrameID] = (
+            [FrameID.from_value(frame_id)] if isinstance(frame_id, str) else [FrameID.from_value(f) for f in frame_id]
+        )
+        if self.evaluation_task.is_3d() and len(self.frame_ids) != 1:
+            raise ValueError(f"For 3D task, FrameID must be 1, but got {len(self.frame_ids)}")
+
         self.load_raw_data: bool = load_raw_data
 
         # directory
@@ -110,9 +118,6 @@ class _EvaluationConfigBase(ABC):
             os.makedirs(self.log_directory)
         if not osp.exists(self.visualization_directory):
             os.makedirs(self.visualization_directory)
-
-        # Labels
-        self.label_converter = LabelConverter(merge_similar_labels, label_prefix)
 
     @property
     def support_tasks(self) -> List[str]:
@@ -137,6 +142,11 @@ class _EvaluationConfigBase(ABC):
         # evaluation task
         evaluation_task: EvaluationTask = set_task(task)
         return evaluation_task
+
+    @staticmethod
+    @abstractmethod
+    def _extract_label_params(evaluation_config_dict: Dict[str, Any]) -> Dict[str, Any]:
+        pass
 
     @abstractmethod
     def _extract_params(

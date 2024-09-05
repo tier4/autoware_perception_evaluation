@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from typing import List
+from typing import Sequence
 from typing import Tuple
 
 import numpy as np
@@ -30,9 +31,7 @@ def distance_points(
     Returns: float: The distance between two points
     """
     if not (len(point_1) == 3 and len(point_2) == 3):
-        raise RuntimeError(
-            f"The length of a point is {len(point_1)} and {len(point_2)}, it needs 3."
-        )
+        raise RuntimeError(f"The length of a point is {len(point_1)} and {len(point_2)}, it needs 3.")
     vec: np.ndarray = np.array(point_1) - np.array(point_2)
     return np.linalg.norm(vec, ord=2, axis=0).item()
 
@@ -49,9 +48,7 @@ def distance_points_bev(
         float: Distance between two points in BEV space.
     """
     if not (len(point_1) == 3 and len(point_2) == 3):
-        raise RuntimeError(
-            f"The length of a point is {len(point_1)} and {len(point_2)}, it needs 3."
-        )
+        raise RuntimeError(f"The length of a point is {len(point_1)} and {len(point_2)}, it needs 3.")
     p1_bev: np.ndarray = np.array(to_bev(point_1))
     p2_bev: np.ndarray = np.array(to_bev(point_2))
     vec: np.ndarray = p1_bev - p2_bev
@@ -72,72 +69,86 @@ def to_bev(point_1: np.ndarray) -> np.ndarray:
 
 def crop_pointcloud(
     pointcloud: np.ndarray,
-    area: List[Tuple[float, float, float]],
+    area: List[Sequence[float]],
     inside: bool = True,
 ) -> np.ndarray:
-    """Crop pointcloud from (N, 3) to (M, 3) with Crossing Number Algorithm.
+    """Crop pointcloud from (N, 3) to (M, 3) with Winding Number Algorithm.
 
     TODO:
         Implement to support the case area min/max height is not constant.
 
     Args:
-        pointcloud (numpy.ndarray): The array of pointcloud, in shape (N, 3)
-        area (List[Tuple[float, float, float]]): The 3D-polygon area to be cropped
+        pointcloud (numpy.ndarray): The array of pointcloud, in shape (N, C).
+        area (List[Sequence[float]): The 3D-polygon area to be cropped.
         inside (bool): Whether output inside pointcloud. Defaults to True.
 
     Returns:
-        numpy.ndarray: The  of cropped pointcloud, in shape (M, 3)
+        numpy.ndarray: The  of cropped pointcloud, in shape (M, C)
     """
+    # NOTE: upper and lower plane has same shape.
+    num_vertices: int = len(area) // 2
     if pointcloud.ndim != 2 or pointcloud.shape[1] < 2:
         raise RuntimeError(
             f"The shape of pointcloud is {pointcloud.shape}, it needs (N, k>=2) and k is (x,y,z,i) order."
         )
-    if len(area) < 6 or len(area) % 2 != 0:
-        raise RuntimeError(
-            f"The area must be a 3D-polygon, it needs the edges more than 6, but got {len(area)}."
-        )
+    if num_vertices < 3 or len(area) % 2 != 0:
+        raise RuntimeError(f"The area must be a 3D-polygon, it needs the edges more than 6, but got {len(area)}.")
+
+    # crop with polygon in xy-plane
+    num_vertices = len(area) // 2
+    cnt_arr_: np.ndarray = np.zeros(pointcloud.shape[0], dtype=np.uint8)
+    for i in range(num_vertices):
+        next_idx: int = (i + 1) % num_vertices
+        incremental_flags = (area[i][1] <= pointcloud[:, 1]) * (area[next_idx][1] > pointcloud[:, 1])
+        decremental_flags = (area[i][1] > pointcloud[:, 1]) * (area[next_idx][1] <= pointcloud[:, 1])
+
+        if area[i + 1][1] != area[i][1]:
+            vt = (pointcloud[:, 1] - area[i][1]) / (area[next_idx][1] - area[i][1])
+        else:
+            vt = pointcloud[:, 0]
+
+        valid_idx = pointcloud[:, 0] < (area[i][0] + (vt * (area[next_idx][0] - area[i][0])))
+        incremental_flags *= valid_idx
+        decremental_flags *= valid_idx
+        cnt_arr_[incremental_flags] += 1
+        cnt_arr_[decremental_flags] -= 1
+
+    xy_idx: np.ndarray = 0 < cnt_arr_ if inside else cnt_arr_ <= 0
+
+    if pointcloud.shape[1] < 3:
+        return pointcloud[xy_idx]
 
     z_min: float = min(area, key=(lambda x: x[2]))[2]
     z_max: float = max(area, key=(lambda x: x[2]))[2]
 
-    # crop with polygon in xy-plane
-    num_vertices = len(area)
-    cnt_arr_: np.ndarray = np.zeros(pointcloud.shape[0], dtype=np.uint8)
-    for i in range(num_vertices // 2 - 1):
-        flags_ = ((area[i][1] <= pointcloud[:, 1]) * (area[i + 1][1] > pointcloud[:, 1])) + (
-            (area[i][1] > pointcloud[:, 1]) * (area[i + 1][1] <= pointcloud[:, 1])
-        )
-
-        if area[i + 1][1] != area[i][1]:
-            vt = (pointcloud[:, 1] - area[i][1]) / (area[i + 1][1] - area[i][1])
-        else:
-            vt = pointcloud[:, 0]
-
-        flags_ *= pointcloud[:, 0] < (area[i][0] + (vt * (area[i + 1][0] - area[i][0])))
-        cnt_arr_[flags_] += 1
-
     if inside:
-        xy_idx: np.ndarray = cnt_arr_ % 2 != 0
-        z_idx: np.ndarray = (z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2])
+        z_idx: np.ndarray = np.bitwise_and((z_min <= pointcloud[:, 2]), (pointcloud[:, 2] <= z_max))
+        idx: np.ndarray = np.bitwise_and(xy_idx, z_idx)
     else:
-        xy_idx: np.ndarray = cnt_arr_ % 2 == 0
-        z_idx: np.ndarray = ~((z_min <= pointcloud[:, 2]) * (z_max >= pointcloud[:, 2]))
-    return pointcloud[xy_idx * z_idx]
+        z_idx: np.ndarray = np.bitwise_or((pointcloud[:, 2] < z_min), (z_max < pointcloud[:, 2]))
+        idx = np.bitwise_or(xy_idx, z_idx)
+
+    return pointcloud[idx]
 
 
-def polygon_to_list(polygon: Polygon):
+def polygon_to_list(polygon: Polygon, include_first: bool = False) -> List[Tuple[float, float, float]]:
     """Convert polygon to list.
 
-    Polygon: [(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x0, y0, z0)]
-    List: [(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3)]
+    `Polygon: [(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x0, y0, z0)]`
+
+    if `include_first=True`:
+        `List: [(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x0, y0, z0)]`
+    otherwise:
+        `List: [(x0, y0, z0), (x1, y1, z1), (x2, y2, z2), (x3, y3, z3)]`
 
     Args:
         polygon (Polygon): Polygon
-
+        include_first (bool): The flag whether to include the first element. Defaults to False.
     Returns:
-        [type]: List of coordinates
+        List[Tuple[float, float, float]]: List of coordinates
     """
-    return list(polygon.exterior.coords)[:4]
+    corners = list(polygon.exterior.coords)
+    return corners if include_first else corners[:-1]
 
 
 def get_point_left_right(
@@ -152,11 +163,33 @@ def get_point_left_right(
         Tuple[Tuple[float, float, float]]: Returns [left_point, right_point]
     """
     if not (len(point_1) > 2 and len(point_2) > 2):
-        raise RuntimeError(
-            f"The length of a point is {len(point_1)} and {len(point_2)}, they must be greater than 2."
-        )
+        raise RuntimeError(f"The length of a point is {len(point_1)} and {len(point_2)}, they must be greater than 2.")
     cross_product = point_1[0] * point_2[1] - point_1[1] * point_2[0]
+    # NOTE: Guard edge cases like cross_product=-5.551115123125784e-17
+    cross_product = round(cross_product, 10)
     if cross_product < 0:
         return (point_1, point_2)
     else:
         return (point_2, point_1)
+
+
+def get_point_left_right_index(
+    point_1: Tuple[float, float, float],
+    point_2: Tuple[float, float, float],
+) -> Tuple[Tuple[float, float, float]]:
+    """Examine the 2D geometric location of a point1 and a point2.
+    Args:
+        point_1 (Tuple[float, float, float]): A point
+        point_2 (Tuple[float, float, float]): A point
+    Returns:
+        Tuple[int, int]: Returns indices [left_point, right_point].
+    """
+    if not (len(point_1) > 2 and len(point_2) > 2):
+        raise RuntimeError(f"The length of a point is {len(point_1)} and {len(point_2)}, they must be greater than 2.")
+    cross_product = point_1[0] * point_2[1] - point_1[1] * point_2[0]
+    # NOTE: Guard edge cases like cross_product=-5.551115123125784e-17
+    cross_product = round(cross_product, 10)
+    if cross_product < 0:
+        return (0, 1)
+    else:
+        return (1, 0)

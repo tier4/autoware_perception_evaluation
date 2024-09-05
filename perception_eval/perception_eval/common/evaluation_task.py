@@ -25,15 +25,19 @@ class EvaluationTask(Enum):
     """Evaluation tasks enum class.
 
     # 3D
-    DETECTION
-    TRACKING
-    PREDICTION
-    SENSING
+    - DETECTION
+    - TRACKING
+    - PREDICTION
+    - SENSING
 
     # 2D
-    DETECTION2D
-    TRACKING2D
-    CLASSIFICATION2D
+    - DETECTION2D
+    - TRACKING2D
+    - CLASSIFICATION2D
+
+    ## False Positive validation
+    - FP_VALIDATION
+    - FP_VALIDATION2D
     """
 
     # 3D
@@ -46,6 +50,10 @@ class EvaluationTask(Enum):
     DETECTION2D = "detection2d"
     TRACKING2D = "tracking2d"
     CLASSIFICATION2D = "classification2d"
+
+    # False Positive validation
+    FP_VALIDATION = "fp_validation"
+    FP_VALIDATION2D = "fp_validation2d"
 
     def __str__(self) -> str:
         return self.value
@@ -61,10 +69,19 @@ class EvaluationTask(Enum):
             EvaluationTask.TRACKING,
             EvaluationTask.PREDICTION,
             EvaluationTask.SENSING,
+            EvaluationTask.FP_VALIDATION,
         )
 
     def is_2d(self) -> bool:
         return not self.is_3d()
+
+    def is_fp_validation(self) -> bool:
+        """Indicates whether evaluation task is FP validation.
+
+        Returns:
+            bool: Return `True` if `FP_VALIDATION` of `FP_VALIDATION2D`.
+        """
+        return self in (EvaluationTask.FP_VALIDATION, EvaluationTask.FP_VALIDATION2D)
 
     @classmethod
     def from_value(cls, name: str) -> EvaluationTask:
@@ -95,9 +112,7 @@ def set_task_lists(evaluation_tasks_str: List[str]) -> List[EvaluationTask]:
     return task_lists
 
 
-def set_task_dict(
-    evaluation_tasks_dict: Dict[str, Dict[str, Any]]
-) -> Dict[EvaluationTask, Dict[str, Any]]:
+def set_task_dict(evaluation_tasks_dict: Dict[str, Dict[str, Any]]) -> Dict[EvaluationTask, Dict[str, Any]]:
     """Convert str key to EvaluationTask instance dict.
 
     Args:

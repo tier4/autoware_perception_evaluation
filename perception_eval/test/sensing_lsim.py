@@ -21,6 +21,7 @@ from typing import Tuple
 
 import numpy as np
 from perception_eval.common.dataset import FrameGroundTruth
+from perception_eval.common.schema import FrameID
 from perception_eval.config import SensingEvaluationConfig
 from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
 from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
@@ -48,13 +49,13 @@ class SensingLSimMoc:
             "box_scale_100m": 1.0,
             "min_points_threshold": 1,
         }
+
         evaluation_config: SensingEvaluationConfig = SensingEvaluationConfig(
             dataset_paths=dataset_paths,
             frame_id="base_link",
-            merge_similar_labels=False,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
-            load_raw_data=False,
+            load_raw_data=True,
         )
 
         _ = configure_logger(
@@ -82,9 +83,9 @@ class SensingLSimMoc:
         Returns:
             frame_result (SensingFrameResult): Result per frame.
         """
-        ground_truth_now_frame: Optional[
-            FrameGroundTruth
-        ] = self.evaluator.get_ground_truth_now_frame(unix_time=unix_time)
+        ground_truth_now_frame: Optional[FrameGroundTruth] = self.evaluator.get_ground_truth_now_frame(
+            unix_time=unix_time
+        )
 
         # Evaluation config for one frame.
         # If not specified, params of SensingEvaluationConfig will be used.
@@ -174,23 +175,27 @@ if __name__ == "__main__":
     non_detection_areas: List[List[Tuple[float, float, float]]] = [
         [
             # lower plane
-            (1.0, 1.0, 0.5),
-            (100.0, 1.0, 0.5),
-            (100.0, -1.0, 0.5),
-            (1.0, -1.0, 0.5),
+            (10.0, 1.5, 0.0),
+            (10, -1.5, 0.0),
+            (0.0, -1.5, 0.0),
+            (0.0, 1.5, 0.0),
             # upper plane
-            (1.0, 1.0, 2.0),
-            (100.0, 1.0, 2.0),
-            (100.0, -1.0, 2.0),
-            (1.0, -1.0, 2.0),
+            (10.0, 1.5, 4.0),
+            (10, -1.5, 4.0),
+            (0.0, -1.5, 4.0),
+            (0.0, 1.5, 4.0),
         ],
     ]
     num_frames = len(sensing_lsim.evaluator.ground_truth_frames)
-    pointcloud_frames = np.random.uniform(-100.0, 100.0, (num_frames, 1000, 3))
-    for ground_truth_frame, pointcloud in zip(
-        sensing_lsim.evaluator.ground_truth_frames,
-        pointcloud_frames,
-    ):
+    for ground_truth_frame in sensing_lsim.evaluator.ground_truth_frames:
+        raw_data = ground_truth_frame.raw_data
+        if FrameID.LIDAR_CONCAT in raw_data:
+            pointcloud = raw_data[FrameID.LIDAR_CONCAT]
+        elif FrameID.LIDAR_TOP in raw_data:
+            pointcloud = raw_data[FrameID.LIDAR_TOP]
+        else:
+            raise ValueError("Pointcloud from LIDAR_CONCAT or LIDAR_TOP must be loaded")
+
         frame_result: SensingFrameResult = sensing_lsim.callback(
             ground_truth_frame.unix_time,
             pointcloud,
@@ -211,6 +216,10 @@ if __name__ == "__main__":
         "Failed to be Non-detected pointcloud example (frame_results[0]): "
         f"{len(sensing_lsim.evaluator.frame_results[0].pointcloud_failed_non_detection)}"
     )
+
+    # Visualize all frame results
+    logging.info("Start visualizing sensing results")
+    sensing_lsim.evaluator.visualize_all()
 
     # Clean up tmpdir
     if args.use_tmpdir:

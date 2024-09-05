@@ -16,13 +16,15 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
+from typing import Union
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
-from perception_eval.common.threshold import check_thresholds
-from perception_eval.common.threshold import ThresholdsError
+from perception_eval.common.threshold import set_thresholds
+from perception_eval.evaluation.matching import MatchingLabelPolicy
 from perception_eval.evaluation.metrics import MetricsScoreConfig
 
 from ._evaluation_config_base import _EvaluationConfigBase
@@ -40,7 +42,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
 
     Attributes:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (FrameID): FrameID instance, where objects are with respect.
+        frame_ids (List[FrameID]): List of FrameID instance, where objects are with respect.
         result_root_directory (str): Directory path to save result.
         log_directory (str): Directory Directory path to save log.
         visualization_directory (str): Directory path to save visualization result.
@@ -55,14 +57,9 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
 
     Args:
         dataset_paths (List[str]): Dataset paths list.
-        frame_id (str): FrameID in string, where objects are with respect.
-        merge_similar_labels (bool): Whether merge similar labels.
-            If True,
-                - BUS, TRUCK, TRAILER -> CAR
-                - MOTORBIKE, CYCLIST -> BICYCLE
+        frame_id (Union[str, Sequence[str]]): FrameID(s) in string, where objects are with respect.
         result_root_directory (str): Directory path to save result.
         evaluation_config_dict (Dict[str, Dict[str, Any]]): Dict that items are evaluation config for each task.
-        label_prefix (str): Prefix of label type. Choose from `autoware` or `traffic_light`. Defaults to autoware.
         load_raw_data (bool): Whether load pointcloud/image data. Defaults to False.
     """
 
@@ -70,36 +67,52 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         "detection2d",
         "tracking2d",
         "classification2d",
+        "fp_validation2d",
         "detection",
         "tracking",
         "prediction",
+        "fp_validation",
     ]
 
     def __init__(
         self,
         dataset_paths: List[str],
-        frame_id: str,
-        merge_similar_labels: bool,
+        frame_id: Union[str, Sequence[str]],
         result_root_directory: str,
         evaluation_config_dict: Dict[str, Any],
-        label_prefix: str = "autoware",
         load_raw_data: bool = False,
     ) -> None:
         super().__init__(
             dataset_paths=dataset_paths,
             frame_id=frame_id,
-            merge_similar_labels=merge_similar_labels,
             result_root_directory=result_root_directory,
             evaluation_config_dict=evaluation_config_dict,
-            label_prefix=label_prefix,
             load_raw_data=load_raw_data,
         )
-        self.filtering_params, self.metrics_params = self._extract_params(evaluation_config_dict)
 
         self.metrics_config: MetricsScoreConfig = MetricsScoreConfig(
             self.evaluation_task,
             **self.metrics_params,
         )
+
+    @staticmethod
+    def _extract_label_params(evaluation_config_dict: Dict[str, Any]) -> Dict[str, Any]:
+        e_cfg = evaluation_config_dict.copy()
+        if e_cfg.get("matching_label_policy"):
+            matching_label_policy = MatchingLabelPolicy.from_str(e_cfg.get("matching_label_policy"))
+        else:
+            allow_matching_unknown = e_cfg.get("allow_matching_unknown", False)
+            matching_label_policy = (
+                MatchingLabelPolicy.ALLOW_UNKNOWN if allow_matching_unknown else MatchingLabelPolicy.DEFAULT
+            )
+
+        l_params: Dict[str, Any] = {
+            "label_prefix": e_cfg["label_prefix"],
+            "merge_similar_labels": e_cfg.get("merge_similar_labels", False),
+            "matching_label_policy": matching_label_policy,
+            "count_label_number": e_cfg.get("count_label_number", True),
+        }
+        return l_params
 
     def _extract_params(
         self,
@@ -111,8 +124,9 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             evaluation_config_dict (Dict[str, Any]): Dict that items are evaluation config for each task.
 
         Returns:
-            f_params (Dict[str, Any]): Parameters for filtering objects.
-            m_params (Dict[str, Any]): Parameters for metrics config.
+            f_params (Dict[str, Any]): Parameters for filtering.
+            m_params (Dict[str, Any]): Parameters for metrics.
+            l_params (Dict[str, Any]): Parameters for label.
         """
         e_cfg = evaluation_config_dict.copy()
 
@@ -128,36 +142,15 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         max_distance: Optional[float] = e_cfg.get("max_distance")
         min_distance: Optional[float] = e_cfg.get("min_distance")
 
-        if max_x_position and max_y_position:
-            max_x_position_list: List[float] = [max_x_position] * len(target_labels)
-            max_y_position_list: List[float] = [max_y_position] * len(target_labels)
-
-            max_x_position_list = check_thresholds(
-                max_x_position_list,
-                target_labels,
-                ThresholdsError,
-            )
-            max_y_position_list: List[float] = check_thresholds(
-                max_y_position_list,
-                target_labels,
-                ThresholdsError,
-            )
+        num_elements: int = len(target_labels)
+        if None not in (max_x_position, max_y_position):
+            max_x_position_list: List[float] = set_thresholds(max_x_position, num_elements, False)
+            max_y_position_list: List[float] = set_thresholds(max_y_position, num_elements, False)
             max_distance_list = None
             min_distance_list = None
-        elif max_distance and min_distance:
-            max_distance_list: List[float] = [max_distance] * len(target_labels)
+        elif None not in (max_distance, min_distance):
+            max_distance_list: List[float] = set_thresholds(max_distance, num_elements, False)
             min_distance_list: List[float] = [min_distance] * len(target_labels)
-
-            max_distance_list = check_thresholds(
-                max_distance_list,
-                target_labels,
-                ThresholdsError,
-            )
-            min_distance_list = check_thresholds(
-                min_distance_list,
-                target_labels,
-                ThresholdsError,
-            )
             max_x_position_list = None
             max_y_position_list = None
         elif self.evaluation_task.is_2d():
@@ -168,32 +161,34 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         else:
             raise RuntimeError("Either max x/y position or max/min distance should be specified")
 
+        max_matchable_radii: Optional[Union[float, List[float]]] = e_cfg.get("max_matchable_radii")
+        if max_matchable_radii is not None:
+            max_matchable_radii: List[float] = set_thresholds(max_matchable_radii, num_elements, False)
+
         min_point_numbers: Optional[List[int]] = e_cfg.get("min_point_numbers")
         if min_point_numbers is not None:
-            min_point_numbers: List[int] = check_thresholds(
-                min_point_numbers,
-                target_labels,
-                ThresholdsError,
-            )
+            min_point_numbers: List[int] = set_thresholds(min_point_numbers, num_elements, False)
 
         if self.evaluation_task == EvaluationTask.DETECTION and min_point_numbers is None:
             raise RuntimeError("In detection task, min point numbers must be specified")
 
         conf_thresh: Optional[float] = e_cfg.get("confidence_threshold")
         if conf_thresh is not None:
-            confidence_threshold_list: List[float] = [conf_thresh] * len(target_labels)
-            confidence_threshold_list = check_thresholds(confidence_threshold_list, target_labels)
+            confidence_threshold_list: List[float] = set_thresholds(conf_thresh, num_elements, False)
         else:
             confidence_threshold_list = None
 
         target_uuids: Optional[List[str]] = e_cfg.get("target_uuids")
+        ignore_attributes: Optional[List[str]] = e_cfg.get("ignore_attributes")
 
         f_params: Dict[str, Any] = {
             "target_labels": target_labels,
+            "ignore_attributes": ignore_attributes,
             "max_x_position_list": max_x_position_list,
             "max_y_position_list": max_y_position_list,
             "max_distance_list": max_distance_list,
             "min_distance_list": min_distance_list,
+            "max_matchable_radii": max_matchable_radii,
             "min_point_numbers": min_point_numbers,
             "confidence_threshold_list": confidence_threshold_list,
             "target_uuids": target_uuids,

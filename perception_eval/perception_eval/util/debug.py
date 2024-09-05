@@ -14,12 +14,24 @@
 
 from enum import Enum
 import pprint
+import random
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
 
 import numpy as np
+from numpy.typing import ArrayLike
+from perception_eval.common.dataset import FrameGroundTruth
+from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import Label
+from perception_eval.common.label import LabelType
+from perception_eval.common.label import TrafficLightLabel
+from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
+from perception_eval.common.schema import FrameID
+from perception_eval.common.shape import Shape
+from perception_eval.common.transform import TransformDict
 from pyquaternion.quaternion import Quaternion
 
 
@@ -71,7 +83,7 @@ def class_to_dict(
 
     if isinstance(object, dict):
         data = {}
-        for (k, v) in object.items():
+        for k, v in object.items():
             data[k] = class_to_dict(v, abbreviation, class_key)
         return data
     elif isinstance(object, Enum):
@@ -109,9 +121,7 @@ def format_dict_for_log(
     Returns:
         (str) formatted str
     """
-    formatted_str: str = (
-        "\n" + pprint.pformat(dict, indent=1, width=120, depth=None, compact=True) + "\n"
-    )
+    formatted_str: str = "\n" + pprint.pformat(dict, indent=1, width=120, depth=None, compact=True) + "\n"
     return formatted_str
 
 
@@ -120,10 +130,11 @@ def get_objects_with_difference(
     diff_distance: Tuple[float, float, float] = (0.0, 0.0, 0.0),
     diff_yaw: float = 0.0,
     is_confidence_with_distance: Optional[bool] = None,
-    ego2map: Optional[np.ndarray] = None,
+    label_to_unknown_rate: float = 1.0,
+    transforms: Optional[TransformDict] = None,
+    label_candidates: Optional[List[LabelType]] = None,
 ) -> List[DynamicObject]:
-    """[summary]
-    Get objects with distance and yaw difference for test.
+    """Get objects with distance and yaw difference for test.
 
     Args:
         ground_truth_objects (List[DynamicObject]):
@@ -142,8 +153,7 @@ def get_objects_with_difference(
                 Near object is lower coefficient like 0.2 and far object is
                 higher like 0.8.
                 Defaults is None.
-        ego2map (Optional[numpy.ndarray]):4x4 Transform matrix
-                from base_link coordinate system to map coordinate system.
+        label_unknown_rate (float): Rate to convert label into unknown randomly. Defaults to 0.5.
 
     Returns:
         List[DynamicObject]: objects with distance and yaw difference.
@@ -161,7 +171,7 @@ def get_objects_with_difference(
         if is_confidence_with_distance is None:
             semantic_score = object_.semantic_score
         else:
-            distance_coefficient: float = object_.get_distance_bev(ego2map=ego2map) / 100.0
+            distance_coefficient: float = object_.get_distance_bev(transforms) / 100.0
             distance_coefficient = max(min(distance_coefficient, 0.8), 0.2)
             if is_confidence_with_distance:
                 semantic_score = object_.semantic_score * (1 - distance_coefficient)
@@ -178,16 +188,29 @@ def get_objects_with_difference(
             diff_distance,
             diff_yaw,
         )
+        shape: Shape = Shape(shape_type=object_.state.shape_type, size=object_.state.size)
+
+        if label_to_unknown_rate < random.uniform(0.0, 1.0):
+            if isinstance(object_.semantic_label.label, AutowareLabel):
+                label = AutowareLabel.UNKNOWN
+            elif isinstance(object_.semantic_label.label, TrafficLightLabel):
+                label = TrafficLightLabel.UNKNOWN
+            semantic_label = Label(label, "unknown")
+        if label_candidates is not None:
+            label: LabelType = random.choice(label_candidates)
+            semantic_label = Label(label, label.value)
+        else:
+            semantic_label = object_.semantic_label
 
         test_object_: DynamicObject = DynamicObject(
             unix_time=object_.unix_time,
             frame_id=object_.frame_id,
             position=position,
             orientation=orientation,
-            size=object_.state.size,
+            shape=shape,
             velocity=object_.state.velocity,
             semantic_score=semantic_score,
-            semantic_label=object_.semantic_label,
+            semantic_label=semantic_label,
             pointcloud_num=object_.pointcloud_num,
             uuid=object_.uuid,
             predicted_positions=predicted_positions,
@@ -203,11 +226,7 @@ def _get_prediction_params(
     object_: DynamicObject,
     diff_distance: Tuple[float, float, float] = (0.0, 0.0, 0.0),
     diff_yaw: float = 0.0,
-) -> Tuple[
-    Optional[List[List[Tuple[float]]]],
-    Optional[List[List[Quaternion]]],
-    Optional[List[float]],
-]:
+) -> Tuple[Optional[List[List[Tuple[float]]]], Optional[List[List[Quaternion]]], Optional[List[float]],]:
     """
     Get object's prediction parameters with distance and yaw difference for test.
 
@@ -253,3 +272,77 @@ def _get_prediction_params(
         predicted_confidences.append(paths.confidence)
 
     return predicted_positions, predicted_orientations, predicted_confidences
+
+
+def get_objects_with_difference2d(
+    objects: List[DynamicObject2D],
+    translate: Tuple[int, int] = None,
+    label_to_unknown_rate: float = 1.0,
+    label_candidates: Optional[List[LabelType]] = None,
+) -> List[DynamicObject2D]:
+    """Returns translated 2D objects.
+
+    Args:
+        objects (List[DynamicObject2D])
+        translate (Optional[Tuple[int, int]]): Translation vector [tx, ty][px]. Defaults to None.
+        label_unknown_rate (float): Rate to convert label into unknown randomly. Defaults to 0.5.
+
+    Returns:
+        List[DynamicObject2D]: List of translated objects.
+    """
+    output_objects: List[DynamicObject2D] = []
+    for object_ in objects:
+        if translate is not None and object_.roi is not None:
+            offset_: Tuple[int, int] = (
+                object_.roi.offset[0] + translate[0],
+                object_.roi.offset[1] + translate[1],
+            )
+            roi = (*offset_, *object_.roi.size)
+        else:
+            roi = object_.roi
+
+        if label_to_unknown_rate < random.uniform(0.0, 1.0):
+            if isinstance(object_.semantic_label.label, AutowareLabel):
+                label = AutowareLabel.UNKNOWN
+            elif isinstance(object_.semantic_label.label, TrafficLightLabel):
+                label = TrafficLightLabel.UNKNOWN
+            semantic_label = Label(label, "unknown")
+        else:
+            semantic_label = object_.semantic_label
+
+        if label_candidates is not None:
+            label: LabelType = random.choice(label_candidates)
+            semantic_label = Label(label, label.value)
+        else:
+            semantic_label = object_.semantic_label
+
+        output_objects.append(
+            DynamicObject2D(
+                unix_time=object_.unix_time,
+                frame_id=object_.frame_id,
+                semantic_score=object_.semantic_score,
+                semantic_label=semantic_label,
+                roi=roi,
+                uuid=object_.uuid,
+                visibility=object_.visibility,
+            )
+        )
+    return output_objects
+
+
+def get_random_position_map(frame_ground_truth: FrameGroundTruth) -> Dict[str, ArrayLike]:
+    """Return a container storing positions of corresponding uuids randomly.
+
+    The positions are computed as ego position + random * 100.0.
+
+    Args:
+        frame_ground_truth (FrameGroundTruth):
+
+    Returns:
+        Dict[str, ArrayLike]: Position map.
+    """
+    output: Dict[str, ArrayLike] = {}
+    ego2map = frame_ground_truth.transforms[(FrameID.BASE_LINK, FrameID.MAP)]
+    for obj in frame_ground_truth.objects:
+        output[obj.uuid] = np.random.rand(3) * 100.0 + ego2map.position
+    return output

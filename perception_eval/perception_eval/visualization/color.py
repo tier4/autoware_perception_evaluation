@@ -38,7 +38,9 @@ class ColorMap:
             "red": np.array((255, 0, 0)),
             "green": np.array((0, 255, 0)),
             "blue": np.array((0, 0, 255)),
+            "yellow": np.array((255, 215, 0)),
             "cyan": np.array((0, 255, 255)),
+            "purple": np.array((125, 0, 205)),
             "orange": np.array((255, 165, 0)),
             "black": np.array((0, 0, 0)),
         }
@@ -57,15 +59,10 @@ class ColorMap:
             np.ndarray: The 3D array. If self.rgb is True, return RGB order, else BGR.
         """
         if self.is_unique(uuid):
-            index: int = self.__ids.index(uuid) % 79
-            if normalize:
-                return self[index] / 255.0
-            return self[index]
-        index: int = len(self.__ids) % 79
-        self.__ids.append(uuid)
-        if normalize:
-            return self[index] / 255.0
-        return self[index]
+            index: int = len(self.__ids) % 79
+            self.__ids.append(uuid)
+        index: int = self.__ids.index(uuid) % 79
+        return self[index] / 255.0 if normalize else self[index]
 
     def get_simple(self, key: str, normalize: bool = True) -> np.ndarray:
         """[summary]
@@ -91,9 +88,8 @@ class ColorMap:
         return color
 
     def is_unique(self, uuid: str) -> bool:
-        """[summary]
-        Check whether input uuid has not been specified yet."""
-        return uuid in self.__ids
+        """Check whether input uuid has not been specified yet."""
+        return uuid not in self.__ids
 
     def __len__(self) -> int:
         return len(self.__cmap)

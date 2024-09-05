@@ -60,8 +60,6 @@ class Map:
         # calculate AP & APH
         self.aps: List[Ap] = []
         self.aphs: List[Ap] = []
-        sum_ap: float = 0.0
-        sum_aph: float = 0.0
         for target_label, matching_threshold in zip(target_labels, matching_threshold_list):
             object_results = object_results_dict[target_label]
             num_ground_truth = num_ground_truth_dict[target_label]
@@ -74,7 +72,6 @@ class Map:
                 matching_threshold_list=[matching_threshold],
             )
             self.aps.append(ap_)
-            sum_ap += ap_.ap
 
             if not self.is_detection_2d:
                 aph_ = Ap(
@@ -86,11 +83,13 @@ class Map:
                     matching_threshold_list=[matching_threshold],
                 )
                 self.aphs.append(aph_)
-                sum_aph += aph_.ap
+
+        valid_aps: List[float] = [ap.ap for ap in self.aps if ap.ap != float("inf")]
+        valid_aphs: List[float] = [aph.ap for aph in self.aphs if aph.ap != float("inf")]
 
         # calculate mAP & mAPH
-        self.map: float = sum_ap / len(target_labels)
-        self.maph: float = sum_aph / len(target_labels)
+        self.map: float = sum(valid_aps) / len(valid_aps) if 0 < len(valid_aps) else float("inf")
+        self.maph: float = sum(valid_aphs) / len(valid_aphs) if 0 < len(valid_aphs) else float("inf")
 
     def __str__(self) -> str:
         """__str__ method
@@ -101,7 +100,7 @@ class Map:
 
         str_: str = "\n"
         str_ += f"mAP: {self.map:.3f}"
-        str_ += ", mAPH: {self.maph:.3f} " if not self.is_detection_2d else " "
+        str_ += f", mAPH: {self.maph:.3f} " if not self.is_detection_2d else " "
         str_ += f"({self.matching_mode.value})\n"
         # Table
         str_ += "\n"

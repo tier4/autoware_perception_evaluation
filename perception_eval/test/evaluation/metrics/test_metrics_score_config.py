@@ -19,9 +19,7 @@ from typing import Tuple
 import unittest
 
 from perception_eval.evaluation.metrics.config._metrics_config_base import _MetricsConfigBase
-from perception_eval.evaluation.metrics.config.detection_metrics_config import (
-    DetectionMetricsConfig,
-)
+from perception_eval.evaluation.metrics.config.detection_metrics_config import DetectionMetricsConfig
 from perception_eval.evaluation.metrics.config.tracking_metrics_config import TrackingMetricsConfig
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsParameterError
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig

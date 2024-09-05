@@ -14,24 +14,33 @@
 
 from __future__ import annotations
 
+import os.path as osp
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
+from typing import Union
 
 from nuimages import NuImages
 import numpy as np
+from numpy.typing import NDArray
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
 from nuscenes.utils.data_classes import Box
 from perception_eval.common.evaluation_task import EvaluationTask
+from perception_eval.common.label import Label
 from perception_eval.common.label import LabelConverter
 from perception_eval.common.label import LabelType
+from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.status import FrameID
-from perception_eval.common.status import Visibility
+from perception_eval.common.schema import FrameID
+from perception_eval.common.schema import Visibility
+from perception_eval.common.shape import Shape
+from perception_eval.common.shape import ShapeType
+from perception_eval.common.transform import HomogeneousMatrix
 from PIL import Image
 from pyquaternion.quaternion import Quaternion
 
@@ -77,26 +86,17 @@ def _sample_to_frame(
     # frame information
     unix_time_ = sample["timestamp"]
     if "LIDAR_TOP" in sample["data"]:
-        lidar_path_token = sample["data"]["LIDAR_TOP"]
+        sample_data_token = sample["data"]["LIDAR_TOP"]
     elif "LIDAR_CONCAT" in sample["data"]:
-        lidar_path_token = sample["data"]["LIDAR_CONCAT"]
+        sample_data_token = sample["data"]["LIDAR_CONCAT"]
     else:
         raise ValueError("lidar data isn't found")
-    frame_data = nusc.get("sample_data", lidar_path_token)
 
-    lidar_path, object_boxes, ego2map = _get_sample_boxes(nusc, frame_data, frame_id)
-
-    # pointcloud
-    if load_raw_data:
-        assert lidar_path.endswith(".bin"), f"Error: Unsupported filetype {lidar_path}"
-        pointcloud: np.ndarray = np.fromfile(lidar_path, dtype=np.float32)
-        raw_data = pointcloud.reshape(-1, 5)[:, :4]
-
-    else:
-        raw_data = None
+    object_boxes = _get_sample_boxes(nusc, sample_data_token, frame_id)
+    transforms = _get_transforms(nusc, sample_data_token)
+    raw_data = _load_raw_data(nusc, sample_token) if load_raw_data else None
 
     objects_: List[DynamicObject] = []
-
     for object_box in object_boxes:
         sample_annotation_: dict = nusc.get("sample_annotation", object_box.token)
         instance_token_: str = sample_annotation_["instance_token"]
@@ -108,6 +108,13 @@ def _sample_to_frame(
             visibility_info: Dict[str, Any] = nusc.get("visibility", visibility_token)
             visibility: Visibility = Visibility.from_value(visibility_info["level"])
 
+        attribute_tokens: List[str] = sample_annotation_["attribute_tokens"]
+        attributes: List[str] = [nusc.get("attribute", token)["name"] for token in attribute_tokens]
+        semantic_label = label_converter.convert_label(object_box.name, attributes)
+
+        if evaluation_task.is_fp_validation() and semantic_label.is_fp() is False:
+            raise ValueError(f"Unexpected GT label for {evaluation_task.value}, got {semantic_label.label}")
+
         object_: DynamicObject = _convert_nuscenes_box_to_dynamic_object(
             nusc=nusc,
             helper=helper,
@@ -115,7 +122,7 @@ def _sample_to_frame(
             object_box=object_box,
             unix_time=unix_time_,
             evaluation_task=evaluation_task,
-            label_converter=label_converter,
+            semantic_label=semantic_label,
             instance_token=instance_token_,
             sample_token=sample_token,
             path_seconds=path_seconds,
@@ -126,9 +133,8 @@ def _sample_to_frame(
     frame = dataset.FrameGroundTruth(
         unix_time=unix_time_,
         frame_name=frame_name,
-        frame_id=frame_id,
         objects=objects_,
-        ego2map=ego2map,
+        transforms=transforms,
         raw_data=raw_data,
     )
     return frame
@@ -141,7 +147,7 @@ def _convert_nuscenes_box_to_dynamic_object(
     object_box: Box,
     unix_time: int,
     evaluation_task: EvaluationTask,
-    label_converter: LabelConverter,
+    semantic_label: Label,
     instance_token: str,
     sample_token: str,
     path_seconds: float,
@@ -156,7 +162,7 @@ def _convert_nuscenes_box_to_dynamic_object(
         object_box (Box): Annotation data from nuscenes dataset defined by Box.
         unix_time (int): The unix time [us].
         evaluation_task (EvaluationTask): Evaluation task.
-        label_converter (LabelConverter): LabelConverter instance.
+        semantic_label (Label): Label instance.
         instance_token (str): Instance token.
         sample_token (str): Sample token, used to get past/future record.
         path_seconds (float): Seconds to be referenced past/future record.
@@ -165,26 +171,23 @@ def _convert_nuscenes_box_to_dynamic_object(
     Returns:
         DynamicObject: Converted dynamic object class
     """
-    position_: Tuple[float, float, float] = tuple(object_box.center.tolist())  # type: ignore
+    position_: Tuple[float, float, float] = tuple(object_box.center.astype(np.float64).tolist())
     orientation_: Quaternion = object_box.orientation
-    size_: Tuple[float, float, float] = tuple(object_box.wlh.tolist())  # type: ignore
-    semantic_score_: float = 1.0
-    semantic_label_: LabelType = label_converter.convert_label(
-        label=object_box.name,
-        count_label_number=True,
+    shape_: Shape = Shape(
+        shape_type=ShapeType.BOUNDING_BOX,
+        size=tuple(object_box.wlh.astype(np.float64).tolist()),
     )
+    semantic_score_: float = 1.0
 
     sample_annotation_: dict = nusc.get("sample_annotation", object_box.token)
     pointcloud_num_: int = sample_annotation_["num_lidar_pts"]
-    velocity_: Tuple[float, float, float] = tuple(
-        nusc.box_velocity(sample_annotation_["token"]).tolist()
-    )
+    velocity_: Optional[Tuple[float, float, float]] = _get_box_velocity(nusc, object_box.token)
 
     if evaluation_task == EvaluationTask.TRACKING:
         (
             tracked_positions,
             tracked_orientations,
-            tracked_sizes,
+            tracked_shapes,
             tracked_velocities,
         ) = _get_tracking_data(
             nusc=nusc,
@@ -197,15 +200,15 @@ def _convert_nuscenes_box_to_dynamic_object(
     else:
         tracked_positions = None
         tracked_orientations = None
-        tracked_sizes = None
+        tracked_shapes = None
         tracked_velocities = None
 
     if evaluation_task == EvaluationTask.PREDICTION:
         (
             predicted_positions,
             predicted_orientations,
-            predicted_sizes,
-            predicted_velocities,
+            predicted_shapes,
+            predicted_twists,
         ) = _get_prediction_data(
             nusc=nusc,
             helper=helper,
@@ -216,14 +219,14 @@ def _convert_nuscenes_box_to_dynamic_object(
         )
         predicted_positions = [predicted_positions]
         predicted_orientations = [predicted_orientations]
-        predicted_sizes = [predicted_sizes]
-        predicted_velocities = [predicted_velocities]
+        predicted_shapes = [predicted_shapes]
+        predicted_twists = [predicted_twists]
         predicted_confidences = [1.0]
     else:
         predicted_positions = None
         predicted_orientations = None
-        predicted_sizes = None
-        predicted_velocities = None
+        predicted_shapes = None
+        predicted_twists = None
         predicted_confidences = None
 
     dynamic_object = DynamicObject(
@@ -231,76 +234,177 @@ def _convert_nuscenes_box_to_dynamic_object(
         frame_id=frame_id,
         position=position_,
         orientation=orientation_,
-        size=size_,
+        shape=shape_,
         velocity=velocity_,
         semantic_score=semantic_score_,
-        semantic_label=semantic_label_,
+        semantic_label=semantic_label,
         pointcloud_num=pointcloud_num_,
         uuid=instance_token,
         tracked_positions=tracked_positions,
         tracked_orientations=tracked_orientations,
-        tracked_sizes=tracked_sizes,
-        tracked_velocities=tracked_velocities,
+        tracked_shapes=tracked_shapes,
+        tracked_twists=tracked_velocities,
         predicted_positions=predicted_positions,
         predicted_orientations=predicted_orientations,
-        predicted_sizes=predicted_sizes,
-        predicted_velocities=predicted_velocities,
+        predicted_shapes=predicted_shapes,
+        predicted_twists=predicted_twists,
         predicted_confidences=predicted_confidences,
         visibility=visibility,
     )
     return dynamic_object
 
 
-def _get_sample_boxes(
-    nusc: NuScenes,
-    frame_data: Dict[str, Any],
-    frame_id: str,
-    use_sensor_frame: bool = True,
-) -> Tuple[str, List[Box], np.ndarray]:
-    """Get bbox from frame data.
+def _get_sample_boxes(nusc: NuScenes, sample_data_token: str, frame_id: FrameID) -> List[Box]:
+    """Get the lidar raw data path, boxes.
+
+    Args:
+        nusc (NuScenes): `NuScenes` instance.
+        sample_data_token (str): Sample data token.
+        frame_id (FrameID): Frame ID where loaded boxes are with respect to.
+
+    Raises:
+        ValueError: Expecting `BASE_LINK` or `MAP` for the target `frame_id`.
+
+    Returns:
+        list[Box]: Boxes.
+    """
+    if frame_id == FrameID.BASE_LINK:
+        # Get boxes moved to ego vehicle coord system.
+        _, boxes, _ = nusc.get_sample_data(sample_data_token)
+    elif frame_id == FrameID.MAP:
+        # Get boxes map based coord system.
+        boxes = nusc.get_boxes(sample_data_token)
+    else:
+        raise ValueError(f"Expected frame id is `BASE_LINK` or `MAP`, but got {frame_id}")
+
+    return boxes
+
+
+def _get_transforms(nusc: NuScenes, sample_data_token: str) -> List[HomogeneousMatrix]:
+    """Load transform matrices.
+    Additionally, for traffic light cameras, add transforms from BASE_LINK to TRAFFIC_LIGHT.
 
     Args:
         nusc (NuScenes): NuScenes instance.
-        frame_data (Dict[str, Any]): Set of frame record.
-        frame_id (FrameID): FrameID instance, where 3D objects are with respect, BASE_LINK or MAP.
-        use_sensor_frame (bool): Whether use sensor frame. Defaults to True.
+        sample_data_token (str): Sample data token.
 
     Returns:
-        lidar_path (str): File path of lidar pointcloud.
-        object_boxes (List[Box]): A list of boxes.
-        ego2map (np.ndarray): 4x4 transformation matrix.
-
-    Raises:
-        ValueError: If got unexpected frame_id except of base_link or map.
+        List[HomogeneousMatrix]: List of matrices transforming position from sensor coordinate to map coordinate.
     """
-    lidar_path: str
-    object_boxes: List[Box]
-    if frame_id == FrameID.BASE_LINK:
-        # Get boxes moved to ego vehicle coord system.
-        lidar_path, object_boxes, _ = nusc.get_sample_data(frame_data["token"])
-    elif frame_id == FrameID.MAP:
-        # Get boxes map based coord system.
-        lidar_path = nusc.get_sample_data_path(frame_data["token"])
-        object_boxes = nusc.get_boxes(frame_data["token"])
+    # Get a ego2map transform matrix
+    sample_data = nusc.get("sample_data", sample_data_token)
+    ego_record = nusc.get("ego_pose", sample_data["ego_pose_token"])
+    ego_position = np.array(ego_record["translation"])
+    ego_rotation = Quaternion(ego_record["rotation"])
+    ego2map = HomogeneousMatrix(ego_position, ego_rotation, src=FrameID.BASE_LINK, dst=FrameID.MAP)
+
+    matrices = [ego2map]
+    tlr_avg_pos: List[NDArray] = []
+    tlr_avg_quat: List[Quaternion] = []
+    for cs_record in nusc.calibrated_sensor:
+        sensor_position = cs_record["translation"]
+        sensor_rotation = Quaternion(cs_record["rotation"])
+        sensor_record = nusc.get("sensor", cs_record["sensor_token"])
+        sensor_frame_id = FrameID.from_value(sensor_record["channel"])
+        sensor2ego = HomogeneousMatrix(sensor_position, sensor_rotation, src=sensor_frame_id, dst=FrameID.BASE_LINK)
+        sensor2map = ego2map.dot(sensor2ego)
+        matrices.extend((sensor2ego, sensor2map))
+        if "CAM_TRAFFIC_LIGHT" in sensor_frame_id.value.upper():
+            tlr_avg_pos.append(sensor_position)
+            tlr_avg_quat.append(sensor_rotation)
+
+    # NOTE: Average positions and rotations are used for matrices of cameras related to TLR.
+    if len(tlr_avg_pos) > 0 and len(tlr_avg_quat) > 0:
+        tlr_cam_pos: NDArray = np.mean(tlr_avg_pos, axis=0)
+        tlr_cam_rot: Quaternion = sum(tlr_avg_quat) / sum(tlr_avg_quat).norm
+        tlr2ego = HomogeneousMatrix(tlr_cam_pos, tlr_cam_rot, src=FrameID.CAM_TRAFFIC_LIGHT, dst=FrameID.BASE_LINK)
+        tlr2map = ego2map.dot(tlr2ego)
+        matrices.extend((tlr2ego, tlr2map))
+
+    return matrices
+
+
+def _load_raw_data(nusc: NuScenes, sample_token: str) -> Dict[FrameID, NDArray]:
+    """Load raw data for each sensor frame.
+
+    Args:
+        nusc (NuScenes): NuScenes instance.
+        sample_token (str): Sample token.
+
+    Returns:
+        Dict[FrameID, NDArray]: Raw data at each sensor frame.
+    """
+    sample = nusc.get("sample", sample_token)
+    output: Dict[FrameID, NDArray] = {}
+    for sensor_name, sample_data_token in sample["data"].items():
+        frame_id = FrameID.from_value(sensor_name)
+        filepath: str = nusc.get_sample_data_path(sample_data_token)
+        if osp.basename(filepath).endswith("bin"):
+            raw_data = np.fromfile(filepath, dtype=np.float32).reshape(-1, 5)[:, :4]
+        else:
+            raw_data = np.array(Image.open(filepath), dtype=np.uint8)
+        output[frame_id] = raw_data
+    return output
+
+
+def _get_box_velocity(
+    nusc: NuScenes,
+    sample_annotation_token: str,
+    max_time_diff: float = 1.5,
+) -> Optional[Tuple[float, float, float]]:
+    """
+    Estimate the velocity for an annotation.
+    If possible, we compute the centered difference between the previous and next frame.
+    Otherwise we use the difference between the current and previous/next frame.
+    If the velocity cannot be estimated, values are set to None.
+
+    Args:
+        sample_annotation_token (str): Unique sample_annotation identifier.
+        max_time_diff (float): Max allowed time diff between consecutive samples that are used to estimate velocities.
+
+    Returns:
+        Optional[Tuple[float, float, float]]: Velocity in x/y/z direction in m/s,
+            which is with respect to object coordinates system.
+    """
+
+    current = nusc.get("sample_annotation", sample_annotation_token)
+    has_prev = current["prev"] != ""
+    has_next = current["next"] != ""
+
+    # Cannot estimate velocity for a single annotation.
+    if not has_prev and not has_next:
+        return None
+
+    if has_prev:
+        first = nusc.get("sample_annotation", current["prev"])
     else:
-        raise ValueError(f"Expected frame_id base_link or map, but got {frame_id}")
+        first = current
 
-    # Get a sensor2map transform matrix
-    vehicle2map = np.eye(4)
-    vehicle_pose = nusc.get("ego_pose", frame_data["ego_pose_token"])
-    vehicle2map[:3, :3] = Quaternion(vehicle_pose["rotation"]).rotation_matrix
-    vehicle2map[:3, 3] = vehicle_pose["translation"]
-
-    if use_sensor_frame:
-        sensor2vehicle = np.eye(4)
-        sensor_pose = nusc.get("calibrated_sensor", frame_data["calibrated_sensor_token"])
-        sensor2vehicle[:3, :3] = Quaternion(sensor_pose["rotation"]).rotation_matrix
-        sensor2vehicle[:3, 3] = sensor_pose["translation"]
-        ego2map: np.ndarray = vehicle2map.dot(sensor2vehicle)
+    if has_next:
+        last = nusc.get("sample_annotation", current["next"])
     else:
-        ego2map: np.ndarray = vehicle2map
+        last = current
 
-    return lidar_path, object_boxes, ego2map
+    pos_last = np.array(last["translation"], dtype=np.float64)
+    pos_first = np.array(first["translation"], dtype=np.float64)
+    pos_diff = pos_last - pos_first
+
+    object2map = np.eye(4, dtype=np.float64)
+    object2map[:3, :3] = Quaternion(first["rotation"]).rotation_matrix
+    object2map[3, :3] = first["translation"]
+
+    pos_diff: np.ndarray = np.linalg.inv(object2map).dot((pos_diff[0], pos_diff[1], pos_diff[2], 1.0))[:3]
+
+    time_last: float = 1e-6 * nusc.get("sample", last["sample_token"])["timestamp"]
+    time_first: float = 1e-6 * nusc.get("sample", first["sample_token"])["timestamp"]
+    time_diff: float = time_last - time_first
+
+    if has_next and has_prev:
+        # If doing centered difference, allow for up to double the max_time_diff.
+        max_time_diff *= 2
+
+    # If time_diff is too big, don't return an estimate.
+    return tuple((pos_diff / time_diff).tolist()) if time_diff <= max_time_diff else None
 
 
 def _get_tracking_data(
@@ -324,8 +428,8 @@ def _get_tracking_data(
     Returns:
         past_positions (List[Tuple[float, float, float]])
         past_orientations (List[Quaternion])
-        past_sizes (List[Tuple[float, float, float]]])
-        past_velocities (List[Tuple[float, float]])
+        past_shapes (List[Shape])
+        past_velocities (List[Tuple[float, float, float]])
     """
     if frame_id == FrameID.BASE_LINK:
         in_agent_frame: bool = True
@@ -343,15 +447,17 @@ def _get_tracking_data(
     )
     past_positions: List[Tuple[float, float, float]] = []
     past_orientations: List[Quaternion] = []
-    past_sizes: List[Tuple[float, float, float]] = []
+    past_shapes: List[Shape] = []
     past_velocities: List[Tuple[float, float, float]] = []
     for record_ in past_records_:
-        past_positions.append(tuple(record_["translation"]))
+        translation: Tuple[float, float, float] = tuple(float(t) for t in record_["translation"])
+        past_positions.append(translation)
         past_orientations.append(Quaternion(record_["rotation"]))
-        past_sizes.append(record_["size"])
+        size: Tuple[float, float, float] = tuple(float(s) for s in record_["size"])
+        past_shapes.append(Shape(shape_type=ShapeType.BOUNDING_BOX, size=size))
         past_velocities.append(nusc.box_velocity(record_["token"]))
 
-    return past_positions, past_orientations, past_sizes, past_velocities
+    return past_positions, past_orientations, past_shapes, past_velocities
 
 
 def _get_prediction_data(
@@ -377,8 +483,8 @@ def _get_prediction_data(
     Returns:
         future_positions (List[Tuple[float, float, float]])
         future_orientations (List[Tuple[float, float, float]])
-        future_sizes (List[Tuple[float, float, float]])
-        future_velocities (List[Tuple[float, float, float]])
+        future_shapes (List[Shape])
+        future_twists (List[Tuple[float, float, float]])
     """
     if frame_id == "base_link":
         in_agent_frame: bool = True
@@ -396,15 +502,15 @@ def _get_prediction_data(
     )
     future_positions: List[Tuple[float, float, float]] = []
     future_orientations: List[Quaternion] = []
-    future_sizes: List[Tuple[float, float, float]] = []
+    future_shapes: List[Shape] = []
     future_velocities: List[Tuple[float, float, float]] = []
     for record_ in future_records_:
         future_positions.append(tuple(record_["translation"]))
         future_orientations.append(Quaternion(record_["rotation"]))
-        future_sizes.append(record_["size"])
+        future_shapes.append(Shape(shape_type=ShapeType.BOUNDING_BOX, size=record_["size"]))
         future_velocities.append(nusc.box_velocity(record_["token"]))
 
-    return future_positions, future_orientations, future_sizes, future_velocities
+    return future_positions, future_orientations, future_shapes, future_velocities
 
 
 #################################
@@ -415,10 +521,10 @@ def _get_prediction_data(
 def _sample_to_frame_2d(
     nusc: NuScenes,
     nuim: NuImages,
-    sample_token: str,
+    sample_token: Union[FrameID, Sequence[FrameID]],
     evaluation_task: EvaluationTask,
     label_converter: LabelConverter,
-    frame_id: FrameID,
+    frame_ids: List[FrameID],
     frame_name: str,
     load_raw_data: bool,
 ) -> dataset.FrameGroundTruth:
@@ -430,7 +536,7 @@ def _sample_to_frame_2d(
         sample_token (str): Sample token.
         evaluation_task (EvaluationTask): 2D evaluation Task.
         label_converter (LabelConverter): LabelConverter instance.
-        frame_id (FrameID): FrameID instance, where 2D objects are with respect, related to CAM_**.
+        frame_ids (List[FrameID]): List of FrameID instances, where 2D objects are with respect, related to CAM_**.
         frame_name (str): Name of frame.
         load_raw_data (bool): The flag to load image data.
 
@@ -441,20 +547,34 @@ def _sample_to_frame_2d(
     sample: Dict[str, Any] = nuim.get("sample", sample_token)
 
     unix_time: int = sample["timestamp"]
-    camera_type: str = frame_id.value.upper()
-    sample_data_token: str = nusc_sample["data"][camera_type]
 
-    object_annotations: List[Dict[str, Any]] = [
-        ann for ann in nuim.object_ann if ann["sample_data_token"] == sample_data_token
-    ]
+    sample_data_tokens: List[str] = []
+    frame_id_mapping: Dict[str, FrameID] = {}
+    transforms = None
+    for frame_id_ in frame_ids:
+        camera_type: str = frame_id_.value.upper()
+        if nusc_sample["data"].get(camera_type) is None:
+            continue
+        sample_data_token = nusc_sample["data"][camera_type]
+        sample_data_tokens.append(sample_data_token)
+        frame_id_mapping[sample_data_token] = frame_id_
+
+        sd_record = nusc.get("sample_data", sample_data_token)
+        if sd_record["is_key_frame"]:
+            transforms = _get_transforms(nusc, sample_data_token)
 
     if load_raw_data:
-        img_path: str = nusc.get_sample_data_path(sample_data_token)
-        raw_data = np.array(Image.open(img_path), dtype=np.uint8)
+        raw_data = _load_raw_data(nusc, sample_token)
     else:
         raw_data = None
 
+    object_annotations: List[Dict[str, Any]] = [
+        ann for ann in nuim.object_ann if ann["sample_data_token"] in sample_data_tokens
+    ]
+
     objects_: List[DynamicObject2D] = []
+    # used to merge multiple traffic lights with same regulatory element ID
+    uuids: List[str] = []
     for ann in object_annotations:
         if evaluation_task in (EvaluationTask.DETECTION2D, EvaluationTask.TRACKING2D):
             bbox: List[float] = ann["bbox"]
@@ -467,31 +587,87 @@ def _sample_to_frame_2d(
             roi = None
 
         category_info: Dict[str, Any] = nuim.get("category", ann["category_token"])
-        semantic_label: LabelType = label_converter.convert_label(
-            label=category_info["name"],
-            count_label_number=True,
-        )
+        attribute_tokens: List[str] = ann["attribute_tokens"]
+        attributes: List[str] = [nuim.get("attribute", token)["name"] for token in attribute_tokens]
+        semantic_label: LabelType = label_converter.convert_label(category_info["name"], attributes)
 
-        uuid: str = ann.get("instance_token")
-        visibility = None
+        if label_converter.label_type == TrafficLightLabel:
+            # NOTE: Check whether Regulatory Element is used
+            # in scene.json => description: "TLR, regulatory_element"
+            for instance_record in nusc.instance:
+                if instance_record["token"] == ann["instance_token"]:
+                    instance_name: str = instance_record["instance_name"]
+                    uuid: str = instance_name.split(":")[-1]
+                    break
+            uuids.append(uuid)
+        else:
+            uuid: str = ann["instance_token"]
 
         object_: DynamicObject2D = DynamicObject2D(
             unix_time=unix_time,
-            frame_id=frame_id,
+            frame_id=frame_id_mapping[ann["sample_data_token"]],
             semantic_score=1.0,
             semantic_label=semantic_label,
             roi=roi,
             uuid=uuid,
-            visibility=visibility,
+            visibility=None,
         )
         objects_.append(object_)
+
+    if label_converter.label_type == TrafficLightLabel and evaluation_task == EvaluationTask.CLASSIFICATION2D:
+        objects_ = _merge_duplicated_traffic_lights(unix_time, objects_, uuids)
 
     frame = dataset.FrameGroundTruth(
         unix_time=unix_time,
         frame_name=frame_name,
-        frame_id=frame_id,
         objects=objects_,
+        transforms=transforms,
         raw_data=raw_data,
     )
 
     return frame
+
+
+def _merge_duplicated_traffic_lights(
+    unix_time: int,
+    objects: List[DynamicObject2D],
+    uuids: List[str],
+) -> List[DynamicObject2D]:
+    """Merge traffic light objects which have same uuids and set its frame id as `FrameID.CAM_TRAFFIC_LIGHT`.
+
+    Args:
+        unix_time (int): Current unix timestamp.
+        objects (List[DynamicObject2D]): List of traffic light objects.
+            It can contain the multiple traffic lights with same uuid.
+        uuids (List[str]): List of uuids.
+
+    Returns:
+        List[DynamicObject2D]: List of merged results.
+    """
+    uuids = set(uuids)
+    ret_objects: List[DynamicObject2D] = []
+    for uuid in uuids:
+        candidates = [obj for obj in objects if obj.uuid == uuid]
+        candidate_labels = [obj.semantic_label for obj in candidates]
+        if all([label == candidate_labels[0] for label in candidate_labels]):
+            # all unknown or not unknown
+            semantic_label = candidate_labels[0]
+        else:
+            unique_labels = set([obj.semantic_label.label for obj in candidates])
+            assert len(unique_labels) == 2, (
+                "If the same regulatory element ID is assigned to multiple traffic lights, "
+                f"it must annotated with only two labels: (unknown, another one). But got, {unique_labels}"
+            )
+            semantic_label = [label for label in candidate_labels if label.label != TrafficLightLabel.UNKNOWN][0]
+            assert semantic_label.label != TrafficLightLabel.UNKNOWN
+        merged_object = DynamicObject2D(
+            unix_time=unix_time,
+            frame_id=FrameID.CAM_TRAFFIC_LIGHT,
+            semantic_score=1.0,
+            semantic_label=semantic_label,
+            roi=None,
+            uuid=uuid,
+            visibility=None,
+        )
+        ret_objects.append(merged_object)
+    return ret_objects

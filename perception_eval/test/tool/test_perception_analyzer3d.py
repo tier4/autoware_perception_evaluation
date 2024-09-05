@@ -18,15 +18,15 @@
 # from typing import List
 # from typing import Union
 
-# from perception_eval.tool import PerceptionPerformanceAnalyzer
+# from perception_eval.tool import PerceptionAnalyzer3D
 # from perception_eval.tool import PlotAxes
 # import pytest
 
 # @pytest.mark.skip(reason="pickle data is deprecated.")
-# class TestPerceptionPerformanceAnalyzer:
+# class TestPerceptionAnalyzer3D:
 #     data_dir: str = osp.join(osp.dirname(__file__), "../sample_data")
 #     tmpdir = tempfile.TemporaryDirectory()
-#     analyzer = PerceptionPerformanceAnalyzer.from_scenario(
+#     analyzer = PerceptionAnalyzer3D.from_scenario(
 #         tmpdir.name,
 #         osp.join(data_dir, "scenario.yaml"),
 #     )
@@ -35,25 +35,25 @@
 
 #     def test_analyze(self):
 #         """[summary]
-#         Test PerceptionPerformanceAnalyzer.analyze().
+#         Test PerceptionAnalyzer3D.analyze().
 #         """
 #         self.analyzer.analyze()
 
 #     def test_summarize_ratio(self):
 #         """[summary]
-#         Test PerceptionPerformanceAnalyzer.summarize_ratio().
+#         Test PerceptionAnalyzer3D.summarize_ratio().
 #         """
 #         self.analyzer.summarize_ratio()
 
 #     def test_summarize_score(self):
 #         """[summary]
-#         Test PerceptionPerformanceAnalyzer.summarize_score().
+#         Test PerceptionAnalyzer3D.summarize_score().
 #         """
 #         self.analyzer.summarize_score()
 
 #     def test_summarize_error(self):
 #         """[summary]
-#         Test PerceptionPerformanceAnalyzer.summarize_error().
+#         Test PerceptionAnalyzer3D.summarize_error().
 #         """
 #         self.analyzer.summarize_error()
 

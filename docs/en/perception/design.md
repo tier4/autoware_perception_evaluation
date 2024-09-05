@@ -34,15 +34,13 @@
 
 - Parameters of `PerceptionEvaluationConfig` are following.
 
-  | Arguments                |       type       | Description                                                                                                                          |
-  | :----------------------- | :--------------: | :----------------------------------------------------------------------------------------------------------------------------------- |
-  | `dataset_path`           |   `List[str]`    | Dataset path(TBD supporting multiple dataset paths)                                                                                  |
-  | `frame_id`               |      `str`       | FrameID in string, where objects are with respect.                                                                                   |
-  | `merge_similar_labels`   |      `bool`      | Whether merge similar labels([Reference])(label.md)                                                                                  |
-  | `result_root_directory`  |      `str`       | Directory path to save result of log and visualization                                                                               |
-  | `evaluation_config_dict` | `Dict[str, Any]` | Parameters of evaluation                                                                                                             |
-  | `label_prefix`           |      `str`       | Prefix of label. If `autoware`, then `AutowareLabel` will be loaded. Also, `traffic_light`, then `TrafficLightLabel` will be loaded. |
-  | `load_raw_data`          |      `bool`      | Whether load pointcloud/image data from dataset                                                                                      |
+  | Arguments                |            type             | Description                                            |
+  | :----------------------- | :-------------------------: | :----------------------------------------------------- |
+  | `dataset_path`           |         `List[str]`         | Dataset path(TBD supporting multiple dataset paths)    |
+  | `frame_id`               | `Union[str, Sequence[str]]` | FrameID in string, where objects are with respect.     |
+  | `result_root_directory`  |            `str`            | Directory path to save result of log and visualization |
+  | `evaluation_config_dict` |      `Dict[str, Any]`       | Parameters of evaluation                               |
+  | `load_raw_data`          |           `bool`            | Whether load pointcloud/image data from dataset        |
 
 ##### `evaluation_config_dict`
 
@@ -55,24 +53,35 @@
   }
   ```
 
-- Each parameter can be categorized in **1.Thresholds for filtering objects**，**2.Thresholds to determine TP/FP/FN**
+- Each parameter can be categorized in **1.Thresholds for filtering objects**, **2.Parameters for label settings**, **3.Thresholds to determine TP/FP/FN**
 
   - **1. Thresholds for filtering objects to generate `DynamicObjectWithPerceptionResult`**
 
-    | Arguments              |    type     |     Mandatory      | Description                                                                                                     |
-    | :--------------------- | :---------: | :----------------: | :-------------------------------------------------------------------------------------------------------------- |
-    | `target_labels`        | `List[str]` |         No         | List of name of target labels. If None, all labels will be evaluated.                                           |
-    | `max_x_position`       |   `float`   |         \*         | Maximum x position of area to be evaluated (Only 3D)                                                            |
-    | `max_y_position`       |   `float`   |         \*         | Maximum y position of area to be evaluated (Only 3D)                                                            |
-    | `max_distance`         |   `float`   |         \*         | Maximum distance from `base_link` of ego to be evaluated (Only 3D)                                              |
-    | `min_distance`         |   `float`   |         \*         | Minimum distance from `base_link` of ego to be evaluated (Only 3D)                                              |
-    | `min_point_numbers`    | `List[int]` | Yes (in Detection) | Minimum number of pointcloud included in GT's bounding box. If `min_point_numbers=0`, evaluate all GT (Only 3D) |
-    | `confidence_threshold` |   `float`   |         No         | Threshold of confidence of estimation                                                                           |
-    | `target_uuids`         | `List[str]` |         No         | List of GTs' ID. Specify if you want to evaluated specific objects                                              |
+    | Arguments              |     type      |     Mandatory      | Description                                                                                                     |
+    | :--------------------- | :-----------: | :----------------: | :-------------------------------------------------------------------------------------------------------------- |
+    | `target_labels`        |  `List[str]`  |         No         | List of name of target labels. If None, all labels will be evaluated.                                           |
+    | `ignore_attributes`    |  `List[str]`  |         No         | List of original name or attribute of labels to be filtered out. If None, all labels will be evaluated.         |
+    | `max_x_position`       |    `float`    |         \*         | Maximum x position of area to be evaluated (Only 3D)                                                            |
+    | `max_y_position`       |    `float`    |         \*         | Maximum y position of area to be evaluated (Only 3D)                                                            |
+    | `max_distance`         |    `float`    |         \*         | Maximum distance from `base_link` of ego to be evaluated (Only 3D)                                              |
+    | `min_distance`         |    `float`    |         \*         | Minimum distance from `base_link` of ego to be evaluated (Only 3D)                                              |
+    | `min_point_numbers`    |  `List[int]`  | Yes (in Detection) | Minimum number of pointcloud included in GT's bounding box. If `min_point_numbers=0`, evaluate all GT (Only 3D) |
+    | `max_matchable_radii`  | `List[float]` |         No         | Maximum distance of matching objects to be allowed (Default: `None`)                                            |
+    | `confidence_threshold` |    `float`    |         No         | Threshold of confidence of estimation                                                                           |
+    | `target_uuids`         |  `List[str]`  |         No         | List of GTs' ID. Specify if you want to evaluated specific objects                                              |
 
     \* It is necessary to specify either **max_x/y_position** or **max/min_distance**. Another groups must be `None`.
 
-  - **2. Thresholds to determine TP/FP/FN for `DynamicObjectWithPerceptionResult`**
+  - **2. Parameters for label settings**
+
+    | Arguments                |  type  | Mandatory | Description                                                               |
+    | :----------------------- | :----: | :-------: | :------------------------------------------------------------------------ |
+    | `label_prefix`           | `str`  |    Yes    | Type of label to be used ("autoware", "traffic_light")                    |
+    | `merge_similar_labels`   | `bool` |    No     | Whether to merge similar labels (Default: `False`)                        |
+    | `allow_matching_unknown` | `bool` |    No     | Whether allow to match unknown label estimation and GT (Default: `False`) |
+    | `count_label_number`     | `bool` |    No     | Whether to count the number of loaded labels (Default: `True`)            |
+
+  - **3. Thresholds to determine TP/FP/FN for `DynamicObjectWithPerceptionResult`**
 
     - For `classification2d`, there is no need to specify the following parameters.
 
@@ -91,9 +100,13 @@
   evaluation_config_dict = {
     "evaluation_task": "foo",  # <-- Set "foo"
     "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+    "ignore_attributes": [],
     "max_x_position": 102.4,
     "max_y_position": 102.4,
     "min_point_numbers": [0, 0, 0, 0],
+    "label_prefix": "autoware",
+    "merge_similar_labels": False,
+    "allow_matching_unknown": True,
     "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
     "plane_distance_thresholds": [2.0, 3.0],
     "iou_2d_thresholds": [0.5],
@@ -115,11 +128,15 @@
     evaluation_config_dict = {
       "evaluation_task": "detection",
       "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+      "ignore_attributes": [],
       "max_x_position": 102.4,
       "max_y_position": 102.4,
       "max_distance": 100.0,
       "min_distance": 10.0,
       "min_point_numbers": [0, 0, 0, 0],
+      "label_prefix": "autoware",
+      "merge_similar_labels": False,
+      "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],
@@ -138,11 +155,15 @@
     evaluation_config_dict = {
       "evaluation_task": "detection",
       "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+      "ignore_attributes": [],
       # "max_x_position": 102.4,  # <-- comment-out all
       # "max_y_position": 102.4,
       # "max_distance": 100.0,
       # "min_distance": 10.0,
       "min_point_numbers": [0, 0, 0, 0],
+      "label_prefix": "autoware",
+      "merge_similar_labels": False,
+      "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],
@@ -161,9 +182,13 @@
     evaluation_config_dict = {
       "evaluation_task": "detection",  # <-- Set "detection"
       "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+      "ignore_attributes": [],
       "max_x_position": 102.4,
       "max_y_position": 102.4,
       # "min_point_numbers": [0, 0, 0, 0],  # <-- comment-out "min_point_numbers"
+      "label_prefix": "autoware",
+      "merge_similar_labels": False,
+      "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],
@@ -184,8 +209,13 @@
     evaluation_config_dict = {
       "evaluation_task": "detection",
       "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+      "ignore_attributes": [],
       "max_x_position": 102.4,
       "max_y_position": 102.4,
+      "label_prefix": "autoware",
+      "min_point_numbers": [0, 0, 0, 0],
+      "merge_similar_labels": False,
+      "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],
@@ -212,6 +242,7 @@
 | :-------------------------- | :--------------------------: | :-------------: | :-------------------------------------------------------------------------------------------------------------- |
 | `evaluator_config`          | `PerceptionEvaluationConfig` |       Yes       | Configuration settings which `PerceptionEvaluationManager` has                                                  |
 | `target_labels`             |         `List[str]`          |       No        | List of name of target labels                                                                                   |
+| `ignore_attributes`         |         `List[str]`          |       No        | List of original name or attribute of labels to be filtered out.                                                |
 | `max_x_position_list`       |        `List[float]`         |       \*        | Maximum x position of area to be evaluated (Only 3D)                                                            |
 | `max_y_position_list`       |        `List[float]`         |       \*        | Maximum y position of area to be evaluated (Only 3D)                                                            |
 | `max_distance_list`         |        `List[float]`         |       \*        | Maximum distance from `base_link` of ego to be evaluated (Only 3D)                                              |

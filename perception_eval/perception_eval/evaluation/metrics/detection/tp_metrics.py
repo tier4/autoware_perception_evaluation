@@ -16,6 +16,10 @@ from abc import ABCMeta
 from abc import abstractmethod
 from math import pi
 
+import numpy as np
+from perception_eval.common.schema import FrameID
+from perception_eval.common.transform import HomogeneousMatrix
+from perception_eval.common.transform import TransformDict
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 
 
@@ -107,8 +111,15 @@ class TPMetricsAph(TPMetrics):
         if object_result.ground_truth_object is None:
             return 0.0
 
-        pd_heading: float = object_result.estimated_object.get_heading_bev()
-        gt_heading: float = object_result.ground_truth_object.get_heading_bev()
+        # FIXME: add support of transformation if objects are w.r.t map.
+        frame_id = object_result.estimated_object.frame_id
+        if frame_id != FrameID.BASE_LINK:
+            matrix = HomogeneousMatrix.from_matrix(np.eye(4), frame_id, FrameID.BASE_LINK)
+            transforms = TransformDict([matrix])
+        else:
+            transforms = None
+        pd_heading: float = object_result.estimated_object.get_heading_bev(transforms)
+        gt_heading: float = object_result.ground_truth_object.get_heading_bev(transforms)
         diff_heading: float = abs(pd_heading - gt_heading)
 
         # Normalize heading error to [0, pi] (+pi and -pi are the same).

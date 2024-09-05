@@ -18,10 +18,12 @@ from typing import List
 from typing import Optional
 
 from perception_eval.common.dataset import FrameGroundTruth
+from perception_eval.common.dataset import get_interpolated_now_frame
 from perception_eval.common.dataset import get_now_frame
 from perception_eval.common.dataset import load_all_datasets
 from perception_eval.config import EvaluationConfigType
 from perception_eval.evaluation import FrameResultType
+from perception_eval.visualization import VisualizerType
 
 
 class _EvaluationMangerBase(ABC):
@@ -47,7 +49,7 @@ class _EvaluationMangerBase(ABC):
             dataset_paths=self.evaluator_config.dataset_paths,
             evaluation_task=self.evaluator_config.evaluation_task,
             label_converter=self.evaluator_config.label_converter,
-            frame_id=self.evaluator_config.frame_id,
+            frame_id=self.evaluator_config.frame_ids,
             load_raw_data=self.evaluator_config.load_raw_data,
         )
 
@@ -56,8 +58,8 @@ class _EvaluationMangerBase(ABC):
         return self.evaluator_config.evaluation_task
 
     @property
-    def frame_id(self):
-        return self.evaluator_config.frame_id
+    def frame_ids(self):
+        return self.evaluator_config.frame_ids
 
     @property
     def filtering_params(self):
@@ -66,6 +68,11 @@ class _EvaluationMangerBase(ABC):
     @property
     def metrics_params(self):
         return self.evaluator_config.metrics_params
+
+    @property
+    @abstractmethod
+    def visualizer(self) -> VisualizerType:
+        ...
 
     @abstractmethod
     def add_frame_result(self) -> FrameResultType:
@@ -85,6 +92,7 @@ class _EvaluationMangerBase(ABC):
         self,
         unix_time: int,
         threshold_min_time: int = 75000,
+        interpolate_ground_truth: bool = False,
     ) -> Optional[FrameGroundTruth]:
         """Returns a FrameGroundTruth instance that has the closest timestamp with `unix_time`.
 
@@ -98,9 +106,32 @@ class _EvaluationMangerBase(ABC):
             Optional[FrameGroundTruth]: FrameGroundTruth instance at current frame.
                 If there is no corresponding ground truth, returns None.
         """
-        ground_truth_now_frame: FrameGroundTruth = get_now_frame(
-            ground_truth_frames=self.ground_truth_frames,
-            unix_time=unix_time,
-            threshold_min_time=threshold_min_time,
-        )
-        return ground_truth_now_frame
+        if not interpolate_ground_truth:
+            # search closest frame
+            ground_truth_now_frame: FrameGroundTruth = get_now_frame(
+                ground_truth_frames=self.ground_truth_frames,
+                unix_time=unix_time,
+                threshold_min_time=threshold_min_time,
+            )
+            return ground_truth_now_frame
+        else:
+            # search closest frame and interpolate if both before and after frames exist
+            ground_truth_now_frame: FrameGroundTruth = get_interpolated_now_frame(
+                ground_truth_frames=self.ground_truth_frames,
+                unix_time=unix_time,
+                threshold_min_time=threshold_min_time,
+            )
+            return ground_truth_now_frame
+
+    def visualize_all(self) -> None:
+        """Visualize object result in BEV space for all frames."""
+        self.visualizer.visualize_all(self.frame_results)
+
+    def visualize_frame(self, frame_index: int = -1) -> None:
+        """[summary]
+        Visualize object result in BEV space at specified frame.
+
+        Args:
+            frame_index (int): The index of frame to be visualized. Defaults to -1 (latest frame).
+        """
+        self.visualizer.visualize_frame(self.frame_results[frame_index])

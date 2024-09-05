@@ -28,28 +28,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.status import FrameID
+from perception_eval.common.schema import FrameID
+from perception_eval.common.transform import TransformDict
+from perception_eval.common.transform import TransformKey
+from perception_eval.evaluation.matching.objects_filter import filter_object_results
+from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.metrics import MetricsScore
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
 
 
-class MatchingStatus(Enum):
-    TP = "TP"
-    FP = "FP"
-    FN = "FN"
-
-    def __str__(self) -> str:
-        return self.value
-
-    def __eq__(self, other: Union[MatchingStatus, str]) -> bool:
-        if isinstance(other, str):
-            return self.value == other
-        return super().__eq__(other)
-
-
 class PlotAxes(Enum):
-    """[summary]
+    """Enum class for plot axes.
 
     2D plot:
         FRAME: X-axis is the number of frame.
@@ -59,10 +49,12 @@ class PlotAxes(Enum):
         Y: X-axis is y[m].
         VX: X-axis is vx[m/s].
         VY: X-axis is vy[m/s].
+        CONFIDENCE: X-axis is confidence in [0, 100][%].
     3D plot:
         POSITION: X-axis is x[m], y-axis is y[m].
         VELOCITY: X-axis is vx[m/s], y-axis is vy[m/s].
-        POLAR: X-axis is theta[rad], y-axis is r[m]
+        SIZE: X-axis is width[m], y-axis is height[m](2D) or length[m](3D).
+        POLAR: X-axis is theta[deg], y-axis is r[m]
     """
 
     FRAME = "frame"
@@ -72,6 +64,7 @@ class PlotAxes(Enum):
     Y = "y"
     VX = "vx"
     VY = "vy"
+    CONFIDENCE = "confidence"
     POSITION = "position"
     SIZE = "size"
     VELOCITY = "velocity"
@@ -92,8 +85,7 @@ class PlotAxes(Enum):
         return not self.is_3d()
 
     def get_axes(self, df: pd.DataFrame, **kwargs) -> np.ndarray:
-        """[summary]
-        Returns axes values for plot.
+        """Returns axes values for plot.
 
         Args:
             df (pandas.DataFrame): Source DataFrame.
@@ -118,16 +110,23 @@ class PlotAxes(Enum):
             axes: np.ndarray = np.array(df["vx"])
         elif self == PlotAxes.VY:
             axes: np.ndarray = np.array(df["vy"])
+        elif self == PlotAxes.CONFIDENCE:
+            axes: np.ndarray = np.array(df["confidence"]) * 100
         elif self == PlotAxes.POSITION:
             axes: np.ndarray = np.array(df[["x", "y"]]).reshape(2, -1)
         elif self == PlotAxes.SIZE:
-            axes: np.ndarray = np.array(df[["w", "l"]]).reshape(2, -1)
+            axes: np.ndarray = (
+                np.array(df[["width", "length"]]).reshape(2, -1)
+                if "length" in df.columns
+                else np.array(df[["width", "height"]]).reshape(2, -1)
+            )
         elif self == PlotAxes.VELOCITY:
             axes: np.ndarray = np.array(df[["vx", "vy"]]).reshape(2, -1)
         elif self == PlotAxes.POLAR:
             distances: np.ndarray = np.linalg.norm(df[["x", "y"]], axis=1)
             thetas: np.ndarray = np.arctan2(df["x"], df["y"])
             thetas[thetas > np.pi] = thetas[thetas > np.pi] - 2.0 * np.pi
+            thetas = np.rad2deg(thetas)
             axes: np.ndarray = np.stack([thetas, distances], axis=0)
         else:
             raise TypeError(f"Unexpected mode: {self}")
@@ -135,8 +134,7 @@ class PlotAxes(Enum):
         return axes
 
     def get_label(self) -> Union[str, Tuple[str]]:
-        """[summary]
-        Returns label name for plot.
+        """Returns label name for plot.
 
         Returns:
             str: Name of label.
@@ -149,43 +147,59 @@ class PlotAxes(Enum):
             return str(self) + " [m]"
         elif self in (PlotAxes.VX, PlotAxes.VY):
             return str(self) + " [m/s]"
+        elif self == PlotAxes.CONFIDENCE:
+            return str(self) + " [%]"
         elif self == PlotAxes.POSITION:
             return "x [m]", "y [m]"
         elif self == PlotAxes.SIZE:
-            return "w [m]", "l [m]"
+            return "width [m]", "length [m]"
         elif self == PlotAxes.VELOCITY:
             return "vx [m/s]", "vy [m/s]"
         elif self == PlotAxes.POLAR:
-            return "theta [rad]", "r [m]"
+            return "theta [deg]", "r [m]"
 
-    def get_bin(self) -> Union[float, Tuple[float, float]]:
-        """[summary]
-        Returns default bins.
+    def get_bins(self) -> Union[int, Tuple[int, int]]:
+        """Returns default bins.
 
         Returns:
-            Union[float, Tuple[float, float]]
+            Union[int, Tuple[int, int]]
         """
         if self == PlotAxes.FRAME:
-            return 1.0
+            return 1
         elif self == PlotAxes.TIME:
-            return 5.0
+            return 1
         elif self in (PlotAxes.DISTANCE, PlotAxes.X, PlotAxes.Y):
-            return 0.5
+            return 10
         elif self in (PlotAxes.VX, PlotAxes.VY):
-            return 1.0
+            return 1
+        elif self == PlotAxes.CONFIDENCE:
+            return 1
         elif self == PlotAxes.POSITION:
-            return (0.5, 0.5)
+            return (10, 10)
         elif self == PlotAxes.SIZE:
-            return (1.0, 1.0)
+            return (5, 5)
         elif self == PlotAxes.VELOCITY:
-            return (1.0, 1.0)
+            return (1, 1)
         elif self == PlotAxes.POLAR:
-            return (0.2, 0.5)
+            return (5, 10)
+
+    def setup_axis(self, ax: plt.Axes, **kwargs) -> None:
+        """Setup axis limits and grid interval to plt.Axes.
+
+        Args:
+            ax (plt.Axes)
+            **kwargs:
+                xlim (Union[float, Sequence]): If use sequence, (left, right) order.
+                ylim (Union[float, Sequence]): If use sequence, (left, right) order. Defaults to None.
+                grid_interval (float): Interval of grid. Defaults to None.
+        """
+        setup_axis(ax, **kwargs)
+        if self == PlotAxes.CONFIDENCE:
+            ax.set_xlim(-5, 105)
 
     @property
     def projection(self) -> Optional[str]:
-        """[summary]
-        Returns type of projection.
+        """Returns type of projection.
 
         Returns:
             Optional[str]: If 3D, returns "3d", otherwise returns None.
@@ -206,8 +220,7 @@ def generate_area_points(
     max_x: float,
     max_y: float,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """[summary]
-    Generate (x,y) pairs of upper right and bottom left of each separate area.
+    """Generate (x,y) pairs of upper right and bottom left of each separate area.
     They are arranged in numerical order as shown in below.
 
     num_area_division:
@@ -248,9 +261,7 @@ def generate_area_points(
         upper_rights: np.ndarray = np.stack([r_xx, r_yy], axis=-1).reshape(-1, 2)
         bottom_lefts: np.ndarray = np.stack([l_xx, l_yy], axis=-1).reshape(-1, 2)
     else:
-        raise ValueError(
-            f"The number of area division must be 1, 3 or 9, but got {num_area_division}"
-        )
+        raise ValueError(f"The number of area division must be 1, 3 or 9, but got {num_area_division}")
 
     return upper_rights, bottom_lefts
 
@@ -259,41 +270,32 @@ def get_area_idx(
     object_result: Union[DynamicObject, DynamicObjectWithPerceptionResult],
     upper_rights: np.ndarray,
     bottom_lefts: np.ndarray,
-    ego2map: Optional[np.ndarray] = None,
+    transforms: TransformDict,
 ) -> Optional[int]:
-    """[summary]
-    Returns the index of area.
+    """Returns the index of area.
 
     Args:
         object_result (Union[DynamicObject, DynamicObjectWithPerceptionResult])
         upper_rights (np.ndarray): in shape (N, 2), N is number of area division.
         bottom_lefts (np.ndarray): in shape (N, 2), N is number of area division.
-        ego2map (Optional[np.ndarray]): in shape (4, 4)
 
     Returns:
         area_idx (Optional[int]): If the position is out of range, returns None.
     """
     if isinstance(object_result, DynamicObject):
         frame_id: FrameID = object_result.frame_id
-        obj_xyz: np.ndarray = np.array(object_result.state.position)
+        position: np.ndarray = np.array(object_result.state.position)
     elif isinstance(object_result, DynamicObjectWithPerceptionResult):
         frame_id: FrameID = object_result.estimated_object.frame_id
-        obj_xyz: np.ndarray = np.array(object_result.estimated_object.state.position)
+        position: np.ndarray = np.array(object_result.estimated_object.state.position)
     else:
         raise TypeError(f"Unexpected object type: {type(object_result)}")
 
-    if frame_id == FrameID.MAP:
-        if ego2map is None:
-            raise RuntimeError("When frame id is map, ego2map must be specified.")
-        obj_xyz: np.ndarray = np.append(obj_xyz, 1.0)
-        obj_xy = np.linalg.inv(ego2map).dot(obj_xyz)[:2]
-    elif frame_id == "base_link":
-        obj_xy = obj_xyz[:2]
-    else:
-        raise ValueError(f"Unexpected frame_id: {frame_id}")
+    transform_key = TransformKey(frame_id, FrameID.BASE_LINK)
+    x, y, _ = transforms.transform(transform_key, position)
 
-    is_x_inside: np.ndarray = (obj_xy[0] < upper_rights[:, 0]) * (obj_xy[0] > bottom_lefts[:, 0])
-    is_y_inside: np.ndarray = (obj_xy[1] > upper_rights[:, 1]) * (obj_xy[1] < bottom_lefts[:, 1])
+    is_x_inside: np.ndarray = (x < upper_rights[:, 0]) * (x > bottom_lefts[:, 0])
+    is_y_inside: np.ndarray = (y > upper_rights[:, 1]) * (y < bottom_lefts[:, 1])
     if any(is_x_inside * is_y_inside) is False:
         return None
     area_idx: int = np.where(is_x_inside * is_y_inside)[0].item()
@@ -323,25 +325,22 @@ def extract_area_results(
     for frame_result in out_frame_results:
         out_object_results: List[DynamicObjectWithPerceptionResult] = []
         out_ground_truths: List[DynamicObject] = []
-        frame_id: str = frame_result.frame_ground_truth.frame_id
-        ego2map: Optional[np.ndarray] = frame_result.frame_ground_truth.ego2map
+        transforms = frame_result.frame_ground_truth.transforms
         for object_result in frame_result.object_results:
             object_result_area: int = get_area_idx(
-                frame_id,
                 object_result,
                 upper_rights,
                 bottom_lefts,
-                ego2map,
+                transforms,
             )
             if object_result_area in area:
                 out_object_results.append(object_result)
         for ground_truth in frame_result.frame_ground_truth.objects:
             ground_truth_area: int = get_area_idx(
-                frame_id,
                 ground_truth,
                 upper_rights,
                 bottom_lefts,
-                ego2map,
+                transforms,
             )
             if ground_truth_area in area:
                 out_ground_truths.append(ground_truth)
@@ -352,7 +351,7 @@ def extract_area_results(
     return out_frame_results
 
 
-def setup_axis(ax: plt.Axes, **kwargs) -> None:
+def setup_axis(ax: Union[plt.Axes, np.ndarray], **kwargs) -> None:
     """[summary]
     Setup axis limits and grid interval to plt.Axes.
 
@@ -363,21 +362,26 @@ def setup_axis(ax: plt.Axes, **kwargs) -> None:
             ylim (Union[float, Sequence]): If use sequence, (left, right) order. Defaults to None.
             grid_interval (float): Interval of grid. Defaults to None.
     """
-    if kwargs.get("xlim"):
-        xlim: Union[float, Sequence] = kwargs.pop("xlim")
-        if isinstance(xlim, float):
-            ax.set_xlim(-xlim, xlim)
-        elif isinstance(xlim, (list, tuple)):
-            ax.set_xlim(xlim[0], xlim[1])
-    if kwargs.get("ylim"):
-        ylim: Union[float, Sequence] = kwargs.pop("ylim")
-        if isinstance(ylim, float):
-            ax.set_ylim(-ylim, ylim)
-        elif isinstance(ylim, (list, tuple)):
-            ax.set_ylim(ylim[0], ylim[1])
+    if isinstance(ax, np.ndarray):
+        for ax_ in ax:
+            setup_axis(ax_, **kwargs)
+    else:
+        ax.grid()
+        if kwargs.get("xlim"):
+            xlim: Union[float, Sequence] = kwargs.pop("xlim")
+            if isinstance(xlim, float):
+                ax.set_xlim(-xlim, xlim)
+            elif isinstance(xlim, (list, tuple)):
+                ax.set_xlim(xlim[0], xlim[1])
+        if kwargs.get("ylim"):
+            ylim: Union[float, Sequence] = kwargs.pop("ylim")
+            if isinstance(ylim, float):
+                ax.set_ylim(-ylim, ylim)
+            elif isinstance(ylim, (list, tuple)):
+                ax.set_ylim(ylim[0], ylim[1])
 
-    if kwargs.get("grid_interval"):
-        ax.grid(lw=kwargs.pop("grid_interval"))
+        if kwargs.get("grid_interval"):
+            ax.grid(lw=kwargs.pop("grid_interval"))
 
 
 def get_metrics_info(metrics_score: MetricsScore) -> Dict[str, Any]:
@@ -402,6 +406,7 @@ def get_metrics_info(metrics_score: MetricsScore) -> Dict[str, Any]:
             data[ap_mode].append(ap.ap)
             data[aph_mode].append(aph.ap)
 
+    # tracking
     for tracking_score in metrics_score.tracking_scores:
         mode: str = str(tracking_score.matching_mode)
         mota_mode: str = f"MOTA({mode})"
@@ -415,6 +420,22 @@ def get_metrics_info(metrics_score: MetricsScore) -> Dict[str, Any]:
             data[mota_mode].append(clear.results["MOTA"])
             data[motp_mode].append(clear.results["MOTP"])
             data[id_switch_mode].append(clear.results["id_switch"])
+
+    # prediction
+    # TODO
+
+    # classification
+    for classification_score in metrics_score.classification_scores:
+        accuracy, precision, recall, f1score = classification_score._summarize()
+        data["Accuracy"] = [accuracy]
+        data["Precision"] = [precision]
+        data["Recall"] = [recall]
+        data["F1score"] = [f1score]
+        for cls_acc in classification_score.accuracies:
+            data["Accuracy"].append(cls_acc.accuracy)
+            data["Precision"].append(cls_acc.precision)
+            data["Recall"].append(cls_acc.recall)
+            data["F1score"].append(cls_acc.f1score)
 
     return data
 
@@ -439,29 +460,48 @@ def get_aligned_timestamp(df: pd.DataFrame) -> np.ndarray:
     return np.array(scene_axes)
 
 
-def filter_df(df: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
-    """[summary]
-    Filter DataFrame with args and kwargs.
+def filter_frame_by_distance(
+    frame: PerceptionFrameResult,
+    min_distance: Optional[float] = None,
+    max_distance: Optional[float] = None,
+) -> PerceptionFrameResult:
+    """Filter frame results by distance.
 
     Args:
-        df (pandas.DataFrame): Source DataFrame.
-        *args
-        **kwargs
+        frame (PerceptionFrameResult): Frame result.
+        min_distance (Optional[float], optional): Min distance range. Defaults to None.
+        max_distance (Optional[float], optional): Max distance range. Defaults to None.
 
     Returns:
-        df_ (pandas.DataFrame): Filtered DataFrame.
+        PerceptionFrameResult: Filtered frame results.
     """
-    df_ = df
+    ret_frame = deepcopy(frame)
 
-    for key, item in kwargs.items():
-        if item is None:
-            continue
-        if isinstance(item, (list, tuple)):
-            df_ = df_[df_[key].isin(item)]
-        else:
-            df_ = df_[df_[key] == item]
+    if min_distance is not None:
+        min_distance_list = [min_distance] * len(ret_frame.target_labels)
+    else:
+        min_distance_list = None
 
-    if args:
-        df_ = df_[list(args)]
+    if max_distance is not None:
+        max_distance_list = [max_distance] * len(ret_frame.target_labels)
+    else:
+        max_distance_list = None
 
-    return df_
+    ret_frame.object_results = filter_object_results(
+        ret_frame.object_results,
+        target_labels=ret_frame.target_labels,
+        max_distance_list=max_distance_list,
+        min_distance_list=min_distance_list,
+        transforms=ret_frame.frame_ground_truth.transforms,
+    )
+    ret_frame.frame_ground_truth.objects = filter_objects(
+        ret_frame.frame_ground_truth.objects,
+        is_gt=True,
+        target_labels=ret_frame.target_labels,
+        max_distance_list=max_distance_list,
+        min_distance_list=min_distance_list,
+        transforms=ret_frame.frame_ground_truth.transforms,
+    )
+    ret_frame.evaluate_frame()
+
+    return ret_frame

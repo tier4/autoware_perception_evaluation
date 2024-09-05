@@ -173,10 +173,15 @@ class CLEAR(_TrackingMetricsBase):
         for cur_obj_result in cur_object_results:
             # Assign previous results if same matching pair has
             matching_threshold_: float = get_label_threshold(
-                semantic_label=cur_obj_result.estimated_object.semantic_label,
+                semantic_label=cur_obj_result.ground_truth_object.semantic_label
+                if cur_obj_result.ground_truth_object is not None
+                else cur_obj_result.estimated_object.semantic_label,
                 target_labels=self.target_labels,
                 threshold_list=self.matching_threshold_list,
             )
+            if matching_threshold_ is None:
+                continue
+
             is_same_match: bool = False
             is_id_switched: bool = False
             for prev_obj_result in prev_object_results:
@@ -240,10 +245,7 @@ class CLEAR(_TrackingMetricsBase):
             bool: Return True if ID is switched.
         """
         # current GT = None -> FP
-        if (
-            cur_object_result.ground_truth_object is None
-            or prev_object_result.ground_truth_object is None
-        ):
+        if cur_object_result.ground_truth_object is None or prev_object_result.ground_truth_object is None:
             return False
 
         # 1. Check whether current/previous estimated objects has same ID.
@@ -254,14 +256,12 @@ class CLEAR(_TrackingMetricsBase):
         )
         # 2. Check whether current/previous estimated objects has same label.
         has_same_estimated_label: bool = (
-            cur_object_result.estimated_object.semantic_label
-            == prev_object_result.estimated_object.semantic_label
+            cur_object_result.estimated_object.semantic_label == prev_object_result.estimated_object.semantic_label
         )
         # 3. Check whether current/previous GT has same ID.
         # NOTE: There is no case GT has same ID, but different label. (Like 1.)
         has_same_ground_truth_id: bool = (
-            cur_object_result.ground_truth_object.uuid
-            == prev_object_result.ground_truth_object.uuid
+            cur_object_result.ground_truth_object.uuid == prev_object_result.ground_truth_object.uuid
         )
         if bool(has_same_estimated_id * has_same_estimated_label):
             return not has_same_ground_truth_id
@@ -285,22 +285,17 @@ class CLEAR(_TrackingMetricsBase):
         Returns:
             bool: Return True if both estimated and GT ID are same.
         """
-        if (
-            cur_object_result.ground_truth_object is None
-            or prev_object_result.ground_truth_object is None
-        ):
+        if cur_object_result.ground_truth_object is None or prev_object_result.ground_truth_object is None:
             return False
 
         has_same_estimated_id: bool = (
             cur_object_result.estimated_object.uuid == prev_object_result.estimated_object.uuid
         )
         has_same_estimated_label: bool = (
-            cur_object_result.estimated_object.semantic_label
-            == prev_object_result.estimated_object.semantic_label
+            cur_object_result.estimated_object.semantic_label == prev_object_result.estimated_object.semantic_label
         )
         has_same_ground_truth_id: bool = (
-            cur_object_result.ground_truth_object.uuid
-            == prev_object_result.ground_truth_object.uuid
+            cur_object_result.ground_truth_object.uuid == prev_object_result.ground_truth_object.uuid
         )
 
         return bool(has_same_estimated_id * has_same_estimated_label * has_same_ground_truth_id)

@@ -20,11 +20,13 @@ import numpy as np
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import crop_pointcloud
+from perception_eval.common.transform import TransformDict
 from perception_eval.config import SensingEvaluationConfig
 from perception_eval.evaluation import SensingFrameResult
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
 from perception_eval.util.math import get_bbox_scale
+from perception_eval.visualization import SensingVisualizer
 
 from ._evaluation_manager_base import _EvaluationMangerBase
 
@@ -47,6 +49,11 @@ class SensingEvaluationManager(_EvaluationMangerBase):
     ) -> None:
         super().__init__(evaluation_config)
         self.frame_results: List[SensingFrameResult] = []
+        self.__visualizer = SensingVisualizer(self.evaluator_config)
+
+    @property
+    def visualizer(self) -> SensingVisualizer:
+        return self.__visualizer
 
     def add_frame_result(
         self,
@@ -78,17 +85,17 @@ class SensingEvaluationManager(_EvaluationMangerBase):
                 **self.metrics_params,
             )
 
+        # Crop pointcloud for non-detection area
+        pointcloud_for_non_detection: np.ndarray = self.crop_pointcloud(
+            ground_truth_objects=ground_truth_now_frame.objects,
+            pointcloud=pointcloud,
+            non_detection_areas=non_detection_areas,
+            transforms=ground_truth_now_frame.transforms,
+        )
+
         ground_truth_objects: List[DynamicObject] = self._filter_objects(
             ground_truth_now_frame,
             sensing_frame_config,
-        )
-
-        # Crop pointcloud for non-detection area
-        pointcloud_for_non_detection: np.ndarray = self.crop_pointcloud(
-            ground_truth_objects=ground_truth_objects,
-            pointcloud=pointcloud,
-            non_detection_areas=non_detection_areas,
-            ego2map=ground_truth_now_frame.ego2map,
         )
 
         result = SensingFrameResult(
@@ -124,7 +131,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             objects=frame_ground_truth.objects,
             is_gt=True,
             target_uuids=sensing_frame_config.target_uuids,
-            ego2map=frame_ground_truth.ego2map,
+            transforms=frame_ground_truth.transforms,
         )
 
     def crop_pointcloud(
@@ -132,7 +139,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         ground_truth_objects: List[DynamicObject],
         pointcloud: np.ndarray,
         non_detection_areas: List[List[Tuple[float, float, float]]],
-        ego2map: Optional[np.ndarray] = None,
+        transforms: Optional[TransformDict] = None,
     ) -> List[np.ndarray]:
         """Crop pointcloud from (N, 3) to (M, 3) with the non-detection area.
 
@@ -140,7 +147,6 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             ground_truth_objects (List[DynamicObject]): Ground truth objects list.
             pointcloud (numpy.ndarray): Array of pointcloud, in shape (N, 3).
             non_detection_areas (List[List[Tuple[float, float, float]]]): List of 3D-polygon areas for non-detection.
-            ego2map (Optional[numpy.ndarray]):4x4 Transform matrix from base_link coordinate system to map coordinate system.
 
         Returns:
             cropped_pointcloud (List[numpy.ndarray]): List of cropped pointcloud array.
@@ -161,7 +167,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             outside_points: np.ndarray = points.copy()
             for ground_truth in ground_truth_objects:
                 bbox_scale: float = get_bbox_scale(
-                    distance=ground_truth.get_distance(ego2map=ego2map),
+                    distance=ground_truth.get_distance(transforms),
                     box_scale_0m=box_scale_0m,
                     box_scale_100m=box_scale_100m,
                 )

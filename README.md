@@ -70,7 +70,6 @@ from perception_eval.evaluation.result.perception_frame_config import Perception
 evaluation_config = PerceptionEvaluationConfig(
     dataset_paths=[dataset_path],
     frame_id="base_link",
-    merge_similar_labels=False,
     result_root_directory="./data/result",
     evaluation_config_dict={"evaluation_task": "detection",...},
     load_raw_data=True,
@@ -84,7 +83,7 @@ pass_fail_config = PerceptionPassFailConfig(...)
 
 for frame in datasets:
     unix_time = frame.unix_time
-    pointcloud: numpy.ndarray = frame.raw_data
+    pointcloud: numpy.ndarray = frame.raw_data["lidar"]
     outputs = model(pointcloud)
     # create a list of estimated objects with your model's outputs
     estimated_objects = [DynamicObject(unix_time=unix_time, ...) for out in outputs]
@@ -93,7 +92,6 @@ for frame in datasets:
         unix_time=unix_time,
         ground_truth_now_frame=frame,
         estimated_objects=estimated_objects,
-        ros_critical_ground_truth_objects=frame.objects,
         critical_object_filter_config=critical_object_filter_config,
         frame_pass_fail_config=pass_fail_config,
     )

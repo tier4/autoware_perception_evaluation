@@ -1,12 +1,16 @@
+# cspell: ignore Shunsuke Miura, Shintaro Tomie
 [tool.poetry]
 name = "perception_eval"
-version = "1.0.2"
+version = "1.2.7"
 description = ""
-authors = ["Satoshi Tanaka <satoshi.tanaka@tier4.jp>", "Kotaro Uetake <kotaro.uetake@tier4.jp>", "Shunsuke Miura <shunsuke.miura@tier4.jp>", "Shintaro Tomie <shinrato.tomie@tier4.jp>"]
-license = "Apache-2.0"
-packages = [
-  { include = "perception_eval", from = "perception_eval"},
+authors = [
+  "Satoshi Tanaka <satoshi.tanaka@tier4.jp>",
+  "Kotaro Uetake <kotaro.uetake@tier4.jp>",
+  "Shunsuke Miura <shunsuke.miura@tier4.jp>",
+  "Shintaro Tomie <shinrato.tomie@tier4.jp>",
 ]
+license = "Apache-2.0"
+packages = [{ include = "perception_eval", from = "perception_eval" }]
 
 [tool.poetry.dependencies]
 python = ">=3.7.11,<3.11"
@@ -14,8 +18,12 @@ nuscenes-devkit = "^1.1.9"
 tqdm = "^4.62.3"
 plotly = "^5.9.0"
 pandas = [
-    {version="<1.4", python=">=3.7.11,<3.8"},
-    {version="*", python=">=3.8,<3.11"}
+  { version = "<1.4", python = ">=3.7.11,<3.8" },
+  { version = "*", python = ">=3.8,<3.11" },
+]
+numpy = [
+  { version = "<1.22.0", python = ">=3.7.11,<3.8" },
+  { version = "*", python = ">=3.8,<3.11" },
 ]
 pandas-profiling = "^3.5.0"
 

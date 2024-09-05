@@ -14,14 +14,17 @@
 
 from __future__ import annotations
 
+import math
 from typing import List
 from typing import Optional
 from typing import Tuple
 
 import numpy as np
-from perception_eval.common.label import LabelType
-from perception_eval.common.status import FrameID
-from perception_eval.common.status import Visibility
+from perception_eval.common.label import Label
+from perception_eval.common.object import ObjectState
+from perception_eval.common.schema import FrameID
+from perception_eval.common.schema import Visibility
+from perception_eval.common.transform import TransformDict
 from shapely.geometry import Polygon
 
 
@@ -110,7 +113,7 @@ class DynamicObject2D:
         unix_time (int): Unix time[us].
         frame_id (FrameID): FrameID instance, where 2D objects are with respect, related to CAM_**.
         semantic_score (float): Object's confidence [0, 1].
-        semantic_label (LabelType): Object's Label.
+        semantic_label (Label): Object's Label.
         roi (Optional[Roi]): ROI in image. For classification, None is OK. Defaults to None.
         uuid (Optional[str]): Unique ID. For traffic light objects, set lane ID. Defaults to None.
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
@@ -119,11 +122,12 @@ class DynamicObject2D:
         unix_time (int): Unix time[us].
         frame_id (FrameID): FrameID instance, where 2D objects are with respect, related to CAM_**.
         semantic_score (float): Object's confidence [0, 1].
-        semantic_label (LabelType): Object's Label.
+        semantic_label (Label): Object's Label.
         roi (Optional[Tuple[int, int, int, int]]): (xmin, ymin, width, height) of ROI.
             For classification, None is OK. Defaults to None.
         uuid (Optional[str]): Unique ID. For traffic light objects, set lane ID. Defaults to None.
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
+        position (Optional[Tuple[float, float, float]]): 3D position in ordering (x, y, z). Defaults to None.
     """
 
     def __init__(
@@ -131,19 +135,21 @@ class DynamicObject2D:
         unix_time: int,
         frame_id: FrameID,
         semantic_score: float,
-        semantic_label: LabelType,
+        semantic_label: Label,
         roi: Optional[Tuple[int, int, int, int]] = None,
         uuid: Optional[str] = None,
         visibility: Optional[Visibility] = None,
+        position: Optional[Tuple[float, float, float]] = None,
     ) -> None:
         super().__init__()
         self.unix_time: int = unix_time
         self.frame_id: FrameID = frame_id
         self.semantic_score: float = semantic_score
-        self.semantic_label: LabelType = semantic_label
+        self.semantic_label: Label = semantic_label
         self.roi: Optional[Roi] = Roi(roi) if roi is not None else None
         self.uuid: Optional[str] = uuid
         self.visibility: Optional[Visibility] = visibility
+        self.state = ObjectState(position, None, None, None)
 
     def get_corners(self) -> np.ndarray:
         """Returns the corners of bounding box in pixel.
@@ -176,3 +182,28 @@ class DynamicObject2D:
         corners: List[List[float]] = self.get_corners().tolist()
         corners.append(corners[0])
         return Polygon(corners)
+
+    def set_position(self, position: Tuple[float, float, float]) -> None:
+        """Set 3D position value.
+
+        Args:
+            position (Tuple[float, float, float]): 3D position in ordering (x, y, z).
+        """
+        self.state.position = position
+
+    def get_distance_bev(self, transforms: Optional[TransformDict] = None) -> float:
+        """Get the 2d distance to the object from ego vehicle in bird eye view.
+
+        Args:
+
+        Returns:
+            float: The 2d distance to the object from ego vehicle in bird eye view.
+        """
+        assert self.state.position is not None, "self.state.position must be set."
+        if self.frame_id == FrameID.BASE_LINK:
+            position = self.state.position
+        else:
+            if transforms is None:
+                raise ValueError("transforms must be specified.")
+            position = transforms.transform((self.frame_id, FrameID.BASE_LINK), self.state.position)
+        return math.hypot(position[0], position[1])
