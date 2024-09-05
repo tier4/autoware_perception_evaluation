@@ -174,8 +174,7 @@ def set_object_states(
 
     if len(positions) != len(orientations):
         raise RuntimeError(
-            "length of positions and orientations must be same, "
-            f"but got {len(positions)} and {len(orientations)}"
+            "length of positions and orientations must be same, " f"but got {len(positions)} and {len(orientations)}"
         )
 
     return [
@@ -223,8 +222,7 @@ def set_object_paths(
 
     if len(positions) != len(orientations) != len(confidences):
         raise RuntimeError(
-            "length of positions and orientations must be same, "
-            f"but got {len(positions)} and {len(orientations)}"
+            "length of positions and orientations must be same, " f"but got {len(positions)} and {len(orientations)}"
         )
 
     paths: List[ObjectPath] = []

@@ -189,9 +189,7 @@ class SoftAp:
 
         ap: float = 0.0
         for i in range(len(max_precision_list) - 1):
-            score: float = max_precision_list[i] * (
-                max_precision_recall_list[i] - max_precision_recall_list[i + 1]
-            )
+            score: float = max_precision_list[i] * (max_precision_recall_list[i] - max_precision_recall_list[i + 1])
             ap += score
 
         return ap

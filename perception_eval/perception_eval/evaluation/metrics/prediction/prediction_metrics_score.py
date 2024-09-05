@@ -105,7 +105,9 @@ class PredictionMetricsScore:
         """__str__ method"""
 
         str_: str = "\n"
-        str_ += f"ADE: {self.ade:.3f}, FDE: {self.fde:.3f}, Miss Rate: {self.miss_rate:.3f}, Soft mAP: {self.soft_map:.3f}"
+        str_ += (
+            f"ADE: {self.ade:.3f}, FDE: {self.fde:.3f}, Miss Rate: {self.miss_rate:.3f}, Soft mAP: {self.soft_map:.3f}"
+        )
         str_ += f"({self.matching_mode.value})\n"
         # Table
         str_ += "\n"
