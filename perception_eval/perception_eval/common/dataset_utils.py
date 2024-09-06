@@ -221,13 +221,13 @@ def _convert_nuscenes_box_to_dynamic_object(
         predicted_orientations = [predicted_orientations]
         predicted_shapes = [predicted_shapes]
         predicted_twists = [predicted_twists]
-        predicted_confidences = [1.0]
+        predicted_scores = [1.0]
     else:
         predicted_positions = None
         predicted_orientations = None
         predicted_shapes = None
         predicted_twists = None
-        predicted_confidences = None
+        predicted_scores = None
 
     dynamic_object = DynamicObject(
         unix_time=unix_time,
@@ -248,7 +248,7 @@ def _convert_nuscenes_box_to_dynamic_object(
         predicted_orientations=predicted_orientations,
         predicted_shapes=predicted_shapes,
         predicted_twists=predicted_twists,
-        predicted_confidences=predicted_confidences,
+        predicted_scores=predicted_scores,
         visibility=visibility,
     )
     return dynamic_object

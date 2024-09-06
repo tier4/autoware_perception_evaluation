@@ -183,7 +183,7 @@ def get_objects_with_difference(
             radians=object_.state.orientation.radians + diff_yaw,
         )
 
-        predicted_positions, predicted_orientations, predicted_confidences = _get_prediction_params(
+        predicted_positions, predicted_orientations, predicted_scores = _get_prediction_params(
             object_,
             diff_distance,
             diff_yaw,
@@ -215,7 +215,7 @@ def get_objects_with_difference(
             uuid=object_.uuid,
             predicted_positions=predicted_positions,
             predicted_orientations=predicted_orientations,
-            predicted_confidences=predicted_confidences,
+            predicted_scores=predicted_scores,
         )
 
         output_objects.append(test_object_)
@@ -242,14 +242,14 @@ def _get_prediction_params(
         If the attribute of dynamic object named predicted_paths is None, returns None, None, None.
         predicted_positions (List[List[Tuple[float]]]): List of positions
         predicted_orientations (List[List[Quaternion]]): List of quaternions.
-        predicted_confidences (List[float]): List of confidences.
+        predicted_scores (List[float]): List of scores.
     """
     if object_.predicted_paths is None:
         return None, None, None
 
     predicted_positions: List[List[Tuple[float]]] = []
     predicted_orientations: List[List[Quaternion]] = []
-    predicted_confidences: List[float] = []
+    predicted_scores: List[float] = []
     for paths in object_.predicted_paths:
         positions = []
         orientations = []
@@ -269,9 +269,9 @@ def _get_prediction_params(
             )
         predicted_positions.append(positions)
         predicted_orientations.append(orientations)
-        predicted_confidences.append(paths.confidence)
+        predicted_scores.append(paths.confidence)
 
-    return predicted_positions, predicted_orientations, predicted_confidences
+    return predicted_positions, predicted_orientations, predicted_scores
 
 
 def get_objects_with_difference2d(

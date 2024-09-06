@@ -23,8 +23,8 @@ def prepare_path(
     object_result: DynamicObjectWithPerceptionResult,
     top_k: int,
 ) -> Tuple[DynamicObject, DynamicObject]:
-    """[summary]
-    Extract
+    """Extract top-K modes.
+
     Args:
         object_result (DynamicObjectResult)
         top_k (int)

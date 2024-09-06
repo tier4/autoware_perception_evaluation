@@ -19,38 +19,47 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
+from perception_eval.common.shape import Shape
+from perception_eval.common.shape import ShapeType
 from pyquaternion import Quaternion
+from shapely.geometry import Polygon
 
 
 class ObjectState:
-    """Object state class.
-
-    Attributes:
-        position (Tuple[float, float, float]) : center_x, center_y, center_z [m]
-        orientation (Quaternion) : Quaternion class.
-            See reference http://kieranwynn.github.io/pyquaternion/
-        size (Tuple[float, float, float]): bounding box size of (wx, wy, wz) [m]
-        velocity (Tuple[float, float, float]): velocity of (vx, vy, vz) [m/s]
-
-    Args:
-        position (Tuple[float, float, float]) : center_x, center_y, center_z [m]
-        orientation (Quaternion) : Quaternion class.
-            See reference http://kieranwynn.github.io/pyquaternion/
-        size (Tuple[float, float, float]): bounding box size of (wx, wy, wz) [m]
-        velocity (Tuple[float, float, float]): velocity of (vx, vy, vz) [m/s]
-    """
+    """Object state class."""
 
     def __init__(
         self,
         position: Tuple[float, float, float],
         orientation: Quaternion,
-        size: Optional[Tuple[float, float, float]] = None,
+        shape: Optional[Shape] = None,
         velocity: Optional[Tuple[float, float, float]] = None,
     ) -> None:
-        self.position: Tuple[float, float, float] = position
-        self.orientation: Quaternion = orientation
-        self.size: Tuple[float, float, float] = size
-        self.velocity: Tuple[float, float, float] = velocity
+        """
+
+        Args:
+            position (Tuple[float, float, float]) : (center_x, center_y, center_z) [m]
+            orientation (Quaternion) : Quaternion instance.
+            shape (Optional[Shape]): Shape instance. Defaults to None.
+            velocity (Optional[Tuple[float, float, float]]): velocity of (vx, vy, vz) [m/s]. Defaults to None.
+        """
+        self.position = position
+        self.orientation = orientation
+        self.shape = shape
+
+        self.velocity = velocity
+
+    @property
+    def shape_type(self) -> Optional[ShapeType]:
+        return self.shape.type if self.shape is not None else None
+
+    @property
+    def size(self) -> Optional[tuple[float, float, float]]:
+        return self.shape.size if self.shape is not None else None
+
+    @property
+    def footprint(self) -> Polygon:
+        return self.shape.footprint if self.shape is not None else None
 
     def get_position_error(self, other: ObjectState) -> Tuple[float, float, float]:
         """Returns the position error between other and itself.
@@ -154,7 +163,7 @@ class ObjectPath:
 def set_object_states(
     positions: Optional[List[Tuple[float, float, float]]] = None,
     orientations: Optional[List[Quaternion]] = None,
-    sizes: Optional[List[Tuple[float, float, float]]] = None,
+    shapes: Optional[List[Shape]] = None,
     velocities: Optional[List[Tuple[float, float, float]]] = None,
 ) -> Optional[List[ObjectState]]:
     """[summary]
@@ -163,7 +172,7 @@ def set_object_states(
     Args:
         positions (Optional[List[Tuple[float]]])
         orientations (Optional[List[Tuple[float]]])
-        sizes (Optional[List[Tuple[float]]])
+        shapes (Optional[List[Shape]])
         velocities (Optional[List[Tuple[float]]])
 
     Returns:
@@ -181,7 +190,7 @@ def set_object_states(
         ObjectState(
             position=pos,
             orientation=orient,
-            size=sizes[i] if sizes else None,
+            shape=shapes[i] if shapes else None,
             velocity=velocities[i] if velocities else None,
         )
         for i, (pos, orient) in enumerate(zip(positions, orientations))
@@ -191,7 +200,7 @@ def set_object_states(
 def set_object_path(
     positions: Optional[List[Tuple[float, float, float]]] = None,
     orientations: Optional[List[Quaternion]] = None,
-    sizes: Optional[List[Tuple[float, float, float]]] = None,
+    shapes: Optional[List[Shape]] = None,
     velocities: Optional[List[Tuple[float, float, float]]] = None,
     confidence: Optional[float] = None,
 ) -> ObjectPath:
@@ -201,8 +210,8 @@ def set_object_path(
     states: Optional[List[ObjectState]] = set_object_states(
         positions=positions,
         orientations=orientations,
+        shapes=shapes,
         velocities=velocities,
-        sizes=sizes,
     )
     return ObjectPath(states, confidence) if states else None
 
@@ -210,8 +219,8 @@ def set_object_path(
 def set_object_paths(
     positions: Optional[List[List[Tuple[float, float, float]]]] = None,
     orientations: Optional[List[List[Quaternion]]] = None,
-    sizes: Optional[List[List[Tuple[float, float, float]]]] = None,
-    velocities: Optional[List[List[Tuple[float, float, float]]]] = None,
+    shapes: Optional[List[List[Shape]]] = None,
+    twists: Optional[List[List[Tuple[float, float, float]]]] = None,
     confidences: Optional[List[float]] = None,
 ) -> Optional[List[ObjectPath]]:
     """[summary]
@@ -230,8 +239,8 @@ def set_object_paths(
         path = set_object_path(
             positions=poses,
             orientations=orients,
-            velocities=velocities[i] if velocities else None,
-            sizes=sizes[i] if sizes else None,
+            velocities=twists[i] if twists else None,
+            shapes=shapes[i] if shapes else None,
             confidence=confidence,
         )
         if path:

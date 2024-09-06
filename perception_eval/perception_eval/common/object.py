@@ -28,6 +28,7 @@ from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
 from perception_eval.common.state import ObjectPath
 from perception_eval.common.state import ObjectState
+from perception_eval.common.state import set_object_paths
 from perception_eval.common.transform import TransformDict
 from pyquaternion import Quaternion
 from shapely.geometry import Polygon
@@ -84,7 +85,7 @@ class DynamicObject:
                 The list of bounding box size for predicted object. Defaults to None.
         predicted_twists (Optional[List[Tuple[float, float, float]]]):
                 The list of twist for predicted object. Defaults to None.
-        predicted_confidence (Optional[float]): Prediction score. Defaults to None.
+        predicted_scores (Optional[List[float]]): Prediction scores for each mode. Defaults to None.
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
     """
 
@@ -104,11 +105,11 @@ class DynamicObject:
         tracked_orientations: Optional[List[Quaternion]] = None,
         tracked_shapes: Optional[List[Shape]] = None,
         tracked_twists: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_positions: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_orientations: Optional[List[Quaternion]] = None,
-        predicted_shapes: Optional[List[Shape]] = None,
-        predicted_twists: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_confidence: Optional[float] = None,
+        predicted_positions: Optional[List[List[Tuple[float, float, float]]]] = None,
+        predicted_orientations: Optional[List[List[Quaternion]]] = None,
+        predicted_shapes: Optional[List[List[Shape]]] = None,
+        predicted_twists: Optional[List[List[Tuple[float, float, float]]]] = None,
+        predicted_scores: Optional[List[float]] = None,
         visibility: Optional[Visibility] = None,
     ) -> None:
         # detection
@@ -137,8 +138,8 @@ class DynamicObject:
         )
 
         # prediction
-        self.predicted_confidence: Optional[float] = predicted_confidence
-        self.predicted_path: Optional[List[ObjectState]] = self._set_states(
+        self.predicted_scores: Optional[List[float]] = predicted_scores
+        self.predicted_paths: Optional[List[ObjectPath]] = set_object_paths(
             positions=predicted_positions,
             orientations=predicted_orientations,
             shapes=predicted_shapes,
