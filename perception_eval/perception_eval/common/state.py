@@ -200,7 +200,6 @@ def set_object_states(
 def set_object_path(
     positions: Optional[List[Tuple[float, float, float]]] = None,
     orientations: Optional[List[Quaternion]] = None,
-    shapes: Optional[List[Shape]] = None,
     velocities: Optional[List[Tuple[float, float, float]]] = None,
     confidence: Optional[float] = None,
 ) -> ObjectPath:
@@ -210,7 +209,6 @@ def set_object_path(
     states: Optional[List[ObjectState]] = set_object_states(
         positions=positions,
         orientations=orientations,
-        shapes=shapes,
         velocities=velocities,
     )
     return ObjectPath(states, confidence) if states else None
@@ -219,7 +217,6 @@ def set_object_path(
 def set_object_paths(
     positions: Optional[List[List[Tuple[float, float, float]]]] = None,
     orientations: Optional[List[List[Quaternion]]] = None,
-    shapes: Optional[List[List[Shape]]] = None,
     twists: Optional[List[List[Tuple[float, float, float]]]] = None,
     confidences: Optional[List[float]] = None,
 ) -> Optional[List[ObjectPath]]:
@@ -240,7 +237,6 @@ def set_object_paths(
             positions=poses,
             orientations=orients,
             velocities=twists[i] if twists else None,
-            shapes=shapes[i] if shapes else None,
             confidence=confidence,
         )
         if path:

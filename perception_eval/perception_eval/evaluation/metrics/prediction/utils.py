@@ -26,12 +26,11 @@ def prepare_path(
     """Extract top-K modes.
 
     Args:
-        object_result (DynamicObjectResult)
-        top_k (int)
+        object_result (DynamicObjectResult): Object result.
+        top_k (int): The number of top-K paths to be evaluated.
 
     Returns:
-        estimated_object_ (DynamicObject)
-        ground_truth_object_ (DynamicObject)
+        tuple[DynamicObject, DynamicObject]: Estimated object and GT object.
     """
     if object_result.ground_truth_object is None:
         raise RuntimeError("Object result's ground truth object must be set")

@@ -83,9 +83,7 @@ class PredictionMetricsScore:
         self._summarize_score()
 
     def _summarize_score(self) -> None:
-        """[summary]
-        Summarize score
-        """
+        """Summarize scores."""
         ade_list, fde_list, miss_list = [], [], []
         for err in self.displacements:
             if ~np.isnan(err.ade):
@@ -113,7 +111,6 @@ class PredictionMetricsScore:
         str_ += "\n"
         # label
         str_ += "|      Label |"
-        target_str: str
         for err in self.displacements:
             str_ += f" {err.target_labels[0].value}({err.matching_threshold_list[0]}) | "
         str_ += "\n"

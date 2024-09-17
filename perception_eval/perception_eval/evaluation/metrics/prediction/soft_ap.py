@@ -65,7 +65,7 @@ class SoftAp:
             target_labels (List[LabelType]):
             matching_mode (MatchingMode):
             matching_threshold_list (List[float])
-            num_path_frames (int): Number of horizontal frames. Defaults to 10[frames].
+            num_waypoints (int): The Number of horizontal waypoints. Defaults to 10[frames].
             top_k (Optional[int]): Number of top kth confidential paths. If None, calculate all paths. Defaults to None.
             miss_tolerance (float): Tolerance value to determine miss. Defaults to 2.0[m].
         """
@@ -108,10 +108,11 @@ class SoftAp:
                 matching_threshold=matching_threshold,
             ):
                 continue
-            estimation, ground_truth = prepare_path(object_result, self.top_k)
-            err: np.ndarray = estimation.get_path_error(ground_truth, self.num_waypoints)
 
-            if len(err) == 0:
+            estimation, ground_truth = prepare_path(object_result, self.top_k)
+            err = estimation.get_path_error(ground_truth, self.num_waypoints)  # (K, T, 3) or None
+
+            if err is None or len(err) == 0:
                 continue
 
             distances: np.ndarray = np.linalg.norm(err[:, :, :2], axis=-1)

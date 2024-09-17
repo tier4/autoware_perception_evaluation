@@ -207,7 +207,6 @@ def _convert_nuscenes_box_to_dynamic_object(
         (
             predicted_positions,
             predicted_orientations,
-            predicted_shapes,
             predicted_twists,
         ) = _get_prediction_data(
             nusc=nusc,
@@ -219,13 +218,11 @@ def _convert_nuscenes_box_to_dynamic_object(
         )
         predicted_positions = [predicted_positions]
         predicted_orientations = [predicted_orientations]
-        predicted_shapes = [predicted_shapes]
         predicted_twists = [predicted_twists]
         predicted_scores = [1.0]
     else:
         predicted_positions = None
         predicted_orientations = None
-        predicted_shapes = None
         predicted_twists = None
         predicted_scores = None
 
@@ -246,7 +243,6 @@ def _convert_nuscenes_box_to_dynamic_object(
         tracked_twists=tracked_velocities,
         predicted_positions=predicted_positions,
         predicted_orientations=predicted_orientations,
-        predicted_shapes=predicted_shapes,
         predicted_twists=predicted_twists,
         predicted_scores=predicted_scores,
         visibility=visibility,
@@ -480,10 +476,10 @@ def _get_prediction_data(
         instance_token (str): The unique token to access to instance.
         sample_token (str): The unique token to access to sample.
         seconds (float): Seconds to be referenced.[s]
+
     Returns:
         future_positions (List[Tuple[float, float, float]])
         future_orientations (List[Tuple[float, float, float]])
-        future_shapes (List[Shape])
         future_twists (List[Tuple[float, float, float]])
     """
     if frame_id == "base_link":
@@ -502,15 +498,13 @@ def _get_prediction_data(
     )
     future_positions: List[Tuple[float, float, float]] = []
     future_orientations: List[Quaternion] = []
-    future_shapes: List[Shape] = []
     future_velocities: List[Tuple[float, float, float]] = []
     for record_ in future_records_:
         future_positions.append(tuple(record_["translation"]))
         future_orientations.append(Quaternion(record_["rotation"]))
-        future_shapes.append(Shape(shape_type=ShapeType.BOUNDING_BOX, size=record_["size"]))
         future_velocities.append(nusc.box_velocity(record_["token"]))
 
-    return future_positions, future_orientations, future_shapes, future_velocities
+    return future_positions, future_orientations, future_velocities
 
 
 #################################

@@ -116,26 +116,28 @@ class PathDisplacementError:
             miss_rate (float): Miss rate.
         """
         sum_ade, sum_fde, sum_miss = 0.0, 0.0, 0.0
-        num_ade, num_fde, num_miss = 0, 0, 0
+        num_ade, num_fde, num_path = 0, 0, 0
         for obj_result in object_results:
             matching_threshold: float = get_label_threshold(
                 semantic_label=obj_result.estimated_object.semantic_label,
                 target_labels=self.target_labels,
                 threshold_list=self.matching_threshold_list,
             )
+
             if not obj_result.is_result_correct(
                 matching_mode=self.matching_mode,
                 matching_threshold=matching_threshold,
             ):
                 continue
+
             estimation, ground_truth = prepare_path(obj_result, self.top_k)
-            # (K, T, 3)
-            err: np.ndarray = estimation.get_path_error(
+
+            err = estimation.get_path_error(
                 ground_truth,
                 self.num_waypoints,
-            )
+            )  # (K, T, 3) or None
 
-            if len(err) == 0:
+            if err is None or len(err) == 0:
                 continue
 
             # NOTE: K, T is different for each agent
@@ -150,10 +152,10 @@ class PathDisplacementError:
             sum_fde += distances[:, -1].sum()
             num_fde += distances[:, -1].size
             sum_miss += (self.miss_tolerance <= distances).sum()
-            num_miss += distances.size
+            num_path += distances.size
 
         ade: float = sum_ade / num_ade if 0 < num_ade else np.nan
         fde: float = sum_fde / num_fde if 0 < num_fde else np.nan
-        miss_rate: float = sum_miss / num_miss if 0 < num_miss else np.nan
+        miss_rate: float = sum_miss / num_path if 0 < num_path else np.nan
 
         return ade, fde, miss_rate

@@ -107,7 +107,6 @@ class DynamicObject:
         tracked_twists: Optional[List[Tuple[float, float, float]]] = None,
         predicted_positions: Optional[List[List[Tuple[float, float, float]]]] = None,
         predicted_orientations: Optional[List[List[Quaternion]]] = None,
-        predicted_shapes: Optional[List[List[Shape]]] = None,
         predicted_twists: Optional[List[List[Tuple[float, float, float]]]] = None,
         predicted_scores: Optional[List[float]] = None,
         visibility: Optional[Visibility] = None,
@@ -138,12 +137,11 @@ class DynamicObject:
         )
 
         # prediction
-        self.predicted_scores: Optional[List[float]] = predicted_scores
         self.predicted_paths: Optional[List[ObjectPath]] = set_object_paths(
             positions=predicted_positions,
             orientations=predicted_orientations,
-            shapes=predicted_shapes,
             twists=predicted_twists,
+            confidences=predicted_scores,
         )
 
         self.visibility: Optional[Visibility] = visibility
@@ -351,15 +349,13 @@ class DynamicObject:
     def get_path_error(
         self,
         other: Optional[DynamicObject],
-        num_waypoints: Optional[int] = None,
-        padding: float = np.nan,
+        num_waypoints: int,
     ) -> Optional[np.ndarray]:
-        """Returns errors of path as numpy.ndarray.
+        """Returns displacement errors of path as numpy.ndarray.
 
         Args:
             other (Optional[DynamicObject]): DynamicObject instance.
             num_waypoints (optional[int]): Number of waypoints. Defaults to None.
-            padding (float): Padding value. Defaults to numpy.nan.
 
         Returns:
             numpy.ndarray: in shape (K, T, 3)
@@ -367,18 +363,14 @@ class DynamicObject:
         if other is None:
             return None
 
-        self_paths: List[ObjectPath] = self.predicted_paths.copy()
-        other_paths: List[ObjectPath] = other.predicted_paths.copy()
-
         path_errors: List[List[List[float]]] = []
-        for self_path, other_path in zip(self_paths, other_paths):
+        for self_path, other_path in zip(self.predicted_paths, other.predicted_paths):
             if self_path is None or other_path is None:
                 continue
-            num_waypoints_ = num_waypoints if num_waypoints else min(len(self_path), len(other_path))
-            self_path_, other_path_ = self_path[:num_waypoints_], other_path[:num_waypoints_]
+            self_path, other_path = self_path[:num_waypoints], other_path[:num_waypoints]
             err: List[Tuple[float, float, float]] = [
-                self_state.get_position_error(other_state) for self_state, other_state in zip(self_path_, other_path_)
-            ]
+                self_state.get_position_error(other_state) for self_state, other_state in zip(self_path, other_path)
+            ]  # (T, 3)
             path_errors.append(err)
         return np.array(path_errors)
 
