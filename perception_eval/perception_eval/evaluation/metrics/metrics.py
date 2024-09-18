@@ -246,40 +246,13 @@ class MetricsScore:
         """
         self.__num_gt += sum(num_ground_truth.values())
 
-        for distance_threshold_ in self.prediction_config.center_distance_thresholds:
+        for top_k in self.prediction_config.top_ks:
             prediction_score_ = PredictionMetricsScore(
                 object_results_dict=object_results,
                 num_ground_truth_dict=num_ground_truth,
                 target_labels=self.prediction_config.target_labels,
-                matching_mode=MatchingMode.CENTERDISTANCE,
-                matching_threshold_list=distance_threshold_,
-            )
-            self.prediction_scores.append(prediction_score_)
-        for iou_threshold_bev_ in self.prediction_config.iou_2d_thresholds:
-            prediction_score_ = PredictionMetricsScore(
-                object_results_dict=object_results,
-                num_ground_truth_dict=num_ground_truth,
-                target_labels=self.prediction_config.target_labels,
-                matching_mode=MatchingMode.IOU2D,
-                matching_threshold_list=iou_threshold_bev_,
-            )
-            self.prediction_scores.append(prediction_score_)
-        for iou_threshold_3d_ in self.prediction_config.iou_3d_thresholds:
-            prediction_score_ = PredictionMetricsScore(
-                object_results_dict=object_results,
-                num_ground_truth_dict=num_ground_truth,
-                target_labels=self.prediction_config.target_labels,
-                matching_mode=MatchingMode.IOU3D,
-                matching_threshold_list=iou_threshold_3d_,
-            )
-            self.prediction_scores.append(prediction_score_)
-        for plane_distance_threshold_ in self.prediction_config.plane_distance_thresholds:
-            prediction_score_ = PredictionMetricsScore(
-                object_results_dict=object_results,
-                num_ground_truth_dict=num_ground_truth,
-                target_labels=self.prediction_config.target_labels,
-                matching_mode=MatchingMode.PLANEDISTANCE,
-                matching_threshold_list=plane_distance_threshold_,
+                top_k=top_k,
+                miss_tolerance=self.prediction_config.miss_tolerance,
             )
             self.prediction_scores.append(prediction_score_)
 

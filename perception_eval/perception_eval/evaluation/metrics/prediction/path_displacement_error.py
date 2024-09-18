@@ -17,34 +17,18 @@ from typing import Optional
 
 import numpy as np
 from perception_eval.common.label import LabelType
-from perception_eval.common.threshold import get_label_threshold
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.matching import MatchingMode
 
 from .utils import prepare_path
 
 
 class PathDisplacementError:
-    """[summary]
-    A class to calculate path displacement errors for motion prediction task.
+    """A class to calculate path displacement errors for motion prediction task.
 
-    Support metrics:
-        ADE; Average Displacement Error
-        FDE; Final Displacement Error
-        Miss Rate
-        Soft mAP
-
-    Attributes:
-        self.ade (float)
-        self.fde (float)
-        self.miss_rate (float)
-        self.num_ground_truth (int)
-        self.target_labels (List[LabelType])
-        self.matching_mode (MatchingMode)
-        self.matching_threshold_list (List[float])
-        self.top_k (Optional[int])
-        self.num_waypoints (int): Number of waypoints of path. Defaults to 10.
-        self.miss_tolerance (float): Tolerance value for miss rate.
+    Support Metrics:
+        - ADE (Average Displacement Error)
+        - FDE (Final Displacement Error)
+        - Miss Rate
     """
 
     def __init__(
@@ -52,35 +36,30 @@ class PathDisplacementError:
         object_results: List[DynamicObjectWithPerceptionResult],
         num_ground_truth: int,
         target_labels: List[LabelType],
-        matching_mode: MatchingMode,
-        matching_threshold_list: List[float],
-        top_k: int = 1,
-        num_waypoints: int = 10,
+        top_k: int = 3,
         miss_tolerance: float = 2.0,
         kernel: Optional[str] = None,
     ) -> None:
-        """[summary]
+        """Construct a new object.
 
         Args:
-            object_results (List[DynamicObjectWithPerceptionResult]):
-            num_ground_truth (int):
-            target_labels (List[LabelType]):
-            matching_mode (MatchingMode):
-            matching_threshold_list (List[float])
-            top_k (int): Number of top kth confidential paths to be evaluated. Defaults to 1.
-            num_waypoints (int): Number of horizontal frames. Defaults to 10.
-            miss_tolerance (float): Tolerance value to determine miss[m]. Defaults to 2.0.
-            kernel (Optional[str]): Target error kernel, min, max or None. Defaults to None.
-                If it is specified, select the mode that total error is the smallest or largest.
-                Otherwise, evaluate all modes.
+            object_results (List[DynamicObjectWithPerceptionResult]): List of object results.
+            num_ground_truth (int): The number of GTs.
+            target_labels (List[LabelType]): List of target label names.
+            matching_mode (MatchingMode): Matching mode.
+            matching_threshold_list (List[float]): List of matching thresholds.
+            top_k (int, optional): The number of top K to be evaluated. Defaults to 1.
+            miss_tolerance (float, optional): Threshold to determine miss. Defaults to 2.0.
+            kernel (Optional[str], optional): Kernel of choose . Defaults to None.
         """
         self.num_ground_truth: int = num_ground_truth
         self.target_labels: List[LabelType] = target_labels
-        self.matching_mode: MatchingMode = matching_mode
-        self.matching_threshold_list: List[float] = matching_threshold_list
         self.top_k: Optional[int] = top_k
-        self.num_waypoints: Optional[int] = num_waypoints
         self.miss_tolerance: float = miss_tolerance
+
+        if kernel is not None and kernel not in ("min", "max"):
+            raise ValueError(f"kernel must be min or max, but got {kernel}")
+
         self.kernel: Optional[str] = kernel
 
         all_object_results: List[DynamicObjectWithPerceptionResult] = []
@@ -117,25 +96,13 @@ class PathDisplacementError:
         """
         sum_ade, sum_fde, sum_miss = 0.0, 0.0, 0.0
         num_ade, num_fde, num_path = 0, 0, 0
-        for obj_result in object_results:
-            matching_threshold: float = get_label_threshold(
-                semantic_label=obj_result.estimated_object.semantic_label,
-                target_labels=self.target_labels,
-                threshold_list=self.matching_threshold_list,
-            )
-
-            if not obj_result.is_result_correct(
-                matching_mode=self.matching_mode,
-                matching_threshold=matching_threshold,
-            ):
+        for result in object_results:
+            if result.ground_truth_object is None:
                 continue
 
-            estimation, ground_truth = prepare_path(obj_result, self.top_k)
+            estimation, ground_truth = prepare_path(result, self.top_k)
 
-            err = estimation.get_path_error(
-                ground_truth,
-                self.num_waypoints,
-            )  # (K, T, 3) or None
+            err = estimation.get_path_error(ground_truth)  # (K, T, 3) or None
 
             if err is None or len(err) == 0:
                 continue

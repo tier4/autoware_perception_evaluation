@@ -346,11 +346,7 @@ class DynamicObject:
 
         return err_vx, err_vy, err_vz
 
-    def get_path_error(
-        self,
-        other: Optional[DynamicObject],
-        num_waypoints: int,
-    ) -> Optional[np.ndarray]:
+    def get_path_error(self, other: Optional[DynamicObject]) -> Optional[np.ndarray]:
         """Returns displacement errors of path as numpy.ndarray.
 
         Args:
@@ -367,7 +363,8 @@ class DynamicObject:
         for self_path, other_path in zip(self.predicted_paths, other.predicted_paths):
             if self_path is None or other_path is None:
                 continue
-            self_path, other_path = self_path[:num_waypoints], other_path[:num_waypoints]
+            min_length = min(len(self_path), len(other_path))
+            self_path, other_path = self_path[:min_length], other_path[:min_length]
             err: List[Tuple[float, float, float]] = [
                 self_state.get_position_error(other_state) for self_state, other_state in zip(self_path, other_path)
             ]  # (T, 3)

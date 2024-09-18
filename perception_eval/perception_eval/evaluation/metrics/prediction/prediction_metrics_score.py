@@ -14,72 +14,52 @@
 
 from typing import Dict
 from typing import List
+from typing import Optional
 
 import numpy as np
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.matching import MatchingMode
 
 from .path_displacement_error import PathDisplacementError
-from .soft_ap import SoftAp
 
 
 class PredictionMetricsScore:
-    """Metrics score for prediction.
-
-    Attributes:
-        self.target_labels (List[LabelType]): List of target labels.
-        self.matching_mode (MatchingMode): MatchingMode instance.
-        self.displacements (List[PathDisplacementError]): List of PathDisplacementError instances.
-        self.soft_aps (SoftAp): List of SoftAp instances.
-        self.ade (float): Average Displacement Error;ADE score.
-        self.fde (float): Final Displacement Error;FDE score.
-        self.miss_rate (float): Miss rate.
-        self.soft_map (float): Soft mAP score.
-    """
+    """Metrics score manager for motion prediction task."""
 
     def __init__(
         self,
         object_results_dict: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
         num_ground_truth_dict: Dict[LabelType, int],
         target_labels: List[LabelType],
-        matching_mode: MatchingMode,
-        matching_threshold_list: List[float],
+        top_k: List[int] = 3,
+        miss_tolerance: float = 2.0,
+        kernel: Optional[str] = "min",
     ) -> None:
-        """[summary]
+        """Construct a new object.
+
         Args:
             object_results_dict (Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]):
                 object results divided by label for multi frame.
             num_ground_truth (int): The number of ground truth.
-            target_labels (List[LabelType]): e.g. ["car", "pedestrian", "bus"]
-            matching_mode (MatchingMode): The target matching mode.
-            matching_threshold_list (List[float]): The list of matching threshold for each category. (e.g. [0.5, 0.3, 0.5])
+            target_labels (List[LabelType]): List of target label names.
         """
-        assert len(target_labels) == len(matching_threshold_list)
-        self.target_labels: List[LabelType] = target_labels
-        self.matching_mode: MatchingMode = matching_mode
+        self.target_labels = target_labels
+        self.top_k = top_k
+        self.miss_tolerance = miss_tolerance
 
         self.displacements: List[PathDisplacementError] = []
-        self.soft_aps: List[SoftAp] = []
-        for target_label, matching_threshold in zip(target_labels, matching_threshold_list):
+        for target_label in target_labels:
             object_results = object_results_dict[target_label]
             num_ground_truth = num_ground_truth_dict[target_label]
             displacement_err = PathDisplacementError(
                 object_results=object_results,
                 num_ground_truth=num_ground_truth,
                 target_labels=[target_label],
-                matching_mode=self.matching_mode,
-                matching_threshold_list=[matching_threshold],
-            )
-            soft_ap = SoftAp(
-                object_results=object_results,
-                num_ground_truth=num_ground_truth,
-                target_labels=[target_label],
-                matching_mode=self.matching_mode,
-                matching_threshold_list=[matching_threshold],
+                top_k=top_k,
+                miss_tolerance=miss_tolerance,
+                kernel=kernel,
             )
             self.displacements.append(displacement_err)
-            self.soft_aps.append(soft_ap)
         self._summarize_score()
 
     def _summarize_score(self) -> None:
@@ -92,27 +72,23 @@ class PredictionMetricsScore:
                 fde_list.append(err.fde)
             if ~np.isnan(err.miss_rate):
                 miss_list.append(err.miss_rate)
-        ap_list: List[float] = [ap.ap for ap in self.soft_aps if ~np.isnan(ap.ap)]
 
         self.ade: float = np.mean(ade_list) if 0 < len(ade_list) else np.nan
         self.fde: float = np.mean(fde_list) if 0 < len(fde_list) else np.nan
         self.miss_rate: float = np.mean(miss_list) if 0 < len(miss_list) else np.nan
-        self.soft_map = np.mean(ap_list) if 0 < len(ap_list) else np.nan
 
     def __str__(self) -> str:
         """__str__ method"""
 
         str_: str = "\n"
-        str_ += (
-            f"ADE: {self.ade:.3f}, FDE: {self.fde:.3f}, Miss Rate: {self.miss_rate:.3f}, Soft mAP: {self.soft_map:.3f}"
-        )
-        str_ += f"({self.matching_mode.value})\n"
+        str_ += f"ADE: {self.ade:.3f}, FDE: {self.fde:.3f}, Miss Rate: {self.miss_rate:.3f}"
+        str_ += f" (Miss Tolerance: {self.miss_tolerance}[m])"
         # Table
         str_ += "\n"
         # label
         str_ += "|      Label |"
         for err in self.displacements:
-            str_ += f" {err.target_labels[0].value}({err.matching_threshold_list[0]}) | "
+            str_ += f" {err.target_labels[0].value}(k={err.top_k}) | "
         str_ += "\n"
         str_ += "| :--------: |"
         for err in self.displacements:
@@ -133,10 +109,6 @@ class PredictionMetricsScore:
         str_ += "|   Miss Rate |"
         for err in self.displacements:
             str_ += f" {err.miss_rate:.3f} | "
-        str_ += "\n"
-        str_ += "|     Soft AP |"
-        for ap in self.soft_aps:
-            str_ += f" {ap.ap:.3f} | "
         str_ += "\n"
 
         return str_
