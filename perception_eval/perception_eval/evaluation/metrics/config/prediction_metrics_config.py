@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from typing import List
-from typing import Optional
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
@@ -31,10 +30,6 @@ class PredictionMetricsConfig(_MetricsConfigBase):
         target_labels: List[LabelType],
         top_ks: List[int] = [1, 3, 6],
         miss_tolerance: float = 2.0,
-        center_distance_thresholds: Optional[List[List[float]]] = None,
-        plane_distance_thresholds: Optional[List[List[float]]] = None,
-        iou_2d_thresholds: Optional[List[List[float]]] = None,
-        iou_3d_thresholds: Optional[List[List[float]]] = None,
     ) -> None:
         """Construct a new object.
 
@@ -46,12 +41,6 @@ class PredictionMetricsConfig(_MetricsConfigBase):
         NOTE:
             `**_thresholds` are not used, just need to input.
         """
-        super().__init__(
-            target_labels=target_labels,
-            center_distance_thresholds=center_distance_thresholds,
-            plane_distance_thresholds=plane_distance_thresholds,
-            iou_2d_thresholds=iou_2d_thresholds,
-            iou_3d_thresholds=iou_3d_thresholds,
-        )
+        super().__init__(target_labels=target_labels)
         self.top_ks = top_ks
         self.miss_tolerance = miss_tolerance

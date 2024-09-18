@@ -194,12 +194,33 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             "target_uuids": target_uuids,
         }
 
-        m_params: Dict[str, Any] = {
-            "target_labels": target_labels,
-            "center_distance_thresholds": e_cfg.get("center_distance_thresholds"),
-            "plane_distance_thresholds": e_cfg.get("plane_distance_thresholds"),
-            "iou_2d_thresholds": e_cfg.get("iou_2d_thresholds"),
-            "iou_3d_thresholds": e_cfg.get("iou_3d_thresholds"),
-        }
+        m_params: Dict[str, Any] = _extract_metric_params(e_cfg, self.evaluation_task, target_labels)
 
         return f_params, m_params
+
+
+def _extract_metric_params(
+    cfg: Dict[str, Any],
+    evaluation_task: EvaluationTask,
+    target_labels: List[LabelType],
+) -> Dict[str, Any]:
+    params = {"target_labels": target_labels}
+
+    if evaluation_task == EvaluationTask.PREDICTION:
+        params.update(
+            {
+                "top_ks": cfg.get("top_ks", [1, 3, 6]),
+                "miss_tolerance": cfg.get("miss_tolerance", 2.0),
+            }
+        )
+    else:
+        params.update(
+            {
+                "center_distance_thresholds": cfg.get("center_distance_thresholds"),
+                "plane_distance_thresholds": cfg.get("plane_distance_thresholds"),
+                "iou_2d_thresholds": cfg.get("iou_2d_thresholds"),
+                "iou_3d_thresholds": cfg.get("iou_3d_thresholds"),
+            }
+        )
+
+    return params
