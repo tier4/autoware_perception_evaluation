@@ -156,10 +156,6 @@ class PerceptionLSimMoc:
             f"{len(frame_result.pass_fail_result.fn_objects)} FN objects",
         )
 
-        if frame_result.metrics_score.maps[0].map < 0.7:
-            logging.debug("mAP is low")
-            # logging.debug(f"frame result {format_class_for_log(frame_result.metrics_score)}")
-
         # Visualize the latest frame result
         # self.evaluator.visualize_frame()
 
@@ -326,6 +322,63 @@ if __name__ == "__main__":
         logging.info(result.error.to_string())
     if result.confusion_matrix is not None:
         logging.info(result.confusion_matrix.to_string())
+
+    # ========================================= Prediction =========================================
+    print("=" * 50 + "Start Prediction" + "=" * 50)
+    if args.use_tmpdir:
+        tmpdir = tempfile.TemporaryDirectory()
+        result_root_directory: str = tmpdir.name
+    else:
+        result_root_directory: str = "data/result/{TIME}/"
+    prediction_lsim = PerceptionLSimMoc(dataset_paths, "prediction", result_root_directory)
+
+    for ground_truth_frame in prediction_lsim.evaluator.ground_truth_frames:
+        objects_with_difference = get_objects_with_difference(
+            ground_truth_objects=ground_truth_frame.objects,
+            diff_distance=(2.3, 0.0, 0.2),
+            diff_yaw=0.2,
+            is_confidence_with_distance=False,
+            transforms=ground_truth_frame.transforms,
+        )
+        # To avoid case of there is no object
+        if len(objects_with_difference) > 0:
+            objects_with_difference.pop(0)
+        prediction_lsim.callback(
+            ground_truth_frame.unix_time,
+            objects_with_difference,
+        )
+
+    # final result
+    prediction_final_metric_score = prediction_lsim.get_final_result()
+
+    # Debug
+    if len(prediction_lsim.evaluator.frame_results) > 0:
+        logging.info(
+            "Frame result example (frame_results[0]): "
+            f"{format_class_for_log(prediction_lsim.evaluator.frame_results[0], 1)}",
+        )
+
+        if len(prediction_lsim.evaluator.frame_results[0].object_results) > 0:
+            logging.info(
+                "Object result example (frame_results[0].object_results[0]): "
+                f"{format_class_for_log(prediction_lsim.evaluator.frame_results[0].object_results[0])}",
+            )
+
+    # Metrics config
+    logging.info(
+        "Prediction Metrics example (prediction_final_metric_score): "
+        f"{format_class_for_log(prediction_final_metric_score, len(prediction_final_metric_score.prediction_config.target_labels))}",
+    )
+
+    # Prediction metrics score
+    logging.info(
+        "Prediction result example (prediction_final_metric_score.tracking_scores[0].clears[0]): "
+        f"{format_class_for_log(prediction_final_metric_score.prediction_scores[0], 100)}"
+    )
+
+    # Visualize all frame results
+    logging.info("Start visualizing prediction results")
+    prediction_lsim.evaluator.visualize_all()
 
     # Clean up tmpdir
     if args.use_tmpdir:

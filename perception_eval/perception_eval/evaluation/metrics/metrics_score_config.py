@@ -47,10 +47,8 @@ class MetricsScoreConfig:
     def __init__(self, evaluation_task: EvaluationTask, **cfg) -> None:
         self.detection_config: Optional[DetectionMetricsConfig] = None
         self.tracking_config: Optional[TrackingMetricsConfig] = None
+        self.prediction_config: Optional[PredictionMetricsConfig] = None
         self.classification_config: Optional[ClassificationMetricsConfig] = None
-
-        # NOTE: prediction_config is under construction
-        self.prediction_config = None
 
         self.evaluation_task: EvaluationTask = evaluation_task
         self.target_labels: List[LabelType] = cfg["target_labels"]
@@ -65,9 +63,7 @@ class MetricsScoreConfig:
             self.detection_config = DetectionMetricsConfig(**cfg)
         elif self.evaluation_task == EvaluationTask.PREDICTION:
             self._check_parameters(PredictionMetricsConfig, cfg)
-            raise NotImplementedError("Prediction config is under construction")
-            # TODO
-            # self.evaluation_tasks.append(task)
+            self.prediction_config = PredictionMetricsConfig(**cfg)
         elif self.evaluation_task == EvaluationTask.CLASSIFICATION2D:
             self._check_parameters(ClassificationMetricsConfig, cfg)
             self.classification_config = ClassificationMetricsConfig(**cfg)

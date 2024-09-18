@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from typing import List
+from typing import Optional
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
@@ -21,34 +22,30 @@ from ._metrics_config_base import _MetricsConfigBase
 
 
 class PredictionMetricsConfig(_MetricsConfigBase):
-    """Configuration class for prediction evaluation metrics.
-
-    Attributes:
-        evaluation_task (EvaluationTask.PREDICTION)
-        target_labels (List[LabelType]): Target labels list.
-        center_distance_thresholds (List[float]): Thresholds list of center distance matching.
-        plane_distance_thresholds (List[float]): Threshold list of plane distance matching.
-        iou_2d_thresholds (List[float]): Thresholds list of 2d iou matching.
-        iou_3d_thresholds (List[float]): Thresholds list of 3d iou matching.
-
-    Args:
-        target_labels (List[LabelType]): Target labels list.
-        center_distance_thresholds (List[float]): Thresholds list of center distance matching.
-        plane_distance_thresholds (List[float]): Threshold list of plane distance matching.
-        iou_2d_thresholds (List[float]): Thresholds list of 2d iou matching.
-        iou_3d_thresholds (List[float]): Thresholds list of 3d iou matching.
-    """
+    """Configuration class for prediction evaluation metrics."""
 
     evaluation_task = EvaluationTask.PREDICTION
 
     def __init__(
         self,
         target_labels: List[LabelType],
-        center_distance_thresholds: List[List[float]],
-        plane_distance_thresholds: List[List[float]],
-        iou_2d_thresholds: List[List[float]],
-        iou_3d_thresholds: List[List[float]],
+        top_ks: List[int] = [1, 3, 6],
+        miss_tolerance: float = 2.0,
+        center_distance_thresholds: Optional[List[List[float]]] = None,
+        plane_distance_thresholds: Optional[List[List[float]]] = None,
+        iou_2d_thresholds: Optional[List[List[float]]] = None,
+        iou_3d_thresholds: Optional[List[List[float]]] = None,
     ) -> None:
+        """Construct a new object.
+
+        Args:
+            target_labels (List[LabelType]): List of target label names.
+            top_ks (List[int], optional): List of top K modes to be evaluated. Defaults to [1, 3, 6].
+            miss_tolerance (float, optional): Threshold value to determine miss. Defaults to 2.0.
+
+        NOTE:
+            `**_thresholds` are not used, just need to input.
+        """
         super().__init__(
             target_labels=target_labels,
             center_distance_thresholds=center_distance_thresholds,
@@ -56,3 +53,5 @@ class PredictionMetricsConfig(_MetricsConfigBase):
             iou_2d_thresholds=iou_2d_thresholds,
             iou_3d_thresholds=iou_3d_thresholds,
         )
+        self.top_ks = top_ks
+        self.miss_tolerance = miss_tolerance
