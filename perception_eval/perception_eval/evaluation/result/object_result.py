@@ -463,7 +463,6 @@ def _get_object_results_for_tlr(
     estimated_objects_ = estimated_objects.copy()
     ground_truth_objects_ = ground_truth_objects.copy()
     # 1. matching based on same label primary
-    # NOTE: current implementation match Est/Gt pairs without considering ID, therefore it might not be right result
     for est_object in estimated_objects:
         for gt_object in ground_truth_objects:
             if est_object.uuid is None or gt_object.uuid is None:
@@ -473,6 +472,7 @@ def _get_object_results_for_tlr(
 
             if (
                 est_object.semantic_label == gt_object.semantic_label
+                and est_object.uuid == gt_object.uuid
                 and est_object.frame_id == gt_object.frame_id
                 and est_object in estimated_objects_
                 and gt_object in ground_truth_objects_
