@@ -466,6 +466,7 @@ def _get_object_results_for_tlr(
     Returns:
         object_results (List[DynamicObjectWithPerceptionEvaluation]): Object results list.
     """
+
     def match_condition(est_object: DynamicObject2D, gt_object: DynamicObject2D, first_uuid_matching: bool) -> bool:
         if first_uuid_matching:
             return (
