@@ -151,16 +151,6 @@ class DynamicObject2D:
         self.visibility: Optional[Visibility] = visibility
         self.state = ObjectState(position, None, None, None)
 
-    @property
-    def has_pose_covariance(self) -> bool:
-        # TODO: Implement this method.
-        return False
-
-    @property
-    def has_twist_covariance(self) -> bool:
-        # TODO: Implement this method.
-        return False
-
     def get_corners(self) -> np.ndarray:
         """Returns the corners of bounding box in pixel.
 

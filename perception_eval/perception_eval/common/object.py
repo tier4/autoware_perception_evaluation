@@ -232,14 +232,6 @@ class DynamicObject:
             eq = eq and self.state.orientation == other.state.orientation  # type: ignore
             return eq
 
-    @property
-    def has_pose_covariance(self) -> bool:
-        return self.state.has_pose_covariance
-
-    @property
-    def has_twist_covariance(self) -> bool:
-        return self.state.has_twist_covariance
-
     def get_distance(self, transforms: Optional[TransformDict] = None) -> float:
         """Get the 3d distance to the object from ego vehicle in bird eye view.
 
