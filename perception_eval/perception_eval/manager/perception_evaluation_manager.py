@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+import logging
 from typing import List
 from typing import Tuple
 
@@ -145,6 +146,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results list.
             frame_ground_truth (FrameGroundTruth): Filtered FrameGroundTruth instance.
         """
+        before_filtering_cnt = len(estimated_objects)
         estimated_objects = filter_objects(
             objects=estimated_objects,
             is_gt=False,
@@ -152,12 +154,24 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             **self.filtering_params,
         )
 
+        before_filtering_gt_cnt = len(frame_ground_truth.objects)
         frame_ground_truth.objects = filter_objects(
             objects=frame_ground_truth.objects,
             is_gt=True,
             transforms=frame_ground_truth.transforms,
             **self.filtering_params,
         )
+        if (len(estimated_objects) == 0 and before_filtering_cnt > 0) or (
+            len(frame_ground_truth.objects) == 0 and before_filtering_gt_cnt > 0
+        ):
+            logging.warning(
+                "Scenario filtering results: All objects were removed. "
+                "This may be due to the processed bag or the scenario configuration.\n"
+                f" - Estimated objects: {before_filtering_cnt} "
+                f"-> {len(estimated_objects)}\n"
+                f" - Ground truth objects: {before_filtering_gt_cnt} "
+                f"-> {len(frame_ground_truth.objects)}"
+            )
 
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
             evaluation_task=self.evaluation_task,
