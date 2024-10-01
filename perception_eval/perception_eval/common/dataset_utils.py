@@ -51,6 +51,20 @@ from . import dataset
 #################################
 
 
+def make_uuid(instance_token: str, nusc: NuScenes) -> str:
+    uuid = instance_token
+
+    for instance_record in nusc.instance:
+        if instance_record["token"] == instance_token:
+            # synthetic:00000000-0000-0000-0000-000000000005
+            instance_name: str = instance_record["instance_name"]
+            uuid: str = instance_name.split(":")[-1]
+            # format is ~ 00000000-0000-0000-0000-000000000005
+            # remove all leading zeros and -
+            uuid = uuid.replace("-", "").lstrip("0")
+    return uuid
+
+
 def _sample_to_frame(
     nusc: NuScenes,
     helper: PredictHelper,
@@ -111,7 +125,9 @@ def _sample_to_frame(
         semantic_label = label_converter.convert_label(object_box.name, attributes)
 
         if evaluation_task.is_fp_validation() and semantic_label.is_fp() is False:
-            raise ValueError(f"Unexpected GT label for {evaluation_task.value}, got {semantic_label.label}")
+            raise ValueError(
+                f"Unexpected GT label for {evaluation_task.value}, got {semantic_label.label}"
+            )
 
         object_: DynamicObject = _convert_nuscenes_box_to_dynamic_object(
             nusc=nusc,
@@ -122,6 +138,7 @@ def _sample_to_frame(
             evaluation_task=evaluation_task,
             semantic_label=semantic_label,
             instance_token=instance_token_,
+            uuid=make_uuid(instance_token_, nusc),
             sample_token=sample_token,
             visibility=visibility,
         )
@@ -146,6 +163,7 @@ def _convert_nuscenes_box_to_dynamic_object(
     evaluation_task: EvaluationTask,
     semantic_label: Label,
     instance_token: str,
+    uuid: str,
     sample_token: str,
     visibility: Optional[Visibility] = None,
     seconds: float = 3.0,
@@ -213,7 +231,7 @@ def _convert_nuscenes_box_to_dynamic_object(
         semantic_score=semantic_score_,
         semantic_label=semantic_label,
         pointcloud_num=pointcloud_num_,
-        uuid=instance_token,
+        uuid=uuid,
         tracked_positions=tracked_positions,
         tracked_orientations=tracked_orientations,
         tracked_shapes=tracked_shapes,
