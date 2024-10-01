@@ -286,7 +286,7 @@ def get_object_results(
     matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE,
     matchable_thresholds: Optional[List[float]] = None,
     transforms: Optional[TransformDict] = None,
-    first_uuid_matching: bool = False,
+    uuid_matching_first: bool = False,
 ) -> List[DynamicObjectWithPerceptionResult]:
     """Returns list of DynamicObjectWithPerceptionResult.
 
@@ -306,7 +306,7 @@ def get_object_results(
         matching_mode (MatchingMode): MatchingMode instance.
         matchable_thresholds (Optional[List[float]]): Thresholds to be.
         transforms (Optional[TransformDict]): Transforms to be applied.
-        first_uuid_matching (bool): Whether matching based on uuid first or not.
+        uuid_matching_first (bool): Whether matching based on uuid first or not.
 
     Returns:
         object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
@@ -328,7 +328,7 @@ def get_object_results(
         and (estimated_objects[0].roi is None or ground_truth_objects[0].roi is None)
         and isinstance(estimated_objects[0].semantic_label.label, TrafficLightLabel)
     ):
-        return _get_object_results_for_tlr(estimated_objects, ground_truth_objects, first_uuid_matching)
+        return _get_object_results_for_tlr(estimated_objects, ground_truth_objects, uuid_matching_first)
     elif isinstance(estimated_objects[0], DynamicObject2D) and (
         estimated_objects[0].roi is None or ground_truth_objects[0].roi is None
     ):
@@ -450,7 +450,7 @@ def _get_object_results_with_id(
 def _get_object_results_for_tlr(
     estimated_objects: List[DynamicObject2D],
     ground_truth_objects: List[DynamicObject2D],
-    first_uuid_matching: bool = False,
+    uuid_matching_first: bool = False,
 ) -> List[DynamicObjectWithPerceptionResult]:
     """Returns the list of DynamicObjectWithPerceptionResult for TLR classification.
 
@@ -459,7 +459,7 @@ def _get_object_results_for_tlr(
     Args:
         estimated_objects (List[DynamicObject2D]): Estimated objects list.
         ground_truth_objects (List[DynamicObject2D]): Ground truth objects list.
-        first_uuid_matching (bool): Whether matching based on uuid first or not.
+        uuid_matching_first (bool): Whether matching based on uuid first or not.
             if True, Evaluation score is not affected by topic which mix up pedestrian signals, but is affected when the part of traffic light is occluded.
             if False, Reverse of the above.
 
@@ -467,8 +467,8 @@ def _get_object_results_for_tlr(
         object_results (List[DynamicObjectWithPerceptionEvaluation]): Object results list.
     """
 
-    def match_condition(est_object: DynamicObject2D, gt_object: DynamicObject2D, first_uuid_matching: bool) -> bool:
-        if first_uuid_matching:
+    def match_condition(est_object: DynamicObject2D, gt_object: DynamicObject2D, uuid_matching_first: bool) -> bool:
+        if uuid_matching_first:
             return (
                 est_object.semantic_label == gt_object.semantic_label
                 and est_object.uuid == gt_object.uuid
@@ -495,7 +495,7 @@ def _get_object_results_for_tlr(
                     f"uuid of estimation and ground truth must be set, but got {est_object.uuid} and {gt_object.uuid}"
                 )
 
-            if match_condition(est_object, gt_object, first_uuid_matching):
+            if match_condition(est_object, gt_object, uuid_matching_first):
                 object_results.append(
                     DynamicObjectWithPerceptionResult(estimated_object=est_object, ground_truth_object=gt_object)
                 )

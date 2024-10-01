@@ -167,7 +167,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             matching_label_policy=self.evaluator_config.label_params["matching_label_policy"],
             matchable_thresholds=self.filtering_params["max_matchable_radii"],
             transforms=frame_ground_truth.transforms,
-            first_uuid_matching=self.filtering_params["first_uuid_matching"],
+            uuid_matching_first=self.filtering_params["uuid_matching_first"],
         )
 
         if self.evaluator_config.filtering_params.get("target_uuids"):
