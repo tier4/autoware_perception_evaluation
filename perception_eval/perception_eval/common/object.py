@@ -41,7 +41,7 @@ class ObjectState:
         size (Tuple[float, float, float]): Bounding box size, (wx, wy, wz)[m].
         velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz)[m/s].
         pose_covariance (Optional[np.ndarray]): Covariance matrix for pose (x, y, z, roll, pitch, yaw). Defaults to None.
-        twist_covariance (Optional[np.ndarray]): Covariance matrix for twist (vx, vy, vz, vroll, vpitch, vyaw). Defaults to None.
+        twist_covariance (Optional[np.ndarray]): Covariance matrix for twist (vx, vy, vz, v roll, v pitch, v yaw). Defaults to None.
 
     Args:
         position (Tuple[float, float, float]): (center_x, center_y, center_z)[m].
@@ -49,7 +49,7 @@ class ObjectState:
         shape (Shape): Shape instance.
         velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz)[m/s].
         pose_covariance (Optional[np.ndarray]): Covariance matrix for pose (x, y, z, roll, pitch, yaw). Defaults to None.
-        twist_covariance (Optional[np.ndarray]): Covariance matrix for twist (vx, vy, vz, vroll, vpitch, vyaw). Defaults to None.
+        twist_covariance (Optional[np.ndarray]): Covariance matrix for twist (vx, vy, vz, v roll, v pitch, v yaw). Defaults to None.
     """
 
     def __init__(
@@ -126,7 +126,7 @@ class DynamicObject:
         pointcloud_num (Optional[int]): Number of points inside of bounding box. Defaults to None.
         uuid (Optional[str]): Unique ID. Defaults to None.
         pose_covariance (Optional[np.ndarray]): Covariance matrix for pose (x, y, z, roll, pitch, yaw). Defaults to None.
-        twist_covariance (Optional[np.ndarray]): Covariance matrix for twist (vx, vy, vz, vroll, vpitch, vyaw). Defaults to None.
+        twist_covariance (Optional[np.ndarray]): Covariance matrix for twist (vx, vy, vz, v roll, v pitch, v yaw). Defaults to None.
         tracked_positions (Optional[List[Tuple[float, float, float]]]):
                 Sequence of positions for tracked object. Defaults to None.
         tracked_orientations (Optional[List[Quaternion]]):
