@@ -190,6 +190,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             "min_point_numbers": min_point_numbers,
             "confidence_threshold_list": confidence_threshold_list,
             "target_uuids": target_uuids,
+            "uuid_matching_first": e_cfg.get("uuid_matching_first", False),
         }
 
         m_params: Dict[str, Any] = {
