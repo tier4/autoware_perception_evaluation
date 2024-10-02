@@ -51,7 +51,7 @@ from . import dataset
 #################################
 
 
-def make_uuid(instance_token: str, nusc: NuScenes) -> str:
+def _make_uuid(instance_token: str, nusc: NuScenes) -> str:
     for instance_record in nusc.instance:
         if instance_record["token"] == instance_token:
             # synthetic:00000000-0000-0000-0000-000000000005
@@ -138,7 +138,7 @@ def _sample_to_frame(
             evaluation_task=evaluation_task,
             semantic_label=semantic_label,
             instance_token=instance_token_,
-            uuid=make_uuid(instance_token_, nusc),
+            uuid=_make_uuid(instance_token_, nusc),
             sample_token=sample_token,
             visibility=visibility,
         )
