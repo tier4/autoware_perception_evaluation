@@ -40,12 +40,16 @@ class ObjectState:
         orientation (Quaternion) : Quaternion instance.
         size (Tuple[float, float, float]): Bounding box size, (wx, wy, wz)[m].
         velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz)[m/s].
+        pose_covariance (Optional[np.ndarray]): Covariance matrix for pose (x, y, z, roll, pitch, yaw). Defaults to None.
+        twist_covariance (Optional[np.ndarray]): Covariance matrix for twist (vx, vy, vz, vroll, vpitch, vyaw). Defaults to None.
 
     Args:
         position (Tuple[float, float, float]): (center_x, center_y, center_z)[m].
         orientation (Quaternion) : Quaternion instance.
         shape (Shape): Shape instance.
         velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz)[m/s].
+        pose_covariance (Optional[np.ndarray]): Covariance matrix for pose (x, y, z, roll, pitch, yaw). Defaults to None.
+        twist_covariance (Optional[np.ndarray]): Covariance matrix for twist (vx, vy, vz, vroll, vpitch, vyaw). Defaults to None.
     """
 
     def __init__(
@@ -54,11 +58,15 @@ class ObjectState:
         orientation: Optional[Quaternion],
         shape: Optional[Shape],
         velocity: Optional[Tuple[float, float, float]],
+        pose_covariance: Optional[np.ndarray] = None,
+        twist_covariance: Optional[np.ndarray] = None,
     ) -> None:
         self.position = position
         self.orientation = orientation
         self.shape = shape
         self.velocity = velocity
+        self.pose_covariance = pose_covariance
+        self.twist_covariance = twist_covariance
 
     @property
     def shape_type(self) -> Optional[ShapeType]:
@@ -71,6 +79,14 @@ class ObjectState:
     @property
     def footprint(self) -> Polygon:
         return self.shape.footprint if self.shape is not None else None
+
+    @property
+    def has_pose_covariance(self) -> bool:
+        return self.pose_covariance is not None
+
+    @property
+    def has_twist_covariance(self) -> bool:
+        return self.twist_covariance is not None
 
 
 class DynamicObject:
@@ -109,6 +125,8 @@ class DynamicObject:
         semantic_label (Label): Object label.
         pointcloud_num (Optional[int]): Number of points inside of bounding box. Defaults to None.
         uuid (Optional[str]): Unique ID. Defaults to None.
+        pose_covariance (Optional[np.ndarray]): Covariance matrix for pose (x, y, z, roll, pitch, yaw). Defaults to None.
+        twist_covariance (Optional[np.ndarray]): Covariance matrix for twist (vx, vy, vz, vroll, vpitch, vyaw). Defaults to None.
         tracked_positions (Optional[List[Tuple[float, float, float]]]):
                 Sequence of positions for tracked object. Defaults to None.
         tracked_orientations (Optional[List[Quaternion]]):
@@ -141,6 +159,8 @@ class DynamicObject:
         semantic_label: Label,
         pointcloud_num: Optional[int] = None,
         uuid: Optional[str] = None,
+        pose_covariance: Optional[np.ndarray] = None,
+        twist_covariance: Optional[np.ndarray] = None,
         tracked_positions: Optional[List[Tuple[float, float, float]]] = None,
         tracked_orientations: Optional[List[Quaternion]] = None,
         tracked_shapes: Optional[List[Shape]] = None,
@@ -160,6 +180,8 @@ class DynamicObject:
             orientation=orientation,
             shape=shape,
             velocity=velocity,
+            pose_covariance=pose_covariance,
+            twist_covariance=twist_covariance,
         )
         self.semantic_score: float = semantic_score
         self.semantic_label: Label = semantic_label
