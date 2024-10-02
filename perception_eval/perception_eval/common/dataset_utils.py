@@ -52,17 +52,17 @@ from . import dataset
 
 
 def make_uuid(instance_token: str, nusc: NuScenes) -> str:
-    uuid = instance_token
-
     for instance_record in nusc.instance:
         if instance_record["token"] == instance_token:
             # synthetic:00000000-0000-0000-0000-000000000005
             instance_name: str = instance_record["instance_name"]
-            uuid: str = instance_name.split(":")[-1]
-            # format is ~ 00000000-0000-0000-0000-000000000005
-            # remove all leading zeros and -
-            uuid = uuid.replace("-", "").lstrip("0")
-    return uuid
+            if ":" in instance_name:
+                uuid: str = instance_name.split(":")[-1]
+                # uuid format is ~ 00000000-0000-0000-0000-000000000005
+                # remove all leading zeros and -
+                uuid = uuid.replace("-", "").lstrip("0")
+                return uuid
+    return instance_token
 
 
 def _sample_to_frame(
@@ -293,7 +293,9 @@ def _get_transforms(nusc: NuScenes, sample_data_token: str) -> List[HomogeneousM
         sensor_rotation = Quaternion(cs_record["rotation"])
         sensor_record = nusc.get("sensor", cs_record["sensor_token"])
         sensor_frame_id = FrameID.from_value(sensor_record["channel"])
-        sensor2ego = HomogeneousMatrix(sensor_position, sensor_rotation, src=sensor_frame_id, dst=FrameID.BASE_LINK)
+        sensor2ego = HomogeneousMatrix(
+            sensor_position, sensor_rotation, src=sensor_frame_id, dst=FrameID.BASE_LINK
+        )
         sensor2map = ego2map.dot(sensor2ego)
         matrices.extend((sensor2ego, sensor2map))
         if "CAM_TRAFFIC_LIGHT" in sensor_frame_id.value.upper():
@@ -304,7 +306,9 @@ def _get_transforms(nusc: NuScenes, sample_data_token: str) -> List[HomogeneousM
     if len(tlr_avg_pos) > 0 and len(tlr_avg_quat) > 0:
         tlr_cam_pos: NDArray = np.mean(tlr_avg_pos, axis=0)
         tlr_cam_rot: Quaternion = sum(tlr_avg_quat) / sum(tlr_avg_quat).norm
-        tlr2ego = HomogeneousMatrix(tlr_cam_pos, tlr_cam_rot, src=FrameID.CAM_TRAFFIC_LIGHT, dst=FrameID.BASE_LINK)
+        tlr2ego = HomogeneousMatrix(
+            tlr_cam_pos, tlr_cam_rot, src=FrameID.CAM_TRAFFIC_LIGHT, dst=FrameID.BASE_LINK
+        )
         tlr2map = ego2map.dot(tlr2ego)
         matrices.extend((tlr2ego, tlr2map))
 
@@ -380,7 +384,9 @@ def _get_box_velocity(
     object2map[:3, :3] = Quaternion(first["rotation"]).rotation_matrix
     object2map[3, :3] = first["translation"]
 
-    pos_diff: np.ndarray = np.linalg.inv(object2map).dot((pos_diff[0], pos_diff[1], pos_diff[2], 1.0))[:3]
+    pos_diff: np.ndarray = np.linalg.inv(object2map).dot(
+        (pos_diff[0], pos_diff[1], pos_diff[2], 1.0)
+    )[:3]
 
     time_last: float = 1e-6 * nusc.get("sample", last["sample_token"])["timestamp"]
     time_first: float = 1e-6 * nusc.get("sample", first["sample_token"])["timestamp"]
@@ -574,7 +580,10 @@ def _sample_to_frame_2d(
         )
         objects_.append(object_)
 
-    if label_converter.label_type == TrafficLightLabel and evaluation_task == EvaluationTask.CLASSIFICATION2D:
+    if (
+        label_converter.label_type == TrafficLightLabel
+        and evaluation_task == EvaluationTask.CLASSIFICATION2D
+    ):
         objects_ = _merge_duplicated_traffic_lights(unix_time, objects_, uuids)
 
     frame = dataset.FrameGroundTruth(
@@ -618,7 +627,9 @@ def _merge_duplicated_traffic_lights(
                 "If the same regulatory element ID is assigned to multiple traffic lights, "
                 f"it must annotated with only two labels: (unknown, another one). But got, {unique_labels}"
             )
-            semantic_label = [label for label in candidate_labels if label.label != TrafficLightLabel.UNKNOWN][0]
+            semantic_label = [
+                label for label in candidate_labels if label.label != TrafficLightLabel.UNKNOWN
+            ][0]
             assert semantic_label.label != TrafficLightLabel.UNKNOWN
         merged_object = DynamicObject2D(
             unix_time=unix_time,
