@@ -50,7 +50,8 @@ class PerceptionLoadDatabaseResult:
         if analyzer.num_scene == 0:
             raise ValueError("No frame results were added from "
                              f"folder {result_root_directory}."
-                             "Check if the folder contains scene_result.pkl files.")
+                             "Check if the folder has been evaluated "
+                             "(aka contains scene_result.pkl files.)")
 
         # Add columns
         analyzer.add_additional_column()
