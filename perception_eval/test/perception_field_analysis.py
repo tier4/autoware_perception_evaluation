@@ -47,6 +47,11 @@ class PerceptionLoadDatabaseResult:
         for filepath in pickle_file_paths:
             analyzer.add_from_pkl(filepath.as_posix())
 
+        if analyzer.num_scene == 0:
+            raise ValueError("No frame results were added from "
+                             f"folder {result_root_directory}."
+                             "Check if the folder contains scene_result.pkl files.")
+
         # Add columns
         analyzer.add_additional_column()
         analyzer.add_error_columns()
