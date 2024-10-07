@@ -384,6 +384,29 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         ).reshape(-1)
         return df[mask]
 
+    def _filter_by_uuid(
+        self, uuids: Iterable[str], df: Optional[pd.DataFrame] = None
+    ) -> pd.DataFrame:
+        """Filter DataFrame by min, max distances.
+
+        Args:
+            uuids (Iterable[str]): List of uuids.
+            df (Optional[pd.DataFrame], optional): Target DataFrame. If `None`, `self.df` will be used. Defaults to None.
+
+        Returns:
+            pd.DataFrame: Filtered DataFrame.
+        """
+        if df is None:
+            df = self.df
+
+        if uuids is None or len(uuids) == 0:
+            return df
+
+        mask = np.array(
+            [[group["uuid"].isin(uuids).any()] * 2 for _, group in df.groupby(level=0)]
+        ).reshape(-1)
+        return df[mask]
+
     def analyze(
         self,
         scene: Optional[int] = None,
@@ -399,6 +422,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         df: pd.DataFrame = self.get(**kwargs)
         if distance is not None:
             df = self.filter_by_distance(distance, df)
+
+        if kwargs.get("uuid") is not None:
+            df = self._filter_by_uuid(kwargs["uuid"], df)
 
         if len(df) > 0:
             ratio_df = self.summarize_ratio(df=df)
