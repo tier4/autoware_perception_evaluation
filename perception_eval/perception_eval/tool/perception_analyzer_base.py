@@ -1001,13 +1001,13 @@ class PerceptionAnalyzerBase(ABC):
             gt_states = np.array(gt_df[col].tolist())
             est_states = np.array(est_df[col].tolist())
             if mode.is_2d():
-                ax.scatter(gt_axes, gt_states, label="GT", c="red", s=100)
-                ax.scatter(est_axes, est_states, label="Estimation")
+                ax.scatter(gt_axes, gt_states, label="GT", c="red", s=10)
+                ax.scatter(est_axes, est_states, label="Estimation", s=10)
             else:
                 ax.set_zlabel(f"{col}")
                 gt_xaxes, gt_yaxes = gt_axes
                 est_xaxes, est_yaxes = est_axes
-                ax.scatter(gt_xaxes, gt_yaxes, gt_states, label="GT", c="red", s=100)
+                ax.scatter(gt_xaxes, gt_yaxes, gt_states, label="GT", c="red", s=10)
                 ax.scatter(est_xaxes, est_yaxes, est_states, label="Estimation")
             ax.legend(loc="upper right", framealpha=0.4)
 
