@@ -162,6 +162,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             "area",
             "frame",
             "scene",
+            "IoU",
         ]
 
     @property
@@ -180,6 +181,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             "nn_point2",
             "nn_plane",
             "distance",
+            "IoU",
         ]
 
     @property
@@ -236,14 +238,12 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             est_point1, est_point2 = (np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan)
         else:
             raise TypeError(f"Unexpected object type: {type(object_result)}")
-
         area: int = get_area_idx(
             object_result=object_result,
             upper_rights=self.upper_rights,
             bottom_lefts=self.bottom_lefts,
             transforms=transforms,
         )
-
         if gt:
             if gt.state.velocity is not None:
                 gt_vx, gt_vy = gt.state.velocity[:2]
@@ -266,6 +266,15 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 gt_point2 = transforms.transform(transform_key, gt_point2)
 
             gt_w, gt_l, gt_h = gt.state.size
+            if status == MatchingStatus.TP:
+                if object_result.iou_2d:
+                    IoU = object_result.iou_2d.value
+                elif object_result.iou_3d:
+                    IoU = object_result.iou_3d.value
+                else:
+                    IoU = 0.0
+            else:
+                IoU = 0.0
 
             gt_ret = dict(
                 frame_id=gt.frame_id.value,
@@ -292,6 +301,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 area=area,
                 frame=frame_num,
                 scene=self.num_scene,
+                IoU=IoU
             )
         else:
             gt_ret = {}
