@@ -18,19 +18,21 @@ import argparse
 import os
 from os.path import expandvars
 from pathlib import Path
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 from perception_eval.tool import DataTableIdx
+from perception_eval.consts import LABELS_DEFAULT, PLOT_DIR
 from perception_eval.tool import PerceptionAnalyzer3DField
 from perception_eval.visualization.perception_visualizer3dfield import PerceptionFieldPlot
 
 
 class PerceptionLoadDatabaseResult:
+
     def __init__(self, result_root_directory: str, scenario_path: str, show: bool = False) -> None:
         self._result_root_directory: str = result_root_directory
-        self._plot_dir: str = Path(result_root_directory, "plot").as_posix()
-        self._show: bool = show
+        self.analysis_configure(plot_subfolder=PLOT_DIR, show=show)
 
         if not os.path.isdir(self._plot_dir):
             os.makedirs(self._plot_dir)
@@ -49,17 +51,16 @@ class PerceptionLoadDatabaseResult:
         # Add columns
         self._analyzer.add_additional_column()
 
-        # Analyze and visualize, for each label group
-        label_lists: dict = {}
-        label_lists["All"] = None
-        label_lists["Vehicle"] = ["car", "truck"]
-        label_lists["VRU"] = ["pedestrian", "bicycle"]
-        label_lists["Motorbike"] = ["motorbike"]
-
-        for label_group, labels in label_lists.items():
-            print('Analyzing label group: {}, label list of "{}" '.format(label_group, labels))
-            self.analyse_and_visualize(subfolder=label_group, label=labels)
-            print("Done")
+    def analysis_configure(
+        self, plot_subfolder: Optional[str] = None, show: Optional[bool] = None
+    ) -> None:
+        if plot_subfolder is not None:
+            self._plot_dir: str = Path(
+                self._result_root_directory,
+                plot_subfolder,
+            ).as_posix()
+        if show is not None:
+            self._show = show
 
     def analyzer(self) -> PerceptionAnalyzer3DField:
         return self._analyzer
@@ -132,6 +133,15 @@ class PerceptionLoadDatabaseResult:
 
         plt.close("all")
 
+    def analyze_by_labels(self, labels: Optional[dict] = None, **kwargs) -> None:
+        if not labels:
+            labels = LABELS_DEFAULT
+
+        for label_group, labels in LABELS_DEFAULT.items():
+            print('Analyzing label group: {}, label list of "{}" '.format(label_group, labels))
+            self.analyse_and_visualize(subfolder=label_group, label=labels, **kwargs)
+            print("Done")
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -154,12 +164,12 @@ def main() -> None:
         help="show plots",
     )
     args = parser.parse_args()
-    PerceptionLoadDatabaseResult(
+    analysis_res = PerceptionLoadDatabaseResult(
         expandvars(args.result_root_directory),
         expandvars(args.scenario_path),
         args.show,
     )
-
+    analysis_res.analyze_by_labels()
 
 if __name__ == "__main__":
     main()
