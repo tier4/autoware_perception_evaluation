@@ -69,6 +69,8 @@ class DynamicObject:
         semantic_label (Label): Object label.
         pointcloud_num (Optional[int]): Number of points inside of bounding box. Defaults to None.
         uuid (Optional[str]): Unique ID. Defaults to None.
+        pose_covariance (Optional[np.ndarray]): Covariance matrix for pose (x, y, z, roll, pitch, yaw). Defaults to None.
+        twist_covariance (Optional[np.ndarray]): Covariance matrix for twist (vx, vy, vz, vroll, vpitch, vyaw). Defaults to None.
         tracked_positions (Optional[List[Tuple[float, float, float]]]):
                 Sequence of positions for tracked object. Defaults to None.
         tracked_orientations (Optional[List[Quaternion]]):
@@ -101,6 +103,8 @@ class DynamicObject:
         semantic_label: Label,
         pointcloud_num: Optional[int] = None,
         uuid: Optional[str] = None,
+        pose_covariance: Optional[np.ndarray] = None,
+        twist_covariance: Optional[np.ndarray] = None,
         tracked_positions: Optional[List[Tuple[float, float, float]]] = None,
         tracked_orientations: Optional[List[Quaternion]] = None,
         tracked_shapes: Optional[List[Shape]] = None,
@@ -119,6 +123,8 @@ class DynamicObject:
             orientation=orientation,
             shape=shape,
             velocity=velocity,
+            pose_covariance=pose_covariance,
+            twist_covariance=twist_covariance,
         )
         self.semantic_score: float = semantic_score
         self.semantic_label: Label = semantic_label
