@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
+from copy import deepcopy, copy
 from enum import Enum
 from typing import Any
 from typing import Dict
@@ -475,7 +475,7 @@ def filter_frame_by_distance(
     Returns:
         PerceptionFrameResult: Filtered frame results.
     """
-    ret_frame = deepcopy(frame)
+    ret_frame = copy(frame)
 
     if min_distance is not None:
         min_distance_list = [min_distance] * len(ret_frame.target_labels)

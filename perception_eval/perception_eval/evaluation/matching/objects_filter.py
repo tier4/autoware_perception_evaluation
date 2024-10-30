@@ -32,7 +32,7 @@ from perception_eval.common.threshold import LabelThreshold
 from perception_eval.common.transform import TransformDict
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
-
+from copy import copy
 
 def filter_object_results(
     object_results: List[DynamicObjectWithPerceptionResult],
@@ -123,7 +123,7 @@ def filter_object_results(
             is_target = False
 
         if is_target:
-            filtered_object_results.append(object_result)
+            filtered_object_results.append(copy(object_result))
 
     return filtered_object_results
 
@@ -198,7 +198,7 @@ def filter_objects(
             transforms=transforms,
         )
         if is_target:
-            filtered_objects.append(object_)
+            filtered_objects.append(copy(object_))
     return filtered_objects
 
 
