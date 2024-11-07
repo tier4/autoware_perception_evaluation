@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import copy
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -32,7 +33,7 @@ from perception_eval.common.threshold import LabelThreshold
 from perception_eval.common.transform import TransformDict
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
-from copy import copy
+
 
 def filter_object_results(
     object_results: List[DynamicObjectWithPerceptionResult],
