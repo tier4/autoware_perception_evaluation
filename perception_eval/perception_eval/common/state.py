@@ -19,6 +19,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
+import numpy as np
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
 from pyquaternion import Quaternion
@@ -34,6 +35,8 @@ class ObjectState:
         orientation: Quaternion,
         shape: Optional[Shape] = None,
         velocity: Optional[Tuple[float, float, float]] = None,
+        pose_covariance: Optional[np.ndarray] = None,
+        twist_covariance: Optional[np.ndarray] = None,
     ) -> None:
         """
 
@@ -42,12 +45,17 @@ class ObjectState:
             orientation (Quaternion) : Quaternion instance.
             shape (Optional[Shape]): Shape instance. Defaults to None.
             velocity (Optional[Tuple[float, float, float]]): velocity of (vx, vy, vz) [m/s]. Defaults to None.
+             pose_covariance (Optional[np.ndarray]): Covariance matrix for pose (x, y, z, roll, pitch, yaw).
+                Defaults to None.
+            twist_covariance (Optional[np.ndarray]): Covariance matrix for twist (x, y, z, roll, pitch, yaw).
+                Defaults to None.
         """
         self.position = position
         self.orientation = orientation
         self.shape = shape
-
         self.velocity = velocity
+        self.pose_covariance = pose_covariance
+        self.twist_covariance = twist_covariance
 
     @property
     def shape_type(self) -> Optional[ShapeType]:
@@ -60,6 +68,14 @@ class ObjectState:
     @property
     def footprint(self) -> Polygon:
         return self.shape.footprint if self.shape is not None else None
+
+    @property
+    def has_pose_covariance(self) -> bool:
+        return self.pose_covariance is not None
+
+    @property
+    def has_twist_covariance(self) -> bool:
+        return self.twist_covariance is not None
 
     def get_position_error(self, other: ObjectState) -> Tuple[float, float, float]:
         """Returns the position error between other and itself.
