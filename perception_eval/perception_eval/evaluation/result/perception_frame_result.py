@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from __future__ import annotations
-
+from copy import copy
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -88,6 +88,23 @@ class PerceptionFrameResult:
             frame_pass_fail_config=frame_pass_fail_config,
             transforms=frame_ground_truth.transforms,
         )
+
+    def copy_with_shallow_results(self) -> PerceptionFrameResult:
+        """
+        Create a shallow copy of the current PerceptionFrameResult instance.
+
+        This method creates a new instance of PerceptionFrameResult by performing a shallow copy
+        of the current instance. The `metrics_score` and `pass_fail_result` attributes are also
+        shallow copied to the new instance.
+
+        Returns:
+            PerceptionFrameResult: A new instance of PerceptionFrameResult with shallow copied attributes.
+        """
+
+        new_instance = copy(self)
+        new_instance.metrics_score = copy(self.metrics_score)
+        new_instance.pass_fail_result = copy(self.pass_fail_result)
+        return new_instance
 
     def evaluate_frame(
         self,
