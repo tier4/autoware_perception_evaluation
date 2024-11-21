@@ -25,6 +25,7 @@ from perception_eval.common import distance_objects_bev
 from perception_eval.common import DynamicObject
 from perception_eval.common import DynamicObject2D
 from perception_eval.common import ObjectType
+from perception_eval.common.deepcopy import deepcopy_with_sharing
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import TrafficLightLabel
@@ -105,6 +106,9 @@ class DynamicObjectWithPerceptionResult:
         else:
             self.iou_3d = None
             self.plane_distance = None
+
+    def __deepcopy__(self, memo):
+        return deepcopy_with_sharing(self, shared_attribute_names = ['estimated_object', 'ground_truth_object'], memo=memo)
 
     def get_status(
         self,
