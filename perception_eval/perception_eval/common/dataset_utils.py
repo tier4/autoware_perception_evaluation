@@ -310,6 +310,9 @@ def _load_raw_data(nusc: NuScenes, sample_token: str) -> Dict[FrameID, NDArray]:
         filepath: str = nusc.get_sample_data_path(sample_data_token)
         if osp.basename(filepath).endswith("bin"):
             raw_data = np.fromfile(filepath, dtype=np.float32).reshape(-1, 5)[:, :4]
+        elif osp.basename(filepath).endswith("pcd"):
+            # skip loading radar pointcloud
+            continue
         else:
             raw_data = np.array(Image.open(filepath), dtype=np.uint8)
         output[frame_id] = raw_data
