@@ -588,15 +588,16 @@ def _is_target_object(
                 if use_unknown_threshold
                 else label_threshold.get_label_threshold(max_x_position_list)
             )
-            is_target = is_target and position_[0] < max_x_position
-
-        if is_target and min_x_position_list is not None:
-            min_x_position = (
-                np.mean(min_x_position_list)
-                if use_unknown_threshold
-                else label_threshold.get_label_threshold(min_x_position_list)
-            )
-            is_target = is_target and position_[0] > min_x_position
+            if min_x_position_list is not None:
+                is_target = is_target and position_[0] < max_x_position
+                min_x_position = (
+                    np.mean(min_x_position_list)
+                    if use_unknown_threshold
+                    else label_threshold.get_label_threshold(min_x_position_list)
+                )
+                is_target = is_target and position_[0] > min_x_position
+            else:
+                is_target = is_target and abs(position_[0]) < max_x_position
 
         if is_target and max_y_position_list is not None:
             max_y_position = (
@@ -604,15 +605,16 @@ def _is_target_object(
                 if use_unknown_threshold
                 else label_threshold.get_label_threshold(max_y_position_list)
             )
-            is_target = is_target and position_[1] < max_y_position
-        
-        if is_target and min_y_position_list is not None:
-            min_y_position = (
-                np.mean(min_y_position_list)
-                if use_unknown_threshold
-                else label_threshold.get_label_threshold(min_y_position_list)
-            )
-            is_target = is_target and position_[1] > min_y_position
+            if min_y_position_list is not None:
+                is_target = is_target and position_[1] < max_y_position
+                min_y_position = (
+                    np.mean(min_y_position_list)
+                    if use_unknown_threshold
+                    else label_threshold.get_label_threshold(min_y_position_list)
+                )
+                is_target = is_target and position_[1] > min_y_position
+            else:
+                is_target = is_target and abs(position_[1]) < max_y_position
 
     if bev_distance_ is not None:
         if is_target and max_distance_list is not None:
