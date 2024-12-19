@@ -516,8 +516,8 @@ def filter_frame_by_region(
 
     Args:
         frame (PerceptionFrameResult): Frame result.
-        x_position (tuple[float, float], optional): x axis range. Defaults to None.
-        y_position (tuple[float, float], optional): y axis range. Defaults to None.
+        x_position (tuple[float, float], optional): x-axis range. Defaults to None.
+        y_position (tuple[float, float], optional): y-axis range. Defaults to None.
 
     Returns:
         PerceptionFrameResult: Filtered frame results.

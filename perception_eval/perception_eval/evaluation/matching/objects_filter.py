@@ -53,8 +53,9 @@ def filter_object_results(
 ) -> List[DynamicObjectWithPerceptionResult]:
     """Filter DynamicObjectWithPerceptionResult considering both estimated and ground truth objects.
 
-    If any of `target_labels`, `max_x_position_list`, `max_y_position_list`, `max_distance_list`, `min_distance_list`,
-    `min_point_numbers` or `confidence_threshold_list` are specified, each of them must be same length list.
+    If any of `target_labels`, `max_x_position_list`, `min_x_position_list`, `max_y_position_list`, `min_y_position_list`,
+    `max_distance_list`, `min_distance_list`, `min_point_numbers` or `confidence_threshold_list`
+    are specified, each of them must be same length list.
 
     It first filters `object_results` with input parameters considering estimated objects.
     After that, remained `object_results` are filtered with input parameters considering ground truth objects.
@@ -66,16 +67,18 @@ def filter_object_results(
             have same label in this list. Defaults to None.
         ignore_attributes (Optional[List[str]]): List of attributes to be ignored. Defaults to None.
         max_x_position_list (Optional[List[float]]): Thresholds list of maximum x-axis position from ego vehicle.
-            Keep all `dynamic_object` that their each x position is smaller than `max_x_position`.
+            Keep all `dynamic_object` that their each x position is smaller than `max_x_position`
             for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
+            If `min_x_position_list` is not specified, keep them that each x position are in [`-max_x_position`, `max_x_position`].
         min_x_position_list (Optional[List[float]]): Thresholds list of minimum x-axis position from ego vehicle.
-            Keep all `dynamic_object` that their each x position is bigger than `min_x_position`.
+            Keep all `dynamic_object` that their each x position is bigger than `min_x_position`
             for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
         max_y_position_list (Optional[List[float]]): Thresholds list of maximum y-axis position from ego vehicle.
-            Keep all `dynamic_object` that their each y position is smaller than `max_y_position`.
+            Keep all `dynamic_object` that their each y position is smaller than `max_y_position`
             for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
+            If `min_y_position_list` is not specified, keep them that each y position are in [`-max_y_position`, `max_y_position`].
         min_y_position_list (Optional[List[float]]): Thresholds list of minimum y-axis position from ego vehicle.
-            Keep all `dynamic_object` that their each y position is bigger than `min_y_position`.
+            Keep all `dynamic_object` that their each y position is bigger than `min_y_position`
             for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
         max_distance_list (Optional[List[float]]): Thresholds list of maximum distance range from ego vehicle.
             Keep all `object_results` that their each distance is smaller than `max_distance`
@@ -160,8 +163,9 @@ def filter_objects(
 ) -> List[ObjectType]:
     """Filter DynamicObject considering ground truth objects.
 
-    If any of `target_labels`, `max_x_position_list`, `max_y_position_list`, `max_distance_list`, `min_distance_list`,
-    `min_point_numbers` or `confidence_threshold_list` are specified, each of them must be same length list.
+    If any of `target_labels`, `max_x_position_list`, `min_x_position_list`, `max_y_position_list`, `min_y_position_list`,
+    `max_distance_list`, `min_distance_list`, `min_point_numbers` or `confidence_threshold_list`
+    are specified, each of them must be same length list.
 
     Args:
         objects (List[ObjectType]: The objects you want to filter.
@@ -170,15 +174,19 @@ def filter_objects(
             Keep all `objects` that have same label in this list. Defaults to None.
         attributes_ignore (Optional[List[str]]): List of attributes to be ignored. Defaults to None.
         max_x_position_list (Optional[List[float]]): Thresholds list of maximum x-axis position from ego vehicle.
-            Keep all `dynamic_object` that their each x position is smaller than `max_x_position`.
+            Keep all `objects` that their each x position are in [`-max_x_position`, `max_x_position`].
+            If `min_x_position_list` is not specified, keep them that each x position are smaller than `max_x_position`.
             Defaults to None.
         min_x_position_list (Optional[List[float]]): Thresholds list of minimum x-axis position from ego vehicle.
-            Keep all `dynamic_object` that their each x position is bigger than `min_x_position`.
+            Keep all `objects` that their each x position are bigger than `min_x_position`.
+            Defaults to None.
         max_y_position_list (Optional[List[float]]): Thresholds list of maximum y-axis position from ego vehicle.
-            Keep all `dynamic_object` that their each y position is smaller than `max_y_position`.
+            Keep all `objects` that their each y posiition are in [`-max_y_position`, `max_y_position`].
+            If `min_y_position_list` is not specified, keep them that each y position are smaller than `max_y_position`.
             Defaults to None.
         min_y_position_list (Optional[List[float]]): Thresholds list of minimum y-axis position from ego vehicle.
-            Keep all `dynamic_object` that their each y position is bigger than `min_y_position`.
+            Keep all `objects` that their each y position are bigger than `min_y_position`.
+            Defaults to None.
         max_distance_list (Optional[List[float]]): Thresholds list of maximum distance range from ego vehicle.
             Keep all `objects` that their each distance is smaller than `max_distance`. Defaults to None.
         min_distance_list (Optional[List[float]]): Thresholds list of minimum distance range from ego vehicle.
@@ -505,15 +513,17 @@ def _is_target_object(
             Keep all `dynamic_object` that have same labels in this list. Defaults to None.
         ignore_attributes (Optional[List[str]]): List of attributes to be ignored. Defaults to None.
         max_x_position_list (Optional[List[float]]): Thresholds list of maximum x-axis position from ego vehicle.
-            Keep all `dynamic_object` that their each x position is smaller than `max_x_position`.
+            Keep all `dynamic_object` that their each x position are in [`-max_x_position`, `max_x_position`].
+            If `min_x_position_list` is not specified, keep them that each x position are smaller than `max_x_position`.
             Defaults to None.
         min_x_position_list (Optional[List[float]]): Thresholds list of minimum x-axis position from ego vehicle.
-            Keep all `dynamic_object` that their each x position is bigger than `min_x_position`.
+            Keep all `dynamic_object` that their each x position are bigger than `min_x_position`.
         max_y_position_list (Optional[List[float]]): Thresholds list of maximum y-axis position from ego vehicle.
-            Keep all `dynamic_object` that their each y position is smaller than `max_y_position`.
+            Keep all `dynamic_object` that their each y position are in [`-max_y_position`, `max_y_position`].
+            If `min_y_position_list` is not specified, keep them that each y position are smaller than `max_y_position`.
             Defaults to None.
         min_y_position_list (Optional[List[float]]): Thresholds list of minimum y-axis position from ego vehicle.
-            Keep all `dynamic_object` that their each y position is bigger than `min_y_position`.
+            Keep all `dynamic_object` that their each y position are bigger than `min_y_position`.
         max_distance_list (Optional[List[float]]): Thresholds list of maximum distance range from ego vehicle.
             Keep all `dynamic_object` that their each distance is smaller than `max_distance`. Defaults to None.
         min_distance_list (Optional[List[float]]): Thresholds list of minimum distance range from ego vehicle.
@@ -615,6 +625,22 @@ def _is_target_object(
                 is_target = is_target and position_[1] > min_y_position
             else:
                 is_target = is_target and abs(position_[1]) < max_y_position
+
+        if is_target and min_x_position_list is not None:
+            min_x_position = (
+                np.mean(min_x_position_list)
+                if use_unknown_threshold
+                else label_threshold.get_label_threshold(min_x_position_list)
+            )
+            is_target = is_target and position_[0] > min_x_position
+
+        if is_target and min_y_position_list is not None:
+            min_y_position = (
+                np.mean(min_y_position_list)
+                if use_unknown_threshold
+                else label_threshold.get_label_threshold(min_y_position_list)
+            )
+            is_target = is_target and position_[1] > min_y_position
 
     if bev_distance_ is not None:
         if is_target and max_distance_list is not None:
