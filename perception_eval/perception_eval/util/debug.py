@@ -183,6 +183,11 @@ def get_objects_with_difference(
             radians=object_.state.orientation.radians + diff_yaw,
         )
 
+        predicted_positions, predicted_orientations, predicted_scores = _get_prediction_params(
+            object_,
+            diff_distance,
+            diff_yaw,
+        )
         shape: Shape = Shape(shape_type=object_.state.shape_type, size=object_.state.size)
 
         if label_to_unknown_rate < random.uniform(0.0, 1.0):
@@ -208,10 +213,65 @@ def get_objects_with_difference(
             semantic_label=semantic_label,
             pointcloud_num=object_.pointcloud_num,
             uuid=object_.uuid,
+            predicted_positions=predicted_positions,
+            predicted_orientations=predicted_orientations,
+            predicted_scores=predicted_scores,
         )
 
         output_objects.append(test_object_)
     return output_objects
+
+
+def _get_prediction_params(
+    object_: DynamicObject,
+    diff_distance: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+    diff_yaw: float = 0.0,
+) -> Tuple[Optional[List[List[Tuple[float]]]], Optional[List[List[Quaternion]]], Optional[List[float]],]:
+    """
+    Get object's prediction parameters with distance and yaw difference for test.
+
+    Args:
+        object_ (DynamicObject): dynamic object.
+        diff_distance (Tuple[float, float, float], optional):
+                The parameter for difference of position. Defaults to
+                (0.0, 0.0, 0.0).
+        diff_yaw (float, optional):
+                The parameter for difference of yaw angle. Defaults to 0.0.
+
+    Returns:
+        If the attribute of dynamic object named predicted_paths is None, returns None, None, None.
+        predicted_positions (List[List[Tuple[float]]]): List of positions
+        predicted_orientations (List[List[Quaternion]]): List of quaternions.
+        predicted_scores (List[float]): List of scores.
+    """
+    if object_.predicted_paths is None:
+        return None, None, None
+
+    predicted_positions: List[List[Tuple[float]]] = []
+    predicted_orientations: List[List[Quaternion]] = []
+    predicted_scores: List[float] = []
+    for paths in object_.predicted_paths:
+        positions = []
+        orientations = []
+        for path in paths:
+            positions.append(
+                (
+                    path.position[0] + diff_distance[0],
+                    path.position[1] + diff_distance[1],
+                    path.position[2] + diff_distance[2],
+                )
+            )
+            orientations.append(
+                Quaternion(
+                    axis=path.orientation.axis,
+                    radians=path.orientation.radians + diff_yaw,
+                )
+            )
+        predicted_positions.append(positions)
+        predicted_orientations.append(orientations)
+        predicted_scores.append(paths.confidence)
+
+    return predicted_positions, predicted_orientations, predicted_scores
 
 
 def get_objects_with_difference2d(

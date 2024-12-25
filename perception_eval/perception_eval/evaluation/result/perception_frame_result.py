@@ -18,7 +18,6 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
-from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import LabelType
 from perception_eval.common.status import GroundTruthStatus
@@ -140,7 +139,7 @@ class PerceptionFrameResult:
                 tracking_results[label] = [prev_results, tracking_results[label]]
             self.metrics_score.evaluate_tracking(tracking_results, num_ground_truth_dict)
         if self.metrics_score.prediction_config is not None:
-            pass
+            self.metrics_score.evaluate_prediction(object_results_dict, num_ground_truth_dict)
         if self.metrics_score.classification_config is not None:
             self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
 

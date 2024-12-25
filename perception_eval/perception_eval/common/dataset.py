@@ -72,6 +72,7 @@ def load_all_datasets(
     label_converter: LabelConverter,
     frame_id: Union[FrameID, Sequence[FrameID]],
     load_raw_data: bool = False,
+    path_seconds: float = 10.0,
 ) -> List[FrameGroundTruth]:
     """
     Load tier4 datasets.
@@ -83,6 +84,7 @@ def load_all_datasets(
         frame_id (FrameID): FrameID instance, where objects are with respect.
         load_raw_data (bool): The flag of setting pointcloud or image.
             For 3D task, pointcloud will be loaded. For 2D, image will be loaded. Defaults to False.
+        path_seconds (float): Time length of path in seconds. Defaults to 10.0.
 
     Returns:
         List[FrameGroundTruth]: FrameGroundTruth instance list.
@@ -116,6 +118,7 @@ def load_all_datasets(
             label_converter=label_converter,
             frame_ids=frame_ids,
             load_raw_data=load_raw_data,
+            path_seconds=path_seconds,
         )
     logging.info("Finish loading dataset\n" + _get_str_objects_number_info(label_converter))
     return all_datasets
@@ -127,6 +130,7 @@ def _load_dataset(
     label_converter: LabelConverter,
     frame_ids: List[FrameID],
     load_raw_data: bool,
+    path_seconds: float = 10.0,
 ) -> List[FrameGroundTruth]:
     """
     Load one tier4 dataset.
@@ -136,6 +140,7 @@ def _load_dataset(
         label_converter (LabelConverter): LabelConvertor instance.
         frame_ids (List[FrameID]): FrameID instance, where objects are with respect.
         load_raw_data (bool): Whether load pointcloud/image data.
+        path_seconds (float): Time length of path in seconds. Defaults to 10.0.
 
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
@@ -182,6 +187,7 @@ def _load_dataset(
                 frame_id=frame_ids[0],
                 frame_name=str(n),
                 load_raw_data=load_raw_data,
+                path_seconds=path_seconds,
             )
         dataset.append(frame)
     return dataset
