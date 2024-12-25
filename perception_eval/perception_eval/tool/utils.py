@@ -476,7 +476,6 @@ def filter_frame_by_distance(
         PerceptionFrameResult: Filtered frame results.
     """
     ret_frame = deepcopy(frame)
-
     if min_distance is not None:
         min_distance_list = [min_distance] * len(ret_frame.target_labels)
     else:

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from __future__ import annotations
-
+from copy import copy, deepcopy
 from typing import Dict
 from typing import List
 from typing import Optional

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import copy
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -138,7 +139,7 @@ def filter_object_results(
             is_target = False
 
         if is_target:
-            filtered_object_results.append(object_result)
+            filtered_object_results.append(copy(object_result))
 
     return filtered_object_results
 
@@ -226,7 +227,7 @@ def filter_objects(
             transforms=transforms,
         )
         if is_target:
-            filtered_objects.append(object_)
+            filtered_objects.append(copy(object_))
     return filtered_objects
 
 
