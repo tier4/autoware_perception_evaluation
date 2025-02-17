@@ -20,6 +20,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 from perception_eval.tool import PerceptionFieldXY
 
 
@@ -30,6 +31,7 @@ class PerceptionFieldPlot:
         self.ax = self.figure.add_subplot(111)
         self.ax.set_aspect("equal")
         self.value: str = value
+        self.value_map: np.ndarray = None
 
     def contourf(self, x, y, z, **kwargs):
         self.cs = self.ax.contourf(x, y, z, **kwargs)
@@ -67,6 +69,7 @@ class PerceptionFieldPlot:
         self.ax.set_yticks(field.axis_y.grid_axis * field.axis_y.plot_scale)
 
     def plot_mesh_map(self, field: PerceptionFieldXY, valuemap: np.ndarray, **kwargs) -> None:
+        self.value_map = valuemap
         x: np.ndarray = field.mesh_x * field.axis_x.plot_scale
         y: np.ndarray = field.mesh_y * field.axis_y.plot_scale
         self.cs = self.ax.pcolormesh(x, y, valuemap, **kwargs)
@@ -96,6 +99,9 @@ class PerceptionFieldPlots:
     def save(self) -> None:
         for fig in self.figures:
             fig.figure.savefig(Path(self.save_dir, fig.name + ".png"))
+            value_to_save = fig.value_map.astype(str)
+            value_to_save[np.isnan(fig.value_map)] = ''
+            np.savetxt(Path(self.save_dir, fig.name + ".csv"), value_to_save, delimiter=",", fmt='%s')
 
     def show(self) -> None:
         plt.show()
@@ -132,35 +138,58 @@ class PerceptionFieldPlots:
         self.last.plot_mesh_map(field, field.ratio_fp, vmin=0, vmax=1)
         self.last.set_axes(field)
 
+        # Yaw Flip rate
+        self.add(PerceptionFieldPlot(prefix + "_" + "ratio_yaw_flip", "Yaw Flip rate [-]"))
+        self.last.plot_mesh_map(field, field.ratio_yaw_flip, vmin=0, vmax=1)
+        self.last.set_axes(field)
+
         if not is_uncertainty:
             # False negative rate
             self.add(PerceptionFieldPlot(prefix + "_" + "ratio_fn", "False Negative rate [-]"))
             self.last.plot_mesh_map(field, field.ratio_fn, vmin=0, vmax=1)
             self.last.set_axes(field)
 
-        # Position error
-        if field.has_any_error_data:
-            title: str = "Position uncertainty [m]" if is_uncertainty else "Position error [m]"
-            self.add(PerceptionFieldPlot(prefix + "_" + "delta_mean_mesh", title))
-            vmax = 1
-            if bool(np.all(np.isnan(field.error_delta_mean))) is False:
-                vmax = np.nanmax(field.error_delta_mean)
-            self.last.plot_mesh_map(field, field.error_delta_mean, vmin=0, vmax=vmax)
-
-            # mean positions of each grid
-            if hasattr(field, field.axis_x.data_label):
-                x_mean_plot = getattr(field, field.axis_x.data_label) * field.axis_x.plot_scale
-            else:
-                x_mean_plot = field.mesh_center_x * field.axis_x.plot_scale
-            if hasattr(field, field.axis_y.data_label):
-                y_mean_plot = getattr(field, field.axis_y.data_label) * field.axis_y.plot_scale
-            else:
-                y_mean_plot = field.mesh_center_y * field.axis_y.plot_scale
-
-            _ = self.last.ax.scatter(x_mean_plot, y_mean_plot, marker="+", c="r", s=10)
-            self.last.set_axes(field)
-        else:
+        # Error analysis
+        if not field.has_any_error_data:
             print("Plot (Prefix " + prefix + "): No TP data, nothing for error analysis")
+            return
+
+        # Position error
+        title: str = "Position uncertainty [m]" if is_uncertainty else "Position error [m]"
+        self.add(PerceptionFieldPlot(prefix + "_" + "delta_mean_mesh", title))
+        vmax = 1
+        if bool(np.all(np.isnan(field.error_delta_mean))) is False:
+            vmax = np.nanmax(field.error_delta_mean)
+        self.last.plot_mesh_map(field, field.error_delta_mean, vmin=0, vmax=vmax)
+        # mean positions of each grid
+        if hasattr(field, field.axis_x.data_label):
+            x_mean_plot = getattr(field, field.axis_x.data_label) * field.axis_x.plot_scale
+        else:
+            x_mean_plot = field.mesh_center_x * field.axis_x.plot_scale
+        if hasattr(field, field.axis_y.data_label):
+            y_mean_plot = getattr(field, field.axis_y.data_label) * field.axis_y.plot_scale
+        else:
+            y_mean_plot = field.mesh_center_y * field.axis_y.plot_scale
+
+        _ = self.last.ax.scatter(x_mean_plot, y_mean_plot, marker="+", c="r", s=10)
+        self.last.set_axes(field)
+        
+        # Yaw error
+        self.add(PerceptionFieldPlot(prefix + "_" + "yaw_error_mean", "Yaw error mean [rad]"))
+        self.last.plot_mesh_map(field, field.error_yaw_mean)
+        self.last.set_axes(field)
+        self.add(PerceptionFieldPlot(prefix + "_" + "yaw_error_std", "Yaw error std [rad]"))
+        self.last.plot_mesh_map(field, field.error_yaw_std)
+        self.last.set_axes(field)
+
+        # Distance error
+        self.add(PerceptionFieldPlot(prefix + "_" + "dist_error_mean", "Distance error mean [m]"))
+        self.last.plot_mesh_map(field, field.error_dist_mean)
+        self.last.set_axes(field)
+        self.add(PerceptionFieldPlot(prefix + "_" + "dist_error_std", "Distance error std [m]"))
+        self.last.plot_mesh_map(field, field.error_dist_std)
+        self.last.set_axes(field)
+
 
     def plot_custom_field(
         self, field: PerceptionFieldXY, array: np.ndarray, filename: str, title: str, **kwargs
@@ -181,6 +210,7 @@ class PerceptionFieldPlots:
         self.last.ax.scatter(field.dist, field.ratio_tp, marker="o", c="b", s=20, label="TP")
         self.last.ax.scatter(field.dist, field.ratio_fn, marker="x", c="r", s=20, label="FN")
         self.last.ax.scatter(field.dist, field.ratio_fp, marker="^", c="g", s=20, label="FP")
+        self.last.ax.scatter(field.dist, field.ratio_yaw_flip, marker="v", c="y", s=20, label="Yaw Flip")
         self.last.set_axis_1d(field, field.ratio_tp)
         self.last.ax.set_ylim([0, 1])
         self.last.ax.set_aspect(10.0 / 0.2)

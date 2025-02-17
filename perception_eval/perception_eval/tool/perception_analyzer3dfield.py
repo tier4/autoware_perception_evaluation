@@ -14,19 +14,15 @@
 
 from __future__ import annotations
 
-from enum import auto
-from enum import IntEnum
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
+from enum import IntEnum, auto
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import yaml
+
 from perception_eval.common.status import MatchingStatus
 from perception_eval.config import PerceptionEvaluationConfig
-import yaml
 
 from .perception_analyzer3d import PerceptionAnalyzer3D
 
@@ -208,10 +204,14 @@ class PerceptionFieldXY:
         self.num_tn: np.ndarray = np.zeros((self.nx, self.ny))
         self.num_fp: np.ndarray = np.zeros((self.nx, self.ny))
         self.num_fn: np.ndarray = np.zeros((self.nx, self.ny))
+        self.num_yaw_flip: np.ndarray = np.zeros((self.nx, self.ny))
+        self.num_error_yaw_count: np.ndarray = np.zeros((self.nx, self.ny))
+        self.num_error_dist_count: np.ndarray = np.zeros((self.nx, self.ny))
         self.ratio_tp: np.ndarray = np.zeros((self.nx, self.ny))
         self.ratio_tn: np.ndarray = np.zeros((self.nx, self.ny))
         self.ratio_fp: np.ndarray = np.zeros((self.nx, self.ny))
         self.ratio_fn: np.ndarray = np.zeros((self.nx, self.ny))
+        self.ratio_yaw_flip: np.ndarray = np.zeros((self.nx, self.ny))
         self.confidence: np.ndarray = np.zeros((self.nx, self.ny))
 
         # Error statistics
@@ -354,10 +354,12 @@ class PerceptionFieldXY:
         self.ratio_tn[mask] = np.divide(self.num_tn[mask], self.num[mask])
         self.ratio_fp[mask] = np.divide(self.num_fp[mask], self.num[mask])
         self.ratio_fn[mask] = np.divide(self.num_fn[mask], self.num[mask])
+        self.ratio_yaw_flip[mask] = np.divide(self.num_yaw_flip[mask], self.num[mask])
         self.ratio_tp[~mask] = np.nan
         self.ratio_tn[~mask] = np.nan
         self.ratio_fp[~mask] = np.nan
         self.ratio_fn[~mask] = np.nan
+        self.ratio_yaw_flip[~mask] = np.nan
 
     def _process_error(self) -> None:
         """
@@ -378,12 +380,21 @@ class PerceptionFieldXY:
         self.error_y_std[self.pair_valid] = np.sqrt(
             np.divide(self.error_y_std[self.pair_valid], self.num_pair[self.pair_valid])
         )
+
         self.error_yaw_mean[self.pair_valid] = np.divide(
-            self.error_yaw_mean[self.pair_valid], self.num_pair[self.pair_valid]
+            self.error_yaw_mean[self.pair_valid], self.num_error_yaw_count[self.pair_valid]
         )
         self.error_yaw_std[self.pair_valid] = np.sqrt(
-            np.divide(self.error_yaw_std[self.pair_valid], self.num_pair[self.pair_valid])
+            np.divide(self.error_yaw_std[self.pair_valid], self.num_error_yaw_count[self.pair_valid])
         )
+
+        self.error_dist_mean[self.pair_valid] = np.divide(
+            self.error_dist_mean[self.pair_valid], self.num_error_dist_count[self.pair_valid]
+        )
+        self.error_dist_std[self.pair_valid] = np.sqrt(
+            np.divide(self.error_dist_std[self.pair_valid], self.num_error_dist_count[self.pair_valid])
+        )
+
         self.error_delta_mean[self.pair_valid] = np.divide(
             self.error_delta_mean[self.pair_valid], self.num_pair[self.pair_valid]
         )
@@ -398,6 +409,8 @@ class PerceptionFieldXY:
         self.error_yaw_std[~self.pair_valid] = np.nan
         self.error_delta_mean[~self.pair_valid] = np.nan
         self.error_delta_std[~self.pair_valid] = np.nan
+        self.error_dist_mean[~self.pair_valid] = np.nan
+        self.error_dist_std[~self.pair_valid] = np.nan
 
     def do_post_process(self) -> None:
         """
@@ -847,9 +860,23 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 error_x: float = gt["error_x"]
                 error_y: float = gt["error_y"]
                 error_delta: float = gt["error_delta"]
-                error_yaw: float = gt["error_yaw"]
-                error_dist: float = gt["error_dist"]
                 error_azimuth: float = gt["error_azimuth"]
+
+                # error yaw is flipped if it is more than 90 degree
+                if -np.pi / 4 < gt["error_yaw"] < np.pi / 4:
+                    error_yaw: float =  gt["error_yaw"]
+                    error_field.num_error_yaw_count[idx_gt_x, idx_gt_y] += 1
+                elif 3 * np.pi / 4 < gt["error_yaw"] or -3 * np.pi / 4 > gt["error_yaw"]:
+                    error_yaw: float = 0
+                    error_field.num_yaw_flip[idx_gt_x, idx_gt_y] += 1
+                else:
+                    error_yaw: float = 0
+                
+                if gt["error_dist"] <= 10:
+                    error_dist: float = gt["error_dist"]
+                    error_field.num_error_dist_count[idx_gt_x, idx_gt_y] += 1
+                else:
+                    error_dist: float = 0    
 
                 # fill the bins
                 idx_gt_x, idx_gt_y = error_field.get_grid_index(gt[label_axis_x], gt[label_axis_y])

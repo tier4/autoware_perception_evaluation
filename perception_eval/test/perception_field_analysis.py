@@ -20,11 +20,16 @@ from os.path import expandvars
 from pathlib import Path
 
 import numpy as np
-from perception_eval.tool import PerceptionAnalyzer3DField
-from perception_eval.tool import PerceptionFieldAxis
-from perception_eval.tool import PerceptionFieldXY
-from perception_eval.visualization.perception_visualizer3dfield import PerceptionFieldPlot
-from perception_eval.visualization.perception_visualizer3dfield import PerceptionFieldPlots
+
+from perception_eval.tool import (
+    PerceptionAnalyzer3DField,
+    PerceptionFieldAxis,
+    PerceptionFieldXY,
+)
+from perception_eval.visualization.perception_visualizer3dfield import (
+    PerceptionFieldPlot,
+    PerceptionFieldPlots,
+)
 
 
 class PerceptionLoadDatabaseResult:
@@ -51,12 +56,15 @@ class PerceptionLoadDatabaseResult:
         analyzer.add_additional_column()
         analyzer.add_error_columns()
 
+        # save df
+        analyzer.df.to_csv(self._plot_dir + "/df.csv", index=False)
+
         # Analyze and visualize, for each label group
         label_lists: dict = {}
         label_lists["All"] = None
-        label_lists["Vehicle"] = ["car", "truck"]
-        label_lists["VRU"] = ["pedestrian", "bicycle"]
-        label_lists["Motorbike"] = ["motorbike"]
+        # label_lists["Vehicle"] = ["car", "truck"]
+        # label_lists["VRU"] = ["pedestrian", "bicycle"]
+        # label_lists["Motorbike"] = ["motorbike"]
 
         for label_group, labels in label_lists.items():
             print('Analyzing label group: {}, label list of "{}" '.format(label_group, labels))
@@ -70,7 +78,9 @@ class PerceptionLoadDatabaseResult:
 
         # Define axes
         # cartesian coordinate position
-        grid_axis_xy: np.ndarray = np.array([-90, -65, -55, -45, -35, -25, -15, -5, 5, 15, 25, 35, 45, 55, 65, 90])
+        # grid_axis_xy: np.ndarray = np.array([-90, -65, -55, -45, -35, -25, -15, -5, 5, 15, 25, 35, 45, 55, 65, 90])
+        grid_axis_xy: np.ndarray = np.arange(-200, 200, 10)
+
         axis_x: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="length", data_label="x")
         axis_y: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="length", data_label="y")
         axis_x.set_grid_axis(grid_axis_xy)
@@ -88,33 +98,38 @@ class PerceptionLoadDatabaseResult:
         axis_error_delta.set_grid_axis(grid_axis_error)
         axis_error_delta.plot_range = (0.0, 6.0)
         axis_error_delta.plot_aspect_ratio = 1.0
-        # visual heading angle
-        axis_heading: PerceptionFieldAxis = PerceptionFieldAxis(
-            quantity_type="angle", data_label="visual_heading", name="Heading"
-        )
-        # yaw error
-        axis_error_yaw: PerceptionFieldAxis = PerceptionFieldAxis(
-            quantity_type="angle", data_label="error_yaw", name="Yaw Error"
-        )
-        # none
-        axis_none: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="none", data_label="none", name="None")
+        # # visual heading angle
+        # axis_heading: PerceptionFieldAxis = PerceptionFieldAxis(
+        #     quantity_type="angle", data_label="visual_heading", name="Heading"
+        # )
+        # # yaw error
+        # axis_error_yaw: PerceptionFieldAxis = PerceptionFieldAxis(
+        #     quantity_type="angle", data_label="error_yaw", name="Yaw Error"
+        # )
+        # # none
+        # axis_none: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="none", data_label="none", name="None")
 
         plots: PerceptionFieldPlots = PerceptionFieldPlots(plot_dir)
 
         # 2D xy grid
         # Analysis
         error_field, _ = analyzer.analyze_xy(axis_x, axis_y, **kwargs)
+        # Save the whole field
+        import pickle
+        with open(plot_dir + "/error_field.pkl", "wb") as f:
+            pickle.dump(error_field, f)
+
         # Visualization
         plots.plot_field_basics(error_field, prefix="XY")
 
-        # distance-visual_heading grid
-        # Analysis
-        error_field_dist_heading, uncertainty_field_dist_heading = analyzer.analyze_xy(
-            axis_dist, axis_heading, **kwargs
-        )
-        # Visualization
-        plots.plot_field_basics(error_field_dist_heading, prefix="dist_heading")
-        plots.plot_field_basics(uncertainty_field_dist_heading, prefix="dist_heading", is_uncertainty=True)
+        # # distance-visual_heading grid
+        # # Analysis
+        # error_field_dist_heading, uncertainty_field_dist_heading = analyzer.analyze_xy(
+        #     axis_dist, axis_heading, **kwargs
+        # )
+        # # Visualization
+        # plots.plot_field_basics(error_field_dist_heading, prefix="dist_heading")
+        # plots.plot_field_basics(uncertainty_field_dist_heading, prefix="dist_heading", is_uncertainty=True)
 
         # Save plots, show and close
         plots.save()
@@ -122,45 +137,45 @@ class PerceptionLoadDatabaseResult:
             plots.show()
         plots.close()
 
-        # Individual analysis
-        prefix: str = ""
+        # # Individual analysis
+        # prefix: str = ""
 
-        # Dist-error grid
-        error_field_range, _ = analyzer.analyze_xy(axis_dist, axis_error_delta, **kwargs)
-        field = error_field_range
-        numb_log: np.ndarray
+        # # Dist-error grid
+        # error_field_range, _ = analyzer.analyze_xy(axis_dist, axis_error_delta, **kwargs)
+        # field = error_field_range
+        # numb_log: np.ndarray
 
-        if field.has_any_error_data:
-            prefix = "dist_delta-error"
-            numb = field.num
-            numb[numb == 0] = np.nan
-            numb_log = np.log10(field.num)
-            # plot
-            plots.plot_custom_field(field, numb_log, prefix + "_" + "numb_log", "log10 of samples [-]", vmin=0)
+        # if field.has_any_error_data:
+        #     prefix = "dist_delta-error"
+        #     numb = field.num
+        #     numb[numb == 0] = np.nan
+        #     numb_log = np.log10(field.num)
+        #     # plot
+        #     plots.plot_custom_field(field, numb_log, prefix + "_" + "numb_log", "log10 of samples [-]", vmin=0)
 
-        # heading-yaw_error grid
-        error_field_yaw_error, _ = analyzer.analyze_xy(axis_heading, axis_error_yaw, **kwargs)
-        field = error_field_yaw_error
+        # # heading-yaw_error grid
+        # error_field_yaw_error, _ = analyzer.analyze_xy(axis_heading, axis_error_yaw, **kwargs)
+        # field = error_field_yaw_error
 
-        if field.has_any_error_data:
-            prefix = "yaw_error"
-            numb = field.num
-            numb[numb == 0] = np.nan
-            numb_log = np.log10(field.num)
-            # plot
-            plots.plot_custom_field(field, numb_log, prefix + "_" + "numb_log", "log10 of samples [-]", vmin=0)
+        # if field.has_any_error_data:
+        #     prefix = "yaw_error"
+        #     numb = field.num
+        #     numb[numb == 0] = np.nan
+        #     numb_log = np.log10(field.num)
+        #     # plot
+        #     plots.plot_custom_field(field, numb_log, prefix + "_" + "numb_log", "log10 of samples [-]", vmin=0)
 
-        # Single axis analysis
-        # distance_heading grid
-        error_field_dist_1d, uncertainty_field_dist_1d = analyzer.analyze_xy(axis_dist, axis_none, **kwargs)
-        plots.plot_axis_basic(error_field_dist_1d, prefix="dist_1D")
-        plots.plot_axis_basic(uncertainty_field_dist_1d, prefix="dist_1D", is_uncertainty=True)
+        # # Single axis analysis
+        # # distance_heading grid
+        # error_field_dist_1d, uncertainty_field_dist_1d = analyzer.analyze_xy(axis_dist, axis_none, **kwargs)
+        # plots.plot_axis_basic(error_field_dist_1d, prefix="dist_1D")
+        # plots.plot_axis_basic(uncertainty_field_dist_1d, prefix="dist_1D", is_uncertainty=True)
 
-        # Save plots, show and close
-        plots.save()
-        if self._show:
-            plots.show()
-        plots.close()
+        # # Save plots, show and close
+        # plots.save()
+        # if self._show:
+        #     plots.show()
+        # plots.close()
 
 
 def main() -> None:
