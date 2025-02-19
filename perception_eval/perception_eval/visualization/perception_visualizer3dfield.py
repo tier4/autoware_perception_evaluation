@@ -21,15 +21,15 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from perception_eval.tool import PerceptionFieldXY
+from perception_eval.tool import PerceptionFieldTime, PerceptionFieldXY
 
 
 class PerceptionFieldPlot:
-    def __init__(self, figname: str, value: str = "Value []") -> None:
+    def __init__(self, figname: str, value: str = "Value []", aspect="equal") -> None:
         self.name: str = figname
         self.figure = plt.figure(self.name, figsize=(10, 8))
         self.ax = self.figure.add_subplot(111)
-        self.ax.set_aspect("equal")
+        self.ax.set_aspect(aspect)
         self.value: str = value
         self.value_map: np.ndarray = None
 
@@ -39,7 +39,7 @@ class PerceptionFieldPlot:
         self.cbar = self.figure.colorbar(self.cs)
         self.cbar.set_label(self.value)
 
-    def set_axis_1d(self, field: PerceptionFieldXY, value: np.ndarray) -> None:
+    def set_axis_1d(self, field: PerceptionFieldXY | PerceptionFieldTime, value: np.ndarray) -> None:
         if np.all(np.isnan(value)):
             return
         value_range = [np.nanmin(value), np.nanmax(value)]
@@ -86,6 +86,16 @@ class PerceptionFieldPlot:
         # enlarge figure size
         self.figure.set_size_inches(14, 10)
         self.ax.set_zlabel(self.value)
+
+    def plot_line(self, x, y, field) -> None:
+        x = np.array(list(x))
+        y = np.array(list(y))
+        self.value_map = np.array(y)
+        self.cs = self.ax.plot(x, y)
+        self.ax.set_xlabel(field.axis_x.get_title())
+        self.ax.set_ylabel(self.value)
+        self.ax.grid(c="k", ls="-", alpha=0.3)
+        self.ax.autoscale()
 
 
 class PerceptionFieldPlots:
@@ -234,3 +244,41 @@ class PerceptionFieldPlots:
             self.last.ax.set_ylim([-1, 5])
         else:
             print("Plot (Prefix " + prefix + "): No TP data, nothing for error analysis")
+
+    def plot_field_time(self, field: PerceptionFieldTime, prefix: str) -> None:
+        # AR(1) parameters
+        for err in field.ar1_errors:
+            self.add(PerceptionFieldPlot(prefix + "_" + err + "_phi",
+                                         f"{err}'s Autoregression coefficient",
+                                         aspect="auto"))
+            self.last.plot_line(field.ar1_phi[err].keys(),
+                                field.ar1_phi[err].values(), field)
+
+            self.add(PerceptionFieldPlot(prefix + "_" + err + "_sigma2",
+                                         f"{err}'s sigma^2", aspect="auto"))
+            self.last.plot_line(field.ar1_sigma2[err].keys(),
+                                field.ar1_sigma2[err].values(), field)
+            self.add(PerceptionFieldPlot(prefix + "_" + err +
+                     "_count", f"{err}'s count for phi calculation", aspect="auto"))
+            self.last.plot_line(field.ar1_gama_count[err].keys(),
+                                field.ar1_gama_count[err].values(), field)
+
+        # Markov chain parameters
+        for err in field.mc_errors:
+            self.add(PerceptionFieldPlot(prefix + "_" + err + "_keep_0_prob",
+                                         f"{err}'s Transition probability of keeping 0", aspect="auto"))
+            self.last.plot_line(field.mc_keep_0_rate[err].keys(),
+                                field.mc_keep_0_rate[err].values(), field)
+
+            self.add(PerceptionFieldPlot(prefix + "_" + err + "_keep_1_prob",
+                                         f"{err}'s Transition probability of keeping 1", aspect="auto"))
+            self.last.plot_line(field.mc_keep_1_rate[err].keys(),
+                                field.mc_keep_1_rate[err].values(), field)
+            self.add(PerceptionFieldPlot(prefix + "_" + err + "_count",
+                                         f"{err}'s count of deactive state (0)", aspect="auto"))
+            self.last.plot_line(field.mc_0_count[err].keys(),
+                                field.mc_0_count[err].values(), field)
+            self.add(PerceptionFieldPlot(prefix + "_" + err + "_count",
+                                         f"{err}'s count of active state (1)", aspect="auto"))
+            self.last.plot_line(field.mc_1_count[err].keys(),
+                                field.mc_1_count[err].values(), field)

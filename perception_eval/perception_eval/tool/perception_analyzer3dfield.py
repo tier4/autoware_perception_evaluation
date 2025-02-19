@@ -483,19 +483,19 @@ class PerceptionFieldXY:
 class PerceptionFieldTime:
     def __init__(
         self,
-        axis_t: PerceptionFieldAxis,
+        axis_x: PerceptionFieldAxis,
     ) -> None:
         """
         Initializes a PerceptionFieldTime object.
 
         Args:
-            axis_t (PerceptionFieldAxis): The time axis configuration for the perception field.
+            axis_x (PerceptionFieldAxis): The time axis configuration for the perception field.
         """
 
-        self.axis_t: PerceptionFieldAxis = axis_t
-        self.mesh_t = axis_t.grid_axis
-        self.nt = len(axis_t.grid_axis)
-        self.time_intervals = list(round(t, 1) for t in axis_t.grid_axis)
+        self.axis_x: PerceptionFieldAxis = axis_x
+        self.mesh_x = axis_x.grid_axis
+        self.nt = len(axis_x.grid_axis)
+        self.time_intervals = list(round(t, 1) for t in axis_x.grid_axis)
 
         self.has_any_error_data: bool = False
         self.N: float = 0
@@ -557,7 +557,6 @@ class PerceptionFieldTime:
                 self.mc_keep_1_rate[err][dt] /= self.mc_1_count[err][dt]
 
     def print_model_parameters(self) -> None:
-        # TODO implement for mc
         for err in self.basic_errors:
             print(f"{err}\'s Statics:\n\
                   \tmean: {round(self.basic_mean[err],3)}\n\
@@ -582,7 +581,7 @@ class PerceptionFieldTime:
                       \t deactive_count: {int(self.mc_0_count[err][dt])}\n\
                       \t active_count: {int(self.mc_1_count[err][dt])}"
                       )
-            # Analyzer
+# Analyzer
 
 
 class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
@@ -1148,11 +1147,11 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 for j in range(i, n_data):
                     dt = round(data[j]["timestamp"]/1_000_000 -
                                data[i]["timestamp"]/1_000_000, 1)
-                    if not dt in time_field.mesh_t:
+                    if not dt in time_field.mesh_x:
                         continue
 
                     # tp
-                    if dt != time_field.mesh_t[0]:
+                    if dt != time_field.mesh_x[0]:
                         if not data[i]['is_tp']:
                             time_field.mc_0_count['tp'][dt] += 1
                             if not data[j]['is_tp']:
@@ -1181,5 +1180,5 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         # Fit AR(1) / ALR(1) models
         time_field.process_ar1_and_mc_parameters()
         time_field.print_model_parameters()
-        import pdb
-        pdb.set_trace()
+
+        return time_field

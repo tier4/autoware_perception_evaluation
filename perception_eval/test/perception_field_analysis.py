@@ -114,14 +114,16 @@ class PerceptionLoadDatabaseResult:
         plots: PerceptionFieldPlots = PerceptionFieldPlots(plot_dir)
         # ---------------------------------------------------------------
         # # 2D xy grid
-        # # Analysis
-        # error_field, _ = analyzer.analyze_xy(axis_x, axis_y, **kwargs)
-        # # Visualization
-        # plots.plot_field_basics(error_field, prefix="XY")
+        # Analysis
+        error_field, _ = analyzer.analyze_xy(axis_x, axis_y, **kwargs)
+        # Visualization
+        plots.plot_field_basics(error_field, prefix="XY")
 
-        # Time grid
+        # # Time grid
+        # Analysis
         error_field_t = analyzer.analyze_time(axis_t, **kwargs)
-        # TODO plots.plot_fiedl_time(error_field_t, prefix="time")
+        # Visualization
+        plots.plot_field_time(error_field_t, prefix="time")
         # ---------------------------------------------------------------
 
         # # distance-visual_heading grid
