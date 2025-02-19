@@ -313,7 +313,8 @@ class PerceptionFieldXY:
         self.cell_pos_y: np.ndarray = self._get_cell_pos(axis_y)
 
         # Generate mesh
-        self.mesh_center_x, self.mesh_center_y = np.meshgrid(self.cell_pos_x, self.cell_pos_y, indexing="ij")
+        self.mesh_center_x, self.mesh_center_y = np.meshgrid(
+            self.cell_pos_x, self.cell_pos_y, indexing="ij")
 
         # Set layer array size
         #   arrays represent surface, including outside of grid points
@@ -385,14 +386,16 @@ class PerceptionFieldXY:
             self.error_yaw_mean[self.pair_valid], self.num_error_yaw_count[self.pair_valid]
         )
         self.error_yaw_std[self.pair_valid] = np.sqrt(
-            np.divide(self.error_yaw_std[self.pair_valid], self.num_error_yaw_count[self.pair_valid])
+            np.divide(self.error_yaw_std[self.pair_valid],
+                      self.num_error_yaw_count[self.pair_valid])
         )
 
         self.error_dist_mean[self.pair_valid] = np.divide(
             self.error_dist_mean[self.pair_valid], self.num_error_dist_count[self.pair_valid]
         )
         self.error_dist_std[self.pair_valid] = np.sqrt(
-            np.divide(self.error_dist_std[self.pair_valid], self.num_error_dist_count[self.pair_valid])
+            np.divide(self.error_dist_std[self.pair_valid],
+                      self.num_error_dist_count[self.pair_valid])
         )
 
         self.error_delta_mean[self.pair_valid] = np.divide(
@@ -477,7 +480,111 @@ class PerceptionFieldXY:
         return idx_x, idx_y
 
 
-# Analyzer
+class PerceptionFieldTime:
+    def __init__(
+        self,
+        axis_t: PerceptionFieldAxis,
+    ) -> None:
+        """
+        Initializes a PerceptionFieldTime object.
+
+        Args:
+            axis_t (PerceptionFieldAxis): The time axis configuration for the perception field.
+        """
+
+        self.axis_t: PerceptionFieldAxis = axis_t
+        self.mesh_t = axis_t.grid_axis
+        self.nt = len(axis_t.grid_axis)
+        self.time_intervals = list(round(t, 1) for t in axis_t.grid_axis)
+
+        self.has_any_error_data: bool = False
+        self.N: float = 0
+        self.data_grouped_by_uuid: Dict[str, list[Dict[str, Any]]] = dict()
+        # Basic statistics
+        self.basic_errors = ["yaw_flip", "yaw_err", "dist_err", "tp"]
+        self.basic_mean = dict()
+        self.basic_mean_count = dict()
+        for err in self.basic_errors:
+            self.basic_mean[err] = 0
+            self.basic_mean_count[err] = 1e-6
+
+        # AutoRegressive (1) model
+        # How to predict the next error noise value from the previous one:
+        #  err(t+dt) = mean + phi * (err(t)- mean) + sqrt(sigma2) * N(0, 1)
+        self.ar1_errors = ["yaw_err", "dist_err"]
+        self.ar1_gama = dict()
+        self.ar1_gama_count = dict()
+        self.ar1_phi = dict()
+        self.ar1_sigma2 = dict()
+        for err in self.ar1_errors:
+            self.ar1_gama[err] = dict((t, 0) for t in self.time_intervals)
+            self.ar1_gama_count[err] = dict((t, 1e-6) for t in self.time_intervals)
+            self.ar1_phi[err] = dict((t, 0) for t in self.time_intervals[1:])
+            self.ar1_sigma2[err] = dict((t, 0) for t in self.time_intervals[1:])
+
+        # Markov chain
+        # How to predict the next error noise value from the previous one:
+        self.mc_errors = ["tp"]
+        self.mc_keep_0_rate = dict()
+        self.mc_keep_1_rate = dict()
+        self.mc_0_count = dict()
+        self.mc_1_count = dict()
+        for err in self.mc_errors:
+            self.mc_keep_0_rate[err] = dict((t, 0) for t in self.time_intervals[1:])
+            self.mc_keep_1_rate[err] = dict((t, 0) for t in self.time_intervals[1:])
+            self.mc_0_count[err] = dict((t, 1e-6) for t in self.time_intervals[1:])
+            self.mc_1_count[err] = dict((t, 1e-6) for t in self.time_intervals[1:])
+
+    def process_basic_statics(self) -> None:
+        for err in self.basic_errors:
+            self.basic_mean[err] /= self.basic_mean_count[err]
+
+    def process_ar1_and_mc_parameters(self) -> None:
+        # AR(1)'s parameters
+        for err in self.ar1_errors:
+            for dt in self.time_intervals:
+                self.ar1_gama[err][dt] /= self.ar1_gama_count[err][dt]
+                if dt == 0.0:
+                    continue
+                self.ar1_phi[err][dt] = self.ar1_gama[err][dt] / self.ar1_gama[err][0]
+                self.ar1_sigma2[err][dt] = self.ar1_gama[err][0] - \
+                    self.ar1_phi[err][dt] * self.ar1_gama[err][dt]
+
+        # MC's parameters
+        for err in self.mc_errors:
+            for dt in self.time_intervals[1:]:
+                self.mc_keep_0_rate[err][dt] /= self.mc_0_count[err][dt]
+                self.mc_keep_1_rate[err][dt] /= self.mc_1_count[err][dt]
+
+    def print_model_parameters(self) -> None:
+        # TODO implement for mc
+        for err in self.basic_errors:
+            print(f"{err}\'s Statics:\n\
+                  \tmean: {round(self.basic_mean[err],3)}\n\
+                  \tcount: {int(self.basic_mean_count[err])}"
+                  )
+        for err in self.ar1_errors:
+            print(f"{err}\'s AR(1) model Statics:\n\
+                  \tvar: {round(self.ar1_gama[err][0],3)}")
+            for dt in self.time_intervals[1:]:
+                print(f"{err}\'s parameters for time_interval {dt} \n \
+                      \t phi: {round(self.ar1_phi[err][dt],3)}\n\
+                      \t sigma2: {round(self.ar1_sigma2[err][dt],3)}\n\
+                      \t count: {int(self.ar1_gama_count[err][dt])}"
+                      )
+            print('\n')
+        for err in self.mc_errors:
+            print(f"{err}\'s Markov Chain model Statics:")
+            for dt in self.time_intervals[1:]:
+                print(f"{err}\'s parameters for time_interval {dt} \n \
+                      \t keep_deactive_rate: {round(self.mc_keep_0_rate[err][dt],3)}\n\
+                      \t keep_active_rate: {round(self.mc_keep_1_rate[err][dt],3)}\n\
+                      \t deactive_count: {int(self.mc_0_count[err][dt])}\n\
+                      \t active_count: {int(self.mc_1_count[err][dt])}"
+                      )
+            # Analyzer
+
+
 class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
     """An analyzer class for 3D perception field evaluation results.
 
@@ -564,7 +671,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
             item_length = item.shape[0]
             pos += item_length
             if "ground_truth" in item.index.get_level_values(1) and "estimation" in item.index.get_level_values(1):
-                gt_est_pair_mask[pos - item_length : pos] = True
+                gt_est_pair_mask[pos - item_length: pos] = True
         df = df[gt_est_pair_mask]
 
         # Get ground truth and estimation data
@@ -589,7 +696,8 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         error_yaw[error_yaw > np.pi] -= 2 * np.pi
         error_yaw[error_yaw < -np.pi] += 2 * np.pi
         error_distance: np.ndarray = est["dist"].values[valid_mask] - gt["dist"].values[valid_mask]
-        error_azimuth: np.ndarray = est["azimuth"].values[valid_mask] - gt["azimuth"].values[valid_mask]
+        error_azimuth: np.ndarray = est["azimuth"].values[valid_mask] - \
+            gt["azimuth"].values[valid_mask]
         error_azimuth[error_azimuth > np.pi] -= 2 * np.pi
         error_azimuth[error_azimuth < -np.pi] += 2 * np.pi
 
@@ -677,7 +785,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
             item_length = item.shape[0]
             pos += item_length
             if "ground_truth" in item.index.get_level_values(1) and "estimation" in item.index.get_level_values(1):
-                gt_est_pair_mask[pos - item_length : pos] = True
+                gt_est_pair_mask[pos - item_length: pos] = True
         df = df[gt_est_pair_mask]
 
         # get ground_truth and estimation data
@@ -812,7 +920,8 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 )
 
             if is_est_valid:
-                idx_est_x, idx_est_y = uncertainty_field.get_grid_index(est[label_axis_x], est[label_axis_y])
+                idx_est_x, idx_est_y = uncertainty_field.get_grid_index(
+                    est[label_axis_x], est[label_axis_y])
                 uncertainty_field.num[idx_est_x, idx_est_y] += 1
 
                 uncertainty_field.x[idx_est_x, idx_est_y] += est["x"]
@@ -820,7 +929,8 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 uncertainty_field.yaw[idx_est_x, idx_est_y] += est["yaw"]
                 uncertainty_field.vx[idx_est_x, idx_est_y] += est["vx"]
                 uncertainty_field.vy[idx_est_x, idx_est_y] += est["vy"]
-                uncertainty_field.dist[idx_est_x, idx_est_y] += np.sqrt(est["x"] ** 2 + est["y"] ** 2)
+                uncertainty_field.dist[idx_est_x,
+                                       idx_est_y] += np.sqrt(est["x"] ** 2 + est["y"] ** 2)
                 uncertainty_field.confidence[idx_est_x, idx_est_y] += est["confidence"]
 
                 if est["status"] == MatchingStatus.TP.value:
@@ -863,20 +973,20 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 error_azimuth: float = gt["error_azimuth"]
 
                 # error yaw is flipped if it is more than 90 degree
-                if -np.pi / 4 < gt["error_yaw"] < np.pi / 4:
-                    error_yaw: float =  gt["error_yaw"]
+                if -np.pi / 3 < gt["error_yaw"] < np.pi / 3:
+                    error_yaw: float = gt["error_yaw"]
                     error_field.num_error_yaw_count[idx_gt_x, idx_gt_y] += 1
-                elif 3 * np.pi / 4 < gt["error_yaw"] or -3 * np.pi / 4 > gt["error_yaw"]:
+                elif 2 * np.pi / 3 < gt["error_yaw"] or -2 * np.pi / 3 > gt["error_yaw"]:
                     error_yaw: float = 0
                     error_field.num_yaw_flip[idx_gt_x, idx_gt_y] += 1
                 else:
                     error_yaw: float = 0
-                
+
                 if gt["error_dist"] <= 10:
                     error_dist: float = gt["error_dist"]
                     error_field.num_error_dist_count[idx_gt_x, idx_gt_y] += 1
                 else:
-                    error_dist: float = 0    
+                    error_dist: float = 0
 
                 # fill the bins
                 idx_gt_x, idx_gt_y = error_field.get_grid_index(gt[label_axis_x], gt[label_axis_y])
@@ -915,7 +1025,8 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                     axis=0,
                 )
 
-                idx_est_x, idx_est_y = uncertainty_field.get_grid_index(est[label_axis_x], est[label_axis_y])
+                idx_est_x, idx_est_y = uncertainty_field.get_grid_index(
+                    est[label_axis_x], est[label_axis_y])
                 uncertainty_field.num_pair[idx_est_x, idx_est_y] += 1
                 uncertainty_field.error_x_mean[idx_est_x, idx_est_y] += -error_x
                 uncertainty_field.error_x_std[idx_est_x, idx_est_y] += error_x**2
@@ -956,3 +1067,119 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         uncertainty_field.do_post_process()
 
         return error_field, uncertainty_field
+
+    def analyze_time(self, axis_t: PerceptionFieldAxis, **kwargs) -> PerceptionFieldTime:
+        # Extract data
+        df: pd.DataFrame = self.get(**kwargs)
+
+        # Initialize fields
+        time_field: PerceptionFieldTime = PerceptionFieldTime(axis_t)
+
+        # group by uuid
+        for _, item in df.groupby(level=0):
+            # init
+            pair = item.droplevel(level=0)
+            if not "ground_truth" in pair.index:
+                continue
+            if pair.loc["ground_truth"]["uuid"] is None:
+                continue
+            gt = pair.loc["ground_truth"]
+            uuid = gt["uuid"]
+            assert isinstance(uuid, str)
+            assert gt["timestamp"] is not None
+            time_field.data_grouped_by_uuid.setdefault(uuid, [])
+
+            # check if the estimation valid.
+            is_tp = gt["status"] == MatchingStatus.TP.value and ~np.isnan(
+                gt["error_dist"]) and ~np.isnan(gt["error_yaw"])
+
+            # calculate yaw related err
+            is_yaw_fliped = False
+            is_yaw_ignored = False
+            is_yaw_flip_ignored = False
+            yaw_err = np.nan
+
+            if -np.pi / 3 < gt["error_yaw"] < np.pi / 3:
+                yaw_err = gt["error_yaw"]
+            elif 2 * np.pi / 3 < gt["error_yaw"] or -2 * np.pi / 3 > gt["error_yaw"]:
+                is_yaw_fliped = True
+            else:
+                is_yaw_flip_ignored = True
+            if gt["speed"] > 0.1:
+                is_yaw_flip_ignored = True
+
+            state = dict(
+                uuid=gt['uuid'],
+                timestamp=gt['timestamp'],
+                is_tp=is_tp,
+                yaw_err=yaw_err,
+                is_yaw_fliped=is_yaw_fliped,
+                is_yaw_ignored=is_yaw_ignored,
+                dist_err=gt['error_dist'],
+            )
+
+            # update time_field
+            time_field.data_grouped_by_uuid[uuid].append(state)
+            time_field.N += 1
+
+            time_field.basic_mean['tp'] += 1 if is_tp else 0
+            time_field.basic_mean_count['tp'] += 1
+
+            time_field.basic_mean['yaw_flip'] += 1 if is_yaw_fliped else 0
+            time_field.basic_mean_count['yaw_flip'] += 1 if not is_yaw_flip_ignored else 0
+
+            if not np.isnan(yaw_err):
+                time_field.basic_mean['yaw_err'] += yaw_err
+                time_field.basic_mean_count['yaw_err'] += 1
+
+            if ~np.isnan(gt['error_dist']):
+                time_field.basic_mean['dist_err'] += gt['error_dist']
+                time_field.basic_mean_count['dist_err'] += 1
+        time_field.process_basic_statics()
+
+        # accumulate data for AR(1) / ALR(1) models
+        for uuid, data in time_field.data_grouped_by_uuid.items():
+            # sort by timestamp
+            data = sorted(data, key=lambda x: x['timestamp'])
+            n_data = len(data)
+
+            # calculate gama(s)
+            for i in range(n_data):
+                for j in range(i, n_data):
+                    dt = round(data[j]["timestamp"]/1_000_000 -
+                               data[i]["timestamp"]/1_000_000, 1)
+                    if not dt in time_field.mesh_t:
+                        continue
+
+                    # tp
+                    if dt != time_field.mesh_t[0]:
+                        if not data[i]['is_tp']:
+                            time_field.mc_0_count['tp'][dt] += 1
+                            if not data[j]['is_tp']:
+                                time_field.mc_keep_0_rate['tp'][dt] += 1
+                        else:
+                            time_field.mc_1_count['tp'][dt] += 1
+                            if data[j]['is_tp']:
+                                time_field.mc_keep_1_rate['tp'][dt] += 1
+
+                    # calculate yaw_err's gama(s)
+                    yaw_err_mean = time_field.basic_mean['yaw_err']
+                    yaw_err_gamma_dt = (data[i]['yaw_err']-yaw_err_mean) * \
+                        (data[j]['yaw_err']-yaw_err_mean)
+                    if not np.isnan(yaw_err_gamma_dt):
+                        time_field.ar1_gama['yaw_err'][dt] += yaw_err_gamma_dt
+                        time_field.ar1_gama_count['yaw_err'][dt] += 1
+
+                    # calculate dist_err's gama(s)
+                    dist_err_mean = time_field.basic_mean['dist_err']
+                    dist_err_gamma_dt = (data[i]['dist_err']-dist_err_mean) * \
+                        (data[j]['dist_err']-dist_err_mean)
+                    if not np.isnan(dist_err_gamma_dt):
+                        time_field.ar1_gama['dist_err'][dt] += dist_err_gamma_dt
+                        time_field.ar1_gama_count['dist_err'][dt] += 1
+
+        # Fit AR(1) / ALR(1) models
+        time_field.process_ar1_and_mc_parameters()
+        time_field.print_model_parameters()
+        import pdb
+        pdb.set_trace()

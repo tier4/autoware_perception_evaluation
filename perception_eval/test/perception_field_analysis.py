@@ -85,19 +85,21 @@ class PerceptionLoadDatabaseResult:
         axis_y: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="length", data_label="y")
         axis_x.set_grid_axis(grid_axis_xy)
         axis_y.set_grid_axis(grid_axis_xy)
-        # plane distance
-        axis_dist: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="length", data_label="dist", name="Distance")
-        grid_axis_dist: np.ndarray = np.arange(0, 105, 10)
-        axis_dist.set_grid_axis(grid_axis_dist)
-        axis_dist.plot_range = (0.0, 110.0)
-        # position error
-        axis_error_delta: PerceptionFieldAxis = PerceptionFieldAxis(
-            quantity_type="length", data_label="error_delta", name="Position Error"
-        )
-        grid_axis_error: np.ndarray = np.arange(0, 8.0, 0.5)
-        axis_error_delta.set_grid_axis(grid_axis_error)
-        axis_error_delta.plot_range = (0.0, 6.0)
-        axis_error_delta.plot_aspect_ratio = 1.0
+        axis_t: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="time", data_label="t")
+        axis_t.set_grid_axis(np.arange(0.0, 5.0, 0.5))
+        # # plane distance
+        # axis_dist: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="length", data_label="dist", name="Distance")
+        # grid_axis_dist: np.ndarray = np.arange(0, 105, 10)
+        # axis_dist.set_grid_axis(grid_axis_dist)
+        # axis_dist.plot_range = (0.0, 110.0)
+        # # position error
+        # axis_error_delta: PerceptionFieldAxis = PerceptionFieldAxis(
+        #     quantity_type="length", data_label="error_delta", name="Position Error"
+        # )
+        # grid_axis_error: np.ndarray = np.arange(0, 8.0, 0.5)
+        # axis_error_delta.set_grid_axis(grid_axis_error)
+        # axis_error_delta.plot_range = (0.0, 6.0)
+        # axis_error_delta.plot_aspect_ratio = 1.0
         # # visual heading angle
         # axis_heading: PerceptionFieldAxis = PerceptionFieldAxis(
         #     quantity_type="angle", data_label="visual_heading", name="Heading"
@@ -110,17 +112,17 @@ class PerceptionLoadDatabaseResult:
         # axis_none: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="none", data_label="none", name="None")
 
         plots: PerceptionFieldPlots = PerceptionFieldPlots(plot_dir)
+        # ---------------------------------------------------------------
+        # # 2D xy grid
+        # # Analysis
+        # error_field, _ = analyzer.analyze_xy(axis_x, axis_y, **kwargs)
+        # # Visualization
+        # plots.plot_field_basics(error_field, prefix="XY")
 
-        # 2D xy grid
-        # Analysis
-        error_field, _ = analyzer.analyze_xy(axis_x, axis_y, **kwargs)
-        # Save the whole field
-        import pickle
-        with open(plot_dir + "/error_field.pkl", "wb") as f:
-            pickle.dump(error_field, f)
-
-        # Visualization
-        plots.plot_field_basics(error_field, prefix="XY")
+        # Time grid
+        error_field_t = analyzer.analyze_time(axis_t, **kwargs)
+        # TODO plots.plot_fiedl_time(error_field_t, prefix="time")
+        # ---------------------------------------------------------------
 
         # # distance-visual_heading grid
         # # Analysis

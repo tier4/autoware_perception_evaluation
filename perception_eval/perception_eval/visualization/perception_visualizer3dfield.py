@@ -101,7 +101,8 @@ class PerceptionFieldPlots:
             fig.figure.savefig(Path(self.save_dir, fig.name + ".png"))
             value_to_save = fig.value_map.astype(str)
             value_to_save[np.isnan(fig.value_map)] = ''
-            np.savetxt(Path(self.save_dir, fig.name + ".csv"), value_to_save, delimiter=",", fmt='%s')
+            np.savetxt(Path(self.save_dir, fig.name + ".csv"),
+                       value_to_save, delimiter=",", fmt='%s')
 
     def show(self) -> None:
         plt.show()
@@ -173,7 +174,7 @@ class PerceptionFieldPlots:
 
         _ = self.last.ax.scatter(x_mean_plot, y_mean_plot, marker="+", c="r", s=10)
         self.last.set_axes(field)
-        
+
         # Yaw error
         self.add(PerceptionFieldPlot(prefix + "_" + "yaw_error_mean", "Yaw error mean [rad]"))
         self.last.plot_mesh_map(field, field.error_yaw_mean)
@@ -183,13 +184,12 @@ class PerceptionFieldPlots:
         self.last.set_axes(field)
 
         # Distance error
-        self.add(PerceptionFieldPlot(prefix + "_" + "dist_error_mean", "Distance error mean [m]"))
+        self.add(PerceptionFieldPlot(prefix + "_" + "dist_error", "Distance error mean [m]"))
         self.last.plot_mesh_map(field, field.error_dist_mean)
         self.last.set_axes(field)
         self.add(PerceptionFieldPlot(prefix + "_" + "dist_error_std", "Distance error std [m]"))
         self.last.plot_mesh_map(field, field.error_dist_std)
         self.last.set_axes(field)
-
 
     def plot_custom_field(
         self, field: PerceptionFieldXY, array: np.ndarray, filename: str, title: str, **kwargs
@@ -210,7 +210,8 @@ class PerceptionFieldPlots:
         self.last.ax.scatter(field.dist, field.ratio_tp, marker="o", c="b", s=20, label="TP")
         self.last.ax.scatter(field.dist, field.ratio_fn, marker="x", c="r", s=20, label="FN")
         self.last.ax.scatter(field.dist, field.ratio_fp, marker="^", c="g", s=20, label="FP")
-        self.last.ax.scatter(field.dist, field.ratio_yaw_flip, marker="v", c="y", s=20, label="Yaw Flip")
+        self.last.ax.scatter(field.dist, field.ratio_yaw_flip,
+                             marker="v", c="y", s=20, label="Yaw Flip")
         self.last.set_axis_1d(field, field.ratio_tp)
         self.last.ax.set_ylim([0, 1])
         self.last.ax.set_aspect(10.0 / 0.2)
