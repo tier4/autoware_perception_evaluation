@@ -501,7 +501,10 @@ class PerceptionFieldTime:
         self.N: float = 0
         self.data_grouped_by_uuid: Dict[str, list[Dict[str, Any]]] = dict()
         # Basic statistics
-        self.basic_errors = ["yaw_flip", "yaw_err", "dist_err", "tp"]
+        self.dist_thresholds = [10, 20, 40, 60, 80, 120, 1000]
+
+        self.basic_errors = ["yaw_flip", "yaw_err",
+                             "dist_err", "tp"] + [f"tp_{t}m" for t in self.dist_thresholds]
         self.basic_mean = dict()
         self.basic_mean_count = dict()
         for err in self.basic_errors:
@@ -524,14 +527,16 @@ class PerceptionFieldTime:
 
         # Markov chain
         # How to predict the next error noise value from the previous one:
-        self.mc_errors = ["tp"]
-        self.mc_keep_0_rate = dict()
-        self.mc_keep_1_rate = dict()
+        self.mc_errors = ["yaw_flip", "tp"] + [f"tp_{t}m" for t in self.dist_thresholds]
+        self.mc_p00 = dict()
+        self.mc_p11 = dict()
+        self.mc_rho = dict()
         self.mc_0_count = dict()
         self.mc_1_count = dict()
         for err in self.mc_errors:
-            self.mc_keep_0_rate[err] = dict((t, 0) for t in self.time_intervals[1:])
-            self.mc_keep_1_rate[err] = dict((t, 0) for t in self.time_intervals[1:])
+            self.mc_p00[err] = dict((t, 0) for t in self.time_intervals[1:])
+            self.mc_p11[err] = dict((t, 0) for t in self.time_intervals[1:])
+            self.mc_rho[err] = dict((t, 0) for t in self.time_intervals[1:])
             self.mc_0_count[err] = dict((t, 1e-6) for t in self.time_intervals[1:])
             self.mc_1_count[err] = dict((t, 1e-6) for t in self.time_intervals[1:])
 
@@ -553,8 +558,9 @@ class PerceptionFieldTime:
         # MC's parameters
         for err in self.mc_errors:
             for dt in self.time_intervals[1:]:
-                self.mc_keep_0_rate[err][dt] /= self.mc_0_count[err][dt]
-                self.mc_keep_1_rate[err][dt] /= self.mc_1_count[err][dt]
+                self.mc_p00[err][dt] /= self.mc_0_count[err][dt]
+                self.mc_p11[err][dt] /= self.mc_1_count[err][dt]
+                self.mc_rho[err][dt] = self.mc_p11[err][dt] + self.mc_p00[err][dt] - 1
 
     def print_model_parameters(self) -> None:
         for err in self.basic_errors:
@@ -576,8 +582,9 @@ class PerceptionFieldTime:
             print(f"{err}\'s Markov Chain model Statics:")
             for dt in self.time_intervals[1:]:
                 print(f"{err}\'s parameters for time_interval {dt} \n \
-                      \t keep_deactive_rate: {round(self.mc_keep_0_rate[err][dt],3)}\n\
-                      \t keep_active_rate: {round(self.mc_keep_1_rate[err][dt],3)}\n\
+                      \t keep_deactive_rate(p00): {round(self.mc_p00[err][dt],3)}\n\
+                      \t keep_active_rate(p11): {round(self.mc_p11[err][dt],3)}\n\
+                      \t rho: {round(self.mc_rho[err][dt],3)}\n\
                       \t deactive_count: {int(self.mc_0_count[err][dt])}\n\
                       \t active_count: {int(self.mc_1_count[err][dt])}"
                       )
@@ -1094,7 +1101,6 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
 
             # calculate yaw related err
             is_yaw_fliped = False
-            is_yaw_ignored = False
             is_yaw_flip_ignored = False
             yaw_err = np.nan
 
@@ -1113,8 +1119,9 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 is_tp=is_tp,
                 yaw_err=yaw_err,
                 is_yaw_fliped=is_yaw_fliped,
-                is_yaw_ignored=is_yaw_ignored,
+                is_yaw_flip_ignored=is_yaw_flip_ignored,
                 dist_err=gt['error_dist'],
+                ellipse_dist=np.sqrt((gt['y']/0.7)**2 + gt['x']**2),
             )
 
             # update time_field
@@ -1124,8 +1131,15 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
             time_field.basic_mean['tp'] += 1 if is_tp else 0
             time_field.basic_mean_count['tp'] += 1
 
-            time_field.basic_mean['yaw_flip'] += 1 if is_yaw_fliped else 0
-            time_field.basic_mean_count['yaw_flip'] += 1 if not is_yaw_flip_ignored else 0
+            if not is_yaw_flip_ignored:
+                time_field.basic_mean['yaw_flip'] += 1 if is_yaw_fliped else 0
+                time_field.basic_mean_count['yaw_flip'] += 1
+
+            for dist_threshold in time_field.dist_thresholds:
+                if state['ellipse_dist'] < dist_threshold:
+                    time_field.basic_mean[f'tp_{dist_threshold}m'] += 1 if is_tp else 0
+                    time_field.basic_mean_count[f'tp_{dist_threshold}m'] += 1
+                    break
 
             if not np.isnan(yaw_err):
                 time_field.basic_mean['yaw_err'] += yaw_err
@@ -1136,13 +1150,13 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 time_field.basic_mean_count['dist_err'] += 1
         time_field.process_basic_statics()
 
-        # accumulate data for AR(1) / ALR(1) models
+        # accumulate data for AR(1) / Markov Chain model
         for uuid, data in time_field.data_grouped_by_uuid.items():
             # sort by timestamp
             data = sorted(data, key=lambda x: x['timestamp'])
             n_data = len(data)
 
-            # calculate gama(s)
+            # calculate the gama(s) for AR(1) and the transition matrix for Markov Chain
             for i in range(n_data):
                 for j in range(i, n_data):
                     dt = round(data[j]["timestamp"]/1_000_000 -
@@ -1150,16 +1164,40 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                     if not dt in time_field.mesh_x:
                         continue
 
-                    # tp
+                    # calculate tp's transition matrix
                     if dt != time_field.mesh_x[0]:
-                        if not data[i]['is_tp']:
+                        # tp
+                        if not data[j]['is_tp']:
                             time_field.mc_0_count['tp'][dt] += 1
-                            if not data[j]['is_tp']:
-                                time_field.mc_keep_0_rate['tp'][dt] += 1
+                            if not data[i]['is_tp']:
+                                time_field.mc_p00['tp'][dt] += 1
                         else:
                             time_field.mc_1_count['tp'][dt] += 1
-                            if data[j]['is_tp']:
-                                time_field.mc_keep_1_rate['tp'][dt] += 1
+                            if data[i]['is_tp']:
+                                time_field.mc_p11['tp'][dt] += 1
+                        # tp_{t}m
+                        for dist_threshold in time_field.dist_thresholds:
+                            if data[j]['ellipse_dist'] < dist_threshold:
+                                if not data[j]['is_tp']:
+                                    time_field.mc_0_count[f'tp_{dist_threshold}m'][dt] += 1
+                                    if not data[i]['is_tp']:
+                                        time_field.mc_p00[f'tp_{dist_threshold}m'][dt] += 1
+                                else:
+                                    time_field.mc_1_count[f'tp_{dist_threshold}m'][dt] += 1
+                                    if data[i]['is_tp']:
+                                        time_field.mc_p11[f'tp_{dist_threshold}m'][dt] += 1
+                                break
+
+                        # calculate yaw_flip's transition matrix
+                        if not data[j]['is_yaw_flip_ignored'] and not data[i]['is_yaw_flip_ignored']:
+                            if not data[j]['is_yaw_fliped']:
+                                time_field.mc_0_count['yaw_flip'][dt] += 1
+                                if not data[i]['is_yaw_fliped']:
+                                    time_field.mc_p00['yaw_flip'][dt] += 1
+                            else:
+                                time_field.mc_1_count['yaw_flip'][dt] += 1
+                                if data[i]['is_yaw_fliped']:
+                                    time_field.mc_p11['yaw_flip'][dt] += 1
 
                     # calculate yaw_err's gama(s)
                     yaw_err_mean = time_field.basic_mean['yaw_err']
@@ -1177,7 +1215,7 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                         time_field.ar1_gama['dist_err'][dt] += dist_err_gamma_dt
                         time_field.ar1_gama_count['dist_err'][dt] += 1
 
-        # Fit AR(1) / ALR(1) models
+        # Fit AR(1) / Markov Chain model
         time_field.process_ar1_and_mc_parameters()
         time_field.print_model_parameters()
 

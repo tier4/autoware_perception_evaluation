@@ -249,7 +249,7 @@ class PerceptionFieldPlots:
         # AR(1) parameters
         for err in field.ar1_errors:
             self.add(PerceptionFieldPlot(prefix + "_" + err + "_phi",
-                                         f"{err}'s Autoregression coefficient",
+                                         f"{err}'s Autoregression coefficient(phi)",
                                          aspect="auto"))
             self.last.plot_line(field.ar1_phi[err].keys(),
                                 field.ar1_phi[err].values(), field)
@@ -267,18 +267,22 @@ class PerceptionFieldPlots:
         for err in field.mc_errors:
             self.add(PerceptionFieldPlot(prefix + "_" + err + "_keep_0_prob",
                                          f"{err}'s Transition probability of keeping 0", aspect="auto"))
-            self.last.plot_line(field.mc_keep_0_rate[err].keys(),
-                                field.mc_keep_0_rate[err].values(), field)
+            self.last.plot_line(field.mc_p00[err].keys(),
+                                field.mc_p00[err].values(), field)
 
             self.add(PerceptionFieldPlot(prefix + "_" + err + "_keep_1_prob",
                                          f"{err}'s Transition probability of keeping 1", aspect="auto"))
-            self.last.plot_line(field.mc_keep_1_rate[err].keys(),
-                                field.mc_keep_1_rate[err].values(), field)
-            self.add(PerceptionFieldPlot(prefix + "_" + err + "_count",
+            self.last.plot_line(field.mc_p11[err].keys(),
+                                field.mc_p11[err].values(), field)
+            self.add(PerceptionFieldPlot(prefix + "_" + err + "_0_count",
                                          f"{err}'s count of deactive state (0)", aspect="auto"))
             self.last.plot_line(field.mc_0_count[err].keys(),
                                 field.mc_0_count[err].values(), field)
-            self.add(PerceptionFieldPlot(prefix + "_" + err + "_count",
+            self.add(PerceptionFieldPlot(prefix + "_" + err + "_1_count",
                                          f"{err}'s count of active state (1)", aspect="auto"))
             self.last.plot_line(field.mc_1_count[err].keys(),
                                 field.mc_1_count[err].values(), field)
+            self.add(PerceptionFieldPlot(prefix + "_" + err + "_rho",
+                                         f"{err}'s Autoregression coefficient(rho)", aspect="auto"))
+            self.last.plot_line(field.mc_rho[err].keys(),
+                                field.mc_rho[err].values(), field)
