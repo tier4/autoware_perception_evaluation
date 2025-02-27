@@ -6,12 +6,16 @@ import os.path as osp
 
 import numpy as np
 import pandas as pd
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.tool import PerceptionAnalyzer3D
 from tabulate import tabulate
 
 
 def count_max_consecutive_fn(analyzer: PerceptionAnalyzer3D, distance: tuple[float, float]) -> dict:
     df = analyzer.filter_by_distance(distance=distance)
+
+    if len(df) == 0:
+        return {}
 
     max_counts = []
     max_time_spans = []
@@ -67,12 +71,47 @@ def count_max_consecutive_fn(analyzer: PerceptionAnalyzer3D, distance: tuple[flo
         # "Median Consecutive FN Frames": np.median(max_counts) if len(max_counts) > 0 else 0,
         "Max Consecutive FN Time": f"{max(max_time_spans):.3f}",
         "Min Consecutive FN Time": min(max_time_spans),
-        "Mean Consecutive FN Time": f"{np.mean(max_time_spans):.3f}" if len(max_time_spans) > 0 else 0.0,
-        "Std Consecutive FN Time": f"{np.std(max_time_spans):.3f}" if len(max_time_spans) > 0 else 1.0,
-        "Median Consecutive FN Time": np.median(max_time_spans) if len(max_time_spans) > 0 else 0,
-        "50Percentile Consecutive FN Time": np.percentile(max_time_spans, 50) if len(max_time_spans) > 0 else 0,
-        "99Percentile Consecutive FN Time": np.percentile(max_time_spans, 99) if len(max_time_spans) > 0 else 0,
+        "Mean Consecutive FN Time": f"{np.mean(max_time_spans):.3f}" if len(max_time_spans) > 0 else np.nan,
+        "Std Consecutive FN Time": f"{np.std(max_time_spans):.3f}" if len(max_time_spans) > 0 else np.nan,
+        "Median Consecutive FN Time": np.median(max_time_spans) if len(max_time_spans) > 0 else np.nan,
+        "50Percentile Consecutive FN Time": np.percentile(max_time_spans, 50) if len(max_time_spans) > 0 else np.nan,
+        "99Percentile Consecutive FN Time": np.percentile(max_time_spans, 99) if len(max_time_spans) > 0 else np.nan,
     }
+
+
+def analyze_prediction(
+    analyzer: PerceptionAnalyzer3D,
+    distance: tuple[float, float],
+    time_steps: list[float],
+) -> dict[int, dict]:
+    df = analyzer.filter_by_distance(distance=distance)
+    time_step_results: dict[int, list[tuple[float, float]]] = {t: [] for t in time_steps}
+    for uuid in pd.unique(df["uuid"]):
+        for t in time_steps:
+            future_df_t = analyzer.future_at(uuid=uuid, t=t)
+            if len(future_df_t) == 0:
+                continue
+            time_step_results[t].append(future_df_t[["err_x", "err_y"]].values)
+
+    outputs = {}
+    for t, results in time_step_results.items():
+        results = np.concatenate(results, axis=0)
+        n_ret = len(results)
+        outputs_t = {}
+        outputs_t["Max Error X[m]"] = np.nanmax(results[:, 0]) if n_ret > 0 else np.nan
+        outputs_t["Max Error Y[m]"] = np.nanmax(results[:, 1]) if n_ret > 0 else np.nan
+        outputs_t["Min Error X[m]"] = np.nanmin(results[:, 0]) if n_ret > 0 else np.nan
+        outputs_t["Min Error Y[m]"] = np.nanmin(results[:, 1]) if n_ret > 0 else np.nan
+        outputs_t["Mean Error X[m]"] = np.nanmean(results[:, 0]) if n_ret > 0 else np.nan
+        outputs_t["Mean Error Y[m]"] = np.nanmean(results[:, 1]) if n_ret > 0 else np.nan
+        outputs_t["Std Error X[m]"] = np.nanstd(results[:, 0]) if n_ret > 0 else np.nan
+        outputs_t["Std Error Y[m]"] = np.nanstd(results[:, 1]) if n_ret > 0 else np.nan
+        outputs_t["50Percentile Error X[m]"] = np.nanpercentile(results[:, 0], 50) if n_ret > 0 else np.nan
+        outputs_t["50Percentile Error Y[m]"] = np.nanpercentile(results[:, 1], 50) if n_ret > 0 else np.nan
+        outputs_t["99Percentile Error X[m]"] = np.nanpercentile(results[:, 0], 99) if n_ret > 0 else np.nan
+        outputs_t["99Percentile Error Y[m]"] = np.nanpercentile(results[:, 1], 99) if n_ret > 0 else np.nan
+        outputs[t] = outputs_t
+    return outputs
 
 
 def main() -> None:
@@ -91,12 +130,16 @@ def main() -> None:
 
     print(analyzer.df)
 
-    profiles = []
+    perception_profiles = []
 
+    time_steps = [1, 5, 10]
+    prediction_profiles = {t: [] for t in time_steps}
     distances = [(i * 10, (i + 1) * 10) for i in range(0, 13)]
     for distance in distances:
         counts = count_max_consecutive_fn(analyzer, distance)
         analysis = analyzer.analyze(distance=distance)
+        if analysis.score is None:
+            continue
         fp = analysis.score["FP"]["ALL"]
         fn = analysis.score["FN"]["ALL"]
         err_x = analysis.error["average"][("ALL", "x")]
@@ -115,7 +158,7 @@ def main() -> None:
         precision = num_tp / (num_tp + num_fp) if num_tp + num_fp != 0 else 1.0
         recall = num_tp / (num_tp + num_fn) if num_tp + num_fn != 0 else 1.0
 
-        profile = {
+        perception_profile = {
             "Distance[m]": distance[1],  # (min, max)
             "FP[%]": f"{fp * 100:.3f}",
             "FN[%]": f"{fn * 100:.3f}",
@@ -125,11 +168,23 @@ def main() -> None:
             "Area Error[m^2]": f"{err_area:.3f}",
             "Speed Error[m/s]": f"{err_speed:.3f}",
         }
-        profile.update(counts)
+        perception_profile.update(counts)
 
-        profiles.append(profile)
+        perception_profiles.append(perception_profile)
 
-    print(tabulate(profiles, headers="keys"))
+        if analyzer.config.evaluation_task == EvaluationTask.PREDICTION:
+            prediction_profile = analyze_prediction(analyzer, distance, time_steps)
+            for t, profiles in prediction_profile.items():
+                prediction_profiles[t].append({"Distance[m]": distance[1], **profiles})
+
+    print("=== Perception Analysis ===")
+    print(tabulate(perception_profiles, headers="keys"))
+
+    if any(len(p) > 0 for _, p in prediction_profiles.items()):
+        print("=== Prediction Analysis ===")
+        for t, profiles in prediction_profiles.items():
+            print(f"===@{t} steps===")
+            print(tabulate(profiles, headers="keys"))
 
 
 if __name__ == "__main__":
