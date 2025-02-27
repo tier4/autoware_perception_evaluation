@@ -365,17 +365,13 @@ class DynamicObject:
         if other is None:
             return None
 
-        path_errors: List[List[List[float]]] = []
-        for self_path, other_path in zip(self.predicted_paths, other.predicted_paths):
-            if self_path is None or other_path is None:
-                continue
-            min_length = min(len(self_path), len(other_path))
-            self_path, other_path = self_path[:min_length], other_path[:min_length]
-            err: List[Tuple[float, float, float]] = [
-                self_state.get_position_error(other_state) for self_state, other_state in zip(self_path, other_path)
-            ]  # (T, 3)
-            path_errors.append(err)
-        return np.array(path_errors)
+        path_errors: List[np.ndarray] = []
+        for self_path in self.predicted_paths:
+            for other_path in other.predicted_paths:
+                if self_path is None or other_path is None:
+                    continue
+                path_errors.append(self_path.get_path_error(other_path))
+        return np.stack(path_errors)
 
     def get_area_bev(self) -> float:
         """Get area of object BEV.

@@ -18,6 +18,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from typing import Generator
 
 import numpy as np
 from perception_eval.common.shape import Shape
@@ -146,27 +147,6 @@ class ObjectPath:
         self.states: List[ObjectState] = states
         self.confidence: float = confidence
 
-    def __getitem__(self, idx: int) -> Union[ObjectState, List[ObjectState]]:
-        """Returns Nth state.
-
-        Args:
-            idx (int): Index.
-
-        Returns:
-            Union[ObjectState, List[ObjectState]]
-        """
-        return self.states[idx]
-
-    def __iter__(self) -> ObjectPath:
-        self.__n = 0
-        return self
-
-    def __next__(self):
-        if self.__n < len(self):
-            self.__n += 1
-            return self[self.__n - 1]
-        raise StopIteration
-
     def __len__(self) -> int:
         """Returns length of states.
 
@@ -174,6 +154,20 @@ class ObjectPath:
             int: length of states.
         """
         return len(self.states)
+    
+    def get_path_error(self, other: ObjectPath) -> np.ndarray:
+        """Return the displacement error at each waypoint of the path.
+
+        Args:
+            other (ObjectPath): Other path.
+
+        Returns:
+            np.ndarray: Displacement error array in the shape of (T, 3).
+        """
+        min_length = min(len(self), len(other))
+        self_states = self.states[:min_length]
+        other_states = other.states[:min_length]
+        return np.array([self_s.get_position_error(other_s) for self_s, other_s in zip(self_states, other_states)]).reshape(-1, 3)
 
 
 def set_object_states(
