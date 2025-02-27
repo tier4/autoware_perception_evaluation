@@ -42,7 +42,7 @@ def prepare_path(
 
     estimated_object_.predicted_paths.sort(key=lambda x: x.confidence, reverse=True)
     for i, path in enumerate(estimated_object_.predicted_paths):
-        num_estimated_future =len(path) 
+        num_estimated_future = len(path)
         if num_estimated_future < num_gt_future:
             # pad by the last state
             pad_states = path.states + [path.states[-1] for _ in range(num_gt_future - num_estimated_future)]

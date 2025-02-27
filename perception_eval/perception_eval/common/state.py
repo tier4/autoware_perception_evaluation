@@ -14,11 +14,11 @@
 
 from __future__ import annotations
 
+from typing import Generator
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-from typing import Generator
 
 import numpy as np
 from perception_eval.common.shape import Shape
@@ -154,7 +154,7 @@ class ObjectPath:
             int: length of states.
         """
         return len(self.states)
-    
+
     def get_path_error(self, other: ObjectPath) -> np.ndarray:
         """Return the displacement error at each waypoint of the path.
 
@@ -167,7 +167,9 @@ class ObjectPath:
         min_length = min(len(self), len(other))
         self_states = self.states[:min_length]
         other_states = other.states[:min_length]
-        return np.array([self_s.get_position_error(other_s) for self_s, other_s in zip(self_states, other_states)]).reshape(-1, 3)
+        return np.array(
+            [self_s.get_position_error(other_s) for self_s, other_s in zip(self_states, other_states)]
+        ).reshape(-1, 3)
 
 
 def set_object_states(
