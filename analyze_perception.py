@@ -70,6 +70,8 @@ def count_max_consecutive_fn(analyzer: PerceptionAnalyzer3D, distance: tuple[flo
         "Mean Consecutive FN Time": f"{np.mean(max_time_spans):.3f}" if len(max_time_spans) > 0 else 0.0,
         "Std Consecutive FN Time": f"{np.std(max_time_spans):.3f}" if len(max_time_spans) > 0 else 1.0,
         "Median Consecutive FN Time": np.median(max_time_spans) if len(max_time_spans) > 0 else 0,
+        "50Percentile Consecutive FN Time": np.percentile(max_time_spans, 50) if len(max_time_spans) > 0 else 0,
+        "99Percentile Consecutive FN Time": np.percentile(max_time_spans, 99) if len(max_time_spans) > 0 else 0,
     }
 
 
@@ -88,8 +90,6 @@ def main() -> None:
         analyzer.add_from_pkl(archive)
 
     print(analyzer.df)
-
-    # print(analyzer.df["status"].to_string())
 
     profiles = []
 
