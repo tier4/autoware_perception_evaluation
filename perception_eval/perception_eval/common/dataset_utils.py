@@ -128,6 +128,10 @@ def _sample_to_frame(
             path_seconds=path_seconds,
             visibility=visibility,
         )
+
+        if evaluation_task == EvaluationTask.PREDICTION and len(object_.predicted_paths) == 0:
+            continue
+
         objects_.append(object_)
 
     frame = dataset.FrameGroundTruth(
@@ -216,6 +220,7 @@ def _convert_nuscenes_box_to_dynamic_object(
             sample_token=sample_token,
             seconds=path_seconds,
         )
+        # (T, D) -> (1, T, D)
         predicted_positions = [predicted_positions]
         predicted_orientations = [predicted_orientations]
         predicted_twists = [predicted_twists]
