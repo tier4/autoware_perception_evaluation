@@ -505,3 +505,58 @@ def filter_frame_by_distance(
     ret_frame.evaluate_frame()
 
     return ret_frame
+
+
+def filter_frame_by_region(
+    frame: PerceptionFrameResult,
+    x_position: tuple[float, float] = None,
+    y_position: tuple[float, float] = None,
+) -> PerceptionFrameResult:
+    """Filter frame results by region which is x axis and y axis.
+
+    Args:
+        frame (PerceptionFrameResult): Frame result.
+        x_position (tuple[float, float], optional): x-axis range. Defaults to None.
+        y_position (tuple[float, float], optional): y-axis range. Defaults to None.
+
+    Returns:
+        PerceptionFrameResult: Filtered frame results.
+    """
+    ret_frame = deepcopy(frame)
+
+    if x_position is not None:
+        min_x_position_list = [x_position[0]] * len(ret_frame.target_labels)
+        max_x_position_list = [x_position[1]] * len(ret_frame.target_labels)
+    else:
+        min_x_position_list = None
+        max_x_position_list = None
+
+    if y_position is not None:
+        min_y_position_list = [y_position[0]] * len(ret_frame.target_labels)
+        max_y_position_list = [y_position[1]] * len(ret_frame.target_labels)
+    else:
+        min_y_position_list = None
+        max_y_position_list = None
+
+    ret_frame.object_results = filter_object_results(
+        ret_frame.object_results,
+        target_labels=ret_frame.target_labels,
+        max_x_position_list=max_x_position_list,
+        min_x_position_list=min_x_position_list,
+        max_y_position_list=max_y_position_list,
+        min_y_position_list=min_y_position_list,
+        transforms=ret_frame.frame_ground_truth.transforms,
+    )
+    ret_frame.frame_ground_truth.objects = filter_objects(
+        ret_frame.frame_ground_truth.objects,
+        is_gt=True,
+        target_labels=ret_frame.target_labels,
+        max_x_position_list=max_x_position_list,
+        min_x_position_list=min_x_position_list,
+        max_y_position_list=max_y_position_list,
+        min_y_position_list=min_y_position_list,
+        transforms=ret_frame.frame_ground_truth.transforms,
+    )
+    ret_frame.evaluate_frame()
+
+    return ret_frame
