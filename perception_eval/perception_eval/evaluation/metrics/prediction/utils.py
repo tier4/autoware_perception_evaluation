@@ -42,7 +42,6 @@ def prepare_path(
     estimated_object_.predicted_paths = estimated_object_.predicted_paths[:top_k]
 
     num_stack: int = min(top_k, len(estimated_object_.predicted_paths))
-    for _ in range(num_stack - 1):
-        ground_truth_object_.predicted_paths.append(ground_truth_object_.predicted_paths)
+    ground_truth_object_.predicted_paths = ground_truth_object_.predicted_paths * num_stack
 
     return estimated_object_, ground_truth_object_
