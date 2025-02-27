@@ -38,7 +38,19 @@ def prepare_path(
     estimated_object_ = deepcopy(object_result.estimated_object)
     ground_truth_object_ = deepcopy(object_result.ground_truth_object)
 
+    num_gt_future = len(object_result.ground_truth_object.predicted_paths[0])
+
     estimated_object_.predicted_paths.sort(key=lambda x: x.confidence, reverse=True)
+    for i, path in enumerate(estimated_object_.predicted_paths):
+        num_estimated_future =len(path) 
+        if num_estimated_future < num_gt_future:
+            # pad by the last state
+            pad_states = path.states + [path.states[-1] for _ in range(num_gt_future - num_estimated_future)]
+        else:
+            pad_states = path.states[:num_gt_future]
+
+        estimated_object_.predicted_paths[i].states = pad_states
+
     estimated_object_.predicted_paths = estimated_object_.predicted_paths[:top_k]
 
     num_stack: int = min(top_k, len(estimated_object_.predicted_paths))
