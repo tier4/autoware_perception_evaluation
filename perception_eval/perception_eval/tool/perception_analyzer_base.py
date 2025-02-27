@@ -498,6 +498,7 @@ class PerceptionAnalyzerBase(ABC):
         if self.config.metrics_config.tracking_config is not None:
             metrics_score.evaluate_tracking(scene_results, scene_num_gt)
         if self.config.metrics_config.prediction_config is not None:
+            # metrics_score.evaluate_prediction(scene_results, scene_num_gt)
             pass
         if self.config.metrics_config.classification_config is not None:
             metrics_score.evaluate_classification(scene_results, scene_num_gt)

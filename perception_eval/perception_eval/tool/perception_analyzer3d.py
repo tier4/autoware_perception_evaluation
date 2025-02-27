@@ -24,6 +24,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
@@ -31,6 +32,7 @@ from perception_eval.common.transform import TransformDict
 from perception_eval.common.transform import TransformKey
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.metrics.prediction.utils import prepare_path
 import yaml
 
 from .perception_analyzer_base import PerceptionAnalysisResult
@@ -94,6 +96,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         self.__upper_rights, self.__bottom_lefts = generate_area_points(
             self.num_area_division, max_x=max_x, max_y=max_y
         )
+
+        self.__future_df = pd.DataFrame()
 
     @classmethod
     def from_scenario(
@@ -194,6 +198,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
     def bottom_lefts(self) -> np.ndarray:
         return self.__bottom_lefts
 
+    @property
+    def future_df(self) -> pd.DataFrame:
+        return self.__future_df
+
     def format2dict(
         self,
         object_result: Union[DynamicObject, DynamicObjectWithPerceptionResult],
@@ -216,6 +224,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             estimation: DynamicObject = object_result.estimated_object
             gt_point1, gt_point2 = object_result.plane_distance.ground_truth_nn_plane
             est_point1, est_point2 = object_result.plane_distance.estimated_nn_plane
+            if self.config.evaluation_task == EvaluationTask.PREDICTION:
+                self._future2df(object_result=object_result, frame_num=frame_num)
         elif isinstance(object_result, DynamicObject):
             if status == MatchingStatus.FP:
                 estimation: DynamicObject = object_result
@@ -359,6 +369,59 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                     est_ret[key] = None
 
         return {"ground_truth": gt_ret, "estimation": est_ret}
+
+    def _future2df(
+        self,
+        object_result: DynamicObjectWithPerceptionResult,
+        frame_num: int,
+        top_k: int = 1,
+    ) -> None:
+        if object_result.ground_truth_object is None:
+            return
+
+        estimated, ground_truth = prepare_path(object_result, top_k=top_k)
+
+        error = estimated.get_path_error(ground_truth)
+        num_mode, num_future, _ = error.shape
+
+        concat = []
+        if len(self.__future_df):
+            concat.append(self.__future_df)
+
+        for m in range(num_mode):
+            df = pd.DataFrame()
+            df["uuid"] = [ground_truth.uuid] * num_future
+            df["current_unix_time"] = [ground_truth.unix_time] * num_future  # TODO(ktro2828): use actual timestamps
+            df["frame"] = [frame_num] * num_future
+            df["scene"] = [self.num_scene] * num_future
+            df["mode"] = [m] * num_future
+            df["confidence"] = [estimated.predicted_paths[m].confidence] * num_future
+            df["is_first"] = [True] + [False] * (num_future - 1)
+            df["err_x"] = error[m, :, 0]
+            df["err_y"] = error[m, :, 1]
+            df["err_z"] = error[m, :, 2]
+            concat.append(df)
+
+        self.__future_df = pd.concat(concat, ignore_index=True)
+
+    def future_of(self, uuid: str, scene: Optional[int] = None, frame: Optional[int] = None) -> pd.DataFrame:
+        indices = self.__future_df["uuid"] == uuid
+        if scene is not None:
+            indices = np.bitwise_and(indices, self.__future_df["scene"] == scene)
+        if frame is not None:
+            indices = np.bitwise_and(indices, self.__future_df["frame"] == frame)
+        return self.__future_df[indices]
+
+    def future_at(self, uuid: str, t: int, scene: Optional[int] = None, frame: Optional[int] = None) -> pd.DataFrame:
+        df = self.future_of(uuid=uuid, scene=scene, frame=frame)
+        first_indices = df.query("is_first").index.to_list()
+        concat = []
+        for i in range(len(first_indices) - 1):
+            cur_df = df.iloc[first_indices[i] : first_indices[i + 1]]
+            if len(cur_df) <= t:
+                continue
+            concat.append(cur_df.iloc[t].to_frame().T)
+        return pd.concat(concat) if len(concat) > 0 else pd.DataFrame()
 
     def filter_by_distance(self, distance: Iterable[float], df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """Filter DataFrame by min, max distances.
