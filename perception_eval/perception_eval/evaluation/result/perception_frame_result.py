@@ -138,8 +138,8 @@ class PerceptionFrameResult:
             for label, prev_results in previous_results_dict.items():
                 tracking_results[label] = [prev_results, tracking_results[label]]
             self.metrics_score.evaluate_tracking(tracking_results, num_ground_truth_dict)
-        if self.metrics_score.prediction_config is not None:
-            self.metrics_score.evaluate_prediction(object_results_dict, num_ground_truth_dict)
+        # if self.metrics_score.prediction_config is not None:
+        #     self.metrics_score.evaluate_prediction(object_results_dict, num_ground_truth_dict)
         if self.metrics_score.classification_config is not None:
             self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
 

@@ -207,8 +207,8 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             scene_metrics_score.evaluate_detection(all_frame_results, all_num_gt)
         if self.evaluator_config.metrics_config.tracking_config is not None:
             scene_metrics_score.evaluate_tracking(all_frame_results, all_num_gt)
-        if self.evaluator_config.metrics_config.prediction_config is not None:
-            scene_metrics_score.evaluate_prediction(all_frame_results, all_num_gt)
+        # if self.evaluator_config.metrics_config.prediction_config is not None:
+        #     scene_metrics_score.evaluate_prediction(all_frame_results, all_num_gt)
         if self.evaluator_config.metrics_config.classification_config is not None:
             scene_metrics_score.evaluate_classification(all_frame_results, all_num_gt)
 
