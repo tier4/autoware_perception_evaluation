@@ -15,7 +15,7 @@ def count_max_consecutive_fn(analyzer: PerceptionAnalyzer3D, distance: tuple[flo
     df = analyzer.filter_by_distance(distance=distance)
 
     if len(df) == 0:
-        return {}
+        return {}  # TODO(ktro2828): Temporal
 
     max_counts = []
     max_time_spans = []
@@ -101,16 +101,21 @@ def analyze_prediction(
     df = analyzer.filter_by_distance(distance=distance)
     time_step_results: dict[int, list[tuple[float, float]]] = {t: [] for t in time_steps}
     for uuid in pd.unique(df["uuid"]):
+        scenes = df[df["uuid"] == uuid]["scene"].values.tolist()
+        frames = df[df["uuid"] == uuid]["frame"].values.tolist()
         for t in time_steps:
-            future_df_t = analyzer.future_at(uuid=uuid, t=t)
-            if len(future_df_t) == 0:
-                continue
-            time_step_results[t].append(future_df_t[["err_x", "err_y"]].values)
+            for scene in scenes:
+                for frame in frames:
+                    future_df_t = analyzer.future_at(uuid=uuid, t=t, scene=scene, frame=frame)
+                    if len(future_df_t) > 0:
+                        time_step_results[t].append(future_df_t[["err_x", "err_y"]].values)
 
     outputs = {}
     for t, results in time_step_results.items():
-        results = np.concatenate(results, axis=0)
         n_ret = len(results)
+        if n_ret == 0:  # TODO(ktro2828): Temporal
+            continue
+        results = np.concatenate(results, axis=0)
         outputs_t = {}
         outputs_t["Max Error X[m]"] = np.nanmax(results[:, 0]) if n_ret > 0 else np.nan
         outputs_t["Max Error Y[m]"] = np.nanmax(results[:, 1]) if n_ret > 0 else np.nan
@@ -143,16 +148,17 @@ def main() -> None:
         analyzer.add_from_pkl(archive)
 
     print(analyzer.df)
+    print(analyzer.future_df.to_string())
 
     perception_profiles = []
 
-    time_steps = [1, 5, 10]
+    time_steps = [0, 4, 9]  # [1, 5, 10]
     prediction_profiles = {t: [] for t in time_steps}
     distances = [(i * 10, (i + 1) * 10) for i in range(0, 13)]
     for distance in distances:
         counts = count_max_consecutive_fn(analyzer, distance)
         analysis = analyzer.analyze(distance=distance)
-        if analysis.score is None:
+        if analysis.score is None:  # TODO(ktro2828): Temporal
             continue
         fp = analysis.score["FP"]["ALL"]
         fn = analysis.score["FN"]["ALL"]
