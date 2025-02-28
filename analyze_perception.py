@@ -19,6 +19,7 @@ def count_max_consecutive_fn(analyzer: PerceptionAnalyzer3D, distance: tuple[flo
 
     max_counts = []
     max_time_spans = []
+    max_uuids = []
     # Compute max consecutive FN frame length for each uuid
     for uuid in pd.unique(df.xs("ground_truth", level=1)["uuid"]):
         if uuid is None:
@@ -62,6 +63,19 @@ def count_max_consecutive_fn(analyzer: PerceptionAnalyzer3D, distance: tuple[flo
 
         max_counts.append(max_count)
         max_time_spans.append(max_time_span * 1e-6)
+        max_uuids.append(uuid)
+
+    # max_uuid = max_uuids[np.argmax(max_time_spans)]
+    # max_value = np.max(max_time_spans)
+    # print(f"{distance[1]}: {max_uuid}, {max_value}[s]")
+
+    sort_idx = np.argsort(max_time_spans)[::-1]
+    sort_uuids = np.asarray(max_uuids)[sort_idx]
+    sort_values = np.sort(max_time_spans)[::-1]
+
+    print(f"{distance[1]}[m]:")
+    for u, v in zip(sort_uuids, sort_values):
+        print(f"{u}: {v}[s]")
 
     return {
         # "Max Consecutive FN Frames": max(max_counts),
