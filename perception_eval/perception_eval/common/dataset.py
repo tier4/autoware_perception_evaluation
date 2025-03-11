@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 from copy import deepcopy
 import logging
@@ -19,13 +20,17 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Sequence
-from typing import Union
+from typing import Union, Tuple
+
+import numpy as np 
 
 from nuimages import NuImages
 from numpy.typing import NDArray
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
 from perception_eval.common import ObjectType
+from perception_eval.common.object2d import DynamicObject2D
+from perception_eval.common.object import DynamicObject
 from perception_eval.common.dataset_utils import _sample_to_frame
 from perception_eval.common.dataset_utils import _sample_to_frame_2d
 from perception_eval.common.evaluation_task import EvaluationTask
@@ -65,6 +70,42 @@ class FrameGroundTruth:
         self.transforms = TransformDict(transforms)
         self.raw_data = raw_data
 
+    def __reduce__(self) -> Tuple[FrameGroundTruth, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (self.__class__, (self.unix_time, self.frame_name, self.objects, self.transforms, self.raw_data))
+    
+    def serialization(self) -> Dict[str, Any]:
+        """ Serialize the object to a dict. """
+        return {
+            "unix_time": self.unix_time,
+            "frame_name": self.frame_name,
+            "objects": [object.serialization() for object in self.objects],
+            "transforms": self.transforms,
+            "raw_data": {frame_id.value: data.tolist() for frame_id, data in self.raw_data.items()},
+        }
+    
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> FrameGroundTruth:
+        """ Deserialize the data to MetricConfigBase. """
+        objects = []
+        for object_data in data["objects"]:
+            if object_data["object_type"] == "DynamicObject2D":
+                object_class = DynamicObject2D
+            elif object_data["object_type"] == "DynamicObject":
+                object_class = DynamicObject
+            else:
+                raise ValueError(f"Invalid object type: {object_data['object_type']}")
+            
+            objects.append(object_class.deserialization(object_data))
+                
+        return cls(
+            unix_time=data["unix_time"],
+            frame_name=data["frame_name"],
+            objects=objects,
+            transforms=data["transforms"],
+            raw_data={FrameID(frame_id): np.array(data) for frame_id, data in data["raw_data"].items()} if data["raw_data"] is not None else None, 
+        )
+    
 
 def load_all_datasets(
     dataset_paths: List[str],

@@ -18,10 +18,10 @@ from enum import Enum
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Union
+from typing import Union, Dict, Any
 
 import numpy as np
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, mapping, shape
 
 
 class ShapeType(Enum):
@@ -101,6 +101,10 @@ class Shape:
         self.size: Tuple[float, float, float] = size
         self.footprint: Optional[Polygon] = footprint if footprint else self.__calculate_corners(shape_type, size)
 
+    def __reduce__(self) -> Tuple[Shape, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (self.__class__, (self.type, self.size, self.footprint))
+
     @staticmethod
     def __calculate_corners(shape_type: ShapeType, size: Tuple[float, float, float]) -> Polygon:
         """Calculate footprint for type of BOUNDING_BOX with respect to each object's coordinate system.
@@ -134,3 +138,20 @@ class Shape:
         )
 
         return corner_polygon
+    
+    def serialization(self) -> Dict[str, Any]:
+        """ Serialize the object to a dict. """
+        return {
+            "shape_type": self.type.value,
+            "size": self.size,
+            "footprint": mapping(self.footprint) if self.footprint else None,
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> shape:
+        """ Deserialize data to Shape. """
+        return Shape(
+            shape_type=data["shape_type"],
+            size=data["size"],
+            footprint=shape(data["footprint"]) if data["footprint"] else None
+        )

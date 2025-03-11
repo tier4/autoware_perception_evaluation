@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import Callable
 from typing import List
 from typing import Optional
-from typing import Tuple
+from typing import Tuple, Dict, Any
 
 import numpy as np
 from perception_eval.common import distance_objects
@@ -78,6 +78,7 @@ class DynamicObjectWithPerceptionResult:
         self.estimated_object: ObjectType = estimated_object
         self.ground_truth_object: Optional[ObjectType] = ground_truth_object
         self.matching_label_policy = matching_label_policy
+        self.transforms: Optional[TransformDict] = transforms
 
         if isinstance(self.estimated_object, DynamicObject2D) and self.estimated_object.roi is None:
             self.center_distance = None
@@ -106,6 +107,10 @@ class DynamicObjectWithPerceptionResult:
             self.iou_3d = None
             self.plane_distance = None
 
+    def __reduce__(self) -> Tuple[DynamicObjectWithPerceptionResult, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (self.__class__, (self.estimated_object, self.ground_truth_object, self.matching_label_policy, self.transforms))
+    
     def get_status(
         self,
         matching_mode: MatchingMode,
@@ -276,6 +281,31 @@ class DynamicObjectWithPerceptionResult:
         else:
             return False
 
+    def serialization(self) -> Dict[str, Any]:
+        """ Serialize the object to a dict. """
+        return {
+            "estimated_object": self.estimated_object.serialization(),
+            "ground_truth_object": self.ground_truth_object.serialization() if self.ground_truth_object else None,
+            "matching_label_policy": self.matching_label_policy.value,
+            "transforms": self.transforms if self.transforms else None,
+        }
+    
+    def deserialization(cls, data: Dict[str, Any]) -> DynamicObjectWithPerceptionResult:
+        """ Deserialize the data to DynamicObjectWithPerceptionResult. """
+        if data["opbject_type"] == "DynamicObject2D":
+            object_type = DynamicObject2D
+        elif data["object_type"] == "DynamicObject":
+            object_type = DynamicObject
+        else:
+            raise ValueError(f"Unsupported object type: {data['object_type']}")
+        
+        return cls(
+            estimated_object=object_type.deserialization(data["estimated_object"]),
+            ground_truth_object=object_type.deserialization(data["ground_truth_object"]) if data["ground_truth_object"] else None,
+            matching_label_policy=MatchingLabelPolicy(data["matching_label_policy"]),
+            transforms=data["transforms"],
+        ) 
+    
 
 def get_object_results(
     evaluation_task: EvaluationTask,

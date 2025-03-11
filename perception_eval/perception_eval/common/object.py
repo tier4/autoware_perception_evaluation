@@ -15,9 +15,7 @@
 from __future__ import annotations
 
 import math
-from typing import List
-from typing import Optional
-from typing import Tuple
+from typing import List, Optional, Tuple, Dict, Any
 
 import numpy as np
 from perception_eval.common.label import Label
@@ -68,6 +66,10 @@ class ObjectState:
         self.pose_covariance = pose_covariance
         self.twist_covariance = twist_covariance
 
+    def __reduce__(self) -> Tuple[ObjectState, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (self.__class__, (self.position, self.orientation, self.shape, self.velocity, self.pose_covariance, self.twist_covariance))
+    
     @property
     def shape_type(self) -> Optional[ShapeType]:
         return self.shape.type if self.shape is not None else None
@@ -88,6 +90,29 @@ class ObjectState:
     def has_twist_covariance(self) -> bool:
         return self.twist_covariance is not None
 
+    def serialization(self) -> Dict[str, Any]:
+        """ Serialize the object to a dict. """
+        return {
+            "position": self.position if self.position is not None else None,
+            "orientation": self.orientation.elements if self.orientation is not None else None,
+            "size": self.shape.serialization() if self.shape is not None else None,
+            "velocity": self.velocity if self.velocity is not None else None,
+            "pose_covariance": self.pose_covariance.tolist() if self.pose_covariance is not None else None,
+            "twist_covariance": self.twist_covariance.tolist() if self.twist_covariance is not None else None,
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> ObjectState:
+        """ Deserialize data to an object of this class. """
+        return cls(
+            position=data["position"] if data["position"] is not None else None,
+            orientation=data["orientation"] if data["orientation"] is not None else None,
+            shape=Shape.deserialization(data["size"]) if data["size"] is not None else None,
+            velocity=data["velocity"] if data["velocity"] is not None else None,
+            pose_covariance=np.array(data["pose_covariance"]) if data["pose_covariance"] is not None else None,
+            twist_covariance=np.array(data["twist_covariance"]) if data["twist_covariance"] is not None else None,
+        )
+    
 
 class DynamicObject:
     """Dynamic object class for 3D object.
@@ -172,9 +197,11 @@ class DynamicObject:
         predicted_confidence: Optional[float] = None,
         visibility: Optional[Visibility] = None,
     ) -> None:
+        # TODO(KokSeang): Pass detection/tracking/prediction to the constructor instead of building them here
         # detection
         self.unix_time: int = unix_time
         self.frame_id: FrameID = frame_id
+       
         self.state: ObjectState = ObjectState(
             position=position,
             orientation=orientation,
@@ -192,6 +219,10 @@ class DynamicObject:
 
         # tracking
         self.uuid: Optional[str] = uuid
+        self.tracked_positions = tracked_positions
+        self.tracked_orientations = tracked_orientations
+        self.tracked_shapes = tracked_shapes
+        self.tracked_twists = tracked_twists
         self.tracked_path: Optional[List[ObjectState]] = self._set_states(
             positions=tracked_positions,
             orientations=tracked_orientations,
@@ -200,6 +231,10 @@ class DynamicObject:
         )
 
         # prediction
+        self.predicted_positions = predicted_positions
+        self.predicted_orientations = predicted_orientations
+        self.predicted_shapes = predicted_shapes
+        self.predicted_twists = predicted_twists
         self.predicted_confidence: Optional[float] = predicted_confidence
         self.predicted_path: Optional[List[ObjectState]] = self._set_states(
             positions=predicted_positions,
@@ -210,6 +245,13 @@ class DynamicObject:
 
         self.visibility: Optional[Visibility] = visibility
 
+    def __reduce__(self) -> Tuple[ObjectState, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (self.__class__, (self.unix_time, self.frame_id, self.state.position, self.state.orientation, self.state.shape, self.state.velocity, self.semantic_score, self.semantic_label, 
+                                 self.pointcloud_num, self.uuid, self.state.pose_covariance, self.state.twist_covariance, self.tracked_positions, self.tracked_orientations, self.tracked_shapes, self.tracked_twists, 
+                                 self.predicted_positions, self.predicted_orientations, self.predicted_shapes, self.predicted_twists, self.predicted_confidence, self.visibility
+                                 ))
+     
     def __eq__(self, other: Optional[DynamicObject]) -> bool:
         """Check if other equals this object.
 
@@ -518,3 +560,59 @@ class DynamicObject:
                 )
             )
         return states
+
+    def serialization(self) -> Dict[str, Any]:
+        """ Serialize the object to a dict. """
+        return {
+            "object_type": "DynamicObject",
+            "unix_time": self.unix_time,
+            "frame_id": self.frame_id.value,
+            "position": self.state.position,
+            "orientation": self.state.orientation.elements,
+            "shape": self.state.shape,
+            "velocity": self.state.velocity,
+            "semantic_score": self.semantic_score,
+            "semantic_label": self.semantic_label.serialization(),
+            "pointcloud_num": self.pointcloud_num if self.pointcloud_num is not None else None,
+            "uuid": self.uuid if self.uuid is not None else None,
+            "pose_covariance": self.state.pose_covariance.tolist() if self.state.has_pose_covariance is not None else None,
+            "twist_covariance": self.state.twist_covariance.tolist() if self.state.has_twist_covariance is not None else None,
+            "tracked_positions": self.tracked_positions if self.tracked_positions is not None else None,
+            "tracked_orientations": [orientation.elements for orientation in self.tracked_orientations] if self.tracked_orientations is not None else None,
+            "tracked_shapes": [shape.serialization() for shape in self.tracked_shapes] if self.tracked_shapes is not None else None,
+            "tracked_twists": self.tracked_twists if self.tracked_twists is not None else None,
+            "predicted_positions": self.predicted_positions if self.predicted_positions is not None else None,
+            "predicted_orientations": [orientation.elements for orientation in self.predicted_orientations] if self.predicted_orientations is not None else None,
+            "predicted_shapes": [shape.serialization() for shape in self.predicted_shapes] if self.predicted_shapes is not None else None,
+            "predicted_twists": self.predicted_twists if self.predicted_twists is not None else None,
+            "predicted_confidence": self.predicted_confidence if self.predicted_confidence is not None else None,
+            "visibility": self.visibility,
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> DynamicObject:
+        """ Deserialize data to DynamicObject. """
+        return cls(
+            unix_time=data["unix_time"],
+            frame_id=FrameID(data["frame_id"]),
+            position=data["position"],
+            orientation=Quaternion(data["orientation"]),
+            shape=Shape.deserialization(data["size"]),
+            velocity=data["velocity"],
+            semantic_score=data["semantic_score"],
+            semantic_label=Label.deserialization(data["semantic_label"]),
+            pointcloud_num=data["pointcloud_num"],
+            uuid=data["uuid"],
+            pose_covariance=np.array(data["pose_covariance"]) if data["pose_covariance"] else None,
+            twist_covariance=np.array(data["twist_covariance"]) if data["twist_covariance"] else None,
+            tracked_positions=data["tracked_positions"],
+            tracked_orientations=[Quaternion(elements) for elements in data["tracked_orientations"]] if data["tracked_orientations"] is not None else None,
+            tracked_shapes=[Shape.deserialization(shape) for shape in data["tracked_shapes"]] if data["tracked_shapes"] is not None else None,
+            tracked_twists=data["tracked_twists"],
+            predicted_positions=data["predicted_positions"],
+            predicted_orientations=[Quaternion(elements) for elements in data["predicted_orientations"]] if data["predicted_orientations"] is not None else None,
+            predicted_shapes=[Shape.deserialization(shape) for shape in data["predicted_shapes"]] if data["predicted_shapes"] is not None else None,
+            predicted_twists=data["predicted_twists"],
+            predicted_confidence=data["predicted_confidence"],
+            visibility=data["visibility"],
+        )

@@ -11,14 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 from abc import ABC
 from abc import abstractmethod
-from typing import List
-from typing import Optional
+from typing import Optional, Dict, Any, Tuple, List
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import LabelType
+from perception_eval.common.label import LabelType, AutowareLabel, TrafficLightLabel
 from perception_eval.common.threshold import set_thresholds
 
 
@@ -76,3 +76,41 @@ class _MetricsConfigBase(ABC):
             self.iou_3d_thresholds = set_thresholds(iou_3d_thresholds, num_targets, True)
         else:
             self.iou_3d_thresholds = []
+
+    def __reduce__(self) -> Tuple[_MetricsConfigBase, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (self.__class__, (self.target_labels, self.center_distance_thresholds, self.plane_distance_thresholds, self.iou_2d_thresholds, self.iou_3d_thresholds))
+    
+    def serialization(self) -> Dict[str, Any]:
+        """ Serialize the object to a dict. """
+        return {
+            "target_labels": [target_label.serialization() for target_label in self.target_labels],
+            "center_distance_thresholds": self.center_distance_thresholds,
+            "plane_distance_thresholds": self.plane_distance_thresholds,
+            "iou_2d_thresholds": self.iou_2d_thresholds,
+            "iou_3d_thresholds": self.iou_3d_thresholds,
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> _MetricsConfigBase:
+        """ Deserialize the data to MetricConfigBase. """
+        target_labels = []
+        for label in data["target_labels"]:
+            label_type = label["label_type"]
+            if  label_type == "AutowareLabel":
+                label_class = AutowareLabel
+            elif label_type == "TrafficLightLabel":
+                label_class = TrafficLightLabel
+            else:
+                raise ValueError(f"Invalid label type: {label_type}")
+            
+            target_labels.append(label_class.deserialization(label))
+        
+        return cls(
+            target_labels=target_labels,
+            center_distance_thresholds=data["center_distance_thresholds"],
+            plane_distance_thresholds=data["plane_distance_thresholds"],
+            iou_2d_thresholds=data["iou_2d_thresholds"],
+            iou_3d_thresholds=data["iou_3d_thresholds"],
+        )
+        

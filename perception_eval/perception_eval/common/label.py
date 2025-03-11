@@ -19,11 +19,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 import logging
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import TYPE_CHECKING
-from typing import Union
+from typing import List, Optional, Tuple, TYPE_CHECKING, Union, Any, Dict
 
 from perception_eval.common.evaluation_task import EvaluationTask
 
@@ -52,6 +48,19 @@ class AutowareLabel(Enum):
     def __str__(self) -> str:
         return self.value
 
+    def serialization(self) -> Dict[str, Any]:
+        """ Serialize the object to a dict. """
+        return {
+            "label_type": "AutowareLabel",
+            "value": self.value
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> AutowareLabel:
+        """ Deserialize the data to AutowareLabel. """
+        return cls(
+            data["value"] 
+        ) 
 
 class TrafficLightLabel(Enum):
     # except of classification
@@ -88,6 +97,20 @@ class TrafficLightLabel(Enum):
 
     def __str__(self) -> str:
         return self.value
+    
+    def serialization(self) -> Dict[str, Any]:
+        """ Serialize the object to a dict. """
+        return {
+            "label_type": "TrafficLightLabel",
+            "value": self.value
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> AutowareLabel:
+        """ Deserialize the data to AutowareLabel. """
+        return cls(
+            data["value"] 
+        ) 
 
 
 class CommonLabel(Enum):
@@ -142,6 +165,10 @@ class Label:
         self.name: str = name
         self.attributes: List[str] = attributes
 
+    def __reduce__(self) -> Tuple[Label, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (self.__class__, (self.label, self.name, self.attributes))
+    
     def contains(self, key: str) -> bool:
         """Check whether self.name contains input attribute.
 
@@ -176,6 +203,23 @@ class Label:
 
     def __eq__(self, other: Label) -> bool:
         return self.label == other.label
+
+    def serialization(self) -> Dict[str, Any]:
+        """ Serialize the object to a dict. """
+        return {
+            "label": self.label.value,
+            "name": self.name,
+            "attributes": self.attributes,
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> Label:
+        """ Deserialize data to this class object. """
+        return cls(
+            label=LabelType(data["label"]),
+            name=data["name"],
+            attributes=data["attributes"],
+        )
 
 
 class LabelConverter:
