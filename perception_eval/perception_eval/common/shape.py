@@ -15,13 +15,17 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Union, Dict, Any
+from typing import Union
 
 import numpy as np
-from shapely.geometry import Polygon, mapping, shape
+from shapely.geometry import mapping
+from shapely.geometry import Polygon
+from shapely.geometry import shape
 
 
 class ShapeType(Enum):
@@ -138,9 +142,9 @@ class Shape:
         )
 
         return corner_polygon
-    
+
     def serialization(self) -> Dict[str, Any]:
-        """ Serialize the object to a dict. """
+        """Serialize the object to a dict."""
         return {
             "shape_type": self.type.value,
             "size": self.size,
@@ -149,9 +153,9 @@ class Shape:
 
     @classmethod
     def deserialization(cls, data: Dict[str, Any]) -> shape:
-        """ Deserialize data to Shape. """
+        """Deserialize data to Shape."""
         return Shape(
             shape_type=data["shape_type"],
             size=data["size"],
-            footprint=shape(data["footprint"]) if data["footprint"] else None
+            footprint=shape(data["footprint"]) if data["footprint"] else None,
         )

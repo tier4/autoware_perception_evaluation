@@ -15,9 +15,11 @@
 from __future__ import annotations
 
 import math
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Tuple, Any, Dict
+from typing import Tuple
 
 import numpy as np
 from perception_eval.common.label import Label
@@ -153,8 +155,20 @@ class DynamicObject2D:
 
     def __reduce__(self) -> Tuple[ObjectState, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
-        return (self.__class__, (self.unix_time, self.frame_id, self.semantic_score, self.semantic_label, self.roi, self.uuid, self.visibility, self.state.position)) 
-    
+        return (
+            self.__class__,
+            (
+                self.unix_time,
+                self.frame_id,
+                self.semantic_score,
+                self.semantic_label,
+                self.roi,
+                self.uuid,
+                self.visibility,
+                self.state.position,
+            ),
+        )
+
     def get_corners(self) -> np.ndarray:
         """Returns the corners of bounding box in pixel.
 
@@ -211,9 +225,9 @@ class DynamicObject2D:
                 raise ValueError("transforms must be specified.")
             position = transforms.transform((self.frame_id, FrameID.BASE_LINK), self.state.position)
         return math.hypot(position[0], position[1])
-    
+
     def serialization(self) -> Dict[str, Any]:
-        """ Serialize the object to a dict. """
+        """Serialize the object to a dict."""
         return {
             "object_type": "DynamicObject2D",
             "unix_time": self.unix_time,
@@ -228,7 +242,7 @@ class DynamicObject2D:
 
     @classmethod
     def deserialization(cls, data: Dict[str, Any]) -> DynamicObject2D:
-        """ Deserialize the data to DynamicObject2D. """
+        """Deserialize the data to DynamicObject2D."""
         return cls(
             unix_time=data["unix_time"],
             velocity=data["velocity"],
@@ -238,4 +252,4 @@ class DynamicObject2D:
             uuid=data["uuid"],
             visibility=data["visibility"],
             position=data["position"],
-        ) 
+        )

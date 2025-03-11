@@ -18,7 +18,8 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Set, Tuple
+from typing import Set
+from typing import Tuple
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
@@ -76,8 +77,14 @@ class MetricsScoreConfig:
 
     def __reduce__(self) -> Tuple[MetricsScoreConfig, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
-        return (self.__class__, (self.evaluation_task, self.cfg,))
-    
+        return (
+            self.__class__,
+            (
+                self.evaluation_task,
+                self.cfg,
+            ),
+        )
+
     @staticmethod
     def _check_parameters(config: _MetricsConfigBase, params: Dict[str, Any]):
         """Check if input parameters are valid.
@@ -99,7 +106,7 @@ class MetricsScoreConfig:
             )
 
     def serialization(self) -> Dict[str, Any]:
-        """ Serialize the object to a dict. """
+        """Serialize the object to a dict."""
         return {
             "evaluation_task": self.evaluation_task.value,
             "cfg": self.cfg,
@@ -107,11 +114,12 @@ class MetricsScoreConfig:
 
     @classmethod
     def deserialization(cls, data: Dict[str, Any]) -> MetricsScoreConfig:
-        """ Deserialize the data to MetricScoreConfig. """
+        """Deserialize the data to MetricScoreConfig."""
         return cls(
             evaluation_task=EvaluationTask.from_value(data["evaluation_task"]),
             **data["cfg"],
         )
+
 
 class MetricsParameterError(Exception):
     def __init__(self, *args) -> None:

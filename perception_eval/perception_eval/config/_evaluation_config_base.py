@@ -121,8 +121,17 @@ class _EvaluationConfigBase(ABC):
 
     def __reduce__(self) -> Tuple[_EvaluationConfigBase, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
-        return (self.__class__, (self.dataset_paths, self.frame_id, self.result_root_directory, self.evaluation_config_dict, self.load_raw_data))
-    
+        return (
+            self.__class__,
+            (
+                self.dataset_paths,
+                self.frame_id,
+                self.result_root_directory,
+                self.evaluation_config_dict,
+                self.load_raw_data,
+            ),
+        )
+
     @property
     def support_tasks(self) -> List[str]:
         return self._support_tasks
@@ -177,18 +186,18 @@ class _EvaluationConfigBase(ABC):
         return self.__visualization_directory
 
     def serialization(self) -> Dict[str, Any]:
-        """ Serialize the object to a dict. """
+        """Serialize the object to a dict."""
         return {
             "dataset_paths": self.dataset_paths,
             "frame_id": self.frame_id,
             "result_root_directory": self.result_root_directory,
             "evaluation_config_dict": self.evaluation_config_dict,
-            "load_raw_data": self.load_raw_data, 
+            "load_raw_data": self.load_raw_data,
         }
 
     @classmethod
     def deserialization(cls, data: Dict[str, Any]) -> _EvaluationConfigBase:
-        """ Deserialize the data to _EvaluationConfigBagse. """
+        """Deserialize the data to _EvaluationConfigBagse."""
         return cls(
             dataset_paths=data["dataset_paths"],
             frame_id=data["frame_id"],

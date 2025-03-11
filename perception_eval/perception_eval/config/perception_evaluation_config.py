@@ -203,4 +203,3 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         }
 
         return f_params, m_params
-

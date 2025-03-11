@@ -17,13 +17,13 @@ from __future__ import annotations
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Optional, Tuple
+from typing import Optional
+from typing import Tuple
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.threshold import check_thresholds
-
 from perception_eval.config import PerceptionEvaluationConfig
 
 
@@ -133,11 +133,24 @@ class CriticalObjectFilterConfig:
 
     def __reduce__(self) -> Tuple[CriticalObjectFilterConfig, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
-        return (self.__class__, (self.evaluator_config, self.target_labels, self.ignore_attributes, self.max_x_position_list, self.max_y_position_list, 
-                                 self.max_distance_list, self.min_distance_list, self.min_point_numbers, self.confidence_threshold_list, self.target_uuids))
+        return (
+            self.__class__,
+            (
+                self.evaluator_config,
+                self.target_labels,
+                self.ignore_attributes,
+                self.max_x_position_list,
+                self.max_y_position_list,
+                self.max_distance_list,
+                self.min_distance_list,
+                self.min_point_numbers,
+                self.confidence_threshold_list,
+                self.target_uuids,
+            ),
+        )
 
     def serialization(self) -> Dict[str, Any]:
-        """ Serialize the object to a dict. """
+        """Serialize the object to a dict."""
         return {
             "evaluator_config": self.evaluator_config.serialization(),
             "target_labels": self.target_labels,
@@ -153,7 +166,7 @@ class CriticalObjectFilterConfig:
 
     @classmethod
     def deserialization(cls, data: Dict[str, Any]) -> CriticalObjectFilterConfig:
-        """ Deserialize the data to CriticalObjectFilterConfig. """
+        """Deserialize the data to CriticalObjectFilterConfig."""
         return cls(
             evaluator_config=PerceptionEvaluationConfig.deserialization(data["evaluator_config"]),
             target_labels=data["target_labels"],
@@ -167,6 +180,7 @@ class CriticalObjectFilterConfig:
             target_uuids=data["target"],
             target_uuids=data["target_uuids"],
         )
+
 
 class PerceptionPassFailConfig:
     """[summary]
@@ -214,11 +228,13 @@ class PerceptionPassFailConfig:
 
     def __reduce__(self) -> Tuple[PerceptionPassFailConfig, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
-        return (self.__class__, (self.evaluator_config, self.target_labels, self.matching_threshold_list, self.confidence_threshold_list))
-
+        return (
+            self.__class__,
+            (self.evaluator_config, self.target_labels, self.matching_threshold_list, self.confidence_threshold_list),
+        )
 
     def serialization(self) -> Dict[str, Any]:
-        """ Serialize the object to a dict. """
+        """Serialize the object to a dict."""
         return {
             "evaluator_config": self.evaluator_config.serialization(),
             "target_labels": self.target_labels,
@@ -228,7 +244,7 @@ class PerceptionPassFailConfig:
 
     @classmethod
     def deserialization(cls, data: Dict[str, Any]) -> PerceptionPassFailConfig:
-        """ Deserialize the data to _EvaluationConfigBagse. """
+        """Deserialize the data to _EvaluationConfigBagse."""
         return cls(
             evaluator_config=PerceptionEvaluationConfig.deserialization(data["evaluator_config"]),
             target_labels=data["target_labels"],

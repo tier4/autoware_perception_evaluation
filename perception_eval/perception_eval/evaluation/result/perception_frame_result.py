@@ -14,13 +14,17 @@
 
 from __future__ import annotations
 
+from typing import Any
 from typing import Dict
 from typing import List
-from typing import Optional, Tuple, Any
+from typing import Optional
+from typing import Tuple
 
 from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
-from perception_eval.common.label import LabelType, AutowareLabel, TrafficLightLabel
+from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
+from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.status import GroundTruthStatus
 from perception_eval.common.status import MatchingStatus
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
@@ -94,8 +98,19 @@ class PerceptionFrameResult:
 
     def __reduce__(self) -> Tuple[PerceptionFrameResult, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
-        return (self.__class__, (self.object_results, self.frame_ground_truth, self.metrics_config, self.critical_object_filter_config, self.frame_pass_fail_config, self.unix_time, self.target_labels)) 
-        
+        return (
+            self.__class__,
+            (
+                self.object_results,
+                self.frame_ground_truth,
+                self.metrics_config,
+                self.critical_object_filter_config,
+                self.frame_pass_fail_config,
+                self.unix_time,
+                self.target_labels,
+            ),
+        )
+
     def evaluate_frame(
         self,
         previous_result: Optional[PerceptionFrameResult] = None,
@@ -154,7 +169,7 @@ class PerceptionFrameResult:
         self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
 
     def serialization(self) -> Dict[str, Any]:
-        """ Serialize the object to a dict. """
+        """Serialize the object to a dict."""
         return {
             "object_results": [object_result.serialization() for object_result in self.object_results],
             "frame_ground_truth": self.frame_ground_truth.serialization(),
@@ -168,29 +183,31 @@ class PerceptionFrameResult:
 
     @classmethod
     def deserialization(cls, data: Dict[str, Any]) -> PerceptionFrameResult:
-        """ Deserialize the data to PerceptionFrameResult. """
+        """Deserialize the data to PerceptionFrameResult."""
         target_labels = []
         for label in data["target_labels"]:
             label_type = label["label_type"]
-            if  label_type == "AutowareLabel":
+            if label_type == "AutowareLabel":
                 label_class = AutowareLabel
             elif label_type == "TrafficLightLabel":
                 label_class = TrafficLightLabel
             else:
                 raise ValueError(f"Invalid label type: {label_type}")
-            
+
             target_labels.append(label_class.deserialization(label))
 
         return cls(
             object_results=[DynamicObjectWithPerceptionResult.deserialization(obj) for obj in data["object_results"]],
             frame_ground_truth=FrameGroundTruth.deserialization(data["frame_ground_truth"]),
             metrics_config=MetricsScoreConfig.deserialization(data["metrics_config"]),
-            critical_object_filter_config=CriticalObjectFilterConfig.deserialization(data["critical_object_filter_config"]),
+            critical_object_filter_config=CriticalObjectFilterConfig.deserialization(
+                data["critical_object_filter_config"]
+            ),
             frame_pass_fail_config=PerceptionPassFailConfig.deserialization(data["frame_pass_fail_config"]),
             target_labels=target_labels,
             unix_time=data["unix_time"],
         )
-    
+
 
 def get_object_status(frame_results: List[PerceptionFrameResult]) -> List[GroundTruthStatus]:
     """Returns the number of TP/FP/TN/FN ratios per frame as tuple.
