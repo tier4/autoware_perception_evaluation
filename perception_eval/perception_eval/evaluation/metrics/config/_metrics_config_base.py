@@ -112,9 +112,9 @@ class _MetricsConfigBase(ABC):
         target_labels = []
         for label in data["target_labels"]:
             label_type = label["label_type"]
-            if label_type == "AutowareLabel":
+            if label_type == AutowareLabel.LABEL_TYPE:
                 label_class = AutowareLabel
-            elif label_type == "TrafficLightLabel":
+            elif label_type == TrafficLightLabel.LABEL_TYPE:
                 label_class = TrafficLightLabel
             else:
                 raise ValueError(f"Invalid label type: {label_type}")

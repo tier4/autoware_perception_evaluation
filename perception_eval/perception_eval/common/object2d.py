@@ -132,6 +132,8 @@ class DynamicObject2D:
         position (Optional[Tuple[float, float, float]]): 3D position in ordering (x, y, z). Defaults to None.
     """
 
+    OBJECT_TYPE: str = "DynamicObject2D"
+
     def __init__(
         self,
         unix_time: int,

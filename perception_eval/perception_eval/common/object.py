@@ -179,6 +179,8 @@ class DynamicObject:
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
     """
 
+    OBJECT_TYPE: str = "DynamicObject"
+
     def __init__(
         self,
         unix_time: int,

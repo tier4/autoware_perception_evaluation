@@ -51,12 +51,15 @@ class AutowareLabel(Enum):
     # for FP validation
     FP = "false_positive"
 
+    # for label type
+    LABEL_TYPE = "AutowareLabel"
+
     def __str__(self) -> str:
         return self.value
 
     def serialization(self) -> Dict[str, Any]:
         """Serialize the object to a dict."""
-        return {"label_type": "AutowareLabel", "value": self.value}
+        return {"label_type": AutowareLabel.LABEL_TYPE.value, "value": self.value}
 
     @classmethod
     def deserialization(cls, data: Dict[str, Any]) -> AutowareLabel:
@@ -97,12 +100,19 @@ class TrafficLightLabel(Enum):
     # for FP validation
     FP = "false_positive"
 
+    # for label type
+    LABEL_TYPE = "TrafficLightLabel"
+
     def __str__(self) -> str:
         return self.value
 
+    def label_type(self) -> str:
+        """Label type."""
+        return "TrafficLightLabel"
+
     def serialization(self) -> Dict[str, Any]:
         """Serialize the object to a dict."""
-        return {"label_type": "TrafficLightLabel", "value": self.value}
+        return {"label_type": TrafficLightLabel.LABEL_TYPE.value, "value": self.value}
 
     @classmethod
     def deserialization(cls, data: Dict[str, Any]) -> AutowareLabel:
