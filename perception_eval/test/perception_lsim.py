@@ -20,10 +20,10 @@ from typing import List
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
 from perception_eval.manager import PerceptionEvaluationManager
 from perception_eval.tool import PerceptionAnalyzer3D
 from perception_eval.util.debug import format_class_for_log

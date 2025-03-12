@@ -24,7 +24,7 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.threshold import check_thresholds
-from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
 
 
 class CriticalObjectFilterConfig:

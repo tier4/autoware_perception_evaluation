@@ -20,7 +20,7 @@ import numpy as np
 from perception_eval.common.schema import FrameID
 from perception_eval.common.transform import HomogeneousMatrix
 from perception_eval.common.transform import TransformDict
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
 class TPMetrics(metaclass=ABCMeta):

@@ -27,13 +27,13 @@ from perception_eval.common.label import LabelType
 from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.status import GroundTruthStatus
 from perception_eval.common.status import MatchingStatus
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.metrics import MetricsScoreConfig
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.evaluation.result.perception_pass_fail_result import PassFailResult

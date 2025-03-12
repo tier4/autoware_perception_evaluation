@@ -16,8 +16,8 @@ from typing import Dict
 from typing import List
 
 from perception_eval.common.label import LabelType
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 from .classification import ClassificationMetricsScore
 from .detection import Map
