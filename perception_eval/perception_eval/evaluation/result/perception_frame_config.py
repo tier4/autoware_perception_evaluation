@@ -177,7 +177,6 @@ class CriticalObjectFilterConfig:
             min_distance_list=data["min_distance_list"],
             min_point_numbers=data["min_point_numbers"],
             confidence_threshold_list=data["confidence_threshold_list"],
-            target_uuids=data["target"],
             target_uuids=data["target_uuids"],
         )
 
