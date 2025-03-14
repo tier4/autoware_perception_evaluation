@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+from typing import Dict
 from typing import Iterator
 from typing import Optional
 from typing import overload
@@ -43,6 +45,13 @@ class TransformDict:
             raise TypeError(f"Expected HomogeneousMatrix, sequence of them or None, but got: {type(matrices)}")
 
         self.__data = {TransformKey(mat.src, mat.dst): mat for mat in self.__matrices}
+
+    def __reduce__(self) -> Tuple[TransformDict, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (
+            self.__class__,
+            (self.__matrices,),
+        )
 
     @staticmethod
     def load_key(src: FrameIDType, dst: FrameIDType) -> TransformKey:
@@ -188,6 +197,32 @@ class TransformDict:
                 matrix = matrix.inv()
             return matrix.transform(*args, **kwargs)
 
+    def serialization(self) -> Dict[str, Any]:
+        """Serialize the object to a dict."""
+        if self.__matrices is None:
+            matrices = None
+            matrices_type = "None"
+        elif isinstance(self.__matrices, HomogeneousMatrix):
+            matrices = matrices.serialization()
+            matrices_type = "HomogeneousMatrix"
+        elif isinstance(self.__matrices, (list, tuple)):
+            matrices = self.__matrices
+            matrices_type = "list"
+
+        return {"matrices": matrices, "matrices_type": matrices_type}
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> TransformDict:
+        """Deserialize the data to TransformDict."""
+        if data["matrices_type"] == "None":
+            matrices = None
+        elif data["matrices_type"] == "HomogeneousMatrix":
+            matrices = HomogeneousMatrix.deserialization(data["matrices"])
+        elif data["matrices_type"] == "list":
+            matrices = data["matrices"]
+
+        return cls(matrices=matrices)
+
 
 class TransformKey:
     def __init__(self, src: FrameIDType, dst: FrameIDType) -> None:
@@ -237,6 +272,13 @@ class HomogeneousMatrix:
         self.dst = FrameID.from_value(dst) if isinstance(dst, str) else dst
 
         self.matrix = self.__generate_homogeneous_matrix(position, rotation)
+
+    def __reduce__(self) -> Tuple[HomogeneousMatrix, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (
+            self.__class__,
+            (self.position, self.rotation, self.src, self.dst),
+        )
 
     @classmethod
     def from_matrix(cls, matrix: NDArray, src: Union[str, FrameID], dst: Union[str, FrameID]) -> HomogeneousMatrix:
@@ -502,6 +544,22 @@ class HomogeneousMatrix:
             return self.__transform_position_and_rotation(position, rotation)
         else:
             raise ValueError(f"Unexpected number of arguments {s}")
+
+    def serialization(self) -> Dict[str, Any]:
+        """Serialize the object to a dict."""
+        return {
+            "position": self.position.tolist(),
+            "rotation": self.rotation.elements,
+            "src": self.src.value,
+            "dst": self.dst.value,
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> HomogeneousMatrix:
+        """Deserialize the data to HomogeneousMatrix."""
+        return cls(
+            position=np.array(data["position"]), rotation=Quaternion(data["rotation"]), src=data["src"], dst=data["dst"]
+        )
 
 
 TransformArgType = TypeVar("TransformArgType", HomogeneousMatrix, NDArray, Tuple[NDArray, Quaternion])
