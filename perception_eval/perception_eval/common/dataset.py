@@ -67,20 +67,30 @@ class FrameGroundTruth:
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
         self.objects: List[ObjectType] = objects
-        self.transforms = TransformDict(transforms)
+        self.transform_matrices = transforms
+        self.transforms = TransformDict(self.transform_matrices)
         self.raw_data = raw_data
 
     def __reduce__(self) -> Tuple[FrameGroundTruth, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
-        return (self.__class__, (self.unix_time, self.frame_name, self.objects, self.transforms, self.raw_data))
+        return (self.__class__, (self.unix_time, self.frame_name, self.objects, self.transform_matrices, self.raw_data))
 
     def serialization(self) -> Dict[str, Any]:
         """Serialize the object to a dict."""
+        transform = self.transforms.serialization() if self.transforms is not None else None
+        if transform is not None:
+            transform_matrices = transform["matrices"]
+            transform_matrices_type = transform["matrices_type"]
+        else:
+            transform_matrices = None
+            transform_matrices_type = None
+
         return {
             "unix_time": self.unix_time,
             "frame_name": self.frame_name,
             "objects": [object.serialization() for object in self.objects],
-            "transforms": self.transforms,
+            "transform_matrices": transform_matrices,
+            "transform_matrices_type": transform_matrices_type,
             "raw_data": {frame_id.value: data.tolist() for frame_id, data in self.raw_data.items()},
         }
 
@@ -98,11 +108,20 @@ class FrameGroundTruth:
 
             objects.append(object_class.deserialization(object_data))
 
+        if data["transform_matrices_type"] == HomogeneousMatrix.MATRIX_TYPE:
+            transform_matrices = HomogeneousMatrix.deserialization(
+                data=data["transform_matrices"],
+            )
+        elif data["transform_matrices_type"] == "list":
+            transform_matrices = data["transform_matrices"]
+        else:
+            transform_matrices = None
+
         return cls(
             unix_time=data["unix_time"],
             frame_name=data["frame_name"],
             objects=objects,
-            transforms=data["transforms"],
+            transforms=transform_matrices,
             raw_data={FrameID(frame_id): np.array(data) for frame_id, data in data["raw_data"].items()}
             if data["raw_data"] is not None
             else None,

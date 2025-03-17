@@ -216,7 +216,7 @@ class TransformDict:
         """Deserialize the data to TransformDict."""
         if data["matrices_type"] == "None":
             matrices = None
-        elif data["matrices_type"] == "HomogeneousMatrix":
+        elif data["matrices_type"] == HomogeneousMatrix.MATRIX_TYPE:
             matrices = HomogeneousMatrix.deserialization(data["matrices"])
         elif data["matrices_type"] == "list":
             matrices = data["matrices"]
@@ -252,6 +252,8 @@ TransformKeyType = TypeVar("TransformKeyType", TransformKey, Tuple[Union[str, Fr
 
 
 class HomogeneousMatrix:
+    MATRIX_TYPE = "HomogeneousMatrix"
+
     def __init__(self, position: ArrayLike, rotation: RotationType, src: FrameIDType, dst: FrameIDType) -> None:
         """
         Args:
