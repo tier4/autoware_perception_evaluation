@@ -82,8 +82,9 @@ class CriticalObjectFilterConfig:
             target_uuids (Optional[List[str]]): The list of target uuid. Defaults to None.
         """
         self.evaluator_config = evaluator_config
+        self.labels = target_labels
         self.target_labels: List[LabelType] = set_target_lists(
-            target_labels,
+            self.labels,
             evaluator_config.label_converter,
         )
         self.ignore_attributes: Optional[List[str]] = ignore_attributes
@@ -137,7 +138,7 @@ class CriticalObjectFilterConfig:
             self.__class__,
             (
                 self.evaluator_config,
-                self.target_labels,
+                self.labels,
                 self.ignore_attributes,
                 self.max_x_position_list,
                 self.max_y_position_list,
@@ -153,7 +154,7 @@ class CriticalObjectFilterConfig:
         """Serialize the object to a dict."""
         return {
             "evaluator_config": self.evaluator_config.serialization(),
-            "target_labels": self.target_labels,
+            "target_labels": self.labels,
             "ignore_attributes": self.ignore_attributes,
             "max_x_position_list": self.max_x_position_list,
             "max_y_position_list": self.max_y_position_list,
@@ -210,8 +211,9 @@ class PerceptionPassFailConfig:
         """
         self.evaluator_config = evaluator_config
         self.evaluation_task: EvaluationTask = evaluator_config.evaluation_task
+        self.labels = target_labels
         self.target_labels: List[LabelType] = set_target_lists(
-            target_labels,
+            self.labels,
             evaluator_config.label_converter,
         )
 
@@ -229,14 +231,14 @@ class PerceptionPassFailConfig:
         """Serialization and deserialization of the object with pickling."""
         return (
             self.__class__,
-            (self.evaluator_config, self.target_labels, self.matching_threshold_list, self.confidence_threshold_list),
+            (self.evaluator_config, self.labels, self.matching_threshold_list, self.confidence_threshold_list),
         )
 
     def serialization(self) -> Dict[str, Any]:
         """Serialize the object to a dict."""
         return {
             "evaluator_config": self.evaluator_config.serialization(),
-            "target_labels": self.target_labels,
+            "target_labels": self.labels,
             "matching_threshold_list": self.matching_threshold_list,
             "confidence_threshold_list": self.confidence_threshold_list,
         }
