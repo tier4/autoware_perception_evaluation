@@ -31,6 +31,11 @@ from .config.prediction_metrics_config import PredictionMetricsConfig
 from .config.tracking_metrics_config import TrackingMetricsConfig
 
 
+def deserializer(evaluation_task: EvaluationTask, kwargs):
+    """A wrapper for pickling/un-pickling MetricScoreConfig with kwargs."""
+    return MetricsScoreConfig(evaluation_task, **kwargs)
+
+
 class MetricsScoreConfig:
     """A configuration class for each evaluation task metrics.
 
@@ -77,13 +82,7 @@ class MetricsScoreConfig:
 
     def __reduce__(self) -> Tuple[MetricsScoreConfig, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
-        return (
-            self.__class__,
-            (
-                self.evaluation_task,
-                self.cfg,
-            ),
-        )
+        return deserializer, (self.evaluation_task, self.cfg)
 
     @staticmethod
     def _check_parameters(config: _MetricsConfigBase, params: Dict[str, Any]):
