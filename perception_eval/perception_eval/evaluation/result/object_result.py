@@ -297,9 +297,9 @@ class DynamicObjectWithPerceptionResult:
 
     def deserialization(cls, data: Dict[str, Any]) -> DynamicObjectWithPerceptionResult:
         """Deserialize the data to DynamicObjectWithPerceptionResult."""
-        if data["opbject_type"] == "DynamicObject2D":
+        if data["opbject_type"] == DynamicObject2D.__name__:
             object_type = DynamicObject2D
-        elif data["object_type"] == "DynamicObject":
+        elif data["object_type"] == DynamicObject.__name__:
             object_type = DynamicObject
         else:
             raise ValueError(f"Unsupported object type: {data['object_type']}")

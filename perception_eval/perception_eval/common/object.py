@@ -179,8 +179,6 @@ class DynamicObject:
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
     """
 
-    OBJECT_TYPE: str = "DynamicObject"
-
     def __init__(
         self,
         unix_time: int,
@@ -596,7 +594,7 @@ class DynamicObject:
     def serialization(self) -> Dict[str, Any]:
         """Serialize the object to a dict."""
         return {
-            "object_type": "DynamicObject",
+            "object_type": self.__class__.__name__,
             "unix_time": self.unix_time,
             "frame_id": self.frame_id.value,
             "position": self.state.position,

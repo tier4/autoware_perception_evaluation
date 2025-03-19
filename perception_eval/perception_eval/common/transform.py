@@ -204,10 +204,10 @@ class TransformDict:
             matrices_type = "None"
         elif isinstance(self.__matrices, HomogeneousMatrix):
             matrices = matrices.serialization()
-            matrices_type = "HomogeneousMatrix"
+            matrices_type = HomogeneousMatrix.__name__
         elif isinstance(self.__matrices, (list, tuple)):
             matrices = self.__matrices
-            matrices_type = "list"
+            matrices_type = list.__name__
 
         return {"matrices": matrices, "matrices_type": matrices_type}
 
@@ -216,9 +216,9 @@ class TransformDict:
         """Deserialize the data to TransformDict."""
         if data["matrices_type"] == "None":
             matrices = None
-        elif data["matrices_type"] == HomogeneousMatrix.MATRIX_TYPE:
+        elif data["matrices_type"] == HomogeneousMatrix.__name__:
             matrices = HomogeneousMatrix.deserialization(data["matrices"])
-        elif data["matrices_type"] == "list":
+        elif data["matrices_type"] == list.__name__:
             matrices = data["matrices"]
 
         return cls(matrices=matrices)
@@ -252,8 +252,6 @@ TransformKeyType = TypeVar("TransformKeyType", TransformKey, Tuple[Union[str, Fr
 
 
 class HomogeneousMatrix:
-    MATRIX_TYPE = "HomogeneousMatrix"
-
     def __init__(self, position: ArrayLike, rotation: RotationType, src: FrameIDType, dst: FrameIDType) -> None:
         """
         Args:
@@ -279,7 +277,12 @@ class HomogeneousMatrix:
         """Serialization and deserialization of the object with pickling."""
         return (
             self.__class__,
-            (self.position, self.rotation, self.src, self.dst),
+            (
+                self.position,
+                self.rotation,
+                self.src,
+                self.dst,
+            ),
         )
 
     @classmethod

@@ -99,9 +99,9 @@ class FrameGroundTruth:
         """Deserialize the data to MetricConfigBase."""
         objects = []
         for object_data in data["objects"]:
-            if object_data["object_type"] == DynamicObject2D.OBJECT_TYPE:
+            if object_data["object_type"] == DynamicObject2D.__name__:
                 object_class = DynamicObject2D
-            elif object_data["object_type"] == DynamicObject.OBJECT_TYPE:
+            elif object_data["object_type"] == DynamicObject.__name__:
                 object_class = DynamicObject
             else:
                 raise ValueError(f"Invalid object type: {object_data['object_type']}")
