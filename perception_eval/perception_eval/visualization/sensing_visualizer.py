@@ -30,8 +30,8 @@ from matplotlib.transforms import Affine2D
 import numpy as np
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import SensingEvaluationConfig
-from perception_eval.evaluation.sensing.sensing_result import DynamicObjectWithSensingResult
 from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
+from perception_eval.evaluation.sensing.sensing_result import DynamicObjectWithSensingResult
 from perception_eval.visualization.color import ColorMap
 from PIL import Image
 from PIL.Image import Image as PILImage
