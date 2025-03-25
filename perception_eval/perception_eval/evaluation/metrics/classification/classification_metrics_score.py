@@ -19,7 +19,7 @@ from typing import List
 from typing import Tuple
 
 from perception_eval.common.label import LabelType
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 from .accuracy import ClassificationAccuracy
 

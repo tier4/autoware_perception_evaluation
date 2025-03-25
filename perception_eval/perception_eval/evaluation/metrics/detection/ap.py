@@ -24,10 +24,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from perception_eval.common.label import LabelType
 from perception_eval.common.threshold import get_label_threshold
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 logger = getLogger(__name__)
 
