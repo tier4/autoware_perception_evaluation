@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 from abc import ABC
 from abc import abstractmethod
@@ -101,6 +102,7 @@ class _EvaluationConfigBase(ABC):
         # dataset
         self.dataset_paths: List[str] = dataset_paths
 
+        self.frame_id = frame_id
         self.frame_ids: List[FrameID] = (
             [FrameID.from_value(frame_id)] if isinstance(frame_id, str) else [FrameID.from_value(f) for f in frame_id]
         )
@@ -118,6 +120,19 @@ class _EvaluationConfigBase(ABC):
             os.makedirs(self.log_directory)
         if not osp.exists(self.visualization_directory):
             os.makedirs(self.visualization_directory)
+
+    def __reduce__(self) -> Tuple[_EvaluationConfigBase, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (
+            self.__class__,
+            (
+                self.dataset_paths,
+                self.frame_id,
+                self.result_root_directory,
+                self.evaluation_config_dict,
+                self.load_raw_data,
+            ),
+        )
 
     @property
     def support_tasks(self) -> List[str]:
@@ -171,3 +186,24 @@ class _EvaluationConfigBase(ABC):
     @property
     def visualization_directory(self) -> str:
         return self.__visualization_directory
+
+    def serialization(self) -> Dict[str, Any]:
+        """Serialize the object to a dict."""
+        return {
+            "dataset_paths": self.dataset_paths,
+            "frame_id": self.frame_id,
+            "result_root_directory": self.result_root_directory,
+            "evaluation_config_dict": self.evaluation_config_dict,
+            "load_raw_data": self.load_raw_data,
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> _EvaluationConfigBase:
+        """Deserialize the data to _EvaluationConfigBagse."""
+        return cls(
+            dataset_paths=data["dataset_paths"],
+            frame_id=data["frame_id"],
+            result_root_directory=data["result_root_directory"],
+            evaluation_config_dict=data["evaluation_config_dict"],
+            load_raw_data=data["load_raw_data"],
+        )
