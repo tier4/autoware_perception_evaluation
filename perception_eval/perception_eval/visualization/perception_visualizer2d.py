@@ -33,8 +33,8 @@ from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.schema import FrameID
 from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation import PerceptionFrameResult
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
 from perception_eval.visualization.color import ColorMap
 from PIL import Image
 from PIL.Image import Image as PILImage

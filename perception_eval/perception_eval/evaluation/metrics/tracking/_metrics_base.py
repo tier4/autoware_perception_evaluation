@@ -21,9 +21,9 @@ from typing import Optional
 from typing import Tuple
 
 from perception_eval.common.label import LabelType
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetrics
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
 class _TrackingMetricsBase(ABC):
