@@ -38,11 +38,13 @@ class _MetricsConfigBase(ABC):
     Args:
         target_labels (List[LabelType]): Target labels list.
         center_distance_thresholds (List[List[float]]):
-                Thresholds List of center distance. Defaults to None.
+                The thresholds list of center distance. Defaults to None.
+        center_distance_bev_thresholds (List[List[float]]):
+                The thresholds list of center distance in BEV. Defaults to None.
         plane_distance_thresholds (List[List[float]]):
-                Thresholds list of plane distance. Defaults to None.
+                The thresholds list of plane distance. Defaults to None.
         iou_2d_thresholds (List[List[float])]:
-                The threshold List of BEV iou for matching as map_thresholds_center_distance.
+                The threshold list of BEV iou for matching as map_thresholds_center_distance.
         iou_3d_thresholds (List[List[float])]:
                 The threshold list of 3D iou for matching as map_thresholds_center_distance.
     """
@@ -54,6 +56,7 @@ class _MetricsConfigBase(ABC):
         self,
         target_labels: List[LabelType],
         center_distance_thresholds: Optional[List[float]] = None,
+        center_distance_bev_thresholds: Optional[List[float]] = None,
         plane_distance_thresholds: Optional[List[float]] = None,
         iou_2d_thresholds: Optional[List[float]] = None,
         iou_3d_thresholds: Optional[List[float]] = None,
@@ -67,6 +70,11 @@ class _MetricsConfigBase(ABC):
             self.center_distance_thresholds = set_thresholds(center_distance_thresholds, num_targets, True)
         else:
             self.center_distance_thresholds = []
+
+        if center_distance_bev_thresholds:
+            self.center_distance_bev_thresholds = set_thresholds(center_distance_bev_thresholds, num_targets, True)
+        else:
+            self.center_distance_bev_thresholds = []
 
         if plane_distance_thresholds:
             self.plane_distance_thresholds = set_thresholds(plane_distance_thresholds, num_targets, True)

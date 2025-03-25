@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from typing import List
+from typing import Optional
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
@@ -27,13 +28,14 @@ class PredictionMetricsConfig(_MetricsConfigBase):
         evaluation_task (EvaluationTask.PREDICTION)
         target_labels (List[LabelType]): Target labels list.
         center_distance_thresholds (List[float]): Thresholds list of center distance matching.
+        center_distance_bev_thresholds (List[float]): Thresholds list of center distance bev matching.
         plane_distance_thresholds (List[float]): Threshold list of plane distance matching.
         iou_2d_thresholds (List[float]): Thresholds list of 2d iou matching.
         iou_3d_thresholds (List[float]): Thresholds list of 3d iou matching.
 
     Args:
         target_labels (List[LabelType]): Target labels list.
-        center_distance_thresholds (List[float]): Thresholds list of center distance matching.
+        center_distance_bev_thresholds (List[float]): Thresholds list of center distance bev matching.
         plane_distance_thresholds (List[float]): Threshold list of plane distance matching.
         iou_2d_thresholds (List[float]): Thresholds list of 2d iou matching.
         iou_3d_thresholds (List[float]): Thresholds list of 3d iou matching.
@@ -45,6 +47,7 @@ class PredictionMetricsConfig(_MetricsConfigBase):
         self,
         target_labels: List[LabelType],
         center_distance_thresholds: List[List[float]],
+        center_distance_bev_thresholds: Optional[List[float]],
         plane_distance_thresholds: List[List[float]],
         iou_2d_thresholds: List[List[float]],
         iou_3d_thresholds: List[List[float]],
@@ -52,6 +55,7 @@ class PredictionMetricsConfig(_MetricsConfigBase):
         super().__init__(
             target_labels=target_labels,
             center_distance_thresholds=center_distance_thresholds,
+            center_distance_bev_thresholds=center_distance_bev_thresholds,
             plane_distance_thresholds=plane_distance_thresholds,
             iou_2d_thresholds=iou_2d_thresholds,
             iou_3d_thresholds=iou_3d_thresholds,

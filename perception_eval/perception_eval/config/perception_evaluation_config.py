@@ -197,6 +197,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         m_params: Dict[str, Any] = {
             "target_labels": target_labels,
             "center_distance_thresholds": e_cfg.get("center_distance_thresholds"),
+            "center_distance_bev_thresholds": e_cfg.get("center_distance_bev_thresholds"),
             "plane_distance_thresholds": e_cfg.get("plane_distance_thresholds"),
             "iou_2d_thresholds": e_cfg.get("iou_2d_thresholds"),
             "iou_3d_thresholds": e_cfg.get("iou_3d_thresholds"),
