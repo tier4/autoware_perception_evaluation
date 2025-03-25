@@ -18,8 +18,8 @@ from typing import Tuple
 from typing import Union
 
 from perception_eval.common.label import LabelType
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 from .clear import CLEAR
 
