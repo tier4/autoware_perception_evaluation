@@ -28,6 +28,7 @@ class DetectionMetricsConfig(_MetricsConfigBase):
         evaluation_task (EvaluationTask.DETECTION)
         target_labels (List[LabelType]): Target labels list.
         center_distance_thresholds (List[float]): Thresholds list of center distance matching.
+        center_distance_bev_thresholds (List[float]): Thresholds list of center distance bev matching.
         plane_distance_thresholds (List[float]): Threshold list of plane distance matching.
         iou_2d_thresholds (List[float]): Thresholds list of 2d iou matching.
         iou_3d_thresholds (List[float]): Thresholds list of 3d iou matching.
@@ -35,6 +36,7 @@ class DetectionMetricsConfig(_MetricsConfigBase):
     Args:
         target_labels (List[LabelType]): Target labels list.
         center_distance_thresholds (List[float]): Thresholds list of center distance matching.
+        center_distance_bev_thresholds (List[float]): Thresholds list of center distance bev matching.
         plane_distance_thresholds (List[float]): Threshold list of plane distance matching.
         iou_2d_thresholds (List[float]): Thresholds list of 2d iou matching.
         iou_3d_thresholds (List[float]): Thresholds list of 3d iou matching.
@@ -46,6 +48,7 @@ class DetectionMetricsConfig(_MetricsConfigBase):
         self,
         target_labels: List[LabelType],
         center_distance_thresholds: Optional[List[float]] = None,
+        center_distance_bev_thresholds: Optional[List[float]] = None,
         plane_distance_thresholds: Optional[List[float]] = None,
         iou_2d_thresholds: Optional[List[float]] = None,
         iou_3d_thresholds: Optional[List[float]] = None,
@@ -53,6 +56,7 @@ class DetectionMetricsConfig(_MetricsConfigBase):
         super().__init__(
             target_labels=target_labels,
             center_distance_thresholds=center_distance_thresholds,
+            center_distance_bev_thresholds=center_distance_bev_thresholds,
             plane_distance_thresholds=plane_distance_thresholds,
             iou_2d_thresholds=iou_2d_thresholds,
             iou_3d_thresholds=iou_3d_thresholds,

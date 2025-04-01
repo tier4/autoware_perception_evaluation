@@ -150,15 +150,16 @@ object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(est
 
 - Attributes
 
-  | Attributes            |           type           | Description                                                      |
-  | :-------------------- | :----------------------: | :--------------------------------------------------------------- |
-  | `estimated_object`    |       `ObjectType`       | 推定オブジェクト                                                 |
-  | `ground_truth_object` |  `Optional[ObjectType]`  | GT オブジェクト                                                  |
-  | `is_label_correct`    |          `bool`          | 推定オブジェクトと GT オブジェクトのラベルが同一かどうかのフラグ |
-  | `center_distance`     | `CenterDistanceMatching` | 中心間距離                                                       |
-  | `plane_distance`      | `PlaneDistanceMatching`  | 面距離                                                           |
-  | `iou_2d`              |     `IOU2dMatching`      | 2D の IOU (3D オブジェクトの場合は BEV)                          |
-  | `iou_3d`              |     `IOU3dMatching`      | 3D の IOU                                                        |
+  | Attributes            |            type             | Description                                                      |
+  | :-------------------- | :-------------------------: | :--------------------------------------------------------------- |
+  | `estimated_object`    |        `ObjectType`         | 推定オブジェクト                                                 |
+  | `ground_truth_object` |   `Optional[ObjectType]`    | GT オブジェクト                                                  |
+  | `is_label_correct`    |           `bool`            | 推定オブジェクトと GT オブジェクトのラベルが同一かどうかのフラグ |
+  | `center_distance`     |  `CenterDistanceMatching`   | 中心間距離                                                       |
+  | `center_distance_bev` | `CenterDistanceBEVMatching` | 中心のBEV距離                                                    |
+  | `plane_distance`      |   `PlaneDistanceMatching`   | 面距離                                                           |
+  | `iou_2d`              |       `IOU2dMatching`       | 2D の IOU (3D オブジェクトの場合は BEV)                          |
+  | `iou_3d`              |       `IOU3dMatching`       | 3D の IOU                                                        |
 
 - Methods
 
