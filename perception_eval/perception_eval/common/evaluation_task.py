@@ -63,6 +63,9 @@ class EvaluationTask(Enum):
             return self.value == other
         return super().__eq__(other)
 
+    def __hash__(self) -> int:
+        return hash(self.value)
+
     def is_3d(self) -> bool:
         return self in (
             EvaluationTask.DETECTION,
