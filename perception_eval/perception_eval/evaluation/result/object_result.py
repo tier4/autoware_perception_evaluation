@@ -34,6 +34,7 @@ from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.common.transform import TransformDict
+from perception_eval.evaluation.matching import CenterDistanceBEVMatching
 from perception_eval.evaluation.matching import CenterDistanceMatching
 from perception_eval.evaluation.matching import IOU2dMatching
 from perception_eval.evaluation.matching import IOU3dMatching
@@ -51,6 +52,7 @@ class DynamicObjectWithPerceptionResult:
         ground_truth_object (Optional[ObjectType]): Ground truth object.
         is_label_correct (bool): Whether the label both of `estimated_object` and `ground_truth_object` are same.
         center_distance (Optional[CenterDistanceMatching]): CenterDistanceMatching instance.
+        center_distance_bev (Optional[CenterDistanceBEVMatching]): CenterDistanceBEVMatching instance.
         plane_distance (Optional[PlaneDistanceMatching]): PlaneDistanceMatching instance.
             In 2D evaluation, this is None.
         iou_2d (IOU2dMatching): IOU2dMatching instance.
@@ -96,6 +98,10 @@ class DynamicObjectWithPerceptionResult:
             )
 
         if isinstance(estimated_object, DynamicObject):
+            self.center_distance_bev: CenterDistanceBEVMatching = CenterDistanceBEVMatching(
+                self.estimated_object,
+                self.ground_truth_object,
+            )
             self.iou_3d: IOU3dMatching = IOU3dMatching(
                 self.estimated_object,
                 self.ground_truth_object,
@@ -106,6 +112,7 @@ class DynamicObjectWithPerceptionResult:
                 transforms=transforms,
             )
         else:
+            self.center_distance_bev = None
             self.iou_3d = None
             self.plane_distance = None
 
@@ -199,6 +206,8 @@ class DynamicObjectWithPerceptionResult:
         """
         if matching_mode == MatchingMode.CENTERDISTANCE:
             return self.center_distance
+        elif matching_mode == MatchingMode.CENTERDISTANCEBEV:
+            return self.center_distance_bev
         elif matching_mode == MatchingMode.PLANEDISTANCE:
             return self.plane_distance
         elif matching_mode == MatchingMode.IOU2D:
@@ -594,6 +603,9 @@ def _get_matching_module(matching_mode: MatchingMode) -> Tuple[Callable, bool]:
     """
     if matching_mode == MatchingMode.CENTERDISTANCE:
         matching_method_module: CenterDistanceMatching = CenterDistanceMatching
+        maximize: bool = False
+    elif matching_mode == MatchingMode.CENTERDISTANCEBEV:
+        matching_method_module: CenterDistanceBEVMatching = CenterDistanceBEVMatching
         maximize: bool = False
     elif matching_mode == MatchingMode.PLANEDISTANCE:
         matching_method_module: PlaneDistanceMatching = PlaneDistanceMatching

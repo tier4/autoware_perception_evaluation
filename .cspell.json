@@ -23,6 +23,7 @@
     "categoryarray",
     "categoryorder",
     "CENTERDISTANCE",
+    "CENTERDISTANCEBEV",
     "cmake",
     "cmap",
     "colcon",
