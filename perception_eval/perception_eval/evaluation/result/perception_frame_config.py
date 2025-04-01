@@ -18,13 +18,13 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import set_target_lists
 from perception_eval.common.threshold import check_thresholds
-
-# from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
 
 
 class CriticalObjectFilterConfig:
@@ -51,7 +51,7 @@ class CriticalObjectFilterConfig:
 
     def __init__(
         self,
-        evaluator_config,  #: PerceptionEvaluationConfig,
+        evaluator_config: PerceptionEvaluationConfig,  #: PerceptionEvaluationConfig,
         target_labels: List[str],
         ignore_attributes: Optional[List[str]] = None,
         max_x_position_list: Optional[List[float]] = None,
@@ -81,8 +81,10 @@ class CriticalObjectFilterConfig:
                 The list of confidence threshold for each label. Defaults to None.
             target_uuids (Optional[List[str]]): The list of target uuid. Defaults to None.
         """
+        self.evaluator_config = evaluator_config
+        self.labels = target_labels
         self.target_labels: List[LabelType] = set_target_lists(
-            target_labels,
+            self.labels,
             evaluator_config.label_converter,
         )
         self.ignore_attributes: Optional[List[str]] = ignore_attributes
@@ -130,6 +132,55 @@ class CriticalObjectFilterConfig:
             "target_uuids": self.target_uuids,
         }
 
+    def __reduce__(self) -> Tuple[CriticalObjectFilterConfig, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (
+            self.__class__,
+            (
+                self.evaluator_config,
+                self.labels,
+                self.ignore_attributes,
+                self.max_x_position_list,
+                self.max_y_position_list,
+                self.max_distance_list,
+                self.min_distance_list,
+                self.min_point_numbers,
+                self.confidence_threshold_list,
+                self.target_uuids,
+            ),
+        )
+
+    def serialization(self) -> Dict[str, Any]:
+        """Serialize the object to a dict."""
+        return {
+            "evaluator_config": self.evaluator_config.serialization(),
+            "target_labels": self.labels,
+            "ignore_attributes": self.ignore_attributes,
+            "max_x_position_list": self.max_x_position_list,
+            "max_y_position_list": self.max_y_position_list,
+            "max_distance_list": self.max_distance_list,
+            "min_distance_list": self.min_distance_list,
+            "min_point_numbers": self.min_point_numbers,
+            "confidence_threshold_list": self.confidence_threshold_list,
+            "target_uuids": self.target_uuids,
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> CriticalObjectFilterConfig:
+        """Deserialize the data to CriticalObjectFilterConfig."""
+        return cls(
+            evaluator_config=PerceptionEvaluationConfig.deserialization(data["evaluator_config"]),
+            target_labels=data["target_labels"],
+            ignore_attributes=data["ignore_attributes"],
+            max_x_position_list=data["max_x_position_list"],
+            max_y_position_list=data["max_y_position_list"],
+            max_distance_list=data["max_distance_list"],
+            min_distance_list=data["min_distance_list"],
+            min_point_numbers=data["min_point_numbers"],
+            confidence_threshold_list=data["confidence_threshold_list"],
+            target_uuids=data["target_uuids"],
+        )
+
 
 class PerceptionPassFailConfig:
     """[summary]
@@ -145,7 +196,7 @@ class PerceptionPassFailConfig:
 
     def __init__(
         self,
-        evaluator_config,  #: PerceptionEvaluationConfig,
+        evaluator_config: PerceptionEvaluationConfig,
         target_labels: Optional[List[str]],
         matching_threshold_list: Optional[List[float]] = None,
         confidence_threshold_list: Optional[List[float]] = None,
@@ -158,9 +209,11 @@ class PerceptionPassFailConfig:
                 For 2D evaluation, IOU2D, for 3D evaluation, PLANEDISTANCE will be used. Defaults to None.
             confidence_threshold_list (Optional[List[float]]): The list of confidence threshold. Defaults to None.
         """
+        self.evaluator_config = evaluator_config
         self.evaluation_task: EvaluationTask = evaluator_config.evaluation_task
+        self.labels = target_labels
         self.target_labels: List[LabelType] = set_target_lists(
-            target_labels,
+            self.labels,
             evaluator_config.label_converter,
         )
 
@@ -173,6 +226,32 @@ class PerceptionPassFailConfig:
             self.confidence_threshold_list = None
         else:
             self.confidence_threshold_list: List[float] = check_thresholds(confidence_threshold_list, num_elements)
+
+    def __reduce__(self) -> Tuple[PerceptionPassFailConfig, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (
+            self.__class__,
+            (self.evaluator_config, self.labels, self.matching_threshold_list, self.confidence_threshold_list),
+        )
+
+    def serialization(self) -> Dict[str, Any]:
+        """Serialize the object to a dict."""
+        return {
+            "evaluator_config": self.evaluator_config.serialization(),
+            "target_labels": self.labels,
+            "matching_threshold_list": self.matching_threshold_list,
+            "confidence_threshold_list": self.confidence_threshold_list,
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> PerceptionPassFailConfig:
+        """Deserialize the data to _EvaluationConfigBagse."""
+        return cls(
+            evaluator_config=PerceptionEvaluationConfig.deserialization(data["evaluator_config"]),
+            target_labels=data["target_labels"],
+            matching_threshold_list=data["matching_threshold_list"],
+            confidence_threshold_list=data["confidence_threshold_list"],
+        )
 
 
 class UseCaseThresholdsError(Exception):

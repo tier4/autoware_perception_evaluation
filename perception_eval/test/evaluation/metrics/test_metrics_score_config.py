@@ -40,6 +40,7 @@ class TestMetricsScoreConfig(unittest.TestCase):
                 {
                     "target_labels": ["car"],
                     "center_distance_thresholds": [[1.0]],
+                    "center_distance_bev_thresholds": [[1.0]],
                     "plane_distance_thresholds": [[1.0]],
                     "iou_bev_thresholds": [[1.0]],
                     "iou_3d_thresholds": [[1.0]],

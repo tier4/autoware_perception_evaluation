@@ -30,8 +30,8 @@ from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.common.threshold import LabelThreshold
 from perception_eval.common.transform import TransformDict
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
 def filter_object_results(

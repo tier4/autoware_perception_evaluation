@@ -14,7 +14,9 @@
 
 from __future__ import annotations
 
+from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -32,6 +34,7 @@ from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.common.transform import TransformDict
+from perception_eval.evaluation.matching import CenterDistanceBEVMatching
 from perception_eval.evaluation.matching import CenterDistanceMatching
 from perception_eval.evaluation.matching import IOU2dMatching
 from perception_eval.evaluation.matching import IOU3dMatching
@@ -49,6 +52,7 @@ class DynamicObjectWithPerceptionResult:
         ground_truth_object (Optional[ObjectType]): Ground truth object.
         is_label_correct (bool): Whether the label both of `estimated_object` and `ground_truth_object` are same.
         center_distance (Optional[CenterDistanceMatching]): CenterDistanceMatching instance.
+        center_distance_bev (Optional[CenterDistanceBEVMatching]): CenterDistanceBEVMatching instance.
         plane_distance (Optional[PlaneDistanceMatching]): PlaneDistanceMatching instance.
             In 2D evaluation, this is None.
         iou_2d (IOU2dMatching): IOU2dMatching instance.
@@ -78,6 +82,7 @@ class DynamicObjectWithPerceptionResult:
         self.estimated_object: ObjectType = estimated_object
         self.ground_truth_object: Optional[ObjectType] = ground_truth_object
         self.matching_label_policy = matching_label_policy
+        self.transforms: Optional[TransformDict] = transforms
 
         if isinstance(self.estimated_object, DynamicObject2D) and self.estimated_object.roi is None:
             self.center_distance = None
@@ -93,6 +98,10 @@ class DynamicObjectWithPerceptionResult:
             )
 
         if isinstance(estimated_object, DynamicObject):
+            self.center_distance_bev: CenterDistanceBEVMatching = CenterDistanceBEVMatching(
+                self.estimated_object,
+                self.ground_truth_object,
+            )
             self.iou_3d: IOU3dMatching = IOU3dMatching(
                 self.estimated_object,
                 self.ground_truth_object,
@@ -103,8 +112,16 @@ class DynamicObjectWithPerceptionResult:
                 transforms=transforms,
             )
         else:
+            self.center_distance_bev = None
             self.iou_3d = None
             self.plane_distance = None
+
+    def __reduce__(self) -> Tuple[DynamicObjectWithPerceptionResult, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (
+            self.__class__,
+            (self.estimated_object, self.ground_truth_object, self.matching_label_policy, self.transforms),
+        )
 
     def get_status(
         self,
@@ -189,6 +206,8 @@ class DynamicObjectWithPerceptionResult:
         """
         if matching_mode == MatchingMode.CENTERDISTANCE:
             return self.center_distance
+        elif matching_mode == MatchingMode.CENTERDISTANCEBEV:
+            return self.center_distance_bev
         elif matching_mode == MatchingMode.PLANEDISTANCE:
             return self.plane_distance
         elif matching_mode == MatchingMode.IOU2D:
@@ -275,6 +294,33 @@ class DynamicObjectWithPerceptionResult:
             return self.matching_label_policy.is_matchable(self.estimated_object, self.ground_truth_object)
         else:
             return False
+
+    def serialization(self) -> Dict[str, Any]:
+        """Serialize the object to a dict."""
+        return {
+            "estimated_object": self.estimated_object.serialization(),
+            "ground_truth_object": self.ground_truth_object.serialization() if self.ground_truth_object else None,
+            "matching_label_policy": self.matching_label_policy.value,
+            "transforms": self.transforms if self.transforms else None,
+        }
+
+    def deserialization(cls, data: Dict[str, Any]) -> DynamicObjectWithPerceptionResult:
+        """Deserialize the data to DynamicObjectWithPerceptionResult."""
+        if data["opbject_type"] == DynamicObject2D.__name__:
+            object_type = DynamicObject2D
+        elif data["object_type"] == DynamicObject.__name__:
+            object_type = DynamicObject
+        else:
+            raise ValueError(f"Unsupported object type: {data['object_type']}")
+
+        return cls(
+            estimated_object=object_type.deserialization(data["estimated_object"]),
+            ground_truth_object=object_type.deserialization(data["ground_truth_object"])
+            if data["ground_truth_object"]
+            else None,
+            matching_label_policy=MatchingLabelPolicy(data["matching_label_policy"]),
+            transforms=data["transforms"],
+        )
 
 
 def get_object_results(
@@ -555,6 +601,9 @@ def _get_matching_module(matching_mode: MatchingMode) -> Tuple[Callable, bool]:
     """
     if matching_mode == MatchingMode.CENTERDISTANCE:
         matching_method_module: CenterDistanceMatching = CenterDistanceMatching
+        maximize: bool = False
+    elif matching_mode == MatchingMode.CENTERDISTANCEBEV:
+        matching_method_module: CenterDistanceBEVMatching = CenterDistanceBEVMatching
         maximize: bool = False
     elif matching_mode == MatchingMode.PLANEDISTANCE:
         matching_method_module: PlaneDistanceMatching = PlaneDistanceMatching

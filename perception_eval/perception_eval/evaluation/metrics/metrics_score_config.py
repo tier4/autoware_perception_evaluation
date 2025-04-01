@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 from inspect import signature
 from typing import Any
@@ -18,6 +19,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Set
+from typing import Tuple
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
@@ -27,6 +29,11 @@ from .config.classification_metrics_config import ClassificationMetricsConfig
 from .config.detection_metrics_config import DetectionMetricsConfig
 from .config.prediction_metrics_config import PredictionMetricsConfig
 from .config.tracking_metrics_config import TrackingMetricsConfig
+
+
+def deserializer(evaluation_task: EvaluationTask, kwargs):
+    """A wrapper for pickling/un-pickling MetricScoreConfig with kwargs."""
+    return MetricsScoreConfig(evaluation_task, **kwargs)
 
 
 class MetricsScoreConfig:
@@ -48,6 +55,7 @@ class MetricsScoreConfig:
         self.detection_config: Optional[DetectionMetricsConfig] = None
         self.tracking_config: Optional[TrackingMetricsConfig] = None
         self.classification_config: Optional[ClassificationMetricsConfig] = None
+        self.cfg = cfg
 
         # NOTE: prediction_config is under construction
         self.prediction_config = None
@@ -72,6 +80,10 @@ class MetricsScoreConfig:
             self._check_parameters(ClassificationMetricsConfig, cfg)
             self.classification_config = ClassificationMetricsConfig(**cfg)
 
+    def __reduce__(self) -> Tuple[MetricsScoreConfig, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return deserializer, (self.evaluation_task, self.cfg)
+
     @staticmethod
     def _check_parameters(config: _MetricsConfigBase, params: Dict[str, Any]):
         """Check if input parameters are valid.
@@ -91,6 +103,21 @@ class MetricsScoreConfig:
                 f"Unexpected parameters: {input_params - valid_parameters} \n"
                 f"Usage: {valid_parameters} \n"
             )
+
+    def serialization(self) -> Dict[str, Any]:
+        """Serialize the object to a dict."""
+        return {
+            "evaluation_task": self.evaluation_task.value,
+            "cfg": self.cfg,
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> MetricsScoreConfig:
+        """Deserialize the data to MetricScoreConfig."""
+        return cls(
+            evaluation_task=EvaluationTask.from_value(data["evaluation_task"]),
+            **data["cfg"],
+        )
 
 
 class MetricsParameterError(Exception):

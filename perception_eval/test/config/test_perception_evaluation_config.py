@@ -36,6 +36,10 @@ class TestPerceptionEvaluationConfig(unittest.TestCase):
                 [1.0, 1.0, 1.0, 1.0],
                 [2.0, 2.0, 2.0, 2.0],
             ],
+            "center_distance_bev_thresholds": [
+                [1.0, 1.0, 1.0, 1.0],
+                [2.0, 2.0, 2.0, 2.0],
+            ],
             "plane_distance_thresholds": [2.0, 3.0],
             "iou_bev_thresholds": [0.5],
             "iou_3d_thresholds": [0.5],
@@ -70,6 +74,10 @@ class TestPerceptionEvaluationConfig(unittest.TestCase):
             "max_x_position": 102.4,
             "max_y_position": 102.4,
             "center_distance_thresholds": [
+                [1.0, 1.0, 1.0, 1.0],
+                [2.0, 2.0, 2.0, 2.0],
+            ],
+            "center_distance_bev_thresholds": [
                 [1.0, 1.0, 1.0, 1.0],
                 [2.0, 2.0, 2.0, 2.0],
             ],

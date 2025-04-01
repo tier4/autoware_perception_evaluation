@@ -30,7 +30,7 @@ from perception_eval.common.status import MatchingStatus
 from perception_eval.common.transform import TransformDict
 from perception_eval.common.transform import TransformKey
 from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 import yaml
 
 from .perception_analyzer_base import PerceptionAnalysisResult

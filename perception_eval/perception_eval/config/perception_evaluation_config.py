@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 from typing import Any
 from typing import Dict
@@ -196,6 +197,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         m_params: Dict[str, Any] = {
             "target_labels": target_labels,
             "center_distance_thresholds": e_cfg.get("center_distance_thresholds"),
+            "center_distance_bev_thresholds": e_cfg.get("center_distance_bev_thresholds"),
             "plane_distance_thresholds": e_cfg.get("plane_distance_thresholds"),
             "iou_2d_thresholds": e_cfg.get("iou_2d_thresholds"),
             "iou_3d_thresholds": e_cfg.get("iou_3d_thresholds"),
