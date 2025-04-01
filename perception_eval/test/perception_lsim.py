@@ -54,7 +54,6 @@ class PerceptionLSimMoc:
             # "confidence_threshold": 0.5,
             # # GTのuuidによるフィルタ (Optional)
             # "target_uuids": ["foo", "bar"],
-            # objectごとにparamを設定
             # label parameters
             "label_prefix": "autoware",
             "merge_similar_labels": False,
@@ -72,6 +71,10 @@ class PerceptionLSimMoc:
             evaluation_config_dict.update(
                 {
                     "center_distance_thresholds": [
+                        [1.0, 1.0, 1.0, 1.0],
+                        [2.0, 2.0, 2.0, 2.0],
+                    ],  # = [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]]
+                    "center_distance_bev_thresholds": [
                         [1.0, 1.0, 1.0, 1.0],
                         [2.0, 2.0, 2.0, 2.0],
                     ],  # = [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]]

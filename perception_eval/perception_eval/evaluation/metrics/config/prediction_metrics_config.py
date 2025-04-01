@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from typing import List
+from typing import Optional
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
