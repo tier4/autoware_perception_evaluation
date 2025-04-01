@@ -157,6 +157,16 @@ class MetricsScore:
 
         if self.evaluation_task.is_3d():
             # Only for Detection3D
+            # TODO(vividf): Rename variable to avoid shadowing Python built-in keywords like 'map'
+            for distance_bev_threshold_ in self.detection_config.center_distance_bev_thresholds:
+                map_ = Map(
+                    object_results_dict=object_results,
+                    num_ground_truth_dict=num_ground_truth,
+                    target_labels=self.detection_config.target_labels,
+                    matching_mode=MatchingMode.CENTERDISTANCEBEV,
+                    matching_threshold_list=distance_bev_threshold_,
+                )
+                self.maps.append(map_)
             for iou_threshold_3d_ in self.detection_config.iou_3d_thresholds:
                 map_ = Map(
                     object_results_dict=object_results,
@@ -214,6 +224,15 @@ class MetricsScore:
             self.tracking_scores.append(tracking_score_)
 
         if self.evaluation_task.is_3d():
+            for distance_bev_threshold_ in self.tracking_config.center_distance_bev_thresholds:
+                tracking_score_ = TrackingMetricsScore(
+                    object_results_dict=object_results,
+                    num_ground_truth_dict=num_ground_truth,
+                    target_labels=self.tracking_config.target_labels,
+                    matching_mode=MatchingMode.CENTERDISTANCEBEV,
+                    matching_threshold_list=distance_bev_threshold_,
+                )
+                self.tracking_scores.append(tracking_score_)
             for iou_threshold_3d_ in self.tracking_config.iou_3d_thresholds:
                 tracking_score_ = TrackingMetricsScore(
                     object_results_dict=object_results,

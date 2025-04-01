@@ -24,6 +24,7 @@ from typing import Tuple
 
 import numpy as np
 from perception_eval.common import distance_objects
+from perception_eval.common import distance_objects_bev
 from perception_eval.common import distance_points_bev
 from perception_eval.common import ObjectType
 from perception_eval.common.label import is_same_label
@@ -77,13 +78,15 @@ class MatchingMode(Enum):
     """[summary]
     The mode enum for matching algorithm.
 
-    CENTERDISTANCE: center distance, for 3d use meter[m], 2d use pixel[px].
+    CENTERDISTANCE: Center distance in meters for 3D objects and in pixels[px] for 2D objects.
+    CENTERDISTANCE: Center distance in meters in Bird Eye View for 3D objects.
     IOU2D : IoU (Intersection over Union) in BEV (Bird Eye View) for 3D objects, pixel for 2D objects.
     IOU3D : IoU (Intersection over Union) in 3D
     PLANEDISTANCE: The plane distance
     """
 
     CENTERDISTANCE = "Center Distance"
+    CENTERDISTANCEBEV = "Center Distance BEV"
     IOU2D = "IoU 2D"
     IOU3D = "IoU 3D"
     PLANEDISTANCE = "Plane Distance"
@@ -195,8 +198,8 @@ class CenterDistanceMatching(MatchingMethod):
         """
         if self.value is None:
             return False
-        else:
-            return self.value < threshold_value
+
+        return self.value < threshold_value
 
     def _calculate_matching_score(
         self,
@@ -218,6 +221,64 @@ class CenterDistanceMatching(MatchingMethod):
         if ground_truth_object is None:
             return None
         return distance_objects(estimated_object, ground_truth_object)
+
+
+class CenterDistanceBEVMatching(MatchingMethod):
+    """A class for matching objects by center distance.
+
+    If input `ground_truth_object=None`, `self.value=None`
+
+    Attributes:
+        mode (MatchingMode): Matching mode that is `MatchingMode.CENTERDISTANCEBEV`.
+        value (Optional[float]): Center distance score.
+
+    Args:
+        estimated_object (ObjectType): Estimated object.
+        ground_truth_object (Optional[ObjectType]): Ground truth object.
+    """
+
+    mode: MatchingMode = MatchingMode.CENTERDISTANCEBEV
+
+    def is_better_than(
+        self,
+        threshold_value: float,
+    ) -> bool:
+        """[summary]
+        Judge whether value is better than threshold.
+
+        If `self.value=None`, always returns False.
+
+        Args:
+            threshold_value (float): Threshold value.
+
+        Returns:
+            bool: If value is better than threshold, return True.
+        """
+        if self.value is None:
+            return False
+
+        return self.value < threshold_value
+
+    def _calculate_matching_score(
+        self,
+        estimated_object: ObjectType,
+        ground_truth_object: Optional[ObjectType],
+        transforms: Optional[TransformDict] = None,
+    ) -> Optional[float]:
+        """Get center distance.
+
+        If input `ground_truth_object=None`, it always returns None.
+
+        Args:
+            estimated_object (ObjectType): Estimated object.
+            ground_truth_object (Optional[ObjectType]): Ground truth object.
+
+        Returns:
+            Optional[float]: Center distance between 2 objects.
+        """
+        if ground_truth_object is None:
+            return None
+        return distance_objects_bev(estimated_object, ground_truth_object)
 
 
 _PlanePointType = Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]]
@@ -272,8 +333,8 @@ class PlaneDistanceMatching(MatchingMethod):
         """
         if self.value is None:
             return False
-        else:
-            return self.value < threshold_value
+
+        return self.value < threshold_value
 
     def _calculate_matching_score(
         self,
