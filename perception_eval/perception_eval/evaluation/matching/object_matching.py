@@ -198,8 +198,8 @@ class CenterDistanceMatching(MatchingMethod):
         """
         if self.value is None:
             return False
-        else:
-            return self.value < threshold_value
+
+        return self.value < threshold_value
 
     def _calculate_matching_score(
         self,
@@ -256,8 +256,8 @@ class CenterDistanceBEVMatching(MatchingMethod):
         """
         if self.value is None:
             return False
-        else:
-            return self.value < threshold_value
+
+        return self.value < threshold_value
 
     def _calculate_matching_score(
         self,
@@ -333,8 +333,8 @@ class PlaneDistanceMatching(MatchingMethod):
         """
         if self.value is None:
             return False
-        else:
-            return self.value < threshold_value
+
+        return self.value < threshold_value
 
     def _calculate_matching_score(
         self,

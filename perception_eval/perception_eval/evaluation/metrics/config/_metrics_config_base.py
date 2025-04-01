@@ -66,30 +66,18 @@ class _MetricsConfigBase(ABC):
         self.target_labels: List[LabelType] = target_labels
 
         num_targets: int = len(target_labels)
-        if center_distance_thresholds:
-            self.center_distance_thresholds = set_thresholds(center_distance_thresholds, num_targets, True)
-        else:
-            self.center_distance_thresholds = []
 
-        if center_distance_bev_thresholds:
-            self.center_distance_bev_thresholds = set_thresholds(center_distance_bev_thresholds, num_targets, True)
-        else:
-            self.center_distance_bev_thresholds = []
-
-        if plane_distance_thresholds:
-            self.plane_distance_thresholds = set_thresholds(plane_distance_thresholds, num_targets, True)
-        else:
-            self.plane_distance_thresholds = []
-
-        if iou_2d_thresholds:
-            self.iou_2d_thresholds = set_thresholds(iou_2d_thresholds, num_targets, True)
-        else:
-            self.iou_2d_thresholds = []
-
-        if iou_3d_thresholds:
-            self.iou_3d_thresholds = set_thresholds(iou_3d_thresholds, num_targets, True)
-        else:
-            self.iou_3d_thresholds = []
+        self.center_distance_thresholds = (
+            set_thresholds(center_distance_thresholds, num_targets, True) if center_distance_thresholds else []
+        )
+        self.center_distance_bev_thresholds = (
+            set_thresholds(center_distance_bev_thresholds, num_targets, True) if center_distance_bev_thresholds else []
+        )
+        self.plane_distance_thresholds = (
+            set_thresholds(plane_distance_thresholds, num_targets, True) if plane_distance_thresholds else []
+        )
+        self.iou_2d_thresholds = set_thresholds(iou_2d_thresholds, num_targets, True) if iou_2d_thresholds else []
+        self.iou_3d_thresholds = set_thresholds(iou_3d_thresholds, num_targets, True) if iou_3d_thresholds else []
 
     def __reduce__(self) -> Tuple[_MetricsConfigBase, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""

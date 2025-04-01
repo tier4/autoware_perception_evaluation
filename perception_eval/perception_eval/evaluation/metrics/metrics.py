@@ -154,6 +154,7 @@ class MetricsScore:
 
         if self.evaluation_task.is_3d():
             # Only for Detection3D
+            # TODO(vividf): Rename variable to avoid shadowing Python built-in keywords like 'map'
             for distance_bev_threshold_ in self.detection_config.center_distance_bev_thresholds:
                 map_ = Map(
                     object_results_dict=object_results,
