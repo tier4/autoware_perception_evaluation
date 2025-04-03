@@ -22,6 +22,7 @@ from perception_eval.evaluation.matching import MatchingMode
 from .classification import ClassificationMetricsScore
 from .detection import Map
 from .metrics_score_config import MetricsScoreConfig
+from .prediction import PredictionMetricsScore
 from .tracking import TrackingMetricsScore
 
 
@@ -58,7 +59,7 @@ class MetricsScore:
         self.maps: List[Map] = []
         # tracking metrics scores for each matching method
         self.tracking_scores: List[TrackingMetricsScore] = []
-        # TODO: prediction metrics scores for each matching method
+        # prediction metrics scores for each matching method
         self.prediction_scores: List = []
         self.classification_scores: List[ClassificationMetricsScore] = []
         self.evaluation_task = config.evaluation_task
@@ -94,7 +95,9 @@ class MetricsScore:
         for track_score in self.tracking_scores:
             str_ += str(track_score)
 
-        # TODO: prediction
+        # prediction
+        for pred_score in self.prediction_scores:
+            str_ += str(pred_score)
 
         for classify_score in self.classification_scores:
             str_ += str(classify_score)
@@ -241,7 +244,17 @@ class MetricsScore:
         Args:
             object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
         """
-        pass
+        self.__num_gt += sum(num_ground_truth.values())
+
+        for top_k in self.prediction_config.top_ks:
+            prediction_score_ = PredictionMetricsScore(
+                object_results_dict=object_results,
+                num_ground_truth_dict=num_ground_truth,
+                target_labels=self.prediction_config.target_labels,
+                top_k=top_k,
+                miss_tolerance=self.prediction_config.miss_tolerance,
+            )
+            self.prediction_scores.append(prediction_score_)
 
     def evaluate_classification(
         self,

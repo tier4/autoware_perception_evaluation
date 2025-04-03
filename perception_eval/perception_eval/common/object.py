@@ -26,67 +26,12 @@ from perception_eval.common.point import polygon_to_list
 from perception_eval.common.schema import FrameID
 from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
-from perception_eval.common.shape import ShapeType
+from perception_eval.common.state import ObjectPath
+from perception_eval.common.state import ObjectState
+from perception_eval.common.state import set_object_paths
 from perception_eval.common.transform import TransformDict
 from pyquaternion import Quaternion
 from shapely.geometry import Polygon
-
-
-class ObjectState:
-    """Object state class.
-
-    Attributes:
-        position (Tuple[float, float, float]): (center_x, center_y, center_z)[m].
-        orientation (Quaternion) : Quaternion instance.
-        size (Tuple[float, float, float]): Bounding box size, (wx, wy, wz)[m].
-        velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz)[m/s].
-        pose_covariance (Optional[np.ndarray]): Covariance matrix for pose (x, y, z, roll, pitch, yaw). Defaults to None.
-        twist_covariance (Optional[np.ndarray]): Covariance matrix for twist (vx, vy, vz, vroll, vpitch, vyaw). Defaults to None.
-
-    Args:
-        position (Tuple[float, float, float]): (center_x, center_y, center_z)[m].
-        orientation (Quaternion) : Quaternion instance.
-        shape (Shape): Shape instance.
-        velocity (Optional[Tuple[float, float, float]]): Velocity, (vx, vy, vz)[m/s].
-        pose_covariance (Optional[np.ndarray]): Covariance matrix for pose (x, y, z, roll, pitch, yaw). Defaults to None.
-        twist_covariance (Optional[np.ndarray]): Covariance matrix for twist (vx, vy, vz, vroll, vpitch, vyaw). Defaults to None.
-    """
-
-    def __init__(
-        self,
-        position: Optional[Tuple[float, float, float]],
-        orientation: Optional[Quaternion],
-        shape: Optional[Shape],
-        velocity: Optional[Tuple[float, float, float]],
-        pose_covariance: Optional[np.ndarray] = None,
-        twist_covariance: Optional[np.ndarray] = None,
-    ) -> None:
-        self.position = position
-        self.orientation = orientation
-        self.shape = shape
-        self.velocity = velocity
-        self.pose_covariance = pose_covariance
-        self.twist_covariance = twist_covariance
-
-    @property
-    def shape_type(self) -> Optional[ShapeType]:
-        return self.shape.type if self.shape is not None else None
-
-    @property
-    def size(self) -> Tuple[float, float, float]:
-        return self.shape.size if self.shape is not None else None
-
-    @property
-    def footprint(self) -> Polygon:
-        return self.shape.footprint if self.shape is not None else None
-
-    @property
-    def has_pose_covariance(self) -> bool:
-        return self.pose_covariance is not None
-
-    @property
-    def has_twist_covariance(self) -> bool:
-        return self.twist_covariance is not None
 
 
 class DynamicObject:
@@ -109,8 +54,7 @@ class DynamicObject:
         self.tracked_path (Optional[List[ObjectState]]): List of the past states.
 
         # Prediction
-        predicted_confidence (Optional[float]): Prediction score.
-        predicted_path (Optional[List[ObjectState]]): List of the future states.
+        predicted_paths (Optional[List[ObjectPath]]): List of the future states.
 
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
 
@@ -136,14 +80,14 @@ class DynamicObject:
         tracked_twists (Optional[List[Tuple[float, float, float]]]):
                 The list of twist for tracked object. Defaults to None.
         predicted_positions (Optional[List[Tuple[float, float, float]]]):
-                The list of position for predicted object. Defaults to None.
+                Sequence of positions for predicted object. Defaults to None.
         predicted_orientations (Optional[List[Quaternion]]):
                 The list of quaternion for predicted object. Defaults to None.
         predicted_shapes (Optional[List[Shape]]):
                 The list of bounding box size for predicted object. Defaults to None.
         predicted_twists (Optional[List[Tuple[float, float, float]]]):
                 The list of twist for predicted object. Defaults to None.
-        predicted_confidence (Optional[float]): Prediction score. Defaults to None.
+        predicted_scores (Optional[List[float]]): Prediction scores for each mode. Defaults to None.
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
     """
 
@@ -165,11 +109,10 @@ class DynamicObject:
         tracked_orientations: Optional[List[Quaternion]] = None,
         tracked_shapes: Optional[List[Shape]] = None,
         tracked_twists: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_positions: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_orientations: Optional[List[Quaternion]] = None,
-        predicted_shapes: Optional[List[Shape]] = None,
-        predicted_twists: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_confidence: Optional[float] = None,
+        predicted_positions: Optional[List[List[Tuple[float, float, float]]]] = None,
+        predicted_orientations: Optional[List[List[Quaternion]]] = None,
+        predicted_twists: Optional[List[List[Tuple[float, float, float]]]] = None,
+        predicted_scores: Optional[List[float]] = None,
         visibility: Optional[Visibility] = None,
     ) -> None:
         # detection
@@ -200,12 +143,11 @@ class DynamicObject:
         )
 
         # prediction
-        self.predicted_confidence: Optional[float] = predicted_confidence
-        self.predicted_path: Optional[List[ObjectState]] = self._set_states(
+        self.predicted_paths: Optional[List[ObjectPath]] = set_object_paths(
             positions=predicted_positions,
             orientations=predicted_orientations,
-            shapes=predicted_shapes,
             twists=predicted_twists,
+            confidences=predicted_scores,
         )
 
         self.visibility: Optional[Visibility] = visibility
@@ -350,9 +292,9 @@ class DynamicObject:
         """
         if other is None:
             return None
-        err_x: float = abs(other.state.position[0] - self.state.position[0])
-        err_y: float = abs(other.state.position[1] - self.state.position[1])
-        err_z: float = abs(other.state.position[2] - self.state.position[2])
+        err_x: float = other.state.position[0] - self.state.position[0]
+        err_y: float = other.state.position[1] - self.state.position[1]
+        err_z: float = other.state.position[2] - self.state.position[2]
         return (err_x, err_y, err_z)
 
     def get_heading_error(
@@ -404,11 +346,29 @@ class DynamicObject:
         if self.state.velocity is None or other.state.velocity is None:
             return None
 
-        err_vx: float = abs(other.state.velocity[0] - self.state.velocity[0])
-        err_vy: float = abs(other.state.velocity[1] - self.state.velocity[1])
-        err_vz: float = abs(other.state.velocity[2] - self.state.velocity[2])
+        err_vx: float = other.state.velocity[0] - self.state.velocity[0]
+        err_vy: float = other.state.velocity[1] - self.state.velocity[1]
+        err_vz: float = other.state.velocity[2] - self.state.velocity[2]
 
         return err_vx, err_vy, err_vz
+
+    def get_path_error(self, other: Optional[DynamicObject]) -> Optional[np.ndarray]:
+        """Returns displacement errors of path as numpy.ndarray.
+
+        Args:
+            other (Optional[DynamicObject]): DynamicObject instance.
+            num_waypoints (optional[int]): Number of waypoints. Defaults to None.
+
+        Returns:
+            numpy.ndarray: in shape (K, T, 3)
+        """
+        if other is None:
+            return None
+
+        path_errors: List[np.ndarray] = []
+        for self_path, other_path in zip(self.predicted_paths, other.predicted_paths, strict=True):
+            path_errors.append(self_path.get_path_error(other_path))
+        return np.stack(path_errors)
 
     def get_area_bev(self) -> float:
         """Get area of object BEV.
