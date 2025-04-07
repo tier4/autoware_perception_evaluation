@@ -18,6 +18,7 @@ from typing import Callable
 from typing import List
 from typing import Optional
 from typing import Tuple
+import logging
 
 import numpy as np
 from perception_eval.common import distance_objects
@@ -166,7 +167,8 @@ class DynamicObjectWithPerceptionResult:
         matching: Optional[MatchingMethod] = self.get_matching(matching_mode)
         if matching is None:
             return self.is_label_correct
-
+        
+        logging.info(f"Val: {matching.value}")
         is_matching: bool = matching.is_better_than(matching_threshold)
         # Whether both label is true and matching is true
         return (
