@@ -15,6 +15,7 @@
 
 from typing import List
 from typing import Tuple
+import logging
 
 from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
@@ -124,6 +125,22 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
             result.evaluate_frame()
 
         self.frame_results.append(result)
+
+        ### debug log ###
+        if result.frame_ground_truth is not None:
+            logging.info(f"GT Num {len(result.frame_ground_truth.objects)}")
+        for i, object in enumerate(result.object_results):
+            if object.ground_truth_object is not None:
+                if object.ground_truth_object.semantic_label is None:
+                    logging.info(f"GT {i}, Label: None")
+                else:
+                    logging.info(f"GT {i}, Label:{object.ground_truth_object.semantic_label.label}, {object.ground_truth_object.semantic_label.name}")
+            if object.estimated_object is not None:
+                if object.estimated_object.semantic_label is None:
+                    logging.info(f"EO {i}, Label: None")
+                else:
+                    logging.info(f"EO {i}, Label:{object.estimated_object.semantic_label.label}, {object.estimated_object.semantic_label.name}")
+        logging.info(f"Num Success:{result.pass_fail_result.get_num_success()}")
         return result
 
     def _filter_objects(
@@ -176,6 +193,22 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
                 target_uuids=self.filtering_params["target_uuids"],
             )
 
+        ### debug log ###
+        #for i, object in enumerate(frame_ground_truth.objects):
+        #    logging.info(f"GT {i}, Label {object.semantic_label}")
+        """
+        for i, object in enumerate(object_results):
+            if object.ground_truth_object is not None:
+                if object.ground_truth_object.semantic_label is None:
+                    logging.info(f"GT {i}, Label: None")
+                else:
+                    logging.info(f"GT {i}, Label:{object.ground_truth_object.semantic_label.label}, {object.ground_truth_object.semantic_label.name}")
+            if object.estimated_object is not None:
+                if object.estimated_object.semantic_label is None:
+                    logging.info(f"EO {i}, Label: None")
+                else:
+                    logging.info(f"EO {i}, Label:{object.estimated_object.semantic_label.label}, {object.estimated_object.semantic_label.name}")
+        """
         return object_results, frame_ground_truth
 
     def get_scene_result(self) -> MetricsScore:
