@@ -139,7 +139,7 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
                 if object.estimated_object.semantic_label is None:
                     logging.info(f"EO {i}, Label: None")
                 else:
-                    logging.info(f"EO {i}, Label:{object.estimated_object.semantic_label.label}, {object.estimated_object.semantic_label.name}, Pos:{object.estimated_object.state.position}, Area:{object.ground_truth_object.get_area_bev()}")
+                    logging.info(f"EO {i}, Label:{object.estimated_object.semantic_label.label}, {object.estimated_object.semantic_label.name}, Pos:{object.estimated_object.state.position}, Area:{object.estimated_object.get_area_bev()}")
         logging.info(f"Num Success:{result.pass_fail_result.get_num_success()}")
         return result
 
