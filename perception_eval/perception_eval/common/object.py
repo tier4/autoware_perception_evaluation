@@ -336,7 +336,7 @@ class DynamicObject:
             rotate_point[:2] = rotate_point[:2] + self.state.position[:2]
             rotated_footprint.append(rotate_point.tolist())
         poly: List[List[float]] = [f for f in rotated_footprint]
-        logging.info(f"Yaw:{self.state.orientation.radians}, Ftpt:{rotated_footprint[0]}")
+        logging.info(f"Yaw Pitch Roll:{self.state.orientation.yaw_pitch_roll}, Ftpt:{rotated_footprint[0]},")
         poly.append(rotated_footprint[0])
         return Polygon(poly)
 
