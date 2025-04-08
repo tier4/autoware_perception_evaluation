@@ -18,6 +18,7 @@ import math
 from typing import List
 from typing import Optional
 from typing import Tuple
+import logging
 
 import numpy as np
 from perception_eval.common.label import Label
@@ -329,11 +330,13 @@ class DynamicObject:
         # Translate to (0, 0, 0) and scale
         footprint = footprint * scale
         rotated_footprint: List[Tuple[float, float, float]] = []
+        
         for point in footprint:
             rotate_point: np.ndarray = self.state.orientation.rotate(point)
             rotate_point[:2] = rotate_point[:2] + self.state.position[:2]
             rotated_footprint.append(rotate_point.tolist())
         poly: List[List[float]] = [f for f in rotated_footprint]
+        logging.info(f"Yaw:{self.state.orientation.radians}, Ftpt:{rotated_footprint[0]}")
         poly.append(rotated_footprint[0])
         return Polygon(poly)
 
