@@ -168,7 +168,7 @@ class DynamicObjectWithPerceptionResult:
         if matching is None:
             return self.is_label_correct
         
-        logging.info(f"Val: {matching.value}")
+        logging.info(f"Val: {matching.value}, Mode: {matching.mode}")
         is_matching: bool = matching.is_better_than(matching_threshold)
         # Whether both label is true and matching is true
         return (

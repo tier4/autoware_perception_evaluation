@@ -134,12 +134,12 @@ class PerceptionEvaluationManager(_EvaluationMangerBase):
                 if object.ground_truth_object.semantic_label is None:
                     logging.info(f"GT {i}, Label: None")
                 else:
-                    logging.info(f"GT {i}, Label:{object.ground_truth_object.semantic_label.label}, {object.ground_truth_object.semantic_label.name}, Pos:{object.ground_truth_object.state.position}, Area:{object.ground_truth_object.get_area()}")
+                    logging.info(f"GT {i}, Label:{object.ground_truth_object.semantic_label.label}, {object.ground_truth_object.semantic_label.name}, Pos:{object.ground_truth_object.state.position}, Area:{object.ground_truth_object.get_area_bev()}")
             if object.estimated_object is not None:
                 if object.estimated_object.semantic_label is None:
                     logging.info(f"EO {i}, Label: None")
                 else:
-                    logging.info(f"EO {i}, Label:{object.estimated_object.semantic_label.label}, {object.estimated_object.semantic_label.name}, Pos:{object.estimated_object.state.position}, Area:{object.ground_truth_object.get_area()}")
+                    logging.info(f"EO {i}, Label:{object.estimated_object.semantic_label.label}, {object.estimated_object.semantic_label.name}, Pos:{object.estimated_object.state.position}, Area:{object.ground_truth_object.get_area_bev()}")
         logging.info(f"Num Success:{result.pass_fail_result.get_num_success()}")
         return result
 
