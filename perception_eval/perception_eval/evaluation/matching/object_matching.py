@@ -21,6 +21,7 @@ import math
 from typing import Optional
 from typing import overload
 from typing import Tuple
+import logging
 
 import numpy as np
 from perception_eval.common import distance_objects
@@ -342,6 +343,8 @@ class PlaneDistanceMatching(MatchingMethod):
             distance = round(plane_distance, 10)
             self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
             self.estimated_nn_plane = (est_left_point, est_right_point)
+            logging.info(f"dist point L:{distance_left_point}, R:{distance_right_point}, 2:{distance_squared}")
+            logging.info(f"dist L:{distance}, GT nn:{self.ground_truth_nn_plane}, EO nn:{self.estimated_nn_plane}")
         else:
             distance = distance_points_bev(estimated_object.state.position, ground_truth_object.state.position)
 

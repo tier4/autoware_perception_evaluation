@@ -16,6 +16,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 import warnings
+import logging
 
 from perception_eval.common import ObjectType
 from perception_eval.common.transform import TransformDict
@@ -79,10 +80,12 @@ class PassFailResult:
             object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
             ground_truth_objects (List[ObjectType]): Ground truth objects which must be evaluated at current frame.
         """
+        logging.info("Positive Eval")
         self.tp_object_results, self.fp_object_results = self.__get_positive_object_results(
             object_results=object_results,
         )
 
+        logging.info("Negative Eval")
         self.tn_objects, self.fn_objects = get_negative_objects(
             ground_truth_objects,
             object_results,
