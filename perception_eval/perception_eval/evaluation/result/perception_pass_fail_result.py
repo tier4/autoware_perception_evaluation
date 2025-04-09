@@ -138,7 +138,7 @@ class PassFailResult:
             matching_mode=(
                 MatchingMode.IOU2D
                 if self.frame_pass_fail_config.evaluation_task.is_2d()
-                else MatchingMode.PLANEDISTANCE
+                else MatchingMode.CENTERDISTANCE
             ),
             matching_threshold_list=self.frame_pass_fail_config.matching_threshold_list,
         )
