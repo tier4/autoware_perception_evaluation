@@ -168,7 +168,7 @@ class MetricsScore:
                     object_results_dict=object_results,
                     num_ground_truth_dict=num_ground_truth,
                     target_labels=self.detection_config.target_labels,
-                    matching_mode=MatchingMode.PLANEDISTANCE,
+                    matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=plane_distance_threshold_,
                 )
                 self.maps.append(map_)
@@ -225,7 +225,7 @@ class MetricsScore:
                     object_results_dict=object_results,
                     num_ground_truth_dict=num_ground_truth,
                     target_labels=self.tracking_config.target_labels,
-                    matching_mode=MatchingMode.PLANEDISTANCE,
+                    matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=plane_distance_threshold_,
                 )
                 self.tracking_scores.append(tracking_score_)
