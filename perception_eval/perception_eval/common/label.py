@@ -97,6 +97,9 @@ class CommonLabel(Enum):
     def __eq__(self, label: LabelType) -> bool:
         return label in self.value
 
+    def __hash__(self) -> int:
+        return super().__hash__()
+
     def __str__(self) -> str:
         if self == CommonLabel.UNKNOWN:
             return "unknown"
