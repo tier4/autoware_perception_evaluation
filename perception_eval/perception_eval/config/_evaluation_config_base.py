@@ -34,9 +34,11 @@ class _EvaluationConfigBase(ABC):
     """Abstract base class for evaluation config
 
     Directory structure to save log and visualization result is following
-    - result_root_directory/
+    ```
+    result_root_directory/
         ├── log_directory/
         └── visualization_directory/
+    ```
 
     Attributes:
         dataset_paths (List[str]): Dataset paths list.
