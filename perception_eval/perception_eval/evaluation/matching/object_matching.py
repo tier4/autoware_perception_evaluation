@@ -29,6 +29,7 @@ from perception_eval.common import ObjectType
 from perception_eval.common.label import is_same_label
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import get_point_left_right_index
+from perception_eval.common.point import get_point_left_right
 from perception_eval.common.point import polygon_to_list
 from perception_eval.common.schema import FrameID
 from perception_eval.common.shape import ShapeType
@@ -300,6 +301,21 @@ class PlaneDistanceMatching(MatchingMethod):
         if ground_truth_object is None:
             return None
 
+        def get_nearest_indices(object: DynamicObject, corners: np.ndarray) -> np.ndarray:
+            # Calculate min distance from ego vehicle
+            if object.frame_id != FrameID.BASE_LINK:
+                assert transforms is not None, f"`transforms` must be specified for {object.frame_id}"
+                gt_corners_base_link = np.array(
+                    [
+                        transforms.transform((object.frame_id, FrameID.BASE_LINK), corner)
+                        for corner in corners
+                    ]
+                )
+                distances = np.linalg.norm(gt_corners_base_link[:, :2], axis=1)
+            else:
+                distances = np.linalg.norm(corners[:, :2], axis=1)
+            return np.argsort(distances)
+
         # Get corner points of estimated object from footprint
         est_footprint: Polygon = estimated_object.get_footprint()
         est_corners = np.array(polygon_to_list(est_footprint))
@@ -312,31 +328,33 @@ class PlaneDistanceMatching(MatchingMethod):
             estimated_object.state.shape_type == ShapeType.BOUNDING_BOX
             and ground_truth_object.state.shape_type == ShapeType.BOUNDING_BOX
         ):
-            if estimated_object.get_heading_error(ground_truth_object) > np.pi / 2:
-                est_corners = est_corners[[1, 0, 3, 2, 1]] # based on reverse clockwise order from left top
+            heading_difference = estimated_object.get_heading_error(ground_truth_object)
+            if heading_difference < np.pi / 4 or heading_difference > 3 * np.pi / 4:
+                if heading_difference > 3 * np.pi / 4:
+                    est_corners = est_corners[[1, 0, 3, 2, 1]] # flip based on reverse clockwise order from left top
 
-            # Calculate min distance from ego vehicle
-            if ground_truth_object.frame_id != FrameID.BASE_LINK:
-                assert transforms is not None, f"`transforms` must be specified for {ground_truth_object.frame_id}"
-                gt_corners_base_link = np.array(
-                    [
-                        transforms.transform((ground_truth_object.frame_id, FrameID.BASE_LINK), corner)
-                        for corner in gt_corners
-                    ]
-                )
-                gt_distances = np.linalg.norm(gt_corners_base_link[:, :2], axis=1)
+                sort_idx = get_nearest_indices(ground_truth_object, gt_corners)
+                gt_corners = gt_corners[sort_idx]
+                est_corners = est_corners[sort_idx]
+
+                est_plane_points = est_corners[:2].tolist()
+                gt_plane_points = gt_corners[:2].tolist()
+
+                left_idx, right_idx = get_point_left_right_index(gt_plane_points[0], gt_plane_points[1])
+                gt_left_point, gt_right_point = gt_plane_points[left_idx], gt_plane_points[right_idx]
+                est_left_point, est_right_point = est_plane_points[left_idx], est_plane_points[right_idx]
             else:
-                gt_distances = gt_distances = np.linalg.norm(gt_corners[:, :2], axis=1)
-            sort_idx = np.argsort(gt_distances)
+                sort_idx = get_nearest_indices(ground_truth_object, gt_corners)
+                gt_corners = gt_corners[sort_idx]
+                sort_idx = get_nearest_indices(estimated_object, est_corners)
+                est_corners = est_corners[sort_idx]
 
-            gt_corners = gt_corners[sort_idx]
-            est_corners = est_corners[sort_idx]
+                est_plane_points = est_corners[:2].tolist()
+                gt_plane_points = gt_corners[:2].tolist()
 
-            est_plane_points = est_corners[:2].tolist()
-            gt_plane_points = gt_corners[:2].tolist()
-            left_idx, right_idx = get_point_left_right_index(gt_plane_points[0], gt_plane_points[1])
-            gt_left_point, gt_right_point = gt_plane_points[left_idx], gt_plane_points[right_idx]
-            est_left_point, est_right_point = est_plane_points[left_idx], est_plane_points[right_idx]
+                est_left_point, est_right_point = get_point_left_right(est_plane_points[0], est_plane_points[1])
+                gt_left_point, gt_right_point = get_point_left_right(gt_plane_points[0], gt_plane_points[1])
+
             distance_left_point: float = distance_points_bev(est_left_point, gt_left_point)
             distance_right_point: float = distance_points_bev(est_right_point, gt_right_point)
             distance_squared = distance_left_point**2 + distance_right_point**2
