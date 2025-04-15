@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from typing import List
+from typing import Literal
 from typing import Optional
 
 import numpy as np
@@ -38,7 +39,7 @@ class PathDisplacementError:
         target_labels: List[LabelType],
         top_k: int = 3,
         miss_tolerance: float = 2.0,
-        kernel: Optional[str] = None,
+        kernel: Optional[Literal["min", "max", "highest"]] = None,
     ) -> None:
         """Construct a new object.
 
@@ -50,14 +51,17 @@ class PathDisplacementError:
             matching_threshold_list (List[float]): List of matching thresholds.
             top_k (int, optional): The number of top K to be evaluated. Defaults to 1.
             miss_tolerance (float, optional): Threshold to determine miss. Defaults to 2.0.
-            kernel (Optional[str], optional): Kernel of choose . Defaults to None.
+            kernel (Optional[Literal["min", "max", "highest"]], optional): Kernel to evaluate displacement errors.
+                "min" evaluates the minimum displacements at each time step.
+                "max" evaluates the maximum at each time step.
+                "highest" evaluates the highest confidence mode. Defaults to None.
         """
         self.num_ground_truth: int = num_ground_truth
         self.target_labels: List[LabelType] = target_labels
         self.top_k: Optional[int] = top_k
         self.miss_tolerance: float = miss_tolerance
 
-        if kernel is not None and kernel not in ("min", "max"):
+        if kernel is not None and kernel not in ("min", "max", "highest"):
             raise ValueError(f"kernel must be min or max, but got {kernel}")
 
         self.kernel: Optional[str] = kernel
@@ -113,6 +117,9 @@ class PathDisplacementError:
                 distances = distances[np.argmin(distances.sum(axis=1))].reshape(1, -1)
             elif kernel == "max":
                 distances = distances[np.argmax(distances.sum(axis=1))].reshape(1, -1)
+            elif kernel == "highest":
+                confidences = [mode.confidence for mode in estimation.predicted_paths]
+                distances = distances[np.argmax(confidences)].reshape(1, -1)
 
             sum_ade += distances.sum()
             num_ade += distances.size
