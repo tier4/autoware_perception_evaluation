@@ -97,6 +97,9 @@ class CommonLabel(Enum):
     def __eq__(self, label: LabelType) -> bool:
         return label in self.value
 
+    def __hash__(self) -> int:
+        return super().__hash__()
+
     def __str__(self) -> str:
         if self == CommonLabel.UNKNOWN:
             return "unknown"
@@ -298,7 +301,6 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
         (AutowareLabel.BICYCLE, "vehicle.bicycle"),
         (AutowareLabel.CAR, "car"),
         (AutowareLabel.CAR, "vehicle.car"),
-        (AutowareLabel.CAR, "vehicle.construction"),
         (AutowareLabel.CAR, "vehicle.emergency (ambulance & police)"),
         (AutowareLabel.CAR, "vehicle.police"),
         (AutowareLabel.CAR, "vehicle.fire"),
@@ -334,6 +336,7 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
             (AutowareLabel.CAR, "vehicle.truck"),
             (AutowareLabel.CAR, "trailer"),
             (AutowareLabel.CAR, "vehicle.trailer"),
+            (AutowareLabel.CAR, "vehicle.construction"),
             (AutowareLabel.BICYCLE, "motorbike"),
             (AutowareLabel.BICYCLE, "motorcycle"),
             (AutowareLabel.BICYCLE, "vehicle.motorcycle"),
@@ -347,6 +350,7 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
             (AutowareLabel.TRUCK, "vehicle.truck"),
             (AutowareLabel.TRUCK, "trailer"),
             (AutowareLabel.TRUCK, "vehicle.trailer"),
+            (AutowareLabel.TRUCK, "vehicle.construction"),
             (AutowareLabel.MOTORBIKE, "motorbike"),
             (AutowareLabel.MOTORBIKE, "motorcycle"),
             (AutowareLabel.MOTORBIKE, "vehicle.motorcycle"),

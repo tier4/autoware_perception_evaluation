@@ -78,6 +78,9 @@ class PlotAxes(Enum):
             return self.value == other
         return super().__eq__(other)
 
+    def __hash__(self) -> int:
+        return super().__hash__()
+
     def is_3d(self) -> bool:
         return self in (PlotAxes.POSITION, PlotAxes.SIZE, PlotAxes.VELOCITY, PlotAxes.POLAR)
 

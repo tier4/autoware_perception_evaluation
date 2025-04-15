@@ -59,6 +59,9 @@ class FrameID(Enum):
             return self.value == __o
         return super().__eq__(__o)
 
+    def __hash__(self) -> int:
+        return super().__hash__()
+
     def __str__(self) -> str:
         return self.value
 
@@ -143,6 +146,9 @@ class Visibility(Enum):
             return self.value == __o
         return super().__eq__(__o)
 
+    def __hash__(self) -> int:
+        return super().__hash__()
+
     def __str__(self) -> str:
         return self.value
 
@@ -177,6 +183,9 @@ class SensorModality(Enum):
         if isinstance(__o, str):
             return self.value == __o
         return super().__eq__(__o)
+
+    def __hash__(self) -> int:
+        return super().__hash__()
 
     def __str__(self) -> str:
         return self.value

@@ -62,6 +62,9 @@ class ShapeType(Enum):
     def __eq__(self, other: Union[str, ShapeType]) -> bool:
         return self.value == other if isinstance(other, str) else super().__eq__(other)
 
+    def __hash__(self) -> int:
+        return super().__hash__()
+
 
 class Shape:
     """Class for object's shape.
