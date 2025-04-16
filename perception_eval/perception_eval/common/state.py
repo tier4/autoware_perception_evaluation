@@ -14,11 +14,9 @@
 
 from __future__ import annotations
 
-from typing import Generator
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Union
 
 import numpy as np
 from perception_eval.common.shape import Shape
@@ -33,7 +31,7 @@ class ObjectState:
     def __init__(
         self,
         position: Tuple[float, float, float],
-        orientation: Quaternion,
+        orientation: Optional[Quaternion] = None,
         shape: Optional[Shape] = None,
         velocity: Optional[Tuple[float, float, float]] = None,
         pose_covariance: Optional[np.ndarray] = None,
@@ -173,7 +171,7 @@ class ObjectPath:
 
 
 def set_object_states(
-    positions: Optional[List[Tuple[float, float, float]]] = None,
+    positions: Optional[List[Tuple[float, float, float]]],
     orientations: Optional[List[Quaternion]] = None,
     shapes: Optional[List[Shape]] = None,
     velocities: Optional[List[Tuple[float, float, float]]] = None,
@@ -182,7 +180,7 @@ def set_object_states(
     Set list of object states.
 
     Args:
-        positions (Optional[List[Tuple[float]]])
+        positions (List[Tuple[float]])
         orientations (Optional[List[Tuple[float]]])
         shapes (Optional[List[Shape]])
         velocities (Optional[List[Tuple[float]]])
@@ -190,22 +188,14 @@ def set_object_states(
     Returns:
         Optional[List[ObjectState]]
     """
-    if positions is None or orientations is None:
-        return None
-
-    if len(positions) != len(orientations):
-        raise RuntimeError(
-            "length of positions and orientations must be same, " f"but got {len(positions)} and {len(orientations)}"
-        )
-
     return [
         ObjectState(
             position=pos,
-            orientation=orient,
+            orientation=orientations[i] if orientations else None,
             shape=shapes[i] if shapes else None,
             velocity=velocities[i] if velocities else None,
         )
-        for i, (pos, orient) in enumerate(zip(positions, orientations))
+        for i, pos in enumerate(positions)
     ]
 
 
@@ -235,19 +225,19 @@ def set_object_paths(
     """[summary]
     Set multiple paths.
     """
-    if positions is None or orientations is None or confidences is None:
+    if positions is None or confidences is None:
         return None
 
-    if len(positions) != len(orientations) != len(confidences):
+    if len(positions) != len(confidences):
         raise RuntimeError(
             "length of positions and orientations must be same, " f"but got {len(positions)} and {len(orientations)}"
         )
 
     paths: List[ObjectPath] = []
-    for i, (poses, orients, confidence) in enumerate(zip(positions, orientations, confidences)):
+    for i, (poses, confidence) in enumerate(zip(positions, confidences)):
         path = set_object_path(
             positions=poses,
-            orientations=orients,
+            orientations=orientations[i] if orientations else None,
             velocities=twists[i] if twists else None,
             confidence=confidence,
         )
