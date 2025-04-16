@@ -458,7 +458,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             err_max = np.max(np.abs(err))
             err_min = np.min(np.abs(err))
             err_percentile_99 = np.percentile(err, 99)
-            return dict(average=err_avg, rms=err_rms, std=err_std, max=err_max, min=err_min, percentile_99=err_percentile_99)
+            return dict(
+                average=err_avg, rms=err_rms, std=err_std, max=err_max, min=err_min, percentile_99=err_percentile_99
+            )
 
         if df is None:
             df = self.df
