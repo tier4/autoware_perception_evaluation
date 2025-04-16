@@ -14,6 +14,7 @@
 
 from typing import Dict
 from typing import List
+from typing import Literal
 from typing import Optional
 
 import numpy as np
@@ -31,9 +32,9 @@ class PredictionMetricsScore:
         object_results_dict: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
         num_ground_truth_dict: Dict[LabelType, int],
         target_labels: List[LabelType],
-        top_k: List[int] = 3,
+        top_k: int = 3,
         miss_tolerance: float = 2.0,
-        kernel: Optional[str] = "min",
+        kernel: Optional[Literal["min", "max", "highest"]] = None,
     ) -> None:
         """Construct a new object.
 
@@ -42,6 +43,12 @@ class PredictionMetricsScore:
                 object results divided by label for multi frame.
             num_ground_truth (int): The number of ground truth.
             target_labels (List[LabelType]): List of target label names.
+            top_k (int, optional): The number of top K to be evaluated. Defaults to 1.
+            miss_tolerance (float, optional): Threshold to determine miss. Defaults to 2.0.
+            kernel (Optional[Literal["min", "max", "highest"]], optional): Kernel to evaluate displacement errors.
+                "min" evaluates the minimum displacements at each time step.
+                "max" evaluates the maximum at each time step.
+                "highest" evaluates the highest confidence mode. Defaults to None.
         """
         self.target_labels = target_labels
         self.top_k = top_k

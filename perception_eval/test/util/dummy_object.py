@@ -55,6 +55,11 @@ def make_dummy_data(
             semantic_label=Label(AutowareLabel.CAR, "car", []),
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16) if use_unique_id else "0",
+            predicted_positions=[
+                [[2.0, 2.0, 1.0], [3.0, 3.0, 1.0], [4.0, 4.0, 1.0]],
+                [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]],
+            ],
+            predicted_scores=[0.1, 0.9],
         ),
         DynamicObject(
             unix_time=100,
@@ -66,6 +71,11 @@ def make_dummy_data(
             semantic_label=Label(AutowareLabel.BICYCLE, "bicycle", []),
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16) if use_unique_id else "0",
+            predicted_positions=[
+                [[2.0, 0.0, 1.0], [3.0, 2.0, 1.0], [4.0, 3.0, 1.0]],
+                [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]],
+            ],
+            predicted_scores=[0.1, 0.9],
         ),
         DynamicObject(
             unix_time=100,
@@ -77,6 +87,11 @@ def make_dummy_data(
             semantic_label=Label(AutowareLabel.CAR, "car", []),
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16) if use_unique_id else "1",
+            predicted_positions=[
+                [[0.0, 2.0, 1.0], [1.0, 3.0, 1.0], [2.0, 4.0, 1.0]],
+                [[-1.0, 1.0, 1.0], [-1.0, 1.0, 1.0], [-1.0, 1.0, 1.0]],
+            ],
+            predicted_scores=[0.1, 0.9],
         ),
     ]
     dummy_ground_truth_objects: List[DynamicObject] = [
@@ -91,6 +106,8 @@ def make_dummy_data(
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16),
             pointcloud_num=10,
+            predicted_positions=[[[2.0, 2.0, 1.0], [3.0, 3.0, 1.0], [4.0, 4.0, 1.0]]],
+            predicted_scores=[1.0],
         ),
         DynamicObject(
             unix_time=100,
@@ -103,6 +120,8 @@ def make_dummy_data(
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16),
             pointcloud_num=10,
+            predicted_positions=[[[2.0, 0.0, 1.0], [3.0, 2.0, 1.0], [4.0, 3.0, 1.0]]],
+            predicted_scores=[1.0],
         ),
         DynamicObject(
             unix_time=100,
@@ -115,6 +134,8 @@ def make_dummy_data(
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16),
             pointcloud_num=10,
+            predicted_positions=[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]],
+            predicted_scores=[1.0],
         ),
         DynamicObject(
             unix_time=100,
@@ -127,6 +148,8 @@ def make_dummy_data(
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16),
             pointcloud_num=10,
+            predicted_positions=[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]],
+            predicted_scores=[1.0],
         ),
     ]
     return dummy_estimated_objects, dummy_ground_truth_objects
