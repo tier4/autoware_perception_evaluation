@@ -15,6 +15,7 @@
 from typing import List
 from typing import Literal
 from typing import Optional
+from typing import Tuple
 
 import numpy as np
 from perception_eval.common.label import LabelType
@@ -83,7 +84,7 @@ class PathDisplacementError:
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
         kernel: Optional[str] = None,
-    ) -> np.ndarray:
+    ) -> Tuple[float, float, float]:
         """[summary]
         Returns the displacement error.
 
@@ -101,7 +102,7 @@ class PathDisplacementError:
         sum_ade, sum_fde, sum_miss = 0.0, 0.0, 0.0
         num_ade, num_fde, num_path = 0, 0, 0
         for result in object_results:
-            if result.ground_truth_object is None:
+            if not result.is_label_correct:
                 continue
 
             estimation, ground_truth = prepare_path(result, self.top_k)
