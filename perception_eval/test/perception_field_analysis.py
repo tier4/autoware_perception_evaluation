@@ -62,9 +62,9 @@ class PerceptionLoadDatabaseResult:
         # Analyze and visualize, for each label group
         label_lists: dict = {}
         label_lists["All"] = None
-        # label_lists["Vehicle"] = ["car", "truck"]
-        # label_lists["VRU"] = ["pedestrian", "bicycle"]
-        # label_lists["Motorbike"] = ["motorbike"]
+        label_lists["Vehicle"] = ["car", "truck"]
+        label_lists["VRU"] = ["pedestrian", "bicycle"]
+        label_lists["Motorbike"] = ["motorbike"]
 
         for label_group, labels in label_lists.items():
             print('Analyzing label group: {}, label list of "{}" '.format(label_group, labels))

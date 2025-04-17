@@ -551,7 +551,7 @@ class PerceptionFieldTime:
                 self.ar1_gama[err][dt] /= self.ar1_gama_count[err][dt]
                 if dt == 0.0:
                     continue
-                self.ar1_phi[err][dt] = self.ar1_gama[err][dt] / self.ar1_gama[err][0]
+                self.ar1_phi[err][dt] = self.ar1_gama[err][dt] / (self.ar1_gama[err][0]+1e-6)
                 self.ar1_sigma2[err][dt] = self.ar1_gama[err][0] - \
                     self.ar1_phi[err][dt] * self.ar1_gama[err][dt]
 
