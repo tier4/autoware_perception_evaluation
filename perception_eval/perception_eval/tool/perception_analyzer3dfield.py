@@ -875,6 +875,15 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
             if "ground_truth" in pair.index:
                 gt = pair.loc["ground_truth"]
                 is_gt_valid = ~np.isnan(gt[label_axis_x]) and ~np.isnan(gt[label_axis_y])
+
+                filter_out_attributes = [
+                    "occlusion_state.most",
+                    "occlusion_state.full",
+                    # "occlusion_state.partial",
+                ]
+                for attr in filter_out_attributes:
+                    is_gt_valid = is_gt_valid and attr not in gt.attributes
+
                 is_paired = is_gt_valid & (gt["status"] == MatchingStatus.TP.value)
             if "estimation" in pair.index:
                 est = pair.loc["estimation"]
@@ -1089,6 +1098,19 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
                 continue
             if pair.loc["ground_truth"]["uuid"] is None:
                 continue
+            filter_out_attributes = [
+                "occlusion_state.most",
+                "occlusion_state.full",
+                # "occlusion_state.partial",
+            ]
+            ignore = False
+            for attr in filter_out_attributes:
+                if attr in pair.loc["ground_truth"].attributes:
+                    ignore = True
+                    break
+            if ignore:
+                continue
+
             gt = pair.loc["ground_truth"]
             uuid = gt["uuid"]
             assert isinstance(uuid, str)
@@ -1219,4 +1241,6 @@ class PerceptionAnalyzer3DField(PerceptionAnalyzer3D):
         time_field.process_ar1_and_mc_parameters()
         time_field.print_model_parameters()
 
+        label = kwargs["label"] if kwargs["label"] is not None else "all"
+        print(f"num of data with label={label}:", time_field.N)
         return time_field
