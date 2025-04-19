@@ -87,7 +87,7 @@ class PassFailResult:
             ground_truth_objects,
             object_results,
             self.frame_pass_fail_config.target_labels,
-            MatchingMode.IOU2D if self.frame_pass_fail_config.evaluation_task.is_2d() else MatchingMode.IOU3D,
+            MatchingMode.IOU2D if self.frame_pass_fail_config.evaluation_task.is_2d() else MatchingMode.PLANEDISTANCE,
             self.frame_pass_fail_config.matching_threshold_list,
         )
 
@@ -138,7 +138,7 @@ class PassFailResult:
             matching_mode=(
                 MatchingMode.IOU2D
                 if self.frame_pass_fail_config.evaluation_task.is_2d()
-                else MatchingMode.IOU3D
+                else MatchingMode.PLANEDISTANCE
             ),
             matching_threshold_list=self.frame_pass_fail_config.matching_threshold_list,
         )
