@@ -370,9 +370,9 @@ class DynamicObject:
             return None
 
         def _clip(err: float) -> float:
-            """Clip [-2pi, 2pi] to [0, pi]"""
-            if err < 0:
-                err += -np.pi * (err // np.pi)
+            """Clip [-2pi, 2pi] to [-pi, pi]"""
+            if err < -np.pi:
+                err += 2 * np.pi
             elif err > np.pi:
                 err -= 2 * np.pi
             return err
