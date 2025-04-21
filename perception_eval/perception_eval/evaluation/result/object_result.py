@@ -42,6 +42,7 @@ from perception_eval.evaluation.matching import MatchingLabelPolicy
 from perception_eval.evaluation.matching import MatchingMethod
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching import PlaneDistanceMatching
+from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
 
 
 class DynamicObjectWithPerceptionResult:
@@ -329,7 +330,7 @@ def get_nuscene_object_results(
     ground_truth_objects: List[ObjectType],
     matching_label_policy: MatchingLabelPolicy = MatchingLabelPolicy.DEFAULT,
     transforms: Optional[TransformDict] = None,
-    metrics_config: "MetricsScoreConfig" = None,
+    metrics_config: MetricsScoreConfig = None,
 ) -> Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]:
     """
     Matches estimated objects to ground truth objects based on various matching strategies
@@ -352,11 +353,12 @@ def get_nuscene_object_results(
         object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
     """
 
-    from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
-
     # There is no estimated object (= all FN)
     if not estimated_objects:
         return []
+
+    if metrics_config is None:
+        raise ValueError("`metrics_config` must be provided for matching thresholds.")
 
     matching_config_map = {
         MatchingMode.CENTERDISTANCE: metrics_config.detection_config.center_distance_thresholds,
