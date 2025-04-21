@@ -331,13 +331,13 @@ def get_nuscene_object_results(
     transforms: Optional[TransformDict] = None,
     metrics_config: "MetricsScoreConfig" = None,
 ) -> Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]:
-    """Returns list of DynamicObjectWithPerceptionResult.
+    """
+    Matches estimated objects to ground truth objects based on various matching strategies
+    and thresholds defined in the metrics configuration. Returns a dictionary of
+    DynamicObjectWithPerceptionResult, categorized by (matching mode, threshold) pair.
 
-    For classification, matching objects their uuid.
-    Otherwise, matching them depending on their center distance by default.
-
-    In case of FP validation, estimated objects, which have no matching GT, will be ignored.
-    Otherwise, they all are FP.
+    For false positive validation mode, unmatched estimated objects are excluded from the results.
+    Otherwise, unmatched objects are recorded as false positives.
 
     Args:
         evaluation_task (EvaluationTask): Evaluation task.
