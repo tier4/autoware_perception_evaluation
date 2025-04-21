@@ -162,6 +162,7 @@ class MetricsScore:
             num_gt_dict = {label: num_ground_truth.get(label, 0) for label in target_labels}
             threshold_list = [threshold] * len(target_labels)
 
+            # TODO(vividf): Rename variable to avoid shadowing Python built-in keywords like 'map'
             self.maps.append(
                 Map(
                     object_results_dict=label_results,
