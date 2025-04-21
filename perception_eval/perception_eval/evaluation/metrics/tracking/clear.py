@@ -72,6 +72,7 @@ class CLEAR(_TrackingMetricsBase):
 
     def __init__(
         self,
+        # TODO(vivid): change the naming for 'object_results'
         object_results: List[List[DynamicObjectWithPerceptionResult]],
         num_ground_truth: int,
         target_labels: List[LabelType],

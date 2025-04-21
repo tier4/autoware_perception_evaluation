@@ -12,8 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
+from itertools import chain
 from typing import Dict
 from typing import List
+from typing import Tuple
+from typing import Union
 
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching import MatchingMode
@@ -119,69 +123,55 @@ class MetricsScore:
 
     def evaluate_detection(
         self,
-        object_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]],
+        object_results: Union[
+            Dict[LabelType, Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]],
+            Dict[LabelType, Dict[Tuple[MatchingMode, float], List[List[DynamicObjectWithPerceptionResult]]]],
+        ],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
-        """[summary]
-        Calculate detection metrics
+        """Calculate detection metrics.
 
         Args:
-            object_results (Dict[LabelType, List[DynamicObjectWithPerceptionResult]]): The dict of object result
+            object_results: Result dict by label and matching parameters.
+            num_ground_truth: Number of ground truth objects per label.
         """
+
         if self.tracking_config is None:
             self.__num_gt += sum(num_ground_truth.values())
 
-        for distance_threshold_ in self.detection_config.center_distance_thresholds:
-            map_ = Map(
-                object_results_dict=object_results,
-                num_ground_truth_dict=num_ground_truth,
-                target_labels=self.detection_config.target_labels,
-                matching_mode=MatchingMode.CENTERDISTANCE,
-                matching_threshold_list=distance_threshold_,
-                is_detection_2d=self.evaluation_task.is_2d(),
-            )
-            self.maps.append(map_)
-        for iou_threshold_2d_ in self.detection_config.iou_2d_thresholds:
-            map_ = Map(
-                object_results_dict=object_results,
-                num_ground_truth_dict=num_ground_truth,
-                target_labels=self.detection_config.target_labels,
-                matching_mode=MatchingMode.IOU2D,
-                matching_threshold_list=iou_threshold_2d_,
-                is_detection_2d=self.evaluation_task.is_2d(),
-            )
-            self.maps.append(map_)
+        # Group by (matching_mode_str, threshold): Dict[LabelType -> List[DynamicObjectWithPerceptionResult]]
+        # Example: (center_distance_bev, 0,5): {car: List[DynamicObjectWithPerceptionResult]}
+        grouped_by_mode_threshold: Dict[
+            Tuple[MatchingMode, float], Dict[LabelType, List[DynamicObjectWithPerceptionResult]]
+        ] = defaultdict(dict)
 
-        if self.evaluation_task.is_3d():
-            # Only for Detection3D
-            # TODO(vividf): Rename variable to avoid shadowing Python built-in keywords like 'map'
-            for distance_bev_threshold_ in self.detection_config.center_distance_bev_thresholds:
-                map_ = Map(
-                    object_results_dict=object_results,
-                    num_ground_truth_dict=num_ground_truth,
-                    target_labels=self.detection_config.target_labels,
-                    matching_mode=MatchingMode.CENTERDISTANCEBEV,
-                    matching_threshold_list=distance_bev_threshold_,
+        for label, method_results in object_results.items():
+            for (matching_mode_str, threshold), result_list in method_results.items():
+                # Flatten if nested (multiple frames)
+                # The case when objects results is type of Dict[Tuple[MatchingMode, float], List[List[DynamicObjectWithPerceptionResult]]]
+                if isinstance(result_list, list) and result_list and isinstance(result_list[0], list):
+                    result_list_flat = list(chain.from_iterable(result_list))
+                else:
+                    result_list_flat = result_list
+
+                grouped_by_mode_threshold[(matching_mode_str, threshold)][label] = result_list_flat
+
+        # For each (matching_mode, threshold), group labels and compute MAP
+        for (matching_mode, threshold), label_results in grouped_by_mode_threshold.items():
+            target_labels = list(label_results.keys())
+            num_gt_dict = {label: num_ground_truth.get(label, 0) for label in target_labels}
+            threshold_list = [threshold] * len(target_labels)
+
+            self.maps.append(
+                Map(
+                    object_results_dict=label_results,
+                    num_ground_truth_dict=num_gt_dict,
+                    target_labels=target_labels,
+                    matching_mode=matching_mode,
+                    matching_threshold_list=threshold_list,
+                    is_detection_2d=self.evaluation_task.is_2d(),
                 )
-                self.maps.append(map_)
-            for iou_threshold_3d_ in self.detection_config.iou_3d_thresholds:
-                map_ = Map(
-                    object_results_dict=object_results,
-                    num_ground_truth_dict=num_ground_truth,
-                    target_labels=self.detection_config.target_labels,
-                    matching_mode=MatchingMode.IOU3D,
-                    matching_threshold_list=iou_threshold_3d_,
-                )
-                self.maps.append(map_)
-            for plane_distance_threshold_ in self.detection_config.plane_distance_thresholds:
-                map_ = Map(
-                    object_results_dict=object_results,
-                    num_ground_truth_dict=num_ground_truth,
-                    target_labels=self.detection_config.target_labels,
-                    matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_threshold_list=plane_distance_threshold_,
-                )
-                self.maps.append(map_)
+            )
 
     def evaluate_tracking(
         self,
