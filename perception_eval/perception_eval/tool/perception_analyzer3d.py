@@ -145,9 +145,11 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             "width",
             "length",
             "height",
+            "bev_area",
             "yaw",
             "vx",
             "vy",
+            "v_yaw",
             "speed",
             "nn_point1",
             "nn_point2",
@@ -172,9 +174,11 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             "width",
             "length",
             "height",
+            "bev_area",
             "yaw",
             "vx",
             "vy",
+            "v_yaw",
             "speed",
             "nn_point1",
             "nn_point2",
@@ -248,9 +252,11 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             if gt.state.velocity is not None:
                 gt_vx, gt_vy = gt.state.velocity[:2]
                 gt_speed = np.linalg.norm(gt.state.velocity[:2])
+                gt_v_yaw = np.arctan2(gt_vy, gt_vx)
             else:
                 gt_vx, gt_vy = np.nan, np.nan
                 gt_speed = np.nan
+                gt_v_yaw = np.nan
 
             transform_key = TransformKey(gt.frame_id, FrameID.BASE_LINK)
             gt_position, gt_rotation = transforms.transform(
@@ -266,6 +272,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 gt_point2 = transforms.transform(transform_key, gt_point2)
 
             gt_w, gt_l, gt_h = gt.state.size
+            bev_area = gt_w * gt_l
 
             gt_ret = dict(
                 frame_id=gt.frame_id.value,
@@ -275,9 +282,11 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 width=gt_w,
                 length=gt_l,
                 height=gt_h,
+                bev_area=bev_area,
                 yaw=gt_yaw,
                 vx=gt_vx,
                 vy=gt_vy,
+                v_yaw=gt_v_yaw,
                 speed=gt_speed,
                 nn_point1=gt_point1,
                 nn_point2=gt_point2,
@@ -304,9 +313,11 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         if estimation:
             if estimation.state.velocity is not None:
                 est_vx, est_vy = estimation.state.velocity[:2]
+                est_v_yaw = np.arctan2(est_vy, est_vx)
                 est_speed = np.linalg.norm(estimation.state.velocity[:2])
             else:
                 est_vx, est_vy = np.nan, np.nan
+                est_v_yaw = np.nan
                 est_speed = np.nan
 
             transform_key = TransformKey(estimation.frame_id, FrameID.BASE_LINK)
@@ -323,6 +334,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 est_point2 = transforms.transform(transform_key, est_point2)
 
             est_w, est_l, est_h = estimation.state.size
+            bev_area = est_w * est_l
 
             est_ret = dict(
                 frame_id=estimation.frame_id.value,
@@ -332,9 +344,11 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
                 width=est_w,
                 length=est_l,
                 height=est_h,
+                bev_area=bev_area,
                 yaw=est_yaw,
                 vx=est_vx,
                 vy=est_vy,
+                v_yaw=est_v_yaw,
                 speed=est_speed,
                 nn_point1=est_point1,
                 nn_point2=est_point2,
@@ -431,19 +445,22 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         ) -> Dict[str, float]:
             if len(_df) == 0:
                 logging.warning(f"The array of errors is empty for column: {_column}")
-                return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan)
+                return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan, percentile_99=np.nan)
 
             err: np.ndarray = self.calculate_error(_column, _df, remove_nan=True)
             if len(err) == 0:
                 logging.warning(f"The array of errors is empty for column: {_column}")
-                return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan)
+                return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan, percentile_99=np.nan)
 
             err_avg = np.average(err)
             err_rms = np.sqrt(np.square(err).mean())
             err_std = np.std(err)
             err_max = np.max(np.abs(err))
             err_min = np.min(np.abs(err))
-            return dict(average=err_avg, rms=err_rms, std=err_std, max=err_max, min=err_min)
+            err_percentile_99 = np.percentile(np.abs(err), 99)
+            return dict(
+                average=err_avg, rms=err_rms, std=err_std, max=err_max, min=err_min, percentile_99=err_percentile_99
+            )
 
         if df is None:
             df = self.df
@@ -464,11 +481,14 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
             data["x"] = _summarize("x", df_)
             data["y"] = _summarize("y", df_)
+            data["distance"] = _summarize("distance", df_)
             data["yaw"] = _summarize("yaw", df_)
             data["length"] = _summarize("length", df_)
             data["width"] = _summarize("width", df_)
+            data["bev_area"] = _summarize("bev_area", df_)
             data["vx"] = _summarize("vx", df_)
             data["vy"] = _summarize("vy", df_)
+            data["v_yaw"] = _summarize("v_yaw", df_)
             data["speed"] = _summarize("speed", df_)
             data["nn_plane"] = _summarize("nn_plane", df_)
             all_data[str(label)] = data
