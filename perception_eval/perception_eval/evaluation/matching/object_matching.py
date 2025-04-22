@@ -312,6 +312,10 @@ class PlaneDistanceMatching(MatchingMethod):
             estimated_object.state.shape_type == ShapeType.BOUNDING_BOX
             and ground_truth_object.state.shape_type == ShapeType.BOUNDING_BOX
         ):
+            _, _, error_yaw = estimated_object.get_heading_error(ground_truth_object)
+            if abs(error_yaw) > np.pi / 2:
+                est_corners = est_corners[[1, 0, 3, 2, 1]]  # based on reverse clockwise order from left top
+
             # Calculate min distance from ego vehicle
             if ground_truth_object.frame_id != FrameID.BASE_LINK:
                 assert transforms is not None, f"`transforms` must be specified for {ground_truth_object.frame_id}"
