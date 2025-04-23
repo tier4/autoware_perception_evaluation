@@ -105,14 +105,14 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         Returns:
             PerceptionFrameResult: Evaluation result.
         """
-        nuscene_object_results, object_results, nuscene_ground_truth_now_frame = self.filter_and_match_objects(
+        nuscene_object_results, object_results, ground_truth_now_frame = self.filter_and_match_objects(
             estimated_objects, ground_truth_now_frame
         )
 
         perception_frame_result = PerceptionFrameResult(
             object_results=object_results,
             nuscene_object_results=nuscene_object_results,
-            frame_ground_truth=nuscene_ground_truth_now_frame,
+            frame_ground_truth=ground_truth_now_frame,
             metrics_config=self.metrics_config,
             critical_object_filter_config=critical_object_filter_config,
             frame_pass_fail_config=frame_pass_fail_config,
@@ -155,6 +155,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             frame_ground_truth (FrameGroundTruth):
                 Updated ground truth with filtered objects.
         """
+
         estimated_objects = filter_objects(
             objects=estimated_objects,
             is_gt=False,

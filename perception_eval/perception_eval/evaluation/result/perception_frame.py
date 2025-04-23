@@ -38,9 +38,6 @@ class PerceptionFrame:
         ground_truth_objects: FrameGroundTruth,
         unix_time: float,
     ) -> None:
-        # TODO(ktro2828): rename `frame_name` into `frame_number`
-        # frame information
-        self.frame_name: str = ground_truth_objects.frame_name
         self.unix_time: float = unix_time
 
         self.estimated_objects: List[DynamicObject] = estimated_objects
@@ -51,18 +48,18 @@ class PerceptionFrame:
         return (
             self.__class__,
             (
-                self.unix_time,
                 self.estimated_objects,
                 self.ground_truth_objects,
+                self.unix_time,
             ),
         )
 
     def serialization(self) -> Dict[str, Any]:
         """Serialize the object to a dict."""
         return {
-            "unix_time": self.unix_time,
             "estimated_objects": [estimated_object.serialization() for estimated_object in self.estimated_objects],
             "ground_truth_objects": self.ground_truth_objects.serialization(),
+            "unix_time": self.unix_time,
         }
 
     @classmethod
@@ -70,7 +67,7 @@ class PerceptionFrame:
         """Deserialize the data to PerceptionFrame."""
 
         return cls(
-            unix_time=data["unix_time"],
             estimated_objects=[DynamicObject.deserialization(obj) for obj in data["estimated_objects"]],
             ground_truth_objects=FrameGroundTruth.deserialization(data["ground_truth_objects"]),
+            unix_time=data["unix_time"],
         )

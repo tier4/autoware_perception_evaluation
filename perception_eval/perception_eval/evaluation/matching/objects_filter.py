@@ -680,7 +680,7 @@ def divide_objects(
     target_labels: Optional[List[LabelType]] = None,
 ) -> Union[
     Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]],
-    Dict[LabelType, Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]],
+    Dict[LabelType, Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]],
 ]:
     """
     Divide objects into a dictionary grouped by their labels.
@@ -705,55 +705,55 @@ def divide_objects(
             Grouped objects by label (and by matching config) depends on the input objects.
     """
 
-    def get_label(obj: Union[ObjectType, DynamicObjectWithPerceptionResult]) -> LabelType:
-        if isinstance(obj, DynamicObjectWithPerceptionResult):
-            return obj.estimated_object.semantic_label.label
-        return obj.semantic_label.label
+    def resolve_label(
+        obj: Union[ObjectType, DynamicObjectWithPerceptionResult],
+        target_labels: Optional[List[LabelType]],
+    ) -> Optional[LabelType]:
+        # If the estimated label is not in target_labels, try using the GT label (if available)
+        label = (
+            obj.estimated_object.semantic_label.label
+            if isinstance(obj, DynamicObjectWithPerceptionResult)
+            else obj.semantic_label.label
+        )
+        if target_labels is not None and label not in target_labels:
+            if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
+                label = obj.ground_truth_object.semantic_label.label
+                if label not in target_labels:
+                    return None
+            else:
+                return None
+        return label
 
     if isinstance(objects, dict):
-        # objects type: Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]
-        result: Dict[LabelType, Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]]
-
-        if target_labels is not None:
-            result = {label: {} for label in target_labels}
-            result = {}
+        # Detection, objects: Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]
+        result: Dict[LabelType, Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]] = (
+            {label: {} for label in target_labels} if target_labels is not None else {}
+        )
 
         for key, object_list in objects.items():
             for obj in object_list:
-                label = get_label(obj)
-
-                if target_labels is not None and label not in target_labels:
-                    if obj.ground_truth_object is not None:
-                        label = obj.ground_truth_object.semantic_label.label
-                    else:
-                        continue
-
-                if label not in result:
-                    result[label] = {}  # fallback in case not initialized above
+                label = resolve_label(obj, target_labels)
+                if label is None:
+                    continue
                 if key not in result[label]:
                     result[label][key] = []
                 result[label][key].append(obj)
-        return result
-    else:
-        # objects type: List[ObjectType or DynamicObjectWithPerceptionResult]
-        result: Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]] = {}
 
-        if target_labels is not None:
-            result = {label: [] for label in target_labels}
+        return result
+
+    else:
+        # Classification/tracking objects: Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]
+        result: Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]] = (
+            {label: [] for label in target_labels} if target_labels is not None else {}
+        )
 
         for obj in objects:
-            label = get_label(obj)
+            label = resolve_label(obj, target_labels)
+            if label is None:
+                continue
+            result.setdefault(label, []).append(obj)
 
-            if target_labels is not None and label not in target_labels:
-                if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
-                    label = obj.ground_truth_object.semantic_label.label
-                else:
-                    continue
-
-            if label not in result:
-                result[label] = []
-            result[label].append(obj)
-        return result
+    return result
 
 
 def divide_objects_to_num(
