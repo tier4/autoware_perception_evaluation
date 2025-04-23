@@ -124,8 +124,10 @@ class MetricsScore:
     def evaluate_detection(
         self,
         object_results: Union[
-            Dict[LabelType, Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]],
-            Dict[LabelType, Dict[Tuple[MatchingMode, float], List[List[DynamicObjectWithPerceptionResult]]]],
+            Dict[LabelType, Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]],  # Single frame
+            Dict[
+                LabelType, Dict[Tuple[MatchingMode, float], List[List[DynamicObjectWithPerceptionResult]]]
+            ],  # Multiple frames
         ],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
@@ -141,7 +143,7 @@ class MetricsScore:
 
         # Group by (matching_mode_str, threshold): Dict[LabelType -> List[DynamicObjectWithPerceptionResult]]
         # Example: (center_distance_bev, 0,5): {car: List[DynamicObjectWithPerceptionResult]}
-        grouped_by_mode_threshold: Dict[
+        results_by_match_config: Dict[
             Tuple[MatchingMode, float], Dict[LabelType, List[DynamicObjectWithPerceptionResult]]
         ] = defaultdict(dict)
 
@@ -149,15 +151,15 @@ class MetricsScore:
             for (matching_mode_str, threshold), result_list in method_results.items():
                 # Flatten if nested (multiple frames)
                 # The case when objects results is type of Dict[Tuple[MatchingMode, float], List[List[DynamicObjectWithPerceptionResult]]]
-                if isinstance(result_list, list) and result_list and isinstance(result_list[0], list):
+                if all(isinstance(r, list) for r in result_list):
                     result_list_flat = list(chain.from_iterable(result_list))
                 else:
                     result_list_flat = result_list
 
-                grouped_by_mode_threshold[(matching_mode_str, threshold)][label] = result_list_flat
+                results_by_match_config[(matching_mode_str, threshold)][label] = result_list_flat
 
         # For each (matching_mode, threshold), group labels and compute MAP
-        for (matching_mode, threshold), label_results in grouped_by_mode_threshold.items():
+        for (matching_mode, threshold), label_results in results_by_match_config.items():
             target_labels = list(label_results.keys())
             num_gt_dict = {label: num_ground_truth.get(label, 0) for label in target_labels}
             threshold_list = [threshold] * len(target_labels)

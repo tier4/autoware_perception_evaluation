@@ -77,7 +77,7 @@ class Ap:
             object_results=object_results,
             matching_mode=self.matching_mode,
         )
-        self.tp_list, self.fp_list, self.conf_list = self._calculate_tp_fp(tp_metrics, object_results)
+        self.tp_list, self.fp_list = self._calculate_tp_fp(tp_metrics, object_results)
         precision_list, recall_list = self.get_precision_recall_list()
         self.ap = self._calculate_ap(precision_list, recall_list)
 
@@ -111,7 +111,7 @@ class Ap:
         tp_list = np.cumsum(tp_sorted).tolist()
         fp_list = np.cumsum(fp_sorted).tolist()
 
-        return tp_list, fp_list, conf_list
+        return tp_list, fp_list
 
     def get_precision_recall_list(self) -> Tuple[List[float], List[float]]:
         """
