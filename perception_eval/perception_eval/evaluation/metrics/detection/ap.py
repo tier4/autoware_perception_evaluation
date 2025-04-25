@@ -84,7 +84,7 @@ class Ap:
             matching_mode=self.matching_mode,
         )
         self.tp_list, self.fp_list = self._calculate_tp_fp(tp_metrics, object_results)
-        precision_list, recall_list = self.get_precision_recall_list()
+        precision_list, recall_list = self.get_precision_recall()
         self.ap = self._calculate_ap(precision_list, recall_list)
 
     def _calculate_tp_fp(
@@ -119,7 +119,7 @@ class Ap:
 
         return tp_list, fp_list
 
-    def get_precision_recall_list(self) -> Tuple[List[float], List[float]]:
+    def get_precision_recall(self) -> Tuple[List[float], List[float]]:
         """
         Compute the precision and recall list.
 

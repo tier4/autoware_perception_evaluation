@@ -99,7 +99,7 @@ class AnswerAP:
         Returns:
             AnswerAP
         """
-        precision_list, recall_list = ap.get_precision_recall_list()
+        precision_list, recall_list = ap.get_precision_recall()
         max_precision_list, max_precision_recall_list = ap.interpolate_precision_recall_list(
             precision_list, recall_list
         )
