@@ -84,7 +84,7 @@ class PerceptionFrameResult:
 
         self.object_results: List[DynamicObjectWithPerceptionResult] = object_results
         self.nuscene_object_results: Dict[
-            Tuple[str, float], List[DynamicObjectWithPerceptionResult]
+            Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]
         ] = nuscene_object_results
         self.frame_ground_truth: FrameGroundTruth = frame_ground_truth
 
