@@ -28,7 +28,7 @@ from perception_eval.evaluation.matching.objects_filter import divide_objects_to
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.detection.map import Map
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 from perception_eval.util.debug import get_objects_with_difference
 
 

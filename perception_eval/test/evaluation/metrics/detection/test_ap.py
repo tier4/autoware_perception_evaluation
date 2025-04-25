@@ -33,7 +33,7 @@ from perception_eval.evaluation.metrics.detection.ap import Ap
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 from perception_eval.util.debug import get_objects_with_difference
 
 

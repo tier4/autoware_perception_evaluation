@@ -132,7 +132,7 @@
 推定オブジェクトの集合`List[ObjectType]`と GT オブジェクトの集合`List[ObjectType]`からマッチングペアの集合`List[DynamicObjectWithPerceptionResult]`を得るには，`get_object_results()`関数を使う．
 
 ```python
-from perception_eval.evaluation.result.object_results import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 
 # REQUIRED:
 #   estimated_objects: List[ObjectType]

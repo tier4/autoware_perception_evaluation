@@ -36,8 +36,8 @@ from perception_eval.visualization import PerceptionVisualizerType
 
 from ._evaluation_manager_base import _EvaluationManagerBase
 from ..evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from ..evaluation.result.object_result import get_nuscene_object_results
-from ..evaluation.result.object_result import get_object_results
+from ..evaluation.result.object_result_matching import get_nuscene_object_results
+from ..evaluation.result.object_result_matching import get_object_results
 
 
 class PerceptionEvaluationManager(_EvaluationManagerBase):

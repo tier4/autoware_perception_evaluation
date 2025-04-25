@@ -23,7 +23,7 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.classification.accuracy import ClassificationAccuracy
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 
 
 class AnswerAccuracy:
