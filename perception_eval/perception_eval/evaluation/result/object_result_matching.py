@@ -45,9 +45,9 @@ def get_nuscene_object_results(
     evaluation_task: EvaluationTask,
     estimated_objects: List[ObjectType],
     ground_truth_objects: List[ObjectType],
+    metrics_config: MetricsScoreConfig,
     matching_label_policy: MatchingLabelPolicy = MatchingLabelPolicy.DEFAULT,
     transforms: Optional[TransformDict] = None,
-    metrics_config: MetricsScoreConfig = None,
 ) -> Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]:
     """
     Matches estimated objects to ground truth objects based on various matching strategies
@@ -73,9 +73,6 @@ def get_nuscene_object_results(
     # There is no estimated object (= all FN)
     if not estimated_objects:
         return []
-
-    if metrics_config is None:
-        raise ValueError("`metrics_config` must be provided for matching thresholds.")
 
     matching_config_map = {
         MatchingMode.CENTERDISTANCE: metrics_config.detection_config.center_distance_thresholds,

@@ -176,9 +176,9 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             evaluation_task=self.evaluation_task,
             estimated_objects=estimated_objects,
             ground_truth_objects=frame_ground_truth.objects,
+            metrics_config=self.metrics_config,
             matching_label_policy=self.evaluator_config.label_params["matching_label_policy"],
             transforms=frame_ground_truth.transforms,
-            metrics_config=self.metrics_config,
         )
 
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
