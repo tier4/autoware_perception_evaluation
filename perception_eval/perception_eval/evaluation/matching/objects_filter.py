@@ -709,20 +709,24 @@ def divide_objects(
         obj: Union[ObjectType, DynamicObjectWithPerceptionResult],
         target_labels: Optional[List[LabelType]],
     ) -> Optional[LabelType]:
-        # If the estimated label is not in target_labels, try using the GT label (if available)
-        label = (
+        # Extract estimated label
+        estimated_label = (
             obj.estimated_object.semantic_label.label
             if isinstance(obj, DynamicObjectWithPerceptionResult)
             else obj.semantic_label.label
         )
-        if target_labels is not None and label not in target_labels:
-            if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
-                label = obj.ground_truth_object.semantic_label.label
-                if label not in target_labels:
-                    return None
-            else:
-                return None
-        return label
+
+        # If it's valid, use it
+        if target_labels is None or estimated_label in target_labels:
+            return estimated_label
+
+        # Try fallback to GT label if available
+        if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
+            gt_label = obj.ground_truth_object.semantic_label.label
+            if gt_label in target_labels:
+                return gt_label
+
+        return None
 
     if isinstance(objects, dict):
         # Detection, objects: Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]
