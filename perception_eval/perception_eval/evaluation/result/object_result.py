@@ -368,7 +368,7 @@ def get_nuscene_object_results(
         MatchingMode.IOU3D: metrics_config.detection_config.iou_3d_thresholds,
     }
 
-    object_results_dict: Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]] = {}
+    object_results_dict: Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]] = {}
     estimated_objects_sorted = sorted(estimated_objects, key=lambda x: x.semantic_score, reverse=True)
 
     for matching_mode, threshold_list in matching_config_map.items():

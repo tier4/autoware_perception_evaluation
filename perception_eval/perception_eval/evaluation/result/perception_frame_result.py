@@ -44,7 +44,7 @@ class PerceptionFrameResult:
 
     Attributes:
         object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results to each estimated object.
-        nuscene_object_results (Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]):
+        nuscene_object_results (Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]):
             Object results grouped by (matching mode, threshold).
         frame_ground_truth (FrameGroundTruth): Filtered ground truth of frame.
         frame_name (str): The file name of frame in the datasets.
@@ -55,7 +55,7 @@ class PerceptionFrameResult:
 
     Args:
         object_results (List[DynamicObjectWithPerceptionResult]): The list of object result.
-        nuscene_object_results (Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]]):
+        nuscene_object_results (Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]):
             A dictionary storing object results per (matching mode, threshold)
         frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
         metrics_config (MetricsScoreConfig): Metrics config class.
@@ -68,7 +68,7 @@ class PerceptionFrameResult:
     def __init__(
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
-        nuscene_object_results: Dict[Tuple[str, float], List[DynamicObjectWithPerceptionResult]],
+        nuscene_object_results: Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]],
         frame_ground_truth: FrameGroundTruth,
         metrics_config: MetricsScoreConfig,
         critical_object_filter_config: CriticalObjectFilterConfig,
