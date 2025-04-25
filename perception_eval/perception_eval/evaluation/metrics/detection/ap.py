@@ -29,6 +29,12 @@ from perception_eval.evaluation.result.object_result import DynamicObjectWithPer
 logger = getLogger(__name__)
 
 
+# Number of recall thresholds for AP interpolation.
+# 101-point interpolation is a standard method used in object detection.
+# It uses recall levels at 0.00, 0.01, ..., 1.00 inclusive.
+NUM_RECALL_POINTS = 101
+
+
 class Ap:
     """AP class.
 
@@ -151,7 +157,7 @@ class Ap:
         precision_envelope = np.maximum.accumulate(precision_list[::-1])[::-1]
 
         # Define uniformly spaced recall levels for interpolation (101 points)
-        recall_interp = np.linspace(0.0, 1.0, 101)
+        recall_interp = np.linspace(0.0, 1.0, NUM_RECALL_POINTS)
 
         # Interpolate precision at those recall levels using the envelope
         # 'right=0' means values beyond the max recall get precision=0
