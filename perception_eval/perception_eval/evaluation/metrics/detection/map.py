@@ -54,6 +54,7 @@ class Map:
     ) -> None:
         self.target_labels: List[LabelType] = target_labels
         self.matching_mode: MatchingMode = matching_mode
+        # TODO(vividf): matching_threshold_list to matching_thresholds
         self.matching_threshold_list: List[float] = matching_threshold_list
         self.is_detection_2d: bool = is_detection_2d
 

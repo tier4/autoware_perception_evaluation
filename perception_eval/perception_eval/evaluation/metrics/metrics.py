@@ -162,7 +162,7 @@ class MetricsScore:
         for (matching_mode, threshold), label_results in results_by_match_config.items():
             target_labels = list(label_results.keys())
             num_gt_dict = {label: num_ground_truth.get(label, 0) for label in target_labels}
-            threshold_list = [threshold] * len(target_labels)
+            thresholds = [threshold] * len(target_labels)
 
             # TODO(vividf): Rename variable to avoid shadowing Python built-in keywords like 'map'
             self.maps.append(
@@ -171,7 +171,7 @@ class MetricsScore:
                     num_ground_truth_dict=num_gt_dict,
                     target_labels=target_labels,
                     matching_mode=matching_mode,
-                    matching_threshold_list=threshold_list,
+                    matching_threshold_list=thresholds,
                     is_detection_2d=self.evaluation_task.is_2d(),
                 )
             )
