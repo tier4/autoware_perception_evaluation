@@ -21,7 +21,7 @@ from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import LabelType
 from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.evaluation.matching.matching_config import MatchingConfig
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
@@ -132,7 +132,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
     def filter_and_match_objects(
         self, estimated_objects: List[ObjectType], frame_ground_truth: FrameGroundTruth
     ) -> Tuple[
-        Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]],
+        Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]],
         List[DynamicObjectWithPerceptionResult],
         FrameGroundTruth,
     ]:
@@ -148,7 +148,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             frame_ground_truth (FrameGroundTruth): The ground truth objects and transformation for the current frame.
 
         Returns:
-            nuscene_object_results (Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]):
+            nuscene_object_results (Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]):
                 Thresholded object match results for NuScenes-style metrics.
             object_results (List[DynamicObjectWithPerceptionResult]):
                 Flat list of matched results for Autoware-style metrics.
@@ -171,7 +171,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         )
 
         nuscene_object_results: Dict[
-            Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]
+            MatchingConfig, List[DynamicObjectWithPerceptionResult]
         ] = get_nuscene_object_results(
             evaluation_task=self.evaluation_task,
             estimated_objects=estimated_objects,
@@ -213,7 +213,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         # aggregated results from each frame
         aggregated_object_results_dict = {label: [] for label in target_labels}
         aggregated_nuscene_object_results_dict: Dict[
-            LabelType, Dict[Tuple[MatchingMode, float], List[List[DynamicObjectWithPerceptionResult]]]
+            LabelType, Dict[MatchingConfig, List[List[DynamicObjectWithPerceptionResult]]]
         ] = {label: {} for label in target_labels}
         aggregated_num_gt = {label: 0 for label in target_labels}
         used_frame: List[int] = []
@@ -223,7 +223,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 frame.object_results, target_labels
             )
             nuscene_object_results_dict: Dict[
-                LabelType, Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]
+                LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]
             ] = divide_objects(frame.nuscene_object_results, target_labels)
             num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, target_labels)
 
@@ -231,7 +231,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 aggregated_object_results_dict[label].append(object_results_dict[label])
 
                 nuscene_label_result: Dict[
-                    Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]
+                    MatchingConfig, List[DynamicObjectWithPerceptionResult]
                 ] = nuscene_object_results_dict.get(label, {})
 
                 for key, detection_list in nuscene_label_result.items():

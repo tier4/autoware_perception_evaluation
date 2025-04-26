@@ -31,6 +31,7 @@ from perception_eval.common.threshold import get_label_threshold
 from perception_eval.common.threshold import LabelThreshold
 from perception_eval.common.transform import TransformDict
 from perception_eval.evaluation.matching import MatchingMode
+from perception_eval.evaluation.matching.matching_config import MatchingConfig
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
@@ -675,12 +676,12 @@ def _is_target_object(
 def divide_objects(
     objects: Union[
         List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
-        Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]],
+        Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]],
     ],
     target_labels: Optional[List[LabelType]] = None,
 ) -> Union[
     Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]],
-    Dict[LabelType, Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]],
+    Dict[LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]],
 ]:
     """
     Divide objects into a dictionary grouped by their labels.
@@ -690,7 +691,7 @@ def divide_objects(
     Args:
         objects (Union[
             List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
-            Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]
+            Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]
         ]):
             Input objects to divide. Can be a list or a dict.
 
@@ -700,7 +701,7 @@ def divide_objects(
     Returns:
         Union[
             Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]],
-            Dict[LabelType, Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]]
+            Dict[LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]]
         ]:
             Grouped objects by label (and by matching config) depends on the input objects.
     """
@@ -729,8 +730,8 @@ def divide_objects(
         return None
 
     if isinstance(objects, dict):
-        # Detection, objects: Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]
-        result: Dict[LabelType, Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]] = (
+        # Detection, objects: Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]
+        result: Dict[LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]] = (
             {label: {} for label in target_labels} if target_labels is not None else {}
         )
 
@@ -746,7 +747,7 @@ def divide_objects(
         return result
 
     else:
-        # Classification/tracking objects: Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]
+        # Classification/tracking objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]]
         result: Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]] = (
             {label: [] for label in target_labels} if target_labels is not None else {}
         )

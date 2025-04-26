@@ -37,6 +37,7 @@ from perception_eval.evaluation.matching import MatchingLabelPolicy
 from perception_eval.evaluation.matching import MatchingMethod
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching import PlaneDistanceMatching
+from perception_eval.evaluation.matching.matching_config import MatchingConfig
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
@@ -48,7 +49,7 @@ def get_nuscene_object_results(
     metrics_config: MetricsScoreConfig,
     matching_label_policy: MatchingLabelPolicy = MatchingLabelPolicy.DEFAULT,
     transforms: Optional[TransformDict] = None,
-) -> Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]:
+) -> Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]:
     """
     Matches estimated objects to ground truth objects based on various matching strategies
     and thresholds defined in the metrics configuration. Returns a dictionary of
@@ -82,7 +83,7 @@ def get_nuscene_object_results(
         MatchingMode.IOU3D: metrics_config.detection_config.iou_3d_thresholds,
     }
 
-    object_results_dict: Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]] = {}
+    object_results_dict: Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]] = {}
     estimated_objects_sorted = sorted(estimated_objects, key=lambda x: x.semantic_score, reverse=True)
 
     for matching_mode, threshold_list in matching_config_map.items():

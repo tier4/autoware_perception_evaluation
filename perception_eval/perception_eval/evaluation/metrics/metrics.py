@@ -21,6 +21,7 @@ from typing import Union
 
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching import MatchingMode
+from perception_eval.evaluation.matching.matching_config import MatchingConfig
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 from .classification import ClassificationMetricsScore
@@ -124,10 +125,8 @@ class MetricsScore:
     def evaluate_detection(
         self,
         object_results: Union[
-            Dict[LabelType, Dict[Tuple[MatchingMode, float], List[DynamicObjectWithPerceptionResult]]],  # Single frame
-            Dict[
-                LabelType, Dict[Tuple[MatchingMode, float], List[List[DynamicObjectWithPerceptionResult]]]
-            ],  # Multiple frames
+            Dict[LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]],  # Single frame
+            Dict[LabelType, Dict[MatchingConfig, List[List[DynamicObjectWithPerceptionResult]]]],  # Multiple frames
         ],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
@@ -144,13 +143,13 @@ class MetricsScore:
         # Group by (matching_mode_str, threshold): Dict[LabelType -> List[DynamicObjectWithPerceptionResult]]
         # Example: (center_distance_bev, 0,5): {car: List[DynamicObjectWithPerceptionResult]}
         results_by_match_config: Dict[
-            Tuple[MatchingMode, float], Dict[LabelType, List[DynamicObjectWithPerceptionResult]]
+            MatchingConfig, Dict[LabelType, List[DynamicObjectWithPerceptionResult]]
         ] = defaultdict(dict)
 
         for label, method_results in object_results.items():
             for (matching_mode_str, threshold), result_list in method_results.items():
                 # Flatten if nested (multiple frames)
-                # The case when objects results is type of Dict[Tuple[MatchingMode, float], List[List[DynamicObjectWithPerceptionResult]]]
+                # The case when objects results is type of Dict[MatchingConfig, List[List[DynamicObjectWithPerceptionResult]]]
                 if all(isinstance(r, list) for r in result_list):
                     result_list_flat = list(chain.from_iterable(result_list))
                 else:
