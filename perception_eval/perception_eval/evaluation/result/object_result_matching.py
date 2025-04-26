@@ -99,6 +99,9 @@ def get_nuscene_object_results(
             # Change it to [0.5, 1.0]
             threshold = threshold[0]
 
+            # TODO(vividf): Optimize the matching process to avoid the O(N^2) complexity.
+            # Consider using matrix operations to calculate distances between all estimated and
+            # ground truth objects simultaneously for a given frame and matching mode.
             for est_obj in estimated_objects_sorted:
                 best_dist = float("inf")
                 best_gt_idx = None
