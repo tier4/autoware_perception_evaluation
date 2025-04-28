@@ -28,13 +28,13 @@ class PerceptionFrame:
 
     Args:
         unix_time (float): The unix time of the frame
-        object_results (List[DynamicObjectWithPerceptionResult]): The list of object result.
+        estimated_objects (List[DynamicObject]): The list of object result.
         frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
     """
 
     def __init__(
         self,
-        estimated_objects: List[DynamicObject],  # TODO(vividf): change to Dynamic Object
+        estimated_objects: List[DynamicObject],
         ground_truth_objects: FrameGroundTruth,
         unix_time: float,
     ) -> None:
