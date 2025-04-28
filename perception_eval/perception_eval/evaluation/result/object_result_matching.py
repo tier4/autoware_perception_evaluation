@@ -92,53 +92,73 @@ def get_nuscene_object_results(
 
         matching_method_module, _ = _get_matching_module(matching_mode)
         for threshold in thresholds:
-            object_results: List[DynamicObjectWithPerceptionResult] = []
-            matched_gt_ids = set()
-
             # TODO(vividf): currently the thresholds design is [[0.5, 0.5], [1.0, 1.0]].
             # Change it to [0.5, 1.0]
             threshold = threshold[0]
 
-            # TODO(vividf): Optimize the matching process to avoid the O(N^2) complexity.
-            # Consider using matrix operations to calculate distances between all estimated and
-            # ground truth objects simultaneously for a given frame and matching mode.
-            for est_obj in estimated_objects_sorted:
-                best_matching: Optional[MatchingMethod] = None
-                best_gt_idx: Optional[int] = None
-
-                for gt_idx, gt_obj in enumerate(ground_truth_objects):
-                    if gt_idx in matched_gt_ids:
-                        continue
-                    if est_obj.frame_id != gt_obj.frame_id:
-                        continue
-                    if not matching_label_policy.is_matchable(est_obj, gt_obj):
-                        continue
-
-                    matching_method = matching_method_module(est_obj, gt_obj)
-                    if best_matching is None or matching_method.is_better_than(best_matching.value):
-                        best_matching = matching_method
-                        best_gt_idx = gt_idx
-
-                is_match = best_matching is not None and best_matching.is_better_than(threshold)
-
-                if is_match:
-                    matched_gt = ground_truth_objects[best_gt_idx]
-                    matched_gt_ids.add(best_gt_idx)
-                    result = DynamicObjectWithPerceptionResult(
-                        est_obj, matched_gt, matching_label_policy, transforms=transforms
-                    )
-                    object_results.append(result)
-                else:
-                    if not evaluation_task.is_fp_validation():
-                        object_results.append(
-                            DynamicObjectWithPerceptionResult(
-                                est_obj, None, matching_label_policy, transforms=transforms
-                            )
-                        )
+            object_results = _get_object_results_per_matching_config(
+                estimated_objects_sorted=estimated_objects_sorted,
+                ground_truth_objects=ground_truth_objects,
+                matching_label_policy=matching_label_policy,
+                matching_method_module=matching_method_module,
+                threshold=threshold,
+                transforms=transforms,
+                evaluation_task=evaluation_task,
+            )
 
             object_results_dict[(matching_mode, threshold)] = object_results
 
     return object_results_dict
+
+
+def _get_object_results_per_matching_config(
+    estimated_objects_sorted: List[ObjectType],
+    ground_truth_objects: List[ObjectType],
+    matching_label_policy: MatchingLabelPolicy,
+    matching_method_module: Callable,
+    threshold: float,
+    transforms: Optional[TransformDict] = None,
+    evaluation_task: Optional[EvaluationTask] = None,
+) -> List[DynamicObjectWithPerceptionResult]:
+    object_results: List[DynamicObjectWithPerceptionResult] = []
+    matched_gt_ids = set()
+
+    # TODO(vividf): Optimize the matching process to avoid the O(N^2) complexity.
+    # Consider using matrix operations to calculate distances between all estimated and
+    # ground truth objects simultaneously for a given frame and matching mode.
+    for est_obj in estimated_objects_sorted:
+        best_matching: Optional[MatchingMethod] = None
+        best_gt_idx: Optional[int] = None
+
+        for gt_idx, gt_obj in enumerate(ground_truth_objects):
+            if gt_idx in matched_gt_ids:
+                continue
+            if est_obj.frame_id != gt_obj.frame_id:
+                continue
+            if not matching_label_policy.is_matchable(est_obj, gt_obj):
+                continue
+
+            matching_method = matching_method_module(est_obj, gt_obj)
+            if best_matching is None or matching_method.is_better_than(best_matching.value):
+                best_matching = matching_method
+                best_gt_idx = gt_idx
+
+        is_match = best_matching is not None and best_matching.is_better_than(threshold)
+
+        if is_match:
+            matched_gt = ground_truth_objects[best_gt_idx]
+            matched_gt_ids.add(best_gt_idx)
+            result = DynamicObjectWithPerceptionResult(
+                est_obj, matched_gt, matching_label_policy, transforms=transforms
+            )
+            object_results.append(result)
+        else:
+            if evaluation_task is None or not evaluation_task.is_fp_validation():
+                object_results.append(
+                    DynamicObjectWithPerceptionResult(est_obj, None, matching_label_policy, transforms=transforms)
+                )
+
+    return object_results
 
 
 def get_object_results(
