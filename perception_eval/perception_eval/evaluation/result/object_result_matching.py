@@ -103,8 +103,8 @@ def get_nuscene_object_results(
             # Consider using matrix operations to calculate distances between all estimated and
             # ground truth objects simultaneously for a given frame and matching mode.
             for est_obj in estimated_objects_sorted:
-                best_dist = float("inf")
-                best_gt_idx = None
+                best_matching: Optional[MatchingMethod] = None
+                best_gt_idx: Optional[int] = None
 
                 for gt_idx, gt_obj in enumerate(ground_truth_objects):
                     if gt_idx in matched_gt_ids:
@@ -114,12 +114,13 @@ def get_nuscene_object_results(
                     if not matching_label_policy.is_matchable(est_obj, gt_obj):
                         continue
 
-                    dist = matching_method_module(est_obj, gt_obj).value
-                    if dist < best_dist:
-                        best_dist = dist
+                    matching_method = matching_method_module(est_obj, gt_obj)
+                    if best_matching is None or matching_method.is_better_than(best_matching.value):
+                        best_matching = matching_method
                         best_gt_idx = gt_idx
 
-                is_match = best_gt_idx is not None and best_dist < threshold
+                is_match = best_matching is not None and best_matching.is_better_than(threshold)
+
                 if is_match:
                     matched_gt = ground_truth_objects[best_gt_idx]
                     matched_gt_ids.add(best_gt_idx)
