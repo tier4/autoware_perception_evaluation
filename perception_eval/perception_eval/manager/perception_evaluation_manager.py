@@ -22,6 +22,7 @@ from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import LabelType
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation.matching.matching_config import MatchingConfig
+from perception_eval.evaluation.matching.objects_filter import divide_nuscene_objects_by_label
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
@@ -271,7 +272,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             ):
                 nuscene_object_results_dict: Dict[
                     LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]
-                ] = divide_objects(frame.nuscene_object_results, target_labels)
+                ] = divide_nuscene_objects_by_label(frame.nuscene_object_results, target_labels)
 
                 for label in target_labels:
                     nuscene_label_result: Dict[

@@ -31,6 +31,8 @@ from perception_eval.evaluation.result.object_result import DynamicObjectWithPer
 from perception_eval.evaluation.result.object_result_matching import get_object_results
 from perception_eval.util.debug import get_objects_with_difference
 
+# TODO(vividf): test the map with latest nusecne object results
+
 
 class TestMap(unittest.TestCase):
     def setUp(self):

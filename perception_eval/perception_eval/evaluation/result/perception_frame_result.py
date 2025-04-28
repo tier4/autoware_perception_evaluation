@@ -27,6 +27,7 @@ from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.status import GroundTruthStatus
 from perception_eval.common.status import MatchingStatus
 from perception_eval.evaluation.matching.matching_config import MatchingConfig
+from perception_eval.evaluation.matching.objects_filter import divide_nuscene_objects_by_label
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
@@ -136,7 +137,7 @@ class PerceptionFrameResult:
         if self.nuscene_object_results is not None:
             nuscene_object_results_dict: Dict[
                 LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]
-            ] = divide_objects(
+            ] = divide_nuscene_objects_by_label(
                 self.nuscene_object_results,
                 self.pass_fail_result.critical_object_filter_config.target_labels,
             )
