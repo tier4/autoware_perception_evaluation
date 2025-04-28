@@ -170,6 +170,7 @@ class MetricsScore:
                     num_ground_truth_dict=num_gt_dict,
                     target_labels=target_labels,
                     matching_mode=matching_mode,
+                    # TODO(vividf): Rename matching_threshold_list to avoid variable name with data type
                     matching_threshold_list=thresholds,
                     is_detection_2d=self.evaluation_task.is_2d(),
                 )
