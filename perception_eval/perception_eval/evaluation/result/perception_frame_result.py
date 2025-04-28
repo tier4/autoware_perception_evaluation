@@ -68,7 +68,7 @@ class PerceptionFrameResult:
     def __init__(
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
-        nuscene_object_results: Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]],
+        nuscene_object_results: Optional[Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]],
         frame_ground_truth: FrameGroundTruth,
         metrics_config: MetricsScoreConfig,
         critical_object_filter_config: CriticalObjectFilterConfig,
@@ -83,8 +83,8 @@ class PerceptionFrameResult:
         self.target_labels: List[LabelType] = target_labels
 
         self.object_results: List[DynamicObjectWithPerceptionResult] = object_results
-        self.nuscene_object_results: Dict[
-            MatchingConfig, List[DynamicObjectWithPerceptionResult]
+        self.nuscene_object_results: Optional[
+            Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]
         ] = nuscene_object_results
         self.frame_ground_truth: FrameGroundTruth = frame_ground_truth
 
@@ -133,12 +133,15 @@ class PerceptionFrameResult:
             self.pass_fail_result.critical_object_filter_config.target_labels,
         )
 
-        nuscene_object_results_dict: Dict[
-            LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]
-        ] = divide_objects(
-            self.nuscene_object_results,
-            self.pass_fail_result.critical_object_filter_config.target_labels,
-        )
+        if self.nuscene_object_results is not None:
+            nuscene_object_results_dict: Dict[
+                LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]
+            ] = divide_objects(
+                self.nuscene_object_results,
+                self.pass_fail_result.critical_object_filter_config.target_labels,
+            )
+        else:
+            nuscene_object_results_dict = {}
 
         num_ground_truth_dict: Dict[LabelType, int] = divide_objects_to_num(
             self.frame_ground_truth.objects,
@@ -150,7 +153,7 @@ class PerceptionFrameResult:
             self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
 
         # Detection
-        if self.metrics_score.detection_config is not None:
+        if self.metrics_score.detection_config is not None and nuscene_object_results_dict:
             self.metrics_score.evaluate_detection(nuscene_object_results_dict, num_ground_truth_dict)
 
         # Tracking
@@ -196,7 +199,7 @@ class PerceptionFrameResult:
         return {
             "object_results": [object_result.serialization() for object_result in self.object_results],
             "nuscene_object_results": [
-                nuscene_object_result.serialization() for nuscene_object_result in self.nuscene_object_results
+                nuscene_object_result.serialization() for nuscene_object_result in (self.nuscene_object_results or [])
             ],
             "frame_ground_truth": self.frame_ground_truth.serialization(),
             "frame_name": self.frame_name,
@@ -210,6 +213,13 @@ class PerceptionFrameResult:
     @classmethod
     def deserialization(cls, data: Dict[str, Any]) -> PerceptionFrameResult:
         """Deserialize the data to PerceptionFrameResult."""
+        nuscene_object_results_list = data.get("nuscene_object_results", [])
+        nuscene_object_results = (
+            [DynamicObjectWithPerceptionResult.deserialization(obj) for obj in nuscene_object_results_list]
+            if nuscene_object_results_list
+            else None
+        )
+
         target_labels = []
         for label in data["target_labels"]:
             label_type = label["label_type"]
@@ -224,9 +234,7 @@ class PerceptionFrameResult:
 
         return cls(
             object_results=[DynamicObjectWithPerceptionResult.deserialization(obj) for obj in data["object_results"]],
-            nuscene_object_results=[
-                DynamicObjectWithPerceptionResult.deserialization(obj) for obj in data["nuscene_object_results"]
-            ],
+            nuscene_object_results=nuscene_object_results,
             frame_ground_truth=FrameGroundTruth.deserialization(data["frame_ground_truth"]),
             metrics_config=MetricsScoreConfig.deserialization(data["metrics_config"]),
             critical_object_filter_config=CriticalObjectFilterConfig.deserialization(

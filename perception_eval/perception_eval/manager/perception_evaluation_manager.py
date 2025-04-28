@@ -105,14 +105,23 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         Returns:
             PerceptionFrameResult: Evaluation result.
         """
-        nuscene_object_results, object_results, ground_truth_now_frame = self.filter_and_match_objects(
+        # Filter estimated and ground truth objects
+        filtered_estimated_objects, filtered_ground_truth = self.filter_objects(
             estimated_objects, ground_truth_now_frame
         )
 
+        # Match objects
+        nuscene_object_results = None
+        if self.evaluator_config.metrics_config.detection_config is not None:
+            nuscene_object_results = self.match_nuscene_objects(filtered_estimated_objects, filtered_ground_truth)
+
+        object_results = self.match_objects(filtered_estimated_objects, filtered_ground_truth)
+
+        # Create PerceptionFrameResult
         perception_frame_result = PerceptionFrameResult(
             object_results=object_results,
             nuscene_object_results=nuscene_object_results,
-            frame_ground_truth=ground_truth_now_frame,
+            frame_ground_truth=filtered_ground_truth,
             metrics_config=self.metrics_config,
             critical_object_filter_config=critical_object_filter_config,
             frame_pass_fail_config=frame_pass_fail_config,
@@ -120,7 +129,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             target_labels=self.target_labels,
         )
 
-        if len(self.perception_frame_results) > 0:
+        if self.perception_frame_results:
             perception_frame_result.evaluate_frame(previous_result=self.perception_frame_results[-1])
         else:
             perception_frame_result.evaluate_frame()
@@ -129,33 +138,20 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
 
         return perception_frame_result
 
-    def filter_and_match_objects(
+    def filter_objects(
         self, estimated_objects: List[ObjectType], frame_ground_truth: FrameGroundTruth
-    ) -> Tuple[
-        Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]],
-        List[DynamicObjectWithPerceptionResult],
-        FrameGroundTruth,
-    ]:
+    ) -> Tuple[List[ObjectType], FrameGroundTruth]:
         """
-        Filter estimated and ground truth objects, compute matching results, and optionally filter by UUIDs.
-
-        This function first applies spatial and semantic filters to the estimated objects and ground truth
-        objects. It then generates matching results in both NuScenes-style (thresholded multi-key format)
-        and Autoware-style (flat list). If `target_uuids` is specified, it will further filter the flat list.
+        Apply spatial and semantic filters to estimated and ground truth objects.
 
         Args:
             estimated_objects (List[ObjectType]): The list of estimated perception objects.
             frame_ground_truth (FrameGroundTruth): The ground truth objects and transformation for the current frame.
 
         Returns:
-            nuscene_object_results (Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]):
-                Thresholded object match results for NuScenes-style metrics.
-            object_results (List[DynamicObjectWithPerceptionResult]):
-                Flat list of matched results for Autoware-style metrics.
-            frame_ground_truth (FrameGroundTruth):
-                Updated ground truth with filtered objects.
+            filtered_estimated_objects (List[ObjectType]): Filtered list of estimated objects.
+            filtered_frame_ground_truth (FrameGroundTruth): Ground truth frame with filtered objects.
         """
-
         estimated_objects = filter_objects(
             objects=estimated_objects,
             is_gt=False,
@@ -170,6 +166,26 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             **self.filtering_params,
         )
 
+        return estimated_objects, frame_ground_truth
+
+    def match_nuscene_objects(
+        self, estimated_objects: List[ObjectType], frame_ground_truth: FrameGroundTruth
+    ) -> Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]:
+        """
+        Perform NuScenes-style matching between estimated and ground truth objects.
+
+        This function matches estimated and ground truth objects using configurable matching modes
+        (e.g., center distance, IoU) and multiple thresholds, producing results categorized by (mode, threshold).
+
+        Args:
+            estimated_objects (List[ObjectType]): Filtered estimated perception objects.
+            frame_ground_truth (FrameGroundTruth): Filtered ground truth objects and transformations for the current frame.
+
+        Returns:
+            nuscene_object_results (Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]):
+                Mapping from (matching mode, threshold) to matched results.
+        """
+
         nuscene_object_results: Dict[
             MatchingConfig, List[DynamicObjectWithPerceptionResult]
         ] = get_nuscene_object_results(
@@ -180,6 +196,26 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             matching_label_policy=self.evaluator_config.label_params["matching_label_policy"],
             transforms=frame_ground_truth.transforms,
         )
+
+        return nuscene_object_results
+
+    def match_objects(
+        self, estimated_objects: List[ObjectType], frame_ground_truth: FrameGroundTruth
+    ) -> List[DynamicObjectWithPerceptionResult]:
+        """
+        Perform flat one-to-one matching between estimated and ground truth objects.
+
+        This function matches estimated and ground truth objects into a flat list format
+        without categorizing by matching modes or thresholds.
+
+        Args:
+            estimated_objects (List[ObjectType]): Filtered estimated perception objects.
+            frame_ground_truth (FrameGroundTruth): Filtered ground truth objects and transformations for the current frame.
+
+        Returns:
+            object_results (List[DynamicObjectWithPerceptionResult]):
+                List of matched objects.
+        """
 
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
             evaluation_task=self.evaluation_task,
@@ -199,7 +235,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 target_uuids=self.filtering_params["target_uuids"],
             )
 
-        return nuscene_object_results, object_results, frame_ground_truth
+        return object_results
 
     def get_scene_result(self) -> MetricsScore:
         """Evaluate metrics score thorough a scene.
@@ -222,24 +258,30 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                 frame.object_results, target_labels
             )
-            nuscene_object_results_dict: Dict[
-                LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]
-            ] = divide_objects(frame.nuscene_object_results, target_labels)
             num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, target_labels)
 
             for label in target_labels:
                 aggregated_object_results_dict[label].append(object_results_dict[label])
-
-                nuscene_label_result: Dict[
-                    MatchingConfig, List[DynamicObjectWithPerceptionResult]
-                ] = nuscene_object_results_dict.get(label, {})
-
-                for key, detection_list in nuscene_label_result.items():
-                    if key not in aggregated_nuscene_object_results_dict[label]:
-                        aggregated_nuscene_object_results_dict[label][key] = []
-                    aggregated_nuscene_object_results_dict[label][key].append(detection_list)
-
                 aggregated_num_gt[label] += num_gt_dict[label]
+
+            # Only aggregate nuscene_object_results if detection_config exists and frame has nuscene_object_results
+            if (
+                self.evaluator_config.metrics_config.detection_config is not None
+                and frame.nuscene_object_results is not None
+            ):
+                nuscene_object_results_dict: Dict[
+                    LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]
+                ] = divide_objects(frame.nuscene_object_results, target_labels)
+
+                for label in target_labels:
+                    nuscene_label_result: Dict[
+                        MatchingConfig, List[DynamicObjectWithPerceptionResult]
+                    ] = nuscene_object_results_dict.get(label, {})
+
+                    for key, detection_list in nuscene_label_result.items():
+                        if key not in aggregated_nuscene_object_results_dict[label]:
+                            aggregated_nuscene_object_results_dict[label][key] = []
+                        aggregated_nuscene_object_results_dict[label][key].append(detection_list)
 
             used_frame.append(int(frame.frame_name))
 
@@ -253,7 +295,10 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             scene_metrics_score.evaluate_classification(aggregated_object_results_dict, aggregated_num_gt)
 
         # Detection
-        if self.evaluator_config.metrics_config.detection_config is not None:
+        if self.evaluator_config.metrics_config.detection_config is not None and any(
+            any(mode_results for mode_results in label_dict.values())
+            for label_dict in aggregated_nuscene_object_results_dict.values()
+        ):
             scene_metrics_score.evaluate_detection(aggregated_nuscene_object_results_dict, aggregated_num_gt)
 
         # Tracking
