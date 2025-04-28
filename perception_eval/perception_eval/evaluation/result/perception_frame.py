@@ -23,6 +23,7 @@ from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.object import DynamicObject
 
 
+# TODO(vividf): This class currently only supports 3D objects. Consider extending it to support 2D evaluation as well.
 class PerceptionFrame:
     """The frame that included estimated objects and ground truth objects
 
