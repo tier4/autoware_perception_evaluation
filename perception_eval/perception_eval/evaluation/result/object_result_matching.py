@@ -86,12 +86,12 @@ def get_nuscene_object_results(
     object_results_dict: Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]] = {}
     estimated_objects_sorted = sorted(estimated_objects, key=lambda x: x.semantic_score, reverse=True)
 
-    for matching_mode, threshold_list in matching_config_map.items():
-        if not threshold_list:
+    for matching_mode, thresholds in matching_config_map.items():
+        if not thresholds:
             continue  # skip if config is None
 
         matching_method_module, _ = _get_matching_module(matching_mode)
-        for threshold in threshold_list:
+        for threshold in thresholds:
             object_results: List[DynamicObjectWithPerceptionResult] = []
             matched_gt_ids = set()
 
