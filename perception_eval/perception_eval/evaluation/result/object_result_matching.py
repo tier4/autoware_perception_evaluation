@@ -121,6 +121,36 @@ def _get_object_results_per_matching_config(
     transforms: Optional[TransformDict] = None,
     evaluation_task: Optional[EvaluationTask] = None,
 ) -> List[DynamicObjectWithPerceptionResult]:
+    """
+    Matches estimated objects to ground truth objects using a single matching configuration.
+
+    This function performs 1-to-1 greedy matching between estimated and ground truth objects
+    based on a specific matching method and threshold. Each estimated object is matched to
+    the best available ground truth object (if any) that:
+    - Has not been matched already
+    - Shares the same frame ID
+    - Is matchable according to the given label policy
+
+    The best match is determined by evaluating all available ground truth objects for each
+    estimated object using the provided matching method module. If the best match is better
+    than the given threshold, it is considered a true positive (TP). Otherwise, the estimated
+    object is marked as a false positive (FP) unless the evaluation task is in FP validation mode.
+
+    Args:
+        estimated_objects_sorted (List[ObjectType]): List of estimated objects sorted by score.
+        ground_truth_objects (List[ObjectType]): List of ground truth objects.
+        matching_label_policy (MatchingLabelPolicy): Policy for determining label matchability.
+        matching_method_module (Callable): Function that returns a matching result (with score)
+            for a given estimated/ground truth object pair.
+        threshold (float): Matching threshold to determine whether the match is valid.
+        transforms (Optional[TransformDict]): Optional dictionary of transforms between frames.
+        evaluation_task (Optional[EvaluationTask]): Optional evaluation task, used to determine
+            FP validation mode.
+
+    Returns:
+        List[DynamicObjectWithPerceptionResult]: Object results list.
+    """
+
     object_results: List[DynamicObjectWithPerceptionResult] = []
     matched_gt_ids = set()
 
