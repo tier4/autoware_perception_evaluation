@@ -248,7 +248,9 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         target_labels: List[LabelType] = self.target_labels
 
         # aggregated results from each frame
-        aggregated_object_results_dict = {label: [] for label in target_labels}
+        aggregated_object_results_dict: Dict[
+            LabelType, Dict[MatchingConfig, List[List[DynamicObjectWithPerceptionResult]]]
+        ] = {label: [] for label in target_labels}
         aggregated_nuscene_object_results_dict: Dict[
             LabelType, Dict[MatchingConfig, List[List[DynamicObjectWithPerceptionResult]]]
         ] = {label: {} for label in target_labels}

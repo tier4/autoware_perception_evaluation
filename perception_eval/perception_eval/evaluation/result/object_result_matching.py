@@ -42,6 +42,7 @@ from perception_eval.evaluation.metrics.metrics_score_config import MetricsScore
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
+# TODO(vividf): Refactor this module to use an object-oriented design.
 def get_nuscene_object_results(
     evaluation_task: EvaluationTask,
     estimated_objects: List[ObjectType],
