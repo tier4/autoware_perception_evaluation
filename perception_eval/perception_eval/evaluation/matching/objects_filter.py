@@ -673,6 +673,9 @@ def _is_target_object(
     return is_target
 
 
+# TODO(vividf): Refactor resolve_label logic into a common interface method
+# (e.g., `get_label(target_labels)`) defined in ObjectType and
+# DynamicObjectWithPerceptionResult for better polymorphic design.
 def resolve_label(
     obj: Union[ObjectType, DynamicObjectWithPerceptionResult],
     target_labels: Optional[List[LabelType]],
