@@ -163,10 +163,15 @@ def _get_object_results_per_matching_config(
         best_gt_idx: Optional[int] = None
 
         for gt_idx, gt_obj in enumerate(ground_truth_objects):
+            # Ground truth object has already been matched with another estimated object
             if gt_idx in matched_gt_ids:
                 continue
+
+            # Estimated and ground truth objects must belong to the same frame
             if est_obj.frame_id != gt_obj.frame_id:
                 continue
+
+            # Estimated and ground truth objects must have matching labels based on the policy
             if not matching_label_policy.is_matchable(est_obj, gt_obj):
                 continue
 
