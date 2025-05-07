@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -766,7 +767,7 @@ def divide_nuscene_objects_by_label(
             all specified labels will exist in the dictionary, even if empty.
     """
     result: Dict[LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]] = (
-        {label: {} for label in target_labels} if target_labels else {}
+        {label: defaultdict(list) for label in target_labels} if target_labels else {}
     )
 
     for matching_config, object_list in objects.items():
@@ -774,8 +775,6 @@ def divide_nuscene_objects_by_label(
             label = resolve_label(obj, target_labels)
             if label is None:
                 continue
-            if matching_config not in result[label]:
-                result[label][matching_config] = []
             result[label][matching_config].append(obj)
 
     return result
