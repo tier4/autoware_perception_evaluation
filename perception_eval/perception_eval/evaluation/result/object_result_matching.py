@@ -232,7 +232,7 @@ def get_object_results(
         return []
 
     # There is no GT and not FP validation (= all FP)
-    if not ground_truth_objects and evaluation_task.is_fp_validation() is False:
+    if not ground_truth_objects and not evaluation_task.is_fp_validation():
         return _get_fp_object_results(estimated_objects)
 
     assert isinstance(
