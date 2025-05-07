@@ -299,7 +299,7 @@ class DynamicObjectWithPerceptionResult:
     @classmethod
     def deserialization(cls, data: Dict[str, Any]) -> DynamicObjectWithPerceptionResult:
         """Deserialize the data to DynamicObjectWithPerceptionResult."""
-        if data["opject_type"] == DynamicObject2D.__name__:
+        if data["object_type"] == DynamicObject2D.__name__:
             object_type = DynamicObject2D
         elif data["object_type"] == DynamicObject.__name__:
             object_type = DynamicObject
