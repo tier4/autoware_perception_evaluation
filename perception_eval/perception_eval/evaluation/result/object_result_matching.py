@@ -74,7 +74,7 @@ def get_nuscene_object_results(
 
     # There is no estimated object (= all FN)
     if not estimated_objects:
-        return []
+        return {}
 
     matching_config_map = {
         mode: thresholds
