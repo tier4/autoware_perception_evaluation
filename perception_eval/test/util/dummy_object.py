@@ -51,7 +51,7 @@ def make_dummy_data(
             position=(1.0, 1.0, 1.0),
             orientation=Quaternion([0.0, 0.0, 0.0, 1.0]),
             shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=(1.5, 1.5, 1.5)),
-            semantic_score=0.9,
+            semantic_score=0.95,
             semantic_label=Label(AutowareLabel.CAR, "car", []),
             velocity=(1.0, 1.0, 1.0),
             uuid=token_hex(16) if use_unique_id else "0",
