@@ -122,6 +122,46 @@ class MetricsScore:
     def num_ground_truth(self) -> int:
         return self.__num_gt
 
+    def flatten_and_group_object_results_by_match_config(
+        self,
+        object_results: Union[
+            Dict[LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]],
+            Dict[LabelType, Dict[MatchingConfig, List[List[DynamicObjectWithPerceptionResult]]]],
+        ],
+    ) -> Dict[MatchingConfig, Dict[LabelType, List[DynamicObjectWithPerceptionResult]]]:
+        """
+        Flatten nested detection results and regroup them by matching configuration and label.
+
+        This method supports both single-frame and multi-frame object results.
+        In the case of multi-frame results (i.e., lists of lists), the method flattens the
+        nested lists into a single list per (label, MatchingConfig) pair.
+        It then reorganizes the data into a structure grouped first by MatchingConfig
+        and then by LabelType, which simplifies downstream metric computations.
+
+        Args:
+            object_results: A dictionary where the first key is a LabelType, the second key is a MatchingConfig,
+                and the value is either a list of DynamicObjectWithPerceptionResult (for single-frame input) or
+                a list of lists of them (for multi-frame input).
+
+        Returns:
+            A dictionary where each key is a MatchingConfig, and each value is another dictionary
+            mapping LabelType to a flattened list of DynamicObjectWithPerceptionResult.
+        """
+        results_by_match_config: Dict[
+            MatchingConfig, Dict[LabelType, List[DynamicObjectWithPerceptionResult]]
+        ] = defaultdict(dict)
+
+        for label, method_results in object_results.items():
+            for matching_config, result_list in method_results.items():
+                if all(isinstance(r, list) for r in result_list):
+                    result_list_flat = list(chain.from_iterable(result_list))
+                else:
+                    result_list_flat = result_list
+
+                results_by_match_config[matching_config][label] = result_list_flat
+
+        return results_by_match_config
+
     def evaluate_detection(
         self,
         object_results: Union[
@@ -130,11 +170,24 @@ class MetricsScore:
         ],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
-        """Calculate detection metrics.
+        """
+        Evaluate detection performance and calculate detection-related metrics such as mAP.
+
+        This function processes detection results grouped by label and matching configuration.
+        It supports both single-frame and multi-frame input formats. Internally, the object results
+        are first flattened and regrouped by MatchingConfig using
+        `flatten_and_group_object_results_by_match_config()`.
+
+        For each unique (MatchingMode, threshold) pair, it computes per-label statistics and
+        passes them to a Map instance for final mAP (mean Average Precision) calculation.
 
         Args:
-            object_results: Result dict by label and matching parameters.
-            num_ground_truth: Number of ground truth objects per label.
+            object_results: A nested dictionary of detection results where:
+                - The first key is a LabelType (e.g., car, pedestrian),
+                - The second key is a MatchingConfig (e.g., IoU@0.5),
+                - The value is either a list (single frame) or list of lists (multi-frame)
+                of DynamicObjectWithPerceptionResult instances.
+            num_ground_truth: A dictionary mapping each label to the number of ground truth objects.
         """
 
         if self.tracking_config is None:
@@ -142,20 +195,7 @@ class MetricsScore:
 
         # Group by (matching_mode_str, threshold): Dict[LabelType -> List[DynamicObjectWithPerceptionResult]]
         # Example: (center_distance_bev, 0,5): {car: List[DynamicObjectWithPerceptionResult]}
-        results_by_match_config: Dict[
-            MatchingConfig, Dict[LabelType, List[DynamicObjectWithPerceptionResult]]
-        ] = defaultdict(dict)
-
-        for label, method_results in object_results.items():
-            for (matching_mode_str, threshold), result_list in method_results.items():
-                # Flatten if nested (multiple frames)
-                # The case when objects results is type of Dict[MatchingConfig, List[List[DynamicObjectWithPerceptionResult]]]
-                if all(isinstance(r, list) for r in result_list):
-                    result_list_flat = list(chain.from_iterable(result_list))
-                else:
-                    result_list_flat = result_list
-
-                results_by_match_config[(matching_mode_str, threshold)][label] = result_list_flat
+        results_by_match_config = self.flatten_and_group_object_results_by_match_config(object_results)
 
         # For each (matching_mode, threshold), group labels and compute MAP
         for (matching_mode, threshold), label_results in results_by_match_config.items():
