@@ -223,14 +223,14 @@ class TestAp(unittest.TestCase):
 
                 # Filter objects
                 diff_trans_estimated_objects = filter_objects(
-                    objects=diff_trans_estimated_objects,
+                    dynamic_objects=diff_trans_estimated_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                 )
                 diff_trans_ground_truth_objects = filter_objects(
-                    objects=diff_trans_ground_truth_objects,
+                    dynamic_objects=diff_trans_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
@@ -494,14 +494,14 @@ class TestAp(unittest.TestCase):
                 )
                 # Filter objects
                 diff_yaw_estimated_objects = filter_objects(
-                    objects=diff_yaw_estimated_objects,
+                    dynamic_objects=diff_yaw_estimated_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                 )
                 diff_yaw_ground_truth_objects = filter_objects(
-                    objects=diff_yaw_ground_truth_objects,
+                    dynamic_objects=diff_yaw_ground_truth_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
@@ -557,12 +557,12 @@ class TestAp(unittest.TestCase):
 
         # Filter objects
         dummy_estimated_objects = filter_objects(
-            objects=self.dummy_estimated_objects,
+            dynamic_objects=self.dummy_estimated_objects,
             is_gt=False,
             target_labels=[AutowareLabel.MOTORBIKE],
         )
         dummy_ground_truth_objects = filter_objects(
-            objects=self.dummy_ground_truth_objects,
+            dynamic_objects=self.dummy_ground_truth_objects,
             is_gt=True,
             target_labels=[AutowareLabel.MOTORBIKE],
         )
@@ -667,14 +667,14 @@ class TestAp(unittest.TestCase):
 
                 # Filter objects
                 diff_trans_estimated_objects = filter_objects(
-                    objects=diff_trans_estimated_objects,
+                    dynamic_objects=diff_trans_estimated_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                 )
                 diff_trans_ground_truth_objects = filter_objects(
-                    objects=diff_trans_ground_truth_objects,
+                    dynamic_objects=diff_trans_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
@@ -938,14 +938,14 @@ class TestAp(unittest.TestCase):
                 )
                 # Filter objects
                 diff_yaw_estimated_objects = filter_objects(
-                    objects=diff_yaw_estimated_objects,
+                    dynamic_objects=diff_yaw_estimated_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                 )
                 diff_yaw_ground_truth_objects = filter_objects(
-                    objects=diff_yaw_ground_truth_objects,
+                    dynamic_objects=diff_yaw_ground_truth_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
@@ -1001,12 +1001,12 @@ class TestAp(unittest.TestCase):
 
         # Filter objects
         dummy_estimated_objects = filter_objects(
-            objects=self.dummy_estimated_objects,
+            dynamic_objects=self.dummy_estimated_objects,
             is_gt=False,
             target_labels=[AutowareLabel.MOTORBIKE],
         )
         dummy_ground_truth_objects = filter_objects(
-            objects=self.dummy_ground_truth_objects,
+            dynamic_objects=self.dummy_ground_truth_objects,
             is_gt=True,
             target_labels=[AutowareLabel.MOTORBIKE],
         )
@@ -1111,14 +1111,14 @@ class TestAp(unittest.TestCase):
                 )
                 # Filter objects
                 diff_trans_estimated_objects = filter_objects(
-                    objects=diff_trans_estimated_objects,
+                    dynamic_objects=diff_trans_estimated_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                 )
                 diff_trans_ground_truth_objects = filter_objects(
-                    objects=diff_trans_ground_truth_objects,
+                    dynamic_objects=diff_trans_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
@@ -1228,12 +1228,12 @@ class TestAp(unittest.TestCase):
                 )
 
                 estimated_objects = filter_objects(
-                    objects=self.dummy_ground_truth_objects,
+                    dynamic_objects=self.dummy_ground_truth_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
                 )
                 ground_truth_objects = filter_objects(
-                    objects=diff_yaw_ground_truth_objects,
+                    dynamic_objects=diff_yaw_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
                 )
@@ -1288,14 +1288,14 @@ class TestAp(unittest.TestCase):
         ans_aph: float = 1.0
         # Filter objects
         dummy_estimated_objects = filter_objects(
-            objects=self.dummy_estimated_objects,
+            dynamic_objects=self.dummy_estimated_objects,
             is_gt=False,
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
         )
         dummy_ground_truth_objects = filter_objects(
-            objects=self.dummy_ground_truth_objects,
+            dynamic_objects=self.dummy_ground_truth_objects,
             is_gt=True,
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
@@ -1356,14 +1356,14 @@ class TestAp(unittest.TestCase):
                 )
                 # Filter objects
                 diff_distance_dummy_ground_truth_objects = filter_objects(
-                    objects=diff_distance_dummy_ground_truth_objects,
+                    dynamic_objects=diff_distance_dummy_ground_truth_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                 )
                 dummy_ground_truth_objects = filter_objects(
-                    objects=self.dummy_ground_truth_objects,
+                    dynamic_objects=self.dummy_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
@@ -1440,14 +1440,14 @@ class TestAp(unittest.TestCase):
                 )
                 # Filter objects
                 diff_yaw_dummy_ground_truth_objects = filter_objects(
-                    objects=diff_yaw_dummy_ground_truth_objects,
+                    dynamic_objects=diff_yaw_dummy_ground_truth_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                 )
                 dummy_ground_truth_objects = filter_objects(
-                    objects=self.dummy_ground_truth_objects,
+                    dynamic_objects=self.dummy_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
@@ -1499,14 +1499,14 @@ class TestAp(unittest.TestCase):
 
         # Filter objects
         dummy_estimated_objects = filter_objects(
-            objects=self.dummy_estimated_objects,
+            dynamic_objects=self.dummy_estimated_objects,
             is_gt=False,
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
         )
         dummy_ground_truth_objects = filter_objects(
-            objects=self.dummy_ground_truth_objects,
+            dynamic_objects=self.dummy_ground_truth_objects,
             is_gt=True,
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
@@ -1570,14 +1570,14 @@ class TestAp(unittest.TestCase):
                 )
                 # Filter objects
                 diff_distance_dummy_ground_truth_objects = filter_objects(
-                    objects=diff_distance_dummy_ground_truth_objects,
+                    dynamic_objects=diff_distance_dummy_ground_truth_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                 )
                 dummy_ground_truth_objects = filter_objects(
-                    objects=self.dummy_ground_truth_objects,
+                    dynamic_objects=self.dummy_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
@@ -1649,14 +1649,14 @@ class TestAp(unittest.TestCase):
                 )
                 # Filter objects
                 diff_yaw_dummy_ground_truth_objects = filter_objects(
-                    objects=diff_yaw_dummy_ground_truth_objects,
+                    dynamic_objects=diff_yaw_dummy_ground_truth_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                 )
                 dummy_ground_truth_objects = filter_objects(
-                    objects=self.dummy_ground_truth_objects,
+                    dynamic_objects=self.dummy_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
@@ -1711,14 +1711,14 @@ class TestAp(unittest.TestCase):
 
         # Filter objects
         dummy_estimated_objects = filter_objects(
-            objects=self.dummy_estimated_objects,
+            dynamic_objects=self.dummy_estimated_objects,
             is_gt=False,
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,
             max_y_position_list=self.max_y_position_list,
         )
         dummy_ground_truth_objects = filter_objects(
-            objects=self.dummy_ground_truth_objects,
+            dynamic_objects=self.dummy_ground_truth_objects,
             is_gt=True,
             target_labels=self.target_labels,
             max_x_position_list=self.max_x_position_list,

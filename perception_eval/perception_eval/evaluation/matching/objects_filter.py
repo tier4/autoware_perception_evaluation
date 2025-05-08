@@ -146,7 +146,7 @@ def filter_object_results(
 
 
 def filter_objects(
-    objects: List[ObjectType],
+    dynamic_objects: List[ObjectType],
     is_gt: bool,
     target_labels: Optional[List[Label]] = None,
     ignore_attributes: Optional[List[str]] = None,
@@ -170,7 +170,7 @@ def filter_objects(
     are specified, each of them must be same length list.
 
     Args:
-        objects (List[ObjectType]: The objects you want to filter.
+        dynamic_objects (List[ObjectType]: The dynamic objects you want to filter.
         is_gt (bool): Flag if input object is ground truth.
         target_labels Optional[List[Label]]): Filter target list of labels.
             Keep all `objects` that have same label in this list. Defaults to None.
@@ -207,12 +207,12 @@ def filter_objects(
             Defaults to None.
 
     Returns:
-        List[ObjectType]: Filtered objects.
+        List[ObjectType]: Filtered dynamic objects.
     """
     filtered_objects: List[ObjectType] = []
-    for object_ in objects:
+    for dynamic_object in dynamic_objects:
         is_target: bool = _is_target_object(
-            dynamic_object=object_,
+            dynamic_object=dynamic_object,
             is_gt=is_gt,
             target_labels=target_labels,
             ignore_attributes=ignore_attributes,
@@ -228,7 +228,7 @@ def filter_objects(
             transforms=transforms,
         )
         if is_target:
-            filtered_objects.append(object_)
+            filtered_objects.append(dynamic_object)
     return filtered_objects
 
 
@@ -677,21 +677,21 @@ def _is_target_object(
 # (e.g., `get_label(target_labels)`) defined in ObjectType and
 # DynamicObjectWithPerceptionResult for better polymorphic design.
 def resolve_label(
-    obj: Union[ObjectType, DynamicObjectWithPerceptionResult],
+    dynamic_object: Union[ObjectType, DynamicObjectWithPerceptionResult],
     target_labels: Optional[List[LabelType]],
 ) -> Optional[LabelType]:
     """Resolve the label from an object, trying fallback to GT label if needed."""
     estimated_label = (
-        obj.estimated_object.semantic_label.label
-        if isinstance(obj, DynamicObjectWithPerceptionResult)
-        else obj.semantic_label.label
+        dynamic_object.estimated_object.semantic_label.label
+        if isinstance(dynamic_object, DynamicObjectWithPerceptionResult)
+        else dynamic_object.semantic_label.label
     )
 
     if target_labels is None or estimated_label in target_labels:
         return estimated_label
 
-    if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
-        gt_label = obj.ground_truth_object.semantic_label.label
+    if isinstance(dynamic_object, DynamicObjectWithPerceptionResult) and dynamic_object.ground_truth_object is not None:
+        gt_label = dynamic_object.ground_truth_object.semantic_label.label
         if gt_label in target_labels:
             return gt_label
 
@@ -700,11 +700,11 @@ def resolve_label(
 
 # TODO(vividf): change the naming for better understanding
 def divide_objects(
-    objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
+    dynamic_objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
     target_labels: Optional[List[LabelType]] = None,
 ) -> Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]:
     """
-    Divide a list of objects into a dictionary grouped by their semantic labels.
+    Divide a list of dynamic objects into a dictionary grouped by their semantic labels.
 
     This function is used for classification, tracking, and similar tasks where
     a simple one-to-one matching between estimated and ground truth objects is performed.
@@ -715,7 +715,7 @@ def divide_objects(
     label is used as a fallback.
 
     Args:
-        objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
+        dynamic_objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
             List of estimated or matched objects.
         target_labels (Optional[List[LabelType]]):
             List of labels to filter. If None, all labels are included.
@@ -730,17 +730,17 @@ def divide_objects(
         {label: [] for label in target_labels} if target_labels else {}
     )
 
-    for obj in objects:
-        label = resolve_label(obj, target_labels)
+    for dynamic_object in dynamic_objects:
+        label = resolve_label(dynamic_object, target_labels)
         if label is None:
             continue
-        result.setdefault(label, []).append(obj)
+        result.setdefault(label, []).append(dynamic_object)
 
     return result
 
 
-def divide_nuscene_objects_by_label(
-    objects: Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]],
+def divide_nuscene_object_results_by_label(
+    nuscene_object_results: Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]],
     target_labels: Optional[List[LabelType]] = None,
 ) -> Dict[LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]]:
     """
@@ -758,7 +758,7 @@ def divide_nuscene_objects_by_label(
     truth label is available, the ground truth label is used as a fallback.
 
     Args:
-        objects (Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]):
+        nuscene_objects (Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]):
             Dictionary of detection matching results grouped by matching config.
         target_labels (Optional[List[LabelType]]):
             List of labels to filter. If None, all labels are included.
@@ -773,24 +773,24 @@ def divide_nuscene_objects_by_label(
         {label: defaultdict(list) for label in target_labels} if target_labels else {}
     )
 
-    for matching_config, object_list in objects.items():
-        for obj in object_list:
-            label = resolve_label(obj, target_labels)
+    for matching_config, dynamic_objects in nuscene_object_results.items():
+        for dynamic_object in dynamic_objects:
+            label = resolve_label(dynamic_object, target_labels)
             if label is None:
                 continue
-            result[label][matching_config].append(obj)
+            result[label][matching_config].append(dynamic_object)
 
     return result
 
 
 def divide_objects_to_num(
-    objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
+    dynamic_objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
     target_labels: Optional[List[LabelType]] = None,
 ) -> Dict[LabelType, int]:
     """Divide the number of input `objects` mapped by their labels.
 
     Args:
-        objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
+        dynamic_object (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
             List of ObjectType or DynamicObjectWithPerceptionResult.
         target_labels (Optional[List[LabelType]]): If this is specified, create empty list even
             if there is no object having specified label. Defaults to None.
@@ -804,15 +804,18 @@ def divide_objects_to_num(
     else:
         ret: Dict[LabelType, int] = {}
 
-    for obj in objects:
-        if isinstance(obj, DynamicObjectWithPerceptionResult):
-            label: LabelType = obj.estimated_object.semantic_label.label
+    for dynamic_object in dynamic_objects:
+        if isinstance(dynamic_object, DynamicObjectWithPerceptionResult):
+            label: LabelType = dynamic_object.estimated_object.semantic_label.label
         else:
-            label: LabelType = obj.semantic_label.label
+            label: LabelType = dynamic_object.semantic_label.label
 
         if target_labels is not None and label not in target_labels:
-            if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
-                label = obj.ground_truth_object.semantic_label.label
+            if (
+                isinstance(dynamic_object, DynamicObjectWithPerceptionResult)
+                and dynamic_object.ground_truth_object is not None
+            ):
+                label = dynamic_object.ground_truth_object.semantic_label.label
             else:
                 continue
 

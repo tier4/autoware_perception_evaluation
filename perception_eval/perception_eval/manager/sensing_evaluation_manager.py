@@ -128,7 +128,7 @@ class SensingEvaluationManager(_EvaluationManagerBase):
             List[DynamicObject]: Filtered ground truth objects.
         """
         return filter_objects(
-            objects=frame_ground_truth.objects,
+            dynamic_objects=frame_ground_truth.objects,
             is_gt=True,
             target_uuids=sensing_frame_config.target_uuids,
             transforms=frame_ground_truth.transforms,

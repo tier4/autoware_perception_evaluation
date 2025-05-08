@@ -99,12 +99,12 @@ class TestClassificationAccuracy(unittest.TestCase):
             with self.subTest(f"Test calculate Accuracy: {n + 1}"):
                 # Filter objects
                 estimated_objects = filter_objects(
-                    objects=self.dummy_estimated_objects,
+                    dynamic_objects=self.dummy_estimated_objects,
                     is_gt=False,
                     target_labels=[target_label],
                 )
                 ground_truth_objects = filter_objects(
-                    objects=self.dummy_ground_truth_objects,
+                    dynamic_objects=self.dummy_ground_truth_objects,
                     is_gt=True,
                     target_labels=[target_label],
                 )

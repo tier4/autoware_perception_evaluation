@@ -22,7 +22,7 @@ from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import LabelType
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation.matching.matching_config import MatchingConfig
-from perception_eval.evaluation.matching.objects_filter import divide_nuscene_objects_by_label
+from perception_eval.evaluation.matching.objects_filter import divide_nuscene_object_results_by_label
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
@@ -154,14 +154,14 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             filtered_frame_ground_truth (FrameGroundTruth): Ground truth frame with filtered objects.
         """
         estimated_objects = filter_objects(
-            objects=estimated_objects,
+            dynamic_objects=estimated_objects,
             is_gt=False,
             transforms=frame_ground_truth.transforms,
             **self.filtering_params,
         )
 
         frame_ground_truth.objects = filter_objects(
-            objects=frame_ground_truth.objects,
+            dynamic_objects=frame_ground_truth.objects,
             is_gt=True,
             transforms=frame_ground_truth.transforms,
             **self.filtering_params,
@@ -274,7 +274,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             ):
                 nuscene_object_results_dict: Dict[
                     LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]
-                ] = divide_nuscene_objects_by_label(frame.nuscene_object_results, target_labels)
+                ] = divide_nuscene_object_results_by_label(frame.nuscene_object_results, target_labels)
 
                 for label in target_labels:
                     nuscene_label_result: Dict[
