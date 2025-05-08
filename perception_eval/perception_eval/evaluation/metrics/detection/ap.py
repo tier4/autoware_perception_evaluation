@@ -152,9 +152,6 @@ class Ap:
         if len(precision_list) == 0:
             return 0.0
 
-        tp = np.array(self.tp_list, dtype=np.float32)
-        fp = np.array(self.fp_list, dtype=np.float32)
-
         # Create a precision envelope: ensures non-increasing precision
         # max accumulate from right to left
         precision_envelope = np.maximum.accumulate(precision_list[::-1])[::-1]
