@@ -129,7 +129,11 @@ class Ap:
         """
         precision, recall = [], []
         for i in range(len(self.tp_list)):
-            precision.append(self.tp_list[i] / (self.tp_list[i] + self.fp_list[i]))
+            denominator = self.tp_list[i] + self.fp_list[i]
+            if denominator == 0.0:
+                precision.append(0.0)
+            else:
+                precision.append(self.tp_list[i] / denominator)
             recall.append(self.tp_list[i] / self.num_ground_truth if self.num_ground_truth > 0 else 0.0)
         return precision, recall
 
