@@ -162,6 +162,9 @@ class MetricsScore:
 
         return results_by_match_config
 
+    # TODO(vividf): Refactor this function to always accept flattened input (List[DynamicObjectWithPerceptionResult]).
+    # Move multi-frame handling and scenario-level aggregation logic to a new function
+    # reference: https://github.com/tier4/autoware_perception_evaluation/pull/212#discussion_r2079100088
     def evaluate_detection(
         self,
         object_results: Union[
