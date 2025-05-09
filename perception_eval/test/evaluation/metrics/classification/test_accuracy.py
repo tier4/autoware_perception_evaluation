@@ -23,7 +23,7 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.classification.accuracy import ClassificationAccuracy
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 
 
 class AnswerAccuracy:
@@ -99,12 +99,12 @@ class TestClassificationAccuracy(unittest.TestCase):
             with self.subTest(f"Test calculate Accuracy: {n + 1}"):
                 # Filter objects
                 estimated_objects = filter_objects(
-                    objects=self.dummy_estimated_objects,
+                    dynamic_objects=self.dummy_estimated_objects,
                     is_gt=False,
                     target_labels=[target_label],
                 )
                 ground_truth_objects = filter_objects(
-                    objects=self.dummy_ground_truth_objects,
+                    dynamic_objects=self.dummy_ground_truth_objects,
                     is_gt=True,
                     target_labels=[target_label],
                 )
