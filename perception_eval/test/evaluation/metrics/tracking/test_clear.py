@@ -29,7 +29,7 @@ from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.tracking.clear import CLEAR
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -411,14 +411,14 @@ class TestCLEAR(unittest.TestCase):
 
                     # Filter previous objects
                     prev_estimated_objects = filter_objects(
-                        objects=prev_estimated_objects,
+                        dynamic_objects=prev_estimated_objects,
                         is_gt=False,
                         target_labels=[target_label],
                         max_x_position_list=self.max_x_position_list,
                         max_y_position_list=self.max_y_position_list,
                     )
                     prev_ground_truth_objects = filter_objects(
-                        objects=prev_ground_truth_objects,
+                        dynamic_objects=prev_ground_truth_objects,
                         is_gt=True,
                         target_labels=[target_label],
                         max_x_position_list=self.max_x_position_list,
@@ -450,14 +450,14 @@ class TestCLEAR(unittest.TestCase):
 
                 # Filter current objects
                 cur_estimated_objects = filter_objects(
-                    objects=cur_estimated_objects,
+                    dynamic_objects=cur_estimated_objects,
                     is_gt=False,
                     target_labels=[target_label],
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                 )
                 cur_ground_truth_objects = filter_objects(
-                    objects=cur_ground_truth_objects,
+                    dynamic_objects=cur_ground_truth_objects,
                     is_gt=True,
                     target_labels=[target_label],
                     max_x_position_list=self.max_x_position_list,
@@ -592,14 +592,14 @@ class TestCLEAR(unittest.TestCase):
 
                     # Filter previous objects
                     prev_estimated_objects = filter_objects(
-                        objects=prev_estimated_objects,
+                        dynamic_objects=prev_estimated_objects,
                         is_gt=False,
                         target_labels=self.target_labels,
                         max_x_position_list=self.max_x_position_list,
                         max_y_position_list=self.max_y_position_list,
                     )
                     prev_ground_truth_objects = filter_objects(
-                        objects=prev_ground_truth_objects,
+                        dynamic_objects=prev_ground_truth_objects,
                         is_gt=True,
                         target_labels=self.target_labels,
                         max_x_position_list=self.max_x_position_list,
@@ -631,14 +631,14 @@ class TestCLEAR(unittest.TestCase):
 
                 # Filter current objects
                 cur_estimated_objects = filter_objects(
-                    objects=cur_estimated_objects,
+                    dynamic_objects=cur_estimated_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                 )
                 cur_ground_truth_objects = filter_objects(
-                    objects=cur_ground_truth_objects,
+                    dynamic_objects=cur_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
@@ -776,14 +776,14 @@ class TestCLEAR(unittest.TestCase):
 
                     # Filter previous objects
                     prev_estimated_objects = filter_objects(
-                        objects=prev_estimated_objects,
+                        dynamic_objects=prev_estimated_objects,
                         is_gt=False,
                         target_labels=self.target_labels,
                         max_x_position_list=self.max_x_position_list,
                         max_y_position_list=self.max_y_position_list,
                     )
                     prev_ground_truth_objects = filter_objects(
-                        objects=prev_ground_truth_objects,
+                        dynamic_objects=prev_ground_truth_objects,
                         is_gt=True,
                         target_labels=self.target_labels,
                         max_x_position_list=self.max_x_position_list,
@@ -815,14 +815,14 @@ class TestCLEAR(unittest.TestCase):
 
                 # Filter current objects
                 cur_estimated_objects = filter_objects(
-                    objects=cur_estimated_objects,
+                    dynamic_objects=cur_estimated_objects,
                     is_gt=False,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                 )
                 cur_ground_truth_objects = filter_objects(
-                    objects=cur_ground_truth_objects,
+                    dynamic_objects=cur_ground_truth_objects,
                     is_gt=True,
                     target_labels=self.target_labels,
                     max_x_position_list=self.max_x_position_list,
