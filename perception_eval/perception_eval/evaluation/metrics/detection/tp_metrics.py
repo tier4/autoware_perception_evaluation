@@ -126,7 +126,7 @@ class TPMetricsAph(TPMetrics):
         if diff_heading > pi:
             diff_heading = 2.0 * pi - diff_heading
         # Clamp the range to avoid numerical errors.
-        return min(1.0, max(0.0, 1.0 - diff_heading / pi))
+        return round(max(0.0, min(1.0, 1.0 - diff_heading / pi)), 10)
 
 
 class TPMetricsConfidence(TPMetrics):

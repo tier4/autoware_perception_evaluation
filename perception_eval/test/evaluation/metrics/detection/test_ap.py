@@ -34,7 +34,6 @@ from perception_eval.evaluation.metrics.detection.ap import Ap
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.object_result_matching import get_nuscene_object_results
 from perception_eval.util.debug import get_objects_with_difference
 
@@ -134,6 +133,69 @@ class TestAp(unittest.TestCase):
             AutowareLabel.MOTORBIKE,
         ]
 
+        # Define common AnswerAPs
+        self.answer_tp_full = AnswerAP(
+            ap=0.9938271604938275,
+            tp_list=[1.0, 1.0],
+            fp_list=[0.0, 1.0],
+            precision_list=[1.0, 0.5],
+            recall_list=[1.0, 1.0],
+        )
+        self.answer_fp_full = AnswerAP(
+            ap=0.0,
+            tp_list=[0.0, 0.0],
+            fp_list=[1.0, 2.0],
+            precision_list=[0.0, 0.0],
+            recall_list=[0.0, 0.0],
+        )
+        self.answer_aph_yaw_pi_2 = AnswerAP(
+            ap=0.43621399176954734,
+            tp_list=[0.5, 0.5],
+            fp_list=[0.0, 1.0],
+            precision_list=[1.0, 0.3333333333333333],
+            recall_list=[0.5, 0.5],
+        )
+        self.answer_aph_yaw_pi = AnswerAP(
+            ap=0.0,
+            tp_list=[0.0, 0.0],
+            fp_list=[0.0, 1.0],
+            precision_list=[0.0, 0.0],
+            recall_list=[0.0, 0.0],
+        )
+        self.answer_aph_yaw_pi_4 = AnswerAP(
+            ap=0.715167548500882,
+            tp_list=[0.75, 0.75],
+            fp_list=[0.0, 1.0],
+            precision_list=[1.0, 0.42857142857142855],
+            recall_list=[0.75, 0.75],
+        )
+        self.answer_partial_yaw_3_pi_4 = AnswerAP(
+            ap=0.1567901234567901,
+            tp_list=[0.25, 0.25],
+            fp_list=[0.0, 1.0],
+            precision_list=[1.0, 0.2],
+            recall_list=[0.25, 0.25],
+        )
+
+    def _get_common_translation_patterns(self):
+        return [
+            (DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)), self.answer_tp_full, self.answer_tp_full),
+            (DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)), self.answer_fp_full, self.answer_fp_full),
+        ]
+
+    def _get_common_yaw_patterns(self):
+        return [
+            (DiffYaw(0.0, 0.0), self.answer_tp_full, self.answer_tp_full),
+            (DiffYaw(math.pi / 2.0, 0.0), self.answer_tp_full, self.answer_aph_yaw_pi_2),
+            (DiffYaw(-math.pi / 2.0, 0.0), self.answer_tp_full, self.answer_aph_yaw_pi_2),
+            (DiffYaw(math.pi, 0.0), self.answer_tp_full, self.answer_aph_yaw_pi),
+            (DiffYaw(-math.pi, 0.0), self.answer_tp_full, self.answer_aph_yaw_pi),
+            (DiffYaw(math.pi / 4.0, 0.0), self.answer_tp_full, self.answer_aph_yaw_pi_4),
+            (DiffYaw(-math.pi / 4.0, 0.0), self.answer_tp_full, self.answer_aph_yaw_pi_4),
+            (DiffYaw(3 * math.pi / 4.0, 0.0), self.answer_tp_full, self.answer_partial_yaw_3_pi_4),
+            (DiffYaw(-3 * math.pi / 4.0, 0.0), self.answer_tp_full, self.answer_partial_yaw_3_pi_4),
+        ]
+
     def _evaluate_ap_aph_for_label(
         self,
         estimated_objects: List[DynamicObject],
@@ -193,46 +255,8 @@ class TestAp(unittest.TestCase):
         test patterns:
             Given diff_distance, check if ap and aph are almost correct.
         """
-        # patterns: (diff_trans, ans_ap, ans_aph)
-        patterns: List[Tuple[DiffTranslation, AnswerAP, AnswerAP]] = [
-            # Given no diff_trans, ap and aph is 1.0.
-            (
-                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-            ),
-            # Given 1.0 diff_distance for one axis, ap and aph are equal to 0.0
-            # since both are over the metrics threshold.
-            (
-                DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-            ),
-        ]
+        patterns = self._get_common_translation_patterns()
+
         for n, (diff_trans, ans_ap, ans_aph) in enumerate(patterns):
             with self.subTest(f"Test AP and APH with center distance matching for translation difference: {n + 1}"):
                 est_objs = get_objects_with_difference(self.dummy_estimated_objects, diff_trans.diff_estimated, 0.0)
@@ -259,170 +283,7 @@ class TestAp(unittest.TestCase):
         test patterns:
             Given diff_yaw, check if ap and aph are almost correct.
         """
-        # patterns: (diff_yaw, ans_ap, ans_aph)
-        patterns: List[Tuple[DiffYaw, AnswerAP, AnswerAP]] = [
-            # Given no diff_yaw, ap and aph is 1.0.
-            (
-                DiffYaw(0.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-            ),
-            # Given vertical diff_yaw
-            # since precision and recall of aph is 0.5 times those of ap.
-            (
-                DiffYaw(math.pi / 2.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.43621399176954734,
-                    [0.5, 0.5],
-                    [0.0, 1.0],
-                    [1.0, 0.3333333333333333],
-                    [0.5, 0.5],
-                ),
-            ),
-            # Given vertical diff_yaw, aph is 0.5**2 times ap
-            # since precision and recall of aph is 0.5 times those of ap.
-            (
-                DiffYaw(-math.pi / 2.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.43621399176954734,
-                    [0.5, 0.5],
-                    [0.0, 1.0],
-                    [1.0, 0.3333333333333333],
-                    [0.5, 0.5],
-                ),
-            ),
-            # Given opposite direction, aph is 0.0.
-            (
-                DiffYaw(math.pi, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [0.0, 1.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-            ),
-            (
-                DiffYaw(-math.pi, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [0.0, 1.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-            ),
-            # Given diff_yaw is pi/4, aph is 0.75**2 times ap
-            (
-                DiffYaw(math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.715167548500882,
-                    [0.75, 0.75],
-                    [0.0, 1.0],
-                    [1.0, 0.42857142857142855],
-                    [0.75, 0.75],
-                ),
-            ),
-            (
-                DiffYaw(-math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.715167548500882,
-                    [0.75, 0.75],
-                    [0.0, 1.0],
-                    [1.0, 0.42857142857142855],
-                    [0.75, 0.75],
-                ),
-            ),
-            # Given diff_yaw is 3*pi/4, aph is 0.25**2 times ap
-            (
-                DiffYaw(3 * math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.16666666666666666,
-                    [0.25000000000000033, 0.25000000000000033],
-                    [0.0, 1.0],
-                    [1.0, 0.2000000000000002],
-                    [0.25000000000000033, 0.25000000000000033],
-                ),
-            ),
-            (
-                DiffYaw(-3 * math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.1567901234567901,
-                    [0.25, 0.25],
-                    [0.0, 1.0],
-                    [1.0, 0.2],
-                    [0.25, 0.25],
-                ),
-            ),
-        ]
+        patterns = self._get_common_yaw_patterns()
 
         for n, (diff_yaw, ans_ap, ans_aph) in enumerate(patterns):
             with self.subTest(f"Test AP and APH with center distance matching for yaw difference: {n + 1}"):
@@ -482,46 +343,8 @@ class TestAp(unittest.TestCase):
         test patterns:
             Given diff_distance, check if ap and aph are almost correct.
         """
-        # patterns: (diff_trans, ans_ap, ans_aph)
-        patterns: List[Tuple[DiffTranslation, AnswerAP, AnswerAP]] = [
-            # Given no diff_trans, ap and aph is 1.0.
-            (
-                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-            ),
-            # Given 1.0 diff_distance for one axis, ap and aph are equal to 0.0
-            # since both are over the metrics threshold.
-            (
-                DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-            ),
-        ]
+        patterns = self._get_common_translation_patterns()
+
         for n, (diff_trans, ans_ap, ans_aph) in enumerate(patterns):
             with self.subTest(f"Test AP and APH with center distance matching for translation difference: {n + 1}"):
                 est_objs = get_objects_with_difference(self.dummy_estimated_objects, diff_trans.diff_estimated, 0.0)
@@ -548,170 +371,7 @@ class TestAp(unittest.TestCase):
         test patterns:
             Given diff_yaw, check if ap and aph are almost correct.
         """
-        # patterns: (diff_yaw, ans_ap, ans_aph)
-        patterns: List[Tuple[DiffYaw, AnswerAP, AnswerAP]] = [
-            # Given no diff_yaw, ap and aph is 1.0.
-            (
-                DiffYaw(0.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-            ),
-            # Given vertical diff_yaw
-            # since precision and recall of aph is 0.5 times those of ap.
-            (
-                DiffYaw(math.pi / 2.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.43621399176954734,
-                    [0.5, 0.5],
-                    [0.0, 1.0],
-                    [1.0, 0.3333333333333333],
-                    [0.5, 0.5],
-                ),
-            ),
-            # Given vertical diff_yaw
-            # since precision and recall of aph is 0.5 times those of ap.
-            (
-                DiffYaw(-math.pi / 2.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.43621399176954734,
-                    [0.5, 0.5],
-                    [0.0, 1.0],
-                    [1.0, 0.3333333333333333],
-                    [0.5, 0.5],
-                ),
-            ),
-            # Given opposite direction, aph is 0.0.
-            (
-                DiffYaw(math.pi, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [0.0, 1.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-            ),
-            (
-                DiffYaw(-math.pi, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [0.0, 1.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-            ),
-            # Given diff_yaw is pi/4, aph is 0.75**2 times ap
-            (
-                DiffYaw(math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.715167548500882,
-                    [0.75, 0.75],
-                    [0.0, 1.0],
-                    [1.0, 0.42857142857142855],
-                    [0.75, 0.75],
-                ),
-            ),
-            (
-                DiffYaw(-math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.715167548500882,
-                    [0.75, 0.75],
-                    [0.0, 1.0],
-                    [1.0, 0.42857142857142855],
-                    [0.75, 0.75],
-                ),
-            ),
-            # Given diff_yaw is 3*pi/4, aph is 0.25**2 times ap
-            (
-                DiffYaw(3 * math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.16666666666666666,
-                    [0.25000000000000033, 0.25000000000000033],
-                    [0.0, 1.0],
-                    [1.0, 0.2000000000000002],
-                    [0.25000000000000033, 0.25000000000000033],
-                ),
-            ),
-            (
-                DiffYaw(-3 * math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.1567901234567901,
-                    [0.25, 0.25],
-                    [0.0, 1.0],
-                    [1.0, 0.2],
-                    [0.25, 0.25],
-                ),
-            ),
-        ]
+        patterns = self._get_common_yaw_patterns()
 
         for n, (diff_yaw, ans_ap, ans_aph) in enumerate(patterns):
             with self.subTest(f"Test AP and APH with center distance matching for yaw difference: {n + 1}"):
@@ -771,46 +431,8 @@ class TestAp(unittest.TestCase):
         test patterns:
             Given diff_distance, check if ap and aph are almost correct.
         """
-        # patterns: (diff_distance, ans_ap, ans_aph)
-        patterns: List[Tuple[DiffTranslation, AnswerAP, AnswerAP]] = [
-            # Given no diff_distance, IOU 2D is 0.44444
-            (
-                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-            ),
-            # Given 1.0 diff_distance for one axis, ap and aph are equal to 0.0
-            # since iou_bev is under the threshold.
-            (
-                DiffTranslation((1.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-            ),
-        ]
+        patterns = self._get_common_translation_patterns()
+
         for n, (diff_trans, ans_ap, ans_aph) in enumerate(patterns):
             with self.subTest(f"Test AP and APH with iou 2d matching for translation difference: {n + 1}"):
                 est_objs = get_objects_with_difference(self.dummy_estimated_objects, diff_trans.diff_estimated, 0.0)
@@ -837,170 +459,7 @@ class TestAp(unittest.TestCase):
         test patterns:
             Given diff_yaw, check if ap and aph are almost correct.
         """
-        # patterns: (diff_yaw, ans_ap, ans_aph)
-        patterns: List[Tuple[DiffYaw, AnswerAP, AnswerAP]] = [
-            # Given no diff_yaw, ap and aph is 1.0.
-            (
-                DiffYaw(0.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-            ),
-            # Given vertical diff_yaw
-            # since precision and recall of aph is 0.5 times those of ap.
-            (
-                DiffYaw(math.pi / 2.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.43621399176954734,
-                    [0.5, 0.5],
-                    [0.0, 1.0],
-                    [1.0, 0.3333333333333333],
-                    [0.5, 0.5],
-                ),
-            ),
-            # Given vertical diff_yaw
-            # since precision and recall of aph is 0.5 times those of ap.
-            (
-                DiffYaw(-math.pi / 2.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.43621399176954734,
-                    [0.5, 0.5],
-                    [0.0, 1.0],
-                    [1.0, 0.3333333333333333],
-                    [0.5, 0.5],
-                ),
-            ),
-            # Given opposite direction, aph is 0.0.
-            (
-                DiffYaw(math.pi, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [0.0, 1.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-            ),
-            (
-                DiffYaw(-math.pi, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [0.0, 1.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-            ),
-            # Given diff_yaw is pi/4, aph is 0.75**2 times ap
-            (
-                DiffYaw(math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.715167548500882,
-                    [0.75, 0.75],
-                    [0.0, 1.0],
-                    [1.0, 0.42857142857142855],
-                    [0.75, 0.75],
-                ),
-            ),
-            (
-                DiffYaw(-math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.715167548500882,
-                    [0.75, 0.75],
-                    [0.0, 1.0],
-                    [1.0, 0.42857142857142855],
-                    [0.75, 0.75],
-                ),
-            ),
-            # Given diff_yaw is 3*pi/4, aph is 0.25**2 times ap
-            (
-                DiffYaw(3 * math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.16666666666666666,
-                    [0.25000000000000033, 0.25000000000000033],
-                    [0.0, 1.0],
-                    [1.0, 0.2000000000000002],
-                    [0.25000000000000033, 0.25000000000000033],
-                ),
-            ),
-            (
-                DiffYaw(-3 * math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.1567901234567901,
-                    [0.25, 0.25],
-                    [0.0, 1.0],
-                    [1.0, 0.2],
-                    [0.25, 0.25],
-                ),
-            ),
-        ]
+        patterns = self._get_common_yaw_patterns()
 
         for n, (diff_yaw, ans_ap, ans_aph) in enumerate(patterns):
             with self.subTest(f"Test AP and APH with iou 2d matching for yaw difference: {n + 1}"):
@@ -1056,46 +515,8 @@ class TestAp(unittest.TestCase):
         test patterns:
             Given diff_distance, check if ap and aph are almost correct.
         """
-        # patterns: (diff_distance, ans_ap, ans_aph)
-        patterns: List[Tuple[DiffTranslation, AnswerAP, AnswerAP]] = [
-            # Given no diff_distance, IOU 3D is 0.806
-            (
-                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-            ),
-            # Given 1.0 diff_distance for one axis, ap and aph are equal to 0.0
-            # since iou_bev is under the threshold.
-            (
-                DiffTranslation((1.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-            ),
-        ]
+        patterns = self._get_common_translation_patterns()
+
         for n, (diff_trans, ans_ap, ans_aph) in enumerate(patterns):
             with self.subTest(f"Test AP and APH with iou 3d matching for translation difference: {n + 1}"):
                 est_objs = get_objects_with_difference(self.dummy_estimated_objects, diff_trans.diff_estimated, 0.0)
@@ -1122,168 +543,7 @@ class TestAp(unittest.TestCase):
         test patterns:
             Given diff_yaw, check if ap and aph are almost correct.
         """
-        # patterns: (diff_yaw, ans_ap, ans_aph)
-        patterns: List[Tuple[DiffYaw, AnswerAP, AnswerAP]] = [
-            # Given no diff_yaw, ap and aph is 1.0.
-            (
-                DiffYaw(0.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-            ),
-            # Given vertical diff_yaw
-            (
-                DiffYaw(math.pi / 2.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.43621399176954734,
-                    [0.5, 0.5],
-                    [0.0, 1.0],
-                    [1.0, 0.3333333333333333],
-                    [0.5, 0.5],
-                ),
-            ),
-            # Given vertical diff_yaw
-            (
-                DiffYaw(-math.pi / 2.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.43621399176954734,
-                    [0.5, 0.5],
-                    [0.0, 1.0],
-                    [1.0, 0.3333333333333333],
-                    [0.5, 0.5],
-                ),
-            ),
-            # Given opposite direction, aph is 0.0.
-            (
-                DiffYaw(math.pi, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [0.0, 1.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-            ),
-            (
-                DiffYaw(-math.pi, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [0.0, 1.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-            ),
-            # Given diff_yaw is pi/4
-            (
-                DiffYaw(math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.715167548500882,
-                    [0.75, 0.75],
-                    [0.0, 1.0],
-                    [1.0, 0.42857142857142855],
-                    [0.75, 0.75],
-                ),
-            ),
-            (
-                DiffYaw(-math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.715167548500882,
-                    [0.75, 0.75],
-                    [0.0, 1.0],
-                    [1.0, 0.42857142857142855],
-                    [0.75, 0.75],
-                ),
-            ),
-            # Given diff_yaw is 3*pi/4
-            (
-                DiffYaw(3 * math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.16666666666666666,
-                    [0.25000000000000033, 0.25000000000000033],
-                    [0.0, 1.0],
-                    [1.0, 0.2000000000000002],
-                    [0.25000000000000033, 0.25000000000000033],
-                ),
-            ),
-            (
-                DiffYaw(-3 * math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.1567901234567901,
-                    [0.25, 0.25],
-                    [0.0, 1.0],
-                    [1.0, 0.2],
-                    [0.25, 0.25],
-                ),
-            ),
-        ]
+        patterns = self._get_common_yaw_patterns()
 
         for n, (diff_yaw, ans_ap, ans_aph) in enumerate(patterns):
             with self.subTest(f"Test AP and APH with iou 2d matching for yaw difference: {n + 1}"):
@@ -1326,7 +586,7 @@ class TestAp(unittest.TestCase):
         self.assertEqual(ap.ap, ans_ap)
         self.assertEqual(aph.ap, ans_aph)
 
-    # Test plance distance
+    # Test plane distance
     def test_ap_plane_distance_translation_difference(self):
         """[summary]
         Test AP and APH with plane distance matching for translation difference.
@@ -1338,46 +598,8 @@ class TestAp(unittest.TestCase):
         test patterns:
             Given diff_distance, check if ap and aph are almost correct.
         """
-        # patterns: (diff_trans, ans_ap, ans_aph)
-        patterns: List[Tuple[DiffTranslation, AnswerAP, AnswerAP]] = [
-            # Given no diff_trans, ap and aph is 1.0.
-            (
-                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-            ),
-            # Given 1.0 diff_distance for one axis, ap and aph are equal to 0.0
-            # since both are over the metrics threshold.
-            (
-                DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-            ),
-        ]
+        patterns = self._get_common_translation_patterns()
+
         for n, (diff_trans, ans_ap, ans_aph) in enumerate(patterns):
             with self.subTest(f"Test AP and APH with center distance matching for translation difference: {n + 1}"):
                 est_objs = get_objects_with_difference(self.dummy_estimated_objects, diff_trans.diff_estimated, 0.0)
@@ -1404,169 +626,60 @@ class TestAp(unittest.TestCase):
         test patterns:
             Given diff_yaw, check if ap and aph are almost correct.
         """
-        # patterns: (diff_yaw, ans_ap, ans_aph)
-        # patterns: (diff_yaw, ans_ap, ans_aph)
         patterns: List[Tuple[DiffYaw, AnswerAP, AnswerAP]] = [
             # Given no diff_yaw, ap and aph is 1.0.
             (
                 DiffYaw(0.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
+                self.answer_tp_full,
+                self.answer_tp_full,
             ),
             # Given vertical diff_yaw
             (
                 DiffYaw(math.pi / 2.0, 0.0),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
+                self.answer_fp_full,
+                self.answer_fp_full,
             ),
             # Given vertical diff_yaw
             (
                 DiffYaw(-math.pi / 2.0, 0.0),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
+                self.answer_fp_full,
+                self.answer_fp_full,
             ),
             # Given opposite direction, aph is 0.0.
             (
                 DiffYaw(math.pi, 0.0),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
+                self.answer_fp_full,
+                self.answer_fp_full,
             ),
             (
                 DiffYaw(-math.pi, 0.0),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
+                self.answer_fp_full,
+                self.answer_fp_full,
             ),
             # Given diff_yaw is pi/4
             (
                 DiffYaw(math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.715167548500882,
-                    [0.75, 0.75],
-                    [0.0, 1.0],
-                    [1.0, 0.42857142857142855],
-                    [0.75, 0.75],
-                ),
+                self.answer_tp_full,
+                self.answer_aph_yaw_pi_4,
             ),
             (
                 DiffYaw(-math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.9938271604938275,
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.5],
-                    [1.0, 1.0],
-                ),
-                AnswerAP(
-                    0.715167548500882,
-                    [0.75, 0.75],
-                    [0.0, 1.0],
-                    [1.0, 0.42857142857142855],
-                    [0.75, 0.75],
-                ),
+                self.answer_tp_full,
+                self.answer_aph_yaw_pi_4,
             ),
             # Given diff_yaw is 3*pi/4
             (
                 DiffYaw(3 * math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
+                self.answer_fp_full,
+                self.answer_fp_full,
             ),
             (
                 DiffYaw(-3 * math.pi / 4.0, 0.0),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
-                AnswerAP(
-                    0.0,
-                    [0.0, 0.0],
-                    [1.0, 2.0],
-                    [0.0, 0.0],
-                    [0.0, 0.0],
-                ),
+                self.answer_fp_full,
+                self.answer_fp_full,
             ),
         ]
+
         for n, (diff_yaw, ans_ap, ans_aph) in enumerate(patterns):
             with self.subTest(f"Test AP and APH with plane distance matching for yaw difference: {n + 1}"):
                 est_objs = get_objects_with_difference(
