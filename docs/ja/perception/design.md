@@ -257,7 +257,7 @@ json_result = json.dump(dict_result)
 ### [`<class> CriticalObjectFilterConfig(...)`](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py)
 
 - 注目物体を動的決定するためのインターフェイス．
-- `PerceptionEvaluationManger`の初期化時ではなく，各フレーム毎(=callback)に指定する．
+- `PerceptionEvaluationManager`の初期化時ではなく，各フレーム毎(=callback)に指定する．
 
 | Arguments                   |             type             |    Mandatory    | Description                                                                                                                 |
 | :-------------------------- | :--------------------------: | :-------------: | :-------------------------------------------------------------------------------------------------------------------------- |
@@ -277,7 +277,7 @@ json_result = json.dump(dict_result)
 ### [`<class> PerceptionPassFailConfig(...)`](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py)
 
 - Pass / Fail を決めるためのパラメータ. Pass/Fail の判定については，**Plane distance**によって TP/FP の判定を行う．
-- `PerceptionEvaluationManger`の初期化時ではなく，各フレーム毎(=callback)に指定する．
+- `PerceptionEvaluationManager`の初期化時ではなく，各フレーム毎(=callback)に指定する．
 
 | Arguments                   |             type             | Mandatory | Description                                            |
 | :-------------------------- | :--------------------------: | :-------: | :----------------------------------------------------- |

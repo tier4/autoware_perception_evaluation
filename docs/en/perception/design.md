@@ -241,7 +241,7 @@
 ### `<class> CriticalObjectFilterConfig(...)`
 
 - An interface to determine target objects dynamically
-- Specify in every frame, not in initialization of `PerceptionEvaluationManger`
+- Specify in every frame, not in initialization of `PerceptionEvaluationManager`
 - See [perception_eval/evaluation/result/perception_frame_config](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py)
 
 | Arguments                   |             type             |    Mandatory    | Description                                                                                                     |

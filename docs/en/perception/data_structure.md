@@ -123,7 +123,7 @@ Call `<func> get_object_results(...)` function to generate a set of matching pai
 For the details，see [perception_eval/evaluation/result/object_result.py](../../../perception_eval/perception_eval/evaluation/result/object_result.py)
 
 ```python
-from perception_eval.evaluation.result.object_results import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 
 # REQUIRED:
 #   estimated_objects: List[ObjectType]

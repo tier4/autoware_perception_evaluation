@@ -130,41 +130,6 @@ class _TrackingMetricsBase(ABC):
     def metrics_field(self) -> List[str]:
         return self._metrics_filed
 
-    def get_precision_recall_list(
-        self,
-        tp_list: List[float],
-        ground_truth_objects_num: int,
-    ) -> Tuple[List[float], List[float]]:
-        """Calculate precision recall.
-
-        Args:
-            tp_list (List[float]): TP results list.
-            ground_truth_objects_num (int): Number of ground truths.
-
-        Returns:
-            Tuple[List[float], List[float]]: tp_list and fp_list
-
-        Examples:
-            >>> tp_list = [1, 1, 2, 3]
-            >>> ground_truth_num = 4
-            >>> precision_list, recall_list = self.get_precision_recall(tp_list, ground_truth_num)
-            >>> precision_list
-            [1.0, 0.5, 0.67, 0.75]
-            >>> recall_list
-            [0.25, 0.25, 0.5, 0.75]
-        """
-        precisions_list: List[float] = [0.0 for i in range(len(tp_list))]
-        recalls_list: List[float] = [0.0 for i in range(len(tp_list))]
-
-        for i in range(len(precisions_list)):
-            precisions_list[i] = float(tp_list[i]) / (i + 1)
-            if ground_truth_objects_num > 0:
-                recalls_list[i] = float(tp_list[i]) / ground_truth_objects_num
-            else:
-                recalls_list[i] = 0.0
-
-        return precisions_list, recalls_list
-
     def __str__(self) -> str:
         """__str__ method
 

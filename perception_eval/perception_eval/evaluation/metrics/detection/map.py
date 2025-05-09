@@ -32,7 +32,7 @@ class Map:
         map (float): mAP value.
 
     Args:
-        object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results
+        object_results_dict (Dict[LabelType, List[DynamicObjectWithPerceptionResult]]): The [label, object results] dictionary
         target_labels (List[LabelType]): Target labels to evaluate mAP
         matching_mode (MatchingMode): Matching mode like distance between the center of
             the object, 3d IoU.
@@ -49,12 +49,14 @@ class Map:
         num_ground_truth_dict: Dict[LabelType, int],
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
-        matching_threshold_list: List[float],
+        matching_threshold_list: List[List[float]],
         is_detection_2d: bool = False,
     ) -> None:
         self.target_labels: List[LabelType] = target_labels
         self.matching_mode: MatchingMode = matching_mode
-        self.matching_threshold_list: List[float] = matching_threshold_list
+        # TODO(vividf): matching_threshold_list to matching_thresholds
+        # Also thresholds should be refactor to List[float]
+        self.matching_threshold_list: List[List[float]] = matching_threshold_list
         self.is_detection_2d: bool = is_detection_2d
 
         # calculate AP & APH
@@ -69,7 +71,7 @@ class Map:
                 num_ground_truth=num_ground_truth,
                 target_labels=[target_label],
                 matching_mode=matching_mode,
-                matching_threshold_list=[matching_threshold],
+                matching_threshold=matching_threshold,
             )
             self.aps.append(ap_)
 
@@ -80,7 +82,7 @@ class Map:
                     num_ground_truth=num_ground_truth,
                     target_labels=[target_label],
                     matching_mode=matching_mode,
-                    matching_threshold_list=[matching_threshold],
+                    matching_threshold=matching_threshold,
                 )
                 self.aphs.append(aph_)
 
@@ -97,40 +99,39 @@ class Map:
         Returns:
             str: Formatted string.
         """
+        str_: str = ""
+        str_ += f"\nmAP: {self.map:.3f}, "
+        str_ += f"mAPH: {self.maph:.3f} " if not self.is_detection_2d else ""
+        str_ += f"({self.matching_mode.value})\n\n"
 
-        str_: str = "\n"
-        str_ += f"mAP: {self.map:.3f}"
-        str_ += f", mAPH: {self.maph:.3f} " if not self.is_detection_2d else " "
-        str_ += f"({self.matching_mode.value})\n"
-        # Table
-        str_ += "\n"
-        # label
-        str_ += "|      Label |"
-        target_str: str
+        # Header
+        str_ += "|      Label      |"
         for ap_ in self.aps:
-            # len labels and threshold_list is always 1
-            str_ += f" {ap_.target_labels[0].value}({ap_.matching_threshold_list[0]}) | "
+            label = ap_.target_labels[0].value
+            threshold = ap_.matching_threshold
+            str_ += f" {label}({threshold}) |"
         str_ += "\n"
-        str_ += "| :--------: |"
+
+        # Separator
+        str_ += "|:---------------:|" + ":------------:|" * len(self.aps) + "\n"
+
+        # Predict_num
+        str_ += "|   Predict_num   |"
         for ap_ in self.aps:
-            str_ += " :---: |"
+            str_ += f" {ap_.objects_results_num:^12} |"
         str_ += "\n"
-        str_ += "| Predict_num |"
+
+        # AP
+        str_ += "|       AP        |"
         for ap_ in self.aps:
-            str_ += f" {ap_.objects_results_num} |"
-        # Each label result
+            str_ += f" {ap_.ap:^12.3f} |"
         str_ += "\n"
-        str_ += "|         AP |"
-        for ap_ in self.aps:
-            str_ += f" {ap_.ap:.3f} | "
-        str_ += "\n"
+
+        # APH
         if not self.is_detection_2d:
-            str_ += "|        APH |"
+            str_ += "|      APH        |"
             for aph_ in self.aphs:
-                target_str = ""
-                for target in aph_.target_labels:
-                    target_str += target.value
-                str_ += f" {aph_.ap:.3f} | "
+                str_ += f" {aph_.ap:^12.3f} |"
             str_ += "\n"
 
         return str_
