@@ -125,10 +125,7 @@ class AnswerAP:
 
 class TestAp(unittest.TestCase):
     def setUp(self):
-        self.dummy_estimated_objects: List[DynamicObject] = []
-        self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
-
         self.evaluation_task: EvaluationTask = EvaluationTask.DETECTION
         self.target_labels: List[AutowareLabel] = [
             AutowareLabel.CAR,
@@ -136,10 +133,52 @@ class TestAp(unittest.TestCase):
             AutowareLabel.PEDESTRIAN,
             AutowareLabel.MOTORBIKE,
         ]
-        self.max_x_position_list: List[float] = [100.0, 100.0, 100.0, 100.0]
-        self.max_y_position_list: List[float] = [100.0, 100.0, 100.0, 100.0]
-        self.min_point_numbers: List[int] = [0, 0, 0, 0]
+        self.matching_threshold = 0.5
 
+    def _evaluate_ap_aph_for_label(
+        self,
+        estimated_objects: List[DynamicObject],
+        ground_truth_objects: List[DynamicObject],
+        label: AutowareLabel,
+        matching_mode: MatchingMode,
+    ) -> Tuple[Ap, Ap]:
+        metrics_config = MetricsScoreConfig(
+            evaluation_task="detection",
+            target_labels=self.target_labels,
+            center_distance_thresholds=[self.matching_threshold],
+            center_distance_bev_thresholds=[self.matching_threshold],
+        )
+        object_results = get_nuscene_object_results(
+            evaluation_task=self.evaluation_task,
+            estimated_objects=estimated_objects,
+            ground_truth_objects=ground_truth_objects,
+            metrics_config=metrics_config,
+        )
+        object_results_by_label = divide_nuscene_object_results_by_label(object_results, self.target_labels)
+        num_gt_dict = divide_objects_to_num(ground_truth_objects, self.target_labels)
+
+        result = object_results_by_label[label][(matching_mode, self.matching_threshold)]
+        num_gt = num_gt_dict[label]
+
+        ap = Ap(
+            tp_metrics=TPMetricsAp(),
+            object_results=result,
+            num_ground_truth=num_gt,
+            target_labels=label,
+            matching_mode=matching_mode,
+            matching_threshold=self.matching_threshold,
+        )
+        aph = Ap(
+            tp_metrics=TPMetricsAph(),
+            object_results=result,
+            num_ground_truth=num_gt,
+            target_labels=label,
+            matching_mode=matching_mode,
+            matching_threshold=self.matching_threshold,
+        )
+        return ap, aph
+
+    # Test center distance
     def test_ap_center_distance_translation_difference(self):
         """[summary]
         Test AP and APH with center distance matching for translation difference.
@@ -193,55 +232,12 @@ class TestAp(unittest.TestCase):
         ]
         for n, (diff_trans, ans_ap, ans_aph) in enumerate(patterns):
             with self.subTest(f"Test AP and APH with center distance matching for translation difference: {n + 1}"):
-                diff_trans_estimated_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_estimated_objects,
-                    diff_distance=diff_trans.diff_estimated,
-                    diff_yaw=0.0,
+                est_objs = get_objects_with_difference(self.dummy_estimated_objects, diff_trans.diff_estimated, 0.0)
+                gt_objs = get_objects_with_difference(
+                    self.dummy_ground_truth_objects, diff_trans.diff_ground_truth, 0.0
                 )
-                diff_trans_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=diff_trans.diff_ground_truth,
-                    diff_yaw=0.0,
-                )
-
-                metrics_config = MetricsScoreConfig(
-                    evaluation_task="detection",
-                    target_labels=self.target_labels,
-                    center_distance_bev_thresholds=[0.5],
-                )
-                nuscene_object_results = get_nuscene_object_results(
-                    evaluation_task=self.evaluation_task,
-                    estimated_objects=diff_trans_estimated_objects,
-                    ground_truth_objects=diff_trans_ground_truth_objects,
-                    metrics_config=metrics_config,
-                )
-
-                nuscene_object_results_dict = divide_nuscene_object_results_by_label(
-                    nuscene_object_results,
-                    self.target_labels,
-                )
-
-                object_results = nuscene_object_results_dict[AutowareLabel.CAR][(MatchingMode.CENTERDISTANCEBEV, 0.5)]
-
-                num_gt_dict = divide_objects_to_num(diff_trans_ground_truth_objects, self.target_labels)
-                num_ground_truth: int = num_gt_dict[AutowareLabel.CAR]
-
-                ap: Ap = Ap(
-                    tp_metrics=TPMetricsAp(),
-                    object_results=object_results,
-                    num_ground_truth=num_ground_truth,
-                    target_labels=AutowareLabel.CAR,
-                    matching_mode=MatchingMode.CENTERDISTANCEBEV,
-                    matching_threshold=0.5,
-                )
-
-                aph: Ap = Ap(
-                    tp_metrics=TPMetricsAph(),
-                    object_results=object_results,
-                    num_ground_truth=num_ground_truth,
-                    target_labels=AutowareLabel.CAR,
-                    matching_mode=MatchingMode.CENTERDISTANCEBEV,
-                    matching_threshold=0.5,
+                ap, aph = self._evaluate_ap_aph_for_label(
+                    est_objs, gt_objs, AutowareLabel.CAR, MatchingMode.CENTERDISTANCE
                 )
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
@@ -427,54 +423,14 @@ class TestAp(unittest.TestCase):
 
         for n, (diff_yaw, ans_ap, ans_aph) in enumerate(patterns):
             with self.subTest(f"Test AP and APH with center distance matching for yaw difference: {n + 1}"):
-                diff_yaw_estimated_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_estimated_objects,
-                    diff_distance=(0.0, 0.0, 0.0),
-                    diff_yaw=diff_yaw.diff_estimated,
+                est_objs = get_objects_with_difference(
+                    self.dummy_estimated_objects, (0.0, 0.0, 0.0), diff_yaw.diff_estimated
                 )
-                diff_yaw_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=(0.0, 0.0, 0.0),
-                    diff_yaw=diff_yaw.diff_ground_truth,
+                gt_objs = get_objects_with_difference(
+                    self.dummy_ground_truth_objects, (0.0, 0.0, 0.0), diff_yaw.diff_ground_truth
                 )
-
-                metrics_config = MetricsScoreConfig(
-                    evaluation_task="detection",
-                    target_labels=self.target_labels,
-                    center_distance_bev_thresholds=[0.5],
-                )
-                nuscene_object_results = get_nuscene_object_results(
-                    evaluation_task=self.evaluation_task,
-                    estimated_objects=diff_yaw_estimated_objects,
-                    ground_truth_objects=diff_yaw_ground_truth_objects,
-                    metrics_config=metrics_config,
-                )
-
-                nuscene_object_results_dict = divide_nuscene_object_results_by_label(
-                    nuscene_object_results,
-                    self.target_labels,
-                )
-
-                object_results = nuscene_object_results_dict[AutowareLabel.CAR][(MatchingMode.CENTERDISTANCEBEV, 0.5)]
-
-                num_gt_dict = divide_objects_to_num(diff_yaw_ground_truth_objects, self.target_labels)
-                num_ground_truth: int = num_gt_dict[AutowareLabel.CAR]
-
-                ap: Ap = Ap(
-                    tp_metrics=TPMetricsAp(),
-                    object_results=object_results,
-                    num_ground_truth=num_ground_truth,
-                    target_labels=AutowareLabel.CAR,
-                    matching_mode=MatchingMode.CENTERDISTANCEBEV,
-                    matching_threshold=0.5,
-                )
-                aph: Ap = Ap(
-                    tp_metrics=TPMetricsAph(),
-                    object_results=object_results,
-                    num_ground_truth=num_ground_truth,
-                    target_labels=AutowareLabel.CAR,
-                    matching_mode=MatchingMode.CENTERDISTANCEBEV,
-                    matching_threshold=0.5,
+                ap, aph = self._evaluate_ap_aph_for_label(
+                    est_objs, gt_objs, AutowareLabel.CAR, MatchingMode.CENTERDISTANCE
                 )
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
@@ -482,463 +438,321 @@ class TestAp(unittest.TestCase):
                 self.assertEqual(out_ap, ans_ap, f"out_ap = {str(out_ap)}, ans_ap = {str(ans_ap)}")
                 self.assertEqual(out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}")
 
-    # def test_ap_center_distance_random_objects(self):
-    #     """[summary]
-    #     Test AP and APH with center distance matching for random objects.
+    def test_ap_center_distance_random_objects(self):
+        """[summary]
+        Test AP and APH with center distance matching for random objects.
 
-    #     test objects:
-    #         dummy_estimated_objects (List[DynamicObject])
-    #         dummy_ground_truth_objects (List[DynamicObject])
+        test objects:
+            dummy_estimated_objects (List[DynamicObject])
+            dummy_ground_truth_objects (List[DynamicObject])
 
-    #     test target_labels:
-    #         MOTORBIKE
+        test target_labels:
+            MOTORBIKE
 
-    #     test patterns:
-    #         Check if ap and aph are almost correct.
-    #     """
-    #     # ap and aph is nan since no MOTORBIKE in the estimated_objects
-    #     ans_ap: float = 0.0
-    #     ans_aph: float = 0.0
+        test patterns:
+            Check if ap and aph are almost correct.
+        """
+        # ap and aph is nan since no MOTORBIKE in the estimated_objects
+        ans_ap = 0.0
+        ans_aph = 0.0
 
-    #     metrics_config = MetricsScoreConfig(
-    #         evaluation_task="detection",
-    #         target_labels=self.target_labels,
-    #         center_distance_bev_thresholds=[0.5],
-    #     )
-    #     object_results_dict = get_nuscene_object_results(
-    #         evaluation_task=self.evaluation_task,
-    #         estimated_objects=self.dummy_estimated_objects,
-    #         ground_truth_objects=self.dummy_ground_truth_objects,
-    #         metrics_config=metrics_config,
-    #     )
+        ap, aph = self._evaluate_ap_aph_for_label(
+            self.dummy_estimated_objects,
+            self.dummy_ground_truth_objects,
+            AutowareLabel.MOTORBIKE,
+            MatchingMode.CENTERDISTANCE,
+        )
 
-    #     print("debug 2: object_results_dict", object_results_dict)
+        self.assertAlmostEqual(ap.ap, ans_ap)
+        self.assertAlmostEqual(aph.ap, ans_aph)
 
-    #     object_results = object_results_dict[(MatchingMode.CENTERDISTANCEBEV, 0.5)]
+    # Test BEV center distance
+    def test_ap_center_distance_bev_translation_difference(self):
+        """[summary]
+        Test AP and APH with center distance matching for translation difference.
 
-    #     num_ground_truth: int = len(dummy_ground_truth_objects)
-    #     print("num_ground_truth: ", num_ground_truth)
-    #     ap: Ap = Ap(
-    #         tp_metrics=TPMetricsAp(),
-    #         object_results=[],
-    #         num_ground_truth=num_ground_truth,
-    #         target_labels=[AutowareLabel.MOTORBIKE],
-    #         matching_mode=MatchingMode.CENTERDISTANCEBEV,
-    #         matching_threshold=0.5,
-    #     )
-    #     aph: Ap = Ap(
-    #         tp_metrics=TPMetricsAph(),
-    #         object_results=[],
-    #         num_ground_truth=num_ground_truth,
-    #         target_labels=[AutowareLabel.MOTORBIKE],
-    #         matching_mode=MatchingMode.CENTERDISTANCEBEV,
-    #         matching_threshold=0.5,
-    #     )
+        test objects:
+            dummy_ground_truth_objects (List[DynamicObject])
+            dummy_ground_truth_objects with diff_distance (List[DynamicObject])
 
-    #     print("DEBUG out_ap:", ap.ap)
-    #     print("DEBUG out_aph:", aph.ap)
-    #     self.assertAlmostEqual(ap.ap, ans_ap)
-    #     self.assertAlmostEqual(aph.ap, ans_aph)
+        test patterns:
+            Given diff_distance, check if ap and aph are almost correct.
+        """
+        # patterns: (diff_trans, ans_ap, ans_aph)
+        patterns: List[Tuple[DiffTranslation, AnswerAP, AnswerAP]] = [
+            # Given no diff_trans, ap and aph is 1.0.
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+            ),
+            # Given 1.0 diff_distance for one axis, ap and aph are equal to 0.0
+            # since both are over the metrics threshold.
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+            ),
+        ]
+        for n, (diff_trans, ans_ap, ans_aph) in enumerate(patterns):
+            with self.subTest(f"Test AP and APH with center distance matching for translation difference: {n + 1}"):
+                est_objs = get_objects_with_difference(self.dummy_estimated_objects, diff_trans.diff_estimated, 0.0)
+                gt_objs = get_objects_with_difference(
+                    self.dummy_ground_truth_objects, diff_trans.diff_ground_truth, 0.0
+                )
+                ap, aph = self._evaluate_ap_aph_for_label(
+                    est_objs, gt_objs, AutowareLabel.CAR, MatchingMode.CENTERDISTANCEBEV
+                )
+                out_ap: AnswerAP = AnswerAP.from_ap(ap)
+                out_aph: AnswerAP = AnswerAP.from_ap(aph)
 
-    # def test_ap_center_distance_bev_translation_difference(self):
-    #     """[summary]
-    #     Test AP and APH with center distance bev matching for translation difference.
+                self.assertEqual(out_ap, ans_ap, f"out_ap = {str(out_ap)}, ans_ap = {str(ans_ap)}")
+                self.assertEqual(out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}")
 
-    #     test objects:
-    #         dummy_ground_truth_objects (List[DynamicObject])
-    #         dummy_ground_truth_objects with diff_distance (List[DynamicObject])
+    def test_ap_center_distance_bev_yaw_difference(self):
+        """[summary]
+        Test AP and APH with center distance matching for yaw difference.
 
-    #     test patterns:
-    #         Given diff_distance, check if ap and aph are almost correct.
-    #     """
-    #     # patterns: (diff_trans, ans_ap, ans_aph)
-    #     patterns: List[Tuple[DiffTranslation, AnswerAP, AnswerAP]] = [
-    #         # Given no diff_trans, ap and aph is 1.0.
-    #         (
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             AnswerAP(
-    #                 1.0,
-    #                 [1.0, 1.0],
-    #                 [0.0, 1.0],
-    #                 [1.0, 0.5],
-    #                 [1.0, 1.0],
-    #                 [0.5, 1.0, 1.0],
-    #                 [1.0, 1.0, 0.0],
-    #             ),
-    #             AnswerAP(
-    #                 1.0,
-    #                 [1.0, 1.0],
-    #                 [0.0, 1.0],
-    #                 [1.0, 0.5],
-    #                 [1.0, 1.0],
-    #                 [0.5, 1.0, 1.0],
-    #                 [1.0, 1.0, 0.0],
-    #             ),
-    #         ),
-    #         # Given 1.0 diff_distance for one axis, ap and aph are equal to 0.0
-    #         # since both are over the metrics threshold.
-    #         (
-    #             DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
-    #             AnswerAP(
-    #                 0.0,
-    #                 [0.0, 0.0],
-    #                 [1.0, 2.0],
-    #                 [0.0, 0.0],
-    #                 [0.0, 0.0],
-    #                 [0.0, 0.0],
-    #                 [0.0, 0.0],
-    #             ),
-    #             AnswerAP(
-    #                 0.0,
-    #                 [0.0, 0.0],
-    #                 [1.0, 2.0],
-    #                 [0.0, 0.0],
-    #                 [0.0, 0.0],
-    #                 [0.0, 0.0],
-    #                 [0.0, 0.0],
-    #             ),
-    #         ),
-    #     ]
-    #     for n, (diff_trans, ans_ap, ans_aph) in enumerate(patterns):
-    #         with self.subTest(f"Test AP and APH with center distance matching for translation difference: {n + 1}"):
-    #             diff_trans_estimated_objects: List[DynamicObject] = get_objects_with_difference(
-    #                 ground_truth_objects=self.dummy_estimated_objects,
-    #                 diff_distance=diff_trans.diff_estimated,
-    #                 diff_yaw=0.0,
-    #             )
-    #             diff_trans_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-    #                 ground_truth_objects=self.dummy_ground_truth_objects,
-    #                 diff_distance=diff_trans.diff_ground_truth,
-    #                 diff_yaw=0.0,
-    #             )
+        test objects:
+            dummy_ground_truth_objects (List[DynamicObject])
+            dummy_ground_truth_objects with diff_distance (List[DynamicObject])
 
-    #             object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-    #                 evaluation_task=self.evaluation_task,
-    #                 estimated_objects=diff_trans_estimated_objects,
-    #                 ground_truth_objects=diff_trans_ground_truth_objects,
-    #             )
+        test patterns:
+            Given diff_yaw, check if ap and aph are almost correct.
+        """
+        # patterns: (diff_yaw, ans_ap, ans_aph)
+        patterns: List[Tuple[DiffYaw, AnswerAP, AnswerAP]] = [
+            # Given no diff_yaw, ap and aph is 1.0.
+            (
+                DiffYaw(0.0, 0.0),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+            ),
+            # Given vertical diff_yaw, aph is 0.5**2 times ap
+            # since precision and recall of aph is 0.5 times those of ap.
+            (
+                DiffYaw(math.pi / 2.0, 0.0),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+                AnswerAP(
+                    0.43621399176954734,
+                    [0.5, 0.5],
+                    [0.0, 1.0],
+                    [1.0, 0.3333333333333333],
+                    [0.5, 0.5],
+                ),
+            ),
+            # Given vertical diff_yaw, aph is 0.5**2 times ap
+            # since precision and recall of aph is 0.5 times those of ap.
+            (
+                DiffYaw(-math.pi / 2.0, 0.0),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+                AnswerAP(
+                    0.43621399176954734,
+                    [0.5, 0.5],
+                    [0.0, 1.0],
+                    [1.0, 0.3333333333333333],
+                    [0.5, 0.5],
+                ),
+            ),
+            # Given opposite direction, aph is 0.0.
+            (
+                DiffYaw(math.pi, 0.0),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [0.0, 1.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+            ),
+            (
+                DiffYaw(-math.pi, 0.0),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [0.0, 1.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+            ),
+            # Given diff_yaw is pi/4, aph is 0.75**2 times ap
+            (
+                DiffYaw(math.pi / 4.0, 0.0),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+                AnswerAP(
+                    0.715167548500882,
+                    [0.75, 0.75],
+                    [0.0, 1.0],
+                    [1.0, 0.42857142857142855],
+                    [0.75, 0.75],
+                ),
+            ),
+            (
+                DiffYaw(-math.pi / 4.0, 0.0),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+                AnswerAP(
+                    0.715167548500882,
+                    [0.75, 0.75],
+                    [0.0, 1.0],
+                    [1.0, 0.42857142857142855],
+                    [0.75, 0.75],
+                ),
+            ),
+            # Given diff_yaw is 3*pi/4, aph is 0.25**2 times ap
+            (
+                DiffYaw(3 * math.pi / 4.0, 0.0),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+                AnswerAP(
+                    0.16666666666666666,
+                    [0.25000000000000033, 0.25000000000000033],
+                    [0.0, 1.0],
+                    [1.0, 0.2000000000000002],
+                    [0.25000000000000033, 0.25000000000000033],
+                ),
+            ),
+            (
+                DiffYaw(-3 * math.pi / 4.0, 0.0),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+                AnswerAP(
+                    0.1567901234567901,
+                    [0.25, 0.25],
+                    [0.0, 1.0],
+                    [1.0, 0.2],
+                    [0.25, 0.25],
+                ),
+            ),
+        ]
 
-    #             num_ground_truth: int = len(diff_trans_ground_truth_objects)
+        for n, (diff_yaw, ans_ap, ans_aph) in enumerate(patterns):
+            with self.subTest(f"Test AP and APH with center distance matching for yaw difference: {n + 1}"):
+                est_objs = get_objects_with_difference(
+                    self.dummy_estimated_objects, (0.0, 0.0, 0.0), diff_yaw.diff_estimated
+                )
+                gt_objs = get_objects_with_difference(
+                    self.dummy_ground_truth_objects, (0.0, 0.0, 0.0), diff_yaw.diff_ground_truth
+                )
+                ap, aph = self._evaluate_ap_aph_for_label(
+                    est_objs, gt_objs, AutowareLabel.CAR, MatchingMode.CENTERDISTANCEBEV
+                )
+                out_ap: AnswerAP = AnswerAP.from_ap(ap)
+                out_aph: AnswerAP = AnswerAP.from_ap(aph)
 
-    #             ap: Ap = Ap(
-    #                 tp_metrics=TPMetricsAp(),
-    #                 object_results=object_results,
-    #                 num_ground_truth=num_ground_truth,
-    #                 target_labels=self.target_labels,
-    #                 matching_mode=MatchingMode.CENTERDISTANCEBEV,
-    #                 matching_threshold=0.5,
-    #             )
+                self.assertEqual(out_ap, ans_ap, f"out_ap = {str(out_ap)}, ans_ap = {str(ans_ap)}")
+                self.assertEqual(out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}")
 
-    #             aph: Ap = Ap(
-    #                 tp_metrics=TPMetricsAph(),
-    #                 object_results=object_results,
-    #                 num_ground_truth=num_ground_truth,
-    #                 target_labels=self.target_labels,
-    #                 matching_mode=MatchingMode.CENTERDISTANCEBEV,
-    #                 matching_threshold=0.5,
-    #             )
-    #             out_ap: AnswerAP = AnswerAP.from_ap(ap)
-    #             out_aph: AnswerAP = AnswerAP.from_ap(aph)
-    #             self.assertEqual(out_ap, ans_ap, f"out_ap = {str(out_ap)}, ans_ap = {str(ans_ap)}")
-    #             self.assertEqual(out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}")
+    def test_ap_center_distance_bev_random_objects(self):
+        """[summary]
+        Test AP and APH with center distance matching for random objects.
 
-    # def test_ap_center_distance_bev_yaw_difference(self):
-    #     """[summary]
-    #     Test AP and APH with center distance bev matching for yaw difference.
+        test objects:
+            dummy_estimated_objects (List[DynamicObject])
+            dummy_ground_truth_objects (List[DynamicObject])
 
-    #     test objects:
-    #         dummy_ground_truth_objects (List[DynamicObject])
-    #         dummy_ground_truth_objects with diff_distance (List[DynamicObject])
+        test target_labels:
+            MOTORBIKE
 
-    #     test patterns:
-    #         Given diff_yaw, check if ap and aph are almost correct.
-    #     """
-    #     # patterns: (diff_yaw, ans_ap, ans_aph)
-    #     patterns: List[Tuple[DiffYaw, AnswerAP, AnswerAP]] = [
-    #         # Given no diff_yaw, ap and aph is 1.0.
-    #         (
-    #             DiffYaw(0.0, 0.0),
-    #             AnswerAP(
-    #                 1.0,
-    #                 [1.0, 1.0],
-    #                 [0.0, 1.0],
-    #                 [1.0, 0.5],
-    #                 [1.0, 1.0],
-    #                 [0.5, 1.0, 1.0],
-    #                 [1.0, 1.0, 0.0],
-    #             ),
-    #             AnswerAP(
-    #                 1.0,
-    #                 [1.0, 1.0],
-    #                 [0.0, 1.0],
-    #                 [1.0, 0.5],
-    #                 [1.0, 1.0],
-    #                 [0.5, 1.0, 1.0],
-    #                 [1.0, 1.0, 0.0],
-    #             ),
-    #         ),
-    #         # Given vertical diff_yaw, aph is 0.5**2 times ap
-    #         # since precision and recall of aph is 0.5 times those of ap.
-    #         (
-    #             DiffYaw(math.pi / 2.0, 0.0),
-    #             AnswerAP(
-    #                 1.0,
-    #                 [1.0, 1.0],
-    #                 [0.0, 1.0],
-    #                 [1.0, 0.5],
-    #                 [1.0, 1.0],
-    #                 [0.5, 1.0, 1.0],
-    #                 [1.0, 1.0, 0.0],
-    #             ),
-    #             AnswerAP(
-    #                 0.25,
-    #                 [0.5, 0.5],
-    #                 [0.0, 1.0],
-    #                 [0.5, 0.25],
-    #                 [0.5, 0.5],
-    #                 [0.25, 0.5, 0.5],
-    #                 [0.5, 0.5, 0.0],
-    #             ),
-    #         ),
-    #         # Given vertical diff_yaw, aph is 0.5**2 times ap
-    #         # since precision and recall of aph is 0.5 times those of ap.
-    #         (
-    #             DiffYaw(-math.pi / 2.0, 0.0),
-    #             AnswerAP(
-    #                 1.0,
-    #                 [1.0, 1.0],
-    #                 [0.0, 1.0],
-    #                 [1.0, 0.5],
-    #                 [1.0, 1.0],
-    #                 [0.5, 1.0, 1.0],
-    #                 [1.0, 1.0, 0.0],
-    #             ),
-    #             AnswerAP(
-    #                 0.25,
-    #                 [0.5, 0.5],
-    #                 [0.0, 1.0],
-    #                 [0.5, 0.25],
-    #                 [0.5, 0.5],
-    #                 [0.25, 0.5, 0.5],
-    #                 [0.5, 0.5, 0.0],
-    #             ),
-    #         ),
-    #         # Given opposite direction, aph is 0.0.
-    #         (
-    #             DiffYaw(math.pi, 0.0),
-    #             AnswerAP(
-    #                 1.0,
-    #                 [1.0, 1.0],
-    #                 [0.0, 1.0],
-    #                 [1.0, 0.5],
-    #                 [1.0, 1.0],
-    #                 [0.5, 1.0, 1.0],
-    #                 [1.0, 1.0, 0.0],
-    #             ),
-    #             AnswerAP(
-    #                 0.0,
-    #                 [0.0, 0.0],
-    #                 [0.0, 1.0],
-    #                 [0.0, 0.0],
-    #                 [0.0, 0.0],
-    #                 [0.0, 0.0],
-    #                 [0.0, 0.0],
-    #             ),
-    #         ),
-    #         (
-    #             DiffYaw(-math.pi, 0.0),
-    #             AnswerAP(
-    #                 1.0,
-    #                 [1.0, 1.0],
-    #                 [0.0, 1.0],
-    #                 [1.0, 0.5],
-    #                 [1.0, 1.0],
-    #                 [0.5, 1.0, 1.0],
-    #                 [1.0, 1.0, 0.0],
-    #             ),
-    #             AnswerAP(
-    #                 0.0,
-    #                 [0.0, 0.0],
-    #                 [0.0, 1.0],
-    #                 [0.0, 0.0],
-    #                 [0.0, 0.0],
-    #                 [0.0, 0.0],
-    #                 [0.0, 0.0],
-    #             ),
-    #         ),
-    #         # # Given diff_yaw is pi/4, aph is 0.75**2 times ap
-    #         (
-    #             DiffYaw(math.pi / 4.0, 0.0),
-    #             AnswerAP(
-    #                 1.0,
-    #                 [1.0, 1.0],
-    #                 [0.0, 1.0],
-    #                 [1.0, 0.5],
-    #                 [1.0, 1.0],
-    #                 [0.5, 1.0, 1.0],
-    #                 [1.0, 1.0, 0.0],
-    #             ),
-    #             AnswerAP(
-    #                 0.5625,
-    #                 [0.75, 0.75],
-    #                 [0.0, 1.0],
-    #                 [0.75, 0.375],
-    #                 [0.75, 0.75],
-    #                 [0.375, 0.75, 0.75],
-    #                 [0.75, 0.75, 0.0],
-    #             ),
-    #         ),
-    #         (
-    #             DiffYaw(-math.pi / 4.0, 0.0),
-    #             AnswerAP(
-    #                 1.0,
-    #                 [1.0, 1.0],
-    #                 [0.0, 1.0],
-    #                 [1.0, 0.5],
-    #                 [1.0, 1.0],
-    #                 [0.5, 1.0, 1.0],
-    #                 [1.0, 1.0, 0.0],
-    #             ),
-    #             AnswerAP(
-    #                 0.5625,
-    #                 [0.75, 0.75],
-    #                 [0.0, 1.0],
-    #                 [0.75, 0.375],
-    #                 [0.75, 0.75],
-    #                 [0.375, 0.75, 0.75],
-    #                 [0.75, 0.75, 0.0],
-    #             ),
-    #         ),
-    #         # # Given diff_yaw is 3*pi/4, aph is 0.25**2 times ap
-    #         (
-    #             DiffYaw(3 * math.pi / 4.0, 0.0),
-    #             AnswerAP(
-    #                 1.0,
-    #                 [1.0, 1.0],
-    #                 [0.0, 1.0],
-    #                 [1.0, 0.5],
-    #                 [1.0, 1.0],
-    #                 [0.5, 1.0, 1.0],
-    #                 [1.0, 1.0, 0.0],
-    #             ),
-    #             AnswerAP(
-    #                 0.0625,
-    #                 [0.25, 0.25],
-    #                 [0.0, 1.0],
-    #                 [0.25, 0.125],
-    #                 [0.25, 0.25],
-    #                 [0.125, 0.25, 0.25],
-    #                 [0.25, 0.25, 0.0],
-    #             ),
-    #         ),
-    #         (
-    #             DiffYaw(-3 * math.pi / 4.0, 0.0),
-    #             AnswerAP(
-    #                 1.0,
-    #                 [1.0, 1.0],
-    #                 [0.0, 1.0],
-    #                 [1.0, 0.5],
-    #                 [1.0, 1.0],
-    #                 [0.5, 1.0, 1.0],
-    #                 [1.0, 1.0, 0.0],
-    #             ),
-    #             AnswerAP(
-    #                 0.0625,
-    #                 [0.25, 0.25],
-    #                 [0.0, 1.0],
-    #                 [0.25, 0.125],
-    #                 [0.25, 0.25],
-    #                 [0.125, 0.25, 0.25],
-    #                 [0.25, 0.25, 0.0],
-    #             ),
-    #         ),
-    #     ]
+        test patterns:
+            Check if ap and aph are almost correct.
+        """
+        # ap and aph is nan since no MOTORBIKE in the estimated_objects
+        ans_ap = 0.0
+        ans_aph = 0.0
 
-    #     for n, (diff_yaw, ans_ap, ans_aph) in enumerate(patterns):
-    #         with self.subTest(f"Test AP and APH with center distance matching for yaw difference: {n + 1}"):
-    #             diff_yaw_estimated_objects: List[DynamicObject] = get_objects_with_difference(
-    #                 ground_truth_objects=self.dummy_estimated_objects,
-    #                 diff_distance=(0.0, 0.0, 0.0),
-    #                 diff_yaw=diff_yaw.diff_estimated,
-    #             )
-    #             diff_yaw_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-    #                 ground_truth_objects=self.dummy_ground_truth_objects,
-    #                 diff_distance=(0.0, 0.0, 0.0),
-    #                 diff_yaw=diff_yaw.diff_ground_truth,
-    #             )
+        ap, aph = self._evaluate_ap_aph_for_label(
+            self.dummy_estimated_objects,
+            self.dummy_ground_truth_objects,
+            AutowareLabel.MOTORBIKE,
+            MatchingMode.CENTERDISTANCEBEV,
+        )
 
-    #             object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-    #                 evaluation_task=self.evaluation_task,
-    #                 estimated_objects=diff_yaw_estimated_objects,
-    #                 ground_truth_objects=diff_yaw_ground_truth_objects,
-    #             )
-
-    #             num_ground_truth: int = len(diff_yaw_ground_truth_objects)
-
-    #             ap: Ap = Ap(
-    #                 tp_metrics=TPMetricsAp(),
-    #                 object_results=object_results,
-    #                 num_ground_truth=num_ground_truth,
-    #                 target_labels=self.target_labels,
-    #                 matching_mode=MatchingMode.CENTERDISTANCEBEV,
-    #                 matching_threshold=0.1,
-    #             )
-    #             aph: Ap = Ap(
-    #                 tp_metrics=TPMetricsAph(),
-    #                 object_results=object_results,
-    #                 num_ground_truth=num_ground_truth,
-    #                 target_labels=self.target_labels,
-    #                 matching_mode=MatchingMode.CENTERDISTANCEBEV,
-    #                 matching_threshold=0.1,
-    #             )
-    #             out_ap: AnswerAP = AnswerAP.from_ap(ap)
-    #             out_aph: AnswerAP = AnswerAP.from_ap(aph)
-    #             self.assertEqual(out_ap, ans_ap, f"out_ap = {str(out_ap)}, ans_ap = {str(ans_ap)}")
-    #             self.assertEqual(out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}")
-
-    # def test_ap_center_distance_bev_random_objects(self):
-    #     """[summary]
-    #     Test AP and APH with center distance bev matching for random objects.
-
-    #     test objects:
-    #         dummy_estimated_objects (List[DynamicObject])
-    #         dummy_ground_truth_objects (List[DynamicObject])
-
-    #     test target_labels:
-    #         MOTORBIKE
-
-    #     test patterns:
-    #         Check if ap and aph are almost correct.
-    #     """
-    #     # ap and aph is nan since no MOTORBIKE in the estimated_objects
-    #     ans_ap: float = float("inf")
-    #     ans_aph: float = float("inf")
-
-    #     object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-    #         evaluation_task=self.evaluation_task,
-    #         estimated_objects=self.dummy_estimated_objects,
-    #         ground_truth_objects=self.dummy_ground_truth_objects,
-    #     )
-    #     num_ground_truth: int = len(self.dummy_ground_truth_objects)
-    #     ap: Ap = Ap(
-    #         tp_metrics=TPMetricsAp(),
-    #         object_results=object_results,
-    #         num_ground_truth=num_ground_truth,
-    #         target_labels=[AutowareLabel.MOTORBIKE],
-    #         matching_mode=MatchingMode.CENTERDISTANCEBEV,
-    #         matching_threshold=0.1,
-    #     )
-    #     aph: Ap = Ap(
-    #         tp_metrics=TPMetricsAph(),
-    #         object_results=object_results,
-    #         num_ground_truth=num_ground_truth,
-    #         target_labels=[AutowareLabel.MOTORBIKE],
-    #         matching_mode=MatchingMode.CENTERDISTANCEBEV,
-    #         matching_threshold=0.1,
-    #     )
-
-    #     self.assertAlmostEqual(ap.ap, ans_ap)
-    #     self.assertAlmostEqual(aph.ap, ans_aph)
+        self.assertAlmostEqual(ap.ap, ans_ap)
+        self.assertAlmostEqual(aph.ap, ans_aph)
 
     # def test_ap_iou_2d_translation_difference(self):
     #     """[summary]
