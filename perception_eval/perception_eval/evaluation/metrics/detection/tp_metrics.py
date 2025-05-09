@@ -125,7 +125,7 @@ class TPMetricsAph(TPMetrics):
         # Normalize heading error to [0, pi] (+pi and -pi are the same).
         if diff_heading > pi:
             diff_heading = 2.0 * pi - diff_heading
-        # Clamp the range to avoid numerical errors.
+        # Clamp the range and round to 10 decimals to avoid floating-point precision issues in evaluation.
         return round(max(0.0, min(1.0, 1.0 - diff_heading / pi)), 10)
 
 
