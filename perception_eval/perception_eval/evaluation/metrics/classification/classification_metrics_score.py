@@ -95,7 +95,7 @@ class ClassificationMetricsScore:
         str_ += "\n"
         # --- Label ----
         str_ += "|      Label |"
-        # CLEAR
+        # Accuracy
         for acc_ in self.accuracies:
             str_ += f" {acc_.target_labels[0]} | "
         str_ += "\n"
