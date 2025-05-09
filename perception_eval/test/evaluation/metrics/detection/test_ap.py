@@ -149,6 +149,7 @@ class TestAp(unittest.TestCase):
             center_distance_bev_thresholds=[matching_threshold],
             iou_2d_thresholds=[matching_threshold],
             iou_3d_thresholds=[matching_threshold],
+            plane_distance_thresholds=[matching_threshold],
         )
         object_results = get_nuscene_object_results(
             evaluation_task=self.evaluation_task,
@@ -466,8 +467,8 @@ class TestAp(unittest.TestCase):
             0.5,
         )
 
-        self.assertAlmostEqual(ap.ap, ans_ap)
-        self.assertAlmostEqual(aph.ap, ans_aph)
+        self.assertEqual(ap.ap, ans_ap)
+        self.assertEqual(aph.ap, ans_aph)
 
     # Test BEV center distance
     def test_ap_center_distance_bev_translation_difference(self):
@@ -755,8 +756,8 @@ class TestAp(unittest.TestCase):
             0.5,
         )
 
-        self.assertAlmostEqual(ap.ap, ans_ap)
-        self.assertAlmostEqual(aph.ap, ans_aph)
+        self.assertEqual(ap.ap, ans_ap)
+        self.assertEqual(aph.ap, ans_aph)
 
     # Test IoU 2D
     def test_ap_iou_2d_translation_difference(self):
@@ -1040,10 +1041,10 @@ class TestAp(unittest.TestCase):
             0.4,
         )
 
-        self.assertAlmostEqual(ap.ap, ans_ap)
-        self.assertAlmostEqual(aph.ap, ans_aph)
+        self.assertEqual(ap.ap, ans_ap)
+        self.assertEqual(aph.ap, ans_aph)
 
-    # Test IOU 3d
+    # Test IoU 3D
     def test_ap_iou_3d_translation_difference(self):
         """[summary]
         Test AP and APH with iou 3d matching for translation difference.
@@ -1322,194 +1323,307 @@ class TestAp(unittest.TestCase):
             0.4,
         )
 
-        self.assertAlmostEqual(ap.ap, ans_ap)
-        self.assertAlmostEqual(aph.ap, ans_aph)
+        self.assertEqual(ap.ap, ans_ap)
+        self.assertEqual(aph.ap, ans_aph)
 
     # Test plance distance
-    # def test_ap_plane_distance_translation_difference(self):
-    #     """[summary]
-    #     Test AP and APH with plane distance matching for translation difference.
+    def test_ap_plane_distance_translation_difference(self):
+        """[summary]
+        Test AP and APH with plane distance matching for translation difference.
 
-    #     test objects:
-    #         dummy_ground_truth_objects (List[DynamicObject])
-    #         dummy_ground_truth_objects with diff_distance (List[DynamicObject])
+        test objects:
+            dummy_ground_truth_objects (List[DynamicObject])
+            dummy_ground_truth_objects with diff_distance (List[DynamicObject])
 
-    #     test patterns:
-    #         Given diff_distance, check if ap and aph are almost correct.
-    #     """
-    #     # patterns: (diff_distance, ans_ap, ans_aph)
-    #     patterns: List[Tuple[float, float, float]] = [
-    #         # Given no diff_distance, ap and aph is 1.0.
-    #         (0.0, 1.0, 1.0),
-    #         # Given 1.0 diff_distance for one axis, ap and aph are equal to 0.0
-    #         # since both are over the metrics threshold.
-    #         (1.0, 0.0, 0.0),
-    #     ]
-    #     for diff_distance, ans_ap, ans_aph in patterns:
-    #         with self.subTest("Test AP and APH with plane distance matching for translation difference."):
-    #             diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-    #                 ground_truth_objects=self.dummy_ground_truth_objects,
-    #                 diff_distance=(diff_distance, 0.0, 0.0),
-    #                 diff_yaw=0,
-    #             )
+        test patterns:
+            Given diff_distance, check if ap and aph are almost correct.
+        """
+        # patterns: (diff_trans, ans_ap, ans_aph)
+        patterns: List[Tuple[DiffTranslation, AnswerAP, AnswerAP]] = [
+            # Given no diff_trans, ap and aph is 1.0.
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+            ),
+            # Given 1.0 diff_distance for one axis, ap and aph are equal to 0.0
+            # since both are over the metrics threshold.
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+            ),
+        ]
+        for n, (diff_trans, ans_ap, ans_aph) in enumerate(patterns):
+            with self.subTest(f"Test AP and APH with center distance matching for translation difference: {n + 1}"):
+                est_objs = get_objects_with_difference(self.dummy_estimated_objects, diff_trans.diff_estimated, 0.0)
+                gt_objs = get_objects_with_difference(
+                    self.dummy_ground_truth_objects, diff_trans.diff_ground_truth, 0.0
+                )
+                ap, aph = self._evaluate_ap_aph_for_label(
+                    est_objs, gt_objs, AutowareLabel.CAR, MatchingMode.PLANEDISTANCE, 1.0
+                )
+                out_ap: AnswerAP = AnswerAP.from_ap(ap)
+                out_aph: AnswerAP = AnswerAP.from_ap(aph)
 
-    #             object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-    #                 evaluation_task=self.evaluation_task,
-    #                 estimated_objects=diff_distance_dummy_ground_truth_objects,
-    #                 ground_truth_objects=self.dummy_ground_truth_objects,
-    #             )
-    #             num_ground_truth: int = len(self.dummy_ground_truth_objects)
-    #             ap: Ap = Ap(
-    #                 tp_metrics=TPMetricsAp(),
-    #                 object_results=object_results,
-    #                 num_ground_truth=num_ground_truth,
-    #                 target_labels=self.target_labels,
-    #                 matching_mode=MatchingMode.PLANEDISTANCE,
-    #                 matching_threshold=0.1,
-    #             )
-    #             aph: Ap = Ap(
-    #                 tp_metrics=TPMetricsAph(),
-    #                 object_results=object_results,
-    #                 num_ground_truth=num_ground_truth,
-    #                 target_labels=self.target_labels,
-    #                 matching_mode=MatchingMode.PLANEDISTANCE,
-    #                 matching_threshold=1.0,
-    #             )
+                self.assertEqual(out_ap, ans_ap, f"out_ap = {str(out_ap)}, ans_ap = {str(ans_ap)}")
+                self.assertEqual(out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}")
 
-    #             self.assertAlmostEqual(ap.ap, ans_ap)
-    #             self.assertAlmostEqual(aph.ap, ans_aph)
+    def test_ap_plane_distance_yaw_difference(self):
+        """[summary]
+        Test AP and APH with plane distance matching for yaw difference.
 
-    # def test_ap_plane_distance_yaw_difference(self):
-    #     """[summary]
-    #     Test AP and APH with plane distance matching for yaw difference.
+        test objects:
+            dummy_ground_truth_objects (List[DynamicObject])
+            dummy_ground_truth_objects with diff_distance (List[DynamicObject])
 
-    #     test objects:
-    #         dummy_ground_truth_objects (List[DynamicObject])
-    #         dummy_ground_truth_objects with diff_distance (List[DynamicObject])
+        test patterns:
+            Given diff_yaw, check if ap and aph are almost correct.
+        """
+        # patterns: (diff_yaw, ans_ap, ans_aph)
+        # patterns: (diff_yaw, ans_ap, ans_aph)
+        patterns: List[Tuple[DiffYaw, AnswerAP, AnswerAP]] = [
+            # Given no diff_yaw, ap and aph is 1.0.
+            (
+                DiffYaw(0.0, 0.0),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+            ),
+            # Given vertical diff_yaw
+            (
+                DiffYaw(math.pi / 2.0, 0.0),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+            ),
+            # Given vertical diff_yaw
+            (
+                DiffYaw(-math.pi / 2.0, 0.0),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+            ),
+            # Given opposite direction, aph is 0.0.
+            (
+                DiffYaw(math.pi, 0.0),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+            ),
+            (
+                DiffYaw(-math.pi, 0.0),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+            ),
+            # Given diff_yaw is pi/4
+            (
+                DiffYaw(math.pi / 4.0, 0.0),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+                AnswerAP(
+                    0.715167548500882,
+                    [0.75, 0.75],
+                    [0.0, 1.0],
+                    [1.0, 0.42857142857142855],
+                    [0.75, 0.75],
+                ),
+            ),
+            (
+                DiffYaw(-math.pi / 4.0, 0.0),
+                AnswerAP(
+                    0.9938271604938275,
+                    [1.0, 1.0],
+                    [0.0, 1.0],
+                    [1.0, 0.5],
+                    [1.0, 1.0],
+                ),
+                AnswerAP(
+                    0.715167548500882,
+                    [0.75, 0.75],
+                    [0.0, 1.0],
+                    [1.0, 0.42857142857142855],
+                    [0.75, 0.75],
+                ),
+            ),
+            # Given diff_yaw is 3*pi/4
+            (
+                DiffYaw(3 * math.pi / 4.0, 0.0),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+            ),
+            (
+                DiffYaw(-3 * math.pi / 4.0, 0.0),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+                AnswerAP(
+                    0.0,
+                    [0.0, 0.0],
+                    [1.0, 2.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ),
+            ),
+        ]
+        for n, (diff_yaw, ans_ap, ans_aph) in enumerate(patterns):
+            with self.subTest(f"Test AP and APH with plane distance matching for yaw difference: {n + 1}"):
+                est_objs = get_objects_with_difference(
+                    self.dummy_estimated_objects, (0.0, 0.0, 0.0), diff_yaw.diff_estimated
+                )
+                gt_objs = get_objects_with_difference(
+                    self.dummy_ground_truth_objects, (0.0, 0.0, 0.0), diff_yaw.diff_ground_truth
+                )
+                ap, aph = self._evaluate_ap_aph_for_label(
+                    est_objs, gt_objs, AutowareLabel.CAR, MatchingMode.PLANEDISTANCE, 1
+                )
+                out_ap: AnswerAP = AnswerAP.from_ap(ap)
+                out_aph: AnswerAP = AnswerAP.from_ap(aph)
 
-    #     test patterns:
-    #         Given diff_yaw, check if ap and aph are almost correct.
-    #     """
-    #     # patterns: (diff_yaw, ans_ap, ans_aph)
-    #     patterns: List[Tuple[float, float, float]] = [
-    #         # Given no diff_yaw, ap and aph is 1.0.
-    #         (0.0, 1.0, 1.0),
-    #         # Given vertical diff_yaw
-    #         # since precision and recall of aph is 0.5 times those of ap.
-    #         (math.pi / 2.0, 1.0, 0.25),
-    #         (-math.pi / 2.0, 1.0, 0.25),
-    #         # Given opposite direction, aph is 0.0.
-    #         (math.pi, 1.0, 0.0),
-    #         (-math.pi, 1.0, 0.0),
-    #         # Given diff_yaw is pi/4, aph is 0.75**2 times ap
-    #         (math.pi / 4, 1.0, 0.5625),
-    #         (-math.pi / 4, 1.0, 0.5625),
-    #         # Given diff_yaw is 3*pi/4, aph is 0.25**2 times ap
-    #         (3 * math.pi / 4, 1.0, 0.0625),
-    #         (-3 * math.pi / 4, 1.0, 0.0625),
-    #     ]
+                self.assertEqual(out_ap, ans_ap, f"out_ap = {str(out_ap)}, ans_ap = {str(ans_ap)}")
+                self.assertEqual(out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}")
 
-    #     for diff_yaw, ans_ap, ans_aph in patterns:
-    #         with self.subTest("Test AP and APH with plane distance matching for yaw difference."):
-    #             diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-    #                 ground_truth_objects=self.dummy_ground_truth_objects,
-    #                 diff_distance=(0.0, 0.0, 0.0),
-    #                 diff_yaw=diff_yaw,
-    #             )
+    def test_ap_plane_distance_random_objects(self):
+        """[summary]
+        Test AP and APH with plane distance matching for random objects.
 
-    #             object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-    #                 evaluation_task=self.evaluation_task,
-    #                 estimated_objects=diff_yaw_dummy_ground_truth_objects,
-    #                 ground_truth_objects=self.dummy_ground_truth_objects,
-    #             )
-    #             num_ground_truth: int = len(self.dummy_ground_truth_objects)
-    #             ap: Ap = Ap(
-    #                 tp_metrics=TPMetricsAp(),
-    #                 object_results=object_results,
-    #                 num_ground_truth=num_ground_truth,
-    #                 target_labels=self.target_labels,
-    #                 matching_mode=MatchingMode.PLANEDISTANCE,
-    #                 matching_threshold=1.5,
-    #             )
-    #             aph: Ap = Ap(
-    #                 tp_metrics=TPMetricsAph(),
-    #                 object_results=object_results,
-    #                 num_ground_truth=num_ground_truth,
-    #                 target_labels=self.target_labels,
-    #                 matching_mode=MatchingMode.PLANEDISTANCE,
-    #                 matching_threshold=1.5,
-    #             )
+        test objects:
+            dummy_ground_truth_objects (List[DynamicObject])
+            dummy_ground_truth_objects with diff_distance (List[DynamicObject])
 
-    #             self.assertAlmostEqual(ap.ap, ans_ap)
-    #             self.assertAlmostEqual(aph.ap, ans_aph)
+        test patterns:
+            Check if ap and aph are almost correct.
+        """
+        # dummy_estimated_objects[0] (CAR) and dummy_ground_truth_objects[0] (CAR):
+        #   pr_corner_points(left, right) = [(0.25, 0.25, 1.0), (0.25, 1.75, 1.0)]
+        #   gt_corner_points(left, right) = [(0.5, 0.5, 1.0), (0.5, 1.5, 1.0)]
+        #   plane_distance = 0.3535533905932738
+        ans_ap_tp = 0.9938271604938275
+        ans_ap_tn = 0.0
+        ans_aph_tp = 0.9938271604938275
+        ans_aph_tn = 0.0
 
-    # def test_ap_plane_distance_random_objects(self):
-    #     """[summary]
-    #     Test AP and APH with plane distance matching for random objects.
+        ap_tp, aph_tp = self._evaluate_ap_aph_for_label(
+            self.dummy_estimated_objects,
+            self.dummy_ground_truth_objects,
+            AutowareLabel.CAR,
+            MatchingMode.PLANEDISTANCE,
+            1.0,
+        )
 
-    #     test objects:
-    #         dummy_ground_truth_objects (List[DynamicObject])
-    #         dummy_ground_truth_objects with diff_distance (List[DynamicObject])
+        ap_tn, aph_tn = self._evaluate_ap_aph_for_label(
+            self.dummy_estimated_objects,
+            self.dummy_ground_truth_objects,
+            AutowareLabel.CAR,
+            MatchingMode.PLANEDISTANCE,
+            0.2,
+        )
 
-    #     test patterns:
-    #         Check if ap and aph are almost correct.
-    #     """
-    #     # dummy_estimated_objects[0] (CAR) and dummy_ground_truth_objects[0] (CAR):
-    #     #   pr_corner_points(left, right) = [(0.25, 0.25, 1.0), (0.25, 1.75, 1.0)]
-    #     #   gt_corner_points(left, right) = [(0.5, 0.5, 1.0), (0.5, 1.5, 1.0)]
-    #     #   plane_distance = 0.3535533905932738
-    #     ans_ap_tp: float = 1.0
-    #     ans_ap_tn: float = 0.0
-    #     ans_aph_tp: float = 1.0
-    #     ans_aph_tn: float = 0.0
-
-    #     object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-    #         evaluation_task=self.evaluation_task,
-    #         estimated_objects=self.dummy_estimated_objects,
-    #         ground_truth_objects=self.dummy_ground_truth_objects,
-    #     )
-
-    #     num_ground_truth: int = len(self.dummy_ground_truth_objects)
-
-    #     ap_tp: Ap = Ap(
-    #         tp_metrics=TPMetricsAp(),
-    #         object_results=object_results,
-    #         num_ground_truth=num_ground_truth,
-    #         target_labels=self.target_labels,
-    #         matching_mode=MatchingMode.PLANEDISTANCE,
-    #         matching_threshold=1.0,
-    #     )
-    #     aph_tp: Ap = Ap(
-    #         tp_metrics=TPMetricsAph(),
-    #         object_results=object_results,
-    #         num_ground_truth=num_ground_truth,
-    #         target_labels=self.target_labels,
-    #         matching_mode=MatchingMode.PLANEDISTANCE,
-    #         matching_threshold=1.0,
-    #     )
-    #     ap_tn: Ap = Ap(
-    #         tp_metrics=TPMetricsAp(),
-    #         object_results=object_results,
-    #         num_ground_truth=num_ground_truth,
-    #         target_labels=self.target_labels,
-    #         matching_mode=MatchingMode.PLANEDISTANCE,
-    #         matching_threshold=0.2,
-    #     )
-    #     aph_tn: Ap = Ap(
-    #         tp_metrics=TPMetricsAph(),
-    #         object_results=object_results,
-    #         num_ground_truth=num_ground_truth,
-    #         target_labels=self.target_labels,
-    #         matching_mode=MatchingMode.PLANEDISTANCE,
-    #         matching_threshold=0.2,
-    #     )
-
-    # print(f"[DEBUG #{n + 1}] out_ap = {out_ap}")
-    # print(f"[DEBUG #{n + 1}] out_aph = {out_aph}")
-    #     self.assertAlmostEqual(ap_tp.ap, ans_ap_tp)
-    #     self.assertAlmostEqual(aph_tp.ap, ans_aph_tp)
-    #     self.assertAlmostEqual(ap_tn.ap, ans_ap_tn)
-    #     self.assertAlmostEqual(aph_tn.ap, ans_aph_tn)
+        self.assertEqual(ap_tp.ap, ans_ap_tp)
+        self.assertEqual(aph_tp.ap, ans_aph_tp)
+        self.assertEqual(ap_tn.ap, ans_ap_tn)
+        self.assertEqual(aph_tn.ap, ans_aph_tn)
 
 
 if __name__ == "__main__":
