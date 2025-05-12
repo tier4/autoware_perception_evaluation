@@ -1,4 +1,4 @@
-# Copyright 2022 TIER IV, Inc.
+# Copyright 2025 TIER IV, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,21 +23,17 @@ from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching.object_matching import MatchingMode
-from perception_eval.evaluation.matching.objects_filter import divide_objects
+from perception_eval.evaluation.matching.objects_filter import divide_nuscene_object_results_by_label
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
-from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.detection.map import Map
+from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result_matching import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_nuscene_object_results
 from perception_eval.util.debug import get_objects_with_difference
-
-# TODO(vividf): test the map with latest nusecne object results
 
 
 class TestMap(unittest.TestCase):
     def setUp(self):
-        self.dummy_estimated_objects: List[DynamicObject] = []
-        self.dummy_ground_truth_objects: List[DynamicObject] = []
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data()
 
         self.evaluation_task: EvaluationTask = EvaluationTask.DETECTION
@@ -47,9 +43,6 @@ class TestMap(unittest.TestCase):
             AutowareLabel.PEDESTRIAN,
             AutowareLabel.MOTORBIKE,
         ]
-        self.max_x_position_list: List[float] = [100.0, 100.0, 100.0, 100.0]
-        self.max_y_position_list: List[float] = [100.0, 100.0, 100.0, 100.0]
-        self.min_point_numbers: List[int] = [0, 0, 0, 0]
 
     def test_map_center_distance_translation_difference(self):
         """[summary]
@@ -80,27 +73,11 @@ class TestMap(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                # Filter objects
-                diff_distance_dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=diff_distance_dummy_ground_truth_objects,
-                    is_gt=False,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                )
-                dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=self.dummy_ground_truth_objects,
-                    is_gt=True,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                    min_point_numbers=self.min_point_numbers,
-                )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
-                    ground_truth_objects=dummy_ground_truth_objects,
+                    ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     object_results,
@@ -108,7 +85,7 @@ class TestMap(unittest.TestCase):
                 )
 
                 num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-                    dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                     self.target_labels,
                 )
 
@@ -159,27 +136,11 @@ class TestMap(unittest.TestCase):
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
                 )
-                # Filter objects
-                diff_yaw_dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=diff_yaw_dummy_ground_truth_objects,
-                    is_gt=False,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                )
-                dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=self.dummy_ground_truth_objects,
-                    is_gt=True,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                    min_point_numbers=self.min_point_numbers,
-                )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
-                    ground_truth_objects=dummy_ground_truth_objects,
+                    ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     object_results,
@@ -187,7 +148,7 @@ class TestMap(unittest.TestCase):
                 )
 
                 num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-                    dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                     self.target_labels,
                 )
 
@@ -216,27 +177,10 @@ class TestMap(unittest.TestCase):
         ans_map: float = (1.0 + 1.0) / 2.0
         ans_maph: float = (1.0 + 1.0) / 2.0
 
-        # Filter objects
-        dummy_estimated_objects = filter_objects(
-            dynamic_objects=self.dummy_estimated_objects,
-            is_gt=False,
-            target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
-        )
-        dummy_ground_truth_objects = filter_objects(
-            dynamic_objects=self.dummy_ground_truth_objects,
-            is_gt=True,
-            target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
-            min_point_numbers=self.min_point_numbers,
-        )
-
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
             evaluation_task=self.evaluation_task,
-            estimated_objects=dummy_estimated_objects,
-            ground_truth_objects=dummy_ground_truth_objects,
+            estimated_objects=self.dummy_estimated_objects,
+            ground_truth_objects=self.dummy_ground_truth_objects,
         )
         object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
             object_results,
@@ -244,7 +188,7 @@ class TestMap(unittest.TestCase):
         )
 
         num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-            dummy_ground_truth_objects,
+            self.dummy_ground_truth_objects,
             self.target_labels,
         )
 
@@ -287,27 +231,11 @@ class TestMap(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                # Filter objects
-                diff_distance_dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=diff_distance_dummy_ground_truth_objects,
-                    is_gt=False,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                )
-                dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=self.dummy_ground_truth_objects,
-                    is_gt=True,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                    min_point_numbers=self.min_point_numbers,
-                )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
-                    ground_truth_objects=dummy_ground_truth_objects,
+                    ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     object_results,
@@ -315,7 +243,7 @@ class TestMap(unittest.TestCase):
                 )
 
                 num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-                    dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                     self.target_labels,
                 )
 
@@ -366,27 +294,11 @@ class TestMap(unittest.TestCase):
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
                 )
-                # Filter objects
-                diff_yaw_dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=diff_yaw_dummy_ground_truth_objects,
-                    is_gt=False,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                )
-                dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=self.dummy_ground_truth_objects,
-                    is_gt=True,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                    min_point_numbers=self.min_point_numbers,
-                )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
-                    ground_truth_objects=dummy_ground_truth_objects,
+                    ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     object_results,
@@ -394,7 +306,7 @@ class TestMap(unittest.TestCase):
                 )
 
                 num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-                    dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                     self.target_labels,
                 )
 
@@ -423,27 +335,10 @@ class TestMap(unittest.TestCase):
         ans_map: float = (1.0 + 1.0) / 2.0
         ans_maph: float = (1.0 + 1.0) / 2.0
 
-        # Filter objects
-        dummy_estimated_objects = filter_objects(
-            dynamic_objects=self.dummy_estimated_objects,
-            is_gt=False,
-            target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
-        )
-        dummy_ground_truth_objects = filter_objects(
-            dynamic_objects=self.dummy_ground_truth_objects,
-            is_gt=True,
-            target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
-            min_point_numbers=self.min_point_numbers,
-        )
-
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
             evaluation_task=self.evaluation_task,
-            estimated_objects=dummy_estimated_objects,
-            ground_truth_objects=dummy_ground_truth_objects,
+            estimated_objects=self.dummy_estimated_objects,
+            ground_truth_objects=self.dummy_ground_truth_objects,
         )
         object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
             object_results,
@@ -451,7 +346,7 @@ class TestMap(unittest.TestCase):
         )
 
         num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-            dummy_ground_truth_objects,
+            self.dummy_ground_truth_objects,
             self.target_labels,
         )
 
@@ -494,27 +389,11 @@ class TestMap(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                # Filter objects
-                diff_distance_dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=diff_distance_dummy_ground_truth_objects,
-                    is_gt=False,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                )
-                dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=self.dummy_ground_truth_objects,
-                    is_gt=False,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                    min_point_numbers=self.min_point_numbers,
-                )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
-                    ground_truth_objects=dummy_ground_truth_objects,
+                    ground_truth_objects=self.dummy_ground_truth_objects,
                 )
 
                 object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
@@ -523,7 +402,7 @@ class TestMap(unittest.TestCase):
                 )
 
                 num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-                    dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                     self.target_labels,
                 )
 
@@ -574,27 +453,11 @@ class TestMap(unittest.TestCase):
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
                 )
-                # Filter objects
-                diff_yaw_dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=diff_yaw_dummy_ground_truth_objects,
-                    is_gt=False,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                )
-                dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=self.dummy_ground_truth_objects,
-                    is_gt=True,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                    min_point_numbers=self.min_point_numbers,
-                )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
-                    ground_truth_objects=dummy_ground_truth_objects,
+                    ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     object_results,
@@ -602,7 +465,7 @@ class TestMap(unittest.TestCase):
                 )
 
                 num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-                    dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                     self.target_labels,
                 )
 
@@ -631,26 +494,10 @@ class TestMap(unittest.TestCase):
         ans_map: float = (1.0 + 0.0) / 2.0
         ans_maph: float = (1.0 + 0.0) / 2.0
 
-        # Filter objects
-        dummy_estimated_objects = filter_objects(
-            dynamic_objects=self.dummy_estimated_objects,
-            is_gt=False,
-            target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
-        )
-        dummy_ground_truth_objects = filter_objects(
-            dynamic_objects=self.dummy_ground_truth_objects,
-            is_gt=True,
-            target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
-            min_point_numbers=self.min_point_numbers,
-        )
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
             evaluation_task=self.evaluation_task,
-            estimated_objects=dummy_estimated_objects,
-            ground_truth_objects=dummy_ground_truth_objects,
+            estimated_objects=self.dummy_estimated_objects,
+            ground_truth_objects=self.dummy_ground_truth_objects,
         )
         object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
             object_results,
@@ -658,7 +505,7 @@ class TestMap(unittest.TestCase):
         )
 
         num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-            dummy_ground_truth_objects,
+            self.dummy_ground_truth_objects,
             self.target_labels,
         )
 
@@ -701,27 +548,11 @@ class TestMap(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                # Filter objects
-                diff_distance_dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=diff_distance_dummy_ground_truth_objects,
-                    is_gt=False,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                )
-                dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=self.dummy_ground_truth_objects,
-                    is_gt=True,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                    min_point_numbers=self.min_point_numbers,
-                )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
-                    ground_truth_objects=dummy_ground_truth_objects,
+                    ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     object_results,
@@ -729,7 +560,7 @@ class TestMap(unittest.TestCase):
                 )
 
                 num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-                    dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                     self.target_labels,
                 )
 
@@ -780,27 +611,11 @@ class TestMap(unittest.TestCase):
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
                 )
-                # Filter objects
-                diff_yaw_dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=diff_yaw_dummy_ground_truth_objects,
-                    is_gt=False,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                )
-                dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=self.dummy_ground_truth_objects,
-                    is_gt=True,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                    min_point_numbers=self.min_point_numbers,
-                )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
-                    ground_truth_objects=dummy_ground_truth_objects,
+                    ground_truth_objects=self.dummy_ground_truth_objects,
                 )
                 object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     object_results,
@@ -808,7 +623,7 @@ class TestMap(unittest.TestCase):
                 )
 
                 num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-                    dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                     self.target_labels,
                 )
 
@@ -837,27 +652,10 @@ class TestMap(unittest.TestCase):
         ans_map: float = (1.0 + 0.0) / 2.0
         ans_maph: float = (1.0 + 0.0) / 2.0
 
-        # Filter objects
-        dummy_estimated_objects = filter_objects(
-            dynamic_objects=self.dummy_estimated_objects,
-            is_gt=False,
-            target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
-        )
-        dummy_ground_truth_objects = filter_objects(
-            dynamic_objects=self.dummy_ground_truth_objects,
-            is_gt=True,
-            target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
-            min_point_numbers=self.min_point_numbers,
-        )
-
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
             evaluation_task=self.evaluation_task,
-            estimated_objects=dummy_estimated_objects,
-            ground_truth_objects=dummy_ground_truth_objects,
+            estimated_objects=self.dummy_estimated_objects,
+            ground_truth_objects=self.dummy_ground_truth_objects,
         )
 
         object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
@@ -866,7 +664,7 @@ class TestMap(unittest.TestCase):
         )
 
         num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-            dummy_ground_truth_objects,
+            self.dummy_ground_truth_objects,
             self.target_labels,
         )
 
@@ -910,27 +708,11 @@ class TestMap(unittest.TestCase):
                     diff_distance=(diff_distance, 0.0, 0.0),
                     diff_yaw=0,
                 )
-                # Filter objects
-                diff_distance_dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=diff_distance_dummy_ground_truth_objects,
-                    is_gt=False,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                )
-                dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=self.dummy_ground_truth_objects,
-                    is_gt=True,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                    min_point_numbers=self.min_point_numbers,
-                )
 
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_distance_dummy_ground_truth_objects,
-                    ground_truth_objects=dummy_ground_truth_objects,
+                    ground_truth_objects=self.dummy_ground_truth_objects,
                 )
 
                 object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
@@ -939,7 +721,7 @@ class TestMap(unittest.TestCase):
                 )
 
                 num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-                    dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                     self.target_labels,
                 )
 
@@ -990,26 +772,11 @@ class TestMap(unittest.TestCase):
                     diff_distance=(0.0, 0.0, 0.0),
                     diff_yaw=diff_yaw,
                 )
-                # Filter objects
-                diff_yaw_dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=diff_yaw_dummy_ground_truth_objects,
-                    is_gt=False,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                )
-                dummy_ground_truth_objects = filter_objects(
-                    dynamic_objects=self.dummy_ground_truth_objects,
-                    is_gt=True,
-                    target_labels=self.target_labels,
-                    max_x_position_list=self.max_x_position_list,
-                    max_y_position_list=self.max_y_position_list,
-                    min_point_numbers=self.min_point_numbers,
-                )
+
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
                     estimated_objects=diff_yaw_dummy_ground_truth_objects,
-                    ground_truth_objects=dummy_ground_truth_objects,
+                    ground_truth_objects=self.dummy_ground_truth_objects,
                 )
 
                 object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
@@ -1017,7 +784,7 @@ class TestMap(unittest.TestCase):
                     self.target_labels,
                 )
                 num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-                    dummy_ground_truth_objects,
+                    self.dummy_ground_truth_objects,
                     self.target_labels,
                 )
 
@@ -1069,27 +836,10 @@ class TestMap(unittest.TestCase):
         ans_map: float = (1.0 + 1.0) / 2.0
         ans_maph: float = (1.0 + 1.0) / 2.0
 
-        # Filter objects
-        dummy_estimated_objects = filter_objects(
-            dynamic_objects=self.dummy_estimated_objects,
-            is_gt=False,
-            target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
-        )
-        dummy_ground_truth_objects = filter_objects(
-            dynamic_objects=self.dummy_ground_truth_objects,
-            is_gt=True,
-            target_labels=self.target_labels,
-            max_x_position_list=self.max_x_position_list,
-            max_y_position_list=self.max_y_position_list,
-            min_point_numbers=self.min_point_numbers,
-        )
-
         object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
             evaluation_task=self.evaluation_task,
-            estimated_objects=dummy_estimated_objects,
-            ground_truth_objects=dummy_ground_truth_objects,
+            estimated_objects=self.dummy_estimated_objects,
+            ground_truth_objects=self.dummy_ground_truth_objects,
         )
         object_results_dict: Dict[AutowareLabel, List[DynamicObjectWithPerceptionResult]] = divide_objects(
             object_results,
@@ -1097,7 +847,7 @@ class TestMap(unittest.TestCase):
         )
 
         num_ground_truth_dict: Dict[AutowareLabel, int] = divide_objects_to_num(
-            dummy_ground_truth_objects,
+            self.dummy_ground_truth_objects,
             self.target_labels,
         )
 
