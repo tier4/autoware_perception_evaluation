@@ -90,12 +90,6 @@ class Map:
                 )
                 self.aphs.append(aph_)
 
-        for ap in self.aps:
-            print("ap: ", ap.ap)
-
-        for aph in self.aphs:
-            print("ap: ", aph.ap)
-
         self.map = sum(ap.ap for ap in self.aps) / len(self.aps) if self.aps else 0
         self.maph = sum(aph.ap for aph in self.aphs) / len(self.aphs) if self.aphs else 0
 
