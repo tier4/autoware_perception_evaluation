@@ -252,8 +252,14 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         aggregated_object_results_dict: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]] = {
             label: [] for label in target_labels
         }
-        aggregated_nuscene_object_results_dict: Dict[
-            MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
+
+        # TODO(vividf): We can use this object to replace 'aggregated_object_results_dict' after refactor tracking.
+        # aggregated_nuscene_object_results_dict: Dict[
+        #     MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
+        # ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+        flattened_nuscene_object_results_dict: Dict[
+            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
         ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
         aggregated_num_gt = {label: 0 for label in target_labels}
@@ -281,7 +287,9 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 for mode, label_map in nuscene_results.items():
                     for label, threshold_map in label_map.items():
                         for threshold, detection_list in threshold_map.items():
-                            aggregated_nuscene_object_results_dict[mode][label][threshold].append(detection_list)
+                            # TODO(vividf): We can use this object to replace 'aggregated_object_results_dict' after refactor classification, tracking, prediction.
+                            # aggregated_nuscene_object_results_dict[mode][label][threshold].append(detection_list)
+                            flattened_nuscene_object_results_dict[mode][label][threshold].extend(detection_list)
 
             used_frame.append(int(frame.frame_name))
 
@@ -295,11 +303,8 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             scene_metrics_score.evaluate_classification(aggregated_object_results_dict, aggregated_num_gt)
 
         # Detection
-        if self.evaluator_config.metrics_config.detection_config is not None and any(
-            any(mode_results for mode_results in label_dict.values())
-            for label_dict in aggregated_nuscene_object_results_dict.values()
-        ):
-            scene_metrics_score.evaluate_detection(aggregated_nuscene_object_results_dict, aggregated_num_gt)
+        if self.evaluator_config.metrics_config.detection_config is not None:
+            scene_metrics_score.evaluate_detection(flattened_nuscene_object_results_dict, aggregated_num_gt)
 
         # Tracking
         if self.evaluator_config.metrics_config.tracking_config is not None:
