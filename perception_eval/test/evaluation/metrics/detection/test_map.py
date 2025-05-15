@@ -22,10 +22,19 @@ from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching.object_matching import MatchingMode
+<<<<<<< HEAD
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.detection.map import Map
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
 from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
+=======
+from perception_eval.evaluation.matching.objects_filter import divide_nuscene_object_results_by_label
+from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
+from perception_eval.evaluation.metrics.detection.map import Map
+from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
+from perception_eval.evaluation.metrics.metrics_utils import flatten_and_group_object_results_by_match_config
+from perception_eval.evaluation.result.object_result_matching import get_nuscene_object_results
+>>>>>>> 37e2ed0 (fix(TestAP, TestMAP): update unit test for AP and MAP (#214))
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -60,6 +69,7 @@ class TestMap(unittest.TestCase):
         matching_threshold: float,
     ) -> Map:
         metrics_config = self._get_default_metrics_config(matching_threshold)
+<<<<<<< HEAD
         matcher = NuscenesObjectMatcher(
             evaluation_task=self.evaluation_task,
             metrics_config=metrics_config,
@@ -74,6 +84,24 @@ class TestMap(unittest.TestCase):
             num_ground_truth_dict=num_ground_truth_dict,
             target_labels=self.target_labels,
             matching_mode=matching_mode,
+=======
+        object_results = get_nuscene_object_results(
+            evaluation_task=self.evaluation_task,
+            estimated_objects=estimated_objects,
+            ground_truth_objects=ground_truth_objects,
+            metrics_config=metrics_config,
+        )
+        object_results_dict = divide_nuscene_object_results_by_label(object_results, self.target_labels)
+        num_ground_truth_dict = divide_objects_to_num(ground_truth_objects, self.target_labels)
+        results_by_match_config = flatten_and_group_object_results_by_match_config(object_results_dict)
+        label_results = results_by_match_config[(matching_mode, matching_threshold)]
+        return Map(
+            object_results_dict=label_results,
+            num_ground_truth_dict=num_ground_truth_dict,
+            target_labels=self.target_labels,
+            matching_mode=matching_mode,
+            matching_threshold_list=[matching_threshold] * len(self.target_labels),
+>>>>>>> 37e2ed0 (fix(TestAP, TestMAP): update unit test for AP and MAP (#214))
         )
 
     def _run_param_test(

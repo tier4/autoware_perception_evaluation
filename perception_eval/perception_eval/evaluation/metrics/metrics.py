@@ -25,6 +25,7 @@ from .classification import ClassificationMetricsScore
 from .detection import Map
 from .metrics_score_config import MetricsScoreConfig
 from .prediction import PredictionMetricsScore
+from .metrics_utils import flatten_and_group_object_results_by_match_config
 from .tracking import TrackingMetricsScore
 
 
