@@ -39,7 +39,7 @@ class Ap:
         matching_threshold (float): Threshold information for the AP instance.
         matching_standard_deviation (Optional[float]): Standard deviation of matching score.
             If there are no object results, this variable is None.
-        target_labels (List[LabelType]): Target labels list.
+        target_label (LabelType): Target labels list.
         tp_metrics (TPMetrics): Mode of TP metrics.
         ground_truth_objects_num (int): Number ground truths.
         tp_list (List[float]): List of the number of TP objects ordered by their confidences.
@@ -49,7 +49,7 @@ class Ap:
         tp_metrics (TPMetrics): Mode of TP (True positive) metrics.
         object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
         num_ground_truth (int): Number of ground truths.
-        target_labels (List[LabelType]): Target labels to evaluate.
+        target_label (LabelType): Target labels to evaluate.
         matching_mode (MatchingMode): Matching instance.
         matching_threshold (float): Threshold information for the AP instance.
     """
@@ -64,14 +64,14 @@ class Ap:
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
         object_results: List[DynamicObjectWithPerceptionResult],
         num_ground_truth: int,
-        target_labels: List[LabelType],  # Only include a target
+        target_label: LabelType,
         matching_mode: MatchingMode,
         matching_threshold: float,
     ) -> None:
         self.tp_metrics: Union[TPMetricsAp, TPMetricsAph] = tp_metrics
         self.num_ground_truth: int = num_ground_truth
 
-        self.target_labels: List[LabelType] = target_labels
+        self.target_label: LabelType = target_label
         self.matching_mode: MatchingMode = matching_mode
         self.matching_threshold: float = matching_threshold
         self.objects_results_num: int = len(object_results)
