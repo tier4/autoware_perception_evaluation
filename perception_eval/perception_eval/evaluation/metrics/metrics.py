@@ -18,7 +18,6 @@ from typing import Union
 
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.matching.matching_config import MatchingConfig
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 from .classification import ClassificationMetricsScore
@@ -37,7 +36,7 @@ class MetricsScore:
         prediction_config (Optional[PredictionMetricsConfig]): Config for prediction evaluation.
         classification_config (Optional[ClassificationMetricsConfig]): Config for classification evaluation.
         evaluation_task (EvaluationTask): EvaluationTask instance.
-        maps (List[Map]): List of mAP instances. Each mAP is different from threshold
+        mean_ap_values (List[Map]): List of mAP instances. Each mAP is different from threshold
                                for matching (ex. IoU 0.3).
         tracking_scores (List[TrackingMetricsScore]): List of TrackingMetricsScore instances.
         prediction_scores (List[TODO]): TBD
@@ -58,7 +57,7 @@ class MetricsScore:
         self.prediction_config = config.prediction_config
         self.classification_config = config.classification_config
         # detection metrics scores for each matching method
-        self.maps: List[Map] = []
+        self.mean_ap_values: List[Map] = []
         # tracking metrics scores for each matching method
         self.tracking_scores: List[TrackingMetricsScore] = []
         # TODO: prediction metrics scores for each matching method
@@ -89,9 +88,9 @@ class MetricsScore:
         str_ += f"Ground Truth Num: {self.num_ground_truth}\n"
 
         # detection
-        for map_ in self.maps:
+        for mean_ap in self.mean_ap_values:
             # whole result
-            str_ += str(map_)
+            str_ += str(mean_ap)
 
         # tracking
         for track_score in self.tracking_scores:
@@ -120,59 +119,101 @@ class MetricsScore:
     def num_ground_truth(self) -> int:
         return self.__num_gt
 
+    def flatten_object_results(
+        self,
+        object_results: Union[
+            Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]],
+            Dict[MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]],
+        ],
+    ) -> Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]:
+        """
+        Flatten nested multi-frame object results into a unified single-frame format.
+
+        This function supports both:
+          - Single-frame results: List[DynamicObjectWithPerceptionResult]
+          - Multi-frame aggregated results: List[List[DynamicObjectWithPerceptionResult]]
+
+        It detects whether each result list is nested (i.e., a list of lists),
+        and flattens it accordingly while preserving the structure across:
+          - Matching mode (e.g., CENTERDISTANCE, IOU3D)
+          - Object label (e.g., car, pedestrian)
+          - Matching threshold (e.g., 0.5, 1.0)
+
+        Args:
+            object_results: Nested or flat dictionary containing detection results
+                grouped by MatchingMode, LabelType, and float threshold.
+
+        Returns:
+            Flattened object_results in the format:
+                Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
+        """
+        flattened_results: Dict[
+            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
+        ] = {}
+
+        for mode, label_map in object_results.items():
+            if not isinstance(label_map, dict):
+                raise TypeError(f"Expected Dict for object_results[{mode}], got {type(label_map)}: {label_map}")
+            flattened_results[mode] = {}
+            for label, threshold_map in label_map.items():
+                flattened_results[mode][label] = {}
+                for threshold, result_list in threshold_map.items():
+                    # Check if nested: List[List[...]]
+                    if all(isinstance(r, list) for r in result_list):
+                        flat_list = list(chain.from_iterable(result_list))  # type: ignore
+                    else:
+                        flat_list = result_list  # type: ignore
+                    flattened_results[mode][label][threshold] = flat_list
+
+        return flattened_results
+
     # TODO(vividf): Refactor this function to always accept flattened input (List[DynamicObjectWithPerceptionResult]).
     # Move multi-frame handling and scenario-level aggregation logic to a new function
     # reference: https://github.com/tier4/autoware_perception_evaluation/pull/212#discussion_r2079100088
     def evaluate_detection(
         self,
-        object_results: Union[
-            Dict[LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]],  # Single frame
-            Dict[LabelType, Dict[MatchingConfig, List[List[DynamicObjectWithPerceptionResult]]]],  # Multiple frames
+        nuscene_object_results: Union[
+            Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]],  # Single frame
+            Dict[
+                MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
+            ],  # Multiple frames
         ],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
         """
-        Evaluate detection performance and calculate detection-related metrics such as mAP.
+        Evaluate detection metrics (e.g., AP, APH, mAP) from object-level matching results.
 
-        This function processes detection results grouped by label and matching configuration.
-        It supports both single-frame and multi-frame input formats. Internally, the object results
-        are first flattened and regrouped by MatchingConfig using
-        `flatten_and_group_object_results_by_match_config()`.
+        This function supports both single-frame and multi-frame formats:
+            - Single-frame: List[DynamicObjectWithPerceptionResult]
+            - Multi-frame: List[List[DynamicObjectWithPerceptionResult]]
 
-        For each unique (MatchingMode, threshold) pair, it computes per-label statistics and
-        passes them to a Map instance for final mAP (mean Average Precision) calculation.
+        It first flattens nested lists if necessary, and then constructs a Map instance per
+        MatchingMode (e.g., CENTERDISTANCE, IOU3D), aggregating results per label and threshold.
 
         Args:
-            object_results: A nested dictionary of detection results where:
-                - The first key is a LabelType (e.g., car, pedestrian),
-                - The second key is a MatchingConfig (e.g., IoU@0.5),
-                - The value is either a list (single frame) or list of lists (multi-frame)
-                of DynamicObjectWithPerceptionResult instances.
-            num_ground_truth: A dictionary mapping each label to the number of ground truth objects.
+            nuscene_object_results: Hierarchical matching results structured as:
+                Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
+                or
+                Dict[MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]]
+                where thresholds are used to group multiple matching configurations.
+            num_ground_truth: A dictionary mapping LabelType to the total number of ground truth
+                objects for that label (aggregated across all frames if multi-frame).
         """
-
         if self.tracking_config is None:
             self.__num_gt += sum(num_ground_truth.values())
 
-        # Group by (matching_mode_str, threshold): Dict[LabelType -> List[DynamicObjectWithPerceptionResult]]
-        # Example: (center_distance_bev, 0,5): {car: List[DynamicObjectWithPerceptionResult]}
-        results_by_match_config = flatten_and_group_object_results_by_match_config(object_results)
+        # Flatten List[List[...]] if multi-frame input
+        flattened_results = self.flatten_object_results(nuscene_object_results)
 
-        # For each (matching_mode, threshold), group labels and compute MAP
-        for (matching_mode, threshold), label_results in results_by_match_config.items():
-            target_labels = list(label_results.keys())
+        for matching_mode, label_to_threshold_map in flattened_results.items():
+            target_labels = list(label_to_threshold_map.keys())
             num_gt_dict = {label: num_ground_truth.get(label, 0) for label in target_labels}
-            thresholds = [threshold] * len(target_labels)
-
-            # TODO(vividf): Rename variable to avoid shadowing Python built-in keywords like 'map'
-            self.maps.append(
+            self.mean_ap_values.append(
                 Map(
-                    object_results_dict=label_results,
+                    object_results_dict=label_to_threshold_map,
                     num_ground_truth_dict=num_gt_dict,
                     target_labels=target_labels,
                     matching_mode=matching_mode,
-                    # TODO(vividf): Rename matching_threshold_list to avoid variable name with data type
-                    matching_threshold_list=thresholds,
                     is_detection_2d=self.evaluation_task.is_2d(),
                 )
             )

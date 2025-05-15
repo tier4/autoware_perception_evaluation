@@ -32,7 +32,6 @@ from perception_eval.common.threshold import get_label_threshold
 from perception_eval.common.threshold import LabelThreshold
 from perception_eval.common.transform import TransformDict
 from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.matching.matching_config import MatchingConfig
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
@@ -735,50 +734,6 @@ def divide_objects(
         if label is None:
             continue
         result.setdefault(label, []).append(dynamic_object)
-
-    return result
-
-
-def divide_nuscene_object_results_by_label(
-    nuscene_object_results: Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]],
-    target_labels: Optional[List[LabelType]] = None,
-) -> Dict[LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]]:
-    """
-    Divide a dictionary of detection matching results into a dictionary grouped by label and matching config.
-
-    This function is used for detection evaluation, where estimated objects are matched
-    against ground truth objects across multiple matching modes (e.g., center distance, IoU)
-    and thresholds.
-
-    The input is a dictionary where each key is a MatchingConfig (mode, threshold) and
-    the value is a list of matched DynamicObjectWithPerceptionResult.
-
-    If `target_labels` is specified, only objects whose labels match the target list
-    will be included in the output. If an estimated label does not match but a ground
-    truth label is available, the ground truth label is used as a fallback.
-
-    Args:
-        nuscene_objects (Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]):
-            Dictionary of detection matching results grouped by matching config.
-        target_labels (Optional[List[LabelType]]):
-            List of labels to filter. If None, all labels are included.
-
-    Returns:
-        Dict[LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]]:
-            A dictionary mapping each label to another dictionary that maps matching config
-            to the list of corresponding matched results. If `target_labels` is provided,
-            all specified labels will exist in the dictionary, even if empty.
-    """
-    result: Dict[LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]] = (
-        {label: defaultdict(list) for label in target_labels} if target_labels else {}
-    )
-
-    for matching_config, dynamic_objects in nuscene_object_results.items():
-        for dynamic_object in dynamic_objects:
-            label = resolve_label(dynamic_object, target_labels)
-            if label is None:
-                continue
-            result[label][matching_config].append(dynamic_object)
 
     return result
 

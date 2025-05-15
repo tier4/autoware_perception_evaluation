@@ -24,122 +24,160 @@ from perception_eval.evaluation.result.object_result import DynamicObjectWithPer
 
 
 class Map:
-    """mAP metrics score class.
+    """
+    mAP evaluation class supporting multiple thresholds per label.
+
+    This class calculates Average Precision (AP) and Average Precision with Heading (APH)
+    for a set of perception results grouped by label and matching threshold.
+
+    For each label:
+        - It computes AP and optionally APH for all given matching thresholds.
+        - It then calculates the mean AP (and APH) across thresholds for that label.
+
+    Finally:
+        - It averages the per-label mean AP (and APH) across all target labels
+          to produce the final mAP and mAPH.
+
+    This class supports both 2D and 3D detection evaluation:
+        - In 2D detection, only AP is calculated (APH is skipped).
+        - In 3D detection, both AP and APH are calculated.
 
     Attributes:
-        map_config (MapConfig): The config for mAP calculation.
-        aps (List[Ap]): The list of AP (Average Precision) for each label.
-        map (float): mAP value.
-
-    Args:
-        object_results_dict (Dict[LabelType, List[DynamicObjectWithPerceptionResult]]): The [label, object results] dictionary
-        target_labels (List[LabelType]): Target labels to evaluate mAP
-        matching_mode (MatchingMode): Matching mode like distance between the center of
-            the object, 3d IoU.
-        matching_threshold_list (List[float]):
-            The matching threshold to evaluate. Defaults to None.
-            For example, if matching_mode = IOU3d and matching_threshold = 0.5,
-            and IoU of the object is higher than "matching_threshold",
-            this function appends to return objects.
+        target_labels (List[LabelType]):
+            List of target labels evaluated in this instance.
+        matching_mode (MatchingMode):
+            The matching strategy used for TP/FP calculation (e.g., CENTERDISTANCE, IOU3D).
+        is_detection_2d (bool):
+            If True, only AP is computed; APH is skipped.
+        label_to_aps (Dict[LabelType, List[Ap]]):
+            List of AP instances (one per threshold) for each label.
+        label_mean_to_ap (Dict[LabelType, float]):
+            Mean AP across thresholds for each label.
+        label_to_aphs (Optional[Dict[LabelType, List[Ap]]]):
+            List of APH instances (one per threshold) for each label (if 3D detection).
+        label_mean_to_aph (Optional[Dict[LabelType, float]]):
+            Mean APH across thresholds for each label (if 3D detection).
+        map (float):
+            Final mean Average Precision (mAP) across all labels.
+        maph (Optional[float]):
+            Final mean Average Precision with Heading (mAPH) across all labels,
+            or None if `is_detection_2d` is True.
     """
 
     def __init__(
         self,
-        object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]],
+        object_results_dict: Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]],
         num_ground_truth_dict: Dict[LabelType, int],
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
-        matching_threshold_list: List[List[float]],
         is_detection_2d: bool = False,
     ) -> None:
         self.num_ground_truth_dict: Dict[LabelType, int] = num_ground_truth_dict
         self.target_labels: List[LabelType] = target_labels
         self.matching_mode: MatchingMode = matching_mode
-        # TODO(vividf): matching_threshold_list to matching_thresholds
-        # Also thresholds should be refactor to List[float]
-        self.matching_threshold_list: List[List[float]] = matching_threshold_list
         self.is_detection_2d: bool = is_detection_2d
 
-        # calculate AP & APH
-        self.aps: List[Ap] = []
-        self.aphs: List[Ap] = []
-        for target_label, matching_threshold in zip(target_labels, matching_threshold_list):
-            if target_label not in object_results_dict:
-                object_results = []
-            else:
-                object_results = object_results_dict[target_label]
-            num_ground_truth = num_ground_truth_dict[target_label]
-            ap_ = Ap(
-                tp_metrics=TPMetricsAp(),
-                object_results=object_results,
-                num_ground_truth=num_ground_truth,
-                target_labels=[target_label],
-                matching_mode=matching_mode,
-                matching_threshold=matching_threshold,
-            )
-            self.aps.append(ap_)
+        self.label_to_aps: Dict[LabelType, List[Ap]] = {}
+        self.label_mean_to_ap: Dict[LabelType, float] = {}
+        self.label_to_aphs: Dict[LabelType, List[Ap]] = {} if not self.is_detection_2d else None
+        self.label_mean_to_aph: Dict[LabelType, float] = {} if not self.is_detection_2d else None
 
-            if not self.is_detection_2d:
-                aph_ = Ap(
-                    tp_metrics=TPMetricsAph(),
+        for label in target_labels:
+            ap_per_threshold = []
+            aph_per_threshold = []
+
+            for threshold, object_results in object_results_dict[label].items():
+                num_ground_truth = num_ground_truth_dict[label]
+
+                ap = Ap(
+                    tp_metrics=TPMetricsAp(),
                     object_results=object_results,
                     num_ground_truth=num_ground_truth,
-                    target_labels=[target_label],
+                    target_label=label,
                     matching_mode=matching_mode,
-                    matching_threshold=matching_threshold,
+                    matching_threshold=threshold,
                 )
-                self.aphs.append(aph_)
+                ap_per_threshold.append(ap)
 
-        self.map = sum(ap.ap for ap in self.aps) / len(self.aps) if self.aps else 0
-        self.maph = sum(aph.ap for aph in self.aphs) / len(self.aphs) if self.aphs else 0
+                if not self.is_detection_2d:
+                    aph = Ap(
+                        tp_metrics=TPMetricsAph(),
+                        object_results=object_results,
+                        num_ground_truth=num_ground_truth,
+                        target_label=label,
+                        matching_mode=matching_mode,
+                        matching_threshold=threshold,
+                    )
+                    aph_per_threshold.append(aph)
+
+            self.label_to_aps[label] = ap_per_threshold
+            self.label_mean_to_ap[label] = self._mean([ap.ap for ap in ap_per_threshold])
+
+            if not self.is_detection_2d:
+                self.label_to_aphs[label] = aph_per_threshold
+                self.label_mean_to_aph[label] = self._mean([aph.ap for aph in aph_per_threshold])
+
+        self.map: float = self._mean(list(self.label_mean_to_ap.values()))
+        self.maph: float = self._mean(list(self.label_mean_to_aph.values())) if not self.is_detection_2d else None
 
     def __str__(self) -> str:
-        """__str__ method
-
-        Returns:
-            str: Formatted string.
-        """
-        str_: str = ""
+        str_ = ""
         str_ += f"\nmAP: {self.map:.3f}, "
         str_ += f"mAPH: {self.maph:.3f} " if not self.is_detection_2d else ""
-        str_ += f"({self.matching_mode.value})\n\n"
+        str_ += f"({self.matching_mode.value})\n"
 
-        # Header
-        str_ += "|      Label      |"
-        for ap_ in self.aps:
-            label = ap_.target_labels[0].value
-            threshold = ap_.matching_threshold
-            str_ += f" {label}({threshold}) |"
-        str_ += "\n"
+        # === Per-label AP Table ===
+        for label in self.target_labels:
+            str_ += f"\nLabel: {label.value}\n"
+            str_ += "| Threshold | Predict_num | Groundtruth_num |     AP     |"
+            if not self.is_detection_2d:
+                str_ += "    APH    |"
+            str_ += "\n"
 
-        # Separator
-        str_ += "|:---------------:|" + ":------------:|" * len(self.aps) + "\n"
+            str_ += "|:---------:|:------------:|:----------------:|:----------:|"
+            if not self.is_detection_2d:
+                str_ += ":---------:|"
+            str_ += "\n"
 
-        # Predict_num
-        str_ += "|   Predict_num   |"
-        for ap_ in self.aps:
-            str_ += f" {ap_.objects_results_num:^12} |"
-        str_ += "\n"
+            aps = self.label_to_aps[label]
+            aphs = self.label_to_aphs.get(label, []) if not self.is_detection_2d else []
+            gt_num = self.num_ground_truth_dict[label]
 
-        # Ground Truth Num
-        str_ += "| GroundTruth_num |"
-        for ap_ in self.aps:
-            label = ap_.target_labels[0]
-            gt_num = self.num_ground_truth_dict.get(label, 0)
-            str_ += f" {gt_num:^12} |"
-        str_ += "\n"
+            for ap in aps:
+                threshold = ap.matching_threshold
+                predict_num = ap.objects_results_num
+                str_ += f"|  {threshold:^8.2f} | {predict_num:^12} | {gt_num:^16} |  {ap.ap:^8.3f} |"
 
-        # AP
-        str_ += "|       AP        |"
-        for ap_ in self.aps:
-            str_ += f" {ap_.ap:^12.3f} |"
-        str_ += "\n"
+                if not self.is_detection_2d:
+                    aph = next((a for a in aphs if a.matching_threshold == threshold), None)
+                    str_ += f"  {aph.ap:^8.3f} |" if aph else " {:^8} |".format("N/A")
+                str_ += "\n"
 
-        # APH
+        # === Summary Table ===
+        str_ += "\nSummary:\n"
+        str_ += "|      Label      |   Thresholds   |  Mean AP   |"
         if not self.is_detection_2d:
-            str_ += "|      APH        |"
-            for aph_ in self.aphs:
-                str_ += f" {aph_.ap:^12.3f} |"
+            str_ += "  Mean APH  |"
+        str_ += "\n"
+
+        str_ += "|:---------------:|:--------------:|:-----------:|"
+        if not self.is_detection_2d:
+            str_ += ":-----------:|"
+        str_ += "\n"
+
+        for label in self.target_labels:
+            thresholds = [f"{ap.matching_threshold:.2f}" for ap in self.label_to_aps[label]]
+            mean_ap = self.label_mean_to_ap[label]
+            str_ += f"| {label.value:^15} | {'/'.join(thresholds):^14} |  {mean_ap:^9.3f} |"
+            if not self.is_detection_2d:
+                mean_aph = self.label_mean_to_aph[label]
+                str_ += f"  {mean_aph:^9.3f} |"
             str_ += "\n"
 
         return str_
+
+    @staticmethod
+    def _mean(values: List[float]) -> float:
+        if not values:
+            raise ValueError("Cannot compute mean of an empty list.")
+        return sum(values) / len(values)
