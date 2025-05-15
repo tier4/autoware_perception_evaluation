@@ -77,6 +77,9 @@ def get_nuscene_object_results(
     For false positive validation mode, unmatched estimated objects are excluded from the results.
     Otherwise, unmatched objects are recorded as false positives.
 
+    If no estimated objects are given, the result will still include all labels and thresholds
+    with empty matching results.
+
     Args:
         evaluation_task (EvaluationTask): Evaluation task.
         estimated_objects (List[ObjectType]): Estimated objects list.
@@ -99,9 +102,6 @@ def get_nuscene_object_results(
               ...
             }
     """
-    # There is no estimated object (= all FN)
-    if not estimated_objects:
-        return {}
 
     label_list: List[LabelType] = metrics_config.target_labels
 
@@ -120,6 +120,15 @@ def get_nuscene_object_results(
     nuscene_object_results: Dict[
         MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
     ] = defaultdict(lambda: defaultdict(dict))
+
+    if not estimated_objects:
+        # All FN case
+        for mode, label_to_thresholds in matching_config_map.items():
+            for label, thresholds in label_to_thresholds.items():
+                for threshold in thresholds:
+                    nuscene_object_results[mode][label][threshold] = []
+        return nuscene_object_results
+
     estimated_objects_sorted = sorted(estimated_objects, key=lambda x: x.semantic_score, reverse=True)
 
     label_to_estimated_objects_map: Dict[LabelType, List[ObjectType]] = defaultdict(list)

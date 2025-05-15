@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from itertools import chain
 from typing import Dict
 from typing import List
 from typing import Union
@@ -23,7 +24,6 @@ from perception_eval.evaluation.result.object_result import DynamicObjectWithPer
 from .classification import ClassificationMetricsScore
 from .detection import Map
 from .metrics_score_config import MetricsScoreConfig
-from .metrics_utils import flatten_and_group_object_results_by_match_config
 from .tracking import TrackingMetricsScore
 
 

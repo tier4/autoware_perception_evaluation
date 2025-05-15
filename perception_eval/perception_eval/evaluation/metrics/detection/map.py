@@ -88,7 +88,6 @@ class Map:
 
             for threshold, object_results in object_results_dict[label].items():
                 num_ground_truth = num_ground_truth_dict[label]
-
                 ap = Ap(
                     tp_metrics=TPMetricsAp(),
                     object_results=object_results,
@@ -179,5 +178,5 @@ class Map:
     @staticmethod
     def _mean(values: List[float]) -> float:
         if not values:
-            raise ValueError("Cannot compute mean of an empty list.")
+            return 0.0
         return sum(values) / len(values)

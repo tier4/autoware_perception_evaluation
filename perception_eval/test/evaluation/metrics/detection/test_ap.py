@@ -28,7 +28,6 @@ from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.matching.objects_filter import divide_nuscene_object_results_by_label
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.detection.ap import Ap
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
@@ -213,23 +212,23 @@ class TestAp(unittest.TestCase):
             iou_3d_thresholds=[matching_threshold],
             plane_distance_thresholds=[matching_threshold],
         )
-        object_results = get_nuscene_object_results(
+        nuscene_object_results = get_nuscene_object_results(
             evaluation_task=self.evaluation_task,
             estimated_objects=estimated_objects,
             ground_truth_objects=ground_truth_objects,
             metrics_config=metrics_config,
         )
-        object_results_by_label = divide_nuscene_object_results_by_label(object_results, self.target_labels)
+
         num_gt_dict = divide_objects_to_num(ground_truth_objects, self.target_labels)
 
-        result = object_results_by_label[label][(matching_mode, matching_threshold)]
+        result = nuscene_object_results[matching_mode][label][matching_threshold]
         num_gt = num_gt_dict[label]
 
         ap = Ap(
             tp_metrics=TPMetricsAp(),
             object_results=result,
             num_ground_truth=num_gt,
-            target_labels=label,
+            target_label=label,
             matching_mode=matching_mode,
             matching_threshold=matching_threshold,
         )
@@ -237,7 +236,7 @@ class TestAp(unittest.TestCase):
             tp_metrics=TPMetricsAph(),
             object_results=result,
             num_ground_truth=num_gt,
-            target_labels=label,
+            target_label=label,
             matching_mode=matching_mode,
             matching_threshold=matching_threshold,
         )
