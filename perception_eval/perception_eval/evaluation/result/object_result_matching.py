@@ -61,158 +61,191 @@ def convert_nested_thresholds(thresholds: List[List[float]], labels: List[LabelT
     return result
 
 
-def get_nuscene_object_results(
-    evaluation_task: EvaluationTask,
-    estimated_objects: List[ObjectType],
-    ground_truth_objects: List[ObjectType],
-    metrics_config: MetricsScoreConfig,
-    matching_label_policy: MatchingLabelPolicy = MatchingLabelPolicy.DEFAULT,
-    transforms: Optional[TransformDict] = None,
-) -> Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]:
+class NuscenesObjectMatcher:
     """
-    Perform label-wise and threshold-wise matching between estimated and ground truth objects,
-    and return results grouped by matching mode → label → threshold.
+    Class to perform NuScenes-style matching between estimated and ground truth objects
+    using various matching modes (e.g., center distance, IoU) and thresholds.
 
-    Matching is performed with greedy 1-to-1 assignment sorted by semantic score.
-    For false positive validation mode, unmatched estimated objects are excluded from the results.
-    Otherwise, unmatched objects are recorded as false positives.
+    This class supports greedy 1-to-1 matching with configurable label policies,
+    and returns results grouped by matching mode → label → threshold.
 
-    If no estimated objects are given, the result will still include all labels and thresholds
-    with empty matching results.
+    Attributes:
+        evaluation_task (EvaluationTask): The evaluation task type (e.g., DETECTION).
+        metrics_config (MetricsScoreConfig): Configuration for evaluation thresholds and target labels.
+        matching_label_policy (MatchingLabelPolicy): Rule for label compatibility during matching.
+        transforms (Optional[TransformDict]): Optional transform dictionary for coordinate conversion.
+    """
 
-    Args:
-        evaluation_task (EvaluationTask): Evaluation task.
-        estimated_objects (List[ObjectType]): Estimated objects list.
-        ground_truth_objects (List[ObjectType]): Ground truth objects list.
-        matching_label_policy (MatchingLabelPolicy, optional): Policy of matching objects.
-            Defaults to MatchingLabelPolicy.DEFAULT.
-        transforms (Optional[TransformDict]): Transforms to be applied.
-        metrics_config (MetricsScoreConfig): Configuration settings for `MetricsScore`
+    def __init__(
+        self,
+        evaluation_task: EvaluationTask,
+        metrics_config: MetricsScoreConfig,
+        matching_label_policy: MatchingLabelPolicy = MatchingLabelPolicy.DEFAULT,
+        transforms: Optional[TransformDict] = None,
+    ):
+        """
+        Initialize the matcher with evaluation parameters and matching thresholds.
+        """
+        self.evaluation_task = evaluation_task
+        self.metrics_config = metrics_config
+        self.matching_label_policy = matching_label_policy
+        self.transforms = transforms
+        self.matching_config_map = self._build_matching_config_map()
 
-    Returns:
-        Nested dict grouped as:
-            {
-              MatchingMode.CENTERDISTANCE: {
-                  LabelType.CAR: {
-                      0.5: [DynamicObjectWithPerceptionResult, ...],
+    def _build_matching_config_map(self) -> Dict[MatchingMode, Dict[LabelType, List[float]]]:
+        """
+        Convert threshold lists from metrics config to label-to-threshold mappings per matching mode.
+
+        Returns:
+            Dict mapping each MatchingMode to a label-wise threshold dictionary.
+        """
+        label_list: List[LabelType] = self.metrics_config.target_labels
+        return {
+            mode: convert_nested_thresholds(thresholds, label_list)
+            for mode, thresholds in [
+                (MatchingMode.CENTERDISTANCE, self.metrics_config.detection_config.center_distance_thresholds),
+                (MatchingMode.CENTERDISTANCEBEV, self.metrics_config.detection_config.center_distance_bev_thresholds),
+                (MatchingMode.PLANEDISTANCE, self.metrics_config.detection_config.plane_distance_thresholds),
+                (MatchingMode.IOU2D, self.metrics_config.detection_config.iou_2d_thresholds),
+                (MatchingMode.IOU3D, self.metrics_config.detection_config.iou_3d_thresholds),
+            ]
+            if thresholds
+        }
+
+    def match(
+        self,
+        estimated_objects: List[ObjectType],
+        ground_truth_objects: List[ObjectType],
+    ) -> Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]:
+        """
+        Perform label-wise and threshold-wise matching between estimated and ground truth objects,
+        and return results grouped by matching mode → label → threshold.
+
+        Matching is performed with greedy 1-to-1 assignment sorted by semantic score.
+        For false positive validation mode, unmatched estimated objects are excluded from the results.
+        Otherwise, unmatched objects are recorded as false positives.
+
+        If no estimated objects are given, the result will still include all labels and thresholds
+        with empty matching results.
+
+        Returns:
+            Nested dict grouped as:
+                {
+                  MatchingMode.CENTERDISTANCE: {
+                      LabelType.CAR: {
+                          0.5: [DynamicObjectWithPerceptionResult, ...],
+                          ...
+                      },
                       ...
                   },
                   ...
-              },
-              ...
-            }
-    """
+                }
+        """
+        results: Dict[
+            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
+        ] = defaultdict(lambda: defaultdict(dict))
 
-    label_list: List[LabelType] = metrics_config.target_labels
+        if not estimated_objects:
+            # All FN case
+            for mode, label_to_thresholds in self.matching_config_map.items():
+                for label, thresholds in label_to_thresholds.items():
+                    for threshold in thresholds:
+                        results[mode][label][threshold] = []
+            return results
 
-    matching_config_map: Dict[MatchingMode, Dict[LabelType, List[float]]] = {
-        mode: convert_nested_thresholds(thresholds, label_list)
-        for mode, thresholds in [
-            (MatchingMode.CENTERDISTANCE, metrics_config.detection_config.center_distance_thresholds),
-            (MatchingMode.CENTERDISTANCEBEV, metrics_config.detection_config.center_distance_bev_thresholds),
-            (MatchingMode.PLANEDISTANCE, metrics_config.detection_config.plane_distance_thresholds),
-            (MatchingMode.IOU2D, metrics_config.detection_config.iou_2d_thresholds),
-            (MatchingMode.IOU3D, metrics_config.detection_config.iou_3d_thresholds),
-        ]
-        if thresholds
-    }
+        estimated_objects_sorted = sorted(estimated_objects, key=lambda x: x.semantic_score, reverse=True)
 
-    nuscene_object_results: Dict[
-        MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
-    ] = defaultdict(lambda: defaultdict(dict))
+        label_to_est_objs: Dict[LabelType, List[ObjectType]] = defaultdict(list)
+        label_to_gt_objs: Dict[LabelType, List[ObjectType]] = defaultdict(list)
 
-    if not estimated_objects:
-        # All FN case
-        for mode, label_to_thresholds in matching_config_map.items():
-            for label, thresholds in label_to_thresholds.items():
-                for threshold in thresholds:
-                    nuscene_object_results[mode][label][threshold] = []
-        return nuscene_object_results
+        for obj in estimated_objects_sorted:
+            label_to_est_objs[obj.semantic_label.label].append(obj)
+        for obj in ground_truth_objects:
+            label_to_gt_objs[obj.semantic_label.label].append(obj)
 
-    estimated_objects_sorted = sorted(estimated_objects, key=lambda x: x.semantic_score, reverse=True)
+        for label in set(label_to_est_objs.keys()).union(label_to_gt_objs.keys()):
+            est_objs = label_to_est_objs.get(label, [])
+            gt_objs = label_to_gt_objs.get(label, [])
 
-    label_to_estimated_objects_map: Dict[LabelType, List[ObjectType]] = defaultdict(list)
-    label_to_ground_truth_objects_map: Dict[LabelType, List[ObjectType]] = defaultdict(list)
+            for matching_mode, label_to_threshold_map in self.matching_config_map.items():
+                thresholds = label_to_threshold_map.get(label, [])
+                if not thresholds:
+                    continue
 
-    for obj in estimated_objects_sorted:
-        label_to_estimated_objects_map[obj.semantic_label.label].append(obj)
-    for obj in ground_truth_objects:
-        label_to_ground_truth_objects_map[obj.semantic_label.label].append(obj)
+                matching_method_module, _ = _get_matching_module(matching_mode)
 
-    for label in set(label_to_estimated_objects_map.keys()).union(label_to_ground_truth_objects_map.keys()):
-        est_objs = label_to_estimated_objects_map.get(label, [])
-        gt_objs = label_to_ground_truth_objects_map.get(label, [])
+                threshold_to_results_map = self._get_threshold_to_results_map(
+                    estimated_objects_sorted=est_objs,
+                    ground_truth_objects=gt_objs,
+                    matching_method_module=matching_method_module,
+                    thresholds=thresholds,
+                    label_policy=self.matching_label_policy,
+                )
 
-        for matching_mode, label_to_threshold_map in matching_config_map.items():
-            thresholds = label_to_threshold_map.get(label, [])
-            if not thresholds:
-                continue
+                results[matching_mode][label] = threshold_to_results_map
 
-            matching_method_module, _ = _get_matching_module(matching_mode)
+        return results
 
-            threshold_to_results_map = _get_threshold_to_results_map(
-                estimated_objects_sorted=est_objs,
-                ground_truth_objects=gt_objs,
-                matching_label_policy=matching_label_policy,
-                matching_method_module=matching_method_module,
-                thresholds=thresholds,
-                transforms=transforms,
-                evaluation_task=evaluation_task,
+    def _get_threshold_to_results_map(
+        self,
+        estimated_objects_sorted: List[ObjectType],
+        ground_truth_objects: List[ObjectType],
+        matching_method_module: Callable,
+        thresholds: List[float],
+        label_policy: MatchingLabelPolicy,
+    ) -> Dict[float, List[DynamicObjectWithPerceptionResult]]:
+        """
+        Perform 1-to-1 greedy matching between estimated and ground truth objects for each threshold.
+
+        This function iterates over a list of matching thresholds and performs matching independently
+        for each threshold using the provided matching method (e.g., center distance, IoU).
+
+        Returns:
+            Dict[float, List[DynamicObjectWithPerceptionResult]]:
+                A dictionary mapping each threshold to its list of matching results.
+        """
+        return {
+            threshold: self._match_one_threshold(
+                estimated_objects_sorted,
+                ground_truth_objects,
+                threshold,
+                matching_method_module,
+                label_policy,
             )
+            for threshold in thresholds
+        }
 
-            nuscene_object_results[matching_mode][label] = threshold_to_results_map
+    def _match_one_threshold(
+        self,
+        estimated_objects_sorted: List[ObjectType],
+        ground_truth_objects: List[ObjectType],
+        threshold: float,
+        matching_method_module: Callable,
+        label_policy: MatchingLabelPolicy,
+    ) -> List[DynamicObjectWithPerceptionResult]:
+        """
+        Perform greedy matching for a single threshold value.
 
-    return nuscene_object_results
+        For each estimated object, it searches for the best-matching ground truth object that:
+            - Has not already been matched,
+            - Has the same frame ID,
+            - Is matchable under the provided label policy.
 
+        If the best match satisfies the current threshold, it is counted as a true positive (TP).
+        Otherwise, the estimated object is recorded as a false positive (FP), unless the evaluation
+        task is in false-positive validation mode.
 
-def _get_threshold_to_results_map(
-    estimated_objects_sorted: List[ObjectType],
-    ground_truth_objects: List[ObjectType],
-    matching_label_policy: MatchingLabelPolicy,
-    matching_method_module: Callable,
-    thresholds: List[float],
-    transforms: Optional[TransformDict] = None,
-    evaluation_task: Optional[EvaluationTask] = None,
-) -> Dict[float, List[DynamicObjectWithPerceptionResult]]:
-    """
-    Perform 1-to-1 greedy matching between estimated and ground truth objects for each threshold.
+        Args:
+            estimated_objects_sorted (List[ObjectType]): Estimated objects sorted by semantic score.
+            ground_truth_objects (List[ObjectType]): Ground truth objects to be matched.
+            threshold (float): Matching threshold.
+            matching_method_module (Callable): Function that computes matching metric.
+            label_policy (MatchingLabelPolicy): Policy that defines label compatibility.
 
-    This function iterates over a list of matching thresholds and performs matching independently
-    for each threshold using the provided matching method (e.g., center distance, IoU).
-
-    For each estimated object, it searches for the best-matching ground truth object that:
-        - Has not already been matched,
-        - Has the same frame ID,
-        - Is matchable under the provided label policy.
-
-    If the best match satisfies the current threshold, it is counted as a true positive (TP).
-    Otherwise, the estimated object is recorded as a false positive (FP), unless the evaluation
-    task is in false-positive validation mode.
-
-    Args:
-        estimated_objects_sorted (List[ObjectType]):
-            Estimated objects sorted in descending order by confidence score.
-        ground_truth_objects (List[ObjectType]):
-            Ground truth objects to match against.
-        matching_label_policy (MatchingLabelPolicy):
-            Label compatibility rule for matching.
-        matching_method_module (Callable):
-            Function that calculates a matching score or distance between object pairs.
-        thresholds (List[float]):
-            List of thresholds used to determine whether a match is valid.
-        transforms (Optional[TransformDict]):
-            Optional dictionary of transforms between frames.
-        evaluation_task (Optional[EvaluationTask]):
-            Optional evaluation task, used to determine FP validation mode.
-
-    Returns:
-        Dict[float, List[DynamicObjectWithPerceptionResult]]:
-            A dictionary mapping each threshold to its list of matching results.
-    """
-    threshold_to_results_map: Dict[float, List[DynamicObjectWithPerceptionResult]] = {}
-
-    for threshold in thresholds:
-        object_results: List[DynamicObjectWithPerceptionResult] = []
+        Returns:
+            List[DynamicObjectWithPerceptionResult]: List of matching results for this threshold.
+        """
+        results = []
         matched_gt_ids = set()
 
         # TODO(vividf): Optimize the matching process to avoid the O(N^2) complexity.
@@ -230,7 +263,7 @@ def _get_threshold_to_results_map(
                 if est_obj.frame_id != gt_obj.frame_id:
                     continue
                 # Estimated and ground truth objects must have matching labels based on the policy
-                if not matching_label_policy.is_matchable(est_obj, gt_obj):
+                if not label_policy.is_matchable(est_obj, gt_obj):
                     continue
 
                 matching_method = matching_method_module(est_obj, gt_obj)
@@ -244,18 +277,15 @@ def _get_threshold_to_results_map(
                 matched_gt = ground_truth_objects[best_gt_idx]
                 matched_gt_ids.add(best_gt_idx)
                 result = DynamicObjectWithPerceptionResult(
-                    est_obj, matched_gt, matching_label_policy, transforms=transforms
+                    est_obj, matched_gt, label_policy, transforms=self.transforms
                 )
-                object_results.append(result)
+                results.append(result)
             else:
-                if evaluation_task is None or not evaluation_task.is_fp_validation():
-                    object_results.append(
-                        DynamicObjectWithPerceptionResult(est_obj, None, matching_label_policy, transforms=transforms)
-                    )
+                if self.evaluation_task is None or not self.evaluation_task.is_fp_validation():
+                    result = DynamicObjectWithPerceptionResult(est_obj, None, label_policy, transforms=self.transforms)
+                    results.append(result)
 
-        threshold_to_results_map[threshold] = object_results
-
-    return threshold_to_results_map
+        return results
 
 
 def get_object_results(

@@ -33,7 +33,7 @@ from perception_eval.evaluation.metrics.detection.ap import Ap
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
-from perception_eval.evaluation.result.object_result_matching import get_nuscene_object_results
+from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -212,11 +212,13 @@ class TestAp(unittest.TestCase):
             iou_3d_thresholds=[matching_threshold],
             plane_distance_thresholds=[matching_threshold],
         )
-        nuscene_object_results = get_nuscene_object_results(
+        matcher = NuscenesObjectMatcher(
             evaluation_task=self.evaluation_task,
+            metrics_config=metrics_config,
+        )
+        nuscene_object_results = matcher.match(
             estimated_objects=estimated_objects,
             ground_truth_objects=ground_truth_objects,
-            metrics_config=metrics_config,
         )
 
         num_gt_dict = divide_objects_to_num(ground_truth_objects, self.target_labels)

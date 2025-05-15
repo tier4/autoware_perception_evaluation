@@ -37,8 +37,8 @@ from perception_eval.visualization import PerceptionVisualizerType
 
 from ._evaluation_manager_base import _EvaluationManagerBase
 from ..evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from ..evaluation.result.object_result_matching import get_nuscene_object_results
 from ..evaluation.result.object_result_matching import get_object_results
+from ..evaluation.result.object_result_matching import NuscenesObjectMatcher
 
 
 class PerceptionEvaluationManager(_EvaluationManagerBase):
@@ -188,18 +188,13 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 to a list of matched object results.
         """
 
-        nuscene_object_results: Dict[
-            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
-        ] = get_nuscene_object_results(
+        matcher = NuscenesObjectMatcher(
             evaluation_task=self.evaluation_task,
-            estimated_objects=estimated_objects,
-            ground_truth_objects=frame_ground_truth.objects,
             metrics_config=self.metrics_config,
             matching_label_policy=self.evaluator_config.label_params["matching_label_policy"],
             transforms=frame_ground_truth.transforms,
         )
-
-        return nuscene_object_results
+        return matcher.match(estimated_objects, frame_ground_truth.objects)
 
     def match_objects(
         self, estimated_objects: List[ObjectType], frame_ground_truth: FrameGroundTruth

@@ -25,7 +25,7 @@ from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.detection.map import Map
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
-from perception_eval.evaluation.result.object_result_matching import get_nuscene_object_results
+from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -60,11 +60,13 @@ class TestMap(unittest.TestCase):
         matching_threshold: float,
     ) -> Map:
         metrics_config = self._get_default_metrics_config(matching_threshold)
-        nuscene_object_results = get_nuscene_object_results(
+        matcher = NuscenesObjectMatcher(
             evaluation_task=self.evaluation_task,
+            metrics_config=metrics_config,
+        )
+        nuscene_object_results = matcher.match(
             estimated_objects=estimated_objects,
             ground_truth_objects=ground_truth_objects,
-            metrics_config=metrics_config,
         )
         num_ground_truth_dict = divide_objects_to_num(ground_truth_objects, self.target_labels)
         return Map(
