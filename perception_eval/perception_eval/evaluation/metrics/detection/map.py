@@ -52,6 +52,7 @@ class Map:
         matching_threshold_list: List[List[float]],
         is_detection_2d: bool = False,
     ) -> None:
+        self.num_ground_truth_dict: Dict[LabelType, int] = num_ground_truth_dict
         self.target_labels: List[LabelType] = target_labels
         self.matching_mode: MatchingMode = matching_mode
         # TODO(vividf): matching_threshold_list to matching_thresholds
@@ -63,7 +64,10 @@ class Map:
         self.aps: List[Ap] = []
         self.aphs: List[Ap] = []
         for target_label, matching_threshold in zip(target_labels, matching_threshold_list):
-            object_results = object_results_dict[target_label]
+            if target_label not in object_results_dict:
+                object_results = []
+            else:
+                object_results = object_results_dict[target_label]
             num_ground_truth = num_ground_truth_dict[target_label]
             ap_ = Ap(
                 tp_metrics=TPMetricsAp(),
@@ -86,12 +90,8 @@ class Map:
                 )
                 self.aphs.append(aph_)
 
-        valid_aps: List[float] = [ap.ap for ap in self.aps if ap.ap != float("inf")]
-        valid_aphs: List[float] = [aph.ap for aph in self.aphs if aph.ap != float("inf")]
-
-        # calculate mAP & mAPH
-        self.map: float = sum(valid_aps) / len(valid_aps) if 0 < len(valid_aps) else float("inf")
-        self.maph: float = sum(valid_aphs) / len(valid_aphs) if 0 < len(valid_aphs) else float("inf")
+        self.map = sum(ap.ap for ap in self.aps) / len(self.aps) if self.aps else 0
+        self.maph = sum(aph.ap for aph in self.aphs) / len(self.aphs) if self.aphs else 0
 
     def __str__(self) -> str:
         """__str__ method
@@ -119,6 +119,14 @@ class Map:
         str_ += "|   Predict_num   |"
         for ap_ in self.aps:
             str_ += f" {ap_.objects_results_num:^12} |"
+        str_ += "\n"
+
+        # Ground Truth Num
+        str_ += "| GroundTruth_num |"
+        for ap_ in self.aps:
+            label = ap_.target_labels[0]
+            gt_num = self.num_ground_truth_dict.get(label, 0)
+            str_ += f" {gt_num:^12} |"
         str_ += "\n"
 
         # AP

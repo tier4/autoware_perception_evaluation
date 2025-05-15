@@ -20,7 +20,6 @@ from typing import Union
 
 import numpy as np
 from perception_eval.common.label import LabelType
-from perception_eval.common.threshold import get_label_threshold
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
@@ -48,7 +47,7 @@ class Ap:
 
     Args:
         tp_metrics (TPMetrics): Mode of TP (True positive) metrics.
-        object_results (List[List[DynamicObjectWithPerceptionResult]]): Object results list.
+        object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
         num_ground_truth (int): Number of ground truths.
         target_labels (List[LabelType]): Target labels to evaluate.
         matching_mode (MatchingMode): Matching instance.
