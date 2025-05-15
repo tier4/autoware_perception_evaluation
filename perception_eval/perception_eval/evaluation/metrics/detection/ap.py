@@ -68,12 +68,13 @@ class Ap:
         matching_mode: MatchingMode,
         matching_threshold: float,
     ) -> None:
-        self.tp_metrics: Union[TPMetricsAp, TPMetricsAph] = tp_metrics
-        self.num_ground_truth: int = num_ground_truth
+        self.tp_metrics = tp_metrics
+        self.num_ground_truth = num_ground_truth
 
-        self.target_label: LabelType = target_label
-        self.matching_mode: MatchingMode = matching_mode
-        self.matching_threshold: float = matching_threshold
+        self.target_label = target_label
+        self.matching_mode = matching_mode
+        self.matching_threshold = matching_threshold
+
         self.objects_results_num: int = len(object_results)
         self.matching_average: Optional[float] = None
         self.matching_standard_deviation: Optional[float] = None

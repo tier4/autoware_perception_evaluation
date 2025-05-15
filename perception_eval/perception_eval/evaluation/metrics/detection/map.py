@@ -72,10 +72,10 @@ class Map:
         matching_mode: MatchingMode,
         is_detection_2d: bool = False,
     ) -> None:
-        self.num_ground_truth_dict: Dict[LabelType, int] = num_ground_truth_dict
-        self.target_labels: List[LabelType] = target_labels
-        self.matching_mode: MatchingMode = matching_mode
-        self.is_detection_2d: bool = is_detection_2d
+        self.num_ground_truth_dict = num_ground_truth_dict
+        self.target_labels = target_labels
+        self.matching_mode = matching_mode
+        self.is_detection_2d = is_detection_2d
 
         self.label_to_aps: Dict[LabelType, List[Ap]] = {}
         self.label_mean_to_ap: Dict[LabelType, float] = {}
