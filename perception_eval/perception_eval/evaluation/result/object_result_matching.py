@@ -70,10 +70,15 @@ class NuscenesObjectMatcher:
     This class supports greedy 1-to-1 matching with configurable label policies,
     and returns results grouped by matching mode → label → threshold.
 
+    To improve efficiency, it computes a pairwise cost matrix once per matching mode and label,
+    and reuses this matrix across all thresholds for that configuration. This avoids redundant
+    recomputation of the same matching mode.
+
+    Note that NuscenesObjectMatcher is not supporting for different label_policy in current stage.
+
     Attributes:
         evaluation_task (EvaluationTask): The evaluation task type (e.g., DETECTION).
         metrics_config (MetricsScoreConfig): Configuration for evaluation thresholds and target labels.
-        matching_label_policy (MatchingLabelPolicy): Rule for label compatibility during matching.
         transforms (Optional[TransformDict]): Optional transform dictionary for coordinate conversion.
     """
 
@@ -84,14 +89,17 @@ class NuscenesObjectMatcher:
         matching_label_policy: MatchingLabelPolicy = MatchingLabelPolicy.DEFAULT,
         transforms: Optional[TransformDict] = None,
     ):
-        """
-        Initialize the matcher with evaluation parameters and matching thresholds.
-        """
         self.evaluation_task = evaluation_task
         self.metrics_config = metrics_config
         self.matching_label_policy = matching_label_policy
         self.transforms = transforms
         self.matching_config_map = self._build_matching_config_map()
+
+        # TODO(vividf): handle different label policy in the future
+        if matching_label_policy is not MatchingLabelPolicy.DEFAULT:
+            raise ValueError(
+                f"NuscenesObjectMatcher only support MatchingLabelPolicy.DEFAULT, but got: {matching_label_policy}"
+            )
 
     def _build_matching_config_map(self) -> Dict[MatchingMode, Dict[LabelType, List[float]]]:
         """
@@ -176,11 +184,10 @@ class NuscenesObjectMatcher:
                 matching_method_module, _ = _get_matching_module(matching_mode)
 
                 threshold_to_results_map = self._get_threshold_to_results_map(
-                    estimated_objects_sorted=est_objs,
+                    estimated_objects=est_objs,
                     ground_truth_objects=gt_objs,
                     matching_method_module=matching_method_module,
                     thresholds=thresholds,
-                    label_policy=self.matching_label_policy,
                 )
 
                 results[matching_mode][label] = threshold_to_results_map
@@ -189,104 +196,99 @@ class NuscenesObjectMatcher:
 
     def _get_threshold_to_results_map(
         self,
-        estimated_objects_sorted: List[ObjectType],
+        estimated_objects: List[ObjectType],
         ground_truth_objects: List[ObjectType],
         matching_method_module: Callable,
         thresholds: List[float],
-        label_policy: MatchingLabelPolicy,
     ) -> Dict[float, List[DynamicObjectWithPerceptionResult]]:
         """
         Perform 1-to-1 greedy matching between estimated and ground truth objects for each threshold.
 
-        This function iterates over a list of matching thresholds and performs matching independently
-        for each threshold using the provided matching method (e.g., center distance, IoU).
+        This function iterates over the provided thresholds and performs greedy matching independently
+        for each threshold using the specified matching method (e.g., center distance, IoU).
 
         Returns:
-            Dict[float, List[DynamicObjectWithPerceptionResult]]:
-                A dictionary mapping each threshold to its list of matching results.
+            A dictionary mapping each threshold to its list of matching results.
         """
-        return {
-            threshold: self._match_one_threshold(
-                estimated_objects_sorted,
-                ground_truth_objects,
-                threshold,
-                matching_method_module,
-                label_policy,
-            )
-            for threshold in thresholds
-        }
+        threshold_to_results: Dict[float, List[DynamicObjectWithPerceptionResult]] = {}
 
-    def _match_one_threshold(
-        self,
-        estimated_objects_sorted: List[ObjectType],
-        ground_truth_objects: List[ObjectType],
-        threshold: float,
-        matching_method_module: Callable,
-        label_policy: MatchingLabelPolicy,
-    ) -> List[DynamicObjectWithPerceptionResult]:
-        """
-        Perform greedy matching for a single threshold value.
+        cost_matrix = self._compute_cost_matrix(
+            estimated_objects,
+            ground_truth_objects,
+            matching_method_module,
+        )
 
-        For each estimated object, it searches for the best-matching ground truth object that:
-            - Has not already been matched,
-            - Has the same frame ID,
-            - Is matchable under the provided label policy.
+        # Skip matching if either estimation or ground truth is empty
+        if cost_matrix is None:
+            return {threshold: [] for threshold in thresholds}
 
-        If the best match satisfies the current threshold, it is counted as a true positive (TP).
-        Otherwise, the estimated object is recorded as a false positive (FP), unless the evaluation
-        task is in false-positive validation mode.
+        for threshold in thresholds:
+            matched_est_row_indices = set()
+            matched_gt_col_indices = set()
+            results: List[DynamicObjectWithPerceptionResult] = []
 
-        Args:
-            estimated_objects_sorted (List[ObjectType]): Estimated objects sorted by semantic score.
-            ground_truth_objects (List[ObjectType]): Ground truth objects to be matched.
-            threshold (float): Matching threshold.
-            matching_method_module (Callable): Function that computes matching metric.
-            label_policy (MatchingLabelPolicy): Policy that defines label compatibility.
-
-        Returns:
-            List[DynamicObjectWithPerceptionResult]: List of matching results for this threshold.
-        """
-        results = []
-        matched_gt_ids = set()
-
-        # TODO(vividf): Optimize the matching process to avoid the O(N^2) complexity.
-        # Consider using matrix operations to calculate distances between all estimated and
-        # ground truth objects simultaneously for a given frame and matching mode.
-        for est_obj in estimated_objects_sorted:
-            best_matching: Optional[MatchingMethod] = None
-            best_gt_idx: Optional[int] = None
-
-            for gt_idx, gt_obj in enumerate(ground_truth_objects):
-                # Ground truth object has already been matched with another estimated object
-                if gt_idx in matched_gt_ids:
-                    continue
-                # Estimated and ground truth objects must belong to the same frame
-                if est_obj.frame_id != gt_obj.frame_id:
-                    continue
-                # Estimated and ground truth objects must have matching labels based on the policy
-                if not label_policy.is_matchable(est_obj, gt_obj):
+            for est_idx in range(len(estimated_objects)):
+                if est_idx in matched_est_row_indices:
                     continue
 
-                matching_method = matching_method_module(est_obj, gt_obj)
-                if best_matching is None or matching_method.is_better_than(best_matching.value):
-                    best_matching = matching_method
-                    best_gt_idx = gt_idx
+                gt_idx = int(np.argmin(cost_matrix[est_idx]))
+                cost = cost_matrix[est_idx, gt_idx]
 
-            is_match = best_matching is not None and best_matching.is_better_than(threshold)
+                if gt_idx in matched_gt_col_indices or cost >= threshold:
+                    continue
 
-            if is_match:
-                matched_gt = ground_truth_objects[best_gt_idx]
-                matched_gt_ids.add(best_gt_idx)
-                result = DynamicObjectWithPerceptionResult(
-                    est_obj, matched_gt, label_policy, transforms=self.transforms
+                matched_est_row_indices.add(est_idx)
+                matched_gt_col_indices.add(gt_idx)
+
+                results.append(
+                    DynamicObjectWithPerceptionResult(
+                        estimated_objects[est_idx],
+                        ground_truth_objects[gt_idx],
+                        self.matching_label_policy,
+                        transforms=self.transforms,
+                    )
                 )
-                results.append(result)
-            else:
-                if self.evaluation_task is None or not self.evaluation_task.is_fp_validation():
-                    result = DynamicObjectWithPerceptionResult(est_obj, None, label_policy, transforms=self.transforms)
-                    results.append(result)
 
-        return results
+            # Add unmatched estimated objects as false positives if applicable
+            if self.evaluation_task is None or not self.evaluation_task.is_fp_validation():
+                for est_idx in range(len(estimated_objects)):
+                    if est_idx not in matched_est_row_indices:
+                        results.append(
+                            DynamicObjectWithPerceptionResult(
+                                estimated_objects[est_idx],
+                                None,
+                                self.matching_label_policy,
+                                transforms=self.transforms,
+                            )
+                        )
+
+            threshold_to_results[threshold] = results
+
+        return threshold_to_results
+
+    def _compute_cost_matrix(
+        self,
+        estimated_objects: List[ObjectType],
+        ground_truth_objects: List[ObjectType],
+        matching_method_module: Callable,
+    ) -> Optional[np.ndarray]:
+        """
+        Compute pairwise cost matrix between valid estimated and ground truth objects.
+
+        Returns:
+            - cost_matrix: 2D numpy array with matching costs, or None if either input is empty.
+        """
+        if len(estimated_objects) == 0 or len(ground_truth_objects) == 0:
+            return None
+
+        cost_matrix = np.full((len(estimated_objects), len(ground_truth_objects)), np.inf)
+
+        for i, est_obj in enumerate(estimated_objects):
+            for j, gt_obj in enumerate(ground_truth_objects):
+                cost = matching_method_module(est_obj, gt_obj).value
+                cost_matrix[i, j] = cost
+
+        return cost_matrix
 
 
 def get_object_results(
