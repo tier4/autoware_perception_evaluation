@@ -119,9 +119,6 @@ class MetricsScore:
     def num_ground_truth(self) -> int:
         return self.__num_gt
 
-    # TODO(vividf): Refactor this function to always accept flattened input (List[DynamicObjectWithPerceptionResult]).
-    # Move multi-frame handling and scenario-level aggregation logic to a new function
-    # reference: https://github.com/tier4/autoware_perception_evaluation/pull/212#discussion_r2079100088
     def evaluate_detection(
         self,
         nuscene_object_results: Dict[
