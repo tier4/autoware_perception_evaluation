@@ -292,6 +292,17 @@ class NuscenesObjectMatcher:
     def _find_best_match(
         self, est_idx: int, matching_matrix: np.ndarray, matched_gt_indices: set
     ) -> Optional[Tuple[int, MatchingMethod]]:
+        """
+        Find the best unmatched ground truth object for the given estimated object index.
+
+        This function searches through all unmatched ground truth objects and selects the one
+        that provides the best match according to the `MatchingMethod`'s `is_better_than()` logic.
+
+        Returns:
+            Optional[Tuple[int, MatchingMethod]]: A tuple of the selected ground truth index
+                and the corresponding `MatchingMethod` instance. Returns `None` if no valid
+                unmatched match is found.
+        """
         best_gt_idx = None
         best_matching = None
 
