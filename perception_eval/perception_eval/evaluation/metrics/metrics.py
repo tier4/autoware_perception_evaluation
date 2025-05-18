@@ -129,13 +129,14 @@ class MetricsScore:
         """
         Evaluate detection performance and calculate detection-related metrics such as mAP.
 
-        For each unique (MatchingMode, threshold) pair, it computes per-label statistics and
-        passes them to a Map instance for final mAP (mean Average Precision) calculation.
+        For each MatchingMode (e.g., IoU, center distance) and each label, this function
+        calculates per-threshold detection metrics. The results are passed to Map instances for
+        mAP and mAPH computation.
 
         Args:
             object_results: A nested dictionary of detection results where:
                 - The first key is a MatchingMode (e.g., IoU),
-                - The second key is a MatchingMode (e.g., car, pedestrian),
+                - The second key is a label (e.g., car, pedestrian),
                 - The thrid key is a threshold (e.g., 0.5),
                 - The value is either a list of DynamicObjectWithPerceptionResult instances.
             num_ground_truth: A dictionary mapping each label to the number of ground truth objects.
