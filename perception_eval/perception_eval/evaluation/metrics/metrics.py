@@ -127,23 +127,18 @@ class MetricsScore:
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
         """
-        Evaluate detection metrics (e.g., AP, APH, mAP) from object-level matching results.
+        Evaluate detection performance and calculate detection-related metrics such as mAP.
 
-        This function supports both single-frame and multi-frame formats:
-            - Single-frame: List[DynamicObjectWithPerceptionResult]
-            - Multi-frame: List[List[DynamicObjectWithPerceptionResult]]
-
-        It first flattens nested lists if necessary, and then constructs a Map instance per
-        MatchingMode (e.g., CENTERDISTANCE, IOU3D), aggregating results per label and threshold.
+        For each unique (MatchingMode, threshold) pair, it computes per-label statistics and
+        passes them to a Map instance for final mAP (mean Average Precision) calculation.
 
         Args:
-            nuscene_object_results: Hierarchical matching results structured as:
-                Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
-                or
-                Dict[MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]]
-                where thresholds are used to group multiple matching configurations.
-            num_ground_truth: A dictionary mapping LabelType to the total number of ground truth
-                objects for that label (aggregated across all frames if multi-frame).
+            object_results: A nested dictionary of detection results where:
+                - The first key is a MatchingMode (e.g., IoU),
+                - The second key is a MatchingMode (e.g., car, pedestrian),
+                - The thrid key is a threshold (e.g., 0.5),
+                - The value is either a list of DynamicObjectWithPerceptionResult instances.
+            num_ground_truth: A dictionary mapping each label to the number of ground truth objects.
         """
         if self.tracking_config is None:
             self.__num_gt += sum(num_ground_truth.values())

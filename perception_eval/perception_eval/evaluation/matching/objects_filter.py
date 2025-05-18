@@ -673,13 +673,13 @@ def _is_target_object(
 
 
 def divide_objects(
-    objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
+    dynamic_objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
     target_labels: Optional[List[LabelType]] = None,
 ) -> Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]:
     """Divide DynamicObject or DynamicObjectWithPerceptionResult into dict mapped by their labels.
 
     Args:
-        objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
+        dynamic_objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
             List of ObjectType or DynamicObjectWithPerceptionResult.
         target_labels (Optional[List[LabelType]]): If this is specified, create empty list even
             if there is no object having specified label. Defaults to None.
@@ -694,34 +694,37 @@ def divide_objects(
     else:
         ret: Dict[LabelType, List[ObjectType]] = {}
 
-    for obj in objects:
+    for dynamic_object in dynamic_objects:
         label: LabelType = (
-            obj.estimated_object.semantic_label.label
-            if isinstance(obj, DynamicObjectWithPerceptionResult)
-            else obj.semantic_label.label
+            dynamic_object.estimated_object.semantic_label.label
+            if isinstance(dynamic_object, DynamicObjectWithPerceptionResult)
+            else dynamic_object.semantic_label.label
         )
 
         if target_labels is not None and label not in target_labels:
-            if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
-                label = obj.ground_truth_object.semantic_label.label
+            if (
+                isinstance(dynamic_object, DynamicObjectWithPerceptionResult)
+                and dynamic_object.ground_truth_object is not None
+            ):
+                label = dynamic_object.ground_truth_object.semantic_label.label
             else:
                 continue
 
         if label not in ret.keys():
-            ret[label] = [obj]
+            ret[label] = [dynamic_object]
         else:
-            ret[label].append(obj)
+            ret[label].append(dynamic_object)
     return ret
 
 
 def divide_objects_to_num(
-    objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
+    dynamic_objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
     target_labels: Optional[List[LabelType]] = None,
 ) -> Dict[LabelType, int]:
     """Divide the number of input `objects` mapped by their labels.
 
     Args:
-        objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
+        dynamic_object (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
             List of ObjectType or DynamicObjectWithPerceptionResult.
         target_labels (Optional[List[LabelType]]): If this is specified, create empty list even
             if there is no object having specified label. Defaults to None.
@@ -735,15 +738,18 @@ def divide_objects_to_num(
     else:
         ret: Dict[LabelType, int] = {}
 
-    for obj in objects:
-        if isinstance(obj, DynamicObjectWithPerceptionResult):
-            label: LabelType = obj.estimated_object.semantic_label.label
+    for dynamic_object in dynamic_objects:
+        if isinstance(dynamic_object, DynamicObjectWithPerceptionResult):
+            label: LabelType = dynamic_object.estimated_object.semantic_label.label
         else:
-            label: LabelType = obj.semantic_label.label
+            label: LabelType = dynamic_object.semantic_label.label
 
         if target_labels is not None and label not in target_labels:
-            if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
-                label = obj.ground_truth_object.semantic_label.label
+            if (
+                isinstance(dynamic_object, DynamicObjectWithPerceptionResult)
+                and dynamic_object.ground_truth_object is not None
+            ):
+                label = dynamic_object.ground_truth_object.semantic_label.label
             else:
                 continue
 
