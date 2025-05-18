@@ -212,38 +212,45 @@ class NuscenesObjectMatcher:
         """
         threshold_to_results: Dict[float, List[DynamicObjectWithPerceptionResult]] = {}
 
-        cost_matrix = self._compute_cost_matrix(
+        matching_matrix = self._compute_matching_matrix(
             estimated_objects,
             ground_truth_objects,
             matching_method_module,
         )
 
         # Skip matching if either estimation or ground truth is empty
-        if cost_matrix is None:
+        if matching_matrix is None:
             return {threshold: [] for threshold in thresholds}
 
         for threshold in thresholds:
-            matched_est_row_indices = set()
-            matched_gt_col_indices = set()
+            matched_est_indices = set()
+            matched_gt_indices = set()
             results: List[DynamicObjectWithPerceptionResult] = []
 
             for est_idx in range(len(estimated_objects)):
-                if est_idx in matched_est_row_indices:
+                best_gt_idx = None
+                best_matching = None
+
+                for gt_idx in range(len(ground_truth_objects)):
+                    if gt_idx in matched_gt_indices:
+                        continue
+
+                    matching = matching_matrix[est_idx, gt_idx]
+
+                    if best_matching is None or matching.is_better_than(best_matching.value):
+                        best_matching = matching
+                        best_gt_idx = gt_idx
+
+                if best_matching is None or not best_matching.is_better_than(threshold):
                     continue
 
-                gt_idx = int(np.argmin(cost_matrix[est_idx]))
-                cost = cost_matrix[est_idx, gt_idx]
-
-                if gt_idx in matched_gt_col_indices or cost >= threshold:
-                    continue
-
-                matched_est_row_indices.add(est_idx)
-                matched_gt_col_indices.add(gt_idx)
+                matched_est_indices.add(est_idx)
+                matched_gt_indices.add(best_gt_idx)
 
                 results.append(
                     DynamicObjectWithPerceptionResult(
                         estimated_objects[est_idx],
-                        ground_truth_objects[gt_idx],
+                        ground_truth_objects[best_gt_idx],
                         self.matching_label_policy,
                         transforms=self.transforms,
                     )
@@ -252,7 +259,7 @@ class NuscenesObjectMatcher:
             # Add unmatched estimated objects as false positives if applicable
             if self.evaluation_task is None or not self.evaluation_task.is_fp_validation():
                 for est_idx in range(len(estimated_objects)):
-                    if est_idx not in matched_est_row_indices:
+                    if est_idx not in matched_est_indices:
                         results.append(
                             DynamicObjectWithPerceptionResult(
                                 estimated_objects[est_idx],
@@ -266,29 +273,29 @@ class NuscenesObjectMatcher:
 
         return threshold_to_results
 
-    def _compute_cost_matrix(
+    def _compute_matching_matrix(
         self,
         estimated_objects: List[ObjectType],
         ground_truth_objects: List[ObjectType],
         matching_method_module: Callable,
     ) -> Optional[np.ndarray]:
         """
-        Compute pairwise cost matrix between valid estimated and ground truth objects.
+        Compute a matrix of MatchingMethod instances for all est-gt pairs.
 
         Returns:
-            - cost_matrix: 2D numpy array with matching costs, or None if either input is empty.
+            2D numpy array with shape (num_est, num_gt) storing MatchingMethod instances.
+            None if either input is empty.
         """
-        if len(estimated_objects) == 0 or len(ground_truth_objects) == 0:
+        if not estimated_objects or not ground_truth_objects:
             return None
 
-        cost_matrix = np.full((len(estimated_objects), len(ground_truth_objects)), np.inf)
+        matching_matrix = np.full((len(estimated_objects), len(ground_truth_objects)), None)
 
         for i, est_obj in enumerate(estimated_objects):
             for j, gt_obj in enumerate(ground_truth_objects):
-                cost = matching_method_module(est_obj, gt_obj).value
-                cost_matrix[i, j] = cost
+                matching_matrix[i, j] = matching_method_module(est_obj, gt_obj)
 
-        return cost_matrix
+        return matching_matrix
 
 
 def get_object_results(
