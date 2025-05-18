@@ -228,20 +228,12 @@ class NuscenesObjectMatcher:
             results: List[DynamicObjectWithPerceptionResult] = []
 
             for est_idx in range(len(estimated_objects)):
-                best_gt_idx = None
-                best_matching = None
+                best_match = self._find_best_match(est_idx, matching_matrix, matched_gt_indices)
+                if best_match is None:
+                    continue
 
-                for gt_idx in range(len(ground_truth_objects)):
-                    if gt_idx in matched_gt_indices:
-                        continue
-
-                    matching = matching_matrix[est_idx, gt_idx]
-
-                    if best_matching is None or matching.is_better_than(best_matching.value):
-                        best_matching = matching
-                        best_gt_idx = gt_idx
-
-                if best_matching is None or not best_matching.is_better_than(threshold):
+                best_gt_idx, best_matching = best_match
+                if not best_matching.is_better_than(threshold):
                     continue
 
                 matched_est_indices.add(est_idx)
@@ -296,6 +288,26 @@ class NuscenesObjectMatcher:
                 matching_matrix[i, j] = matching_method_module(est_obj, gt_obj)
 
         return matching_matrix
+
+    def _find_best_match(
+        self, est_idx: int, matching_matrix: np.ndarray, matched_gt_indices: set
+    ) -> Optional[Tuple[int, MatchingMethod]]:
+        best_gt_idx = None
+        best_matching = None
+
+        for gt_idx in range(matching_matrix.shape[1]):
+            if gt_idx in matched_gt_indices:
+                continue
+            matching = matching_matrix[est_idx, gt_idx]
+            if matching is None:
+                continue
+            if best_matching is None or matching.is_better_than(best_matching.value):
+                best_matching = matching
+                best_gt_idx = gt_idx
+
+        if best_matching is None:
+            return None
+        return best_gt_idx, best_matching
 
 
 def get_object_results(
