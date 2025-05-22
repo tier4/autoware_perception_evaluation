@@ -246,17 +246,21 @@ class NuscenesObjectMatcher:
                 )
 
             # Add unmatched estimated objects as false positives if applicable
-            if self.evaluation_task is None or not self.evaluation_task.is_fp_validation():
-                for est_idx in range(len(estimated_objects)):
-                    if est_idx not in matched_est_indices:
-                        results.append(
-                            DynamicObjectWithPerceptionResult(
-                                estimated_objects[est_idx],
-                                None,
-                                self.matching_label_policy,
-                                transforms=self.transforms,
-                            )
-                        )
+            if self.evaluation_task is not None and self.evaluation_task.is_fp_validation():
+                continue
+
+            for est_idx in range(len(estimated_objects)):
+                if est_idx in matched_est_indices:
+                    continue
+
+                results.append(
+                    DynamicObjectWithPerceptionResult(
+                        estimated_objects[est_idx],
+                        None,
+                        self.matching_label_policy,
+                        transforms=self.transforms,
+                    )
+                )
 
             threshold_to_results[threshold] = results
 
