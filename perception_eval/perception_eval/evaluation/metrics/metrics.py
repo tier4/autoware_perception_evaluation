@@ -137,7 +137,7 @@ class MetricsScore:
             object_results: A nested dictionary of detection results where:
                 - The first key is a MatchingMode (e.g., IoU),
                 - The second key is a label (e.g., car, pedestrian),
-                - The thrid key is a threshold (e.g., 0.5),
+                - The third key is a threshold (e.g., 0.5),
                 - The value is either a list of DynamicObjectWithPerceptionResult instances.
             num_ground_truth: A dictionary mapping each label to the number of ground truth objects.
         """

@@ -155,7 +155,7 @@ class NuscenesObjectMatcher:
         ] = defaultdict(lambda: defaultdict(dict))
 
         if not estimated_objects:
-            # All FN case
+            # All FN cases
             for mode, label_to_thresholds in self.matching_config_map.items():
                 for label, thresholds in label_to_thresholds.items():
                     for threshold in thresholds:
