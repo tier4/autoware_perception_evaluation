@@ -177,6 +177,4 @@ class Map:
 
     @staticmethod
     def _mean(values: List[float]) -> float:
-        if not values:
-            return 0.0
-        return sum(values) / len(values)
+        return sum(values) / len(values) if values else 0.0
