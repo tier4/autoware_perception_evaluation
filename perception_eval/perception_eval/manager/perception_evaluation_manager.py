@@ -248,7 +248,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             label: [] for label in target_labels
         }
 
-        # TODO(vividf): We can use this object to replace 'aggregated_object_results_dict' after refactor tracking.
+        # TODO(vividf): We can implement 'aggregated_object_results_dict' after refactor tracking.
         # aggregated_nuscene_object_results_dict: Dict[
         #     MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
         # ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
@@ -279,12 +279,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                     MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
                 ] = frame.nuscene_object_results
 
-                for mode, label_map in nuscene_results.items():
-                    for label, threshold_map in label_map.items():
-                        for threshold, detection_list in threshold_map.items():
-                            # TODO(vividf): We can use this object to replace 'aggregated_object_results_dict' after refactor classification, tracking, prediction.
-                            # aggregated_nuscene_object_results_dict[mode][label][threshold].append(detection_list)
-                            flattened_nuscene_object_results_dict[mode][label][threshold].extend(detection_list)
+                self.append_to_flattened_results(flattened_nuscene_object_results_dict, nuscene_results)
 
             used_frame.append(int(frame.frame_name))
 
@@ -310,3 +305,21 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             pass
 
         return scene_metrics_score
+
+    def append_to_flattened_results(
+        self,
+        flattened_results: Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]],
+        new_results: Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]],
+    ) -> None:
+        """
+        Append detection results from a single frame's nuscene_object_results into the
+        accumulated flattened_nuscene_object_results_dict.
+
+        Args:
+            flattened_dict (dict): The running accumulation dict to be updated in-place.
+            new_results (dict): The current frame's nuscene_object_results to be merged in.
+        """
+        for mode, label_map in new_results.items():
+            for label, threshold_map in label_map.items():
+                for threshold, detection_list in threshold_map.items():
+                    flattened_results[mode][label][threshold].extend(detection_list)
