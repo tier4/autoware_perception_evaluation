@@ -152,14 +152,10 @@ class NuscenesObjectMatcher:
         """
         results: Dict[
             MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
-        ] = defaultdict(lambda: defaultdict(dict))
+        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
+        # All FN cases
         if not estimated_objects:
-            # All FN cases
-            for mode, label_to_thresholds in self.matching_config_map.items():
-                for label, thresholds in label_to_thresholds.items():
-                    for threshold in thresholds:
-                        results[mode][label][threshold] = []
             return results
 
         estimated_objects_sorted = sorted(estimated_objects, key=lambda x: x.semantic_score, reverse=True)
