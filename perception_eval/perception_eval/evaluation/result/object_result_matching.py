@@ -168,7 +168,8 @@ class NuscenesObjectMatcher:
         for obj in ground_truth_objects:
             label_to_gt_objs[obj.semantic_label.label].append(obj)
 
-        for label in set(label_to_est_objs.keys()).union(label_to_gt_objs.keys()):
+        union_labels = set(label_to_est_objs.keys()).union(label_to_gt_objs.keys())
+        for label in union_labels:
             est_objs = label_to_est_objs.get(label, [])
             gt_objs = label_to_gt_objs.get(label, [])
 
