@@ -296,13 +296,21 @@ class NuscenesObjectMatcher:
         """
         Find the best unmatched ground truth object for the given estimated object index.
 
-        This function searches through all unmatched ground truth objects and selects the one
-        that provides the best match according to the `MatchingMethod`'s `is_better_than()` logic.
+        This function iterates over all unmatched ground truth objects and evaluates the matching
+        quality between the estimated object and each ground truth candidate using a `MatchingMethod`.
+
+        The "best match" refers to the ground truth object that yields the most favorable matching score
+        as defined by the `MatchingMethod.is_better_than()` function. The comparison logic varies by matching
+        mode, for example:
+            - For distance-based methods (e.g., center distance, plane distance), a smaller value is better.
+            - For IoU-based methods, a higher value is better.
+
+        The function returns the index of the best unmatched ground truth object and the corresponding
+        MatchingMethod instance. If no suitable match is found, it returns None.
 
         Returns:
-            Optional[Tuple[int, MatchingMethod]]: A tuple of the selected ground truth index
-                and the corresponding `MatchingMethod` instance. Returns `None` if no valid
-                unmatched match is found.
+            Optional[Tuple[int, MatchingMethod]]: A tuple containing the index of the selected ground truth object
+                and its corresponding `MatchingMethod`, or `None` if no valid unmatched match is found.
         """
         best_gt_idx = None
         best_matching = None
