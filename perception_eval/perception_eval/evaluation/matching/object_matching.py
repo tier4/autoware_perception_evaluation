@@ -314,7 +314,7 @@ class PlaneDistanceMatching(MatchingMethod):
         ):
             _, _, error_yaw = estimated_object.get_heading_error(ground_truth_object)
             if abs(error_yaw) > np.pi / 2:
-                est_corners = est_corners[[1, 0, 3, 2, 1]]  # based on reverse clockwise order from left top
+                est_corners = est_corners[[2, 3, 0, 1]]  # based on reverse clockwise order from left top
 
             # Calculate min distance from ego vehicle
             if ground_truth_object.frame_id != FrameID.BASE_LINK:
@@ -327,7 +327,7 @@ class PlaneDistanceMatching(MatchingMethod):
                 )
                 gt_distances = np.linalg.norm(gt_corners_base_link[:, :2], axis=1)
             else:
-                gt_distances = gt_distances = np.linalg.norm(gt_corners[:, :2], axis=1)
+                gt_distances = np.linalg.norm(gt_corners[:, :2], axis=1)
             sort_idx = np.argsort(gt_distances)
 
             gt_corners = gt_corners[sort_idx]
