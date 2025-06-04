@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+from collections import defaultdict
 from typing import Dict
 from typing import List
 from typing import Tuple
@@ -21,8 +22,7 @@ from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import LabelType
 from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation.matching.matching_config import MatchingConfig
-from perception_eval.evaluation.matching.objects_filter import divide_nuscene_object_results_by_label
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
@@ -37,8 +37,8 @@ from perception_eval.visualization import PerceptionVisualizerType
 
 from ._evaluation_manager_base import _EvaluationManagerBase
 from ..evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from ..evaluation.result.object_result_matching import get_nuscene_object_results
 from ..evaluation.result.object_result_matching import get_object_results
+from ..evaluation.result.object_result_matching import NuscenesObjectMatcher
 
 
 class PerceptionEvaluationManager(_EvaluationManagerBase):
@@ -171,7 +171,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
 
     def match_nuscene_objects(
         self, estimated_objects: List[ObjectType], frame_ground_truth: FrameGroundTruth
-    ) -> Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]:
+    ) -> Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]:
         """
         Perform NuScenes-style matching between estimated and ground truth objects.
 
@@ -183,22 +183,18 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             frame_ground_truth (FrameGroundTruth): Filtered ground truth objects and transformations for the current frame.
 
         Returns:
-            nuscene_object_results (Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]):
-                Mapping from (matching mode, threshold) to matched results.
+            nuscene_object_results (Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]):
+                A nested dictionary mapping from matching mode → label → threshold
+                to a list of matched object results.
         """
 
-        nuscene_object_results: Dict[
-            MatchingConfig, List[DynamicObjectWithPerceptionResult]
-        ] = get_nuscene_object_results(
+        matcher = NuscenesObjectMatcher(
             evaluation_task=self.evaluation_task,
-            estimated_objects=estimated_objects,
-            ground_truth_objects=frame_ground_truth.objects,
             metrics_config=self.metrics_config,
             matching_label_policy=self.evaluator_config.label_params["matching_label_policy"],
             transforms=frame_ground_truth.transforms,
         )
-
-        return nuscene_object_results
+        return matcher.match(estimated_objects, frame_ground_truth.objects)
 
     def match_objects(
         self, estimated_objects: List[ObjectType], frame_ground_truth: FrameGroundTruth
@@ -248,12 +244,19 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         target_labels: List[LabelType] = self.target_labels
 
         # aggregated results from each frame
-        aggregated_object_results_dict: Dict[
-            LabelType, Dict[MatchingConfig, List[List[DynamicObjectWithPerceptionResult]]]
-        ] = {label: [] for label in target_labels}
-        aggregated_nuscene_object_results_dict: Dict[
-            LabelType, Dict[MatchingConfig, List[List[DynamicObjectWithPerceptionResult]]]
-        ] = {label: {} for label in target_labels}
+        aggregated_object_results_dict: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]] = {
+            label: [] for label in target_labels
+        }
+
+        # TODO(vividf): We can implement 'aggregated_object_results_dict' after refactor tracking.
+        # aggregated_nuscene_object_results_dict: Dict[
+        #     MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
+        # ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+        flattened_nuscene_object_results_dict: Dict[
+            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
+        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
         aggregated_num_gt = {label: 0 for label in target_labels}
         used_frame: List[int] = []
 
@@ -272,19 +275,11 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 self.evaluator_config.metrics_config.detection_config is not None
                 and frame.nuscene_object_results is not None
             ):
-                nuscene_object_results_dict: Dict[
-                    LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]
-                ] = divide_nuscene_object_results_by_label(frame.nuscene_object_results, target_labels)
+                nuscene_results: Dict[
+                    MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
+                ] = frame.nuscene_object_results
 
-                for label in target_labels:
-                    nuscene_label_result: Dict[
-                        MatchingConfig, List[DynamicObjectWithPerceptionResult]
-                    ] = nuscene_object_results_dict.get(label, {})
-
-                    for key, detection_list in nuscene_label_result.items():
-                        if key not in aggregated_nuscene_object_results_dict[label]:
-                            aggregated_nuscene_object_results_dict[label][key] = []
-                        aggregated_nuscene_object_results_dict[label][key].append(detection_list)
+                self.append_to_flattened_results(flattened_nuscene_object_results_dict, nuscene_results)
 
             used_frame.append(int(frame.frame_name))
 
@@ -298,11 +293,8 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             scene_metrics_score.evaluate_classification(aggregated_object_results_dict, aggregated_num_gt)
 
         # Detection
-        if self.evaluator_config.metrics_config.detection_config is not None and any(
-            any(mode_results for mode_results in label_dict.values())
-            for label_dict in aggregated_nuscene_object_results_dict.values()
-        ):
-            scene_metrics_score.evaluate_detection(aggregated_nuscene_object_results_dict, aggregated_num_gt)
+        if self.evaluator_config.metrics_config.detection_config is not None:
+            scene_metrics_score.evaluate_detection(flattened_nuscene_object_results_dict, aggregated_num_gt)
 
         # Tracking
         if self.evaluator_config.metrics_config.tracking_config is not None:
@@ -315,3 +307,21 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             scene_metrics_score.evaluate_classification(aggregated_object_results_dict, aggregated_num_gt)
 
         return scene_metrics_score
+
+    def append_to_flattened_results(
+        self,
+        flattened_results: Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]],
+        new_results: Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]],
+    ) -> None:
+        """
+        Append detection results from a single frame's nuscene_object_results into the
+        accumulated flattened_nuscene_object_results_dict.
+
+        Args:
+            flattened_dict (dict): The running accumulation dict to be updated in-place.
+            new_results (dict): The current frame's nuscene_object_results to be merged in.
+        """
+        for mode, label_map in new_results.items():
+            for label, threshold_map in label_map.items():
+                for threshold, detection_list in threshold_map.items():
+                    flattened_results[mode][label][threshold].extend(detection_list)

@@ -26,8 +26,7 @@ from perception_eval.common.label import LabelType
 from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.status import GroundTruthStatus
 from perception_eval.common.status import MatchingStatus
-from perception_eval.evaluation.matching.matching_config import MatchingConfig
-from perception_eval.evaluation.matching.objects_filter import divide_nuscene_object_results_by_label
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
@@ -45,8 +44,8 @@ class PerceptionFrameResult:
 
     Attributes:
         object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results to each estimated object.
-        nuscene_object_results (Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]):
-            Object results grouped by (matching mode, threshold).
+        nuscene_object_results (Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]):
+            Object results grouped by matching mode, target label, and threshold.
         frame_ground_truth (FrameGroundTruth): Filtered ground truth of frame.
         frame_name (str): The file name of frame in the datasets.
         unix_time (int): The unix time for frame [us].
@@ -56,8 +55,8 @@ class PerceptionFrameResult:
 
     Args:
         object_results (List[DynamicObjectWithPerceptionResult]): The list of object result.
-        nuscene_object_results (Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]):
-            A dictionary storing object results per (matching mode, threshold)
+        nuscene_object_results (Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]):
+            A dictionary storing object results grouped by matching mode, target label, and threshold.
         frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
         metrics_config (MetricsScoreConfig): Metrics config class.
         critical_object_filter_config (CriticalObjectFilterConfig): Critical object filter config.
@@ -69,7 +68,9 @@ class PerceptionFrameResult:
     def __init__(
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
-        nuscene_object_results: Optional[Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]],
+        nuscene_object_results: Optional[
+            Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
+        ],
         frame_ground_truth: FrameGroundTruth,
         metrics_config: MetricsScoreConfig,
         critical_object_filter_config: CriticalObjectFilterConfig,
@@ -85,7 +86,7 @@ class PerceptionFrameResult:
 
         self.object_results: List[DynamicObjectWithPerceptionResult] = object_results
         self.nuscene_object_results: Optional[
-            Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]
+            Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
         ] = nuscene_object_results
         self.frame_ground_truth: FrameGroundTruth = frame_ground_truth
 
@@ -134,16 +135,6 @@ class PerceptionFrameResult:
             self.pass_fail_result.critical_object_filter_config.target_labels,
         )
 
-        if self.nuscene_object_results is not None:
-            nuscene_object_results_dict: Dict[
-                LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]
-            ] = divide_nuscene_object_results_by_label(
-                self.nuscene_object_results,
-                self.pass_fail_result.critical_object_filter_config.target_labels,
-            )
-        else:
-            nuscene_object_results_dict = {}
-
         num_ground_truth_dict: Dict[LabelType, int] = divide_objects_to_num(
             self.frame_ground_truth.objects,
             self.pass_fail_result.critical_object_filter_config.target_labels,
@@ -154,8 +145,8 @@ class PerceptionFrameResult:
             self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
 
         # Detection
-        if self.metrics_score.detection_config is not None and nuscene_object_results_dict:
-            self.metrics_score.evaluate_detection(nuscene_object_results_dict, num_ground_truth_dict)
+        if self.metrics_score.detection_config is not None and self.nuscene_object_results:
+            self.metrics_score.evaluate_detection(self.nuscene_object_results, num_ground_truth_dict)
 
         # Tracking
         if self.metrics_score.tracking_config is not None:

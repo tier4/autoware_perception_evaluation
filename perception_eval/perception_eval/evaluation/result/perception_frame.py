@@ -19,11 +19,10 @@ from typing import Dict
 from typing import List
 from typing import Tuple
 
+from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
-from perception_eval.common.object import DynamicObject
 
 
-# TODO(vividf): This class currently only supports 3D objects. Consider extending it to support 2D evaluation as well.
 class PerceptionFrame:
     """The frame that included estimated objects and ground truth objects
 
@@ -35,13 +34,13 @@ class PerceptionFrame:
 
     def __init__(
         self,
-        estimated_objects: List[DynamicObject],
+        estimated_objects: List[ObjectType],
         ground_truth_objects: FrameGroundTruth,
         unix_time: float,
     ) -> None:
         self.unix_time: float = unix_time
 
-        self.estimated_objects: List[DynamicObject] = estimated_objects
+        self.estimated_objects: List[ObjectType] = estimated_objects
         self.ground_truth_objects: FrameGroundTruth = ground_truth_objects
 
     def __reduce__(self) -> Tuple[PerceptionFrame, Tuple[Any]]:
@@ -68,7 +67,7 @@ class PerceptionFrame:
         """Deserialize the data to PerceptionFrame."""
 
         return cls(
-            estimated_objects=[DynamicObject.deserialization(obj) for obj in data["estimated_objects"]],
+            estimated_objects=[ObjectType.deserialization(obj) for obj in data["estimated_objects"]],
             ground_truth_objects=FrameGroundTruth.deserialization(data["ground_truth_objects"]),
             unix_time=data["unix_time"],
         )

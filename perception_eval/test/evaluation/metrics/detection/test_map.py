@@ -22,12 +22,10 @@ from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching.object_matching import MatchingMode
-from perception_eval.evaluation.matching.objects_filter import divide_nuscene_object_results_by_label
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.detection.map import Map
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
-from perception_eval.evaluation.metrics.metrics_utils import flatten_and_group_object_results_by_match_config
-from perception_eval.evaluation.result.object_result_matching import get_nuscene_object_results
+from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -62,22 +60,20 @@ class TestMap(unittest.TestCase):
         matching_threshold: float,
     ) -> Map:
         metrics_config = self._get_default_metrics_config(matching_threshold)
-        object_results = get_nuscene_object_results(
+        matcher = NuscenesObjectMatcher(
             evaluation_task=self.evaluation_task,
-            estimated_objects=estimated_objects,
-            ground_truth_objects=ground_truth_objects,
             metrics_config=metrics_config,
         )
-        object_results_dict = divide_nuscene_object_results_by_label(object_results, self.target_labels)
+        nuscene_object_results = matcher.match(
+            estimated_objects=estimated_objects,
+            ground_truth_objects=ground_truth_objects,
+        )
         num_ground_truth_dict = divide_objects_to_num(ground_truth_objects, self.target_labels)
-        results_by_match_config = flatten_and_group_object_results_by_match_config(object_results_dict)
-        label_results = results_by_match_config[(matching_mode, matching_threshold)]
         return Map(
-            object_results_dict=label_results,
+            object_results_dict=nuscene_object_results[matching_mode],
             num_ground_truth_dict=num_ground_truth_dict,
             target_labels=self.target_labels,
             matching_mode=matching_mode,
-            matching_threshold_list=[matching_threshold] * len(self.target_labels),
         )
 
     def _run_param_test(
@@ -230,12 +226,20 @@ class TestMap(unittest.TestCase):
             1.0,
         )
         output_str = str(map_result)
+
+        # Check label names
         for label in self.target_labels:
             self.assertIn(label.value, output_str)
+
+        # Check table headers
         self.assertIn("Predict_num", output_str)
-        self.assertIn("GroundTruth_num", output_str)
+        self.assertIn("Groundtruth_num", output_str)
         self.assertIn("AP", output_str)
-        self.assertIn("APH", output_str)
+
+        if not map_result.is_detection_2d:
+            self.assertIn("APH", output_str)
+        else:
+            self.assertNotIn("APH", output_str)
 
 
 if __name__ == "__main__":

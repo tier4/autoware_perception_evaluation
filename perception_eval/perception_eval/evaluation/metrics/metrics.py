@@ -12,20 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from itertools import chain
 from typing import Dict
 from typing import List
 from typing import Union
 
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.matching.matching_config import MatchingConfig
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 from .classification import ClassificationMetricsScore
 from .detection import Map
 from .metrics_score_config import MetricsScoreConfig
 from .prediction import PredictionMetricsScore
-from .metrics_utils import flatten_and_group_object_results_by_match_config
 from .tracking import TrackingMetricsScore
 
 
@@ -38,7 +37,7 @@ class MetricsScore:
         prediction_config (Optional[PredictionMetricsConfig]): Config for prediction evaluation.
         classification_config (Optional[ClassificationMetricsConfig]): Config for classification evaluation.
         evaluation_task (EvaluationTask): EvaluationTask instance.
-        maps (List[Map]): List of mAP instances. Each mAP is different from threshold
+        mean_ap_values (List[Map]): List of mAP instances. Each mAP is different from threshold
                                for matching (ex. IoU 0.3).
         tracking_scores (List[TrackingMetricsScore]): List of TrackingMetricsScore instances.
         prediction_scores (List[TODO]): TBD
@@ -59,7 +58,7 @@ class MetricsScore:
         self.prediction_config = config.prediction_config
         self.classification_config = config.classification_config
         # detection metrics scores for each matching method
-        self.maps: List[Map] = []
+        self.mean_ap_values: List[Map] = []
         # tracking metrics scores for each matching method
         self.tracking_scores: List[TrackingMetricsScore] = []
         # prediction metrics scores for each matching method
@@ -90,9 +89,9 @@ class MetricsScore:
         str_ += f"Ground Truth Num: {self.num_ground_truth}\n"
 
         # detection
-        for map_ in self.maps:
+        for mean_ap in self.mean_ap_values:
             # whole result
-            str_ += str(map_)
+            str_ += str(mean_ap)
 
         # tracking
         for track_score in self.tracking_scores:
@@ -123,59 +122,40 @@ class MetricsScore:
     def num_ground_truth(self) -> int:
         return self.__num_gt
 
-    # TODO(vividf): Refactor this function to always accept flattened input (List[DynamicObjectWithPerceptionResult]).
-    # Move multi-frame handling and scenario-level aggregation logic to a new function
-    # reference: https://github.com/tier4/autoware_perception_evaluation/pull/212#discussion_r2079100088
     def evaluate_detection(
         self,
-        object_results: Union[
-            Dict[LabelType, Dict[MatchingConfig, List[DynamicObjectWithPerceptionResult]]],  # Single frame
-            Dict[LabelType, Dict[MatchingConfig, List[List[DynamicObjectWithPerceptionResult]]]],  # Multiple frames
+        nuscene_object_results: Dict[
+            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
         ],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
         """
         Evaluate detection performance and calculate detection-related metrics such as mAP.
 
-        This function processes detection results grouped by label and matching configuration.
-        It supports both single-frame and multi-frame input formats. Internally, the object results
-        are first flattened and regrouped by MatchingConfig using
-        `flatten_and_group_object_results_by_match_config()`.
-
-        For each unique (MatchingMode, threshold) pair, it computes per-label statistics and
-        passes them to a Map instance for final mAP (mean Average Precision) calculation.
+        For each MatchingMode (e.g., IoU, center distance) and each label, this function
+        calculates per-threshold detection metrics. The results are passed to Map instances for
+        mAP and mAPH computation.
 
         Args:
             object_results: A nested dictionary of detection results where:
-                - The first key is a LabelType (e.g., car, pedestrian),
-                - The second key is a MatchingConfig (e.g., IoU@0.5),
-                - The value is either a list (single frame) or list of lists (multi-frame)
-                of DynamicObjectWithPerceptionResult instances.
+                - The first key is a MatchingMode (e.g., IoU),
+                - The second key is a label (e.g., car, pedestrian),
+                - The third key is a threshold (e.g., 0.5),
+                - The value is either a list of DynamicObjectWithPerceptionResult instances.
             num_ground_truth: A dictionary mapping each label to the number of ground truth objects.
         """
-
         if self.tracking_config is None:
             self.__num_gt += sum(num_ground_truth.values())
 
-        # Group by (matching_mode_str, threshold): Dict[LabelType -> List[DynamicObjectWithPerceptionResult]]
-        # Example: (center_distance_bev, 0,5): {car: List[DynamicObjectWithPerceptionResult]}
-        results_by_match_config = flatten_and_group_object_results_by_match_config(object_results)
-
-        # For each (matching_mode, threshold), group labels and compute MAP
-        for (matching_mode, threshold), label_results in results_by_match_config.items():
-            target_labels = list(label_results.keys())
+        for matching_mode, label_to_threshold_map in nuscene_object_results.items():
+            target_labels = list(label_to_threshold_map.keys())
             num_gt_dict = {label: num_ground_truth.get(label, 0) for label in target_labels}
-            thresholds = [threshold] * len(target_labels)
-
-            # TODO(vividf): Rename variable to avoid shadowing Python built-in keywords like 'map'
-            self.maps.append(
+            self.mean_ap_values.append(
                 Map(
-                    object_results_dict=label_results,
+                    object_results_dict=label_to_threshold_map,
                     num_ground_truth_dict=num_gt_dict,
                     target_labels=target_labels,
                     matching_mode=matching_mode,
-                    # TODO(vividf): Rename matching_threshold_list to avoid variable name with data type
-                    matching_threshold_list=thresholds,
                     is_detection_2d=self.evaluation_task.is_2d(),
                 )
             )
