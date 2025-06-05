@@ -58,7 +58,6 @@ class ObjectState:
         self.pose_covariance = pose_covariance
         self.twist_covariance = twist_covariance
 
-
     def __reduce__(self) -> Tuple[ObjectState, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
         return (
@@ -88,7 +87,6 @@ class ObjectState:
             pose_covariance=np.array(data["pose_covariance"]) if data["pose_covariance"] is not None else None,
             twist_covariance=np.array(data["twist_covariance"]) if data["twist_covariance"] is not None else None,
         )
-
 
     @property
     def shape_type(self) -> Optional[ShapeType]:
