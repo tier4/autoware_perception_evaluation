@@ -19,7 +19,7 @@ from typing import Optional
 
 import numpy as np
 from perception_eval.common.label import LabelType
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 from .path_displacement_error import PathDisplacementError
 
