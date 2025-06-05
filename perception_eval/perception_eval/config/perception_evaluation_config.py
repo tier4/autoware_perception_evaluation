@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 from typing import Any
 from typing import Dict
@@ -196,7 +197,6 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         }
 
         m_params: Dict[str, Any] = _extract_metric_params(e_cfg, self.evaluation_task, target_labels)
-
         return f_params, m_params
 
 
@@ -218,6 +218,7 @@ def _extract_metric_params(
         params.update(
             {
                 "center_distance_thresholds": cfg.get("center_distance_thresholds"),
+                "center_distance_bev_thresholds": cfg.get("center_distance_bev_thresholds"),
                 "plane_distance_thresholds": cfg.get("plane_distance_thresholds"),
                 "iou_2d_thresholds": cfg.get("iou_2d_thresholds"),
                 "iou_3d_thresholds": cfg.get("iou_3d_thresholds"),

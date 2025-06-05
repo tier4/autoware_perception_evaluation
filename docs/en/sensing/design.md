@@ -4,7 +4,7 @@
 
 About coordinate system, see [docs/perception/design.md](../perception/design.md)
 
-### `<class> SensingEvaluationManger(...)`
+### `<class> SensingEvaluationManager(...)`
 
 - A class to execute sensing evaluation.
 - This is constructed by `SensingEvaluationConfig`
@@ -43,4 +43,4 @@ evaluation_config_dict: [Dict[str, Any]] = {
 
 #### Execute evaluation
 
-- Evaluate in every frame : `SensingEvaluationManger()::add_frame_result()`
+- Evaluate in every frame : `SensingEvaluationManager()::add_frame_result()`

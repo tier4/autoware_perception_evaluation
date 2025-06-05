@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 from copy import deepcopy
 import logging
@@ -19,9 +20,11 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import Tuple
 from typing import Union
 
 from nuimages import NuImages
+import numpy as np
 from numpy.typing import NDArray
 from nuscenes.nuscenes import NuScenes
 from nuscenes.prediction.helper import PredictHelper
@@ -32,6 +35,8 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.geometry import interpolate_homogeneous_matrix
 from perception_eval.common.geometry import interpolate_object_list
 from perception_eval.common.label import LabelConverter
+from perception_eval.common.object2d import DynamicObject2D
+from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.common.transform import HomogeneousMatrix
 from perception_eval.common.transform import TransformDict
@@ -62,8 +67,65 @@ class FrameGroundTruth:
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
         self.objects: List[ObjectType] = objects
-        self.transforms = TransformDict(transforms)
+        self.transform_matrices = transforms
+        self.transforms = TransformDict(self.transform_matrices)
         self.raw_data = raw_data
+
+    def __reduce__(self) -> Tuple[FrameGroundTruth, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (self.__class__, (self.unix_time, self.frame_name, self.objects, self.transform_matrices, self.raw_data))
+
+    def serialization(self) -> Dict[str, Any]:
+        """Serialize the object to a dict."""
+        transform = self.transforms.serialization() if self.transforms is not None else None
+        if transform is not None:
+            transform_matrices = transform["matrices"]
+            transform_matrices_type = transform["matrices_type"]
+        else:
+            transform_matrices = None
+            transform_matrices_type = None
+
+        return {
+            "unix_time": self.unix_time,
+            "frame_name": self.frame_name,
+            "objects": [object.serialization() for object in self.objects],
+            "transform_matrices": transform_matrices,
+            "transform_matrices_type": transform_matrices_type,
+            "raw_data": {frame_id.value: data.tolist() for frame_id, data in self.raw_data.items()},
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> FrameGroundTruth:
+        """Deserialize the data to MetricConfigBase."""
+        objects = []
+        for object_data in data["objects"]:
+            if object_data["object_type"] == DynamicObject2D.__name__:
+                object_class = DynamicObject2D
+            elif object_data["object_type"] == DynamicObject.__name__:
+                object_class = DynamicObject
+            else:
+                raise ValueError(f"Invalid object type: {object_data['object_type']}")
+
+            objects.append(object_class.deserialization(object_data))
+
+        if data["transform_matrices_type"] == HomogeneousMatrix.MATRIX_TYPE:
+            transform_matrices = HomogeneousMatrix.deserialization(
+                data=data["transform_matrices"],
+            )
+        elif data["transform_matrices_type"] == "list":
+            transform_matrices = data["transform_matrices"]
+        else:
+            transform_matrices = None
+
+        return cls(
+            unix_time=data["unix_time"],
+            frame_name=data["frame_name"],
+            objects=objects,
+            transforms=transform_matrices,
+            raw_data={FrameID(frame_id): np.array(data) for frame_id, data in data["raw_data"].items()}
+            if data["raw_data"] is not None
+            else None,
+        )
 
 
 def load_all_datasets(
