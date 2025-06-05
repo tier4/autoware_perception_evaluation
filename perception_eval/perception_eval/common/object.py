@@ -35,6 +35,7 @@ from perception_eval.common.transform import TransformDict
 from pyquaternion import Quaternion
 from shapely.geometry import Polygon
 
+
 class DynamicObject:
     """Dynamic object class for 3D object.
 
@@ -152,6 +153,11 @@ class DynamicObject:
         )
 
         # prediction
+        self.predicted_positions = predicted_positions
+        self.predicted_orientations = predicted_orientations
+        self.predicted_twists = predicted_twists
+        self.predicted_scores = predicted_scores
+
         self.predicted_paths: Optional[List[ObjectPath]] = set_object_paths(
             timestamps=relative_timestamps,
             positions=predicted_positions,
@@ -185,9 +191,8 @@ class DynamicObject:
                 self.tracked_twists,
                 self.predicted_positions,
                 self.predicted_orientations,
-                self.predicted_shapes,
                 self.predicted_twists,
-                self.predicted_confidence,
+                self.predicted_scores,
                 self.visibility,
             ),
         )
@@ -551,11 +556,8 @@ class DynamicObject:
             "predicted_orientations": [orientation.elements for orientation in self.predicted_orientations]
             if self.predicted_orientations is not None
             else None,
-            "predicted_shapes": [shape.serialization() for shape in self.predicted_shapes]
-            if self.predicted_shapes is not None
-            else None,
             "predicted_twists": self.predicted_twists if self.predicted_twists is not None else None,
-            "predicted_confidence": self.predicted_confidence if self.predicted_confidence is not None else None,
+            "predicted_scores": self.predicted_scores if self.predicted_scores is not None else None,
             "visibility": self.visibility,
         }
 
@@ -587,10 +589,7 @@ class DynamicObject:
             predicted_orientations=[Quaternion(elements) for elements in data["predicted_orientations"]]
             if data["predicted_orientations"] is not None
             else None,
-            predicted_shapes=[Shape.deserialization(shape) for shape in data["predicted_shapes"]]
-            if data["predicted_shapes"] is not None
-            else None,
             predicted_twists=data["predicted_twists"],
-            predicted_confidence=data["predicted_confidence"],
+            predicted_scores=data["predicted_scores"],
             visibility=data["visibility"],
         )
