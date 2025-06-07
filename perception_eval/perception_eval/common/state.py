@@ -137,11 +137,13 @@ class ObjectPath:
         confidence (float): Path confidence in [0, 1].
 
     Args:
+        timestamps (List[int]): List of timestamps for each waypoint.
         states (List[ObjectState]): List of ObjectState instances.
         confidence (float): Path confidence in [0, 1].
     """
 
-    def __init__(self, states: List[ObjectState], confidence: float) -> None:
+    def __init__(self, timestamps: List[int], states: List[ObjectState], confidence: float) -> None:
+        self.timestamps: List[int] = timestamps
         self.states: List[ObjectState] = states
         self.confidence: float = confidence
 
@@ -200,6 +202,7 @@ def set_object_states(
 
 
 def set_object_path(
+    timestamps: Optional[List[int]] = None,
     positions: Optional[List[Tuple[float, float, float]]] = None,
     orientations: Optional[List[Quaternion]] = None,
     velocities: Optional[List[Tuple[float, float, float]]] = None,
@@ -213,10 +216,11 @@ def set_object_path(
         orientations=orientations,
         velocities=velocities,
     )
-    return ObjectPath(states, confidence) if states else None
+    return ObjectPath(timestamps, states, confidence) if states else None
 
 
 def set_object_paths(
+    timestamps: Optional[List[List[int]]] = None,
     positions: Optional[List[List[Tuple[float, float, float]]]] = None,
     orientations: Optional[List[List[Quaternion]]] = None,
     twists: Optional[List[List[Tuple[float, float, float]]]] = None,
@@ -225,17 +229,19 @@ def set_object_paths(
     """[summary]
     Set multiple paths.
     """
-    if positions is None or confidences is None:
+    if timestamps is None or positions is None or confidences is None:
         return None
 
-    if len(positions) != len(confidences):
+    if not (len(timestamps) == len(positions) == len(confidences)):
         raise RuntimeError(
-            "length of positions and orientations must be same, " f"but got {len(positions)} and {len(orientations)}"
+            "length of timestamps and positions and orientations must be same, "
+            f"but got {len(timestamps)}, {len(positions)} and {len(orientations)}"
         )
 
     paths: List[ObjectPath] = []
-    for i, (poses, confidence) in enumerate(zip(positions, confidences)):
+    for i, (times, poses, confidence) in enumerate(zip(timestamps, positions, confidences)):
         path = set_object_path(
+            timestamps=times,
             positions=poses,
             orientations=orientations[i] if orientations else None,
             velocities=twists[i] if twists else None,

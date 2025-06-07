@@ -209,6 +209,7 @@ def _convert_nuscenes_box_to_dynamic_object(
 
     if evaluation_task == EvaluationTask.PREDICTION:
         (
+            predicted_timestamps,
             predicted_positions,
             predicted_orientations,
             predicted_twists,
@@ -221,11 +222,13 @@ def _convert_nuscenes_box_to_dynamic_object(
             seconds=path_seconds,
         )
         # (T, D) -> (1, T, D)
+        predicted_timestamps = [predicted_timestamps]
         predicted_positions = [predicted_positions]
         predicted_orientations = [predicted_orientations]
         predicted_twists = [predicted_twists]
         predicted_scores = [1.0]
     else:
+        predicted_timestamps = None
         predicted_positions = None
         predicted_orientations = None
         predicted_twists = None
@@ -246,6 +249,7 @@ def _convert_nuscenes_box_to_dynamic_object(
         tracked_orientations=tracked_orientations,
         tracked_shapes=tracked_shapes,
         tracked_twists=tracked_velocities,
+        predicted_timestamps=predicted_timestamps,
         predicted_positions=predicted_positions,
         predicted_orientations=predicted_orientations,
         predicted_twists=predicted_twists,
@@ -472,7 +476,7 @@ def _get_prediction_data(
     sample_token: str,
     seconds: float,
 ) -> Tuple[
-    List[Tuple[float, float, float]],
+    List[int],
     List[Tuple[float, float, float]],
     List[Tuple[float, float, float]],
     List[Tuple[float, float, float]],
@@ -486,6 +490,7 @@ def _get_prediction_data(
         seconds (float): Seconds to be referenced.[s]
 
     Returns:
+        future_timestamps (List[int])
         future_positions (List[Tuple[float, float, float]])
         future_orientations (List[Tuple[float, float, float]])
         future_twists (List[Tuple[float, float, float]])
@@ -504,15 +509,18 @@ def _get_prediction_data(
         in_agent_frame=in_agent_frame,
         just_xy=False,
     )
+    future_timestamps: List[float] = []
     future_positions: List[Tuple[float, float, float]] = []
     future_orientations: List[Quaternion] = []
     future_velocities: List[Tuple[float, float, float]] = []
     for record_ in future_records_:
+        timestamp = nusc.get("sample", record_["sample_token"])["timestamp"]
+        future_timestamps.append(timestamp)
         future_positions.append(tuple(record_["translation"]))
         future_orientations.append(Quaternion(record_["rotation"]))
         future_velocities.append(nusc.box_velocity(record_["token"]))
 
-    return future_positions, future_orientations, future_velocities
+    return future_timestamps, future_positions, future_orientations, future_velocities
 
 
 #################################
