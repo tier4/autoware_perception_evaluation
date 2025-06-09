@@ -7,7 +7,7 @@
 
 ### install
 
-- poetry install
+- `astral/uv`をインストール: 詳細は[公式ドキュメント](https://docs.astral.sh/uv)を参照。
 
 ```bash
 pip3 install poetry
@@ -18,30 +18,25 @@ pip3 install poetry
   ```bash
   git clone https://github.com/tier4/autoware_perception_evaluation.git
   cd autoware_perception_evaluation
-  poetry install
+  uv sync
+
+  # activate virtual environment
+  source .venv/bin/activate
   ```
-
-  - 暫定的な措置として，EDA ツール用のライブラリを pip で install
-
-    ```bash
-    poetry shell
-    pip install -r requirements.txt
-    ```
 
   - 実行
 
   ```bash
   cd perception_eval
-  poetry run python3 -m test.sensing_lsim <DATASET_PATH1> <DATASET_PATH2> ...
-  poetry run python3 -m test.perception_lsim <DATASET_PATH1> <DATASET_PATH2> ...
+  python3 -m test.sensing_lsim <DATASET_PATH1> <DATASET_PATH2> ...
+  python3 -m test.perception_lsim <DATASET_PATH1> <DATASET_PATH2> ...
   ```
 
 - ライブラリとして使用
 
   ```bash
-  git clone https://github.com/tier4/autoware_perception_evaluation.git
-  cd <YOUR_PROJECT>
-  poetry add <RELATIVE_PATH_TO_autoware_perception_evaluation> # または pip install -e <RELATIVE_PATH_TO_autoware_perception_evaluation>
+  # e.g. with uv
+  uv add git+https://github.com/tier4/autoware_perception_evaluation.git
   ```
 
   -　使用例

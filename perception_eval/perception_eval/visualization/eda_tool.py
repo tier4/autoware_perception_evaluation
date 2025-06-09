@@ -34,11 +34,7 @@ from perception_eval.evaluation.matching.objects_filter import get_fn_objects
 from plotly import graph_objects as go
 from plotly.graph_objs import Figure
 from plotly.subplots import make_subplots
-
-try:
-    import pandas_profiling as pdp
-except ImportError:
-    import ydata_profiling as pdp
+import ydata_profiling as pdp
 
 logger = getLogger(__name__)
 

@@ -250,26 +250,28 @@ def _get_prediction_params(
     predicted_positions: List[List[Tuple[float]]] = []
     predicted_orientations: List[List[Quaternion]] = []
     predicted_scores: List[float] = []
-    for paths in object_.predicted_paths:
+    for path in object_.predicted_paths:
         positions = []
         orientations = []
-        for path in paths:
+        for state in path.states:
             positions.append(
                 (
-                    path.position[0] + diff_distance[0],
-                    path.position[1] + diff_distance[1],
-                    path.position[2] + diff_distance[2],
+                    state.position[0] + diff_distance[0],
+                    state.position[1] + diff_distance[1],
+                    state.position[2] + diff_distance[2],
                 )
             )
             orientations.append(
                 Quaternion(
-                    axis=path.orientation.axis,
-                    radians=path.orientation.radians + diff_yaw,
+                    axis=state.orientation.axis,
+                    radians=state.orientation.radians + diff_yaw,
                 )
+                if state.orientation is not None
+                else None
             )
         predicted_positions.append(positions)
         predicted_orientations.append(orientations)
-        predicted_scores.append(paths.confidence)
+        predicted_scores.append(path.confidence)
 
     return predicted_positions, predicted_orientations, predicted_scores
 

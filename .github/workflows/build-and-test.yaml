@@ -14,9 +14,6 @@ on:
       - "README.md"
     types: [opened, edited, synchronize]
 
-env:
-  POETRY_VERSION: '1.5.1'
-
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -24,24 +21,30 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        python-version: ["3.8", "3.10", "3.12"]
+        python-version: ["3.10", "3.12"]
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        uses: ./.github/actions/install
+      - name: Define a cache dependency glob
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python-version }}
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
+
+      - name: Install the project
+        run: uv sync
 
       - name: Run unittest
         run: |
           cd perception_eval
-          poetry run python -m pytest
+          uv run python -m pytest
 
       - name: Run mock test
         run: |
           cd perception_eval
-          poetry run python -m test.perception_lsim test/sample_data/ --use_tmpdir
-          poetry run python -m test.perception_lsim2d test/sample_data/ --use_tmpdir
-          poetry run python -m test.sensing_lsim test/sample_data/ --use_tmpdir
-          poetry run python -m test.eda test/sample_data/
+          uv run python -m test.perception_lsim test/sample_data/ --use_tmpdir
+          uv run python -m test.perception_lsim2d test/sample_data/ --use_tmpdir
+          uv run python -m test.sensing_lsim test/sample_data/ --use_tmpdir
+          uv run python -m test.eda test/sample_data/
