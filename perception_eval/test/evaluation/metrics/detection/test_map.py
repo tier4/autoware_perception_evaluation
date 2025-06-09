@@ -764,14 +764,14 @@ class TestMap(unittest.TestCase):
             (math.pi / 2.0, 0.0, 0.0),
             (-math.pi / 2.0, 0.0, 0.0),
             # Given opposite direction, maph is 0.0.
-            (math.pi, 0.0, 0.0),
-            (-math.pi, 0.0, 0.0),
+            (math.pi, 1.0, 0.0),
+            (-math.pi, 1.0, 0.0),
             # Given diff_yaw is pi/4, maph is 0.75**2 times map
             (math.pi / 4, 1.0, 0.5625),
             (-math.pi / 4, 1.0, 0.5625),
             # Given diff_yaw is 3*pi/4, maph is 0.25**2 times map
-            (3 * math.pi / 4, 0.0, 0.0),
-            (-3 * math.pi / 4, 0.0, 0.0),
+            (3 * math.pi / 4, 1.0, 0.0625),
+            (-3 * math.pi / 4, 1.0, 0.0625),
         ]
 
         for n, (diff_yaw, ans_map, ans_maph) in enumerate(patterns):
