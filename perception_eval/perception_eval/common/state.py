@@ -229,8 +229,10 @@ def set_object_paths(
     """[summary]
     Set multiple paths.
     """
-    if timestamps is None or positions is None or confidences is None:
+    if all(o is None for o in [timestamps, positions, confidences]):
         return None
+    elif not all(o is not None for o in [timestamps, positions, confidences]):
+        raise ValueError(f"All items must not be None, but got {timestamps=}, {positions=}, {confidences=}")
 
     if not (len(timestamps) == len(positions) == len(confidences)):
         raise RuntimeError(

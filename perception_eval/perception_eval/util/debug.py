@@ -183,11 +183,12 @@ def get_objects_with_difference(
             radians=object_.state.orientation.radians + diff_yaw,
         )
 
-        predicted_positions, predicted_orientations, predicted_scores = _get_prediction_params(
+        predicted_timestamps, predicted_positions, predicted_orientations, predicted_scores = _get_prediction_params(
             object_,
             diff_distance,
             diff_yaw,
         )
+
         shape: Shape = Shape(shape_type=object_.state.shape_type, size=object_.state.size)
 
         if label_to_unknown_rate < random.uniform(0.0, 1.0):
@@ -213,6 +214,7 @@ def get_objects_with_difference(
             semantic_label=semantic_label,
             pointcloud_num=object_.pointcloud_num,
             uuid=object_.uuid,
+            predicted_timestamps=predicted_timestamps,
             predicted_positions=predicted_positions,
             predicted_orientations=predicted_orientations,
             predicted_scores=predicted_scores,
@@ -240,19 +242,22 @@ def _get_prediction_params(
 
     Returns:
         If the attribute of dynamic object named predicted_paths is None, returns None, None, None.
+        predicted_timestamps (List[List[int]]): List of timestamps.
         predicted_positions (List[List[Tuple[float]]]): List of positions
         predicted_orientations (List[List[Quaternion]]): List of quaternions.
         predicted_scores (List[float]): List of scores.
     """
     if object_.predicted_paths is None:
-        return None, None, None
+        return None, None, None, None
 
+    predicted_timestamps: List[List[int]] = []
     predicted_positions: List[List[Tuple[float]]] = []
     predicted_orientations: List[List[Quaternion]] = []
     predicted_scores: List[float] = []
     for path in object_.predicted_paths:
         positions = []
         orientations = []
+        predicted_timestamps.append(path.timestamps)
         for state in path.states:
             positions.append(
                 (
@@ -273,7 +278,7 @@ def _get_prediction_params(
         predicted_orientations.append(orientations)
         predicted_scores.append(path.confidence)
 
-    return predicted_positions, predicted_orientations, predicted_scores
+    return predicted_timestamps, predicted_positions, predicted_orientations, predicted_scores
 
 
 def get_objects_with_difference2d(
