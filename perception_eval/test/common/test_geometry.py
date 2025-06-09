@@ -3,7 +3,6 @@ from perception_eval.common.geometry import interpolate_homogeneous_matrix
 from perception_eval.common.geometry import interpolate_list
 from perception_eval.common.geometry import interpolate_quaternion
 from pyquaternion import Quaternion
-import pytest
 
 
 def test_interpolate_homogeneous_matrix():

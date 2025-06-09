@@ -113,7 +113,9 @@ class PerceptionVisualizer2D:
             numpy.ndarray: NDArray of multiple Axes instances.
         """
 
-        self.label_type: Union[AutowareLabel, TrafficLightLabel] = self.__config.label_converter.label_type
+        self.label_type: Union[AutowareLabel, TrafficLightLabel] = (
+            self.__config.label_converter.label_type
+        )
 
         if self.label_type == TrafficLightLabel:
             cameras = ("cam_traffic_light_near", "cam_traffic_light_far")
@@ -339,7 +341,9 @@ class PerceptionVisualizer2D:
         object_text = "GT" if is_ground_truth else "Est"
         for object_ in objects:
             if isinstance(object_, DynamicObjectWithPerceptionResult):
-                object_: DynamicObject2D = object_.ground_truth_object if is_ground_truth else object_.estimated_object
+                object_: DynamicObject2D = (
+                    object_.ground_truth_object if is_ground_truth else object_.estimated_object
+                )
             if object_ is None or object_.roi is None:
                 continue
             box_top_left: np.ndarray = np.array(object_.roi.offset)
@@ -363,7 +367,9 @@ class PerceptionVisualizer2D:
                 axes[col].text(*box_bottom_left, s=box_text, fontsize="x-small", color=edge_color)
             else:
                 axes[row, col].add_patch(box)
-                axes[row, col].text(*box_bottom_left, s=box_text, fontsize="x-small", color=edge_color)
+                axes[row, col].text(
+                    *box_bottom_left, s=box_text, fontsize="x-small", color=edge_color
+                )
 
         return axes
 

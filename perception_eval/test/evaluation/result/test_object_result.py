@@ -89,7 +89,9 @@ class TestObjectResult(unittest.TestCase):
                         estimated_objects,
                         f"Unexpected estimated object at {i}",
                     )
-                    estimated_object_index: int = estimated_objects.index(object_result_.estimated_object)
+                    estimated_object_index: int = estimated_objects.index(
+                        object_result_.estimated_object
+                    )
                     gt_idx = ans_pair_index[estimated_object_index][1]
                     if gt_idx is not None:
                         self.assertEqual(
@@ -121,7 +123,11 @@ class TestObjectResult(unittest.TestCase):
                 {},
                 [
                     (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
-                    (Label(AutowareLabel.BICYCLE, "bicycle"), Label(AutowareLabel.BICYCLE, "bicycle"), True),
+                    (
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        True,
+                    ),
                     (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
                 ],
             ),
@@ -129,16 +135,32 @@ class TestObjectResult(unittest.TestCase):
                 {2: Label(AutowareLabel.UNKNOWN, "unknown")},
                 [
                     (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
-                    (Label(AutowareLabel.BICYCLE, "bicycle"), Label(AutowareLabel.BICYCLE, "bicycle"), True),
-                    (Label(AutowareLabel.UNKNOWN, "unknown"), Label(AutowareLabel.CAR, "car"), False),
+                    (
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        True,
+                    ),
+                    (
+                        Label(AutowareLabel.UNKNOWN, "unknown"),
+                        Label(AutowareLabel.CAR, "car"),
+                        False,
+                    ),
                 ],
             ),
             (
                 {2: Label(AutowareLabel.PEDESTRIAN, "pedestrian")},
                 [
                     (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
-                    (Label(AutowareLabel.BICYCLE, "bicycle"), Label(AutowareLabel.BICYCLE, "bicycle"), True),
-                    (Label(AutowareLabel.PEDESTRIAN, "pedestrian"), Label(AutowareLabel.CAR, "car"), False),
+                    (
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        True,
+                    ),
+                    (
+                        Label(AutowareLabel.PEDESTRIAN, "pedestrian"),
+                        Label(AutowareLabel.CAR, "car"),
+                        False,
+                    ),
                 ],
             ),
         ]
@@ -179,7 +201,11 @@ class TestObjectResult(unittest.TestCase):
                 {},
                 [
                     (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
-                    (Label(AutowareLabel.BICYCLE, "bicycle"), Label(AutowareLabel.BICYCLE, "bicycle"), True),
+                    (
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        True,
+                    ),
                     (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
                 ],
             ),
@@ -187,16 +213,32 @@ class TestObjectResult(unittest.TestCase):
                 {2: Label(AutowareLabel.UNKNOWN, "unknown")},
                 [
                     (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
-                    (Label(AutowareLabel.BICYCLE, "bicycle"), Label(AutowareLabel.BICYCLE, "bicycle"), True),
-                    (Label(AutowareLabel.UNKNOWN, "unknown"), Label(AutowareLabel.CAR, "car"), True),
+                    (
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        True,
+                    ),
+                    (
+                        Label(AutowareLabel.UNKNOWN, "unknown"),
+                        Label(AutowareLabel.CAR, "car"),
+                        True,
+                    ),
                 ],
             ),
             (
                 {2: Label(AutowareLabel.PEDESTRIAN, "pedestrian")},
                 [
                     (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
-                    (Label(AutowareLabel.BICYCLE, "bicycle"), Label(AutowareLabel.BICYCLE, "bicycle"), True),
-                    (Label(AutowareLabel.PEDESTRIAN, "pedestrian"), Label(AutowareLabel.CAR, "car"), False),
+                    (
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        True,
+                    ),
+                    (
+                        Label(AutowareLabel.PEDESTRIAN, "pedestrian"),
+                        Label(AutowareLabel.CAR, "car"),
+                        False,
+                    ),
                 ],
             ),
         ]
@@ -237,7 +279,11 @@ class TestObjectResult(unittest.TestCase):
                 {},
                 [
                     (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
-                    (Label(AutowareLabel.BICYCLE, "bicycle"), Label(AutowareLabel.BICYCLE, "bicycle"), True),
+                    (
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        True,
+                    ),
                     (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
                 ],
             ),
@@ -245,16 +291,32 @@ class TestObjectResult(unittest.TestCase):
                 {2: Label(AutowareLabel.UNKNOWN, "unknown")},
                 [
                     (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
-                    (Label(AutowareLabel.BICYCLE, "bicycle"), Label(AutowareLabel.BICYCLE, "bicycle"), True),
-                    (Label(AutowareLabel.UNKNOWN, "unknown"), Label(AutowareLabel.CAR, "car"), True),
+                    (
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        True,
+                    ),
+                    (
+                        Label(AutowareLabel.UNKNOWN, "unknown"),
+                        Label(AutowareLabel.CAR, "car"),
+                        True,
+                    ),
                 ],
             ),
             (
                 {2: Label(AutowareLabel.PEDESTRIAN, "pedestrian")},
                 [
                     (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
-                    (Label(AutowareLabel.BICYCLE, "bicycle"), Label(AutowareLabel.BICYCLE, "bicycle"), True),
-                    (Label(AutowareLabel.PEDESTRIAN, "pedestrian"), Label(AutowareLabel.CAR, "car"), True),
+                    (
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        Label(AutowareLabel.BICYCLE, "bicycle"),
+                        True,
+                    ),
+                    (
+                        Label(AutowareLabel.PEDESTRIAN, "pedestrian"),
+                        Label(AutowareLabel.CAR, "car"),
+                        True,
+                    ),
                 ],
             ),
         ]

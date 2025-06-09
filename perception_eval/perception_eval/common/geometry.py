@@ -56,7 +56,9 @@ def interpolate_homogeneous_matrix(
     return matrix
 
 
-def interpolate_list(list_1: List[float], list_2: List[float], t1: float, t2: float, t: float) -> List[float]:
+def interpolate_list(
+    list_1: List[float], list_2: List[float], t1: float, t2: float, t: float
+) -> List[float]:
     """[summary]
     Interpolate the state of object_1 to the time of object_2.
     Args:
@@ -72,7 +74,9 @@ def interpolate_list(list_1: List[float], list_2: List[float], t1: float, t2: fl
     return state
 
 
-def interpolate_quaternion(quat_1: Quaternion, quat_2: Quaternion, t1: float, t2: float, t: float) -> Quaternion:
+def interpolate_quaternion(
+    quat_1: Quaternion, quat_2: Quaternion, t1: float, t2: float, t: float
+) -> Quaternion:
     """Interpolate a quaternion between two given times to a specific time."""
     assert t1 <= t <= t2
     alpha = (t - t1) / (t2 - t1)
@@ -80,7 +84,9 @@ def interpolate_quaternion(quat_1: Quaternion, quat_2: Quaternion, t1: float, t2
     return interpolated_quat
 
 
-def interpolate_state(state_1: ObjectState, state_2: ObjectState, t1: float, t2: float, t: float) -> ObjectState:
+def interpolate_state(
+    state_1: ObjectState, state_2: ObjectState, t1: float, t2: float, t: float
+) -> ObjectState:
     """[summary]
     Interpolate the state of object_1 to the time of object_2.
     Args:
@@ -91,7 +97,9 @@ def interpolate_state(state_1: ObjectState, state_2: ObjectState, t1: float, t2:
     assert t1 <= t <= t2
     # state has position, Orientation, shape, velocity
     interpolated_position = tuple(interpolate_list(state_1.position, state_2.position, t1, t2, t))
-    interpolated_orientation = interpolate_quaternion(state_1.orientation, state_2.orientation, t1, t2, t)
+    interpolated_orientation = interpolate_quaternion(
+        state_1.orientation, state_2.orientation, t1, t2, t
+    )
     interpolated_shape = state_1.shape  # shape will not change
     interpolated_velocity = tuple(interpolate_list(state_1.velocity, state_2.velocity, t1, t2, t))
     return ObjectState(
@@ -142,7 +150,9 @@ def interpolate_object_list(
     return output_object_list
 
 
-def interpolate_object(object_1: ObjectType, object_2: ObjectType, t1: float, t2: float, t: float) -> ObjectType:
+def interpolate_object(
+    object_1: ObjectType, object_2: ObjectType, t1: float, t2: float, t: float
+) -> ObjectType:
     """[summary]
     Interpolate the state of object_1 to the time of object_2.
     Args:
@@ -151,14 +161,18 @@ def interpolate_object(object_1: ObjectType, object_2: ObjectType, t1: float, t2
     Returns: ObjectType: The interpolated object.
     """
     if not isinstance(object_1, type(object_2)):
-        raise TypeError(f"objects' type must be same, but got {type(object_1) and {type(object_2)}}")
+        raise TypeError(
+            f"objects' type must be same, but got {type(object_1) and {type(object_2)}}"
+        )
 
     if isinstance(object_1, DynamicObject):
         return interpolate_dynamic_object(object_1, object_2, t1, t2, t)
     elif isinstance(object_1, DynamicObject2D):
         return interpolate_dynamic_object2d(object_1, object_2, t1, t2, t)
     else:
-        raise TypeError(f"object type must be DynamicObject or DynamicObject2D, but got {type(object_1)}")
+        raise TypeError(
+            f"object type must be DynamicObject or DynamicObject2D, but got {type(object_1)}"
+        )
 
 
 def interpolate_dynamic_object(

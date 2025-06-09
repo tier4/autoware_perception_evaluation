@@ -58,12 +58,16 @@ class _MetricsConfigBase(ABC):
 
         num_targets: int = len(target_labels)
         if center_distance_thresholds:
-            self.center_distance_thresholds = set_thresholds(center_distance_thresholds, num_targets, True)
+            self.center_distance_thresholds = set_thresholds(
+                center_distance_thresholds, num_targets, True
+            )
         else:
             self.center_distance_thresholds = []
 
         if plane_distance_thresholds:
-            self.plane_distance_thresholds = set_thresholds(plane_distance_thresholds, num_targets, True)
+            self.plane_distance_thresholds = set_thresholds(
+                plane_distance_thresholds, num_targets, True
+            )
         else:
             self.plane_distance_thresholds = []
 

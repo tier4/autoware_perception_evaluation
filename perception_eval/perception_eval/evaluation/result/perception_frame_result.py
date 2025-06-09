@@ -112,9 +112,11 @@ class PerceptionFrameResult:
         )
 
         # Divide objects by label to dict
-        object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
-            self.object_results,
-            self.pass_fail_result.critical_object_filter_config.target_labels,
+        object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = (
+            divide_objects(
+                self.object_results,
+                self.pass_fail_result.critical_object_filter_config.target_labels,
+            )
         )
 
         num_ground_truth_dict: Dict[LabelType, int] = divide_objects_to_num(
@@ -128,13 +130,17 @@ class PerceptionFrameResult:
         if self.metrics_score.tracking_config is not None:
             if previous_result is None:
                 previous_results_dict = {
-                    label: [] for label in self.pass_fail_result.critical_object_filter_config.target_labels
+                    label: []
+                    for label in self.pass_fail_result.critical_object_filter_config.target_labels
                 }
             else:
                 previous_results_dict = divide_objects(
-                    previous_result.object_results, self.pass_fail_result.critical_object_filter_config.target_labels
+                    previous_result.object_results,
+                    self.pass_fail_result.critical_object_filter_config.target_labels,
                 )
-            tracking_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = object_results_dict.copy()
+            tracking_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = (
+                object_results_dict.copy()
+            )
             for label, prev_results in previous_results_dict.items():
                 tracking_results[label] = [prev_results, tracking_results[label]]
             self.metrics_score.evaluate_tracking(tracking_results, num_ground_truth_dict)

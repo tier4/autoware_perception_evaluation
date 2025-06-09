@@ -168,7 +168,9 @@ def __get_thresholds(threshold: Union[Real, List[Real]], num_elements: int) -> L
     elif any([not isinstance(t, Real) for t in threshold]):
         raise ThresholdError(f"Type of all elements must be Real number, but got {threshold}")
     elif len(threshold) != 1 and num_elements != len(threshold):
-        raise ThresholdError(f"Number of list elements must be {num_elements} or 1, but got {len(threshold)}")
+        raise ThresholdError(
+            f"Number of list elements must be {num_elements} or 1, but got {len(threshold)}"
+        )
 
     return threshold * num_elements if len(threshold) == 1 else threshold
 
@@ -215,13 +217,18 @@ def __get_nested_thresholds(
     if isinstance(threshold[0], Real):
         if any([not isinstance(t, Real) for t in threshold]):
             raise ThresholdError(f"Type of all elements must be same, but got {threshold}")
-        return [[t] * num_elements for t in threshold] if len(threshold) != num_elements else [threshold]
+        return (
+            [[t] * num_elements for t in threshold]
+            if len(threshold) != num_elements
+            else [threshold]
+        )
     else:
         if any([not isinstance(t, list) for t in threshold]):
             raise ThresholdError(f"Type of all elements must be same but got {threshold}")
         elif any([len(t) != num_elements and len(t) != 1 for t in threshold]):
             raise ThresholdError(
-                f"For nested list, expected the number of each element is {num_elements} or 1, " f"but got {threshold}"
+                f"For nested list, expected the number of each element is {num_elements} or 1, "
+                f"but got {threshold}"
             )
         threshold_list: List[List[Real]] = []
         for t in threshold:
@@ -285,5 +292,7 @@ def check_nested_thresholds(thresholds: List[List[Real]], num_elements: int) -> 
     if any([not isinstance(t, list) for t in thresholds]):
         raise ThresholdError(f"Type of all elements must be list, but got {thresholds}")
     elif any([len(t) == 0 or len(t) != num_elements for t in thresholds]):
-        raise ThresholdError(f"Expected the number of each element is {num_elements}, but got {thresholds}")
+        raise ThresholdError(
+            f"Expected the number of each element is {num_elements}, but got {thresholds}"
+        )
     return thresholds

@@ -59,4 +59,6 @@ class DiffYaw:
             deg2rad (bool): Whether convert degrees to radians. Defaults to False.
         """
         self.diff_estimated: float = math.radians(diff_estimated) if deg2rad else diff_estimated
-        self.diff_ground_truth: float = math.radians(diff_ground_truth) if deg2rad else diff_ground_truth
+        self.diff_ground_truth: float = (
+            math.radians(diff_ground_truth) if deg2rad else diff_ground_truth
+        )

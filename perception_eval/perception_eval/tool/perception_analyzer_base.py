@@ -532,7 +532,9 @@ class PerceptionAnalyzerBase(ABC):
         concat: List[pd.DataFrame] = []
         if len(self) > 0:
             concat.append(self.df)
-        self.__transforms[str(self.num_scene)][str(frame.frame_name)] = frame.frame_ground_truth.transforms
+        self.__transforms[str(self.num_scene)][str(frame.frame_name)] = (
+            frame.frame_ground_truth.transforms
+        )
 
         tp_df = self.format2df(
             frame.pass_fail_result.tp_object_results,
@@ -776,7 +778,9 @@ class PerceptionAnalyzerBase(ABC):
         if df is None:
             df = self.df
 
-        data: Dict[str, List[float]] = {str(s): [0.0] * len(self.all_labels) for s in MatchingStatus}
+        data: Dict[str, List[float]] = {
+            str(s): [0.0] * len(self.all_labels) for s in MatchingStatus
+        }
         for i, label in enumerate(self.all_labels):
             if label == "ALL":
                 label = None
@@ -791,7 +795,9 @@ class PerceptionAnalyzerBase(ABC):
                 data["FN"][i] = self.get_num_fn(df=df, label=label) / num_ground_truth
         return pd.DataFrame(data, index=self.all_labels)
 
-    def summarize_score(self, scene: Optional[Union[int, List[int]]] = None, *args, **kwargs) -> pd.DataFrame:
+    def summarize_score(
+        self, scene: Optional[Union[int, List[int]]] = None, *args, **kwargs
+    ) -> pd.DataFrame:
         """Summarize MetricsScore.
 
         Args:
@@ -830,8 +836,12 @@ class PerceptionAnalyzerBase(ABC):
         if "unknown" not in target_labels:
             target_labels.append("unknown")
 
-        gt_indices: np.ndarray = gt_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
-        est_indices: np.ndarray = est_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
+        gt_indices: np.ndarray = (
+            gt_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
+        )
+        est_indices: np.ndarray = (
+            est_df["label"].apply(lambda label: target_labels.index(label)).to_numpy()
+        )
 
         num_classes = len(target_labels)
         indices = num_classes * gt_indices + est_indices
@@ -898,7 +908,9 @@ class PerceptionAnalyzerBase(ABC):
             bins = mode.get_bins()
 
         if mode.is_2d():
-            assert isinstance(bins, Number), f"For 2D plot, bins must be number but got {type(bins)}"
+            assert isinstance(
+                bins, Number
+            ), f"For 2D plot, bins must be number but got {type(bins)}"
             min_value = 0 if mode == PlotAxes.CONFIDENCE else _get_min_value(gt_axes, est_axes)
             max_value = 100 if mode == PlotAxes.CONFIDENCE else _get_max_value(gt_axes, est_axes)
             hist_bins = np.arange(min_value, max_value + bins, bins)
@@ -1098,7 +1110,9 @@ class PerceptionAnalyzerBase(ABC):
                 if heatmap:
                     if project:
                         # TODO(ktro2828): This is wrong projection
-                        hist, x_edges, y_edges = np.histogram2d(xaxes, yaxes, bins=bins, weights=err)
+                        hist, x_edges, y_edges = np.histogram2d(
+                            xaxes, yaxes, bins=bins, weights=err
+                        )
                         ax.pcolormesh(x_edges, y_edges, hist, cmap=cm.jet)
                     else:
                         ax.scatter(xaxes, yaxes, err, c=err, cmap=cm.jet)
@@ -1184,7 +1198,9 @@ class PerceptionAnalyzerBase(ABC):
             min_value, max_value = plot_range
         else:
             min_value = 0 if mode == PlotAxes.CONFIDENCE else _get_min_value(gt_values, est_values)
-            max_value = 100 if mode == PlotAxes.CONFIDENCE else _get_max_value(gt_values, est_values)
+            max_value = (
+                100 if mode == PlotAxes.CONFIDENCE else _get_max_value(gt_values, est_values)
+            )
         step = bins if bins else mode.get_bins()
         hist_bins = np.arange(min_value, max_value + step, step)
         _, axis = np.histogram(est_values, bins=hist_bins)

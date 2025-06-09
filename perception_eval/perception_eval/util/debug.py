@@ -121,7 +121,9 @@ def format_dict_for_log(
     Returns:
         (str) formatted str
     """
-    formatted_str: str = "\n" + pprint.pformat(dict, indent=1, width=120, depth=None, compact=True) + "\n"
+    formatted_str: str = (
+        "\n" + pprint.pformat(dict, indent=1, width=120, depth=None, compact=True) + "\n"
+    )
     return formatted_str
 
 
@@ -226,7 +228,11 @@ def _get_prediction_params(
     object_: DynamicObject,
     diff_distance: Tuple[float, float, float] = (0.0, 0.0, 0.0),
     diff_yaw: float = 0.0,
-) -> Tuple[Optional[List[List[Tuple[float]]]], Optional[List[List[Quaternion]]], Optional[List[float]],]:
+) -> Tuple[
+    Optional[List[List[Tuple[float]]]],
+    Optional[List[List[Quaternion]]],
+    Optional[List[float]],
+]:
     """
     Get object's prediction parameters with distance and yaw difference for test.
 

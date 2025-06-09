@@ -102,7 +102,9 @@ class _TrackingMetricsBase(ABC):
             return self.support_metrics
 
         if set(metrics_field) > set(self.support_metrics):
-            raise ValueError(f"Unsupported metrics: {set(metrics_field) - set(self.support_metrics)}")
+            raise ValueError(
+                f"Unsupported metrics: {set(metrics_field) - set(self.support_metrics)}"
+            )
 
         return metrics_field
 
