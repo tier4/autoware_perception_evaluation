@@ -79,7 +79,7 @@ class DynamicObject:
                 The list of bounding box size for tracked object. Defaults to None.
         tracked_twists (Optional[List[Tuple[float, float, float]]]):
                 The list of twist for tracked object. Defaults to None.
-        predicted_timestamps (Optional[List[List[int]]]): Sequence of timestamps for predicted path. Defaults to None.
+        relative_timestamps (Optional[List[List[int]]]): Sequence of relative timestamps for each waypoint from the current timestamp. Defaults to None.
         predicted_positions (Optional[List[Tuple[float, float, float]]]):
                 Sequence of positions for predicted object. Defaults to None.
         predicted_orientations (Optional[List[Quaternion]]):
@@ -110,7 +110,7 @@ class DynamicObject:
         tracked_orientations: Optional[List[Quaternion]] = None,
         tracked_shapes: Optional[List[Shape]] = None,
         tracked_twists: Optional[List[Tuple[float, float, float]]] = None,
-        predicted_timestamps: Optional[List[List[int]]] = None,
+        relative_timestamps: Optional[List[List[int]]] = None,
         predicted_positions: Optional[List[List[Tuple[float, float, float]]]] = None,
         predicted_orientations: Optional[List[List[Quaternion]]] = None,
         predicted_twists: Optional[List[List[Tuple[float, float, float]]]] = None,
@@ -146,7 +146,7 @@ class DynamicObject:
 
         # prediction
         self.predicted_paths: Optional[List[ObjectPath]] = set_object_paths(
-            timestamps=predicted_timestamps,
+            timestamps=relative_timestamps,
             positions=predicted_positions,
             orientations=predicted_orientations,
             twists=predicted_twists,
