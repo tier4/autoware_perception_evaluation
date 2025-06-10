@@ -137,13 +137,19 @@ class ObjectPath:
         confidence (float): Path confidence in [0, 1].
 
     Args:
-        timestamps (List[int]): List of timestamps for each waypoint.
+        relative_timestamps (List[int]): List of relative timestamps for each waypoint
+            from the current timestamp.
         states (List[ObjectState]): List of ObjectState instances.
         confidence (float): Path confidence in [0, 1].
     """
 
-    def __init__(self, timestamps: List[int], states: List[ObjectState], confidence: float) -> None:
-        self.timestamps: List[int] = timestamps
+    def __init__(
+        self,
+        relative_timestamps: List[int],
+        states: List[ObjectState],
+        confidence: float,
+    ) -> None:
+        self.relative_timestamps: List[int] = relative_timestamps
         self.states: List[ObjectState] = states
         self.confidence: float = confidence
 
