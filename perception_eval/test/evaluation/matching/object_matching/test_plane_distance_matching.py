@@ -52,10 +52,12 @@ class TestPlaneDistanceMatching(unittest.TestCase):
         )
         for diff_distance, ans_plane_distance_list in patterns:
             with self.subTest("Test get_uc_plane_distance."):
-                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=fixed_dummy_ground_truth_objects,
-                    diff_distance=(diff_distance, 0.0, 0.0),
-                    diff_yaw=0,
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = (
+                    get_objects_with_difference(
+                        ground_truth_objects=fixed_dummy_ground_truth_objects,
+                        diff_distance=(diff_distance, 0.0, 0.0),
+                        diff_yaw=0,
+                    )
                 )
                 for estimated_object, ground_truth_object, ans_plane_distance in zip(
                     diff_distance_dummy_ground_truth_objects,

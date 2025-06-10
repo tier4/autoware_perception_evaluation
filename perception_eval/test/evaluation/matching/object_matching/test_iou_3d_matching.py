@@ -45,10 +45,12 @@ class TestIou3dMatching(unittest.TestCase):
         patterns: List[Tuple[float, float]] = [(0.0, 1.0), (-0.5, 0.5), (-1.0, 0.0)]
         for diff_distance, ans_height_intersection in patterns:
             with self.subTest("Test get_height_intersection."):
-                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=(0.0, 0.0, diff_distance),
-                    diff_yaw=0,
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = (
+                    get_objects_with_difference(
+                        ground_truth_objects=self.dummy_ground_truth_objects,
+                        diff_distance=(0.0, 0.0, diff_distance),
+                        diff_yaw=0,
+                    )
                 )
                 for estimated_object, ground_truth_object in zip(
                     diff_distance_dummy_ground_truth_objects, self.dummy_ground_truth_objects
@@ -73,10 +75,12 @@ class TestIou3dMatching(unittest.TestCase):
         patterns: List[Tuple[float, float]] = [(0.0, 1.0), (0.5, 0.125), (1.5, 0.0)]
         for diff_distance, ans_intersection in patterns:
             with self.subTest("Test get_intersection."):
-                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=(diff_distance, diff_distance, diff_distance),
-                    diff_yaw=0,
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = (
+                    get_objects_with_difference(
+                        ground_truth_objects=self.dummy_ground_truth_objects,
+                        diff_distance=(diff_distance, diff_distance, diff_distance),
+                        diff_yaw=0,
+                    )
                 )
                 for estimated_object, ground_truth_object in zip(
                     diff_distance_dummy_ground_truth_objects, self.dummy_ground_truth_objects
@@ -98,10 +102,12 @@ class TestIou3dMatching(unittest.TestCase):
         patterns: List[Tuple[float, float]] = [(0.0, 1.0), (-0.5, 1.0 / 3.0), (-1.0, 0.0)]
         for diff_distance, ans_iou_3d in patterns:
             with self.subTest("Test diff_x get_iou_3d."):
-                diff_x_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=(diff_distance, 0.0, 0.0),
-                    diff_yaw=0,
+                diff_x_dummy_ground_truth_objects: List[DynamicObject] = (
+                    get_objects_with_difference(
+                        ground_truth_objects=self.dummy_ground_truth_objects,
+                        diff_distance=(diff_distance, 0.0, 0.0),
+                        diff_yaw=0,
+                    )
                 )
                 for estimated_object, ground_truth_object in zip(
                     diff_x_dummy_ground_truth_objects, self.dummy_ground_truth_objects
@@ -110,10 +116,12 @@ class TestIou3dMatching(unittest.TestCase):
                     self.assertAlmostEqual(iou_3d.value, ans_iou_3d)
 
             with self.subTest("Test diff_z get_iou_3d."):
-                diff_z_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=(0.0, 0.0, diff_distance),
-                    diff_yaw=0,
+                diff_z_dummy_ground_truth_objects: List[DynamicObject] = (
+                    get_objects_with_difference(
+                        ground_truth_objects=self.dummy_ground_truth_objects,
+                        diff_distance=(0.0, 0.0, diff_distance),
+                        diff_yaw=0,
+                    )
                 )
                 for estimated_object, ground_truth_object in zip(
                     diff_z_dummy_ground_truth_objects, self.dummy_ground_truth_objects

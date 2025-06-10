@@ -122,7 +122,9 @@ class TestCLEAR(unittest.TestCase):
     def setUp(self) -> None:
         self.dummy_estimated_objects: List[DynamicObject] = []
         self.dummy_ground_truth_objects: List[DynamicObject] = []
-        self.dummy_unique_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data(use_unique_id=True)
+        self.dummy_unique_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data(
+            use_unique_id=True
+        )
         self.dummy_estimated_objects, _ = make_dummy_data(use_unique_id=False)
 
         self.evaluation_task: EvaluationTask = EvaluationTask.TRACKING
@@ -155,7 +157,9 @@ class TestCLEAR(unittest.TestCase):
                         (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
         """
         # patterns: (prev_diff_trans, cur_diff_trans, target_label, use_unique_id, ans_clear)
-        patterns: List[Tuple[Optional[DiffTranslation], DiffTranslation, AutowareLabel, AnswerCLEAR]] = [
+        patterns: List[
+            Tuple[Optional[DiffTranslation], DiffTranslation, AutowareLabel, AnswerCLEAR]
+        ] = [
             # ========== Test unique ID association ==========
             # (1). Est: 2, GT: 1
             # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
@@ -398,7 +402,9 @@ class TestCLEAR(unittest.TestCase):
                     # Translate previous estimated objects
                     prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                         ground_truth_objects=(
-                            self.dummy_unique_estimated_objects if use_unique_id else self.dummy_estimated_objects
+                            self.dummy_unique_estimated_objects
+                            if use_unique_id
+                            else self.dummy_estimated_objects
                         ),
                         diff_distance=prev_diff_trans.diff_estimated,
                         diff_yaw=0.0,
@@ -437,7 +443,9 @@ class TestCLEAR(unittest.TestCase):
                 # Translate current objects
                 cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=(
-                        self.dummy_unique_estimated_objects if use_unique_id else self.dummy_estimated_objects
+                        self.dummy_unique_estimated_objects
+                        if use_unique_id
+                        else self.dummy_estimated_objects
                     ),
                     diff_distance=cur_diff_trans.diff_estimated,
                     diff_yaw=0.0,
@@ -579,7 +587,9 @@ class TestCLEAR(unittest.TestCase):
                     # Translate previous objects
                     prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                         ground_truth_objects=(
-                            self.dummy_unique_estimated_objects if use_unique_id else self.dummy_estimated_objects
+                            self.dummy_unique_estimated_objects
+                            if use_unique_id
+                            else self.dummy_estimated_objects
                         ),
                         diff_distance=prev_diff_trans.diff_estimated,
                         diff_yaw=0.0,
@@ -618,7 +628,9 @@ class TestCLEAR(unittest.TestCase):
                 # Translate current objects
                 cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=(
-                        self.dummy_unique_estimated_objects if use_unique_id else self.dummy_estimated_objects
+                        self.dummy_unique_estimated_objects
+                        if use_unique_id
+                        else self.dummy_estimated_objects
                     ),
                     diff_distance=cur_diff_trans.diff_estimated,
                     diff_yaw=0.0,
@@ -657,7 +669,9 @@ class TestCLEAR(unittest.TestCase):
                             cur_object_result=cur_obj_result,
                             prev_object_result=prev_obj_result,
                         )
-                        self.assertEqual(flag, ans_flags[i][j], f"[{n + 1}] {flag}!=answer[{i}][{j}]]")
+                        self.assertEqual(
+                            flag, ans_flags[i][j], f"[{n + 1}] {flag}!=answer[{i}][{j}]]"
+                        )
 
     def test_is_same_match(self):
         """[summary]
@@ -763,7 +777,9 @@ class TestCLEAR(unittest.TestCase):
                     # Translate previous objects
                     prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                         ground_truth_objects=(
-                            self.dummy_unique_estimated_objects if use_unique_id else self.dummy_estimated_objects
+                            self.dummy_unique_estimated_objects
+                            if use_unique_id
+                            else self.dummy_estimated_objects
                         ),
                         diff_distance=prev_diff_trans.diff_estimated,
                         diff_yaw=0.0,
@@ -802,7 +818,9 @@ class TestCLEAR(unittest.TestCase):
                 # Translate current objects
                 cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=(
-                        self.dummy_unique_estimated_objects if use_unique_id else self.dummy_estimated_objects
+                        self.dummy_unique_estimated_objects
+                        if use_unique_id
+                        else self.dummy_estimated_objects
                     ),
                     diff_distance=cur_diff_trans.diff_estimated,
                     diff_yaw=0.0,

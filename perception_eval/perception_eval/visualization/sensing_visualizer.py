@@ -317,7 +317,9 @@ class SensingVisualizer:
 
             # rotate box around center
             yaw: float = orientation.yaw_pitch_roll[0]
-            transform: Affine2D = Affine2D().rotate_around(box_center[0], box_center[1], yaw) + axes.transData
+            transform: Affine2D = (
+                Affine2D().rotate_around(box_center[0], box_center[1], yaw) + axes.transData
+            )
 
             box: Rectangle = Rectangle(
                 xy=box_bottom_left,

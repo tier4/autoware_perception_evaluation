@@ -14,10 +14,9 @@
 
 from __future__ import annotations
 
-from enum import Enum
 import logging
-from typing import Dict
-from typing import Union
+from enum import Enum
+from typing import Dict, Union
 
 from perception_eval.common.evaluation_task import EvaluationTask
 
@@ -50,9 +49,6 @@ class FrameID(Enum):
 
     # Integrated TLR camera frame
     CAM_TRAFFIC_LIGHT = "cam_traffic_light"
-
-    def __hash__(self) -> int:
-        return hash(self.value)
 
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, str):
@@ -101,7 +97,9 @@ class FrameID(Enum):
             task = EvaluationTask.from_value(task)
 
         if task.is_2d():
-            raise ValueError("For 2D task, FrameID must be initialized explicitly, or use `FrameID.from_value(name)`.")
+            raise ValueError(
+                "For 2D task, FrameID must be initialized explicitly, or use `FrameID.from_value(name)`."
+            )
 
         if task in (EvaluationTask.DETECTION, EvaluationTask.SENSING):
             return FrameID.BASE_LINK
@@ -138,7 +136,9 @@ class Visibility(Enum):
         elif name == "v80-100":
             return Visibility.FULL
         else:
-            logging.warning(f"level: {name} is not supported, Visibility.UNAVAILABLE will be assigned.")
+            logging.warning(
+                f"level: {name} is not supported, Visibility.UNAVAILABLE will be assigned."
+            )
             return Visibility.UNAVAILABLE
 
     def __eq__(self, __o: object) -> bool:

@@ -12,22 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from logging import getLogger
 import os.path as osp
-from typing import Callable
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
+from logging import getLogger
+from typing import List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 from perception_eval.common.label import LabelType
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
-from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
+from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp, TPMetricsAph
 
 logger = getLogger(__name__)
 
@@ -83,8 +79,7 @@ class Ap:
         self.objects_results_num: int = len(all_object_results)
 
         # sort by confidence
-        lambda_func: Callable[[DynamicObjectWithPerceptionResult], float] = lambda x: x.estimated_object.semantic_score
-        all_object_results.sort(key=lambda_func, reverse=True)
+        all_object_results.sort(key=lambda x: x.estimated_object.semantic_score, reverse=True)
 
         # tp and fp from object results ordered by confidence
         self.tp_list: List[float] = []
@@ -101,7 +96,9 @@ class Ap:
 
         # AP
         self.ap: float = (
-            self._calculate_ap(precision_list, recall_list) if 0 < len(all_object_results) else float("inf")
+            self._calculate_ap(precision_list, recall_list)
+            if 0 < len(all_object_results)
+            else float("inf")
         )
         # average and standard deviation
         self.matching_average: Optional[float] = None
@@ -315,7 +312,9 @@ class Ap:
 
         ap: float = 0.0
         for i in range(len(max_precision_list) - 1):
-            score: float = max_precision_list[i] * (max_precision_recall_list[i] - max_precision_recall_list[i + 1])
+            score: float = max_precision_list[i] * (
+                max_precision_recall_list[i] - max_precision_recall_list[i + 1]
+            )
             ap += score
 
         return ap
@@ -339,7 +338,9 @@ class Ap:
         matching_score_list: List[float] = [
             object_result.get_matching(matching_mode).value for object_result in object_results
         ]
-        matching_score_list_without_none = list(filter(lambda x: x is not None, matching_score_list))
+        matching_score_list_without_none = list(
+            filter(lambda x: x is not None, matching_score_list)
+        )
         if len(matching_score_list_without_none) == 0:
             return None, None
         mean: float = np.mean(matching_score_list_without_none).item()

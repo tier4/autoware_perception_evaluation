@@ -115,7 +115,9 @@ def set_task_lists(evaluation_tasks_str: List[str]) -> List[EvaluationTask]:
     return task_lists
 
 
-def set_task_dict(evaluation_tasks_dict: Dict[str, Dict[str, Any]]) -> Dict[EvaluationTask, Dict[str, Any]]:
+def set_task_dict(
+    evaluation_tasks_dict: Dict[str, Dict[str, Any]],
+) -> Dict[EvaluationTask, Dict[str, Any]]:
     """Convert str key to EvaluationTask instance dict.
 
     Args:

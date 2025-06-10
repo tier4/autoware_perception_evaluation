@@ -71,8 +71,7 @@ class _EvaluationMangerBase(ABC):
 
     @property
     @abstractmethod
-    def visualizer(self) -> VisualizerType:
-        ...
+    def visualizer(self) -> VisualizerType: ...
 
     @abstractmethod
     def add_frame_result(self) -> FrameResultType:

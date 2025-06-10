@@ -45,7 +45,9 @@ def prepare_path(
         num_estimated_future = len(path)
         if num_estimated_future < num_gt_future:
             # pad by the last state
-            pad_states = path.states + [path.states[-1] for _ in range(num_gt_future - num_estimated_future)]
+            pad_states = path.states + [
+                path.states[-1] for _ in range(num_gt_future - num_estimated_future)
+            ]
         else:
             pad_states = path.states[:num_gt_future]
 

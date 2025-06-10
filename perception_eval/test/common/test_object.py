@@ -99,10 +99,12 @@ class TestObject(unittest.TestCase):
         ]
         for diff_yaw, ans_heading_bev in patterns:
             with self.subTest("Test get_heading_bev"):
-                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=(0.0, 0.0, 0.0),
-                    diff_yaw=diff_yaw,
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = (
+                    get_objects_with_difference(
+                        ground_truth_objects=self.dummy_ground_truth_objects,
+                        diff_distance=(0.0, 0.0, 0.0),
+                        diff_yaw=diff_yaw,
+                    )
                 )
                 for diff_distance_dummy_object in diff_distance_dummy_ground_truth_objects:
                     heading_bev = diff_distance_dummy_object.get_heading_bev()
@@ -195,10 +197,12 @@ class TestObject(unittest.TestCase):
         ]
         for diff_distance, ans_distance in patterns:
             with self.subTest("Test distance_objects"):
-                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=(diff_distance, diff_distance, diff_distance),
-                    diff_yaw=0,
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = (
+                    get_objects_with_difference(
+                        ground_truth_objects=self.dummy_ground_truth_objects,
+                        diff_distance=(diff_distance, diff_distance, diff_distance),
+                        diff_yaw=0,
+                    )
                 )
                 for dummy_object, diff_dummy_object in zip(
                     self.dummy_ground_truth_objects, diff_distance_dummy_ground_truth_objects
@@ -225,10 +229,12 @@ class TestObject(unittest.TestCase):
         ]
         for diff_distance, ans_distance_bev in patterns:
             with self.subTest("Test distance_objects_bev"):
-                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=(diff_distance, diff_distance, diff_distance),
-                    diff_yaw=0,
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = (
+                    get_objects_with_difference(
+                        ground_truth_objects=self.dummy_ground_truth_objects,
+                        diff_distance=(diff_distance, diff_distance, diff_distance),
+                        diff_yaw=0,
+                    )
                 )
                 for dummy_object, diff_dummy_object in zip(
                     self.dummy_ground_truth_objects, diff_distance_dummy_ground_truth_objects

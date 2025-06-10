@@ -22,8 +22,6 @@ from pathlib import Path
 import numpy as np
 from perception_eval.tool import PerceptionAnalyzer3DField
 from perception_eval.tool import PerceptionFieldAxis
-from perception_eval.tool import PerceptionFieldXY
-from perception_eval.visualization.perception_visualizer3dfield import PerceptionFieldPlot
 from perception_eval.visualization.perception_visualizer3dfield import PerceptionFieldPlots
 
 
@@ -63,20 +61,26 @@ class PerceptionLoadDatabaseResult:
             self.analyse_and_visualize(analyzer, subfolder=label_group, label=labels)
             print("Done")
 
-    def analyse_and_visualize(self, analyzer: PerceptionAnalyzer3DField, subfolder: str, **kwargs) -> None:
+    def analyse_and_visualize(
+        self, analyzer: PerceptionAnalyzer3DField, subfolder: str, **kwargs
+    ) -> None:
         plot_dir: str = Path(self._plot_dir, subfolder).as_posix()
         if not os.path.isdir(plot_dir):
             os.makedirs(plot_dir)
 
         # Define axes
         # cartesian coordinate position
-        grid_axis_xy: np.ndarray = np.array([-90, -65, -55, -45, -35, -25, -15, -5, 5, 15, 25, 35, 45, 55, 65, 90])
+        grid_axis_xy: np.ndarray = np.array(
+            [-90, -65, -55, -45, -35, -25, -15, -5, 5, 15, 25, 35, 45, 55, 65, 90]
+        )
         axis_x: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="length", data_label="x")
         axis_y: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="length", data_label="y")
         axis_x.set_grid_axis(grid_axis_xy)
         axis_y.set_grid_axis(grid_axis_xy)
         # plane distance
-        axis_dist: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="length", data_label="dist", name="Distance")
+        axis_dist: PerceptionFieldAxis = PerceptionFieldAxis(
+            quantity_type="length", data_label="dist", name="Distance"
+        )
         grid_axis_dist: np.ndarray = np.arange(0, 105, 10)
         axis_dist.set_grid_axis(grid_axis_dist)
         axis_dist.plot_range = (0.0, 110.0)
@@ -97,7 +101,9 @@ class PerceptionLoadDatabaseResult:
             quantity_type="angle", data_label="error_yaw", name="Yaw Error"
         )
         # none
-        axis_none: PerceptionFieldAxis = PerceptionFieldAxis(quantity_type="none", data_label="none", name="None")
+        axis_none: PerceptionFieldAxis = PerceptionFieldAxis(
+            quantity_type="none", data_label="none", name="None"
+        )
 
         plots: PerceptionFieldPlots = PerceptionFieldPlots(plot_dir)
 
@@ -114,7 +120,9 @@ class PerceptionLoadDatabaseResult:
         )
         # Visualization
         plots.plot_field_basics(error_field_dist_heading, prefix="dist_heading")
-        plots.plot_field_basics(uncertainty_field_dist_heading, prefix="dist_heading", is_uncertainty=True)
+        plots.plot_field_basics(
+            uncertainty_field_dist_heading, prefix="dist_heading", is_uncertainty=True
+        )
 
         # Save plots, show and close
         plots.save()
@@ -136,7 +144,9 @@ class PerceptionLoadDatabaseResult:
             numb[numb == 0] = np.nan
             numb_log = np.log10(field.num)
             # plot
-            plots.plot_custom_field(field, numb_log, prefix + "_" + "numb_log", "log10 of samples [-]", vmin=0)
+            plots.plot_custom_field(
+                field, numb_log, prefix + "_" + "numb_log", "log10 of samples [-]", vmin=0
+            )
 
         # heading-yaw_error grid
         error_field_yaw_error, _ = analyzer.analyze_xy(axis_heading, axis_error_yaw, **kwargs)
@@ -148,11 +158,15 @@ class PerceptionLoadDatabaseResult:
             numb[numb == 0] = np.nan
             numb_log = np.log10(field.num)
             # plot
-            plots.plot_custom_field(field, numb_log, prefix + "_" + "numb_log", "log10 of samples [-]", vmin=0)
+            plots.plot_custom_field(
+                field, numb_log, prefix + "_" + "numb_log", "log10 of samples [-]", vmin=0
+            )
 
         # Single axis analysis
         # distance_heading grid
-        error_field_dist_1d, uncertainty_field_dist_1d = analyzer.analyze_xy(axis_dist, axis_none, **kwargs)
+        error_field_dist_1d, uncertainty_field_dist_1d = analyzer.analyze_xy(
+            axis_dist, axis_none, **kwargs
+        )
         plots.plot_axis_basic(error_field_dist_1d, prefix="dist_1D")
         plots.plot_axis_basic(uncertainty_field_dist_1d, prefix="dist_1D", is_uncertainty=True)
 

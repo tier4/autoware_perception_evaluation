@@ -110,7 +110,9 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 0,
             ),
         ]
-        for n, (prev_diff_trans, cur_diff_trans, ans_mota, ans_motp, ans_id_switch) in enumerate(patterns):
+        for n, (prev_diff_trans, cur_diff_trans, ans_mota, ans_motp, ans_id_switch) in enumerate(
+            patterns
+        ):
             with self.subTest(f"Test sum CLEAR: {n + 1}"):
                 prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
@@ -202,7 +204,9 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 mota, motp, id_switch = tracking_score._sum_clear()
                 self.assertAlmostEqual(mota, ans_mota, msg=f"[{n + 1}] MOTA: {mota} != {ans_mota}")
                 self.assertAlmostEqual(motp, ans_motp, msg=f"[{n + 1}] MOTP: {motp} != {ans_motp}")
-                self.assertEqual(id_switch, ans_id_switch, msg=f"[{n + 1}] IDsw: {id_switch} != {ans_id_switch}")
+                self.assertEqual(
+                    id_switch, ans_id_switch, msg=f"[{n + 1}] IDsw: {id_switch} != {ans_id_switch}"
+                )
 
     def test_center_distance_translation_difference(self):
         """[summary]
@@ -349,7 +353,9 @@ class TestTrackingMetricsScore(unittest.TestCase):
             ),
         ]
         for n, (prev_diff_yaw, cur_diff_yaw, ans_clears) in enumerate(patterns):
-            with self.subTest(f"Test tracking score with center distance matching translated by yaw: {n + 1}"):
+            with self.subTest(
+                f"Test tracking score with center distance matching translated by yaw: {n + 1}"
+            ):
                 prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
                     diff_distance=(0.0, 0.0, 0.0),
@@ -426,7 +432,9 @@ class TestTrackingMetricsScore(unittest.TestCase):
                         cur_object_results_dict[label],
                     ]
 
-                num_ground_truth_dict = divide_objects_to_num(cur_ground_truth_objects, self.target_labels)
+                num_ground_truth_dict = divide_objects_to_num(
+                    cur_ground_truth_objects, self.target_labels
+                )
 
                 tracking_score: TrackingMetricsScore = TrackingMetricsScore(
                     object_results_dict=object_results_dict,

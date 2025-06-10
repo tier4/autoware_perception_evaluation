@@ -108,7 +108,9 @@ class SensingFrameResult:
             return
 
         for ground_truth_object in ground_truth_objects:
-            scale_factor_: float = self.sensing_frame_config.get_scale_factor(ground_truth_object.get_distance())
+            scale_factor_: float = self.sensing_frame_config.get_scale_factor(
+                ground_truth_object.get_distance()
+            )
             sensing_result: DynamicObjectWithSensingResult = DynamicObjectWithSensingResult(
                 ground_truth_object,
                 pointcloud_for_detection,
@@ -141,9 +143,13 @@ class SensingFrameResult:
         for point_non_detection in pointcloud_for_non_detection:
             for ground_truth_object in ground_truth_objects:
                 # Get bbox scale factor
-                scale_factor_: float = self.sensing_frame_config.get_scale_factor(ground_truth_object.get_distance())
+                scale_factor_: float = self.sensing_frame_config.get_scale_factor(
+                    ground_truth_object.get_distance()
+                )
                 # Get object area, the start position is looped
-                object_area_: List[List[float]] = ground_truth_object.get_corners(scale_factor_).tolist()
+                object_area_: List[List[float]] = ground_truth_object.get_corners(
+                    scale_factor_
+                ).tolist()
                 # Convert object_area_ to tuple and make it un-looped
                 object_area_: List[Tuple[float]] = [tuple(e) for e in object_area_]
                 # Remove pointcloud in bounding boxes

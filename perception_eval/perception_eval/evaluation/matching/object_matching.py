@@ -110,8 +110,9 @@ class MatchingMethod(ABC):
     mode: MatchingMode
 
     @overload
-    def __init__(self, estimated_object: ObjectType, ground_truth_object: Optional[ObjectType]) -> None:
-        ...
+    def __init__(
+        self, estimated_object: ObjectType, ground_truth_object: Optional[ObjectType]
+    ) -> None: ...
 
     @overload
     def __init__(
@@ -119,8 +120,7 @@ class MatchingMethod(ABC):
         estimated_object: ObjectType,
         ground_truth_object: Optional[ObjectType],
         transforms: Optional[TransformDict] = None,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     def __init__(
         self,
@@ -131,7 +131,9 @@ class MatchingMethod(ABC):
         if ground_truth_object is not None:
             assert isinstance(estimated_object, type(ground_truth_object))
         self.value: Optional[float] = self._calculate_matching_score(
-            estimated_object=estimated_object, ground_truth_object=ground_truth_object, transforms=transforms
+            estimated_object=estimated_object,
+            ground_truth_object=ground_truth_object,
+            transforms=transforms,
         )
 
     @abstractmethod
@@ -220,7 +222,9 @@ class CenterDistanceMatching(MatchingMethod):
         return distance_objects(estimated_object, ground_truth_object)
 
 
-_PlanePointType = Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]]
+_PlanePointType = Tuple[
+    Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]
+]
 
 
 class PlaneDistanceMatching(MatchingMethod):
@@ -250,10 +254,18 @@ class PlaneDistanceMatching(MatchingMethod):
         ground_truth_object: Optional[DynamicObject],
         transforms: Optional[TransformDict] = None,
     ) -> None:
-        self.ground_truth_nn_plane: _PlanePointType = ((np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan))
-        self.estimated_nn_plane: _PlanePointType = ((np.nan, np.nan, np.nan), (np.nan, np.nan, np.nan))
+        self.ground_truth_nn_plane: _PlanePointType = (
+            (np.nan, np.nan, np.nan),
+            (np.nan, np.nan, np.nan),
+        )
+        self.estimated_nn_plane: _PlanePointType = (
+            (np.nan, np.nan, np.nan),
+            (np.nan, np.nan, np.nan),
+        )
         super().__init__(
-            estimated_object=estimated_object, ground_truth_object=ground_truth_object, transforms=transforms
+            estimated_object=estimated_object,
+            ground_truth_object=ground_truth_object,
+            transforms=transforms,
         )
 
     def is_better_than(
@@ -314,14 +326,20 @@ class PlaneDistanceMatching(MatchingMethod):
         ):
             _, _, error_yaw = estimated_object.get_heading_error(ground_truth_object)
             if abs(error_yaw) > np.pi / 2:
-                est_corners = est_corners[[2, 3, 0, 1]]  # based on reverse clockwise order from left top
+                est_corners = est_corners[
+                    [2, 3, 0, 1]
+                ]  # based on reverse clockwise order from left top
 
             # Calculate min distance from ego vehicle
             if ground_truth_object.frame_id != FrameID.BASE_LINK:
-                assert transforms is not None, f"`transforms` must be specified for {ground_truth_object.frame_id}"
+                assert (
+                    transforms is not None
+                ), f"`transforms` must be specified for {ground_truth_object.frame_id}"
                 gt_corners_base_link = np.array(
                     [
-                        transforms.transform((ground_truth_object.frame_id, FrameID.BASE_LINK), corner)
+                        transforms.transform(
+                            (ground_truth_object.frame_id, FrameID.BASE_LINK), corner
+                        )
                         for corner in gt_corners
                     ]
                 )
@@ -337,7 +355,10 @@ class PlaneDistanceMatching(MatchingMethod):
             gt_plane_points = gt_corners[:2].tolist()
             left_idx, right_idx = get_point_left_right_index(gt_plane_points[0], gt_plane_points[1])
             gt_left_point, gt_right_point = gt_plane_points[left_idx], gt_plane_points[right_idx]
-            est_left_point, est_right_point = est_plane_points[left_idx], est_plane_points[right_idx]
+            est_left_point, est_right_point = (
+                est_plane_points[left_idx],
+                est_plane_points[right_idx],
+            )
             distance_left_point: float = distance_points_bev(est_left_point, gt_left_point)
             distance_right_point: float = distance_points_bev(est_right_point, gt_right_point)
             distance_squared = distance_left_point**2 + distance_right_point**2
@@ -347,7 +368,9 @@ class PlaneDistanceMatching(MatchingMethod):
             self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
             self.estimated_nn_plane = (est_left_point, est_right_point)
         else:
-            distance = distance_points_bev(estimated_object.state.position, ground_truth_object.state.position)
+            distance = distance_points_bev(
+                estimated_object.state.position, ground_truth_object.state.position
+            )
 
         return distance
 
@@ -386,7 +409,9 @@ class IOU2dMatching(MatchingMethod):
         Raises:
             AssertionError: When `threshold_value` is not in [0.0, 1.0].
         """
-        assert 0.0 <= threshold_value <= 1.0, f"threshold must be [0.0, 1.0], but got {threshold_value}."
+        assert (
+            0.0 <= threshold_value <= 1.0
+        ), f"threshold must be [0.0, 1.0], but got {threshold_value}."
 
         if self.value is None:
             return False
@@ -466,7 +491,9 @@ class IOU3dMatching(MatchingMethod):
         Raises:
             AssertionError: When `threshold_value` is not in [0.0, 1.0].
         """
-        assert 0.0 <= threshold_value <= 1.0, f"threshold must be [0.0, 1.0], but got {threshold_value}"
+        assert (
+            0.0 <= threshold_value <= 1.0
+        ), f"threshold must be [0.0, 1.0], but got {threshold_value}"
 
         if self.value is None:
             return False

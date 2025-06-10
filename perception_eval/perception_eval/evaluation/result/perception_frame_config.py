@@ -89,8 +89,12 @@ class CriticalObjectFilterConfig:
 
         num_elements: int = len(self.target_labels)
         if max_x_position_list and max_y_position_list:
-            self.max_x_position_list: List[float] = check_thresholds(max_x_position_list, num_elements)
-            self.max_y_position_list: List[float] = check_thresholds(max_y_position_list, num_elements)
+            self.max_x_position_list: List[float] = check_thresholds(
+                max_x_position_list, num_elements
+            )
+            self.max_y_position_list: List[float] = check_thresholds(
+                max_y_position_list, num_elements
+            )
             self.max_distance_list = None
             self.min_distance_list = None
         elif max_distance_list and min_distance_list:
@@ -114,7 +118,9 @@ class CriticalObjectFilterConfig:
         if confidence_threshold_list is None:
             self.confidence_threshold_list = None
         else:
-            self.confidence_threshold_list: List[float] = check_thresholds(confidence_threshold_list, num_elements)
+            self.confidence_threshold_list: List[float] = check_thresholds(
+                confidence_threshold_list, num_elements
+            )
 
         self.target_uuids: Optional[List[str]] = target_uuids
 
@@ -168,11 +174,15 @@ class PerceptionPassFailConfig:
         if matching_threshold_list is None:
             self.matching_threshold_list = None
         else:
-            self.matching_threshold_list: List[float] = check_thresholds(matching_threshold_list, num_elements)
+            self.matching_threshold_list: List[float] = check_thresholds(
+                matching_threshold_list, num_elements
+            )
         if confidence_threshold_list is None:
             self.confidence_threshold_list = None
         else:
-            self.confidence_threshold_list: List[float] = check_thresholds(confidence_threshold_list, num_elements)
+            self.confidence_threshold_list: List[float] = check_thresholds(
+                confidence_threshold_list, num_elements
+            )
 
 
 class UseCaseThresholdsError(Exception):

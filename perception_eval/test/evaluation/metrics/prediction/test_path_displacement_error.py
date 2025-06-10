@@ -26,7 +26,9 @@ from perception_eval.common.schema import FrameID
 from perception_eval.common.transform import HomogeneousMatrix
 from perception_eval.common.transform import TransformDict
 from perception_eval.evaluation import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.metrics.prediction.path_displacement_error import PathDisplacementError
+from perception_eval.evaluation.metrics.prediction.path_displacement_error import (
+    PathDisplacementError,
+)
 from perception_eval.evaluation.result.object_result import get_object_results
 import pytest
 
@@ -35,7 +37,9 @@ import pytest
 def setup() -> Tuple[List[DynamicObjectWithPerceptionResult], int, List[LabelType]]:
     estimations, ground_truths = make_dummy_data(frame_id=FrameID.MAP, use_unique_id=False)
     transforms = TransformDict(
-        HomogeneousMatrix(position=(0, 0, 0), rotation=(1, 0, 0, 0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
+        HomogeneousMatrix(
+            position=(0, 0, 0), rotation=(1, 0, 0, 0), src=FrameID.BASE_LINK, dst=FrameID.MAP
+        )
     )
     return (
         get_object_results(
