@@ -272,7 +272,9 @@ class DynamicObjectWithPerceptionResult:
             bool: Whether label is correct
         """
         if self.ground_truth_object:
-            return self.matching_label_policy.is_matchable(self.estimated_object, self.ground_truth_object)
+            return self.matching_label_policy.is_matchable(
+                self.estimated_object, self.ground_truth_object
+            )
         else:
             return False
 
@@ -328,7 +330,9 @@ def get_object_results(
         and (estimated_objects[0].roi is None or ground_truth_objects[0].roi is None)
         and isinstance(estimated_objects[0].semantic_label.label, TrafficLightLabel)
     ):
-        return _get_object_results_for_tlr(estimated_objects, ground_truth_objects, uuid_matching_first)
+        return _get_object_results_for_tlr(
+            estimated_objects, ground_truth_objects, uuid_matching_first
+        )
     elif isinstance(estimated_objects[0], DynamicObject2D) and (
         estimated_objects[0].roi is None or ground_truth_objects[0].roi is None
     ):
@@ -366,7 +370,9 @@ def get_object_results(
 
         est_obj = estimated_objects_.pop(est_idx)
         gt_obj = ground_truth_objects_.pop(gt_idx)
-        result = DynamicObjectWithPerceptionResult(est_obj, gt_obj, matching_label_policy, transforms=transforms)
+        result = DynamicObjectWithPerceptionResult(
+            est_obj, gt_obj, matching_label_policy, transforms=transforms
+        )
         object_results.append(result)
 
         # Remove corresponding estimated objects and GTs from the score table.
@@ -391,7 +397,9 @@ def get_object_results(
 
         est_obj = estimated_objects_.pop(est_idx)
         gt_obj = ground_truth_objects_.pop(gt_idx)
-        result = DynamicObjectWithPerceptionResult(est_obj, gt_obj, matching_label_policy, transforms=transforms)
+        result = DynamicObjectWithPerceptionResult(
+            est_obj, gt_obj, matching_label_policy, transforms=transforms
+        )
         object_results.append(result)
 
         # Remove corresponding estimated objects and GTs from the score table
@@ -433,7 +441,9 @@ def _get_object_results_with_id(
                 )
             if est_object.uuid == gt_object.uuid and est_object.frame_id == gt_object.frame_id:
                 object_results.append(
-                    DynamicObjectWithPerceptionResult(estimated_object=est_object, ground_truth_object=gt_object)
+                    DynamicObjectWithPerceptionResult(
+                        estimated_object=est_object, ground_truth_object=gt_object
+                    )
                 )
                 estimated_objects_.remove(est_object)
                 ground_truth_objects_.remove(gt_object)
@@ -467,7 +477,9 @@ def _get_object_results_for_tlr(
         object_results (List[DynamicObjectWithPerceptionEvaluation]): Object results list.
     """
 
-    def match_condition(est_object: DynamicObject2D, gt_object: DynamicObject2D, uuid_matching_first: bool) -> bool:
+    def match_condition(
+        est_object: DynamicObject2D, gt_object: DynamicObject2D, uuid_matching_first: bool
+    ) -> bool:
         if uuid_matching_first:
             return (
                 est_object.semantic_label == gt_object.semantic_label
@@ -497,7 +509,9 @@ def _get_object_results_for_tlr(
 
             if match_condition(est_object, gt_object, uuid_matching_first):
                 object_results.append(
-                    DynamicObjectWithPerceptionResult(estimated_object=est_object, ground_truth_object=gt_object)
+                    DynamicObjectWithPerceptionResult(
+                        estimated_object=est_object, ground_truth_object=gt_object
+                    )
                 )
                 estimated_objects_.remove(est_object)
                 ground_truth_objects_.remove(gt_object)
@@ -519,14 +533,18 @@ def _get_object_results_for_tlr(
                 and gt_object in ground_truth_objects_
             ):
                 object_results.append(
-                    DynamicObjectWithPerceptionResult(estimated_object=est_object, ground_truth_object=gt_object)
+                    DynamicObjectWithPerceptionResult(
+                        estimated_object=est_object, ground_truth_object=gt_object
+                    )
                 )
                 estimated_objects_.remove(est_object)
                 ground_truth_objects_.remove(gt_object)
     return object_results
 
 
-def _get_fp_object_results(estimated_objects: List[ObjectType]) -> List[DynamicObjectWithPerceptionResult]:
+def _get_fp_object_results(
+    estimated_objects: List[ObjectType],
+) -> List[DynamicObjectWithPerceptionResult]:
     """Returns the list of DynamicObjectWithPerceptionResult that have no ground truth.
 
     Args:
@@ -537,7 +555,9 @@ def _get_fp_object_results(estimated_objects: List[ObjectType]) -> List[DynamicO
     """
     object_results: List[DynamicObjectWithPerceptionResult] = []
     for est_obj_ in estimated_objects:
-        object_result_ = DynamicObjectWithPerceptionResult(estimated_object=est_obj_, ground_truth_object=None)
+        object_result_ = DynamicObjectWithPerceptionResult(
+            estimated_object=est_obj_, ground_truth_object=None
+        )
         object_results.append(object_result_)
 
     return object_results
@@ -611,7 +631,9 @@ def _get_score_table(
                     estimated_object=est_obj, ground_truth_object=gt_obj, transforms=transforms
                 )
 
-                if threshold is None or (threshold is not None and matching_method.is_better_than(threshold)):
+                if threshold is None or (
+                    threshold is not None and matching_method.is_better_than(threshold)
+                ):
                     is_label_ok = matching_label_policy.is_matchable(est_obj, gt_obj)
                     score_table[i, j] = (matching_method.value, is_label_ok)
 

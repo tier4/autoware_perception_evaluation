@@ -417,7 +417,9 @@ def divide_tp_fp_objects(
             threshold_list=confidence_threshold_list,
         )
         if confidence_threshold_ is not None:
-            is_confidence: bool = object_result.estimated_object.semantic_score > confidence_threshold_
+            is_confidence: bool = (
+                object_result.estimated_object.semantic_score > confidence_threshold_
+            )
             is_correct = is_correct and is_confidence
 
         if is_correct:
@@ -481,7 +483,10 @@ def _is_fn_object(
         DeprecationWarning,
     )
     for object_result in object_results:
-        if ground_truth_object == object_result.ground_truth_object and object_result in tp_object_results:
+        if (
+            ground_truth_object == object_result.ground_truth_object
+            and object_result in tp_object_results
+        ):
             return False
     return True
 
@@ -550,7 +555,9 @@ def _is_target_object(
 
     # Whether unknown is contained in target labels
     is_contained_unknown: bool = (
-        any([label == CommonLabel.UNKNOWN for label in target_labels]) if target_labels is not None else False
+        any([label == CommonLabel.UNKNOWN for label in target_labels])
+        if target_labels is not None
+        else False
     )
 
     # use special threshold for unknown labeled estimations
@@ -578,7 +585,9 @@ def _is_target_object(
 
     if is_target and confidence_threshold_list is not None:
         confidence_threshold = (
-            0.0 if use_unknown_threshold else label_threshold.get_label_threshold(confidence_threshold_list)
+            0.0
+            if use_unknown_threshold
+            else label_threshold.get_label_threshold(confidence_threshold_list)
         )
         is_target = is_target and dynamic_object.semantic_score > confidence_threshold
 
@@ -586,7 +595,9 @@ def _is_target_object(
         position_ = dynamic_object.state.position
         bev_distance_ = dynamic_object.get_distance_bev()
     elif dynamic_object.state.position is not None and transforms is not None:
-        position_ = transforms.transform((dynamic_object.frame_id, FrameID.BASE_LINK), dynamic_object.state.position)
+        position_ = transforms.transform(
+            (dynamic_object.frame_id, FrameID.BASE_LINK), dynamic_object.state.position
+        )
         bev_distance_ = dynamic_object.get_distance_bev(transforms)
     else:
         position_ = bev_distance_ = None
@@ -660,7 +671,11 @@ def _is_target_object(
             is_target = is_target and bev_distance_ > min_distance
 
         if is_target and min_point_numbers is not None and is_gt:
-            min_point_number = 0 if use_unknown_threshold else label_threshold.get_label_threshold(min_point_numbers)
+            min_point_number = (
+                0
+                if use_unknown_threshold
+                else label_threshold.get_label_threshold(min_point_numbers)
+            )
             is_target = is_target and dynamic_object.pointcloud_num >= min_point_number
 
     if is_target and target_uuids is not None and is_gt:
@@ -701,7 +716,10 @@ def divide_objects(
         )
 
         if target_labels is not None and label not in target_labels:
-            if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
+            if (
+                isinstance(obj, DynamicObjectWithPerceptionResult)
+                and obj.ground_truth_object is not None
+            ):
                 label = obj.ground_truth_object.semantic_label.label
             else:
                 continue
@@ -741,7 +759,10 @@ def divide_objects_to_num(
             label: LabelType = obj.semantic_label.label
 
         if target_labels is not None and label not in target_labels:
-            if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
+            if (
+                isinstance(obj, DynamicObjectWithPerceptionResult)
+                and obj.ground_truth_object is not None
+            ):
                 label = obj.ground_truth_object.semantic_label.label
             else:
                 continue

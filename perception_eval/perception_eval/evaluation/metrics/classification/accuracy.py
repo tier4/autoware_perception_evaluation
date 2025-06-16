@@ -127,7 +127,9 @@ class ClassificationAccuracy:
             precision (float): Precision score. When `self.object_results_num=0`, returns float('inf').
             recall (float): Recall score. When `self.num_ground_truth=0`, returns float('inf').
         """
-        precision = num_tp / self.objects_results_num if self.objects_results_num != 0 else float("inf")
+        precision = (
+            num_tp / self.objects_results_num if self.objects_results_num != 0 else float("inf")
+        )
         recall = num_tp / self.num_ground_truth if self.num_ground_truth != 0 else float("inf")
         return precision, recall
 
@@ -146,6 +148,10 @@ class ClassificationAccuracy:
         """
         return (
             (1 + beta**2) * precision * recall / (beta**2 * precision + recall)
-            if (precision != float("inf") and recall != float("inf") and (beta**2 * precision + recall) != 0)
+            if (
+                precision != float("inf")
+                and recall != float("inf")
+                and (beta**2 * precision + recall) != 0
+            )
             else float("inf")
         )

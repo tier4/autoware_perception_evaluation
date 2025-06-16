@@ -73,11 +73,11 @@ class AnswerAP:
         assert len(tp_list) == len(
             fp_list
         ), f"length of TP/FP list must be same, but got {len(tp_list)} and {len(fp_list)}"
-        assert len(precision_list) == len(
-            recall_list
+        assert (
+            len(precision_list) == len(recall_list)
         ), f"length of precision/recall list must be same, but got {len(precision_list)} and {len(recall_list)}"
-        assert len(max_precision_list) == len(
-            max_precision_recall_list
+        assert (
+            len(max_precision_list) == len(max_precision_recall_list)
         ), f"length of max_precision/recall_list must be same, but got {len(max_precision_list)} and {len(max_precision_recall_list)}"
 
         self.ap: float = ap
@@ -209,7 +209,9 @@ class TestAp(unittest.TestCase):
             ),
         ]
         for n, (diff_trans, ans_ap, ans_aph) in enumerate(patterns):
-            with self.subTest(f"Test AP and APH with center distance matching for translation difference: {n + 1}"):
+            with self.subTest(
+                f"Test AP and APH with center distance matching for translation difference: {n + 1}"
+            ):
                 diff_trans_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
                     diff_distance=diff_trans.diff_estimated,
@@ -266,7 +268,9 @@ class TestAp(unittest.TestCase):
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
                 self.assertEqual(out_ap, ans_ap, f"out_ap = {str(out_ap)}, ans_ap = {str(ans_ap)}")
-                self.assertEqual(out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}")
+                self.assertEqual(
+                    out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}"
+                )
 
     def test_ap_center_distance_yaw_difference(self):
         """[summary]
@@ -481,7 +485,9 @@ class TestAp(unittest.TestCase):
         ]
 
         for n, (diff_yaw, ans_ap, ans_aph) in enumerate(patterns):
-            with self.subTest(f"Test AP and APH with center distance matching for yaw difference: {n + 1}"):
+            with self.subTest(
+                f"Test AP and APH with center distance matching for yaw difference: {n + 1}"
+            ):
                 diff_yaw_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
                     diff_distance=(0.0, 0.0, 0.0),
@@ -535,7 +541,9 @@ class TestAp(unittest.TestCase):
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
                 self.assertEqual(out_ap, ans_ap, f"out_ap = {str(out_ap)}, ans_ap = {str(ans_ap)}")
-                self.assertEqual(out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}")
+                self.assertEqual(
+                    out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}"
+                )
 
     def test_ap_center_distance_random_objects(self):
         """[summary]
@@ -654,7 +662,9 @@ class TestAp(unittest.TestCase):
             ),
         ]
         for n, (diff_trans, ans_ap, ans_aph) in enumerate(patterns):
-            with self.subTest(f"Test AP and APH with iou bev matching for translation difference: {n + 1}"):
+            with self.subTest(
+                f"Test AP and APH with iou bev matching for translation difference: {n + 1}"
+            ):
                 diff_trans_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
                     diff_distance=diff_trans.diff_estimated,
@@ -708,7 +718,9 @@ class TestAp(unittest.TestCase):
                 out_ap: AnswerAP = AnswerAP.from_ap(ap)
                 out_aph: AnswerAP = AnswerAP.from_ap(aph)
                 self.assertEqual(out_ap, ans_ap, f"out_ap = {str(out_ap)}, ans_ap = {str(ans_ap)}")
-                self.assertEqual(out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}")
+                self.assertEqual(
+                    out_aph, ans_aph, f"out_aph = {str(out_aph)}, ans_aph = {str(ans_aph)}"
+                )
 
     def test_ap_iou_2d_yaw_difference(self):
         """[summary]
@@ -905,10 +917,12 @@ class TestAp(unittest.TestCase):
         ]
         for diff_distance, ans_ap, ans_aph in patterns:
             with self.subTest("Test AP and APH with iou 3d matching for translation difference."):
-                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=(diff_distance, 0.0, 0.0),
-                    diff_yaw=0,
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = (
+                    get_objects_with_difference(
+                        ground_truth_objects=self.dummy_ground_truth_objects,
+                        diff_distance=(diff_distance, 0.0, 0.0),
+                        diff_yaw=0,
+                    )
                 )
                 # Filter objects
                 diff_distance_dummy_ground_truth_objects = filter_objects(
@@ -989,10 +1003,12 @@ class TestAp(unittest.TestCase):
 
         for diff_yaw, ans_ap, ans_aph in patterns:
             with self.subTest("Test AP and APH with iou 3d matching for yaw difference."):
-                diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=(0.0, 0.0, 0.0),
-                    diff_yaw=diff_yaw,
+                diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = (
+                    get_objects_with_difference(
+                        ground_truth_objects=self.dummy_ground_truth_objects,
+                        diff_distance=(0.0, 0.0, 0.0),
+                        diff_yaw=diff_yaw,
+                    )
                 )
                 # Filter objects
                 diff_yaw_dummy_ground_truth_objects = filter_objects(
@@ -1118,11 +1134,15 @@ class TestAp(unittest.TestCase):
             (1.0, 0.0, 0.0),
         ]
         for diff_distance, ans_ap, ans_aph in patterns:
-            with self.subTest("Test AP and APH with plane distance matching for translation difference."):
-                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=(diff_distance, 0.0, 0.0),
-                    diff_yaw=0,
+            with self.subTest(
+                "Test AP and APH with plane distance matching for translation difference."
+            ):
+                diff_distance_dummy_ground_truth_objects: List[DynamicObject] = (
+                    get_objects_with_difference(
+                        ground_truth_objects=self.dummy_ground_truth_objects,
+                        diff_distance=(diff_distance, 0.0, 0.0),
+                        diff_yaw=0,
+                    )
                 )
                 # Filter objects
                 diff_distance_dummy_ground_truth_objects = filter_objects(
@@ -1198,10 +1218,12 @@ class TestAp(unittest.TestCase):
 
         for diff_yaw, ans_ap, ans_aph in patterns:
             with self.subTest("Test AP and APH with plane distance matching for yaw difference."):
-                diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=(0.0, 0.0, 0.0),
-                    diff_yaw=diff_yaw,
+                diff_yaw_dummy_ground_truth_objects: List[DynamicObject] = (
+                    get_objects_with_difference(
+                        ground_truth_objects=self.dummy_ground_truth_objects,
+                        diff_distance=(0.0, 0.0, 0.0),
+                        diff_yaw=diff_yaw,
+                    )
                 )
                 # Filter objects
                 diff_yaw_dummy_ground_truth_objects = filter_objects(

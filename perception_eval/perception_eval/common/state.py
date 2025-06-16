@@ -166,7 +166,10 @@ class ObjectPath:
         self_states = self.states[:min_length]
         other_states = other.states[:min_length]
         return np.array(
-            [self_s.get_position_error(other_s) for self_s, other_s in zip(self_states, other_states)]
+            [
+                self_s.get_position_error(other_s)
+                for self_s, other_s in zip(self_states, other_states)
+            ]
         ).reshape(-1, 3)
 
 
@@ -230,7 +233,8 @@ def set_object_paths(
 
     if len(positions) != len(confidences):
         raise RuntimeError(
-            "length of positions and orientations must be same, " f"but got {len(positions)} and {len(orientations)}"
+            "length of positions and orientations must be same, "
+            f"but got {len(positions)} and {len(orientations)}"
         )
 
     paths: List[ObjectPath] = []

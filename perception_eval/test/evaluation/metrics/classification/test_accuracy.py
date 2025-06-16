@@ -85,7 +85,9 @@ class AnswerAccuracy:
 
 class TestClassificationAccuracy(unittest.TestCase):
     def setUp(self) -> None:
-        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data2d(use_roi=False)
+        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data2d(
+            use_roi=False
+        )
 
         self.evaluation_task: EvaluationTask = EvaluationTask.CLASSIFICATION2D
 
@@ -121,4 +123,6 @@ class TestClassificationAccuracy(unittest.TestCase):
                     target_labels=[target_label],
                 )
                 out_accuracy = AnswerAccuracy.from_accuracy(accuracy)
-                self.assertEqual(out_accuracy, answer, f"\nout = {str(out_accuracy)},\nanswer = {str(answer)}")
+                self.assertEqual(
+                    out_accuracy, answer, f"\nout = {str(out_accuracy)},\nanswer = {str(answer)}"
+                )

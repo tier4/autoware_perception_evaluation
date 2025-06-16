@@ -374,7 +374,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
         return {"ground_truth": gt_ret, "estimation": est_ret}
 
-    def filter_by_distance(self, distance: Iterable[float], df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+    def filter_by_distance(
+        self, distance: Iterable[float], df: Optional[pd.DataFrame] = None
+    ) -> pd.DataFrame:
         """Filter DataFrame by min, max distances.
 
         Args:
@@ -385,14 +387,21 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             pd.DataFrame: Filtered DataFrame.
         """
         assert len(distance) == 2, "distance must be (min, max)"
-        assert distance[0] < distance[1], f"distance must be (min, max) and min < max, but got {distance}"
+        assert (
+            distance[0] < distance[1]
+        ), f"distance must be (min, max) and min < max, but got {distance}"
 
         if df is None:
             df = self.df
 
         mask = np.array(
             [
-                [np.logical_and(distance[0] <= group["distance"], group["distance"] < distance[1]).any()] * 2
+                [
+                    np.logical_and(
+                        distance[0] <= group["distance"], group["distance"] < distance[1]
+                    ).any()
+                ]
+                * 2
                 for _, group in df.groupby(level=0)
             ]
         ).reshape(-1)
@@ -445,12 +454,26 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         ) -> Dict[str, float]:
             if len(_df) == 0:
                 logging.warning(f"The array of errors is empty for column: {_column}")
-                return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan, percentile_99=np.nan)
+                return dict(
+                    average=np.nan,
+                    rms=np.nan,
+                    std=np.nan,
+                    max=np.nan,
+                    min=np.nan,
+                    percentile_99=np.nan,
+                )
 
             err: np.ndarray = self.calculate_error(_column, _df, remove_nan=True)
             if len(err) == 0:
                 logging.warning(f"The array of errors is empty for column: {_column}")
-                return dict(average=np.nan, rms=np.nan, std=np.nan, max=np.nan, min=np.nan, percentile_99=np.nan)
+                return dict(
+                    average=np.nan,
+                    rms=np.nan,
+                    std=np.nan,
+                    max=np.nan,
+                    min=np.nan,
+                    percentile_99=np.nan,
+                )
 
             err_avg = np.average(err)
             err_rms = np.sqrt(np.square(err).mean())
@@ -459,7 +482,12 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
             err_min = np.min(np.abs(err))
             err_percentile_99 = np.percentile(np.abs(err), 99)
             return dict(
-                average=err_avg, rms=err_rms, std=err_std, max=err_max, min=err_min, percentile_99=err_percentile_99
+                average=err_avg,
+                rms=err_rms,
+                std=err_std,
+                max=err_max,
+                min=err_min,
+                percentile_99=err_percentile_99,
             )
 
         if df is None:
@@ -528,7 +556,10 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         if distance is not None:
             assert isinstance(distance, Iterable) and len(distance) == 2
             min_distance, max_distance = distance
-            frame_results = [filter_frame_by_distance(frame, min_distance, max_distance) for frame in frame_results]
+            frame_results = [
+                filter_frame_by_distance(frame, min_distance, max_distance)
+                for frame in frame_results
+            ]
 
         if area is not None:
             frame_results = extract_area_results(
@@ -566,7 +597,9 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "speed", "distance"]):
+        if set(columns) > set(
+            ["x", "y", "yaw", "width", "length", "vx", "vy", "speed", "distance"]
+        ):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().plot_state(
             uuid=uuid,
@@ -604,10 +637,18 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "speed", "nn_plane", "distance"]):
+        if set(columns) > set(
+            ["x", "y", "yaw", "width", "length", "vx", "vy", "speed", "nn_plane", "distance"]
+        ):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().plot_error(
-            columns=columns, mode=mode, heatmap=heatmap, project=project, show=show, bins=bins, **kwargs
+            columns=columns,
+            mode=mode,
+            heatmap=heatmap,
+            project=project,
+            show=show,
+            bins=bins,
+            **kwargs,
         )
 
     def box_plot(
@@ -626,6 +667,8 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         """
         if isinstance(columns, str):
             columns: List[str] = [columns]
-        if set(columns) > set(["x", "y", "yaw", "width", "length", "vx", "vy", "speed", "nn_plane", "distance"]):
+        if set(columns) > set(
+            ["x", "y", "yaw", "width", "length", "vx", "vy", "speed", "nn_plane", "distance"]
+        ):
             raise ValueError(f"{columns} is unsupported for plot")
         return super().box_plot(columns=columns, show=show, **kwargs)

@@ -21,16 +21,13 @@ FrameIDType = TypeVar("FrameIDType", str, FrameID)
 
 class TransformDict:
     @overload
-    def __init__(self, matrix: HomogeneousMatrix) -> None:
-        ...
+    def __init__(self, matrix: HomogeneousMatrix) -> None: ...
 
     @overload
-    def __init__(self, matrices: Sequence[HomogeneousMatrix]) -> None:
-        ...
+    def __init__(self, matrices: Sequence[HomogeneousMatrix]) -> None: ...
 
     @overload
-    def __init__(self, matrix=None) -> None:
-        ...
+    def __init__(self, matrix=None) -> None: ...
 
     def __init__(self, matrices: TransformDictArgType = None) -> None:
         if matrices is None:
@@ -40,7 +37,9 @@ class TransformDict:
         elif isinstance(matrices, (list, tuple)):
             self.__matrices = list(matrices)
         else:
-            raise TypeError(f"Expected HomogeneousMatrix, sequence of them or None, but got: {type(matrices)}")
+            raise TypeError(
+                f"Expected HomogeneousMatrix, sequence of them or None, but got: {type(matrices)}"
+            )
 
         self.__data = {TransformKey(mat.src, mat.dst): mat for mat in self.__matrices}
 
@@ -88,8 +87,7 @@ class TransformDict:
         return f"{type(self).__name__}({self.__matrices})"
 
     @overload
-    def transform(self, key: TransformKeyType, position: ArrayLike) -> ArrayLike:
-        ...
+    def transform(self, key: TransformKeyType, position: ArrayLike) -> ArrayLike: ...
 
     @overload
     def transform(
@@ -97,14 +95,14 @@ class TransformDict:
         key: TransformKeyType,
         position: ArrayLike,
         rotation: RotationType,
-    ) -> Tuple[ArrayLike, Quaternion]:
-        ...
+    ) -> Tuple[ArrayLike, Quaternion]: ...
 
     @overload
-    def transform(self, key: TransformKeyType, matrix: HomogeneousMatrix) -> HomogeneousMatrix:
-        ...
+    def transform(self, key: TransformKeyType, matrix: HomogeneousMatrix) -> HomogeneousMatrix: ...
 
-    def transform(self, key: TransformKeyType, *args: TransformArgType, **kwargs: TransformArgType) -> TransformArgType:
+    def transform(
+        self, key: TransformKeyType, *args: TransformArgType, **kwargs: TransformArgType
+    ) -> TransformArgType:
         """
         Args:
         -----
@@ -184,7 +182,9 @@ class TransformDict:
                 # search matrix dst->src and if exists use inverse matrix
                 matrix = self.get((dst, src))
                 if matrix is None:
-                    raise KeyError(f"No transform matrix is registered both {src}->{dst} and {dst}->{src}")
+                    raise KeyError(
+                        f"No transform matrix is registered both {src}->{dst} and {dst}->{src}"
+                    )
                 matrix = matrix.inv()
             return matrix.transform(*args, **kwargs)
 
@@ -213,11 +213,15 @@ class TransformKey:
             return False
 
 
-TransformKeyType = TypeVar("TransformKeyType", TransformKey, Tuple[Union[str, FrameID], Union[str, FrameID]])
+TransformKeyType = TypeVar(
+    "TransformKeyType", TransformKey, Tuple[Union[str, FrameID], Union[str, FrameID]]
+)
 
 
 class HomogeneousMatrix:
-    def __init__(self, position: ArrayLike, rotation: RotationType, src: FrameIDType, dst: FrameIDType) -> None:
+    def __init__(
+        self, position: ArrayLike, rotation: RotationType, src: FrameIDType, dst: FrameIDType
+    ) -> None:
         """
         Args:
             position (ArrayLike): 3D position ordering `(x, y, z)`.
@@ -239,7 +243,9 @@ class HomogeneousMatrix:
         self.matrix = self.__generate_homogeneous_matrix(position, rotation)
 
     @classmethod
-    def from_matrix(cls, matrix: NDArray, src: Union[str, FrameID], dst: Union[str, FrameID]) -> HomogeneousMatrix:
+    def from_matrix(
+        cls, matrix: NDArray, src: Union[str, FrameID], dst: Union[str, FrameID]
+    ) -> HomogeneousMatrix:
         position, rotation = cls.__extract_position_and_rotation_from_matrix(matrix)
         return cls(position, rotation, src, dst)
 
@@ -272,7 +278,7 @@ class HomogeneousMatrix:
 
     @staticmethod
     def __extract_position_and_rotation_from_matrix(
-        matrix: Union[NDArray, HomogeneousMatrix]
+        matrix: Union[NDArray, HomogeneousMatrix],
     ) -> Tuple[NDArray, Quaternion]:
         """Extract the equivalent position and rotation matrix from a 4x4 homogeneous matrix.
 
@@ -421,16 +427,15 @@ class HomogeneousMatrix:
         return self.__extract_position_and_rotation_from_matrix(ret_mat)
 
     @overload
-    def transform(self, position: ArrayLike) -> NDArray:
-        ...
+    def transform(self, position: ArrayLike) -> NDArray: ...
 
     @overload
-    def transform(self, position: ArrayLike, rotation: RotationType) -> Tuple[NDArray, Quaternion]:
-        ...
+    def transform(
+        self, position: ArrayLike, rotation: RotationType
+    ) -> Tuple[NDArray, Quaternion]: ...
 
     @overload
-    def transform(self, matrix: HomogeneousMatrix) -> HomogeneousMatrix:
-        ...
+    def transform(self, matrix: HomogeneousMatrix) -> HomogeneousMatrix: ...
 
     def transform(self, *args, **kwargs) -> TransformArgType:
         """Transform with specified position, rotation or homogeneous matrix.
@@ -504,5 +509,9 @@ class HomogeneousMatrix:
             raise ValueError(f"Unexpected number of arguments {s}")
 
 
-TransformArgType = TypeVar("TransformArgType", HomogeneousMatrix, NDArray, Tuple[NDArray, Quaternion])
-TransformDictArgType = TypeVar("TransformDictArgType", HomogeneousMatrix, Sequence[HomogeneousMatrix], None)
+TransformArgType = TypeVar(
+    "TransformArgType", HomogeneousMatrix, NDArray, Tuple[NDArray, Quaternion]
+)
+TransformDictArgType = TypeVar(
+    "TransformDictArgType", HomogeneousMatrix, Sequence[HomogeneousMatrix], None
+)

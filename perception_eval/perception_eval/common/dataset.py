@@ -148,7 +148,9 @@ def _load_dataset(
 
     nusc: NuScenes = NuScenes(version="annotation", dataroot=dataset_path, verbose=False)
     nuim: Optional[NuImages] = (
-        NuImages(version="annotation", dataroot=dataset_path, verbose=False) if evaluation_task.is_2d() else None
+        NuImages(version="annotation", dataroot=dataset_path, verbose=False)
+        if evaluation_task.is_2d()
+        else None
     )
     helper: PredictHelper = PredictHelper(nusc)
 
@@ -177,7 +179,9 @@ def _load_dataset(
                 load_raw_data=load_raw_data,
             )
         else:
-            assert len(frame_ids) == 1, f"For 3D evaluation, only one Frame ID must be specified, but got {frame_ids}"
+            assert (
+                len(frame_ids) == 1
+            ), f"For 3D evaluation, only one Frame ID must be specified, but got {frame_ids}"
             frame = _sample_to_frame(
                 nusc=nusc,
                 helper=helper,
@@ -383,7 +387,11 @@ def interpolate_ground_truth_frames(
 
     # 2. interpolate objects
     object_list = interpolate_object_list(
-        before_frame_objects, after_frame_objects, before_frame.unix_time, after_frame.unix_time, unix_time
+        before_frame_objects,
+        after_frame_objects,
+        before_frame.unix_time,
+        after_frame.unix_time,
+        unix_time,
     )
     # 3. convert object list to base_link
     # object_list = convert_objects_to_base_link(object_list, ego2map)
@@ -396,7 +404,9 @@ def interpolate_ground_truth_frames(
     return output_frame
 
 
-def convert_objects_to_global(object_list: List[ObjectType], ego2map: HomogeneousMatrix) -> List[ObjectType]:
+def convert_objects_to_global(
+    object_list: List[ObjectType], ego2map: HomogeneousMatrix
+) -> List[ObjectType]:
     """Convert object list to global coordinate.
 
     Args:
@@ -411,7 +421,9 @@ def convert_objects_to_global(object_list: List[ObjectType], ego2map: Homogeneou
         if object.frame_id == "map":
             output_object_list.append(deepcopy(object))
         elif object.frame_id == "base_link":
-            updated_position, updated_rotation = ego2map.transform(object.state.position, object.state.orientation)
+            updated_position, updated_rotation = ego2map.transform(
+                object.state.position, object.state.orientation
+            )
             output_object = deepcopy(object)
             output_object.state.position = updated_position
             output_object.state.orientation = updated_rotation
@@ -422,7 +434,9 @@ def convert_objects_to_global(object_list: List[ObjectType], ego2map: Homogeneou
     return output_object_list
 
 
-def convert_objects_to_base_link(object_list: List[ObjectType], ego2map: HomogeneousMatrix) -> List[ObjectType]:
+def convert_objects_to_base_link(
+    object_list: List[ObjectType], ego2map: HomogeneousMatrix
+) -> List[ObjectType]:
     """Convert object list to base_link coordinate.
 
     Args:

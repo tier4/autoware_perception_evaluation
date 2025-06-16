@@ -61,7 +61,9 @@ class PerceptionLoadDatabaseResult:
             self.analyse_and_visualize(analyzer, subfolder=label_group, label=labels)
             print("Done")
 
-    def analyse_and_visualize(self, analyzer: PerceptionAnalyzer3DField, subfolder: str, **kwargs) -> None:
+    def analyse_and_visualize(
+        self, analyzer: PerceptionAnalyzer3DField, subfolder: str, **kwargs
+    ) -> None:
         plot_dir: str = Path(self._plot_dir, subfolder).as_posix()
         if not os.path.isdir(plot_dir):
             os.makedirs(plot_dir)
@@ -81,16 +83,22 @@ class PerceptionLoadDatabaseResult:
         figures[-1].ax.set_ylabel("Est Distance [m]")
 
         figures.append(PerceptionFieldPlot(prefix + "_" + "azimuth_diff", "Azimuth error [rad]"))
-        figures[-1].plot_scatter(table_gt[:, DataTableIdx.AZIMUTH], table_est[:, DataTableIdx.AZIMUTH])
+        figures[-1].plot_scatter(
+            table_gt[:, DataTableIdx.AZIMUTH], table_est[:, DataTableIdx.AZIMUTH]
+        )
         figures[-1].ax.set_xlabel("GT Azimuth [rad]")
         figures[-1].ax.set_ylabel("Est Azimuth [rad]")
 
-        azimuth_error: np.ndarray = table_est[:, DataTableIdx.AZIMUTH] - table_gt[:, DataTableIdx.AZIMUTH]
+        azimuth_error: np.ndarray = (
+            table_est[:, DataTableIdx.AZIMUTH] - table_gt[:, DataTableIdx.AZIMUTH]
+        )
         azimuth_error[azimuth_error > np.pi] -= 2 * np.pi
         azimuth_error[azimuth_error < -np.pi] += 2 * np.pi
         azimuth_dist_error: np.ndarray = azimuth_error * table_gt[:, DataTableIdx.DIST]
         figures.append(
-            PerceptionFieldPlot(prefix + "_" + "dist_latitudinal_position_error", "Latitudinal position error [m]")
+            PerceptionFieldPlot(
+                prefix + "_" + "dist_latitudinal_position_error", "Latitudinal position error [m]"
+            )
         )
         figures[-1].plot_scatter(table_gt[:, DataTableIdx.DIST], azimuth_dist_error)
         figures[-1].ax.set_xlabel("GT Distance [m]")
@@ -98,14 +106,18 @@ class PerceptionLoadDatabaseResult:
 
         dist_error = table_est[:, DataTableIdx.DIST] - table_gt[:, DataTableIdx.DIST]
         figures.append(PerceptionFieldPlot(prefix + "_" + "TP_XY_dist_error", "Position error [m]"))
-        figures[-1].plot_scatter_3d(table_gt[:, DataTableIdx.X], table_gt[:, DataTableIdx.Y], dist_error)
+        figures[-1].plot_scatter_3d(
+            table_gt[:, DataTableIdx.X], table_gt[:, DataTableIdx.Y], dist_error
+        )
         figures[-1].ax.set_xlabel("X [m]")
         figures[-1].ax.set_ylabel("Y [m]")
 
         # false negatives
         table = analyzer.data_fn
         figures.append(PerceptionFieldPlot(prefix + "_" + "FN_XY_width", "Width [m]"))
-        figures[-1].plot_scatter_3d(table[:, DataTableIdx.X], table[:, DataTableIdx.Y], table[:, DataTableIdx.WIDTH])
+        figures[-1].plot_scatter_3d(
+            table[:, DataTableIdx.X], table[:, DataTableIdx.Y], table[:, DataTableIdx.WIDTH]
+        )
         figures[-1].ax.set_xlabel("X [m]")
         figures[-1].ax.set_ylabel("Y [m]")
 

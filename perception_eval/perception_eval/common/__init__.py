@@ -15,10 +15,10 @@
 from typing import Union
 
 import numpy as np
-from perception_eval.common.object2d import DynamicObject2D
+
 from perception_eval.common.object import DynamicObject
-from perception_eval.common.point import distance_points
-from perception_eval.common.point import distance_points_bev
+from perception_eval.common.object2d import DynamicObject2D
+from perception_eval.common.point import distance_points, distance_points_bev
 
 # Type aliases
 ObjectType = Union[DynamicObject, DynamicObject2D]
@@ -32,8 +32,10 @@ def distance_objects(object_1: ObjectType, object_2: ObjectType) -> float:
          object_2 (ObjectType): An object
     Returns: float: The center distance between object_1 and object_2.
     """
-    if type(object_1) != type(object_2):
-        raise TypeError(f"objects' type must be same, but got {type(object_1) and {type(object_2)}}")
+    if not isinstance(object_1, type(object_2)):
+        raise TypeError(
+            f"objects' type must be same, but got {type(object_1) and {type(object_2)}}"
+        )
 
     if isinstance(object_1, DynamicObject):
         return distance_points(object_1.state.position, object_2.state.position)

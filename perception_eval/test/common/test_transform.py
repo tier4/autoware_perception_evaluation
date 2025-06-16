@@ -35,7 +35,9 @@ def test_homogeneous_matrix_transform():
 
 def test_homogenous_matrix_dot():
     ego2map = HomogeneousMatrix((1, 1, 1), (1, 0, 0, 0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
-    cam2ego = HomogeneousMatrix((2, 2, 2), (1, 0, 0, 0), src=FrameID.CAM_FRONT, dst=FrameID.BASE_LINK)
+    cam2ego = HomogeneousMatrix(
+        (2, 2, 2), (1, 0, 0, 0), src=FrameID.CAM_FRONT, dst=FrameID.BASE_LINK
+    )
     cam2map = ego2map.dot(cam2ego)
     assert np.allclose(
         cam2map.matrix,

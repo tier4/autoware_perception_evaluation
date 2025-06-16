@@ -74,10 +74,18 @@ class ClassificationMetricsScore:
             num_gt += acc_.num_ground_truth
             num_tp += acc_.num_tp
             num_fp += acc_.num_fp
-        accuracy = num_tp / (num_est + num_gt - num_tp) if (num_est + num_gt - num_tp) != 0 else float("inf")
+        accuracy = (
+            num_tp / (num_est + num_gt - num_tp)
+            if (num_est + num_gt - num_tp) != 0
+            else float("inf")
+        )
         precision = num_tp / (num_tp + num_fp) if (num_tp + num_fp) != 0 else float("inf")
         recall = num_tp / num_gt if num_gt != 0 else float("inf")
-        f1score = 2 * precision * recall / (precision + recall) if precision + recall != 0 else float("inf")
+        f1score = (
+            2 * precision * recall / (precision + recall)
+            if precision + recall != 0
+            else float("inf")
+        )
         return accuracy, precision, recall, f1score
 
     def __str__(self) -> str:
