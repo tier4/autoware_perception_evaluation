@@ -60,7 +60,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
 
     def __init__(self, evaluation_config: PerceptionEvaluationConfig, load_ground_truth: bool = True) -> None:
         super().__init__(evaluation_config=evaluation_config, load_ground_truth=load_ground_truth)
-        self.perception_frame_results: List[PerceptionFrameResult] = []
+        self.frame_results: List[PerceptionFrameResult] = []
         self.__visualizer = (
             PerceptionVisualizer2D(self.evaluator_config)
             if self.evaluation_task.is_2d()
@@ -130,12 +130,12 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             target_labels=self.target_labels,
         )
 
-        if self.perception_frame_results:
-            perception_frame_result.evaluate_frame(previous_result=self.perception_frame_results[-1])
+        if self.frame_results:
+            perception_frame_result.evaluate_frame(previous_result=self.frame_results[-1])
         else:
             perception_frame_result.evaluate_frame()
 
-        self.perception_frame_results.append(perception_frame_result)
+        self.frame_results.append(perception_frame_result)
 
         return perception_frame_result
 
@@ -260,7 +260,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         aggregated_num_gt = {label: 0 for label in target_labels}
         used_frame: List[int] = []
 
-        for frame in self.perception_frame_results:
+        for frame in self.frame_results:
             object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                 frame.object_results, target_labels
             )
