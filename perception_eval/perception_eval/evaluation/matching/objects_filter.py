@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from collections import defaultdict
+import functools
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -224,8 +225,6 @@ def filter_nuscene_object_results(
     """
     if nuscene_object_results is None:
         return None
-
-    import functools
 
     filtered_nuscene_object_results: Dict[
         MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
