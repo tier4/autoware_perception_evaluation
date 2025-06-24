@@ -29,6 +29,7 @@ from perception_eval.common.status import MatchingStatus
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
+from perception_eval.evaluation.matching.objects_filter import filter_nuscene_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics import MetricsScore
@@ -118,9 +119,18 @@ class PerceptionFrameResult:
         # Filter objects by critical object filter config
         self.object_results: List[DynamicObjectWithPerceptionResult] = filter_object_results(
             self.object_results,
-            transform=self.frame_ground_truth.transforms,
+            transforms=self.frame_ground_truth.transforms,
             **self.pass_fail_result.critical_object_filter_config.filtering_params,
         )
+
+        if self.nuscene_object_results:
+            self.nuscene_object_results: Dict[
+                MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
+            ] = filter_nuscene_object_results(
+                self.nuscene_object_results,
+                transforms=self.frame_ground_truth.transforms,
+                **self.pass_fail_result.critical_object_filter_config.filtering_params,
+            )
 
         self.frame_ground_truth.objects = filter_objects(
             self.frame_ground_truth.objects,

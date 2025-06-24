@@ -52,7 +52,7 @@ def filter_object_results(
     *args,
     **kwargs,
 ) -> List[DynamicObjectWithPerceptionResult]:
-    """Filter DynamicObjectWithPerceptionResult considering both estimated and ground truth objects.
+    """Filter DynamicObjectWithPerceptionResult considering both estimated and ground truth objects based on critical object filter configuration.
 
     If any of `target_labels`, `max_x_position_list`, `min_x_position_list`, `max_y_position_list`, `min_y_position_list`,
     `max_distance_list`, `min_distance_list`, `min_point_numbers` or `confidence_threshold_list`
@@ -142,6 +142,132 @@ def filter_object_results(
             filtered_object_results.append(object_result)
 
     return filtered_object_results
+
+
+def filter_nuscene_object_results(
+    nuscene_object_results: Optional[
+        Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
+    ],
+    target_labels: Optional[List[LabelType]] = None,
+    ignore_attributes: Optional[List[str]] = None,
+    max_x_position_list: Optional[List[float]] = None,
+    min_x_position_list: Optional[List[float]] = None,
+    max_y_position_list: Optional[List[float]] = None,
+    min_y_position_list: Optional[List[float]] = None,
+    max_distance_list: Optional[List[float]] = None,
+    min_distance_list: Optional[List[float]] = None,
+    min_point_numbers: Optional[List[int]] = None,
+    confidence_threshold_list: Optional[List[float]] = None,
+    target_uuids: Optional[str] = None,
+    transforms: Optional[TransformDict] = None,
+    *args,
+    **kwargs,
+) -> Optional[Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]]:
+    """
+    Filter DynamicObjectWithPerceptionResult in the nuscene_object_results
+    considering both estimated and ground truth objects based on Critical Object Filter configuration.
+
+    If any of `target_labels`, `max_x_position_list`, `min_x_position_list`, `max_y_position_list`, `min_y_position_list`,
+    `max_distance_list`, `min_distance_list`, `min_point_numbers` or `confidence_threshold_list`
+    are specified, each of them must be same length list.
+
+    It first filters `object_results` with input parameters considering estimated objects.
+    After that, remained `object_results` are filtered with input parameters considering ground truth objects.
+
+    Args:
+        object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
+        target_labels (Optional[List[LabelType]]): Filter target list of labels.
+            Keep all `object_results` that both of their `estimated_object` and `ground_truth_object`
+            have same label in this list. Defaults to None.
+        ignore_attributes (Optional[List[str]]): List of attributes to be ignored. Defaults to None.
+        max_x_position_list (Optional[List[float]]): Thresholds list of maximum x-axis position from ego vehicle.
+            Keep all `dynamic_object` that their each x position is smaller than `max_x_position`
+            for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
+            If `min_x_position_list` is not specified, keep them that each x position are in [`-max_x_position`, `max_x_position`].
+        min_x_position_list (Optional[List[float]]): Thresholds list of minimum x-axis position from ego vehicle.
+            Keep all `dynamic_object` that their each x position is bigger than `min_x_position`
+            for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
+        max_y_position_list (Optional[List[float]]): Thresholds list of maximum y-axis position from ego vehicle.
+            Keep all `dynamic_object` that their each y position is smaller than `max_y_position`
+            for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
+            If `min_y_position_list` is not specified, keep them that each y position are in [`-max_y_position`, `max_y_position`].
+        min_y_position_list (Optional[List[float]]): Thresholds list of minimum y-axis position from ego vehicle.
+            Keep all `dynamic_object` that their each y position is bigger than `min_y_position`
+            for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
+        max_distance_list (Optional[List[float]]): Thresholds list of maximum distance range from ego vehicle.
+            Keep all `object_results` that their each distance is smaller than `max_distance`
+            for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
+        min_distance_list (Optional[List[float]]): Thresholds list of minimum distance range from ego vehicle.
+            Keep all `object_results` that their each distance is bigger than `min_distance`
+            for both of their `estimated_object` and `ground_truth_object`. Defaults to None.
+        min_point_numbers (Optional[List[int]]): Thresholds list of minimum number of points
+            must be contained in object's box. Keep all `object_results` that their boxes contain more points than
+            `min_point_number` only considering their `ground_truth_object`. Defaults to None.
+            For example, `target_labels=["car", "bike", "pedestrian"]` and `min_point_numbers=[5, 0, 0]`,
+            Then objects that has car label and their boxes contain 4 or less points are filtered.
+            Otherwise, all objects that has bike or pedestrian label are not filtered.
+        confidence_threshold_list (Optional[List[float]]): Thresholds list of minimum confidence score.
+            Keep all `object_results` that their confidence is bigger than `confidence_threshold`
+            only considering their `estimated_object`. Defaults to None.
+        target_uuids (Optional[List[str]]): Filter target list of ground truths' uuids.
+            Keep all `object_results` that their each uuid is in `target_uuids`
+            only considering their `ground_truth_object`.
+            Defaults to None.
+
+    Returns:
+        filtered_nuscene_object_results (Optional[
+                                            Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
+                                        ]): Filtered nuscene object results.
+    """
+    if nuscene_object_results is None:
+        return None
+
+    import functools
+
+    filtered_nuscene_object_results: Dict[
+        MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
+    ] = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
+
+    for matching_mode, label_result in nuscene_object_results.items():
+        for label, threshold_result in label_result.items():
+            for threshold, object_results in threshold_result.items():
+                for object_result in object_results:
+                    is_target = _is_target_object(
+                        dynamic_object=object_result.estimated_object,
+                        is_gt=False,
+                        target_labels=target_labels,
+                        max_x_position_list=max_x_position_list,
+                        min_x_position_list=min_x_position_list,
+                        max_y_position_list=max_y_position_list,
+                        min_y_position_list=min_y_position_list,
+                        max_distance_list=max_distance_list,
+                        min_distance_list=min_distance_list,
+                        confidence_threshold_list=confidence_threshold_list,
+                        transforms=transforms,
+                    )
+                    if is_target and object_result.ground_truth_object:
+                        is_target = is_target and _is_target_object(
+                            dynamic_object=object_result.ground_truth_object,
+                            is_gt=True,
+                            target_labels=target_labels,
+                            ignore_attributes=ignore_attributes,
+                            max_x_position_list=max_x_position_list,
+                            min_x_position_list=min_x_position_list,
+                            max_y_position_list=max_y_position_list,
+                            min_y_position_list=min_y_position_list,
+                            max_distance_list=max_distance_list,
+                            min_distance_list=min_distance_list,
+                            min_point_numbers=min_point_numbers,
+                            target_uuids=target_uuids,
+                            transforms=transforms,
+                        )
+                    elif target_uuids and object_result.ground_truth_object is None:
+                        is_target = False
+
+                    if is_target:
+                        filtered_nuscene_object_results[matching_mode][label][threshold].append(object_result)
+
+    return filtered_nuscene_object_results
 
 
 def filter_objects(
