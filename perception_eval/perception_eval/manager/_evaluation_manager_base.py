@@ -95,17 +95,25 @@ class _EvaluationManagerBase(ABC):
         threshold_min_time: int = 75000,
         interpolate_ground_truth: bool = False,
     ) -> Optional[FrameGroundTruth]:
-        """Returns a FrameGroundTruth instance that has the closest timestamp with `unix_time`.
+        """
+        Return the closest ground truth frame to the given unix_time.
 
-        If there is no corresponding ground truth, returns None.
+        If `interpolate_ground_truth` is False, it returns the closest ground truth frame
+        whose timestamp is within `threshold_min_time` microseconds.
+
+        If `interpolate_ground_truth` is True, it interpolates between two frames
+        (before and after) if both exist.
 
         Args:
-            unix_time (int): Unix time of frame to evaluate.
-            threshold_min_time (int, optional): Minimum timestamp threshold[s]. Defaults to 75000[s]=75[ms].
+            unix_time (int): Target frame's timestamp in microseconds.
+            threshold_min_time (int, optional): Maximum allowed time difference [μs]
+                between `unix_time` and ground truth. Defaults to 75,000 μs (75 ms).
+            interpolate_ground_truth (bool, optional): Whether to interpolate between
+                frames for more accurate ground truth. Defaults to False.
 
         Returns:
-            Optional[FrameGroundTruth]: FrameGroundTruth instance at current frame.
-                If there is no corresponding ground truth, returns None.
+            Optional[FrameGroundTruth]: Ground truth frame corresponding to `unix_time`,
+            possibly interpolated. Returns None if no suitable frame is found.
         """
         if not interpolate_ground_truth:
             # search closest frame

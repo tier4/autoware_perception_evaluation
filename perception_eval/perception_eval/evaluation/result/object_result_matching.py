@@ -96,12 +96,6 @@ class NuscenesObjectMatcher:
         self.transforms = transforms
         self.matching_config_map = self._build_matching_config_map()
 
-        # TODO(vividf): handle different label policy in the future
-        if matching_label_policy is not MatchingLabelPolicy.DEFAULT:
-            raise ValueError(
-                f"NuscenesObjectMatcher only support MatchingLabelPolicy.DEFAULT, but got: {matching_label_policy}"
-            )
-
     def _build_matching_config_map(self) -> Dict[MatchingMode, Dict[LabelType, List[float]]]:
         """
         Convert threshold lists from metrics config to label-to-threshold mappings per matching mode.
