@@ -165,8 +165,7 @@ class NuscenesObjectMatcher:
             for obj in ground_truth_objects:
                 label_to_gt_objs[obj.semantic_label.label].append(obj)
 
-            union_labels = set(label_to_est_objs.keys()).union(label_to_gt_objs.keys())
-            for label in union_labels:
+            for label in self.metrics_config.target_labels:
                 est_objs = label_to_est_objs.get(label, [])
                 gt_objs = label_to_gt_objs.get(label, [])
                 for matching_mode, label_to_thresholds_map in self.matching_config_map.items():
@@ -186,12 +185,21 @@ class NuscenesObjectMatcher:
         else:
             # MatchingLabelPolicy.ALLOW_UNKNOWN or MatchingLabelPolicy.ALLOW_ANY
             for matching_mode, label_to_thresholds_map in self.matching_config_map.items():
-                thresholds = sorted(
-                    set(
-                        threshold for threshold_list in label_to_thresholds_map.values() for threshold in threshold_list
-                    )
-                )
                 matching_method_module, _ = _get_matching_module(matching_mode)
+
+                label_threshold_pairs = [
+                    (label, threshold)
+                    for label, thresholds in label_to_thresholds_map.items()
+                    for threshold in thresholds
+                ]
+
+                # Initialize all entries in the nested result dictionary,
+                # even if no matching results are found later
+                for label, threshold in label_threshold_pairs:
+                    _ = nuscene_object_results[matching_mode][label][threshold]
+
+                thresholds = sorted(set(threshold for _, threshold in label_threshold_pairs))
+
                 threshold_to_results_map = self._get_threshold_to_results_map(
                     estimated_objects=estimated_objects_sorted,
                     ground_truth_objects=ground_truth_objects,
