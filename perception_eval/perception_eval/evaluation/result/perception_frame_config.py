@@ -245,7 +245,7 @@ class PerceptionPassFailConfig:
 
     @classmethod
     def deserialization(cls, data: Dict[str, Any]) -> PerceptionPassFailConfig:
-        """Deserialize the data to _EvaluationConfigBagse."""
+        """Deserialize the data to _EvaluationConfigBase."""
         return cls(
             evaluator_config=PerceptionEvaluationConfig.deserialization(data["evaluator_config"]),
             target_labels=data["target_labels"],
