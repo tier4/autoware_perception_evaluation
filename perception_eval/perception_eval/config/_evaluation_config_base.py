@@ -199,7 +199,7 @@ class _EvaluationConfigBase(ABC):
 
     @classmethod
     def deserialization(cls, data: Dict[str, Any]) -> _EvaluationConfigBase:
-        """Deserialize the data to _EvaluationConfigBagse."""
+        """Deserialize the data to _EvaluationConfigBase."""
         return cls(
             dataset_paths=data["dataset_paths"],
             frame_id=data["frame_id"],
