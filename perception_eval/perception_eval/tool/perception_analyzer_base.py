@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from abc import ABC
 from abc import abstractmethod
+from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
 import logging
@@ -44,11 +45,13 @@ from perception_eval.common.schema import FrameID
 from perception_eval.common.status import MatchingStatus
 from perception_eval.common.transform import TransformDict
 from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.metrics import MetricsScore
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
+from perception_eval.util.aggregation_results import accumulate_nuscene_results
 from tqdm import tqdm
 
 from .utils import get_metrics_info
@@ -478,15 +481,26 @@ class PerceptionAnalyzerBase(ABC):
         """
         target_labels: List[LabelType] = self.config.target_labels
         scene_results = {label: [[]] for label in target_labels}
+        nuscene_scene_results_dict: Dict[
+            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
+        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
         scene_num_gt = {label: 0 for label in target_labels}
         used_frame: List[int] = []
-
         for frame in frame_results:
             obj_results_dict = divide_objects(frame.object_results, target_labels)
             num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, target_labels)
             for label in target_labels:
                 scene_results[label].append(obj_results_dict[label])
                 scene_num_gt[label] += num_gt_dict[label]
+
+            if self.config.metrics_config.detection_config is not None and frame.nuscene_object_results is not None:
+                nuscene_results: Dict[
+                    MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
+                ] = frame.nuscene_object_results
+
+                accumulate_nuscene_results(nuscene_scene_results_dict, nuscene_results)
+
             used_frame.append(int(frame.frame_name))
 
         metrics_score: MetricsScore = MetricsScore(
@@ -494,7 +508,7 @@ class PerceptionAnalyzerBase(ABC):
             used_frame=used_frame,
         )
         if self.config.metrics_config.detection_config is not None:
-            metrics_score.evaluate_detection(scene_results, scene_num_gt)
+            metrics_score.evaluate_detection(nuscene_scene_results_dict, scene_num_gt)
         if self.config.metrics_config.tracking_config is not None:
             metrics_score.evaluate_tracking(scene_results, scene_num_gt)
         if self.config.metrics_config.prediction_config is not None:

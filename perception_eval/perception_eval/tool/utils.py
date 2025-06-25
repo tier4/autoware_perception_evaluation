@@ -398,16 +398,28 @@ def get_metrics_info(metrics_score: MetricsScore) -> Dict[str, Any]:
         data (Dict[str, Any]):
     """
     data: Dict[str, List[float]] = {}
-    # detection
-    for map in metrics_score.maps:
-        mode: str = str(map.matching_mode)
+    # Detection format:
+    # {
+    #     "AP(IOU3D)": [mAP, label0_AP, label1_AP, ...],
+    #     "APH(IOU3D)": [mAPH, label0_APH, label1_APH, ...]
+    # }
+
+    for mean_ap_value in metrics_score.mean_ap_values:
+        mode: str = str(mean_ap_value.matching_mode)
         ap_mode: str = f"AP({mode})"
         aph_mode: str = f"APH({mode})"
-        data[ap_mode] = [map.map]
-        data[aph_mode] = [map.maph]
-        for ap, aph in zip(map.aps, map.aphs):
-            data[ap_mode].append(ap.ap)
-            data[aph_mode].append(aph.ap)
+        # AP
+        ap_list = [mean_ap_value.map]
+        for label in mean_ap_value.target_labels:
+            ap_list.append(mean_ap_value.label_mean_to_ap[label])
+        data[ap_mode] = ap_list
+
+        # APH (only if 3D)
+        if not mean_ap_value.is_detection_2d:
+            aph_list = [mean_ap_value.maph]
+            for label in mean_ap_value.target_labels:
+                aph_list.append(mean_ap_value.label_mean_to_aph[label])
+            data[aph_mode] = aph_list
 
     # tracking
     for tracking_score in metrics_score.tracking_scores:
