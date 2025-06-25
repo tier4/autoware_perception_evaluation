@@ -21,7 +21,7 @@ def accumulate_nuscene_results(
         accumulated_results (dict): Dictionary accumulating detection results across frames.
         frame_results (dict): Dictionary containing detection results for a single frame.
     """
-    for mode, label_map in frame_results.items():
-        for label, threshold_map in label_map.items():
-            for threshold, detection_list in threshold_map.items():
-                accumulated_results[mode][label][threshold].extend(detection_list)
+    for matching_mode, label_result in frame_results.items():
+        for label, threshold_result in label_result.items():
+            for threshold, object_results in threshold_result.items():
+                accumulated_results[matching_mode][label][threshold].extend(object_results)
