@@ -181,7 +181,7 @@ def filter_objects(
             Keep all `objects` that their each x position are bigger than `min_x_position`.
             Defaults to None.
         max_y_position_list (Optional[List[float]]): Thresholds list of maximum y-axis position from ego vehicle.
-            Keep all `objects` that their each y posiition are in [`-max_y_position`, `max_y_position`].
+            Keep all `objects` that their each y position are in [`-max_y_position`, `max_y_position`].
             If `min_y_position_list` is not specified, keep them that each y position are smaller than `max_y_position`.
             Defaults to None.
         min_y_position_list (Optional[List[float]]): Thresholds list of minimum y-axis position from ego vehicle.
