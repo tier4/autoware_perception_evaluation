@@ -153,6 +153,7 @@ class DynamicObject:
         )
 
         # prediction
+        self.relative_timestamps = relative_timestamps
         self.predicted_positions = predicted_positions
         self.predicted_orientations = predicted_orientations
         self.predicted_twists = predicted_twists
@@ -189,6 +190,7 @@ class DynamicObject:
                 self.tracked_orientations,
                 self.tracked_shapes,
                 self.tracked_twists,
+                self.relative_timestamps,
                 self.predicted_positions,
                 self.predicted_orientations,
                 self.predicted_twists,
@@ -552,6 +554,7 @@ class DynamicObject:
             if self.tracked_shapes is not None
             else None,
             "tracked_twists": self.tracked_twists if self.tracked_twists is not None else None,
+            "relative_timestamps": self.relative_timestamps if self.relative_timestamps is not None else None,
             "predicted_positions": self.predicted_positions if self.predicted_positions is not None else None,
             "predicted_orientations": [orientation.elements for orientation in self.predicted_orientations]
             if self.predicted_orientations is not None
@@ -585,6 +588,7 @@ class DynamicObject:
             if data["tracked_shapes"] is not None
             else None,
             tracked_twists=data["tracked_twists"],
+            relative_timestamps=data["relative_timestamps"],
             predicted_positions=data["predicted_positions"],
             predicted_orientations=[Quaternion(elements) for elements in data["predicted_orientations"]]
             if data["predicted_orientations"] is not None
