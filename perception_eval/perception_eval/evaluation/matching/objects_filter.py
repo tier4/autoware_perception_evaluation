@@ -48,7 +48,7 @@ def filter_object_results(
     min_distance_list: Optional[List[float]] = None,
     min_point_numbers: Optional[List[int]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
-    target_uuids: Optional[str] = None,
+    target_uuids: Optional[List[str]] = None,
     transforms: Optional[TransformDict] = None,
     # TODO(vividf): Remove *args and **kwargs from this function signature in a future update.
     # They are currently unused and unnecessarily clutter the API.
@@ -110,48 +110,28 @@ def filter_object_results(
     """
     filtered_object_results: List[DynamicObjectWithPerceptionResult] = []
     for object_result in object_results:
-        is_target: bool = _is_target_object(
-            dynamic_object=object_result.estimated_object,
-            is_gt=False,
-            target_labels=target_labels,
-            max_x_position_list=max_x_position_list,
-            min_x_position_list=min_x_position_list,
-            max_y_position_list=max_y_position_list,
-            min_y_position_list=min_y_position_list,
-            max_distance_list=max_distance_list,
-            min_distance_list=min_distance_list,
-            confidence_threshold_list=confidence_threshold_list,
-            transforms=transforms,
-        )
-        if is_target and object_result.ground_truth_object:
-            is_target = is_target and _is_target_object(
-                dynamic_object=object_result.ground_truth_object,
-                is_gt=True,
-                target_labels=target_labels,
-                ignore_attributes=ignore_attributes,
-                max_x_position_list=max_x_position_list,
-                min_x_position_list=min_x_position_list,
-                max_y_position_list=max_y_position_list,
-                min_y_position_list=min_y_position_list,
-                max_distance_list=max_distance_list,
-                min_distance_list=min_distance_list,
-                min_point_numbers=min_point_numbers,
-                target_uuids=target_uuids,
-                transforms=transforms,
-            )
-        elif target_uuids and object_result.ground_truth_object is None:
-            is_target = False
-
-        if is_target:
+        if _should_keep_object_result(
+            object_result,
+            target_labels,
+            ignore_attributes,
+            max_x_position_list,
+            min_x_position_list,
+            max_y_position_list,
+            min_y_position_list,
+            max_distance_list,
+            min_distance_list,
+            min_point_numbers,
+            confidence_threshold_list,
+            target_uuids,
+            transforms,
+        ):
             filtered_object_results.append(object_result)
 
     return filtered_object_results
 
 
 def filter_nuscene_object_results(
-    nuscene_object_results: Optional[
-        Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
-    ],
+    nuscene_object_results: Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]],
     target_labels: Optional[List[LabelType]] = None,
     ignore_attributes: Optional[List[str]] = None,
     max_x_position_list: Optional[List[float]] = None,
@@ -162,7 +142,7 @@ def filter_nuscene_object_results(
     min_distance_list: Optional[List[float]] = None,
     min_point_numbers: Optional[List[int]] = None,
     confidence_threshold_list: Optional[List[float]] = None,
-    target_uuids: Optional[str] = None,
+    target_uuids: Optional[List[str]] = None,
     transforms: Optional[TransformDict] = None,
     *args,
     **kwargs,
@@ -236,39 +216,21 @@ def filter_nuscene_object_results(
                 # Always initialize the entry, even if nothing gets added
                 _ = filtered_nuscene_object_results[matching_mode][label][threshold]
                 for object_result in object_results:
-                    is_target = _is_target_object(
-                        dynamic_object=object_result.estimated_object,
-                        is_gt=False,
-                        target_labels=target_labels,
-                        max_x_position_list=max_x_position_list,
-                        min_x_position_list=min_x_position_list,
-                        max_y_position_list=max_y_position_list,
-                        min_y_position_list=min_y_position_list,
-                        max_distance_list=max_distance_list,
-                        min_distance_list=min_distance_list,
-                        confidence_threshold_list=confidence_threshold_list,
-                        transforms=transforms,
-                    )
-                    if is_target and object_result.ground_truth_object:
-                        is_target = is_target and _is_target_object(
-                            dynamic_object=object_result.ground_truth_object,
-                            is_gt=True,
-                            target_labels=target_labels,
-                            ignore_attributes=ignore_attributes,
-                            max_x_position_list=max_x_position_list,
-                            min_x_position_list=min_x_position_list,
-                            max_y_position_list=max_y_position_list,
-                            min_y_position_list=min_y_position_list,
-                            max_distance_list=max_distance_list,
-                            min_distance_list=min_distance_list,
-                            min_point_numbers=min_point_numbers,
-                            target_uuids=target_uuids,
-                            transforms=transforms,
-                        )
-                    elif target_uuids and object_result.ground_truth_object is None:
-                        is_target = False
-
-                    if is_target:
+                    if _should_keep_object_result(
+                        object_result,
+                        target_labels,
+                        ignore_attributes,
+                        max_x_position_list,
+                        min_x_position_list,
+                        max_y_position_list,
+                        min_y_position_list,
+                        max_distance_list,
+                        min_distance_list,
+                        min_point_numbers,
+                        confidence_threshold_list,
+                        target_uuids,
+                        transforms,
+                    ):
                         filtered_nuscene_object_results[matching_mode][label][threshold].append(object_result)
 
     return filtered_nuscene_object_results
@@ -623,6 +585,131 @@ def _is_fn_object(
         if ground_truth_object == object_result.ground_truth_object and object_result in tp_object_results:
             return False
     return True
+
+
+def _should_keep_object_result(
+    object_result: DynamicObjectWithPerceptionResult,
+    target_labels: Optional[List[LabelType]],
+    ignore_attributes: Optional[List[str]],
+    max_x_position_list: Optional[List[float]],
+    min_x_position_list: Optional[List[float]],
+    max_y_position_list: Optional[List[float]],
+    min_y_position_list: Optional[List[float]],
+    max_distance_list: Optional[List[float]],
+    min_distance_list: Optional[List[float]],
+    min_point_numbers: Optional[List[int]],
+    confidence_threshold_list: Optional[List[float]],
+    target_uuids: Optional[List[str]],
+    transforms: Optional[TransformDict],
+) -> bool:
+    """
+    Determine whether a DynamicObjectWithPerceptionResult passes all filtering criteria.
+    Delegates filtering checks to _check_estimated_object and _check_ground_truth_object.
+
+    Returns:
+        bool: True if object_result passes all filters, False otherwise.
+    """
+    if not _check_estimated_object(
+        object_result.estimated_object,
+        target_labels,
+        max_x_position_list,
+        min_x_position_list,
+        max_y_position_list,
+        min_y_position_list,
+        max_distance_list,
+        min_distance_list,
+        confidence_threshold_list,
+        transforms,
+    ):
+        return False
+
+    if object_result.ground_truth_object:
+        return _check_ground_truth_object(
+            object_result.ground_truth_object,
+            target_labels,
+            ignore_attributes,
+            max_x_position_list,
+            min_x_position_list,
+            max_y_position_list,
+            min_y_position_list,
+            max_distance_list,
+            min_distance_list,
+            min_point_numbers,
+            target_uuids,
+            transforms,
+        )
+
+    return target_uuids is None
+
+
+def _check_estimated_object(
+    obj: DynamicObject,
+    target_labels: Optional[List[LabelType]],
+    max_x_position_list: Optional[List[float]],
+    min_x_position_list: Optional[List[float]],
+    max_y_position_list: Optional[List[float]],
+    min_y_position_list: Optional[List[float]],
+    max_distance_list: Optional[List[float]],
+    min_distance_list: Optional[List[float]],
+    confidence_threshold_list: Optional[List[float]],
+    transforms: Optional[TransformDict],
+) -> bool:
+    """
+    Apply filtering criteria to the estimated object.
+
+    Returns:
+        bool: True if estimated object passes all filters, False otherwise.
+    """
+    return _is_target_object(
+        dynamic_object=obj,
+        is_gt=False,
+        target_labels=target_labels,
+        max_x_position_list=max_x_position_list,
+        min_x_position_list=min_x_position_list,
+        max_y_position_list=max_y_position_list,
+        min_y_position_list=min_y_position_list,
+        max_distance_list=max_distance_list,
+        min_distance_list=min_distance_list,
+        confidence_threshold_list=confidence_threshold_list,
+        transforms=transforms,
+    )
+
+
+def _check_ground_truth_object(
+    obj: DynamicObject,
+    target_labels: Optional[List[LabelType]],
+    ignore_attributes: Optional[List[str]],
+    max_x_position_list: Optional[List[float]],
+    min_x_position_list: Optional[List[float]],
+    max_y_position_list: Optional[List[float]],
+    min_y_position_list: Optional[List[float]],
+    max_distance_list: Optional[List[float]],
+    min_distance_list: Optional[List[float]],
+    min_point_numbers: Optional[List[int]],
+    target_uuids: Optional[str],
+    transforms: Optional[TransformDict],
+) -> bool:
+    """
+    Apply filtering criteria to the ground truth object.
+
+    Returns:
+        bool: True if ground truth object passes all filters, False otherwise.
+    """
+    return _is_target_object(
+        dynamic_object=obj,
+        is_gt=True,
+        target_labels=target_labels,
+        ignore_attributes=ignore_attributes,
+        max_x_position_list=max_x_position_list,
+        min_x_position_list=min_x_position_list,
+        max_y_position_list=max_y_position_list,
+        min_y_position_list=min_y_position_list,
+        max_distance_list=max_distance_list,
+        min_distance_list=min_distance_list,
+        min_point_numbers=min_point_numbers,
+        target_uuids=target_uuids,
+        transforms=transforms,
+    )
 
 
 def _is_target_object(
