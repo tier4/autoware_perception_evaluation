@@ -36,6 +36,7 @@ from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
+# TODO(vividf): remove this when we replace object_results with nuscene_object_results
 def filter_object_results(
     object_results: List[DynamicObjectWithPerceptionResult],
     target_labels: Optional[List[LabelType]] = None,
