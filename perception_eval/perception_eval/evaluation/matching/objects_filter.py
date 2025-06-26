@@ -590,18 +590,18 @@ def _is_fn_object(
 
 def _should_keep_object_result(
     object_result: DynamicObjectWithPerceptionResult,
-    target_labels: Optional[List[LabelType]],
-    ignore_attributes: Optional[List[str]],
-    max_x_position_list: Optional[List[float]],
-    min_x_position_list: Optional[List[float]],
-    max_y_position_list: Optional[List[float]],
-    min_y_position_list: Optional[List[float]],
-    max_distance_list: Optional[List[float]],
-    min_distance_list: Optional[List[float]],
-    min_point_numbers: Optional[List[int]],
-    confidence_threshold_list: Optional[List[float]],
-    target_uuids: Optional[List[str]],
-    transforms: Optional[TransformDict],
+    target_labels: Optional[List[LabelType]] = None,
+    ignore_attributes: Optional[List[str]] = None,
+    max_x_position_list: Optional[List[float]] = None,
+    min_x_position_list: Optional[List[float]] = None,
+    max_y_position_list: Optional[List[float]] = None,
+    min_y_position_list: Optional[List[float]] = None,
+    max_distance_list: Optional[List[float]] = None,
+    min_distance_list: Optional[List[float]] = None,
+    min_point_numbers: Optional[List[int]] = None,
+    confidence_threshold_list: Optional[List[float]] = None,
+    target_uuids: Optional[List[str]] = None,
+    transforms: Optional[TransformDict] = None,
 ) -> bool:
     """
     Determine whether a DynamicObjectWithPerceptionResult passes all filtering criteria.
@@ -645,15 +645,15 @@ def _should_keep_object_result(
 
 def _check_estimated_object(
     obj: DynamicObject,
-    target_labels: Optional[List[LabelType]],
-    max_x_position_list: Optional[List[float]],
-    min_x_position_list: Optional[List[float]],
-    max_y_position_list: Optional[List[float]],
-    min_y_position_list: Optional[List[float]],
-    max_distance_list: Optional[List[float]],
-    min_distance_list: Optional[List[float]],
-    confidence_threshold_list: Optional[List[float]],
-    transforms: Optional[TransformDict],
+    target_labels: Optional[List[LabelType]] = None,
+    max_x_position_list: Optional[List[float]] = None,
+    min_x_position_list: Optional[List[float]] = None,
+    max_y_position_list: Optional[List[float]] = None,
+    min_y_position_list: Optional[List[float]] = None,
+    max_distance_list: Optional[List[float]] = None,
+    min_distance_list: Optional[List[float]] = None,
+    confidence_threshold_list: Optional[List[float]] = None,
+    transforms: Optional[TransformDict] = None,
 ) -> bool:
     """
     Apply filtering criteria to the estimated object.
@@ -678,17 +678,17 @@ def _check_estimated_object(
 
 def _check_ground_truth_object(
     obj: DynamicObject,
-    target_labels: Optional[List[LabelType]],
-    ignore_attributes: Optional[List[str]],
-    max_x_position_list: Optional[List[float]],
-    min_x_position_list: Optional[List[float]],
-    max_y_position_list: Optional[List[float]],
-    min_y_position_list: Optional[List[float]],
-    max_distance_list: Optional[List[float]],
-    min_distance_list: Optional[List[float]],
-    min_point_numbers: Optional[List[int]],
-    target_uuids: Optional[str],
-    transforms: Optional[TransformDict],
+    target_labels: Optional[List[LabelType]] = None,
+    ignore_attributes: Optional[List[str]] = None,
+    max_x_position_list: Optional[List[float]] = None,
+    min_x_position_list: Optional[List[float]] = None,
+    max_y_position_list: Optional[List[float]] = None,
+    min_y_position_list: Optional[List[float]] = None,
+    max_distance_list: Optional[List[float]] = None,
+    min_distance_list: Optional[List[float]] = None,
+    min_point_numbers: Optional[List[int]] = None,
+    target_uuids: Optional[str] = None,
+    transforms: Optional[TransformDict] = None,
 ) -> bool:
     """
     Apply filtering criteria to the ground truth object.
