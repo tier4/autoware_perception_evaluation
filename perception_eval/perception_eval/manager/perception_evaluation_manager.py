@@ -304,7 +304,5 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         # Prediction
         if self.evaluator_config.metrics_config.prediction_config is not None:
             scene_metrics_score.evaluate_prediction(aggregated_object_results_dict, aggregated_num_gt)
-        if self.evaluator_config.metrics_config.classification_config is not None:
-            scene_metrics_score.evaluate_classification(aggregated_object_results_dict, aggregated_num_gt)
 
         return scene_metrics_score
