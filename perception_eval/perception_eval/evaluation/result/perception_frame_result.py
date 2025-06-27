@@ -124,9 +124,7 @@ class PerceptionFrameResult:
         )
 
         if self.nuscene_object_results:
-            self.nuscene_object_results: Dict[
-                MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
-            ] = filter_nuscene_object_results(
+            self.nuscene_object_results = filter_nuscene_object_results(
                 self.nuscene_object_results,
                 transforms=self.frame_ground_truth.transforms,
                 **self.pass_fail_result.critical_object_filter_config.filtering_params,
