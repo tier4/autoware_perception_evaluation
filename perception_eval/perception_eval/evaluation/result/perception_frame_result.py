@@ -176,8 +176,6 @@ class PerceptionFrameResult:
         # Prediction
         if self.metrics_score.prediction_config is not None:
             self.metrics_score.evaluate_prediction(object_results_dict, num_ground_truth_dict)
-        if self.metrics_score.classification_config is not None:
-            self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
 
         # FP validation
         self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
