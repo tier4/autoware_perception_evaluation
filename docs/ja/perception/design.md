@@ -100,12 +100,13 @@ json_result = json.dump(dict_result)
 
   - **2. メトリクス評価時の `DynamicObjectWithPerceptionResult`の TP/FP/FN 判定用の閾値**
 
-    | Arguments                    |     type      | Mandatory | Description                          |
-    | :--------------------------- | :-----------: | :-------: | :----------------------------------- |
-    | `center_distance_thresholds` | `List[float]` |    Yes    | 中心間距離マッチング時の閾値         |
-    | `plane_distance_thresholds`  | `List[float]` | Yes (3D)  | 平面距離マッチング時の閾値 (3D のみ) |
-    | `iou_2d_thresholds`          | `List[float]` |    Yes    | BEV IoU 　マッチング時の閾値         |
-    | `iou_3d_thresholds`          | `List[float]` | Yes (3D)  | 3D IoU マッチング時の閾値 (3D のみ)  |
+    | Arguments                        |     type      | Mandatory | Description                          |
+    | :------------------------------- | :-----------: | :-------: | :----------------------------------- |
+    | `center_distance_thresholds`     | `List[float]` |    Yes    | 中心間距離マッチング時の閾値         |
+    | `center_distance_bev_thresholds` | `List[float]` |    Yes    | 中心のBEV距離マッチング時の閾値      |
+    | `plane_distance_thresholds`      | `List[float]` | Yes (3D)  | 平面距離マッチング時の閾値 (3D のみ) |
+    | `iou_2d_thresholds`              | `List[float]` |    Yes    | BEV IoU 　マッチング時の閾値         |
+    | `iou_3d_thresholds`              | `List[float]` | Yes (3D)  | 3D IoU マッチング時の閾値 (3D のみ)  |
 
 - **パラメータ指定時の Error ケース**
 
@@ -123,6 +124,7 @@ json_result = json.dump(dict_result)
     "merge_similar_labels": False,
     "allow_matching_unknown": True,
     "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
+    "center_distance_bev_thresholds": [[1.0, 1.0, 1.0, 1.0]],
     "plane_distance_thresholds": [2.0, 3.0],
     "iou_2d_thresholds": [0.5],
     "iou_3d_thresholds": [0.5],
@@ -154,6 +156,7 @@ json_result = json.dump(dict_result)
       "merge_similar_labels": False,
       "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
+      "center_distance_bev_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
@@ -181,6 +184,7 @@ json_result = json.dump(dict_result)
       "merge_similar_labels": False,
       "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
+      "center_distance_bev_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
@@ -206,6 +210,7 @@ json_result = json.dump(dict_result)
       "merge_similar_labels": False,
       "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
+      "center_distance_bev_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
@@ -233,6 +238,7 @@ json_result = json.dump(dict_result)
       "merge_similar_labels": False,
       "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
+      "center_distance_bev_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
@@ -251,7 +257,7 @@ json_result = json.dump(dict_result)
 ### [`<class> CriticalObjectFilterConfig(...)`](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py)
 
 - 注目物体を動的決定するためのインターフェイス．
-- `PerceptionEvaluationManger`の初期化時ではなく，各フレーム毎(=callback)に指定する．
+- `PerceptionEvaluationManager`の初期化時ではなく，各フレーム毎(=callback)に指定する．
 
 | Arguments                   |             type             |    Mandatory    | Description                                                                                                                 |
 | :-------------------------- | :--------------------------: | :-------------: | :-------------------------------------------------------------------------------------------------------------------------- |
@@ -271,7 +277,7 @@ json_result = json.dump(dict_result)
 ### [`<class> PerceptionPassFailConfig(...)`](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py)
 
 - Pass / Fail を決めるためのパラメータ. Pass/Fail の判定については，**Plane distance**によって TP/FP の判定を行う．
-- `PerceptionEvaluationManger`の初期化時ではなく，各フレーム毎(=callback)に指定する．
+- `PerceptionEvaluationManager`の初期化時ではなく，各フレーム毎(=callback)に指定する．
 
 | Arguments                   |             type             | Mandatory | Description                                            |
 | :-------------------------- | :--------------------------: | :-------: | :----------------------------------------------------- |

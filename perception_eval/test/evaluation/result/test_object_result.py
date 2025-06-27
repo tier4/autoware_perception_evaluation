@@ -27,7 +27,7 @@ from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import Label
 from perception_eval.evaluation.matching import MatchingLabelPolicy
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 from perception_eval.util.debug import get_objects_with_difference
 
 

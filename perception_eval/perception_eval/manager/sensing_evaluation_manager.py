@@ -22,16 +22,16 @@ from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import crop_pointcloud
 from perception_eval.common.transform import TransformDict
 from perception_eval.config import SensingEvaluationConfig
-from perception_eval.evaluation import SensingFrameResult
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
+from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
 from perception_eval.util.math import get_bbox_scale
 from perception_eval.visualization import SensingVisualizer
 
-from ._evaluation_manager_base import _EvaluationMangerBase
+from ._evaluation_manager_base import _EvaluationManagerBase
 
 
-class SensingEvaluationManager(_EvaluationMangerBase):
+class SensingEvaluationManager(_EvaluationManagerBase):
     """A manager class to evaluate sensing task.
 
     Attributes:
@@ -47,7 +47,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
         self,
         evaluation_config: SensingEvaluationConfig,
     ) -> None:
-        super().__init__(evaluation_config)
+        super().__init__(evaluation_config=evaluation_config, load_ground_truth=True)
         self.frame_results: List[SensingFrameResult] = []
         self.__visualizer = SensingVisualizer(self.evaluator_config)
 
@@ -93,7 +93,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             transforms=ground_truth_now_frame.transforms,
         )
 
-        ground_truth_objects: List[DynamicObject] = self._filter_objects(
+        ground_truth_objects: List[DynamicObject] = self.filter_ground_truth(
             ground_truth_now_frame,
             sensing_frame_config,
         )
@@ -113,7 +113,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
 
         return result
 
-    def _filter_objects(
+    def filter_ground_truth(
         self,
         frame_ground_truth: FrameGroundTruth,
         sensing_frame_config: SensingFrameConfig,
@@ -128,7 +128,7 @@ class SensingEvaluationManager(_EvaluationMangerBase):
             List[DynamicObject]: Filtered ground truth objects.
         """
         return filter_objects(
-            objects=frame_ground_truth.objects,
+            dynamic_objects=frame_ground_truth.objects,
             is_gt=True,
             target_uuids=sensing_frame_config.target_uuids,
             transforms=frame_ground_truth.transforms,

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from perception_eval.evaluation.matching.object_matching import CenterDistanceBEVMatching
 from perception_eval.evaluation.matching.object_matching import CenterDistanceMatching
 from perception_eval.evaluation.matching.object_matching import IOU2dMatching
 from perception_eval.evaluation.matching.object_matching import IOU3dMatching
@@ -22,6 +23,7 @@ from perception_eval.evaluation.matching.object_matching import PlaneDistanceMat
 
 __all__ = (
     "CenterDistanceMatching",
+    "CenterDistanceBEVMatching",
     "IOU2dMatching",
     "IOU3dMatching",
     "MatchingMethod",

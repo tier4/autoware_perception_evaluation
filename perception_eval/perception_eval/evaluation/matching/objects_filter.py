@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -30,8 +31,8 @@ from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.common.threshold import LabelThreshold
 from perception_eval.common.transform import TransformDict
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
 def filter_object_results(
@@ -144,7 +145,7 @@ def filter_object_results(
 
 
 def filter_objects(
-    objects: List[ObjectType],
+    dynamic_objects: List[ObjectType],
     is_gt: bool,
     target_labels: Optional[List[Label]] = None,
     ignore_attributes: Optional[List[str]] = None,
@@ -168,7 +169,7 @@ def filter_objects(
     are specified, each of them must be same length list.
 
     Args:
-        objects (List[ObjectType]: The objects you want to filter.
+        dynamic_objects (List[ObjectType]: The dynamic objects you want to filter.
         is_gt (bool): Flag if input object is ground truth.
         target_labels Optional[List[Label]]): Filter target list of labels.
             Keep all `objects` that have same label in this list. Defaults to None.
@@ -205,12 +206,12 @@ def filter_objects(
             Defaults to None.
 
     Returns:
-        List[ObjectType]: Filtered objects.
+        List[ObjectType]: Filtered dynamic objects.
     """
     filtered_objects: List[ObjectType] = []
-    for object_ in objects:
+    for dynamic_object in dynamic_objects:
         is_target: bool = _is_target_object(
-            dynamic_object=object_,
+            dynamic_object=dynamic_object,
             is_gt=is_gt,
             target_labels=target_labels,
             ignore_attributes=ignore_attributes,
@@ -226,7 +227,7 @@ def filter_objects(
             transforms=transforms,
         )
         if is_target:
-            filtered_objects.append(object_)
+            filtered_objects.append(dynamic_object)
     return filtered_objects
 
 
@@ -672,13 +673,13 @@ def _is_target_object(
 
 
 def divide_objects(
-    objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
+    dynamic_objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
     target_labels: Optional[List[LabelType]] = None,
 ) -> Dict[LabelType, List[Union[ObjectType, DynamicObjectWithPerceptionResult]]]:
     """Divide DynamicObject or DynamicObjectWithPerceptionResult into dict mapped by their labels.
 
     Args:
-        objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
+        dynamic_objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
             List of ObjectType or DynamicObjectWithPerceptionResult.
         target_labels (Optional[List[LabelType]]): If this is specified, create empty list even
             if there is no object having specified label. Defaults to None.
@@ -693,34 +694,37 @@ def divide_objects(
     else:
         ret: Dict[LabelType, List[ObjectType]] = {}
 
-    for obj in objects:
+    for dynamic_object in dynamic_objects:
         label: LabelType = (
-            obj.estimated_object.semantic_label.label
-            if isinstance(obj, DynamicObjectWithPerceptionResult)
-            else obj.semantic_label.label
+            dynamic_object.estimated_object.semantic_label.label
+            if isinstance(dynamic_object, DynamicObjectWithPerceptionResult)
+            else dynamic_object.semantic_label.label
         )
 
         if target_labels is not None and label not in target_labels:
-            if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
-                label = obj.ground_truth_object.semantic_label.label
+            if (
+                isinstance(dynamic_object, DynamicObjectWithPerceptionResult)
+                and dynamic_object.ground_truth_object is not None
+            ):
+                label = dynamic_object.ground_truth_object.semantic_label.label
             else:
                 continue
 
         if label not in ret.keys():
-            ret[label] = [obj]
+            ret[label] = [dynamic_object]
         else:
-            ret[label].append(obj)
+            ret[label].append(dynamic_object)
     return ret
 
 
 def divide_objects_to_num(
-    objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
+    dynamic_objects: List[Union[ObjectType, DynamicObjectWithPerceptionResult]],
     target_labels: Optional[List[LabelType]] = None,
 ) -> Dict[LabelType, int]:
     """Divide the number of input `objects` mapped by their labels.
 
     Args:
-        objects (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
+        dynamic_object (List[Union[ObjectType, DynamicObjectWithPerceptionResult]]):
             List of ObjectType or DynamicObjectWithPerceptionResult.
         target_labels (Optional[List[LabelType]]): If this is specified, create empty list even
             if there is no object having specified label. Defaults to None.
@@ -734,15 +738,18 @@ def divide_objects_to_num(
     else:
         ret: Dict[LabelType, int] = {}
 
-    for obj in objects:
-        if isinstance(obj, DynamicObjectWithPerceptionResult):
-            label: LabelType = obj.estimated_object.semantic_label.label
+    for dynamic_object in dynamic_objects:
+        if isinstance(dynamic_object, DynamicObjectWithPerceptionResult):
+            label: LabelType = dynamic_object.estimated_object.semantic_label.label
         else:
-            label: LabelType = obj.semantic_label.label
+            label: LabelType = dynamic_object.semantic_label.label
 
         if target_labels is not None and label not in target_labels:
-            if isinstance(obj, DynamicObjectWithPerceptionResult) and obj.ground_truth_object is not None:
-                label = obj.ground_truth_object.semantic_label.label
+            if (
+                isinstance(dynamic_object, DynamicObjectWithPerceptionResult)
+                and dynamic_object.ground_truth_object is not None
+            ):
+                label = dynamic_object.ground_truth_object.semantic_label.label
             else:
                 continue
 
