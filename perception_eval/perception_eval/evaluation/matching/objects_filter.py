@@ -48,6 +48,9 @@ def filter_object_results(
     confidence_threshold_list: Optional[List[float]] = None,
     target_uuids: Optional[str] = None,
     transforms: Optional[TransformDict] = None,
+    # TODO(vividf): Remove *args and **kwargs from this function signature in a future update.
+    # They are currently unused and unnecessarily clutter the API.
+    # Ensure no external calls rely on passing extra arguments before removing.
     *args,
     **kwargs,
 ) -> List[DynamicObjectWithPerceptionResult]:
@@ -158,6 +161,8 @@ def filter_objects(
     confidence_threshold_list: Optional[List[float]] = None,
     target_uuids: Optional[List[str]] = None,
     transforms: Optional[TransformDict] = None,
+    # TODO(vividf): Remove *args and **kwargs from this function signature in a future update.
+    # ex: max_matchable_radii
     *args,
     **kwargs,
 ) -> List[ObjectType]:
