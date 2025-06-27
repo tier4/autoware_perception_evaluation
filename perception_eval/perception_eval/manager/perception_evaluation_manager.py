@@ -276,11 +276,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 self.evaluator_config.metrics_config.detection_config is not None
                 and frame.nuscene_object_results is not None
             ):
-                nuscene_object_results: Dict[
-                    MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
-                ] = frame.nuscene_object_results
-
-                accumulate_nuscene_results(flattened_nuscene_object_results_dict, nuscene_object_results)
+                accumulate_nuscene_results(flattened_nuscene_object_results_dict, frame.nuscene_object_results)
 
             used_frame.append(int(frame.frame_name))
 
