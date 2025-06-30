@@ -35,7 +35,7 @@ from perception_eval.evaluation.matching.objects_filter import get_fn_objects
 from perception_eval.evaluation.matching.objects_filter import get_negative_objects
 from perception_eval.evaluation.matching.objects_filter import get_positive_objects
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 from perception_eval.util.debug import get_objects_with_difference
 
 

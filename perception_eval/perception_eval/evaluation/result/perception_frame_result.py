@@ -14,21 +14,26 @@
 
 from __future__ import annotations
 
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 
 from perception_eval.common.dataset import FrameGroundTruth
+from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import LabelType
+from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.status import GroundTruthStatus
 from perception_eval.common.status import MatchingStatus
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.metrics import MetricsScoreConfig
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.evaluation.result.perception_pass_fail_result import PassFailResult
@@ -39,6 +44,8 @@ class PerceptionFrameResult:
 
     Attributes:
         object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results to each estimated object.
+        nuscene_object_results (Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]):
+            Object results grouped by matching mode, target label, and threshold.
         frame_ground_truth (FrameGroundTruth): Filtered ground truth of frame.
         frame_name (str): The file name of frame in the datasets.
         unix_time (int): The unix time for frame [us].
@@ -48,6 +55,8 @@ class PerceptionFrameResult:
 
     Args:
         object_results (List[DynamicObjectWithPerceptionResult]): The list of object result.
+        nuscene_object_results (Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]):
+            A dictionary storing object results grouped by matching mode, target label, and threshold.
         frame_ground_truth (FrameGroundTruth): FrameGroundTruth instance.
         metrics_config (MetricsScoreConfig): Metrics config class.
         critical_object_filter_config (CriticalObjectFilterConfig): Critical object filter config.
@@ -59,6 +68,9 @@ class PerceptionFrameResult:
     def __init__(
         self,
         object_results: List[DynamicObjectWithPerceptionResult],
+        nuscene_object_results: Optional[
+            Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
+        ],
         frame_ground_truth: FrameGroundTruth,
         metrics_config: MetricsScoreConfig,
         critical_object_filter_config: CriticalObjectFilterConfig,
@@ -73,13 +85,19 @@ class PerceptionFrameResult:
         self.target_labels: List[LabelType] = target_labels
 
         self.object_results: List[DynamicObjectWithPerceptionResult] = object_results
+        self.nuscene_object_results: Optional[
+            Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
+        ] = nuscene_object_results
         self.frame_ground_truth: FrameGroundTruth = frame_ground_truth
 
         # init evaluation
+        self.metrics_config = metrics_config
         self.metrics_score: MetricsScore = MetricsScore(
             metrics_config,
             used_frame=[int(self.frame_name)],
         )
+        self.critical_object_filter_config = critical_object_filter_config
+        self.frame_pass_fail_config = frame_pass_fail_config
         self.pass_fail_result: PassFailResult = PassFailResult(
             unix_time=unix_time,
             frame_number=frame_ground_truth.frame_name,
@@ -111,7 +129,7 @@ class PerceptionFrameResult:
             **self.pass_fail_result.critical_object_filter_config.filtering_params,
         )
 
-        # Divide objects by label to dict
+        # Group objects results based on the Label
         object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
             self.object_results,
             self.pass_fail_result.critical_object_filter_config.target_labels,
@@ -122,9 +140,15 @@ class PerceptionFrameResult:
             self.pass_fail_result.critical_object_filter_config.target_labels,
         )
 
-        # If evaluation task is FP validation, only evaluate pass/fail result.
-        if self.metrics_score.detection_config is not None:
-            self.metrics_score.evaluate_detection(object_results_dict, num_ground_truth_dict)
+        # Classification
+        if self.metrics_score.classification_config is not None:
+            self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
+
+        # Detection
+        if self.metrics_score.detection_config is not None and self.nuscene_object_results:
+            self.metrics_score.evaluate_detection(self.nuscene_object_results, num_ground_truth_dict)
+
+        # Tracking
         if self.metrics_score.tracking_config is not None:
             if previous_result is None:
                 previous_results_dict = {
@@ -138,12 +162,82 @@ class PerceptionFrameResult:
             for label, prev_results in previous_results_dict.items():
                 tracking_results[label] = [prev_results, tracking_results[label]]
             self.metrics_score.evaluate_tracking(tracking_results, num_ground_truth_dict)
+
+        # Prediction
         if self.metrics_score.prediction_config is not None:
             self.metrics_score.evaluate_prediction(object_results_dict, num_ground_truth_dict)
         if self.metrics_score.classification_config is not None:
             self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
 
+        # FP validation
         self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
+
+    def __reduce__(self) -> Tuple[PerceptionFrameResult, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (
+            self.__class__,
+            (
+                self.object_results,
+                self.nuscene_object_results,
+                self.frame_ground_truth,
+                self.metrics_config,
+                self.critical_object_filter_config,
+                self.frame_pass_fail_config,
+                self.unix_time,
+                self.target_labels,
+            ),
+        )
+
+    def serialization(self) -> Dict[str, Any]:
+        """Serialize the object to a dict."""
+        return {
+            "object_results": [object_result.serialization() for object_result in self.object_results],
+            "nuscene_object_results": [
+                nuscene_object_result.serialization() for nuscene_object_result in (self.nuscene_object_results or [])
+            ],
+            "frame_ground_truth": self.frame_ground_truth.serialization(),
+            "frame_name": self.frame_name,
+            "unix_time": self.unix_time,
+            "target_labels": [target_label.serialization() for target_label in self.target_labels],
+            "metrics_config": self.metrics_config.serialization(),
+            "frame_pass_fail_config": self.frame_pass_fail_config.serialization(),
+            "critical_object_filter_config": self.critical_object_filter_config.serialization(),
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> PerceptionFrameResult:
+        """Deserialize the data to PerceptionFrameResult."""
+        nuscene_object_results_list = data.get("nuscene_object_results", [])
+        nuscene_object_results = (
+            [DynamicObjectWithPerceptionResult.deserialization(obj) for obj in nuscene_object_results_list]
+            if nuscene_object_results_list
+            else None
+        )
+
+        target_labels = []
+        for label in data["target_labels"]:
+            label_type = label["label_type"]
+            if label_type == AutowareLabel.LABEL_TYPE:
+                label_class = AutowareLabel
+            elif label_type == TrafficLightLabel.LABEL_TYPE:
+                label_class = TrafficLightLabel
+            else:
+                raise ValueError(f"Invalid label type: {label_type}")
+
+            target_labels.append(label_class.deserialization(label))
+
+        return cls(
+            object_results=[DynamicObjectWithPerceptionResult.deserialization(obj) for obj in data["object_results"]],
+            nuscene_object_results=nuscene_object_results,
+            frame_ground_truth=FrameGroundTruth.deserialization(data["frame_ground_truth"]),
+            metrics_config=MetricsScoreConfig.deserialization(data["metrics_config"]),
+            critical_object_filter_config=CriticalObjectFilterConfig.deserialization(
+                data["critical_object_filter_config"]
+            ),
+            frame_pass_fail_config=PerceptionPassFailConfig.deserialization(data["frame_pass_fail_config"]),
+            target_labels=target_labels,
+            unix_time=data["unix_time"],
+        )
 
 
 def get_object_status(frame_results: List[PerceptionFrameResult]) -> List[GroundTruthStatus]:
