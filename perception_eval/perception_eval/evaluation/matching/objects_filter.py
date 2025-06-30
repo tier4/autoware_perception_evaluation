@@ -111,7 +111,7 @@ def filter_object_results(
     """
     filtered_object_results: List[DynamicObjectWithPerceptionResult] = []
     for object_result in object_results:
-        if _should_keep_object_result(
+        if _is_object_result_passing_filters(
             object_result,
             target_labels,
             ignore_attributes,
@@ -217,7 +217,7 @@ def filter_nuscene_object_results(
                 # Always initialize the entry, even if nothing gets added
                 _ = filtered_nuscene_object_results[matching_mode][label][threshold]
                 for object_result in object_results:
-                    if _should_keep_object_result(
+                    if _is_object_result_passing_filters(
                         object_result,
                         target_labels,
                         ignore_attributes,
@@ -588,7 +588,7 @@ def _is_fn_object(
     return True
 
 
-def _should_keep_object_result(
+def _is_object_result_passing_filters(
     object_result: DynamicObjectWithPerceptionResult,
     target_labels: Optional[List[LabelType]] = None,
     ignore_attributes: Optional[List[str]] = None,
@@ -604,65 +604,51 @@ def _should_keep_object_result(
     transforms: Optional[TransformDict] = None,
 ) -> bool:
     """
-    Determine whether a DynamicObjectWithPerceptionResult passes all filtering criteria.
-    Delegates filtering checks to _check_estimated_object and _check_ground_truth_object.
+    Check whether a DynamicObjectWithPerceptionResult passes all specified filtering criteria.
+
+    This function evaluates both the estimated and ground truth objects contained within
+    the DynamicObjectWithPerceptionResult. It applies the provided filtering constraints
+    such as spatial bounds, distance ranges, label inclusion, confidence thresholds, and UUID filtering.
+
+    Args:
+        object_result (DynamicObjectWithPerceptionResult): The object result to check whether it pass the filtering criteria.
+        target_labels (Optional[List[LabelType]]): Filter target list of labels.
+        attributes_ignore (Optional[List[str]]): List of attributes to be ignored. Defaults to None.
+        max_x_position_list (Optional[List[float]]): Thresholds list of maximum x-axis position from ego vehicle.
+            Keep all `dynamic_object` that their each x position are in [`-max_x_position`, `max_x_position`].
+            If `min_x_position_list` is not specified, keep them that each x position are smaller than `max_x_position`.
+            Defaults to None.
+        min_x_position_list (Optional[List[float]]): Thresholds list of minimum x-axis position from ego vehicle.
+            Keep all `dynamic_object` that their each x position are bigger than `min_x_position`.
+        max_y_position_list (Optional[List[float]]): Thresholds list of maximum y-axis position from ego vehicle.
+            Keep all `dynamic_object` that their each y position are in [`-max_y_position`, `max_y_position`].
+            If `min_y_position_list` is not specified, keep them that each y position are smaller than `max_y_position`.
+            Defaults to None.
+        min_y_position_list (Optional[List[float]]): Thresholds list of minimum y-axis position from ego vehicle.
+            Keep all `dynamic_object` that their each y position are bigger than `min_y_position`.
+        max_distance_list (Optional[List[float]]): Thresholds list of maximum distance range from ego vehicle.
+            Keep all `dynamic_object` that their each distance is smaller than `max_distance`. Defaults to None.
+        min_distance_list (Optional[List[float]]): Thresholds list of minimum distance range from ego vehicle.
+            Keep all `dynamic_object` that their each distance is bigger than `min_distance`. Defaults to None.
+        min_point_numbers (Optional[List[int]]): Thresholds list of minimum number of points
+            must be contained in object's box. Keep all `dynamic_objects` that their boxes contain more points than
+            `min_point_number`. Defaults to None.
+            For example, `target_labels=["car", "bike", "pedestrian"]` and `min_point_numbers=[5, 0, 0]`,
+            Then objects that has car label and their boxes contain 4 or less points are filtered.
+            Otherwise, all objects that has bike or pedestrian label are not filtered.
+        confidence_threshold_list (Optional[List[float]]): Thresholds list of minimum confidence score.
+            Keep all `dynamic_objects` that their confidence is bigger than `confidence_threshold`. Defaults to None.
+        target_uuids (Optional[List[str]]): Filter target list of ground truths' uuids.
+            Keep all `dynamic_objects` that their each uuid is in `target_uuids`. Defaults to None.
+        transforms (Optional[TransformDict]): Dictionary of transformations for position conversion.
 
     Returns:
-        bool: True if object_result passes all filters, False otherwise.
+        bool: True if the object result satisfies all filter conditions, False otherwise.
     """
-    if not _check_estimated_object(
-        object_result.estimated_object,
-        target_labels,
-        max_x_position_list,
-        min_x_position_list,
-        max_y_position_list,
-        min_y_position_list,
-        max_distance_list,
-        min_distance_list,
-        confidence_threshold_list,
-        transforms,
-    ):
-        return False
 
-    if object_result.ground_truth_object:
-        return _check_ground_truth_object(
-            object_result.ground_truth_object,
-            target_labels,
-            ignore_attributes,
-            max_x_position_list,
-            min_x_position_list,
-            max_y_position_list,
-            min_y_position_list,
-            max_distance_list,
-            min_distance_list,
-            min_point_numbers,
-            target_uuids,
-            transforms,
-        )
-
-    return target_uuids is None
-
-
-def _check_estimated_object(
-    obj: DynamicObject,
-    target_labels: Optional[List[LabelType]] = None,
-    max_x_position_list: Optional[List[float]] = None,
-    min_x_position_list: Optional[List[float]] = None,
-    max_y_position_list: Optional[List[float]] = None,
-    min_y_position_list: Optional[List[float]] = None,
-    max_distance_list: Optional[List[float]] = None,
-    min_distance_list: Optional[List[float]] = None,
-    confidence_threshold_list: Optional[List[float]] = None,
-    transforms: Optional[TransformDict] = None,
-) -> bool:
-    """
-    Apply filtering criteria to the estimated object.
-
-    Returns:
-        bool: True if estimated object passes all filters, False otherwise.
-    """
-    return _is_target_object(
-        dynamic_object=obj,
+    # Check estimated object
+    is_target: bool = _is_target_object(
+        dynamic_object=object_result.estimated_object,
         is_gt=False,
         target_labels=target_labels,
         max_x_position_list=max_x_position_list,
@@ -675,44 +661,30 @@ def _check_estimated_object(
         transforms=transforms,
     )
 
+    # Check ground truth object if exists
+    if is_target and object_result.ground_truth_object:
+        is_target = is_target and _is_target_object(
+            dynamic_object=object_result.ground_truth_object,
+            is_gt=True,
+            target_labels=target_labels,
+            ignore_attributes=ignore_attributes,
+            max_x_position_list=max_x_position_list,
+            min_x_position_list=min_x_position_list,
+            max_y_position_list=max_y_position_list,
+            min_y_position_list=min_y_position_list,
+            max_distance_list=max_distance_list,
+            min_distance_list=min_distance_list,
+            min_point_numbers=min_point_numbers,
+            target_uuids=target_uuids,
+            transforms=transforms,
+        )
+    elif target_uuids and object_result.ground_truth_object is None:
+        is_target = False
 
-def _check_ground_truth_object(
-    obj: DynamicObject,
-    target_labels: Optional[List[LabelType]] = None,
-    ignore_attributes: Optional[List[str]] = None,
-    max_x_position_list: Optional[List[float]] = None,
-    min_x_position_list: Optional[List[float]] = None,
-    max_y_position_list: Optional[List[float]] = None,
-    min_y_position_list: Optional[List[float]] = None,
-    max_distance_list: Optional[List[float]] = None,
-    min_distance_list: Optional[List[float]] = None,
-    min_point_numbers: Optional[List[int]] = None,
-    target_uuids: Optional[str] = None,
-    transforms: Optional[TransformDict] = None,
-) -> bool:
-    """
-    Apply filtering criteria to the ground truth object.
-
-    Returns:
-        bool: True if ground truth object passes all filters, False otherwise.
-    """
-    return _is_target_object(
-        dynamic_object=obj,
-        is_gt=True,
-        target_labels=target_labels,
-        ignore_attributes=ignore_attributes,
-        max_x_position_list=max_x_position_list,
-        min_x_position_list=min_x_position_list,
-        max_y_position_list=max_y_position_list,
-        min_y_position_list=min_y_position_list,
-        max_distance_list=max_distance_list,
-        min_distance_list=min_distance_list,
-        min_point_numbers=min_point_numbers,
-        target_uuids=target_uuids,
-        transforms=transforms,
-    )
+    return is_target
 
 
+# TODO(vividf): change the unclear naming
 def _is_target_object(
     dynamic_object: ObjectType,
     is_gt: bool,
