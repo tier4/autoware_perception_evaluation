@@ -31,6 +31,7 @@ from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
+from perception_eval.util.aggregation_results import accumulate_nuscene_results
 from perception_eval.visualization import PerceptionVisualizer2D
 from perception_eval.visualization import PerceptionVisualizer3D
 from perception_eval.visualization import PerceptionVisualizerType
@@ -60,7 +61,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
 
     def __init__(self, evaluation_config: PerceptionEvaluationConfig, load_ground_truth: bool = True) -> None:
         super().__init__(evaluation_config=evaluation_config, load_ground_truth=load_ground_truth)
-        self.perception_frame_results: List[PerceptionFrameResult] = []
+        self.frame_results: List[PerceptionFrameResult] = []
         self.__visualizer = (
             PerceptionVisualizer2D(self.evaluator_config)
             if self.evaluation_task.is_2d()
@@ -130,12 +131,12 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             target_labels=self.target_labels,
         )
 
-        if self.perception_frame_results:
-            perception_frame_result.evaluate_frame(previous_result=self.perception_frame_results[-1])
+        if self.frame_results:
+            perception_frame_result.evaluate_frame(previous_result=self.frame_results[-1])
         else:
             perception_frame_result.evaluate_frame()
 
-        self.perception_frame_results.append(perception_frame_result)
+        self.frame_results.append(perception_frame_result)
 
         return perception_frame_result
 
@@ -260,7 +261,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         aggregated_num_gt = {label: 0 for label in target_labels}
         used_frame: List[int] = []
 
-        for frame in self.perception_frame_results:
+        for frame in self.frame_results:
             object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                 frame.object_results, target_labels
             )
@@ -275,11 +276,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 self.evaluator_config.metrics_config.detection_config is not None
                 and frame.nuscene_object_results is not None
             ):
-                nuscene_results: Dict[
-                    MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
-                ] = frame.nuscene_object_results
-
-                self.append_to_flattened_results(flattened_nuscene_object_results_dict, nuscene_results)
+                accumulate_nuscene_results(flattened_nuscene_object_results_dict, frame.nuscene_object_results)
 
             used_frame.append(int(frame.frame_name))
 
@@ -303,25 +300,5 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         # Prediction
         if self.evaluator_config.metrics_config.prediction_config is not None:
             scene_metrics_score.evaluate_prediction(aggregated_object_results_dict, aggregated_num_gt)
-        if self.evaluator_config.metrics_config.classification_config is not None:
-            scene_metrics_score.evaluate_classification(aggregated_object_results_dict, aggregated_num_gt)
 
         return scene_metrics_score
-
-    def append_to_flattened_results(
-        self,
-        flattened_results: Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]],
-        new_results: Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]],
-    ) -> None:
-        """
-        Append detection results from a single frame's nuscene_object_results into the
-        accumulated flattened_nuscene_object_results_dict.
-
-        Args:
-            flattened_dict (dict): The running accumulation dict to be updated in-place.
-            new_results (dict): The current frame's nuscene_object_results to be merged in.
-        """
-        for mode, label_map in new_results.items():
-            for label, threshold_map in label_map.items():
-                for threshold, detection_list in threshold_map.items():
-                    flattened_results[mode][label][threshold].extend(detection_list)

@@ -27,6 +27,7 @@ from perception_eval.evaluation.result.perception_frame_config import CriticalOb
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 
 
+# TODO(vividf): replace object results with nuscene object results
 class PassFailResult:
     """Class for keeping TP/FP/TN/FP object results and GT objects for critical GT objects.
 

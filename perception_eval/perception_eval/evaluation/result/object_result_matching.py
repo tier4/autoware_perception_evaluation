@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+import functools
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -95,12 +96,6 @@ class NuscenesObjectMatcher:
         self.transforms = transforms
         self.matching_config_map = self._build_matching_config_map()
 
-        # TODO(vividf): handle different label policy in the future
-        if matching_label_policy is not MatchingLabelPolicy.DEFAULT:
-            raise ValueError(
-                f"NuscenesObjectMatcher only support MatchingLabelPolicy.DEFAULT, but got: {matching_label_policy}"
-            )
-
     def _build_matching_config_map(self) -> Dict[MatchingMode, Dict[LabelType, List[float]]]:
         """
         Convert threshold lists from metrics config to label-to-threshold mappings per matching mode.
@@ -150,46 +145,77 @@ class NuscenesObjectMatcher:
                   ...
                 }
         """
-        results: Dict[
+        # Use functools.partial instead of lambda to ensure the nested defaultdict structure is pickleable.
+        nuscene_object_results: Dict[
             MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
-        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+        ] = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
 
         # All FN cases
         if not estimated_objects:
-            return results
+            return nuscene_object_results
 
         estimated_objects_sorted = sorted(estimated_objects, key=lambda x: x.semantic_score, reverse=True)
 
-        label_to_est_objs: Dict[LabelType, List[ObjectType]] = defaultdict(list)
-        label_to_gt_objs: Dict[LabelType, List[ObjectType]] = defaultdict(list)
+        if self.matching_label_policy == MatchingLabelPolicy.DEFAULT:
+            label_to_est_objs: Dict[LabelType, List[ObjectType]] = defaultdict(list)
+            label_to_gt_objs: Dict[LabelType, List[ObjectType]] = defaultdict(list)
 
-        for obj in estimated_objects_sorted:
-            label_to_est_objs[obj.semantic_label.label].append(obj)
-        for obj in ground_truth_objects:
-            label_to_gt_objs[obj.semantic_label.label].append(obj)
+            for obj in estimated_objects_sorted:
+                label_to_est_objs[obj.semantic_label.label].append(obj)
+            for obj in ground_truth_objects:
+                label_to_gt_objs[obj.semantic_label.label].append(obj)
 
-        union_labels = set(label_to_est_objs.keys()).union(label_to_gt_objs.keys())
-        for label in union_labels:
-            est_objs = label_to_est_objs.get(label, [])
-            gt_objs = label_to_gt_objs.get(label, [])
+            for label in self.metrics_config.target_labels:
+                est_objs = label_to_est_objs.get(label, [])
+                gt_objs = label_to_gt_objs.get(label, [])
+                for matching_mode, label_to_thresholds_map in self.matching_config_map.items():
+                    thresholds = label_to_thresholds_map.get(label, [])
+                    if not thresholds:
+                        continue
 
-            for matching_mode, label_to_threshold_map in self.matching_config_map.items():
-                thresholds = label_to_threshold_map.get(label, [])
-                if not thresholds:
-                    continue
+                    matching_method_module, _ = _get_matching_module(matching_mode)
 
+                    threshold_to_results_map = self._get_threshold_to_results_map(
+                        estimated_objects=est_objs,
+                        ground_truth_objects=gt_objs,
+                        matching_method_module=matching_method_module,
+                        thresholds=thresholds,
+                    )
+                    nuscene_object_results[matching_mode][label] = threshold_to_results_map
+        else:
+            # MatchingLabelPolicy.ALLOW_UNKNOWN or MatchingLabelPolicy.ALLOW_ANY
+            for matching_mode, label_to_thresholds_map in self.matching_config_map.items():
                 matching_method_module, _ = _get_matching_module(matching_mode)
 
+                label_threshold_pairs = [
+                    (label, threshold)
+                    for label, thresholds in label_to_thresholds_map.items()
+                    for threshold in thresholds
+                ]
+
+                # Initialize all entries in the nested result dictionary,
+                # even if no matching results are found later
+                for label, threshold in label_threshold_pairs:
+                    _ = nuscene_object_results[matching_mode][label][threshold]
+
+                thresholds = sorted(set(threshold for _, threshold in label_threshold_pairs))
+
                 threshold_to_results_map = self._get_threshold_to_results_map(
-                    estimated_objects=est_objs,
-                    ground_truth_objects=gt_objs,
+                    estimated_objects=estimated_objects_sorted,
+                    ground_truth_objects=ground_truth_objects,
                     matching_method_module=matching_method_module,
                     thresholds=thresholds,
                 )
+                for threshold, matched_results in threshold_to_results_map.items():
+                    for result in matched_results:
+                        label = (
+                            result.ground_truth_object.semantic_label.label
+                            if result.ground_truth_object
+                            else result.estimated_object.semantic_label.label
+                        )
+                        nuscene_object_results[matching_mode][label][threshold].append(result)
 
-                results[matching_mode][label] = threshold_to_results_map
-
-        return results
+        return nuscene_object_results
 
     def _get_threshold_to_results_map(
         self,
@@ -286,6 +312,8 @@ class NuscenesObjectMatcher:
 
         for i, est_obj in enumerate(estimated_objects):
             for j, gt_obj in enumerate(ground_truth_objects):
+                if not self.matching_label_policy.is_matchable(est_obj, gt_obj):
+                    continue
                 matching_matrix[i, j] = matching_method_module(est_obj, gt_obj)
 
         return matching_matrix
