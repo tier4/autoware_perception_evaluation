@@ -214,9 +214,9 @@ def filter_nuscene_object_results(
     for matching_mode, label_result in nuscene_object_results.items():
         for label, threshold_result in label_result.items():
             for threshold, object_results in threshold_result.items():
-                # Always initialize the entry, even if nothing gets added
-                _ = filtered_nuscene_object_results[matching_mode][label][threshold]
-                for object_result in object_results:
+                filtered_object_results = [
+                    object_result
+                    for object_result in object_results
                     if _is_object_result_passing_filters(
                         object_result,
                         target_labels,
@@ -231,8 +231,10 @@ def filter_nuscene_object_results(
                         confidence_threshold_list,
                         target_uuids,
                         transforms,
-                    ):
-                        filtered_nuscene_object_results[matching_mode][label][threshold].append(object_result)
+                    )
+                ]
+
+                filtered_nuscene_object_results[matching_mode][label][threshold] = filtered_object_results
 
     return filtered_nuscene_object_results
 
