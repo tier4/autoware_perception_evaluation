@@ -48,7 +48,7 @@ data_root/
 
 ### Evaluate with ROS
 
-`perception_eval` is mainly used in [tier4/driving_log_replayer](https://github.com/tier4/driving_log_replayer) that is a tool to evaluate output of [autoware](https://github.com/autowarefoundation/autoware).
+`perception_eval` is mainly used in [tier4/driving_log_replayer_v2](https://github.com/tier4/driving_log_replayer_v2) that is a tool to evaluate output of [autoware](https://github.com/autowarefoundation/autoware).
 If you want to evaluate your perception results through ROS, use `driving_log_replayer` or refer [test/perception_lsim.py](./perception_eval/test/perception_lsim.py).
 
 ### Evaluate with your ML model
