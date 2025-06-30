@@ -100,7 +100,7 @@ class PerceptionFrameResult:
         # Filter objects by critical object filter config
         self.object_results: List[DynamicObjectWithPerceptionResult] = filter_object_results(
             self.object_results,
-            transform=self.frame_ground_truth.transforms,
+            transforms=self.frame_ground_truth.transforms,
             **self.pass_fail_result.critical_object_filter_config.filtering_params,
         )
 
