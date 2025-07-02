@@ -332,6 +332,7 @@ def get_now_frame(
              but you may input nano second {unix_time}"
         )
 
+    # TODO(vividf): this may change to binary search if the ground truth frames is in order
     ground_truth_now_frame: FrameGroundTruth = ground_truth_frames[0]
     min_time: int = abs(unix_time - ground_truth_now_frame.unix_time)
 
