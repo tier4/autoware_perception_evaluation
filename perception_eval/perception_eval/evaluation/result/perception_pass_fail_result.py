@@ -107,6 +107,17 @@ class PassFailResult:
         """
         return len(self.fp_object_results) + len(self.fn_objects)
 
+    def get_num_gt(self) -> int:
+        """Get the number of ground truth objects.
+
+        Returns:
+            int: Number of ground truth objects.
+        """
+        if self.frame_pass_fail_config.evaluation_task.is_fp_validation():
+            return len(self.fp_object_results) + len(self.tn_objects)
+        else:
+            return len(self.tp_object_results) + len(self.fn_objects)
+
     def get_fail_object_num(self) -> int:
         """Get the number of fail objects.
 

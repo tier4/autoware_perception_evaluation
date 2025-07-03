@@ -125,13 +125,13 @@ class DynamicObjectWithPerceptionResult:
 
         if self.is_result_correct(matching_mode, matching_threshold):
             return (
-                (MatchingStatus.FP, MatchingStatus.TN)
+                (MatchingStatus.FP, MatchingStatus.FP)
                 if self.ground_truth_object.semantic_label.is_fp()
                 else (MatchingStatus.TP, MatchingStatus.TP)
             )
         else:
             return (
-                (MatchingStatus.FP, MatchingStatus.FP)
+                (MatchingStatus.FP, MatchingStatus.TN)
                 if self.ground_truth_object.semantic_label.is_fp()
                 else (MatchingStatus.FP, MatchingStatus.FN)
             )
