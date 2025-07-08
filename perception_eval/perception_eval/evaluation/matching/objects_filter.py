@@ -263,10 +263,16 @@ def get_positive_objects(
             fp_object_results.append(object_result)
             continue
 
-        # in case of matching (Est, GT) = (unknown, except of unknown)
-        # use GT label
+        # to get label threshold, use GT label basically,
+        # but use EST label if GT is FP validation
+        semantic_label = (
+            object_result.estimated_object.semantic_label
+            if object_result.ground_truth_object.semantic_label.is_fp()
+            else object_result.ground_truth_object.semantic_label
+        )
+
         matching_threshold = get_label_threshold(
-            semantic_label=object_result.ground_truth_object.semantic_label,
+            semantic_label=semantic_label,
             target_labels=target_labels,
             threshold_list=matching_threshold_list,
         )
@@ -319,11 +325,16 @@ def get_negative_objects(
 
     non_candidates: List[ObjectType] = []
     for object_result in object_results:
+        # to get label threshold, use GT label basically,
+        # but use EST label if GT is FP validation
         matching_threshold: Optional[float] = get_label_threshold(
             (
-                object_result.ground_truth_object.semantic_label
-                if object_result.ground_truth_object is not None
-                else object_result.estimated_object.semantic_label
+                object_result.estimated_object.semantic_label
+                if (
+                    object_result.ground_truth_object is None
+                    or object_result.ground_truth_object.semantic_label.is_fp()
+                )
+                else object_result.ground_truth_object.semantic_label
             ),
             target_labels,
             matching_threshold_list,
