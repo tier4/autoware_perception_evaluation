@@ -255,10 +255,15 @@ class Ap:
         fp_list: List[float] = [0.0 for _ in range(self.objects_results_num)]
 
         for i, obj_result in enumerate(object_results):
+            # to get label threshold, use GT label basically,
+            # but use EST label if GT is FP validation
+            semantic_label = (
+                obj_result.estimated_object.semantic_label
+                if (obj_result.ground_truth_object is None or obj_result.ground_truth_object.semantic_label.is_fp())
+                else obj_result.ground_truth_object.semantic_label
+            )
             matching_threshold_ = get_label_threshold(
-                semantic_label=obj_result.ground_truth_object.semantic_label
-                if obj_result.ground_truth_object is not None
-                else obj_result.estimated_object.semantic_label,
+                semantic_label=semantic_label,
                 target_labels=self.target_labels,
                 threshold_list=self.matching_threshold_list,
             )
