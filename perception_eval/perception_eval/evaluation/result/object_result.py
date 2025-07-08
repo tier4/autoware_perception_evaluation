@@ -526,7 +526,9 @@ def _get_object_results_for_tlr(
     return object_results
 
 
-def _get_fp_object_results(estimated_objects: List[ObjectType]) -> List[DynamicObjectWithPerceptionResult]:
+def _get_fp_object_results(
+    estimated_objects: List[ObjectType],
+) -> List[DynamicObjectWithPerceptionResult]:
     """Returns the list of DynamicObjectWithPerceptionResult that have no ground truth.
 
     Args:
@@ -603,8 +605,18 @@ def _get_score_table(
             is_same_frame_id: bool = est_obj.frame_id == gt_obj.frame_id
 
             if is_same_frame_id:
-                threshold: Optional[float] = get_label_threshold(
-                    gt_obj.semantic_label, target_labels, matchable_thresholds
+                threshold: Optional[float] = (
+                    get_label_threshold(
+                        est_obj.semantic_label,
+                        target_labels,
+                        matchable_thresholds,
+                    )
+                    if gt_obj.semantic_label.is_fp()
+                    else get_label_threshold(
+                        gt_obj.semantic_label,
+                        target_labels,
+                        matchable_thresholds,
+                    )
                 )
 
                 matching_method: MatchingMethod = matching_method_module(
