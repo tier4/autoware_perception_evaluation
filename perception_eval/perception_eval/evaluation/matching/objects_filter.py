@@ -280,15 +280,8 @@ def get_positive_objects(
 
         if est_status == MatchingStatus.FP:
             if gt_status == MatchingStatus.TN:
-                fp_object_results.append(
-                    DynamicObjectWithPerceptionResult(
-                        object_result.estimated_object,
-                        None,
-                        object_result.matching_label_policy,
-                    )
-                )
-            else:
-                fp_object_results.append(object_result)
+                continue
+            fp_object_results.append(object_result)
         elif est_status == MatchingStatus.TP and gt_status == MatchingStatus.TP:
             tp_object_results.append(object_result)
 
