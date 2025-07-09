@@ -258,7 +258,7 @@ def check_thresholds(thresholds: List[Real], num_elements: int) -> List[Real]:
         raise ThresholdError(f"Type of all elements must be Real number, but got {thresholds}")
     elif len(thresholds) != num_elements:
         raise ThresholdError(
-            f"Expected the number of elements is {num_elements}, " f"but got {len(thresholds)}",
+            f"Expected the number of elements is {num_elements}, but got {len(thresholds)}",
         )
     return thresholds
 

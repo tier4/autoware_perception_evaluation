@@ -172,10 +172,18 @@ class CLEAR(_TrackingMetricsBase):
 
         for cur_obj_result in cur_object_results:
             # Assign previous results if same matching pair has
-            matching_threshold_: float = get_label_threshold(
-                semantic_label=cur_obj_result.ground_truth_object.semantic_label
-                if cur_obj_result.ground_truth_object is not None
-                else cur_obj_result.estimated_object.semantic_label,
+            # to get label threshold, use GT label basically,
+            # but use EST label if GT is FP validation
+            semantic_label = (
+                cur_obj_result.estimated_object.semantic_label
+                if (
+                    cur_obj_result.ground_truth_object is None
+                    or cur_obj_result.ground_truth_object.semantic_label.is_fp()
+                )
+                else cur_obj_result.ground_truth_object.semantic_label
+            )
+            matching_threshold_ = get_label_threshold(
+                semantic_label=semantic_label,
                 target_labels=self.target_labels,
                 threshold_list=self.matching_threshold_list,
             )
