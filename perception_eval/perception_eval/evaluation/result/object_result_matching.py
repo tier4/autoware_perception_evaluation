@@ -342,7 +342,7 @@ class NuscenesObjectMatcher:
             for j, gt_obj in enumerate(ground_truth_objects):
                 if not self.matching_label_policy.is_matchable(est_obj, gt_obj):
                     continue
-                matching_matrix[i, j] = matching_method_module(est_obj, gt_obj)
+                matching_matrix[i, j] = matching_method_module(est_obj, gt_obj, self.transforms)
 
         return matching_matrix
 
