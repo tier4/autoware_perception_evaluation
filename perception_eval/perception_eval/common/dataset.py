@@ -301,6 +301,7 @@ def get_interpolated_now_frame(
         ground_truth_frames (List[FrameGroundTruth]): FrameGroundTruth instance list.
         unix_time (int): Unix time [us].
         threshold_min_time (int): Min time for unix time difference [us].
+        return_frame_id (FrameID): specify Frame ID to return.
 
     Returns:
         Optional[FrameGroundTruth]:
@@ -363,6 +364,7 @@ def interpolate_ground_truth_frames(
         before_frame (FrameGroundTruth): input frame1
         after_frame (FrameGroundTruth): input frame2
         unix_time (int): target time
+        return_frame_id (FrameID): specify Frame ID to return.
     """
     # interpolate ego2map
     ego2map_key = TransformKey(FrameID.BASE_LINK, FrameID.MAP)
