@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from typing import List
-from typing import Optional
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
@@ -36,8 +35,8 @@ class PredictionMetricsConfig(_MetricsConfigBase):
 
         Args:
             target_labels (List[LabelType]): List of target label names.
-            top_ks (List[int], optional): List of top K modes to be evaluated. Defaults to [1, 3, 6].
-            miss_tolerance (float, optional): Threshold value to determine miss. Defaults to 2.0.
+            top_ks (List[int]): List of top K modes to be evaluated. Defaults to [1, 3, 6].
+            miss_tolerance (float): Threshold value to determine miss. Defaults to 2.0.
 
         NOTE:
             `**_thresholds` are not used, just need to input.

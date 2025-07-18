@@ -51,7 +51,7 @@ class CriticalObjectFilterConfig:
 
     def __init__(
         self,
-        evaluator_config: PerceptionEvaluationConfig,  #: PerceptionEvaluationConfig,
+        evaluator_config: PerceptionEvaluationConfig,
         target_labels: List[str],
         ignore_attributes: Optional[List[str]] = None,
         max_x_position_list: Optional[List[float]] = None,

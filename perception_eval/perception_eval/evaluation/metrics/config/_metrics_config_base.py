@@ -86,6 +86,7 @@ class _MetricsConfigBase(ABC):
             (
                 self.target_labels,
                 self.center_distance_thresholds,
+                self.center_distance_bev_thresholds,
                 self.plane_distance_thresholds,
                 self.iou_2d_thresholds,
                 self.iou_3d_thresholds,
@@ -97,6 +98,7 @@ class _MetricsConfigBase(ABC):
         return {
             "target_labels": [target_label.serialization() for target_label in self.target_labels],
             "center_distance_thresholds": self.center_distance_thresholds,
+            "center_distance_bev_thresholds": self.center_distance_bev_thresholds,
             "plane_distance_thresholds": self.plane_distance_thresholds,
             "iou_2d_thresholds": self.iou_2d_thresholds,
             "iou_3d_thresholds": self.iou_3d_thresholds,
@@ -120,6 +122,7 @@ class _MetricsConfigBase(ABC):
         return cls(
             target_labels=target_labels,
             center_distance_thresholds=data["center_distance_thresholds"],
+            center_distance_bev_thresholds=data["center_distance_bev_thresholds"],
             plane_distance_thresholds=data["plane_distance_thresholds"],
             iou_2d_thresholds=data["iou_2d_thresholds"],
             iou_3d_thresholds=data["iou_3d_thresholds"],

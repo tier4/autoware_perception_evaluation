@@ -79,7 +79,7 @@ class MatchingMode(Enum):
     The mode enum for matching algorithm.
 
     CENTERDISTANCE: Center distance in meters for 3D objects and in pixels[px] for 2D objects.
-    CENTERDISTANCE: Center distance in meters in Bird Eye View for 3D objects.
+    CENTERDISTANCEBEV: Center distance in meters in Bird Eye View for 3D objects.
     IOU2D : IoU (Intersection over Union) in BEV (Bird Eye View) for 3D objects, pixel for 2D objects.
     IOU3D : IoU (Intersection over Union) in 3D
     PLANEDISTANCE: The plane distance

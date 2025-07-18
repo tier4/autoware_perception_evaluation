@@ -175,7 +175,7 @@ class PerceptionFrameResult:
         if self.metrics_score.prediction_config is not None:
             self.metrics_score.evaluate_prediction(object_results_dict, num_ground_truth_dict)
 
-        # FP validation
+        # Calculate TP/FP/TN/FN based on plane distance or IoU 2D
         self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
 
     def __reduce__(self) -> Tuple[PerceptionFrameResult, Tuple[Any]]:
