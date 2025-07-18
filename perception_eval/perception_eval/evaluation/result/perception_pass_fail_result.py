@@ -19,14 +19,15 @@ import warnings
 
 from perception_eval.common import ObjectType
 from perception_eval.common.transform import TransformDict
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import get_negative_objects
 from perception_eval.evaluation.matching.objects_filter import get_positive_objects
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 
 
+# TODO(vividf): replace object results with nuscene object results
 class PassFailResult:
     """Class for keeping TP/FP/TN/FP object results and GT objects for critical GT objects.
 

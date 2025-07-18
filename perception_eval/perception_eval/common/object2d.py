@@ -15,6 +15,8 @@
 from __future__ import annotations
 
 import math
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -151,6 +153,22 @@ class DynamicObject2D:
         self.visibility: Optional[Visibility] = visibility
         self.state = ObjectState(position, None, None, None)
 
+    def __reduce__(self) -> Tuple[ObjectState, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (
+            self.__class__,
+            (
+                self.unix_time,
+                self.frame_id,
+                self.semantic_score,
+                self.semantic_label,
+                self.roi,
+                self.uuid,
+                self.visibility,
+                self.state.position,
+            ),
+        )
+
     def get_corners(self) -> np.ndarray:
         """Returns the corners of bounding box in pixel.
 
@@ -207,3 +225,31 @@ class DynamicObject2D:
                 raise ValueError("transforms must be specified.")
             position = transforms.transform((self.frame_id, FrameID.BASE_LINK), self.state.position)
         return math.hypot(position[0], position[1])
+
+    def serialization(self) -> Dict[str, Any]:
+        """Serialize the object to a dict."""
+        return {
+            "object_type": self.__class__.__name__,
+            "unix_time": self.unix_time,
+            "velocity": self.state.velocity,
+            "semantic_score": self.semantic_score,
+            "semantic_label": self.semantic_label.serialization(),
+            "roi": self.roi,
+            "uuid": self.uuid,
+            "visibility": self.visibility,
+            "position": self.state.position,
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> DynamicObject2D:
+        """Deserialize the data to DynamicObject2D."""
+        return cls(
+            unix_time=data["unix_time"],
+            velocity=data["velocity"],
+            semantic_score=data["semantic_score"],
+            semantic_label=Label.deserialization(data["semantic_label"]),
+            roi=data["roi"],
+            uuid=data["uuid"],
+            visibility=data["visibility"],
+            position=data["position"],
+        )

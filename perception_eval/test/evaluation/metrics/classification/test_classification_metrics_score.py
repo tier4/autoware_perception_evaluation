@@ -22,7 +22,7 @@ from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.classification import ClassificationMetricsScore
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 
 
 class TestClassificationMetricsScore(unittest.TestCase):
@@ -52,12 +52,12 @@ class TestClassificationMetricsScore(unittest.TestCase):
         f1score = 2 * 0.5 * 0.66 / (0.5 + 0.66) = 0.57...
         """
         estimated_objects = filter_objects(
-            objects=self.dummy_estimated_objects,
+            dynamic_objects=self.dummy_estimated_objects,
             is_gt=False,
             target_labels=self.target_labels,
         )
         ground_truth_objects = filter_objects(
-            objects=self.dummy_ground_truth_objects,
+            dynamic_objects=self.dummy_ground_truth_objects,
             is_gt=False,
             target_labels=self.target_labels,
         )
@@ -67,11 +67,11 @@ class TestClassificationMetricsScore(unittest.TestCase):
             ground_truth_objects=ground_truth_objects,
         )
         object_results_dict = divide_objects(
-            objects=object_results,
+            dynamic_objects=object_results,
             target_labels=self.target_labels,
         )
         num_ground_truth_dict = divide_objects_to_num(
-            objects=ground_truth_objects,
+            dynamic_objects=ground_truth_objects,
             target_labels=self.target_labels,
         )
 

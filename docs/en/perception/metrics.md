@@ -36,6 +36,7 @@
 ```yaml
 [2022-08-09 18:56:45,237] [INFO] [perception_lsim.py:214 <module>] Detection Metrics example (final_metric_score):
 {'detection_config': {'center_distance_thresholds': [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]],
+                      'center_distance_bev_thresholds': [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]],
                       'iou_3d_thresholds': [[0.5, 0.5, 0.5, 0.5]],
                       'iou_bev_thresholds': [[0.5, 0.5, 0.5, 0.5]],
                       'plane_distance_thresholds': [[2.0, 2.0, 2.0, 2.0], [3.0, 3.0, 3.0, 3.0]],
@@ -53,6 +54,7 @@
 
  [2022-08-09 18:57:53,888] [INFO] [perception_lsim.py:270 <module>] Tracking Metrics example (tracking_final_metric_score):
 {'detection_config': {'center_distance_thresholds': [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]],
+                      'center_distance_bev_thresholds': [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]],
                       'iou_3d_thresholds': [[0.5, 0.5, 0.5, 0.5]],
                       'iou_bev_thresholds': [[0.5, 0.5, 0.5, 0.5]],
                       'plane_distance_thresholds': [[2.0, 2.0, 2.0, 2.0], [3.0, 3.0, 3.0, 3.0]],
