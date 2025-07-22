@@ -31,6 +31,7 @@ from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.common.transform import TransformDict
 from perception_eval.common.transform import TransformKey
+from perception_eval.evaluation.matching.objects_filter import filter_nuscene_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.metrics import MetricsScore
@@ -502,13 +503,24 @@ def filter_frame_by_distance(
     else:
         max_distance_list = None
 
-    ret_frame.object_results = filter_object_results(
-        ret_frame.object_results,
-        target_labels=ret_frame.target_labels,
-        max_distance_list=max_distance_list,
-        min_distance_list=min_distance_list,
-        transforms=ret_frame.frame_ground_truth.transforms,
-    )
+    if ret_frame.object_results is not None:
+        ret_frame.object_results = filter_object_results(
+            ret_frame.object_results,
+            target_labels=ret_frame.target_labels,
+            max_distance_list=max_distance_list,
+            min_distance_list=min_distance_list,
+            transforms=ret_frame.frame_ground_truth.transforms,
+        )
+
+    if ret_frame.nuscene_object_results is not None:
+        ret_frame.nuscene_object_results = filter_nuscene_object_results(
+            ret_frame.nuscene_object_results,
+            target_labels=ret_frame.target_labels,
+            max_distance_list=max_distance_list,
+            min_distance_list=min_distance_list,
+            transforms=ret_frame.frame_ground_truth.transforms,
+        )
+
     ret_frame.frame_ground_truth.objects = filter_objects(
         ret_frame.frame_ground_truth.objects,
         is_gt=True,
@@ -553,15 +565,28 @@ def filter_frame_by_region(
         min_y_position_list = None
         max_y_position_list = None
 
-    ret_frame.object_results = filter_object_results(
-        ret_frame.object_results,
-        target_labels=ret_frame.target_labels,
-        max_x_position_list=max_x_position_list,
-        min_x_position_list=min_x_position_list,
-        max_y_position_list=max_y_position_list,
-        min_y_position_list=min_y_position_list,
-        transforms=ret_frame.frame_ground_truth.transforms,
-    )
+    if ret_frame.object_results is not None:
+        ret_frame.object_results = filter_object_results(
+            ret_frame.object_results,
+            target_labels=ret_frame.target_labels,
+            max_x_position_list=max_x_position_list,
+            min_x_position_list=min_x_position_list,
+            max_y_position_list=max_y_position_list,
+            min_y_position_list=min_y_position_list,
+            transforms=ret_frame.frame_ground_truth.transforms,
+        )
+
+    if ret_frame.nuscene_object_results is not None:
+        ret_frame.nuscene_object_results = filter_nuscene_object_results(
+            ret_frame.nuscene_object_results,
+            target_labels=ret_frame.target_labels,
+            max_x_position_list=max_x_position_list,
+            min_x_position_list=min_x_position_list,
+            max_y_position_list=max_y_position_list,
+            min_y_position_list=min_y_position_list,
+            transforms=ret_frame.frame_ground_truth.transforms,
+        )
+
     ret_frame.frame_ground_truth.objects = filter_objects(
         ret_frame.frame_ground_truth.objects,
         is_gt=True,

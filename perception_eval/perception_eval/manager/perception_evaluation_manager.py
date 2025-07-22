@@ -114,10 +114,11 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
 
         # Match objects
         nuscene_object_results = None
+        object_results = None
         if self.evaluator_config.metrics_config.detection_config is not None:
             nuscene_object_results = self.match_nuscene_objects(filtered_estimated_objects, filtered_ground_truth)
-
-        object_results = self.match_objects(filtered_estimated_objects, filtered_ground_truth)
+        else:
+            object_results = self.match_objects(filtered_estimated_objects, filtered_ground_truth)
 
         # Create PerceptionFrameResult
         perception_frame_result = PerceptionFrameResult(
@@ -262,13 +263,15 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         used_frame: List[int] = []
 
         for frame in self.frame_results:
-            object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
-                frame.object_results, target_labels
-            )
+            if frame.object_results is not None:
+                object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+                    frame.object_results, target_labels
+                )
             num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, target_labels)
 
             for label in target_labels:
-                aggregated_object_results_dict[label].append(object_results_dict[label])
+                if frame.object_results is not None:
+                    aggregated_object_results_dict[label].append(object_results_dict[label])
                 aggregated_num_gt[label] += num_gt_dict[label]
 
             # Only aggregate nuscene_object_results if detection_config exists and frame has nuscene_object_results
