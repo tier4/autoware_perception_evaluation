@@ -739,6 +739,24 @@ class TestAp(unittest.TestCase):
         self.assertEqual(ap_tn.ap, ans_ap_tn)
         self.assertEqual(aph_tn.ap, ans_aph_tn)
 
+    def test_ap_empty_gt_empty_prediction(self):
+        """Test AP and APH when both ground truth and prediction are empty for a label."""
+        # Create empty lists for both estimated and ground truth objects
+        empty_estimated_objects = []
+        empty_ground_truth_objects = []
+
+        ap, aph = self._evaluate_ap_aph_for_label(
+            empty_estimated_objects,
+            empty_ground_truth_objects,
+            AutowareLabel.CAR,
+            MatchingMode.CENTERDISTANCE,
+            0.5,
+        )
+
+        # When both ground truth and prediction are empty, AP should be NaN
+        self.assertTrue(np.isnan(ap.ap))
+        self.assertTrue(np.isnan(aph.ap))
+
 
 if __name__ == "__main__":
     unittest.main()

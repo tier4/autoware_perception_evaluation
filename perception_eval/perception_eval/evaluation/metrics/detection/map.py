@@ -15,6 +15,7 @@
 from typing import Dict
 from typing import List
 
+import numpy as np
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.ap import Ap
@@ -52,16 +53,16 @@ class Map:
         label_to_aps (Dict[LabelType, List[Ap]]):
             List of AP instances (one per threshold) for each label.
         label_mean_to_ap (Dict[LabelType, float]):
-            Mean AP across thresholds for each label.
+            Mean AP across thresholds for each label. Can be NaN if all AP values are NaN.
         label_to_aphs (Optional[Dict[LabelType, List[Ap]]]):
             List of APH instances (one per threshold) for each label (if 3D detection).
         label_mean_to_aph (Optional[Dict[LabelType, float]]):
-            Mean APH across thresholds for each label (if 3D detection).
+            Mean APH across thresholds for each label (if 3D detection). Can be NaN if all APH values are NaN.
         map (float):
-            Final mean Average Precision (mAP) across all labels.
+            Final mean Average Precision (mAP) across all labels. Can be NaN if all label means are NaN.
         maph (Optional[float]):
             Final mean Average Precision with Heading (mAPH) across all labels,
-            or None if `is_detection_2d` is True.
+            or None if `is_detection_2d` is True. Can be NaN if all label means are NaN.
     """
 
     def __init__(
@@ -121,8 +122,11 @@ class Map:
 
     def __str__(self) -> str:
         str_ = ""
-        str_ += f"\nmAP: {self.map:.3f}, "
-        str_ += f"mAPH: {self.maph:.3f} " if not self.is_detection_2d else ""
+        map_str = f"{self.map:.3f}" if not (isinstance(self.map, float) and np.isnan(self.map)) else "NaN"
+        str_ += f"\nmAP: {map_str}, "
+        if not self.is_detection_2d:
+            maph_str = f"{self.maph:.3f}" if not (isinstance(self.maph, float) and np.isnan(self.maph)) else "NaN"
+            str_ += f"mAPH: {maph_str} "
         str_ += f"({self.matching_mode.value})\n"
 
         # === Per-label AP Table ===
@@ -145,11 +149,18 @@ class Map:
             for ap in aps:
                 threshold = ap.matching_threshold
                 predict_num = ap.objects_results_num
-                str_ += f"|  {threshold:^8.2f} | {predict_num:^12} | {gt_num:^16} |  {ap.ap:^8.3f} |"
+                ap_str = f"{ap.ap:^8.3f}" if not (isinstance(ap.ap, float) and np.isnan(ap.ap)) else "   NaN   "
+                str_ += f"|  {threshold:^8.2f} | {predict_num:^12} | {gt_num:^16} |  {ap_str} |"
 
                 if not self.is_detection_2d:
                     aph = next((a for a in aphs if a.matching_threshold == threshold), None)
-                    str_ += f"  {aph.ap:^8.3f} |" if aph else " {:^8} |".format("N/A")
+                    if aph:
+                        aph_str = (
+                            f"{aph.ap:^8.3f}" if not (isinstance(aph.ap, float) and np.isnan(aph.ap)) else "   NaN   "
+                        )
+                        str_ += f"  {aph_str} |"
+                    else:
+                        str_ += " {:^8} |".format("N/A")
                 str_ += "\n"
 
         # === Summary Table ===
@@ -167,14 +178,26 @@ class Map:
         for label in self.target_labels:
             thresholds = [f"{ap.matching_threshold:.2f}" for ap in self.label_to_aps[label]]
             mean_ap = self.label_mean_to_ap[label]
-            str_ += f"| {label.value:^15} | {'/'.join(thresholds):^14} |  {mean_ap:^9.3f} |"
+            mean_ap_str = f"{mean_ap:^9.3f}" if not (isinstance(mean_ap, float) and np.isnan(mean_ap)) else "   NaN   "
+            str_ += f"| {label.value:^15} | {'/'.join(thresholds):^14} |  {mean_ap_str} |"
             if not self.is_detection_2d:
                 mean_aph = self.label_mean_to_aph[label]
-                str_ += f"  {mean_aph:^9.3f} |"
+                mean_aph_str = (
+                    f"{mean_aph:^9.3f}" if not (isinstance(mean_aph, float) and np.isnan(mean_aph)) else "   NaN   "
+                )
+                str_ += f"  {mean_aph_str} |"
             str_ += "\n"
 
         return str_
 
     @staticmethod
     def _mean(values: List[float]) -> float:
-        return sum(values) / len(values) if values else 0.0
+        # Filter out NaN values
+        valid_values = [v for v in values if not (isinstance(v, float) and np.isnan(v))]
+
+        # If no valid values, return NaN
+        if not valid_values:
+            return float('nan')
+
+        # Return the mean of valid values
+        return sum(valid_values) / len(valid_values)

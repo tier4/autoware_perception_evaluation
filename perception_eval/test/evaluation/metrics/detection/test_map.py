@@ -18,6 +18,7 @@ from typing import List
 from typing import Tuple
 import unittest
 
+import numpy as np
 from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
@@ -214,8 +215,9 @@ class TestMap(unittest.TestCase):
         est_objs = []
         gt_objs = []
         map_result = self._evaluate_map(est_objs, gt_objs, MatchingMode.CENTERDISTANCE, 1.0)
-        self.assertEqual(map_result.map, 0.0)
-        self.assertEqual(map_result.maph, 0.0)
+        # When both ground truth and prediction are empty, mAP should be NaN
+        self.assertTrue(np.isnan(map_result.map))
+        self.assertTrue(np.isnan(map_result.maph))
 
     def test_map_str_output(self):
         """Test that the __str__ output of Map contains expected label and score info."""
