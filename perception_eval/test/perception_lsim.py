@@ -20,6 +20,7 @@ from typing import List
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import PerceptionEvaluationConfig
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
@@ -224,11 +225,20 @@ if __name__ == "__main__":
             f"{format_class_for_log(detection_lsim.evaluator.frame_results[0], 1)}",
         )
 
-        if len(detection_lsim.evaluator.frame_results[0].object_results) > 0:
-            logging.info(
-                "Object result example (frame_results[0].object_results[0]): "
-                f"{format_class_for_log(detection_lsim.evaluator.frame_results[0].object_results[0])}",
-            )
+        frame_result = detection_lsim.evaluator.frame_results[0]
+        nuscene_object_results = frame_result.nuscene_object_results
+        if nuscene_object_results is not None:
+            center_distance_results = nuscene_object_results.get(MatchingMode.CENTERDISTANCE)
+            if center_distance_results:
+                for label, threshold_dict in center_distance_results.items():
+                    for threshold, results_list in threshold_dict.items():
+                        if results_list and len(results_list) > 0:
+                            logging.info(
+                                "Object result example (nuscene_object_results[MatchingMode.CENTERDISTANCE][label][threshold][0]): "
+                                f"{format_class_for_log(results_list[0])}",
+                            )
+                        break  # Only show one example
+                    break
 
     # Metrics config
     logging.info(
@@ -299,11 +309,20 @@ if __name__ == "__main__":
             f"{format_class_for_log(tracking_lsim.evaluator.frame_results[0], 1)}",
         )
 
-        if len(tracking_lsim.evaluator.frame_results[0].object_results) > 0:
-            logging.info(
-                "Object result example (frame_results[0].object_results[0]): "
-                f"{format_class_for_log(tracking_lsim.evaluator.frame_results[0].object_results[0])}",
-            )
+        frame_result = tracking_lsim.evaluator.frame_results[0]
+        nuscene_object_results = frame_result.nuscene_object_results
+        if nuscene_object_results is not None:
+            center_distance_results = nuscene_object_results.get(MatchingMode.CENTERDISTANCE)
+            if center_distance_results:
+                for label, threshold_dict in center_distance_results.items():
+                    for threshold, results_list in threshold_dict.items():
+                        if results_list and len(results_list) > 0:
+                            logging.info(
+                                "Object result example (nuscene_object_results[MatchingMode.CENTERDISTANCE][label][threshold][0]): "
+                                f"{format_class_for_log(results_list[0])}",
+                            )
+                        break  # Only show one example
+                    break
 
     # Metrics config
     logging.info(
