@@ -152,6 +152,13 @@ class NuscenesObjectMatcher:
 
         # All FN cases
         if not estimated_objects:
+            for label in self.metrics_config.target_labels:
+                for matching_mode, label_to_thresholds_map in self.matching_config_map.items():
+                    thresholds = label_to_thresholds_map.get(label, [])
+                    if not thresholds:
+                        continue
+                    for threshold in thresholds:
+                        nuscene_object_results[matching_mode][label][threshold] = []
             return nuscene_object_results
 
         estimated_objects_sorted = sorted(estimated_objects, key=lambda x: x.semantic_score, reverse=True)
@@ -269,8 +276,25 @@ class NuscenesObjectMatcher:
             matching_method_module,
         )
 
-        # Skip matching if either estimation or ground truth is empty
+        # Handle cases where there are no predictions or no ground truth:
+        # - If there are predictions but no ground truth, treat all predictions as false positives (FP).
+        # - If both are empty or only ground truth is present, return empty results for all thresholds.
         if matching_matrix is None:
+            # If there are predictions but no ground truth, treat all predictions as false positives (FP)
+            if estimated_objects and not ground_truth_objects:
+                return {
+                    threshold: [
+                        DynamicObjectWithPerceptionResult(
+                            est_obj,
+                            None,
+                            self.matching_label_policy,
+                            transforms=self.transforms,
+                        )
+                        for est_obj in estimated_objects
+                    ]
+                    for threshold in thresholds
+                }
+            # Otherwise, return empty results for all thresholds
             return {threshold: [] for threshold in thresholds}
 
         for threshold in thresholds:
