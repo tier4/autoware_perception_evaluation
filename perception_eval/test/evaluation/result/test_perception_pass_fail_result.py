@@ -32,15 +32,16 @@ class TestPassFailResult(unittest.TestCase):
             AutowareLabel.BICYCLE,
             AutowareLabel.PEDESTRIAN,
             AutowareLabel.MOTORBIKE,
+            AutowareLabel.UNKNOWN,
         ]
-        self.max_x_position_list: List[float] = [2.0, 2.0, 2.0, 2.0]
-        self.max_y_position_list: List[float] = [2.0, 2.0, 2.0, 2.0]
-        self.max_pos_distance_list: List[float] = [1.5, 1.5, 1.5, 1.5]
-        self.min_pos_distance_list: List[float] = [0.3, 0.3, 0.3, 0.3]
+        self.max_x_position_list: List[float] = [2.0, 2.0, 2.0, 2.0, 2.0]
+        self.max_y_position_list: List[float] = [2.0, 2.0, 2.0, 2.0, 2.0]
+        self.max_pos_distance_list: List[float] = [1.5, 1.5, 1.5, 1.5, 1.5]
+        self.min_pos_distance_list: List[float] = [0.3, 0.3, 0.3, 0.3, 0.3]
         self.matching_mode: MatchingMode = MatchingMode.CENTERDISTANCE
-        self.matching_threshold_list: List[float] = [2.0, 2.0, 2.0, 2.0]
-        self.confidence_threshold_list: List[float] = [0.5, 0.5, 0.5, 0.5]
-        self.min_point_numbers: List[int] = [0, 1, 10, 0]
+        self.matching_threshold_list: List[float] = [2.0, 2.0, 2.0, 2.0, 2.0]
+        self.confidence_threshold_list: List[float] = [0.5, 0.5, 0.5, 0.5, 0.5]
+        self.min_point_numbers: List[int] = [0, 1, 10, 0, 0]
         # Minimal config for PassFailResult
         dummy_eval_cfg = PerceptionEvaluationConfig(
             dataset_paths=["dummy"],

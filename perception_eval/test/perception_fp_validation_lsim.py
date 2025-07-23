@@ -34,10 +34,10 @@ class FPValidationLsimMoc:
     def __init__(self, dataset_paths: List[int], result_root_directory: str) -> None:
         evaluation_config_dict = {
             "evaluation_task": "fp_validation",
-            "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+            "target_labels": ["car", "bicycle", "pedestrian", "motorbike", "unknown"],
             "max_x_position": 102.4,
             "max_y_position": 102.4,
-            "max_matchable_radii": [5.0, 3.0, 3.0, 3.0],
+            "max_matchable_radii": [5.0, 3.0, 3.0, 3.0, 3.0],
             "merge_similar_labels": False,
             "label_prefix": "autoware",
             "allow_matching_unknown": True,
@@ -64,15 +64,15 @@ class FPValidationLsimMoc:
 
         critical_object_filter_config = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            max_x_position_list=[100.0, 100.0, 100.0, 100.0],
-            max_y_position_list=[100.0, 100.0, 100.0, 100.0],
+            target_labels=["car", "bicycle", "pedestrian", "motorbike", "unknown"],
+            max_x_position_list=[100.0, 100.0, 100.0, 100.0, 100.0],
+            max_y_position_list=[100.0, 100.0, 100.0, 100.0, 100.0],
         )
 
         frame_pass_fail_config = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            matching_threshold_list=[2.0, 2.0, 2.0, 2.0],
+            target_labels=["car", "bicycle", "pedestrian", "motorbike", "unknown"],
+            matching_threshold_list=[2.0, 2.0, 2.0, 2.0, 2.0],
         )
 
         frame_result = self.evaluator.add_frame_result(

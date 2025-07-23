@@ -41,7 +41,7 @@ class PerceptionLSimMoc:
         evaluation_config_dict = {
             "evaluation_task": evaluation_task,
             # ラベル，max x/y，マッチング閾値 (detection/tracking/predictionで共通)
-            "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+            "target_labels": ["car", "bicycle", "pedestrian", "motorbike", "unknown"],
             "ignore_attributes": ["cycle_state.without_rider"],
             # max x/y position or max/min distanceの指定が必要
             # # max x/y position
@@ -71,22 +71,22 @@ class PerceptionLSimMoc:
             evaluation_config_dict.update(
                 {
                     "center_distance_thresholds": [
-                        [1.0, 1.0, 1.0, 1.0],
-                        [2.0, 2.0, 2.0, 2.0],
-                    ],  # = [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]]
+                        [1.0, 1.0, 1.0, 1.0, 1.0],
+                        [2.0, 2.0, 2.0, 2.0, 2.0],
+                    ],  # = [[1.0, 1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0, 2.0]]
                     "center_distance_bev_thresholds": [
-                        [1.0, 1.0, 1.0, 1.0],
-                        [2.0, 2.0, 2.0, 2.0],
-                    ],  # = [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]]
+                        [1.0, 1.0, 1.0, 1.0, 1.0],
+                        [2.0, 2.0, 2.0, 2.0, 2.0],
+                    ],  # = [[1.0, 1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0, 2.0]]
                     # objectごとに同じparamの場合はこのような指定が可能
                     "plane_distance_thresholds": [
                         2.0,
                         3.0,
                     ],  # = [[2.0, 2.0, 2.0, 2.0], [3.0, 3.0, 3.0, 3.0]]
-                    "iou_2d_thresholds": [0.5, 0.5, 0.5, 0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
-                    "iou_3d_thresholds": [0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
-                    "min_point_numbers": [0, 0, 0, 0],
-                    "max_matchable_radii": 5.0,  # = [5.0, 5.0, 5.0, 5.0]
+                    "iou_2d_thresholds": [0.5, 0.5, 0.5, 0.5, 0.5],  # = [[0.5, 0.5, 0.5, 0.5, 0.5]]
+                    "iou_3d_thresholds": [0.5, 0.5, 0.5, 0.5, 0.5],  # = [[0.5, 0.5, 0.5, 0.5, 0.5]]
+                    "min_point_numbers": [0, 0, 0, 0, 0],
+                    "max_matchable_radii": [5.0, 5.0, 5.0, 5.0, 5.0],
                 }
             )
 
