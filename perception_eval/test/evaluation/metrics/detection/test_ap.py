@@ -649,13 +649,13 @@ class TestAp(unittest.TestCase):
             # Given opposite direction, aph is 0.0.
             (
                 DiffYaw(math.pi, 0.0),
-                self.answer_fp_full,
-                self.answer_fp_full,
+                self.answer_tp_full,
+                self.answer_aph_yaw_pi,
             ),
             (
                 DiffYaw(-math.pi, 0.0),
-                self.answer_fp_full,
-                self.answer_fp_full,
+                self.answer_tp_full,
+                self.answer_aph_yaw_pi,
             ),
             # Given diff_yaw is pi/4
             (
@@ -671,13 +671,13 @@ class TestAp(unittest.TestCase):
             # Given diff_yaw is 3*pi/4
             (
                 DiffYaw(3 * math.pi / 4.0, 0.0),
-                self.answer_fp_full,
-                self.answer_fp_full,
+                self.answer_tp_full,
+                self.answer_partial_yaw_3_pi_4,
             ),
             (
                 DiffYaw(-3 * math.pi / 4.0, 0.0),
-                self.answer_fp_full,
-                self.answer_fp_full,
+                self.answer_tp_full,
+                self.answer_partial_yaw_3_pi_4,
             ),
         ]
 
