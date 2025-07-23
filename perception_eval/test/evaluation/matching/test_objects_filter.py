@@ -477,30 +477,29 @@ class TestObjectsFilter(unittest.TestCase):
                 self.assertEqual(fn_objects, ans_fn_objects)
 
     def test_filter_object_results_by_confidence(self):
-        """[summary]
-        Test filtering DynamicObjectWithPerceptionResult by confidence
+        """Test filtering DynamicObjectWithPerceptionResult by confidence.
 
-        test objects:
+        Test objects:
             4 object_results made from dummy_ground_truth_objects with diff_distance
 
-        test patterns:
-            Given diff_distance, check if filtered_object_results and ans_object_results
-            are the same.
+        Test patterns:
+            For each confidence_threshold and confidence_change_dict, check if filtered_object_results
+            and expected_object_results (objects with confidence strictly greater than the threshold) are the same.
         """
-        # patterns: (confidence_threshold, confidence_change_dict: Dict[str, float], List[ans_idx])
-        patterns: List[Tuple[float, Dict[str, float], List[int]]] = [
+        # patterns: (confidence_threshold, confidence_change_dict: Dict[str, float])
+        patterns: List[Tuple[float, Dict[str, float]]] = [
             # When confidence_threshold is 0, no object_results are filtered out.
-            (0.0, {}, [0, 1, 2, 3]),
-            # When confidence_threshold is 0.3 and confidences of 1 objects change to 0.1, 1 object_results are filtered out.
-            (0.3, {"0": 0.1}, [1, 2, 3]),
+            (0.0, {}),
+            # When confidence_threshold is 0.3 and confidences of 1 object changes to 0.1, 1 object_result is filtered out.
+            (0.3, {"0": 0.1}),
             # When confidence_threshold is 0.3 and confidences of 2 objects change to 0.1, 0.3, 2 object_results are filtered out.
-            (0.3, {"0": 0.1, "1": 0.3}, [2, 3]),
-            # When confidence_threshold is 0.3 and confidences of 2 objects change to 0.1, 0.31, 1 object_results are filtered out.
-            (0.3, {"0": 0.1, "1": 0.31}, [1, 2, 3]),
+            (0.3, {"0": 0.1, "1": 0.3}),
+            # When confidence_threshold is 0.3 and confidences of 2 objects change to 0.1, 0.31, 1 object_result is filtered out.
+            (0.3, {"0": 0.1, "1": 0.31}),
             # When confidence_threshold is 0.9, all object_results are filtered out.
-            (0.9, {}, []),
+            (0.9, {}),
         ]
-        for n, (confidence_threshold, confidence_change_dict, ans_idx) in enumerate(patterns):
+        for n, (confidence_threshold, confidence_change_dict) in enumerate(patterns):
             with self.subTest(f"Test filtered_object_results by confidence: {n + 1}"):
                 object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
                     evaluation_task=self.evaluation_task,
@@ -508,7 +507,7 @@ class TestObjectsFilter(unittest.TestCase):
                     ground_truth_objects=self.dummy_ground_truth_objects,
                 )
 
-                # change semantic score
+                # Change semantic score for specified objects
                 for idx, confidence in confidence_change_dict.items():
                     object_results[int(idx)].estimated_object.semantic_score = confidence
 
@@ -518,8 +517,12 @@ class TestObjectsFilter(unittest.TestCase):
                     target_labels=self.target_labels,
                     confidence_threshold_list=confidence_threshold_list,
                 )
-                ans_object_results = [x for idx, x in enumerate(object_results) if idx in ans_idx]
-                self.assertEqual(filtered_object_results, ans_object_results)
+
+                # Expected: only objects with confidence strictly greater than the threshold are kept
+                expected_object_results = [
+                    x for x in object_results if x.estimated_object.semantic_score > confidence_threshold
+                ]
+                self.assertEqual(filtered_object_results, expected_object_results)
 
     def test_divide_objects(self):
         """[summary]
