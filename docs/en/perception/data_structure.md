@@ -72,7 +72,7 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
                                         'iou_2d_thresholds': [' --- length of element 4 ---,'],
                                         'plane_distance_thresholds': ' --- length of element 2 ---,',
                                         'target_labels': ' --- length of element 4 ---,'},
-                   'maps': ' --- length of element 6 ---,',
+                   'mean_ap_values': ' --- length of element 6 ---,',
                    'prediction_config': None,
                    'prediction_scores': [],
                    'tracking_config': {'center_distance_thresholds': ' --- length of element 2 ---,',

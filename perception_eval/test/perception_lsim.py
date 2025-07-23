@@ -18,6 +18,7 @@ import tempfile
 from typing import List
 
 from perception_eval.common.evaluation_task import EvaluationTask
+from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation.matching import MatchingMode
@@ -248,8 +249,8 @@ if __name__ == "__main__":
 
     # Detection metrics score
     logging.info(
-        "mAP result example (final_metric_score.maps[0].aps[0]): "
-        f"{format_class_for_log(detection_final_metric_score.maps[0], 100)}",
+        "mAP result example (final_metric_score.mean_ap_values[0].label_to_aps[AutowareLabel.CAR][0]): "
+        f"{format_class_for_log(detection_final_metric_score.mean_ap_values[0].label_to_aps[AutowareLabel.CAR][0], 100)}",
     )
 
     if detection_lsim.evaluator.evaluator_config.load_raw_data:
@@ -332,8 +333,8 @@ if __name__ == "__main__":
 
     # Detection metrics score in Tracking
     logging.info(
-        "mAP result example (tracking_final_metric_score.maps[0].aps[0]): "
-        f"{format_class_for_log(tracking_final_metric_score.maps[0], 100)}",
+        "mAP result example (tracking_final_metric_score.mean_ap_values[0].aps[0]): "
+        f"{format_class_for_log(tracking_final_metric_score.mean_ap_values[0], 100)}",
     )
 
     # Tracking metrics score

@@ -42,7 +42,7 @@
                       'plane_distance_thresholds': [[2.0, 2.0, 2.0, 2.0], [3.0, 3.0, 3.0, 3.0]],
                       'target_labels': ['AutowareLabel.CAR', 'AutowareLabel.BICYCLE', 'AutowareLabel.PEDESTRIAN',
                                         'AutowareLabel.MOTORBIKE']},
- 'maps': ' --- length of element 6 ---,',
+ 'mean_ap_values': ' --- length of element 6 ---,',
  'num_ground_truth_dict': {<AutowareLabel.PEDESTRIAN: 'pedestrian'>: 7657,
                            <AutowareLabel.MOTORBIKE: 'motorbike'>: 335,
                            <AutowareLabel.BICYCLE: 'bicycle'>: 1319,
@@ -60,7 +60,7 @@
                       'plane_distance_thresholds': [[2.0, 2.0, 2.0, 2.0], [3.0, 3.0, 3.0, 3.0]],
                       'target_labels': ['AutowareLabel.CAR', 'AutowareLabel.BICYCLE', 'AutowareLabel.PEDESTRIAN',
                                         'AutowareLabel.MOTORBIKE']},
- 'maps': ' --- length of element 6 ---,',
+ 'mean_ap_values': ' --- length of element 6 ---,',
  'num_ground_truth_dict': {<AutowareLabel.PEDESTRIAN: 'pedestrian'>: 7657,
                            <AutowareLabel.MOTORBIKE: 'motorbike'>: 335,
                            <AutowareLabel.BICYCLE: 'bicycle'>: 1319,
@@ -103,7 +103,7 @@
   <img src="../../fig/perception/pr-curve_interpolate.jpeg" width=480 >
 
 ```yaml
-[2022-08-09 18:56:45,238] [INFO] [perception_lsim.py:220 <module>] mAP result example (final_metric_score.maps[0].aps[0]):
+[2022-08-09 18:56:45,238] [INFO] [perception_lsim.py:220 <module>] mAP result example (final_metric_score.mean_ap_values[0].aps[0]):
 {'aphs': [{'ap': 0.0,
            'fp_list': ' --- length of element 3768 ---,',
            'matching_average': 2.3086792761230375,
