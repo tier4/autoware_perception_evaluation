@@ -73,7 +73,7 @@ class PerceptionLSimMoc:
 
         evaluation_config_dict.update(
             dict(
-                allow_matching_unknown=True,
+                allow_matching_unknown=False,
                 merge_similar_labels=False,
                 label_prefix=self.label_prefix,
                 count_label_number=True,
