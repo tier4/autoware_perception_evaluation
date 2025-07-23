@@ -128,11 +128,9 @@ class PassFailNusceneResult:
             threshold = self.label_thresholds[label]
             label_dict = nuscene_object_results[self.mode].get(label)
             if label_dict is None:
-                print(f"[DEBUG] nuscene_object_results[{self.mode}][{label}] is None or missing.")
                 continue
             results_for_label_and_threshold = label_dict.get(threshold)
             if results_for_label_and_threshold is None:
-                print(f"[DEBUG] nuscene_object_results[{self.mode}][{label}][{threshold}] is None or missing.")
                 continue
             selected_object_results.extend(results_for_label_and_threshold)
         return selected_object_results
