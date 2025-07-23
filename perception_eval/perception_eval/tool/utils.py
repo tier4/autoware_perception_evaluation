@@ -503,7 +503,7 @@ def filter_frame_by_distance(
     else:
         max_distance_list = None
 
-    if ret_frame.object_results is not None:
+    if ret_frame.object_results:
         ret_frame.object_results = filter_object_results(
             ret_frame.object_results,
             target_labels=ret_frame.target_labels,
@@ -512,7 +512,7 @@ def filter_frame_by_distance(
             transforms=ret_frame.frame_ground_truth.transforms,
         )
 
-    if ret_frame.nuscene_object_results is not None:
+    if ret_frame.nuscene_object_results:
         ret_frame.nuscene_object_results = filter_nuscene_object_results(
             ret_frame.nuscene_object_results,
             target_labels=ret_frame.target_labels,
@@ -565,7 +565,7 @@ def filter_frame_by_region(
         min_y_position_list = None
         max_y_position_list = None
 
-    if ret_frame.object_results is not None:
+    if ret_frame.object_results:
         ret_frame.object_results = filter_object_results(
             ret_frame.object_results,
             target_labels=ret_frame.target_labels,
@@ -576,7 +576,7 @@ def filter_frame_by_region(
             transforms=ret_frame.frame_ground_truth.transforms,
         )
 
-    if ret_frame.nuscene_object_results is not None:
+    if ret_frame.nuscene_object_results:
         ret_frame.nuscene_object_results = filter_nuscene_object_results(
             ret_frame.nuscene_object_results,
             target_labels=ret_frame.target_labels,

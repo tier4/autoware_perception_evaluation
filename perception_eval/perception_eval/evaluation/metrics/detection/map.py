@@ -197,7 +197,7 @@ class Map:
 
         # If no valid values, return NaN
         if not valid_values:
-            return float('nan')
+            return np.nan
 
         # Return the mean of valid values
         return sum(valid_values) / len(valid_values)

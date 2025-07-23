@@ -150,7 +150,7 @@ class Ap:
 
         # Special case: If ground truth is zero and prediction is zero, return NaN
         if self.num_ground_truth == 0 and self.objects_results_num == 0:
-            return float('nan')
+            return np.nan
 
         # If there are no precision values, return AP = 0.0
         if len(precision_list) == 0:
