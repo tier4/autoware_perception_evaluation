@@ -70,21 +70,21 @@ class TestPerceptionEvaluationConfig(unittest.TestCase):
         """Test if `MatchingLabelPolicy` is set as expected."""
         evaluation_config_dict = {
             "evaluation_task": "detection",
-            "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+            "target_labels": ["car", "bicycle", "pedestrian", "motorbike", "unknown"],
             "max_x_position": 102.4,
             "max_y_position": 102.4,
             "center_distance_thresholds": [
-                [1.0, 1.0, 1.0, 1.0],
-                [2.0, 2.0, 2.0, 2.0],
+                [1.0, 1.0, 1.0, 1.0, 1.0],
+                [2.0, 2.0, 2.0, 2.0, 2.0],
             ],
             "center_distance_bev_thresholds": [
-                [1.0, 1.0, 1.0, 1.0],
-                [2.0, 2.0, 2.0, 2.0],
+                [1.0, 1.0, 1.0, 1.0, 1.0],
+                [2.0, 2.0, 2.0, 2.0, 2.0],
             ],
             "plane_distance_thresholds": [2.0, 3.0],
             "iou_bev_thresholds": [0.5],
             "iou_3d_thresholds": [0.5],
-            "min_point_numbers": [0, 0, 0, 0],
+            "min_point_numbers": [0, 0, 0, 0, 0],
             "label_prefix": "autoware",
             "merge_similar_labels": False,
         }
