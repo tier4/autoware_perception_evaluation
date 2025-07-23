@@ -148,17 +148,13 @@ class Ap:
         Calculate Average Precision (AP) using 101 uniformly spaced recall thresholds
         """
 
-        # If there are no precision values, check if this is due to no ground truth and no predictions
+        # Special case: If ground truth is zero and prediction is zero, return NaN
+        if self.num_ground_truth == 0 and self.objects_results_num == 0:
+            return float('nan')
+
+        # If there are no precision values, return AP = 0.0
         if len(precision_list) == 0:
-            # If ground truth is zero and prediction is zero, return NaN
-            if self.num_ground_truth == 0 and self.objects_results_num == 0:
-                return float('nan')
-            # If ground truth is zero but prediction has numbers, return 0.0
-            elif self.num_ground_truth == 0 and self.objects_results_num > 0:
-                return 0.0
-            # Otherwise return 0.0 (fallback case)
-            else:
-                return 0.0
+            return 0.0
 
         # Create a precision envelope: ensures non-increasing precision
         # max accumulate from right to left
