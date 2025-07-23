@@ -25,9 +25,9 @@ from perception_eval.common.label import LabelType
 from perception_eval.common.schema import FrameID
 from perception_eval.common.transform import HomogeneousMatrix
 from perception_eval.common.transform import TransformDict
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.metrics.prediction.path_displacement_error import PathDisplacementError
-from perception_eval.evaluation.result.object_result import get_object_results
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 import pytest
 
 
