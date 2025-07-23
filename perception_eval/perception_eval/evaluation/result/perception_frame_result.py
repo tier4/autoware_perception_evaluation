@@ -37,6 +37,7 @@ from perception_eval.evaluation.metrics import MetricsScoreConfig
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from perception_eval.evaluation.result.perception_pass_fail_nuscene_result import PassFailNusceneResult
 from perception_eval.evaluation.result.perception_pass_fail_result import PassFailResult
 
 
@@ -68,7 +69,7 @@ class PerceptionFrameResult:
 
     def __init__(
         self,
-        object_results: List[DynamicObjectWithPerceptionResult],
+        object_results: Optional[List[DynamicObjectWithPerceptionResult]],
         nuscene_object_results: Optional[
             Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
         ],
@@ -85,7 +86,7 @@ class PerceptionFrameResult:
         self.unix_time: int = unix_time
         self.target_labels: List[LabelType] = target_labels
 
-        self.object_results: List[DynamicObjectWithPerceptionResult] = object_results
+        self.object_results: Optional[List[DynamicObjectWithPerceptionResult]] = object_results
         self.nuscene_object_results: Optional[
             Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
         ] = nuscene_object_results
@@ -107,6 +108,14 @@ class PerceptionFrameResult:
             transforms=frame_ground_truth.transforms,
         )
 
+        self.pass_fail_result_nuscene: PassFailNusceneResult = PassFailNusceneResult(
+            unix_time=unix_time,
+            frame_number=frame_ground_truth.frame_name,
+            critical_object_filter_config=critical_object_filter_config,
+            frame_pass_fail_config=frame_pass_fail_config,
+            transforms=frame_ground_truth.transforms,
+        )
+
     def evaluate_frame(
         self,
         previous_result: Optional[PerceptionFrameResult] = None,
@@ -116,20 +125,6 @@ class PerceptionFrameResult:
         Args:
             previous_result (Optional[PerceptionFrameResult]): The previous frame result. If None, set it as empty list []. Defaults to None.
         """
-        # Filter objects by critical object filter config
-        self.object_results: List[DynamicObjectWithPerceptionResult] = filter_object_results(
-            self.object_results,
-            transforms=self.frame_ground_truth.transforms,
-            **self.pass_fail_result.critical_object_filter_config.filtering_params,
-        )
-
-        if self.nuscene_object_results:
-            self.nuscene_object_results = filter_nuscene_object_results(
-                self.nuscene_object_results,
-                transforms=self.frame_ground_truth.transforms,
-                **self.pass_fail_result.critical_object_filter_config.filtering_params,
-            )
-
         self.frame_ground_truth.objects = filter_objects(
             self.frame_ground_truth.objects,
             is_gt=True,
@@ -137,46 +132,65 @@ class PerceptionFrameResult:
             **self.pass_fail_result.critical_object_filter_config.filtering_params,
         )
 
-        # Group objects results based on the Label
-        object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
-            self.object_results,
-            self.pass_fail_result.critical_object_filter_config.target_labels,
-        )
-
         num_ground_truth_dict: Dict[LabelType, int] = divide_objects_to_num(
             self.frame_ground_truth.objects,
             self.pass_fail_result.critical_object_filter_config.target_labels,
         )
 
-        # Classification
-        if self.metrics_score.classification_config is not None:
-            self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
-
         # Detection
         if self.metrics_score.detection_config is not None and self.nuscene_object_results:
+            self.nuscene_object_results = filter_nuscene_object_results(
+                self.nuscene_object_results,
+                transforms=self.frame_ground_truth.transforms,
+                **self.pass_fail_result.critical_object_filter_config.filtering_params,
+            )
+
             self.metrics_score.evaluate_detection(self.nuscene_object_results, num_ground_truth_dict)
 
-        # Tracking
-        if self.metrics_score.tracking_config is not None:
-            if previous_result is None:
-                previous_results_dict = {
-                    label: [] for label in self.pass_fail_result.critical_object_filter_config.target_labels
-                }
-            else:
-                previous_results_dict = divide_objects(
-                    previous_result.object_results, self.pass_fail_result.critical_object_filter_config.target_labels
-                )
-            tracking_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = object_results_dict.copy()
-            for label, prev_results in previous_results_dict.items():
-                tracking_results[label] = [prev_results, tracking_results[label]]
-            self.metrics_score.evaluate_tracking(tracking_results, num_ground_truth_dict)
+            # Calculate TP/FP/TN/FN based on plane distance
+            self.pass_fail_result_nuscene.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
 
-        # Prediction
-        if self.metrics_score.prediction_config is not None:
-            self.metrics_score.evaluate_prediction(object_results_dict, num_ground_truth_dict)
+        # Classification, Tracking, Prediction
+        if self.object_results:
+            # Filter objects by critical object filter config
+            self.object_results: List[DynamicObjectWithPerceptionResult] = filter_object_results(
+                self.object_results,
+                transforms=self.frame_ground_truth.transforms,
+                **self.pass_fail_result.critical_object_filter_config.filtering_params,
+            )
 
-        # Calculate TP/FP/TN/FN based on plane distance or IoU 2D
-        self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
+            # Group objects results based on the Label
+            object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+                self.object_results,
+                self.pass_fail_result.critical_object_filter_config.target_labels,
+            )
+
+            # Classification
+            if self.metrics_score.classification_config is not None:
+                self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
+
+            # Tracking
+            if self.metrics_score.tracking_config is not None:
+                if previous_result is None:
+                    previous_results_dict = {
+                        label: [] for label in self.pass_fail_result.critical_object_filter_config.target_labels
+                    }
+                else:
+                    previous_results_dict = divide_objects(
+                        previous_result.object_results,
+                        self.pass_fail_result.critical_object_filter_config.target_labels,
+                    )
+                tracking_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = object_results_dict.copy()
+                for label, prev_results in previous_results_dict.items():
+                    tracking_results[label] = [prev_results, tracking_results[label]]
+                self.metrics_score.evaluate_tracking(tracking_results, num_ground_truth_dict)
+
+            # Prediction
+            if self.metrics_score.prediction_config is not None:
+                self.metrics_score.evaluate_prediction(object_results_dict, num_ground_truth_dict)
+
+            # Calculate TP/FP/TN/FN based on plane distance or IoU 2D
+            self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
 
     def __reduce__(self) -> Tuple[PerceptionFrameResult, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""

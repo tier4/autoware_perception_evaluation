@@ -627,6 +627,34 @@ class TestAp(unittest.TestCase):
         test patterns:
             Given diff_yaw, check if ap and aph are almost correct.
         """
+        # Note that due to the nature of the plane distance, we couldn't use the common yaw patterns.
+        # Explanation:
+        #
+        # In most matching modes (such as IoU or center distance), a large yaw (heading) difference between
+        # the estimated and ground truth objects will typically cause the objects to fail matching,
+        # resulting in false positives (FP) and thus AP/APH scores of zero.
+        #
+        # However, for plane distance matching, the matching criterion is based solely on the distance
+        # between the projected centers of the objects on a reference plane (usually the ground plane).
+        # The yaw (heading) angle of the objects is NOT considered in the matching process.
+        #
+        # This means:
+        # - As long as the centers of the estimated and ground truth objects are within the specified threshold,
+        #   they will be considered a match, regardless of how different their orientations (yaw) are.
+        # - Therefore, the AP (Average Precision) for plane distance matching will always reflect a successful match
+        #   if the centers are close enough, even if the yaw difference is large.
+        # - However, APH (Average Precision with Heading) will still penalize large yaw differences, because APH
+        #   incorporates the heading similarity into the TP value (using 1 - diff_heading / pi).
+        #
+        # As a result:
+        # - For plane distance matching, the AP result is always the same as the "full TP" case as long as the centers match,
+        #   but the APH result will vary according to the yaw difference.
+        # - This is different from IoU or center distance matching, where large yaw differences can cause the match to fail
+        #   entirely (resulting in FP and AP=0).
+        #
+        # Therefore, we cannot simply reuse the common yaw patterns (which assume matching will fail for large yaw differences)
+        # for plane distance matching. Instead, we must explicitly specify the expected AP and APH for each yaw difference case,
+        # as done in the patterns list below.
         patterns: List[Tuple[DiffYaw, AnswerAP, AnswerAP]] = [
             # Given no diff_yaw, ap and aph is 1.0.
             (
@@ -649,13 +677,13 @@ class TestAp(unittest.TestCase):
             # Given opposite direction, aph is 0.0.
             (
                 DiffYaw(math.pi, 0.0),
-                self.answer_fp_full,
-                self.answer_fp_full,
+                self.answer_tp_full,
+                self.answer_aph_yaw_pi,
             ),
             (
                 DiffYaw(-math.pi, 0.0),
-                self.answer_fp_full,
-                self.answer_fp_full,
+                self.answer_tp_full,
+                self.answer_aph_yaw_pi,
             ),
             # Given diff_yaw is pi/4
             (
@@ -671,13 +699,13 @@ class TestAp(unittest.TestCase):
             # Given diff_yaw is 3*pi/4
             (
                 DiffYaw(3 * math.pi / 4.0, 0.0),
-                self.answer_fp_full,
-                self.answer_fp_full,
+                self.answer_tp_full,
+                self.answer_partial_yaw_3_pi_4,
             ),
             (
                 DiffYaw(-3 * math.pi / 4.0, 0.0),
-                self.answer_fp_full,
-                self.answer_fp_full,
+                self.answer_tp_full,
+                self.answer_partial_yaw_3_pi_4,
             ),
         ]
 
@@ -738,6 +766,24 @@ class TestAp(unittest.TestCase):
         self.assertEqual(aph_tp.ap, ans_aph_tp)
         self.assertEqual(ap_tn.ap, ans_ap_tn)
         self.assertEqual(aph_tn.ap, ans_aph_tn)
+
+    def test_ap_empty_gt_empty_prediction(self):
+        """Test AP and APH when both ground truth and prediction are empty for a label."""
+        # Create empty lists for both estimated and ground truth objects
+        empty_estimated_objects = []
+        empty_ground_truth_objects = []
+
+        ap, aph = self._evaluate_ap_aph_for_label(
+            empty_estimated_objects,
+            empty_ground_truth_objects,
+            AutowareLabel.CAR,
+            MatchingMode.CENTERDISTANCE,
+            0.5,
+        )
+
+        # When both ground truth and prediction are empty, AP should be NaN
+        self.assertTrue(np.isnan(ap.ap))
+        self.assertTrue(np.isnan(aph.ap))
 
 
 if __name__ == "__main__":

@@ -112,12 +112,32 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             estimated_objects, ground_truth_now_frame
         )
 
-        # Match objects
+        # Match objects based on enabled metrics
         nuscene_object_results = None
-        if self.evaluator_config.metrics_config.detection_config is not None:
+        object_results = None
+
+        # Match for detection metrics (Based on matching policy)
+        if self.metrics_config.detection_config:
             nuscene_object_results = self.match_nuscene_objects(filtered_estimated_objects, filtered_ground_truth)
 
-        object_results = self.match_objects(filtered_estimated_objects, filtered_ground_truth)
+        # Match for tracking, prediction, classification (Based on shortest distance)
+        # TODO(vividf): Remove this after using nuscene_object_results for all metrics
+        shortest_distance_matching = any(
+            [
+                self.metrics_config.tracking_config,
+                self.metrics_config.prediction_config,
+                self.metrics_config.classification_config,
+            ]
+        )
+        if shortest_distance_matching:
+            object_results = self.match_objects(filtered_estimated_objects, filtered_ground_truth)
+
+        # Validate that at least one matching method was performed
+        if nuscene_object_results is None and object_results is None:
+            raise ValueError(
+                "No object matching performed. At least one metric configuration "
+                "(detection, tracking, prediction, or classification) must be enabled."
+            )
 
         # Create PerceptionFrameResult
         perception_frame_result = PerceptionFrameResult(
@@ -137,7 +157,6 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             perception_frame_result.evaluate_frame()
 
         self.frame_results.append(perception_frame_result)
-
         return perception_frame_result
 
     def filter_objects(
@@ -262,20 +281,19 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         used_frame: List[int] = []
 
         for frame in self.frame_results:
-            object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
-                frame.object_results, target_labels
-            )
+            if frame.object_results:
+                object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+                    frame.object_results, target_labels
+                )
             num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, target_labels)
 
             for label in target_labels:
-                aggregated_object_results_dict[label].append(object_results_dict[label])
+                if frame.object_results:
+                    aggregated_object_results_dict[label].append(object_results_dict[label])
                 aggregated_num_gt[label] += num_gt_dict[label]
 
             # Only aggregate nuscene_object_results if detection_config exists and frame has nuscene_object_results
-            if (
-                self.evaluator_config.metrics_config.detection_config is not None
-                and frame.nuscene_object_results is not None
-            ):
+            if self.evaluator_config.metrics_config.detection_config and frame.nuscene_object_results:
                 accumulate_nuscene_results(flattened_nuscene_object_results_dict, frame.nuscene_object_results)
 
             used_frame.append(int(frame.frame_name))
@@ -286,19 +304,19 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         )
 
         # Classification
-        if self.evaluator_config.metrics_config.classification_config is not None:
+        if self.evaluator_config.metrics_config.classification_config:
             scene_metrics_score.evaluate_classification(aggregated_object_results_dict, aggregated_num_gt)
 
         # Detection
-        if self.evaluator_config.metrics_config.detection_config is not None:
+        if self.evaluator_config.metrics_config.detection_config:
             scene_metrics_score.evaluate_detection(flattened_nuscene_object_results_dict, aggregated_num_gt)
 
         # Tracking
-        if self.evaluator_config.metrics_config.tracking_config is not None:
+        if self.evaluator_config.metrics_config.tracking_config:
             scene_metrics_score.evaluate_tracking(aggregated_object_results_dict, aggregated_num_gt)
 
         # Prediction
-        if self.evaluator_config.metrics_config.prediction_config is not None:
+        if self.evaluator_config.metrics_config.prediction_config:
             scene_metrics_score.evaluate_prediction(aggregated_object_results_dict, aggregated_num_gt)
 
         return scene_metrics_score

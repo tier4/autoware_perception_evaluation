@@ -32,7 +32,7 @@ class Ap:
     """AP class.
 
     Attributes:
-        ap (float): AP (Average Precision) score.
+        ap (float): AP (Average Precision) score. Can be NaN when there are no ground truths and no predictions.
         matching_average (Optional[float]): Average of matching score.
             If there are no object results, this variable is None.
         matching_mode (MatchingMode): MatchingMode instance.
@@ -147,6 +147,10 @@ class Ap:
         """
         Calculate Average Precision (AP) using 101 uniformly spaced recall thresholds
         """
+
+        # Special case: If ground truth is zero and prediction is zero, return NaN
+        if self.num_ground_truth == 0 and self.objects_results_num == 0:
+            return np.nan
 
         # If there are no precision values, return AP = 0.0
         if len(precision_list) == 0:

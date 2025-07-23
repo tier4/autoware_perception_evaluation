@@ -32,10 +32,12 @@ from perception_eval.evaluation.matching.objects_filter import divide_tp_fp_obje
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.matching.objects_filter import get_fn_objects
-from perception_eval.evaluation.matching.objects_filter import get_negative_objects
-from perception_eval.evaluation.matching.objects_filter import get_positive_objects
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.object_result_matching import get_object_results
+
+# TODO(vividf): Move the testing for get_positive_objects, get_negative_objects to another test file
+from perception_eval.evaluation.result.perception_pass_fail_result import get_negative_objects
+from perception_eval.evaluation.result.perception_pass_fail_result import get_positive_objects
 from perception_eval.util.debug import get_objects_with_difference
 
 
