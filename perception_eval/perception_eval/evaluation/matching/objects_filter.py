@@ -433,6 +433,7 @@ def get_fn_objects(
     Returns:
         List[ObjectType]: FN (False Negative) objects list.
     """
+    # TODO(vividf): remove this since get_negative_objects() is removed
     warnings.warn(
         "`get_fn_objects()` is removed in next minor update, please use `get_negative_objects()`",
         DeprecationWarning,
@@ -465,6 +466,7 @@ def _is_fn_object(
     Returns:
         bool: Whether ground truth object is FN (False Negative) object.
     """
+    # TODO(vividf): remove this since get_negative_objects() is removed
     warnings.warn(
         "`_is_fn_object()` is removed in next minor update, please use `get_negative_objects()`",
         DeprecationWarning,
