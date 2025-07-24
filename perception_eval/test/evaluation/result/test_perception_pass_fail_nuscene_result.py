@@ -113,7 +113,7 @@ class TestPassFailNusceneResult(unittest.TestCase):
                     critical_object_filter_config=self.critical_object_filter_config,
                     frame_pass_fail_config=self.frame_pass_fail_config,
                 )
-                tp_results, fp_results = pf_result.get_positive_objects(object_results)
+                tp_results, fp_results = pf_result._get_positive_objects(object_results)
                 self.assertEqual(len(tp_results), len(expect_tp_indices))
                 for tp_result in tp_results:
                     tp_est_idx: int = estimated_objects.index(tp_result.estimated_object)

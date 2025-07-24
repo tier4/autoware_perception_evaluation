@@ -363,6 +363,7 @@ def divide_tp_fp_objects(
         List[DynamicObjectWithPerceptionResult]]: TP object results.
         List[DynamicObjectWithPerceptionResult]]: FP object results.
     """
+    # TODO(vividf): remove this since get_positive_objects() is removed
     warnings.warn(
         "`divide_tp_fp_objects()` is removed in next minor update, please use `get_positive_objects()`",
         DeprecationWarning,

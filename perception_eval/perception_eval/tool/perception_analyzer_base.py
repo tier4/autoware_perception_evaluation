@@ -544,15 +544,8 @@ class PerceptionAnalyzerBase(ABC):
             concat.append(self.df)
         self.__transforms[str(self.num_scene)][str(frame.frame_name)] = frame.frame_ground_truth.transforms
 
-        # TODO(vividf): we need to think a better design to handle different evaluation tasks and configurations.
-        pass_fail = getattr(frame, 'pass_fail_result', None)
-        if pass_fail is None:
-            pass_fail = getattr(frame, 'pass_fail_result_nuscene', None)
-        if pass_fail is None:
-            raise ValueError('pass_fail_result and pass_fail_result_nuscene are both None')
-
         tp_df = self.format2df(
-            pass_fail.tp_object_results,
+            frame.pass_fail_result.tp_object_results,
             status=MatchingStatus.TP,
             start=start,
             frame_num=int(frame.frame_name),
@@ -563,7 +556,7 @@ class PerceptionAnalyzerBase(ABC):
             concat.append(tp_df)
 
         fp_df = self.format2df(
-            pass_fail.fp_object_results,
+            frame.pass_fail_result.fp_object_results,
             status=MatchingStatus.FP,
             start=start,
             frame_num=int(frame.frame_name),
@@ -574,7 +567,7 @@ class PerceptionAnalyzerBase(ABC):
             concat.append(fp_df)
 
         tn_df = self.format2df(
-            pass_fail.tn_objects,
+            frame.pass_fail_result.tn_objects,
             status=MatchingStatus.TN,
             start=start,
             frame_num=int(frame.frame_name),
@@ -585,7 +578,7 @@ class PerceptionAnalyzerBase(ABC):
             concat.append(tn_df)
 
         fn_df = self.format2df(
-            pass_fail.fn_objects,
+            frame.pass_fail_result.fn_objects,
             status=MatchingStatus.FN,
             start=start,
             frame_num=int(frame.frame_name),

@@ -79,10 +79,10 @@ class PassFailResult:
             object_results (List[DynamicObjectWithPerceptionResult]): Object results list.
             ground_truth_objects (List[ObjectType]): Ground truth objects which must be evaluated at current frame.
         """
-        self.tp_object_results, self.fp_object_results = self.get_positive_objects(object_results)
-        self.tn_objects, self.fn_objects = self.get_negative_objects(ground_truth_objects, object_results)
+        self.tp_object_results, self.fp_object_results = self._get_positive_objects(object_results)
+        self.tn_objects, self.fn_objects = self._get_negative_objects(ground_truth_objects, object_results)
 
-    def get_positive_objects(self, object_results):
+    def _get_positive_objects(self, object_results):
         """Returns TP (True Positive) and FP (False Positive) object results as `tuple`.
 
         If an object result has better matching score than the matching threshold, it is TP, otherwise FP.
@@ -129,7 +129,7 @@ class PassFailResult:
                 tp_object_results.append(object_result)
         return tp_object_results, fp_object_results
 
-    def get_negative_objects(self, ground_truth_objects, object_results):
+    def _get_negative_objects(self, ground_truth_objects, object_results):
         """Returns TN (True Negative) and FN (False Negative) objects as `tuple`.
 
         If a ground truth object is contained in object results, it is TP or FP.

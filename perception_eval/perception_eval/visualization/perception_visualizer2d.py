@@ -157,16 +157,9 @@ class PerceptionVisualizer2D:
             self.__tracked_paths = {}
 
         for frame_result_ in tqdm(frame_results, desc="Visualize results for each frame"):
-            # TODO(vividf): we need to think a better design to handle different evaluation tasks and configurations.
-            pass_fail = getattr(frame_result_, 'pass_fail_result', None)
-            if pass_fail is None:
-                pass_fail = getattr(frame_result_, 'pass_fail_result_nuscene', None)
-            if pass_fail is None:
-                raise ValueError('pass_fail_result and pass_fail_result_nuscene are both None')
             self.__axes: np.ndarray = self.visualize_frame(
                 frame_result=frame_result_,
                 axes=self.__axes,
-                pass_fail=pass_fail,
             )
             if cache_figure is False:
                 self.__clear_axes()
@@ -211,7 +204,6 @@ class PerceptionVisualizer2D:
         self,
         frame_result: PerceptionFrameResult,
         axes: Optional[np.ndarray] = None,
-        pass_fail=None,
     ) -> np.ndarray:
         """Visualize a frame result on image.
 
@@ -225,7 +217,6 @@ class PerceptionVisualizer2D:
         Args:
             frame_result (PerceptionFrameResult)
             axes (Optional[numpy.ndarray]): Axes instances. Defaults to None.
-            pass_fail: The pass_fail result object to use for plotting.
 
         Returns:
             numpy.ndarray: Numpy array of Axes instances.
@@ -257,7 +248,7 @@ class PerceptionVisualizer2D:
         # Plot objects
         handles: List[Patch] = []
         axes = self.plot_objects(
-            objects=pass_fail.tp_object_results,
+            objects=frame_result.pass_fail_result.tp_object_results,
             is_ground_truth=False,
             axes=axes,
             color="blue",
@@ -265,7 +256,7 @@ class PerceptionVisualizer2D:
         handles.append(Patch(color="blue", label="TP est"))
 
         axes = self.plot_objects(
-            objects=pass_fail.tp_object_results,
+            objects=frame_result.pass_fail_result.tp_object_results,
             is_ground_truth=True,
             axes=axes,
             color="red",
@@ -273,7 +264,7 @@ class PerceptionVisualizer2D:
         handles.append(Patch(color="red", label="TP GT"))
 
         axes = self.plot_objects(
-            objects=pass_fail.fp_object_results,
+            objects=frame_result.pass_fail_result.fp_object_results,
             is_ground_truth=False,
             axes=axes,
             color="cyan",
@@ -281,7 +272,7 @@ class PerceptionVisualizer2D:
         handles.append(Patch(color="cyan", label="FP"))
 
         axes = self.plot_objects(
-            objects=pass_fail.tn_objects,
+            objects=frame_result.pass_fail_result.tn_objects,
             is_ground_truth=True,
             axes=axes,
             color="purple",
@@ -289,7 +280,7 @@ class PerceptionVisualizer2D:
         handles.append(Patch(color="purple", label="TN"))
 
         axes = self.plot_objects(
-            objects=pass_fail.fn_objects,
+            objects=frame_result.pass_fail_result.fn_objects,
             is_ground_truth=True,
             axes=axes,
             color="orange",

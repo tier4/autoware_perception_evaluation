@@ -139,6 +139,12 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 "(detection, tracking, prediction, or classification) must be enabled."
             )
 
+        # Note: Since tracking will have detection_config and tracking_config,
+        # We will have both nuscene_object_results and object_results for tracking.
+        # For other metrics, we will have either nuscene_object_results or object_results.
+        # TODO(vividf): Once we have nuscene_object_results for all metrics,
+        # we can remove object_results.
+
         # Create PerceptionFrameResult
         perception_frame_result = PerceptionFrameResult(
             object_results=object_results,
@@ -281,19 +287,22 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         used_frame: List[int] = []
 
         for frame in self.frame_results:
-            if frame.object_results:
+            if frame.object_results is not None:
                 object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     frame.object_results, target_labels
                 )
             num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, target_labels)
 
             for label in target_labels:
-                if frame.object_results:
+                if frame.object_results is not None:
                     aggregated_object_results_dict[label].append(object_results_dict[label])
                 aggregated_num_gt[label] += num_gt_dict[label]
 
             # Only aggregate nuscene_object_results if detection_config exists and frame has nuscene_object_results
-            if self.evaluator_config.metrics_config.detection_config and frame.nuscene_object_results:
+            if (
+                self.evaluator_config.metrics_config.detection_config is not None
+                and frame.nuscene_object_results is not None
+            ):
                 accumulate_nuscene_results(flattened_nuscene_object_results_dict, frame.nuscene_object_results)
 
             used_frame.append(int(frame.frame_name))
@@ -304,19 +313,19 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         )
 
         # Classification
-        if self.evaluator_config.metrics_config.classification_config:
+        if self.evaluator_config.metrics_config.classification_config is not None:
             scene_metrics_score.evaluate_classification(aggregated_object_results_dict, aggregated_num_gt)
 
         # Detection
-        if self.evaluator_config.metrics_config.detection_config:
+        if self.evaluator_config.metrics_config.detection_config is not None:
             scene_metrics_score.evaluate_detection(flattened_nuscene_object_results_dict, aggregated_num_gt)
 
         # Tracking
-        if self.evaluator_config.metrics_config.tracking_config:
+        if self.evaluator_config.metrics_config.tracking_config is not None:
             scene_metrics_score.evaluate_tracking(aggregated_object_results_dict, aggregated_num_gt)
 
         # Prediction
-        if self.evaluator_config.metrics_config.prediction_config:
+        if self.evaluator_config.metrics_config.prediction_config is not None:
             scene_metrics_score.evaluate_prediction(aggregated_object_results_dict, aggregated_num_gt)
 
         return scene_metrics_score

@@ -66,9 +66,11 @@ class PassFailNusceneResult:
         self.critical_object_filter_config: CriticalObjectFilterConfig = critical_object_filter_config
         self.frame_pass_fail_config: PerceptionPassFailConfig = frame_pass_fail_config
         self.transforms = transforms
-        # Build label-to-threshold mapping
+        if self.frame_pass_fail_config.matching_threshold_list is None:
+            raise ValueError(
+                "PerceptionPassFailConfig.matching_threshold_list cannot be None. Please provide a valid list of thresholds."
+            )
         self.label_thresholds: Dict[LabelType, float] = self._build_label_thresholds()
-        # Decide matching mode once
         self.mode = (
             MatchingMode.IOU2D if self.frame_pass_fail_config.evaluation_task.is_2d() else MatchingMode.PLANEDISTANCE
         )
@@ -103,8 +105,10 @@ class PassFailNusceneResult:
         """
 
         self.selected_object_results = self._select_object_results(nuscene_object_results)
-        self.tp_object_results, self.fp_object_results = self.get_positive_objects(self.selected_object_results)
-        self.tn_objects, self.fn_objects = self.get_negative_objects(ground_truth_objects, self.selected_object_results)
+        self.tp_object_results, self.fp_object_results = self._get_positive_objects(self.selected_object_results)
+        self.tn_objects, self.fn_objects = self._get_negative_objects(
+            ground_truth_objects, self.selected_object_results
+        )
 
     def _select_object_results(self, nuscene_object_results) -> List[DynamicObjectWithPerceptionResult]:
         """
@@ -135,7 +139,7 @@ class PassFailNusceneResult:
             selected_object_results.extend(results_for_label_and_threshold)
         return selected_object_results
 
-    def get_positive_objects(self, object_results: List[DynamicObjectWithPerceptionResult]):
+    def _get_positive_objects(self, object_results: List[DynamicObjectWithPerceptionResult]):
         """
         Returns TP (True Positive) and FP (False Positive) object results as a tuple.
         Args:
@@ -169,7 +173,7 @@ class PassFailNusceneResult:
                 tp_object_results.append(object_result)
         return tp_object_results, fp_object_results
 
-    def get_negative_objects(
+    def _get_negative_objects(
         self, ground_truth_objects: List[ObjectType], object_results: List[DynamicObjectWithPerceptionResult]
     ):
         """

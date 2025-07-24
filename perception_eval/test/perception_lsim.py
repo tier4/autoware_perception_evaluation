@@ -124,16 +124,16 @@ class PerceptionLSimMoc:
         # どれを注目物体とするかのparam
         critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
+            target_labels=["car", "bicycle", "pedestrian", "motorbike", "unknown"],
             ignore_attributes=["cycle_state.without_rider"],
-            max_x_position_list=[30.0, 30.0, 30.0, 30.0],
-            max_y_position_list=[30.0, 30.0, 30.0, 30.0],
+            max_x_position_list=[30.0, 30.0, 30.0, 30.0, 30.0],
+            max_y_position_list=[30.0, 30.0, 30.0, 30.0, 30.0],
         )
         # Pass fail を決めるパラメータ
         frame_pass_fail_config: PerceptionPassFailConfig = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            matching_threshold_list=[2.0, 2.0, 2.0, 2.0],
+            target_labels=["car", "bicycle", "pedestrian", "motorbike", "unknown"],
+            matching_threshold_list=[2.0, 2.0, 2.0, 2.0, 2.0],
         )
 
         frame_result = self.evaluator.add_frame_result(
@@ -151,23 +151,12 @@ class PerceptionLSimMoc:
         """
 
         # number of fails for critical objects
-        # TODO(vividf): we need to think a better design to handle different evaluation tasks and configurations.
-        def get_num_fail(frame_result):
-            pf = getattr(frame_result, 'pass_fail_result', None)
-            if pf is None:
-                pf = getattr(frame_result, 'pass_fail_result_nuscene', None)
-            if pf is None:
-                return 0
-            return pf.get_num_fail()
-
-        num_critical_fail: int = sum(map(get_num_fail, self.evaluator.frame_results))
-        # number of fails for critical objects
-        # num_critical_fail: int = sum(
-        #     map(
-        #         lambda frame_result: frame_result.pass_fail_result.get_num_fail(),
-        #         self.evaluator.frame_results,
-        #     )
-        # )
+        num_critical_fail: int = sum(
+            map(
+                lambda frame_result: frame_result.pass_fail_result.get_num_fail(),
+                self.evaluator.frame_results,
+            )
+        )
         logging.info(f"Number of fails for critical objects: {num_critical_fail}")
 
         # scene metrics score
@@ -179,16 +168,11 @@ class PerceptionLSimMoc:
         """
         Frameごとの可視化
         """
-        # TODO(vividf): we need to think a better design to handle different evaluation tasks and configurations.
-        pass_fail = getattr(frame_result, 'pass_fail_result', None)
-        if pass_fail is None:
-            pass_fail = getattr(frame_result, 'pass_fail_result_nuscene', None)
-        if pass_fail is None:
-            raise ValueError("pass_fail_result and pass_fail_result_nuscene are both None")
+
         logging.info(
-            f"{len(pass_fail.tp_object_results)} TP objects, "
-            f"{len(pass_fail.fp_object_results)} FP objects, "
-            f"{len(pass_fail.fn_objects)} FN objects",
+            f"{len(frame_result.pass_fail_result.tp_object_results)} TP objects, "
+            f"{len(frame_result.pass_fail_result.fp_object_results)} FP objects, "
+            f"{len(frame_result.pass_fail_result.fn_objects)} FN objects",
         )
 
         # Visualize the latest frame result

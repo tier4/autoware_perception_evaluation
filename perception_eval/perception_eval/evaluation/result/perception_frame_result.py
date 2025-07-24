@@ -101,23 +101,16 @@ class PerceptionFrameResult:
         self.critical_object_filter_config = critical_object_filter_config
         self.frame_pass_fail_config = frame_pass_fail_config
 
-        # Note that in current design, tracking will have detection_config and tracking_config.
-        # TODO(vividf): we need to think a better design to handle different evaluation tasks and configurations.
-        self.pass_fail_result_nuscene = None
-        self.pass_fail_result = None
-        if self.metrics_score.detection_config:
-            self.pass_fail_result_nuscene: PassFailNusceneResult = PassFailNusceneResult(
+        # For tracking and detection, we use PassFailNusceneResult
+        if self.metrics_score.detection_config or self.metrics_score.tracking_config:
+            self.pass_fail_result: PassFailNusceneResult = PassFailNusceneResult(
                 unix_time=unix_time,
                 frame_number=frame_ground_truth.frame_name,
                 critical_object_filter_config=critical_object_filter_config,
                 frame_pass_fail_config=frame_pass_fail_config,
                 transforms=frame_ground_truth.transforms,
             )
-        if (
-            self.metrics_score.classification_config
-            or self.metrics_score.tracking_config
-            or self.metrics_score.prediction_config
-        ):
+        else:
             self.pass_fail_result: PassFailResult = PassFailResult(
                 unix_time=unix_time,
                 frame_number=frame_ground_truth.frame_name,
@@ -147,21 +140,15 @@ class PerceptionFrameResult:
             self.critical_object_filter_config.target_labels,
         )
 
-        # Detection
-        if self.metrics_score.detection_config and self.nuscene_object_results:
+        if self.nuscene_object_results is not None:
+            # Filter objects by critical object filter config
             self.nuscene_object_results = filter_nuscene_object_results(
                 self.nuscene_object_results,
                 transforms=self.frame_ground_truth.transforms,
                 **self.critical_object_filter_config.filtering_params,
             )
 
-            self.metrics_score.evaluate_detection(self.nuscene_object_results, num_ground_truth_dict)
-
-            # Calculate TP/FP/TN/FN based on plane distance
-            self.pass_fail_result_nuscene.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
-
-        # Classification, Tracking, Prediction
-        if self.object_results:
+        if self.object_results is not None:
             # Filter objects by critical object filter config
             self.object_results: List[DynamicObjectWithPerceptionResult] = filter_object_results(
                 self.object_results,
@@ -175,30 +162,44 @@ class PerceptionFrameResult:
                 self.critical_object_filter_config.target_labels,
             )
 
-            # Classification
-            if self.metrics_score.classification_config:
-                self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
+        # Only detection
+        if self.metrics_score.detection_config is not None and self.metrics_score.tracking_config is None:
+            self.metrics_score.evaluate_detection(self.nuscene_object_results, num_ground_truth_dict)
+            # Calculate TP/FP/TN/FN based on plane distance
+            self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
 
-            # Tracking
-            if self.metrics_score.tracking_config:
-                if previous_result is None:
-                    previous_results_dict = {label: [] for label in self.critical_object_filter_config.target_labels}
-                else:
-                    previous_results_dict = divide_objects(
-                        previous_result.object_results,
-                        self.critical_object_filter_config.target_labels,
-                    )
-                tracking_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = object_results_dict.copy()
-                for label, prev_results in previous_results_dict.items():
-                    tracking_results[label] = [prev_results, tracking_results[label]]
-                self.metrics_score.evaluate_tracking(tracking_results, num_ground_truth_dict)
+        # Detection and Tracking
+        elif self.metrics_score.detection_config is not None and self.metrics_score.tracking_config is not None:
+            # Use object_results for tracking and nuscene_object_results for detection/pass_fail
+            if previous_result is None:
+                previous_results_dict = {label: [] for label in self.critical_object_filter_config.target_labels}
+            else:
+                previous_results_dict = divide_objects(
+                    previous_result.object_results,
+                    self.critical_object_filter_config.target_labels,
+                )
+            tracking_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = object_results_dict.copy()
+            for label, prev_results in previous_results_dict.items():
+                tracking_results[label] = [prev_results, tracking_results[label]]
+            self.metrics_score.evaluate_detection(self.nuscene_object_results, num_ground_truth_dict)
+            self.metrics_score.evaluate_tracking(tracking_results, num_ground_truth_dict)
+            # Calculate TP/FP/TN/FN based on plane distance
+            self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
 
-            # Prediction
-            if self.metrics_score.prediction_config:
-                self.metrics_score.evaluate_prediction(object_results_dict, num_ground_truth_dict)
-
-            # Calculate TP/FP/TN/FN based on plane distance or IoU 2D
+        # Classification
+        elif self.metrics_score.classification_config is not None:
+            self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
             self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
+
+        # Prediction
+        elif self.metrics_score.prediction_config is not None:
+            self.metrics_score.evaluate_prediction(object_results_dict, num_ground_truth_dict)
+            self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
+        else:
+            raise ValueError(
+                "No matched metrics config. "
+                "Please ensure that at least one of detection, tracking, classification, or prediction configs is set."
+            )
 
     def __reduce__(self) -> Tuple[PerceptionFrameResult, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
@@ -282,14 +283,8 @@ def get_object_status(frame_results: List[PerceptionFrameResult]) -> List[Ground
     for frame_result in frame_results:
         frame_num: int = int(frame_result.frame_name)
 
-        # TODO(vividf): we need to think a better design to handle different evaluation tasks and configurations.
-        pass_fail = getattr(frame_result, 'pass_fail_result', None)
-        if pass_fail is None:
-            pass_fail = getattr(frame_result, 'pass_fail_result_nuscene', None)
-        if pass_fail is None:
-            raise ValueError("pass_fail_result and pass_fail_result_nuscene is None")
         # TP
-        for tp_object_result in pass_fail.tp_object_results:
+        for tp_object_result in frame_result.pass_fail_result.tp_object_results:
             if tp_object_result.ground_truth_object.uuid not in status_infos:
                 tp_status = GroundTruthStatus(tp_object_result.ground_truth_object.uuid)
                 tp_status.add_status(MatchingStatus.TP, frame_num)
@@ -299,7 +294,7 @@ def get_object_status(frame_results: List[PerceptionFrameResult]) -> List[Ground
                 tp_status = status_infos[index]
                 tp_status.add_status(MatchingStatus.TP, frame_num)
         # FP
-        for fp_object_result in pass_fail.fp_object_results:
+        for fp_object_result in frame_result.pass_fail_result.fp_object_results:
             if fp_object_result.ground_truth_object is None:
                 continue
             if fp_object_result.ground_truth_object.uuid not in status_infos:
@@ -311,7 +306,7 @@ def get_object_status(frame_results: List[PerceptionFrameResult]) -> List[Ground
                 fp_status = status_infos[index]
                 fp_status.add_status(MatchingStatus.FP, frame_num)
         # TN
-        for tn_object in pass_fail.tn_objects:
+        for tn_object in frame_result.pass_fail_result.tn_objects:
             if tn_object.uuid not in status_infos:
                 tn_status = GroundTruthStatus(tn_object.uuid)
                 tn_status.add_status(MatchingStatus.TN, frame_num)
@@ -321,7 +316,7 @@ def get_object_status(frame_results: List[PerceptionFrameResult]) -> List[Ground
                 tn_status = status_infos[index]
                 tn_status.add_status(MatchingStatus.TN, frame_num)
         # FN
-        for fn_object in pass_fail.fn_objects:
+        for fn_object in frame_result.pass_fail_result.fn_objects:
             if fn_object.uuid not in status_infos:
                 fn_status = GroundTruthStatus(fn_object.uuid)
                 fn_status.add_status(MatchingStatus.FN, frame_num)

@@ -149,23 +149,12 @@ class PerceptionLSimMoc:
         """
 
         # number of fails for critical objects
-        # TODO(vividf): we need to think a better design to handle different evaluation tasks and configurations.
-        def get_num_fail(frame_result):
-            pf = getattr(frame_result, 'pass_fail_result', None)
-            if pf is None:
-                pf = getattr(frame_result, 'pass_fail_result_nuscene', None)
-            if pf is None:
-                return 0
-            return pf.get_num_fail()
-
-        num_critical_fail: int = sum(map(get_num_fail, self.evaluator.frame_results))
-
-        # num_critical_fail: int = sum(
-        #     map(
-        #         lambda frame_result: frame_result.pass_fail_result.get_num_fail(),
-        #         self.evaluator.frame_results,
-        #     )
-        # )
+        num_critical_fail: int = sum(
+            map(
+                lambda frame_result: frame_result.pass_fail_result.get_num_fail(),
+                self.evaluator.frame_results,
+            )
+        )
         logging.info(f"Number of fails for critical objects: {num_critical_fail}")
 
         # scene metrics score
@@ -177,16 +166,10 @@ class PerceptionLSimMoc:
         """
         Frameごとの可視化
         """
-        # TODO(vividf): we need to think a better design to handle different evaluation tasks and configurations.
-        pass_fail = getattr(frame_result, 'pass_fail_result', None)
-        if pass_fail is None:
-            pass_fail = getattr(frame_result, 'pass_fail_result_nuscene', None)
-        if pass_fail is None:
-            raise ValueError("pass_fail_result and pass_fail_result_nuscene are both None")
         logging.info(
-            f"{len(pass_fail.tp_object_results)} TP objects, "
-            f"{len(pass_fail.fp_object_results)} FP objects, "
-            f"{len(pass_fail.fn_objects)} FN objects",
+            f"{len(frame_result.pass_fail_result.tp_object_results)} TP objects, "
+            f"{len(frame_result.pass_fail_result.fp_object_results)} FP objects, "
+            f"{len(frame_result.pass_fail_result.fn_objects)} FN objects",
         )
 
 

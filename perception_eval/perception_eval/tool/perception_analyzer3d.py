@@ -405,25 +405,35 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
         area: Optional[int] = None,
         **kwargs,
     ) -> PerceptionAnalysisResult:
+        print(f"[analyze] called with scene={scene}, distance={distance}, area={area}, kwargs={kwargs}")
         if scene is not None:
             kwargs.update({"scene": scene})
         if area is not None:
             kwargs.update({"area": area})
 
         df: pd.DataFrame = self.get(**kwargs)
+        print(f"[analyze] df type: {type(df)}, is None: {df is None}")
         if distance is not None:
             df = self.filter_by_distance(distance, df)
+            print(f"[analyze] df after filter_by_distance, type: {type(df)}, is None: {df is None}")
 
         if len(df) > 0:
             ratio_df = self.summarize_ratio(df=df)
+            print(f"[analyze] ratio_df type: {type(ratio_df)}, is None: {ratio_df is None}")
             error_df = self.summarize_error(df=df)
+            print(f"[analyze] error_df type: {type(error_df)}, is None: {error_df is None}")
             if "scene" in kwargs.keys():
                 scene = kwargs.pop("scene")
             else:
                 scene = None
             metrics_df = self.summarize_score(scene=scene, distance=distance, area=area)
+            print(f"[analyze] metrics_df type: {type(metrics_df)}, is None: {metrics_df is None}")
             score_df = pd.concat([ratio_df, metrics_df], axis=1)
+            print(f"[analyze] score_df type: {type(score_df)}, is None: {score_df is None}")
             confusion_matrix_df = self.get_confusion_matrix(df=df)
+            print(
+                f"[analyze] confusion_matrix_df type: {type(confusion_matrix_df)}, is None: {confusion_matrix_df is None}"
+            )
             return PerceptionAnalysisResult(score_df, error_df, confusion_matrix_df)
         else:
             logging.warning("There is no DataFrame to be able to analyze.")
