@@ -162,7 +162,7 @@ class TestPassFailNusceneResult(unittest.TestCase):
                     critical_object_filter_config=self.critical_object_filter_config,
                     frame_pass_fail_config=self.frame_pass_fail_config,
                 )
-                tn_objects, fn_objects = pf_result.get_negative_objects(
+                tn_objects, fn_objects = pf_result._get_negative_objects(
                     self.dummy_ground_truth_objects,
                     object_results,
                 )
