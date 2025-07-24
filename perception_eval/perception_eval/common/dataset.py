@@ -292,6 +292,7 @@ def get_interpolated_now_frame(
     ground_truth_frames: List[FrameGroundTruth],
     unix_time: int,
     threshold_min_time: int,
+    return_frame_id: FrameID,
 ) -> Optional[FrameGroundTruth]:
     """Get interpolated ground truth frame in specified unix time.
     It searches before and after frames which satisfy the time difference condition and if found both, interpolate them.
@@ -300,6 +301,7 @@ def get_interpolated_now_frame(
         ground_truth_frames (List[FrameGroundTruth]): FrameGroundTruth instance list.
         unix_time (int): Unix time [us].
         threshold_min_time (int): Min time for unix time difference [us].
+        return_frame_id (FrameID): specify Frame ID to return.
 
     Returns:
         Optional[FrameGroundTruth]:
@@ -347,13 +349,14 @@ def get_interpolated_now_frame(
         return before_frame
     else:
         # do interpolation
-        return interpolate_ground_truth_frames(before_frame, after_frame, unix_time)
+        return interpolate_ground_truth_frames(before_frame, after_frame, unix_time, return_frame_id)
 
 
 def interpolate_ground_truth_frames(
     before_frame: FrameGroundTruth,
     after_frame: FrameGroundTruth,
     unix_time: int,
+    return_frame_id: FrameID,
 ):
     """Interpolate ground truth frame with linear interpolation.
 
@@ -361,6 +364,7 @@ def interpolate_ground_truth_frames(
         before_frame (FrameGroundTruth): input frame1
         after_frame (FrameGroundTruth): input frame2
         unix_time (int): target time
+        return_frame_id (FrameID): specify Frame ID to return.
     """
     # interpolate ego2map
     ego2map_key = TransformKey(FrameID.BASE_LINK, FrameID.MAP)
@@ -386,7 +390,8 @@ def interpolate_ground_truth_frames(
         before_frame_objects, after_frame_objects, before_frame.unix_time, after_frame.unix_time, unix_time
     )
     # 3. convert object list to base_link
-    # object_list = convert_objects_to_base_link(object_list, ego2map)
+    if return_frame_id == FrameID.BASE_LINK:
+        object_list = convert_objects_to_base_link(object_list, ego2map)
 
     # interpolate raw data
     output_frame = deepcopy(before_frame)
@@ -408,14 +413,14 @@ def convert_objects_to_global(object_list: List[ObjectType], ego2map: Homogeneou
     """
     output_object_list = []
     for object in object_list:
-        if object.frame_id == "map":
+        if object.frame_id == FrameID.MAP:
             output_object_list.append(deepcopy(object))
-        elif object.frame_id == "base_link":
+        elif object.frame_id == FrameID.BASE_LINK:
             updated_position, updated_rotation = ego2map.transform(object.state.position, object.state.orientation)
             output_object = deepcopy(object)
             output_object.state.position = updated_position
             output_object.state.orientation = updated_rotation
-            output_object.frame_id = "map"
+            output_object.frame_id = FrameID.MAP
             output_object_list.append(output_object)
         else:
             raise NotImplementedError(f"Unexpected frame_id: {object.frame_id}")
@@ -434,9 +439,9 @@ def convert_objects_to_base_link(object_list: List[ObjectType], ego2map: Homogen
     """
     output_object_list = []
     for object in object_list:
-        if object.frame_id == "base_link":
+        if object.frame_id == FrameID.BASE_LINK:
             output_object_list.append(deepcopy(object))
-        elif object.frame_id == "map":
+        elif object.frame_id == FrameID.MAP:
             map2ego = ego2map.inv()
             updated_position, updated_rotation = map2ego.transform(
                 position=object.state.position,
@@ -445,7 +450,7 @@ def convert_objects_to_base_link(object_list: List[ObjectType], ego2map: Homogen
             output_object = deepcopy(object)
             output_object.state.position = updated_position
             output_object.state.orientation = updated_rotation
-            output_object.frame_id = "base_link"
+            output_object.frame_id = FrameID.BASE_LINK
             output_object_list.append(output_object)
         else:
             raise NotImplementedError(f"Unexpected frame_id: {object.frame_id}")
