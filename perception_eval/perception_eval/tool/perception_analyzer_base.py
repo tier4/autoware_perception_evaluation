@@ -470,6 +470,7 @@ class PerceptionAnalyzerBase(ABC):
     def __len__(self) -> int:
         return len(self.df)
 
+    # TODO(vividf): duplicate code as get_scene_result function in percpetion_evaluation_manager.py
     def get_metrics_score(self, frame_results: List[PerceptionFrameResult]) -> MetricsScore:
         """Returns the metrics score for each evaluator
 
@@ -479,6 +480,7 @@ class PerceptionAnalyzerBase(ABC):
         Returns:
             metrics_score (MetricsScore): The final metrics score.
         """
+
         target_labels: List[LabelType] = self.config.target_labels
         scene_results = {label: [[]] for label in target_labels}
         nuscene_scene_results_dict: Dict[
@@ -488,10 +490,13 @@ class PerceptionAnalyzerBase(ABC):
         scene_num_gt = {label: 0 for label in target_labels}
         used_frame: List[int] = []
         for frame in frame_results:
-            obj_results_dict = divide_objects(frame.object_results, target_labels)
+            obj_results_dict = None
+            if frame.object_results is not None:
+                obj_results_dict = divide_objects(frame.object_results, target_labels)
             num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, target_labels)
             for label in target_labels:
-                scene_results[label].append(obj_results_dict[label])
+                if obj_results_dict is not None:
+                    scene_results[label].append(obj_results_dict[label])
                 scene_num_gt[label] += num_gt_dict[label]
 
             if self.config.metrics_config.detection_config is not None and frame.nuscene_object_results is not None:

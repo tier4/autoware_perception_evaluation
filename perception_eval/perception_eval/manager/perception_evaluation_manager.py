@@ -287,6 +287,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         used_frame: List[int] = []
 
         for frame in self.frame_results:
+            object_results_dict = None
             if frame.object_results is not None:
                 object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
                     frame.object_results, target_labels
@@ -294,7 +295,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, target_labels)
 
             for label in target_labels:
-                if frame.object_results is not None:
+                if object_results_dict is not None:
                     aggregated_object_results_dict[label].append(object_results_dict[label])
                 aggregated_num_gt[label] += num_gt_dict[label]
 

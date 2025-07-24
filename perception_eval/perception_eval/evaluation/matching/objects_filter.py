@@ -774,6 +774,9 @@ def divide_objects(
             Dict that are list of ObjectType or DynamicObjectWithPerceptionResult mapped by their labels.
             It depends on the type of input object.
     """
+    if dynamic_objects is None:
+        raise ValueError("dynamic_objects cannot be None in divide_objects")  # noqa
+
     if target_labels is not None:
         ret = {label: [] for label in target_labels}
     else:
