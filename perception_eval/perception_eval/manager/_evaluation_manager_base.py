@@ -22,6 +22,7 @@ from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.dataset import get_interpolated_now_frame
 from perception_eval.common.dataset import get_now_frame
 from perception_eval.common.dataset import load_all_datasets
+from perception_eval.common.schema import FrameID
 from perception_eval.config import EvaluationConfigType
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
 from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
@@ -94,6 +95,7 @@ class _EvaluationManagerBase(ABC):
         unix_time: int,
         threshold_min_time: int = 75000,
         interpolate_ground_truth: bool = False,
+        interpolated_frame_id: FrameID = FrameID.MAP,
     ) -> Optional[FrameGroundTruth]:
         """
         Return the closest ground truth frame to the given unix_time.
@@ -129,6 +131,7 @@ class _EvaluationManagerBase(ABC):
                 ground_truth_frames=self.ground_truth_frames,
                 unix_time=unix_time,
                 threshold_min_time=threshold_min_time,
+                return_frame_id=interpolated_frame_id,
             )
             return ground_truth_now_frame
 
