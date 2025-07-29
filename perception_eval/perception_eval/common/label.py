@@ -268,7 +268,7 @@ class LabelConverter:
             label (str): Label name you want to convert to any LabelType object.
 
         Returns:
-            Label: Converted label.
+            LabelType: Converted label.
         """
         return_label: Optional[LabelType] = None
         for label_info in self.label_infos:
