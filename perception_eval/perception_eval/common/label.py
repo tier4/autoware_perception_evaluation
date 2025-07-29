@@ -196,6 +196,8 @@ class LabelConverter:
                 - BUS, TRUCK, TRAILER -> CAR
                 - MOTORBIKE, CYCLIST -> BICYCLE
         label_prefix (str): Prefix of label, [autoware, traffic_light]. Defaults to autoware.
+        count_label_number (bool): Whether to count how many labels have been converted.
+            Defaults to False.
 
     Raises:
         NotImplementedError: For prefix named `blinker` and `brake_lamp` is under construction.
@@ -240,8 +242,7 @@ class LabelConverter:
 
         Args:
             label (str): Label name you want to convert to any LabelType object.
-            count_label_number (bool): Whether to count how many labels have been converted.
-                Defaults to False.
+            attributes (List[str]): List of attributes. Defaults to [].
 
         Returns:
             Label: Converted label.
@@ -260,13 +261,11 @@ class LabelConverter:
             return_label = Label(self.label_type.UNKNOWN, name, attributes)
         return return_label
 
-    def convert_name(self, name: str) -> LabelType:
-        """Convert label name to LabelType instance.
+    def convert_name_without_count(self, name: str) -> LabelType:
+        """Convert only label name to LabelType instance without counting even if `count_label_number` is True.
 
         Args:
             label (str): Label name you want to convert to any LabelType object.
-            count_label_number (bool): Whether to count how many labels have been converted.
-                Defaults to False.
 
         Returns:
             Label: Converted label.
@@ -274,8 +273,6 @@ class LabelConverter:
         return_label: Optional[LabelType] = None
         for label_info in self.label_infos:
             if name.lower() == label_info.name:
-                if self.count_label_number:
-                    label_info.num += 1
                 return_label = label_info.label
         if return_label is None:
             logging.warning(f"Label {name} is not registered.")
@@ -445,7 +442,7 @@ def set_target_lists(
     """
     if target_labels is None or len(target_labels) == 0:
         return [label for label in label_converter.label_type]
-    return [label_converter.convert_name(name) for name in target_labels]
+    return [label_converter.convert_name_without_count(name) for name in target_labels]
 
 
 def is_same_label(object1: ObjectType, object2: ObjectType) -> bool:

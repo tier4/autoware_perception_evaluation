@@ -123,4 +123,4 @@ def test_label_converter(
         count_label_number=True,
     )
     for autoware_label, name in label_pairs:
-        assert autoware_label == label_converter.convert_name(name)
+        assert autoware_label == label_converter.convert_name_without_count(name)
