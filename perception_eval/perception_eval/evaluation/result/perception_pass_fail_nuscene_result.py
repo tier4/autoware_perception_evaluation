@@ -132,10 +132,14 @@ class PassFailNusceneResult:
             threshold = self.label_thresholds[label]
             label_dict = nuscene_object_results[self.mode].get(label)
             if label_dict is None:
-                continue
+                raise ValueError(
+                    f"Required label {label} not found in nuscene_object_results. Please check the frame_pass_fail_config again."
+                )
             results_for_label_and_threshold = label_dict.get(threshold)
             if results_for_label_and_threshold is None:
-                continue
+                raise ValueError(
+                    f"Required theshold {threshold} not found in nuscene_object_results. Please specify matching threshold in matching_threshold_list."
+                )
             selected_object_results.extend(results_for_label_and_threshold)
         return selected_object_results
 
