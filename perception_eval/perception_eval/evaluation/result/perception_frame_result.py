@@ -218,7 +218,7 @@ class PerceptionFrameResult:
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         """Set the state of the object after deserialization."""
-        self.pass_fail_result = state["pass_fail_result"]
+        self.pass_fail_result = state.get("pass_fail_result", None)
 
     def serialization(self) -> Dict[str, Any]:
         """Serialize the object to a dict."""
