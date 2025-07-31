@@ -203,19 +203,22 @@ class PerceptionFrameResult:
 
     def __reduce__(self) -> Tuple[PerceptionFrameResult, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
-        return (
-            self.__class__,
-            (
-                self.object_results,
-                self.nuscene_object_results,
-                self.frame_ground_truth,
-                self.metrics_config,
-                self.critical_object_filter_config,
-                self.frame_pass_fail_config,
-                self.unix_time,
-                self.target_labels,
-            ),
+        init_args = (
+            self.object_results,
+            self.nuscene_object_results,
+            self.frame_ground_truth,
+            self.metrics_config,
+            self.critical_object_filter_config,
+            self.frame_pass_fail_config,
+            self.unix_time,
+            self.target_labels,
         )
+        state = {"pass_fail_result": self.pass_fail_result}
+        return (self.__class__, init_args, state)
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        """Set the state of the object after deserialization."""
+        self.pass_fail_result = state.get("pass_fail_result", None)
 
     def serialization(self) -> Dict[str, Any]:
         """Serialize the object to a dict."""
