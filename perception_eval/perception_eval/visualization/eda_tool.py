@@ -475,7 +475,9 @@ class EDAManager:
             confidence_threshold (float):
                     confidence threshold for visualization
         """
-        target_labels: List[LabelType] = [self.label_converter.convert_name(name) for name in self.class_names]
+        target_labels: List[LabelType] = [
+            self.label_converter.convert_name_without_count(name) for name in self.class_names
+        ]
         # visualize tp, fp in estimated objects
         tp_results, fp_results = divide_tp_fp_objects(
             object_results,
