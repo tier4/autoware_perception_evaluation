@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from itertools import chain
 from typing import Dict
 from typing import List
+from typing import Union
 
 from perception_eval.common.label import LabelType
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.matching import MatchingMode
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 from .classification import ClassificationMetricsScore
 from .detection import Map
@@ -35,7 +37,7 @@ class MetricsScore:
         prediction_config (Optional[PredictionMetricsConfig]): Config for prediction evaluation.
         classification_config (Optional[ClassificationMetricsConfig]): Config for classification evaluation.
         evaluation_task (EvaluationTask): EvaluationTask instance.
-        maps (List[Map]): List of mAP instances. Each mAP is different from threshold
+        mean_ap_values (List[Map]): List of mAP instances. Each mAP is different from threshold
                                for matching (ex. IoU 0.3).
         tracking_scores (List[TrackingMetricsScore]): List of TrackingMetricsScore instances.
         prediction_scores (List[TODO]): TBD
@@ -56,7 +58,7 @@ class MetricsScore:
         self.prediction_config = config.prediction_config
         self.classification_config = config.classification_config
         # detection metrics scores for each matching method
-        self.maps: List[Map] = []
+        self.mean_ap_values: List[Map] = []
         # tracking metrics scores for each matching method
         self.tracking_scores: List[TrackingMetricsScore] = []
         # prediction metrics scores for each matching method
@@ -87,9 +89,9 @@ class MetricsScore:
         str_ += f"Ground Truth Num: {self.num_ground_truth}\n"
 
         # detection
-        for map_ in self.maps:
+        for mean_ap in self.mean_ap_values:
             # whole result
-            str_ += str(map_)
+            str_ += str(mean_ap)
 
         # tracking
         for track_score in self.tracking_scores:
@@ -122,59 +124,41 @@ class MetricsScore:
 
     def evaluate_detection(
         self,
-        object_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]],
+        nuscene_object_results: Dict[
+            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
+        ],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
-        """[summary]
-        Calculate detection metrics
+        """
+        Evaluate detection performance and calculate detection-related metrics such as mAP.
+
+        For each MatchingMode (e.g., IoU, center distance) and each label, this function
+        calculates per-threshold detection metrics. The results are passed to Map instances for
+        mAP and mAPH computation.
 
         Args:
-            object_results (Dict[LabelType, List[DynamicObjectWithPerceptionResult]]): The dict of object result
+            object_results: A nested dictionary of detection results where:
+                - The first key is a MatchingMode (e.g., IoU),
+                - The second key is a label (e.g., car, pedestrian),
+                - The third key is a threshold (e.g., 0.5),
+                - The value is either a list of DynamicObjectWithPerceptionResult instances.
+            num_ground_truth: A dictionary mapping each label to the number of ground truth objects.
         """
         if self.tracking_config is None:
             self.__num_gt += sum(num_ground_truth.values())
 
-        for distance_threshold_ in self.detection_config.center_distance_thresholds:
-            map_ = Map(
-                object_results_dict=object_results,
-                num_ground_truth_dict=num_ground_truth,
-                target_labels=self.detection_config.target_labels,
-                matching_mode=MatchingMode.CENTERDISTANCE,
-                matching_threshold_list=distance_threshold_,
-                is_detection_2d=self.evaluation_task.is_2d(),
-            )
-            self.maps.append(map_)
-        for iou_threshold_2d_ in self.detection_config.iou_2d_thresholds:
-            map_ = Map(
-                object_results_dict=object_results,
-                num_ground_truth_dict=num_ground_truth,
-                target_labels=self.detection_config.target_labels,
-                matching_mode=MatchingMode.IOU2D,
-                matching_threshold_list=iou_threshold_2d_,
-                is_detection_2d=self.evaluation_task.is_2d(),
-            )
-            self.maps.append(map_)
-
-        if self.evaluation_task.is_3d():
-            # Only for Detection3D
-            for iou_threshold_3d_ in self.detection_config.iou_3d_thresholds:
-                map_ = Map(
-                    object_results_dict=object_results,
-                    num_ground_truth_dict=num_ground_truth,
-                    target_labels=self.detection_config.target_labels,
-                    matching_mode=MatchingMode.IOU3D,
-                    matching_threshold_list=iou_threshold_3d_,
+        for matching_mode, label_to_threshold_map in nuscene_object_results.items():
+            target_labels = list(label_to_threshold_map.keys())
+            num_gt_dict = {label: num_ground_truth.get(label, 0) for label in target_labels}
+            self.mean_ap_values.append(
+                Map(
+                    object_results_dict=label_to_threshold_map,
+                    num_ground_truth_dict=num_gt_dict,
+                    target_labels=target_labels,
+                    matching_mode=matching_mode,
+                    is_detection_2d=self.evaluation_task.is_2d(),
                 )
-                self.maps.append(map_)
-            for plane_distance_threshold_ in self.detection_config.plane_distance_thresholds:
-                map_ = Map(
-                    object_results_dict=object_results,
-                    num_ground_truth_dict=num_ground_truth,
-                    target_labels=self.detection_config.target_labels,
-                    matching_mode=MatchingMode.PLANEDISTANCE,
-                    matching_threshold_list=plane_distance_threshold_,
-                )
-                self.maps.append(map_)
+            )
 
     def evaluate_tracking(
         self,
@@ -214,6 +198,15 @@ class MetricsScore:
             self.tracking_scores.append(tracking_score_)
 
         if self.evaluation_task.is_3d():
+            for distance_bev_threshold_ in self.tracking_config.center_distance_bev_thresholds:
+                tracking_score_ = TrackingMetricsScore(
+                    object_results_dict=object_results,
+                    num_ground_truth_dict=num_ground_truth,
+                    target_labels=self.tracking_config.target_labels,
+                    matching_mode=MatchingMode.CENTERDISTANCEBEV,
+                    matching_threshold_list=distance_bev_threshold_,
+                )
+                self.tracking_scores.append(tracking_score_)
             for iou_threshold_3d_ in self.tracking_config.iou_3d_thresholds:
                 tracking_score_ = TrackingMetricsScore(
                     object_results_dict=object_results,

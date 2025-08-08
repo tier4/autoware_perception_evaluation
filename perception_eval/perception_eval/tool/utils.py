@@ -31,6 +31,7 @@ from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
 from perception_eval.common.transform import TransformDict
 from perception_eval.common.transform import TransformKey
+from perception_eval.evaluation.matching.objects_filter import filter_nuscene_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.metrics import MetricsScore
@@ -398,16 +399,28 @@ def get_metrics_info(metrics_score: MetricsScore) -> Dict[str, Any]:
         data (Dict[str, Any]):
     """
     data: Dict[str, List[float]] = {}
-    # detection
-    for map in metrics_score.maps:
-        mode: str = str(map.matching_mode)
+    # Detection format:
+    # {
+    #     "AP(IOU3D)": [mAP, label0_AP, label1_AP, ...],
+    #     "APH(IOU3D)": [mAPH, label0_APH, label1_APH, ...]
+    # }
+
+    for mean_ap_value in metrics_score.mean_ap_values:
+        mode: str = str(mean_ap_value.matching_mode)
         ap_mode: str = f"AP({mode})"
         aph_mode: str = f"APH({mode})"
-        data[ap_mode] = [map.map]
-        data[aph_mode] = [map.maph]
-        for ap, aph in zip(map.aps, map.aphs):
-            data[ap_mode].append(ap.ap)
-            data[aph_mode].append(aph.ap)
+        # AP
+        ap_list = [mean_ap_value.map]
+        for label in mean_ap_value.target_labels:
+            ap_list.append(mean_ap_value.label_mean_to_ap[label])
+        data[ap_mode] = ap_list
+
+        # APH (only if 3D)
+        if not mean_ap_value.is_detection_2d:
+            aph_list = [mean_ap_value.maph]
+            for label in mean_ap_value.target_labels:
+                aph_list.append(mean_ap_value.label_mean_to_aph[label])
+            data[aph_mode] = aph_list
 
     # tracking
     for tracking_score in metrics_score.tracking_scores:
@@ -490,13 +503,24 @@ def filter_frame_by_distance(
     else:
         max_distance_list = None
 
-    ret_frame.object_results = filter_object_results(
-        ret_frame.object_results,
-        target_labels=ret_frame.target_labels,
-        max_distance_list=max_distance_list,
-        min_distance_list=min_distance_list,
-        transforms=ret_frame.frame_ground_truth.transforms,
-    )
+    if ret_frame.object_results is not None:
+        ret_frame.object_results = filter_object_results(
+            ret_frame.object_results,
+            target_labels=ret_frame.target_labels,
+            max_distance_list=max_distance_list,
+            min_distance_list=min_distance_list,
+            transforms=ret_frame.frame_ground_truth.transforms,
+        )
+
+    if ret_frame.nuscene_object_results is not None:
+        ret_frame.nuscene_object_results = filter_nuscene_object_results(
+            ret_frame.nuscene_object_results,
+            target_labels=ret_frame.target_labels,
+            max_distance_list=max_distance_list,
+            min_distance_list=min_distance_list,
+            transforms=ret_frame.frame_ground_truth.transforms,
+        )
+
     ret_frame.frame_ground_truth.objects = filter_objects(
         ret_frame.frame_ground_truth.objects,
         is_gt=True,
@@ -541,15 +565,28 @@ def filter_frame_by_region(
         min_y_position_list = None
         max_y_position_list = None
 
-    ret_frame.object_results = filter_object_results(
-        ret_frame.object_results,
-        target_labels=ret_frame.target_labels,
-        max_x_position_list=max_x_position_list,
-        min_x_position_list=min_x_position_list,
-        max_y_position_list=max_y_position_list,
-        min_y_position_list=min_y_position_list,
-        transforms=ret_frame.frame_ground_truth.transforms,
-    )
+    if ret_frame.object_results is not None:
+        ret_frame.object_results = filter_object_results(
+            ret_frame.object_results,
+            target_labels=ret_frame.target_labels,
+            max_x_position_list=max_x_position_list,
+            min_x_position_list=min_x_position_list,
+            max_y_position_list=max_y_position_list,
+            min_y_position_list=min_y_position_list,
+            transforms=ret_frame.frame_ground_truth.transforms,
+        )
+
+    if ret_frame.nuscene_object_results is not None:
+        ret_frame.nuscene_object_results = filter_nuscene_object_results(
+            ret_frame.nuscene_object_results,
+            target_labels=ret_frame.target_labels,
+            max_x_position_list=max_x_position_list,
+            min_x_position_list=min_x_position_list,
+            max_y_position_list=max_y_position_list,
+            min_y_position_list=min_y_position_list,
+            transforms=ret_frame.frame_ground_truth.transforms,
+        )
+
     ret_frame.frame_ground_truth.objects = filter_objects(
         ret_frame.frame_ground_truth.objects,
         is_gt=True,

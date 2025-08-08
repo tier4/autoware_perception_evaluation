@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 from typing import Any
 from typing import Dict
@@ -106,6 +107,12 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
                 MatchingLabelPolicy.ALLOW_UNKNOWN if allow_matching_unknown else MatchingLabelPolicy.DEFAULT
             )
 
+        # If using MatchingLabelPolicy.ALLOW_UNKNOWN, it is required unknown label in target label
+        if matching_label_policy is MatchingLabelPolicy.ALLOW_UNKNOWN and "unknown" not in e_cfg.get(
+            "target_labels", []
+        ):
+            raise ValueError("MatchingLabelPolicy.ALLOW_UNKNOWN requires 'unknown' to be included in target_labels")
+
         l_params: Dict[str, Any] = {
             "label_prefix": e_cfg["label_prefix"],
             "merge_similar_labels": e_cfg.get("merge_similar_labels", False),
@@ -196,7 +203,6 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         }
 
         m_params: Dict[str, Any] = _extract_metric_params(e_cfg, self.evaluation_task, target_labels)
-
         return f_params, m_params
 
 
@@ -218,6 +224,7 @@ def _extract_metric_params(
         params.update(
             {
                 "center_distance_thresholds": cfg.get("center_distance_thresholds"),
+                "center_distance_bev_thresholds": cfg.get("center_distance_bev_thresholds"),
                 "plane_distance_thresholds": cfg.get("plane_distance_thresholds"),
                 "iou_2d_thresholds": cfg.get("iou_2d_thresholds"),
                 "iou_3d_thresholds": cfg.get("iou_3d_thresholds"),

@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -55,6 +57,36 @@ class ObjectState:
         self.velocity = velocity
         self.pose_covariance = pose_covariance
         self.twist_covariance = twist_covariance
+
+    def __reduce__(self) -> Tuple[ObjectState, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        return (
+            self.__class__,
+            (self.position, self.orientation, self.shape, self.velocity, self.pose_covariance, self.twist_covariance),
+        )
+
+    def serialization(self) -> Dict[str, Any]:
+        """Serialize the object to a dict."""
+        return {
+            "position": self.position if self.position is not None else None,
+            "orientation": self.orientation.elements if self.orientation is not None else None,
+            "shape": self.shape.serialization() if self.shape is not None else None,
+            "velocity": self.velocity if self.velocity is not None else None,
+            "pose_covariance": self.pose_covariance.tolist() if self.pose_covariance is not None else None,
+            "twist_covariance": self.twist_covariance.tolist() if self.twist_covariance is not None else None,
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> ObjectState:
+        """Deserialize data to an object of this class."""
+        return cls(
+            position=data["position"] if data["position"] is not None else None,
+            orientation=data["orientation"] if data["orientation"] is not None else None,
+            shape=Shape.deserialization(data["shape"]) if data["shape"] is not None else None,
+            velocity=data["velocity"] if data["velocity"] is not None else None,
+            pose_covariance=np.array(data["pose_covariance"]) if data["pose_covariance"] is not None else None,
+            twist_covariance=np.array(data["twist_covariance"]) if data["twist_covariance"] is not None else None,
+        )
 
     @property
     def shape_type(self) -> Optional[ShapeType]:

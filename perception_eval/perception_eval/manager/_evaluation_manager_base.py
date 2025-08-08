@@ -16,6 +16,7 @@ from abc import ABC
 from abc import abstractmethod
 from typing import List
 from typing import Optional
+from typing import Union
 
 from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.dataset import get_interpolated_now_frame
@@ -23,36 +24,41 @@ from perception_eval.common.dataset import get_now_frame
 from perception_eval.common.dataset import load_all_datasets
 from perception_eval.common.schema import FrameID
 from perception_eval.config import EvaluationConfigType
-from perception_eval.evaluation import FrameResultType
+from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
+from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
 from perception_eval.visualization import VisualizerType
 
+FrameResultType = Union[PerceptionFrameResult, SensingFrameResult]
 
-class _EvaluationMangerBase(ABC):
+
+class _EvaluationManagerBase(ABC):
     """Abstract base class for EvaluationManager.
 
     Attributes:
-        evaluator_config (EvaluationConfigType): Configuration for specified evaluation task.
+        evaluator_config (EvaluationConfigType): Configuration for the specified evaluation task.
         ground_truth_frames (List[FrameGroundTruth]): List of ground truths per frame.
 
     Args:
-        evaluation_config (EvaluationConfigType): Parameter config for EvaluationManager.
+        evaluation_config (EvaluationConfigType): Configuration for EvaluationManager.
+        load_ground_truth (bool, optional): Whether to automatically load ground truth annotations during initialization.
+            Defaults to True. Set to False if you prefer to handle ground truth loading manually — for example,
+            in the Autoware ML evaluation pipeline.
     """
 
     @abstractmethod
-    def __init__(
-        self,
-        evaluation_config: EvaluationConfigType,
-    ) -> None:
+    def __init__(self, evaluation_config: EvaluationConfigType, load_ground_truth: bool = True) -> None:
         super().__init__()
 
         self.evaluator_config = evaluation_config
-        self.ground_truth_frames: List[FrameGroundTruth] = load_all_datasets(
-            dataset_paths=self.evaluator_config.dataset_paths,
-            evaluation_task=self.evaluator_config.evaluation_task,
-            label_converter=self.evaluator_config.label_converter,
-            frame_id=self.evaluator_config.frame_ids,
-            load_raw_data=self.evaluator_config.load_raw_data,
-        )
+
+        if load_ground_truth:
+            self.ground_truth_frames: List[FrameGroundTruth] = load_all_datasets(
+                dataset_paths=self.evaluator_config.dataset_paths,
+                evaluation_task=self.evaluator_config.evaluation_task,
+                label_converter=self.evaluator_config.label_converter,
+                frame_id=self.evaluator_config.frame_ids,
+                load_raw_data=self.evaluator_config.load_raw_data,
+            )
 
     @property
     def evaluation_task(self):
@@ -84,11 +90,6 @@ class _EvaluationMangerBase(ABC):
         """
         pass
 
-    @abstractmethod
-    def _filter_objects(self):
-        """Filter objects with `self.filtering_params`"""
-        pass
-
     def get_ground_truth_now_frame(
         self,
         unix_time: int,
@@ -96,17 +97,25 @@ class _EvaluationMangerBase(ABC):
         interpolate_ground_truth: bool = False,
         interpolated_frame_id: FrameID = FrameID.MAP,
     ) -> Optional[FrameGroundTruth]:
-        """Returns a FrameGroundTruth instance that has the closest timestamp with `unix_time`.
+        """
+        Return the closest ground truth frame to the given unix_time.
 
-        If there is no corresponding ground truth, returns None.
+        If `interpolate_ground_truth` is False, it returns the closest ground truth frame
+        whose timestamp is within `threshold_min_time` microseconds.
+
+        If `interpolate_ground_truth` is True, it interpolates between two frames
+        (before and after) if both exist.
 
         Args:
-            unix_time (int): Unix time of frame to evaluate.
-            threshold_min_time (int, optional): Minimum timestamp threshold[s]. Defaults to 75000[s]=75[ms].
+            unix_time (int): Target frame's timestamp in microseconds.
+            threshold_min_time (int, optional): Maximum allowed time difference [μs]
+                between `unix_time` and ground truth. Defaults to 75,000 μs (75 ms).
+            interpolate_ground_truth (bool, optional): Whether to interpolate between
+                frames for more accurate ground truth. Defaults to False.
 
         Returns:
-            Optional[FrameGroundTruth]: FrameGroundTruth instance at current frame.
-                If there is no corresponding ground truth, returns None.
+            Optional[FrameGroundTruth]: Ground truth frame corresponding to `unix_time`,
+            possibly interpolated. Returns None if no suitable frame is found.
         """
         if not interpolate_ground_truth:
             # search closest frame

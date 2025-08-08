@@ -67,14 +67,16 @@ For the details, see [perception_eval/evaluation/result/perception_frame_result.
                         'unix_time': 1624164470849887},
  'frame_name': '0',
  'metrics_score': {'detection_config': {'center_distance_thresholds': ' --- length of element 2 ---,',
+                                        'center_distance_bev_thresholds': ' --- length of element 2 ---,',
                                         'iou_3d_thresholds': [' --- length of element 4 ---,'],
                                         'iou_2d_thresholds': [' --- length of element 4 ---,'],
                                         'plane_distance_thresholds': ' --- length of element 2 ---,',
                                         'target_labels': ' --- length of element 4 ---,'},
-                   'maps': ' --- length of element 6 ---,',
+                   'mean_ap_values': ' --- length of element 6 ---,',
                    'prediction_config': None,
                    'prediction_scores': [],
                    'tracking_config': {'center_distance_thresholds': ' --- length of element 2 ---,',
+                                       'center_distance_bev_thresholds': ' --- length of element 2 ---,',
                                        'iou_3d_thresholds': [' --- length of element 4 ---,'],
                                        'iou_2d_thresholds': [' --- length of element 4 ---,'],
                                        'plane_distance_thresholds': ' --- length of element 2 ---,',
@@ -121,7 +123,7 @@ Call `<func> get_object_results(...)` function to generate a set of matching pai
 For the details，see [perception_eval/evaluation/result/object_result.py](../../../perception_eval/perception_eval/evaluation/result/object_result.py)
 
 ```python
-from perception_eval.evaluation.result.object_results import get_object_results
+from perception_eval.evaluation.result.object_result_matching import get_object_results
 
 # REQUIRED:
 #   estimated_objects: List[ObjectType]
@@ -139,15 +141,16 @@ object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(est
 
 - Attributes
 
-  | Attributes            |           type           | Description                                                    |
-  | :-------------------- | :----------------------: | :------------------------------------------------------------- |
-  | `estimated_object`    |       `ObjectType`       | Estimation                                                     |
-  | `ground_truth_object` |  `Optional[ObjectType]`  | GT object                                                      |
-  | `is_label_correct`    |          `bool`          | Whether the labels which estimation and GT object has are same |
-  | `center_distance`     | `CenterDistanceMatching` | Distance of center between two objects                         |
-  | `plane_distance`      | `PlaneDistanceMatching`  | Distance of the nearest plane between two objects              |
-  | `iou_2d`              |     `IOU2DMatching`      | IOU score in 2-dimensions                                      |
-  | `iou_3d`              |     `IOU3dMatching`      | IOU score in 3-dimensions                                      |
+  | Attributes            |            type             | Description                                                    |
+  | :-------------------- | :-------------------------: | :------------------------------------------------------------- |
+  | `estimated_object`    |        `ObjectType`         | Estimation                                                     |
+  | `ground_truth_object` |   `Optional[ObjectType]`    | GT object                                                      |
+  | `is_label_correct`    |           `bool`            | Whether the labels which estimation and GT object has are same |
+  | `center_distance`     |  `CenterDistanceMatching`   | Distance of center between two objects                         |
+  | `center_distance_bev` | `CenterDistanceBEVMatching` | BEV distance of center between two 3D objects                  |
+  | `plane_distance`      |   `PlaneDistanceMatching`   | Distance of the nearest plane between two objects              |
+  | `iou_2d`              |       `IOU2DMatching`       | IOU score in 2-dimensions                                      |
+  | `iou_3d`              |       `IOU3dMatching`       | IOU score in 3-dimensions                                      |
 
 - Methods
 

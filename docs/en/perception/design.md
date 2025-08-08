@@ -85,12 +85,13 @@
 
     - For `classification2d`, there is no need to specify the following parameters.
 
-    | Arguments                    |     type      | Mandatory | Description                            |
-    | :--------------------------- | :-----------: | :-------: | :------------------------------------- |
-    | `center_distance_thresholds` | `List[float]` |    Yes    | Thresholds of center distance          |
-    | `plane_distance_thresholds`  | `List[float]` |    Yes    | Thresholds of plane distance (Only 3D) |
-    | `iou_2d_thresholds`          | `List[float]` |    Yes    | Thresholds of IoU in 2D                |
-    | `iou_3d_thresholds`          | `List[float]` |    Yes    | Thresholds of IoU in 3D (Only 3D)      |
+    | Arguments                        |     type      | Mandatory | Description                            |
+    | :------------------------------- | :-----------: | :-------: | :------------------------------------- |
+    | `center_distance_thresholds`     | `List[float]` |    Yes    | Thresholds of center distance          |
+    | `center_distance_bev_thresholds` | `List[float]` |    Yes    | Thresholds of center distance in BEV   |
+    | `plane_distance_thresholds`      | `List[float]` |    Yes    | Thresholds of plane distance (Only 3D) |
+    | `iou_2d_thresholds`              | `List[float]` |    Yes    | Thresholds of IoU in 2D                |
+    | `iou_3d_thresholds`              | `List[float]` |    Yes    | Thresholds of IoU in 3D (Only 3D)      |
 
 - **Error cases in setting parameters**
 
@@ -108,6 +109,7 @@
     "merge_similar_labels": False,
     "allow_matching_unknown": True,
     "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
+    "center_distance_bev_thresholds": [[1.0, 1.0, 1.0, 1.0]],
     "plane_distance_thresholds": [2.0, 3.0],
     "iou_2d_thresholds": [0.5],
     "iou_3d_thresholds": [0.5],
@@ -138,6 +140,7 @@
       "merge_similar_labels": False,
       "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
+      "center_distance_bev_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
@@ -165,6 +168,7 @@
       "merge_similar_labels": False,
       "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
+      "center_distance_bev_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
@@ -190,6 +194,7 @@
       "merge_similar_labels": False,
       "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
+      "center_distance_bev_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
@@ -217,6 +222,7 @@
       "merge_similar_labels": False,
       "allow_matching_unknown": True,
       "center_distance_thresholds": [[1.0, 1.0, 1.0, 1.0]],
+      "center_distance_bev_thresholds": [[1.0, 1.0, 1.0, 1.0]],
       "plane_distance_thresholds": [2.0, 3.0],
       "iou_2d_thresholds": [0.5],
       "iou_3d_thresholds": [0.5],
@@ -235,7 +241,7 @@
 ### `<class> CriticalObjectFilterConfig(...)`
 
 - An interface to determine target objects dynamically
-- Specify in every frame, not in initialization of `PerceptionEvaluationManger`
+- Specify in every frame, not in initialization of `PerceptionEvaluationManager`
 - See [perception_eval/evaluation/result/perception_frame_config](../../../perception_eval/perception_eval/evaluation/result/perception_frame_config.py)
 
 | Arguments                   |             type             |    Mandatory    | Description                                                                                                     |

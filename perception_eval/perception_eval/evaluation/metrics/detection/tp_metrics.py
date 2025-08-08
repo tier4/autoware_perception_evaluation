@@ -20,7 +20,7 @@ import numpy as np
 from perception_eval.common.schema import FrameID
 from perception_eval.common.transform import HomogeneousMatrix
 from perception_eval.common.transform import TransformDict
-from perception_eval.evaluation import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
 class TPMetrics(metaclass=ABCMeta):
@@ -125,8 +125,11 @@ class TPMetricsAph(TPMetrics):
         # Normalize heading error to [0, pi] (+pi and -pi are the same).
         if diff_heading > pi:
             diff_heading = 2.0 * pi - diff_heading
-        # Clamp the range to avoid numerical errors.
-        return min(1.0, max(0.0, 1.0 - diff_heading / pi))
+        # Python uses IEEE 754 floating-point arithmetic, which can introduce small numerical errors.
+        # For example, 1.0 - (3π/4 / π) may become 0.2500000000000001 instead of 0.25.
+        # This leads to inconsistent TP matching or AP/APH scores due to tiny differences (e.g., 0.2499999999999999 vs 0.25).
+        # Rounding to 10 decimals ensures stable evaluation for semantically identical angles like +3π/4 and -3π/4.
+        return round(max(0.0, min(1.0, 1.0 - diff_heading / pi)), 10)
 
 
 class TPMetricsConfidence(TPMetrics):

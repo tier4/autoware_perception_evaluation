@@ -20,10 +20,10 @@ from typing import Union
 
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
 from perception_eval.manager import PerceptionEvaluationManager
 from perception_eval.tool import PerceptionAnalyzer2D
 from perception_eval.util.debug import get_objects_with_difference2d
@@ -73,7 +73,7 @@ class PerceptionLSimMoc:
 
         evaluation_config_dict.update(
             dict(
-                allow_matching_unknown=True,
+                allow_matching_unknown=False,
                 merge_similar_labels=False,
                 label_prefix=self.label_prefix,
                 count_label_number=True,
@@ -147,6 +147,7 @@ class PerceptionLSimMoc:
         """
         処理の最後に評価結果を出す
         """
+
         # number of fails for critical objects
         num_critical_fail: int = sum(
             map(

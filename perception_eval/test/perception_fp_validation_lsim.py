@@ -21,10 +21,10 @@ from perception_eval.common import ObjectType
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.status import get_scene_rates
 from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation import get_object_status
-from perception_eval.evaluation import PerceptionFrameResult
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from perception_eval.evaluation.result.perception_frame_result import get_object_status
+from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
 from perception_eval.manager import PerceptionEvaluationManager
 from perception_eval.util.debug import get_objects_with_difference
 from perception_eval.util.logger_config import configure_logger
@@ -34,10 +34,10 @@ class FPValidationLsimMoc:
     def __init__(self, dataset_paths: List[int], result_root_directory: str) -> None:
         evaluation_config_dict = {
             "evaluation_task": "fp_validation",
-            "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+            "target_labels": ["car", "bicycle", "pedestrian", "motorbike", "unknown"],
             "max_x_position": 102.4,
             "max_y_position": 102.4,
-            "max_matchable_radii": [5.0, 3.0, 3.0, 3.0],
+            "max_matchable_radii": [5.0, 3.0, 3.0, 3.0, 3.0],
             "merge_similar_labels": False,
             "label_prefix": "autoware",
             "allow_matching_unknown": True,
@@ -64,15 +64,15 @@ class FPValidationLsimMoc:
 
         critical_object_filter_config = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            max_x_position_list=[100.0, 100.0, 100.0, 100.0],
-            max_y_position_list=[100.0, 100.0, 100.0, 100.0],
+            target_labels=["car", "bicycle", "pedestrian", "motorbike", "unknown"],
+            max_x_position_list=[100.0, 100.0, 100.0, 100.0, 100.0],
+            max_y_position_list=[100.0, 100.0, 100.0, 100.0, 100.0],
         )
 
         frame_pass_fail_config = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            matching_threshold_list=[2.0, 2.0, 2.0, 2.0],
+            target_labels=["car", "bicycle", "pedestrian", "motorbike", "unknown"],
+            matching_threshold_list=[2.0, 2.0, 2.0, 2.0, 2.0],
         )
 
         frame_result = self.evaluator.add_frame_result(

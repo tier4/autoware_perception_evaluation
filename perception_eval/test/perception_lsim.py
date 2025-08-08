@@ -18,12 +18,14 @@ import tempfile
 from typing import List
 
 from perception_eval.common.evaluation_task import EvaluationTask
+from perception_eval.common.label import AutowareLabel
 from perception_eval.common.object import DynamicObject
 from perception_eval.config import PerceptionEvaluationConfig
-from perception_eval.evaluation import PerceptionFrameResult
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
 from perception_eval.manager import PerceptionEvaluationManager
 from perception_eval.tool import PerceptionAnalyzer3D
 from perception_eval.util.debug import format_class_for_log
@@ -41,7 +43,7 @@ class PerceptionLSimMoc:
         evaluation_config_dict = {
             "evaluation_task": evaluation_task,
             # ラベル，max x/y，マッチング閾値 (detection/tracking/predictionで共通)
-            "target_labels": ["car", "bicycle", "pedestrian", "motorbike"],
+            "target_labels": ["car", "bicycle", "pedestrian", "motorbike", "unknown"],
             "ignore_attributes": ["cycle_state.without_rider"],
             # max x/y position or max/min distanceの指定が必要
             # # max x/y position
@@ -54,7 +56,6 @@ class PerceptionLSimMoc:
             # "confidence_threshold": 0.5,
             # # GTのuuidによるフィルタ (Optional)
             # "target_uuids": ["foo", "bar"],
-            # objectごとにparamを設定
             # label parameters
             "label_prefix": "autoware",
             "merge_similar_labels": False,
@@ -72,18 +73,22 @@ class PerceptionLSimMoc:
             evaluation_config_dict.update(
                 {
                     "center_distance_thresholds": [
-                        [1.0, 1.0, 1.0, 1.0],
-                        [2.0, 2.0, 2.0, 2.0],
-                    ],  # = [[1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0]]
+                        [1.0, 1.0, 1.0, 1.0, 1.0],
+                        [2.0, 2.0, 2.0, 2.0, 2.0],
+                    ],  # = [[1.0, 1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0, 2.0]]
+                    "center_distance_bev_thresholds": [
+                        [1.0, 1.0, 1.0, 1.0, 1.0],
+                        [2.0, 2.0, 2.0, 2.0, 2.0],
+                    ],  # = [[1.0, 1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0, 2.0]]
                     # objectごとに同じparamの場合はこのような指定が可能
                     "plane_distance_thresholds": [
                         2.0,
                         3.0,
                     ],  # = [[2.0, 2.0, 2.0, 2.0], [3.0, 3.0, 3.0, 3.0]]
-                    "iou_2d_thresholds": [0.5, 0.5, 0.5, 0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
-                    "iou_3d_thresholds": [0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
-                    "min_point_numbers": [0, 0, 0, 0],
-                    "max_matchable_radii": 5.0,  # = [5.0, 5.0, 5.0, 5.0]
+                    "iou_2d_thresholds": [0.5, 0.5, 0.5, 0.5, 0.5],  # = [[0.5, 0.5, 0.5, 0.5, 0.5]]
+                    "iou_3d_thresholds": [0.5, 0.5, 0.5, 0.5, 0.5],  # = [[0.5, 0.5, 0.5, 0.5, 0.5]]
+                    "min_point_numbers": [0, 0, 0, 0, 0],
+                    "max_matchable_radii": [5.0, 5.0, 5.0, 5.0, 5.0],
                 }
             )
 
@@ -119,16 +124,16 @@ class PerceptionLSimMoc:
         # どれを注目物体とするかのparam
         critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
             evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
+            target_labels=["car", "bicycle", "pedestrian", "motorbike", "unknown"],
             ignore_attributes=["cycle_state.without_rider"],
-            max_x_position_list=[30.0, 30.0, 30.0, 30.0],
-            max_y_position_list=[30.0, 30.0, 30.0, 30.0],
+            max_x_position_list=[30.0, 30.0, 30.0, 30.0, 30.0],
+            max_y_position_list=[30.0, 30.0, 30.0, 30.0, 30.0],
         )
         # Pass fail を決めるパラメータ
         frame_pass_fail_config: PerceptionPassFailConfig = PerceptionPassFailConfig(
             evaluator_config=self.evaluator.evaluator_config,
-            target_labels=["car", "bicycle", "pedestrian", "motorbike"],
-            matching_threshold_list=[2.0, 2.0, 2.0, 2.0],
+            target_labels=["car", "bicycle", "pedestrian", "motorbike", "unknown"],
+            matching_threshold_list=[2.0, 2.0, 2.0, 2.0, 2.0],
         )
 
         frame_result = self.evaluator.add_frame_result(
@@ -163,6 +168,7 @@ class PerceptionLSimMoc:
         """
         Frameごとの可視化
         """
+
         logging.info(
             f"{len(frame_result.pass_fail_result.tp_object_results)} TP objects, "
             f"{len(frame_result.pass_fail_result.fp_object_results)} FP objects, "
@@ -221,11 +227,20 @@ if __name__ == "__main__":
             f"{format_class_for_log(detection_lsim.evaluator.frame_results[0], 1)}",
         )
 
-        if len(detection_lsim.evaluator.frame_results[0].object_results) > 0:
-            logging.info(
-                "Object result example (frame_results[0].object_results[0]): "
-                f"{format_class_for_log(detection_lsim.evaluator.frame_results[0].object_results[0])}",
-            )
+        frame_result = detection_lsim.evaluator.frame_results[0]
+        nuscene_object_results = frame_result.nuscene_object_results
+        if nuscene_object_results is not None:
+            center_distance_results = nuscene_object_results.get(MatchingMode.CENTERDISTANCE)
+            if center_distance_results:
+                for label, threshold_dict in center_distance_results.items():
+                    for threshold, results_list in threshold_dict.items():
+                        if results_list and len(results_list) > 0:
+                            logging.info(
+                                "Object result example (nuscene_object_results[MatchingMode.CENTERDISTANCE][label][threshold][0]): "
+                                f"{format_class_for_log(results_list[0])}",
+                            )
+                        break  # Only show one example
+                    break
 
     # Metrics config
     logging.info(
@@ -235,8 +250,8 @@ if __name__ == "__main__":
 
     # Detection metrics score
     logging.info(
-        "mAP result example (final_metric_score.maps[0].aps[0]): "
-        f"{format_class_for_log(detection_final_metric_score.maps[0], 100)}",
+        "mAP result example (final_metric_score.mean_ap_values[0].label_to_aps[AutowareLabel.CAR][0]): "
+        f"{format_class_for_log(detection_final_metric_score.mean_ap_values[0].label_to_aps[AutowareLabel.CAR][0], 100)}",
     )
 
     if detection_lsim.evaluator.evaluator_config.load_raw_data:
@@ -296,11 +311,20 @@ if __name__ == "__main__":
             f"{format_class_for_log(tracking_lsim.evaluator.frame_results[0], 1)}",
         )
 
-        if len(tracking_lsim.evaluator.frame_results[0].object_results) > 0:
-            logging.info(
-                "Object result example (frame_results[0].object_results[0]): "
-                f"{format_class_for_log(tracking_lsim.evaluator.frame_results[0].object_results[0])}",
-            )
+        frame_result = tracking_lsim.evaluator.frame_results[0]
+        nuscene_object_results = frame_result.nuscene_object_results
+        if nuscene_object_results is not None:
+            center_distance_results = nuscene_object_results.get(MatchingMode.CENTERDISTANCE)
+            if center_distance_results:
+                for label, threshold_dict in center_distance_results.items():
+                    for threshold, results_list in threshold_dict.items():
+                        if results_list and len(results_list) > 0:
+                            logging.info(
+                                "Object result example (nuscene_object_results[MatchingMode.CENTERDISTANCE][label][threshold][0]): "
+                                f"{format_class_for_log(results_list[0])}",
+                            )
+                        break  # Only show one example
+                    break
 
     # Metrics config
     logging.info(
@@ -310,8 +334,8 @@ if __name__ == "__main__":
 
     # Detection metrics score in Tracking
     logging.info(
-        "mAP result example (tracking_final_metric_score.maps[0].aps[0]): "
-        f"{format_class_for_log(tracking_final_metric_score.maps[0], 100)}",
+        "mAP result example (tracking_final_metric_score.mean_ap_values[0].aps[0]): "
+        f"{format_class_for_log(tracking_final_metric_score.mean_ap_values[0], 100)}",
     )
 
     # Tracking metrics score

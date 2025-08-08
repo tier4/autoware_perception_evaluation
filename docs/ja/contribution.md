@@ -46,7 +46,7 @@
 │       ├── t4dataset
 │       │    ├── annotation
 │       │    ├── data
-│       │    ├── maps
+│       │    ├── mean_ap_values
 │       │    ├── ros2bag
 │       │    ├── scenario.yaml
 │       │    └── status.json
