@@ -117,9 +117,16 @@ class _EvaluationConfigBase(ABC):
         self.__log_directory: str = osp.join(self.result_root_directory, "log")
         self.__visualization_directory: str = osp.join(self.result_root_directory, "visualization")
         if not osp.exists(self.log_directory):
-            os.makedirs(self.log_directory)
+            try:
+                os.makedirs(self.log_directory)
+            except Exception as e:
+                print(e)
         if not osp.exists(self.visualization_directory):
-            os.makedirs(self.visualization_directory)
+            try:
+                os.makedirs(self.visualization_directory)
+            except Exception as e:
+                print(e)
+
 
     def __reduce__(self) -> Tuple[_EvaluationConfigBase, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
