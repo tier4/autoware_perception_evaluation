@@ -127,7 +127,6 @@ class _EvaluationConfigBase(ABC):
             except Exception as e:
                 print(e)
 
-
     def __reduce__(self) -> Tuple[_EvaluationConfigBase, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
         return (
