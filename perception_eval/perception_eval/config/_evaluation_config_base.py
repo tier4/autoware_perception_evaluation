@@ -128,7 +128,9 @@ class _EvaluationConfigBase(ABC):
             try:
                 os.makedirs(self.visualization_directory)
             except OSError as e:
-                logging.exception(f"Failed to create visualization directory: {self.visualization_directory}. Error: {e}")
+                logging.exception(
+                    f"Failed to create visualization directory: {self.visualization_directory}. Error: {e}"
+                )
 
     def __reduce__(self) -> Tuple[_EvaluationConfigBase, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
