@@ -16,6 +16,7 @@ from __future__ import annotations
 from abc import ABC
 from abc import abstractmethod
 import datetime
+import logging
 import os
 import os.path as osp
 from typing import Any
@@ -116,16 +117,18 @@ class _EvaluationConfigBase(ABC):
         self.result_root_directory: str = result_root_directory.format(TIME=time)
         self.__log_directory: str = osp.join(self.result_root_directory, "log")
         self.__visualization_directory: str = osp.join(self.result_root_directory, "visualization")
+        # create directories if not exist.
+        # it may cause permission error, so use try-catch to handle it.
         if not osp.exists(self.log_directory):
             try:
                 os.makedirs(self.log_directory)
-            except Exception as e:
-                print(e)
+            except OSError as e:
+                logging.exception(f"Failed to create log directory: {self.log_directory}. Error: {e}")
         if not osp.exists(self.visualization_directory):
             try:
                 os.makedirs(self.visualization_directory)
-            except Exception as e:
-                print(e)
+            except OSError as e:
+                logging.exception(f"Failed to create visualization directory: {self.visualization_directory}. Error: {e}")
 
     def __reduce__(self) -> Tuple[_EvaluationConfigBase, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
