@@ -25,6 +25,7 @@ from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
+from perception_eval.evaluation.matching.objects_filter import filter_nuscene_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics import MetricsScore
@@ -79,6 +80,103 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
     @property
     def visualizer(self) -> PerceptionVisualizerType:
         return self.__visualizer
+
+    def preprocess_object_results(
+        self,
+        unix_time: int,
+        ground_truth_now_frame: FrameGroundTruth,
+        estimated_objects: List[ObjectType],
+        critical_object_filter_config: CriticalObjectFilterConfig,
+        frame_pass_fail_config: PerceptionPassFailConfig,
+    ) -> PerceptionFrameResult:
+        """Preprocess perception result at current frame without appending to `self.frame_results`."""
+
+        # Filter estimated and ground truth objects
+        filtered_estimated_objects, filtered_ground_truth = self.filter_objects(
+            estimated_objects, ground_truth_now_frame
+        )
+
+        # Match objects based on enabled metrics
+        nuscene_object_results = None
+        object_results = None
+
+        # Match for detection metrics (Based on matching policy)
+        if self.metrics_config.detection_config:
+            nuscene_object_results = self.match_nuscene_objects(filtered_estimated_objects, filtered_ground_truth)
+
+        # Match for tracking, prediction, classification (Based on shortest distance)
+        # TODO(vividf): Remove this after using nuscene_object_results for all metrics
+        shortest_distance_matching = any(
+            [
+                self.metrics_config.tracking_config,
+                self.metrics_config.prediction_config,
+                self.metrics_config.classification_config,
+            ]
+        )
+        if shortest_distance_matching:
+            object_results = self.match_objects(filtered_estimated_objects, filtered_ground_truth)
+
+        # Validate that at least one matching method was performed
+        if nuscene_object_results is None and object_results is None:
+            raise ValueError(
+                "No object matching performed. At least one metric configuration "
+                "(detection, tracking, prediction, or classification) must be enabled."
+            )
+
+        filtered_ground_truth.objects = filter_objects(
+            filtered_ground_truth.objects,
+            is_gt=True,
+            transforms=filtered_ground_truth.transforms,
+            **critical_object_filter_config.filtering_params,
+        )
+
+        if nuscene_object_results is not None:
+            # Filter objects by critical object filter config
+            nuscene_object_results = filter_nuscene_object_results(
+                nuscene_object_results,
+                transforms=self.frame_ground_truth.transforms,
+                **critical_object_filter_config.filtering_params,
+            )
+
+        if object_results is not None:
+            # Filter objects by critical object filter config
+            object_results: List[DynamicObjectWithPerceptionResult] = filter_object_results(
+                object_results,
+                transforms=filtered_ground_truth.transforms,
+                **critical_object_filter_config.filtering_params,
+            )
+
+        # Note: Since tracking will have detection_config and tracking_config,
+        # We will have both nuscene_object_results and object_results for tracking.
+        # For other metrics, we will have either nuscene_object_results or object_results.
+        # TODO(vividf): Once we have nuscene_object_results for all metrics,
+        # we can remove object_results.
+
+        # Create PerceptionFrameResult
+        return PerceptionFrameResult(
+            object_results=object_results,
+            nuscene_object_results=nuscene_object_results,
+            frame_ground_truth=filtered_ground_truth,
+            metrics_config=self.metrics_config,
+            critical_object_filter_config=critical_object_filter_config,
+            frame_pass_fail_config=frame_pass_fail_config,
+            unix_time=unix_time,
+            target_labels=self.target_labels,
+        )
+
+    def evaluate_perception_frame(
+        self,
+        perception_frame_result: PerceptionFrameResult,
+        previous_perception_frame_result: PerceptionFrameResult = None,
+    ) -> PerceptionFrameResult:
+        """Evaluate perception frame result and append to `self.frame_results`."""
+        if previous_perception_frame_result is not None:
+            perception_frame_result.evaluate_perception_frame(previous_result=previous_perception_frame_result)
+        else:
+            perception_frame_result.evaluate_perception_frame()
+
+        self.frame_results.append(perception_frame_result)
+        return perception_frame_result
 
     def add_frame_result(
         self,
