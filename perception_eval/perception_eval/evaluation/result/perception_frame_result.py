@@ -192,6 +192,8 @@ class PerceptionFrameResult:
             # Calculate TP/FP/TN/FN based on plane distance
             self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
 
+            return
+
         assert self.object_results is not None, "Object results must be provided for evaluation in the following tasks."
 
         # TODO(KS): This should be done in preprocessing step
