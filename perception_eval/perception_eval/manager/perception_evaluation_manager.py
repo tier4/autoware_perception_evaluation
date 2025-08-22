@@ -169,13 +169,12 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         perception_frame_result: PerceptionFrameResult,
         previous_perception_frame_result: PerceptionFrameResult = None,
     ) -> PerceptionFrameResult:
-        """Evaluate perception frame result and append to `self.frame_results`."""
+        """Evaluate perception frame result."""
         if previous_perception_frame_result is not None:
             perception_frame_result.evaluate_perception_frame(previous_result=previous_perception_frame_result)
         else:
             perception_frame_result.evaluate_perception_frame()
 
-        self.frame_results.append(perception_frame_result)
         return perception_frame_result
 
     def add_frame_result(
