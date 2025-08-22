@@ -134,7 +134,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             # Filter objects by critical object filter config
             nuscene_object_results = filter_nuscene_object_results(
                 nuscene_object_results,
-                transforms=self.frame_ground_truth.transforms,
+                transforms=filtered_ground_truth.transforms,
                 **critical_object_filter_config.filtering_params,
             )
 

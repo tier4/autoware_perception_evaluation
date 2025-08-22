@@ -123,7 +123,7 @@ class PerceptionFrameResult:
         self,
         previous_result: Optional[PerceptionFrameResult] = None,
     ) -> None:
-        """[summary]
+        """
         Evaluate a frame from the pair of estimated objects and ground truth objects
         Args:
             previous_result (Optional[PerceptionFrameResult]): The previous frame result. If None, set it as empty list []. Defaults to None.
@@ -133,53 +133,10 @@ class PerceptionFrameResult:
             self.frame_ground_truth.objects,
             self.critical_object_filter_config.target_labels,
         )
-
-        # TODO(KS): This should be done in preprocessing step
-        if self.object_results is not None:
-            # Group objects results based on the Label
-            object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
-                self.object_results,
-                self.critical_object_filter_config.target_labels,
-            )
-
-        # Only detection
-        if self.metrics_score.detection_config is not None and self.metrics_score.tracking_config is None:
-            self.metrics_score.evaluate_detection(self.nuscene_object_results, num_ground_truth_dict)
-            # Calculate TP/FP/TN/FN based on plane distance
-            self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
-
-        # Detection and Tracking
-        elif self.metrics_score.detection_config is not None and self.metrics_score.tracking_config is not None:
-            # Use object_results for tracking and nuscene_object_results for detection/pass_fail
-            if previous_result is None:
-                previous_results_dict = {label: [] for label in self.critical_object_filter_config.target_labels}
-            else:
-                previous_results_dict = divide_objects(
-                    previous_result.object_results,
-                    self.critical_object_filter_config.target_labels,
-                )
-            tracking_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = object_results_dict.copy()
-            for label, prev_results in previous_results_dict.items():
-                tracking_results[label] = [prev_results, tracking_results[label]]
-            self.metrics_score.evaluate_detection(self.nuscene_object_results, num_ground_truth_dict)
-            self.metrics_score.evaluate_tracking(tracking_results, num_ground_truth_dict)
-            # Calculate TP/FP/TN/FN based on plane distance
-            self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
-
-        # Classification
-        elif self.metrics_score.classification_config is not None:
-            self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
-            self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
-
-        # Prediction
-        elif self.metrics_score.prediction_config is not None:
-            self.metrics_score.evaluate_prediction(object_results_dict, num_ground_truth_dict)
-            self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
-        else:
-            raise ValueError(
-                "No matched metrics config. "
-                "Please ensure that at least one of detection, tracking, classification, or prediction configs is set."
-            )
+        self._core_evaluation(
+            num_ground_truth_dict=num_ground_truth_dict,
+            previous_object_results=previous_result.object_results if previous_result else None,
+        )
 
     def evaluate_frame(
         self,
@@ -218,28 +175,43 @@ class PerceptionFrameResult:
                 **self.critical_object_filter_config.filtering_params,
             )
 
-            # Group objects results based on the Label
-            object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
-                self.object_results,
-                self.critical_object_filter_config.target_labels,
-            )
+        self._core_evaluation(
+            num_ground_truth_dict=num_ground_truth_dict,
+            previous_object_results=previous_result.object_results if previous_result else None,
+        )
 
+    def _core_evaluation(
+        self,
+        num_ground_truth_dict: Dict[LabelType, int],
+        previous_object_results: Optional[List[DynamicObjectWithPerceptionResult]],
+    ) -> None:
+        """Core evaluation logic for the frame result."""
         # Only detection
         if self.metrics_score.detection_config is not None and self.metrics_score.tracking_config is None:
             self.metrics_score.evaluate_detection(self.nuscene_object_results, num_ground_truth_dict)
             # Calculate TP/FP/TN/FN based on plane distance
             self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
 
+        assert self.object_results is not None, "Object results must be provided for evaluation in the following tasks."
+
+        # TODO(KS): This should be done in preprocessing step
+        # Group objects results based on the Label
+        object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
+            self.object_results,
+            self.critical_object_filter_config.target_labels,
+        )
+
         # Detection and Tracking
-        elif self.metrics_score.detection_config is not None and self.metrics_score.tracking_config is not None:
+        if self.metrics_score.detection_config is not None and self.metrics_score.tracking_config is not None:
             # Use object_results for tracking and nuscene_object_results for detection/pass_fail
-            if previous_result is None:
+            if previous_object_results is None:
                 previous_results_dict = {label: [] for label in self.critical_object_filter_config.target_labels}
             else:
                 previous_results_dict = divide_objects(
-                    previous_result.object_results,
+                    previous_object_results,
                     self.critical_object_filter_config.target_labels,
                 )
+
             tracking_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = object_results_dict.copy()
             for label, prev_results in previous_results_dict.items():
                 tracking_results[label] = [prev_results, tracking_results[label]]
