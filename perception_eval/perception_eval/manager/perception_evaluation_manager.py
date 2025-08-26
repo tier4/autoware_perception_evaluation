@@ -129,7 +129,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 self.metrics_config.prediction_config,
                 self.metrics_config.classification_config,
             ]
-        ) or not any( # If no metrics_config is provided, enable shortest_distance_matching for fp_validation
+        ) or not any(  # If no metrics_config is provided, enable shortest_distance_matching for fp_validation
             [
                 self.metrics_config.detection_config,
                 self.metrics_config.tracking_config,
