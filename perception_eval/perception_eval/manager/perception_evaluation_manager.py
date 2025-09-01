@@ -96,13 +96,12 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             estimated_objects, ground_truth_now_frame
         )
 
-        # Match objects based on enabled metrics
-        nuscene_object_results = None
-        object_results = None
-
         # Match for detection metrics (Based on matching policy)
-        if self.metrics_config.detection_config:
-            nuscene_object_results = self.match_nuscene_objects(filtered_estimated_objects, filtered_ground_truth)
+        nuscene_object_results = (
+            self.match_nuscene_objects(filtered_estimated_objects, filtered_ground_truth)
+            if self.metrics_config.detection_config
+            else None
+        )
 
         # Match for tracking, prediction, classification (Based on shortest distance)
         # TODO(vividf): Remove this after using nuscene_object_results for all metrics
@@ -113,8 +112,11 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 self.metrics_config.classification_config,
             ]
         )
-        if shortest_distance_matching:
-            object_results = self.match_objects(filtered_estimated_objects, filtered_ground_truth)
+        object_results = (
+            self.match_objects(filtered_estimated_objects, filtered_ground_truth)
+            if shortest_distance_matching
+            else None
+        )
 
         # Validate that at least one matching method was performed
         if nuscene_object_results is None and object_results is None:
