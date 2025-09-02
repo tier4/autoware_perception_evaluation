@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from itertools import chain
+from typing import Any
 from typing import Dict
 from typing import List
+from typing import Tuple
 from typing import Union
 
 from perception_eval.common.label import LabelType
@@ -53,6 +57,7 @@ class MetricsScore:
         config: MetricsScoreConfig,
         used_frame: List[int],
     ) -> None:
+        self.config = config
         self.detection_config = config.detection_config
         self.tracking_config = config.tracking_config
         self.prediction_config = config.prediction_config
@@ -69,6 +74,33 @@ class MetricsScore:
         self.__num_frame: int = len(used_frame)
         self.__num_gt: int = 0
         self.__used_frame: List[int] = used_frame
+
+    def __reduce__(self) -> Tuple[MetricsScore, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        init_args = (
+            self.config,
+            self.__used_frame,
+        )
+        state = {
+            "mean_ap_values": self.mean_ap_values,
+            "tracking_scores": self.tracking_scores,
+            "prediction_scores": self.prediction_scores,
+            "classification_scores": self.classification_scores,
+            "__num_gt": self.__num_gt,
+        }
+        return (self.__class__, init_args, state)
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        """Set the state of the object to preserve states after deserialization."""
+        state_keys = ["mean_ap_values", "tracking_scores", "prediction_scores", "classification_scores", "__num_gt"]
+
+        for state_key in state_keys:
+            value = state.get(state_key, None)
+            if state_key.startswith("__"):  # private
+                mangled = f"_{self.__class__.__name__}{state_key}"
+                setattr(self, mangled, value)
+            else:
+                setattr(self, state_key, value)
 
     def __str__(self) -> str:
         """__str__ method
