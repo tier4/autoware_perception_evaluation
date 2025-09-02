@@ -14,7 +14,7 @@ license = "Apache-2.0"
 requires-python = ">=3.10,<3.13"
 dependencies = [
   "numpy<2.0.0",
-  "nuscenes-devkit>=1.1.9",
+  "nuscenes-devkit>=1.1.9,<1.2.0",
   "plotly>=6.1.2",
   "setuptools>=80.9.0",
   "tqdm>=4.67.1",
