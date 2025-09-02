@@ -231,10 +231,21 @@ class PerceptionFrameResult:
         elif self.metrics_score.prediction_config is not None:
             self.metrics_score.evaluate_prediction(object_results_dict, num_ground_truth_dict)
             self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
+
+        # Fp validation
+        elif not any(
+            [
+                self.metrics_config.detection_config,
+                self.metrics_config.tracking_config,
+                self.metrics_config.prediction_config,
+                self.metrics_config.classification_config,
+            ]
+        ):
+            self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
         else:
             raise ValueError(
                 "No matched metrics config. "
-                "Please ensure that at least one of detection, tracking, classification, or prediction configs is set."
+                "Please ensure that at least one of detection, tracking, classification, prediction or fp_validation configs is set."
             )
 
     def __reduce__(self) -> Tuple[PerceptionFrameResult, Tuple[Any]]:

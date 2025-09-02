@@ -219,10 +219,18 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         if self.metrics_config.detection_config:
             nuscene_object_results = self.match_nuscene_objects(filtered_estimated_objects, filtered_ground_truth)
 
-        # Match for tracking, prediction, classification (Based on shortest distance)
+        # Match for tracking, prediction, classification, fp_validation (Based on shortest distance)
+        # fp_validation is enabled when no metrics_config is provided.
         # TODO(vividf): Remove this after using nuscene_object_results for all metrics
         shortest_distance_matching = any(
             [
+                self.metrics_config.tracking_config,
+                self.metrics_config.prediction_config,
+                self.metrics_config.classification_config,
+            ]
+        ) or not any(  # If no metrics_config is provided, enable shortest_distance_matching for fp_validation
+            [
+                self.metrics_config.detection_config,
                 self.metrics_config.tracking_config,
                 self.metrics_config.prediction_config,
                 self.metrics_config.classification_config,
@@ -235,7 +243,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         if nuscene_object_results is None and object_results is None:
             raise ValueError(
                 "No object matching performed. At least one metric configuration "
-                "(detection, tracking, prediction, or classification) must be enabled."
+                "(detection, tracking, prediction, classification, or fp_validation) must be enabled."
             )
 
         # Note: Since tracking will have detection_config and tracking_config,
