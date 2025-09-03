@@ -12,8 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
+from typing import Any
 from typing import Dict
 from typing import List
+from typing import Tuple
 
 import numpy as np
 from perception_eval.common.label import LabelType
@@ -73,6 +77,7 @@ class Map:
         matching_mode: MatchingMode,
         is_detection_2d: bool = False,
     ) -> None:
+        self.object_results_dict = object_results_dict
         self.num_ground_truth_dict = num_ground_truth_dict
         self.target_labels = target_labels
         self.matching_mode = matching_mode
@@ -87,7 +92,7 @@ class Map:
             ap_per_threshold = []
             aph_per_threshold = []
 
-            for threshold, object_results in object_results_dict[label].items():
+            for threshold, object_results in self.object_results_dict[label].items():
                 num_ground_truth = num_ground_truth_dict[label]
                 ap = Ap(
                     tp_metrics=TPMetricsAp(),
@@ -119,6 +124,20 @@ class Map:
 
         self.map: float = self._mean(list(self.label_mean_to_ap.values()))
         self.maph: float = self._mean(list(self.label_mean_to_aph.values())) if not self.is_detection_2d else None
+
+    def __reduce__(self) -> Tuple[Map, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        init_args = (
+            self.object_results_dict,
+            self.num_ground_truth_dict,
+            self.target_labels,
+            self.matching_mode,
+            self.is_detection_2d,
+        )
+        return (
+            self.__class__,
+            init_args,
+        )
 
     def __str__(self) -> str:
         str_ = ""

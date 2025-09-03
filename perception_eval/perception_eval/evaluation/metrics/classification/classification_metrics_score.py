@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
@@ -44,6 +45,10 @@ class ClassificationMetricsScore:
         num_ground_truth_dict: Dict[LabelType, int],
         target_labels: List[LabelType],
     ) -> None:
+        self.object_results_dict = object_results_dict
+        self.num_ground_truth_dict = num_ground_truth_dict
+        self.target_labels: List[LabelType] = target_labels
+
         self.accuracies: List[ClassificationAccuracy] = []
         for target_label in target_labels:
             object_results = object_results_dict[target_label]
@@ -55,6 +60,19 @@ class ClassificationMetricsScore:
                 target_labels=[target_label],
             )
             self.accuracies.append(acc_)
+
+    def __reduce__(self) -> Tuple[ClassificationMetricsScore, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        init_args = (
+            self.object_results_dict,
+            self.num_ground_truth_dict,
+            self.target_labels,
+        )
+
+        return (
+            self.__class__,
+            init_args,
+        )
 
     def _summarize(self) -> Tuple[float, float, float, float]:
         """Summarize all ClassificationAccuracy.
