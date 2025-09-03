@@ -248,7 +248,7 @@ class PerceptionFrameResult:
                 "Please ensure that at least one of detection, tracking, classification, prediction or fp_validation configs is set."
             )
 
-    def __reduce__(self) -> Tuple[PerceptionFrameResult, Tuple[Any]]:
+    def __reduce__(self) -> Tuple[PerceptionFrameResult, Tuple[Any], Dict[Any]]:
         """Serialization and deserialization of the object with pickling."""
         init_args = (
             self.object_results,

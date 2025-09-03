@@ -75,7 +75,7 @@ class MetricsScore:
         self.__num_gt: int = 0
         self.__used_frame: List[int] = used_frame
 
-    def __reduce__(self) -> Tuple[MetricsScore, Tuple[Any]]:
+    def __reduce__(self) -> Tuple[MetricsScore, Tuple[Any], Dict[Any]]:
         """Serialization and deserialization of the object with pickling."""
         init_args = (
             self.config,
