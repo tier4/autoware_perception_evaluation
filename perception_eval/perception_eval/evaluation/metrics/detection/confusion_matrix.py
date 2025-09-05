@@ -14,12 +14,16 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
+from dataclasses import dataclass
+
 from logging import getLogger
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
 from typing import Any
+from typing import Dict
 
 import numpy as np
 import numpy.typing as npt 
@@ -32,8 +36,104 @@ from perception_eval.evaluation.result.object_result import DynamicObjectWithPer
 
 logger = getLogger(__name__)
 
+_UNMATCHED_LABEL = "unmatched"
 
-class Ap:
+@dataclass(frozen=True)
+class ConfusionMatrixData:
+
+    label: str
+    total_gt_nums: int
+    total_tp_nums: int
+    matched_labels: Dict[str, int]
+
+
+class ConfusionMatrix:
+    """
+    Class to visualize a confusion matrix across all labels.
+
+    mAP evaluation class supporting multiple thresholds per label.
+
+    This class calculates Average Precision (AP) and Average Precision with Heading (APH)
+    for a set of perception results grouped by label and matching threshold.
+
+    For each label:
+        - It computes AP and optionally APH for all given matching thresholds.
+        - It then calculates the mean AP (and APH) across thresholds for that label.
+
+    Finally:
+        - It averages the per-label mean AP (and APH) across all target labels
+          to produce the final mAP and mAPH.
+
+    This class supports both 2D and 3D detection evaluation:
+        - In 2D detection, only AP is calculated (APH is skipped).
+        - In 3D detection, both AP and APH are calculated.
+
+    Attributes:
+        target_labels (List[LabelType]):
+            List of target labels evaluated in this instance.
+        matching_mode (MatchingMode):
+            The matching strategy used for TP/FP calculation (e.g., CENTERDISTANCE, IOU3D).
+        is_detection_2d (bool):
+            If True, only AP is computed; APH is skipped.
+        label_to_aps (Dict[LabelType, List[Ap]]):
+            List of AP instances (one per threshold) for each label.
+        label_mean_to_ap (Dict[LabelType, float]):
+            Mean AP across thresholds for each label. Can be NaN if all AP values are NaN.
+        label_to_aphs (Optional[Dict[LabelType, List[Ap]]]):
+            List of APH instances (one per threshold) for each label (if 3D detection).
+        label_mean_to_aph (Optional[Dict[LabelType, float]]):
+            Mean APH across thresholds for each label (if 3D detection). Can be NaN if all APH values are NaN.
+        map (float):
+            Final mean Average Precision (mAP) across all labels. Can be NaN if all label means are NaN.
+        maph (Optional[float]):
+            Final mean Average Precision with Heading (mAPH) across all labels,
+            or None if `is_detection_2d` is True. Can be NaN if all label means are NaN.
+
+    """
+
+    def __init__(self, 
+                 object_results_dict: Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]],
+                 num_ground_truth_dict: Dict[LabelType, int],
+                 target_labels: List[LabelType],
+                 matching_mode: MatchingMode,
+                 ) -> None:
+        
+        self.object_results_dict = object_results_dict
+        self.num_ground_truth_dict = num_ground_truth_dict
+        self.target_labels = target_labels
+        self.matching_mode = matching_mode
+    
+    def get_confusion_matrix(self) -> Dict[float, Dict[str, Dict[str, int]]]:
+        """
+        Compute confusion matrix in an array of target_labels x target_labels, 
+        where the row is prediction and gt is ground truth.
+        """
+        # confusion_matrix: {matching_threshold: {predicted_label: {ground_truth: number of matched predicted boxes}}}
+        matching_threshold_confusion_matrices = defaultdict(defaultdict(int))
+
+        # total tp nums for each ground truth labels, {threshold: {ground_truth: number of tps}}
+        total_tps = defaultdict(defaultdict(int))
+        # 
+        for label in self.target_labels:
+            
+            for threshold, object_results in self.object_results_dict[label].items():
+                for object_result in object_results:
+                    predicted_object_label = object_result.semantic_label.name
+
+                    if object_result.ground_truth_object is not None:
+                        if object_result.is_label_correct:
+                            total_tps[threshold][label] += 1
+                        
+                        matching_threshold_confusion_matrices[threshold][predicted_object_label][predicted_object_label] += 1
+                    else:
+                        matching_threshold_confusion_matrices[threshold][predicted_object_label][_UNMATCHED_LABEL] += 1
+                        
+            
+            
+
+        
+
+class Ap::
     """AP class.
 
     Attributes:
@@ -100,7 +200,7 @@ class Ap:
     def __reduce__(self) -> Tuple[Ap, Tuple[Any]]:
         """ Serialize and deserializing the class. """
         return (self.__class__, (self.tp_metrics, self.objects_results, self.num_ground_truth, self.target_label, self.matching_mode, self.matching_threshold), )
- 
+    
     def _calculate_tp_fp(
         self,
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],

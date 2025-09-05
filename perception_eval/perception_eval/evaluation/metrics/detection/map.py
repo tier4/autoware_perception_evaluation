@@ -151,12 +151,12 @@ class Map:
         # === Per-label AP Table ===
         for label in self.target_labels:
             str_ += f"\nLabel: {label.value}\n"
-            str_ += "| Threshold | Predict_num | Groundtruth_num |     AP     |"
+            str_ += "| Threshold | Predict_num | Groundtruth_num |     AP     |    max_f1    |       best_conf     |"
             if not self.is_detection_2d:
                 str_ += "    APH    |"
             str_ += "\n"
 
-            str_ += "|:---------:|:------------:|:----------------:|:----------:|"
+            str_ += "|:---------:|:------------:|:----------------:|:----------:|:----------:|:----------:|"
             if not self.is_detection_2d:
                 str_ += ":---------:|"
             str_ += "\n"
@@ -180,6 +180,7 @@ class Map:
                         str_ += f"  {aph_str} |"
                     else:
                         str_ += " {:^8} |".format("N/A")
+                str_ += f"|{ap.max_f1_score:^8.4f} | {ap.best_conf:^12.6f} |"
                 str_ += "\n"
 
         # === Summary Table ===
@@ -206,6 +207,9 @@ class Map:
                 )
                 str_ += f"  {mean_aph_str} |"
             str_ += "\n"
+
+        # Summary about the best 
+        str += "\n"
 
         return str_
 
