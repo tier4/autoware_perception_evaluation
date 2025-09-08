@@ -444,6 +444,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 detection_confusion_matrix = DetectionConfusionMatrix(
                     output_dir=self._metric_output_dir
                 )
+                # Draw confusion matrices
                 detection_confusion_matrix(
                     nuscene_object_results=flattened_nuscene_object_results_dict,
                     num_ground_truth=aggregated_num_gt
