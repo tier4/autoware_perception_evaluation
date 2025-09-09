@@ -100,7 +100,7 @@ class DetectionConfusionMatrix:
                 total_tp_nums = 0
                 matched_boxes = defaultdict(int)
                 for object_result in object_results:
-                    predicted_object_label = object_result.semantic_label.name
+                    predicted_object_label = object_result.estimated_object.semantic_label.name
 
                     if object_result.ground_truth_object is not None:
                         if object_result.is_label_correct:
@@ -177,13 +177,13 @@ class DetectionConfusionMatrix:
 
         for ax, (threshold, label_confusion_matrices) in zip(axes, matching_confusion_matrices.items()):
             # Row for ground truths, and col for predictions
-            confusion_matrix = []
+            confusion_matrices = []
             cm_col_header = []
             cm_row_header = []
 
             for target_label in target_labels:
                 confusion_matrix_data = label_confusion_matrices[target_label]
-                confusion_matrix.append(confusion_matrix_data.matched_boxes.get(target_label, 0))
+                confusion_matrices.append(confusion_matrix_data.matched_boxes.get(target_label, 0))
 
                 if target_label is not _UNMATCHED_LABEL:
                     total_gt_nums = confusion_matrix_data.total_gt_nums
@@ -197,7 +197,7 @@ class DetectionConfusionMatrix:
                 cm_col_header.append(f"{target_label} ({total_gt_nums})")
                 cm_row_header.append(f"{target_label} ({total_prediction_nums})")
 
-            confusion_matrix: npt.NDArray[np.int32] = np.array(confusion_matrix)
+            confusion_matrix: npt.NDArray[np.int32] = np.array(confusion_matrices)
 
             # Plot
             title = f"Matching mode: {matching_mode}, Threshold: {threshold}"
