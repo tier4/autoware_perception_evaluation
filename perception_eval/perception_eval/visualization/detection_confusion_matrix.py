@@ -172,9 +172,6 @@ class DetectionConfusionMatrix:
         fig, axes = plt.subplots(rows, cols, figsize=(cols * fig_size[0], rows * fig_size[1]))
         axes = axes.flatten()  # Flatten in case of single row/column
 
-        if _UNMATCHED_LABEL not in target_labels:
-            target_labels.append(_UNMATCHED_LABEL)
-
         for ax, (threshold, label_confusion_matrices) in zip(axes, matching_confusion_matrices.items()):
             # Row for ground truths, and col for predictions
             confusion_matrices = []
@@ -183,39 +180,64 @@ class DetectionConfusionMatrix:
 
             for target_label in target_labels:
                 confusion_matrix_data = label_confusion_matrices[target_label]
-                confusion_matrices.append(confusion_matrix_data.matched_boxes.get(target_label, 0))
+                # Ground_truth_label_1: [predicted_label_1_num, predicted_label_2_num, ...]
+                confusion_matrices.append(
+                    [confusion_matrix_data.matched_boxes.get(label, 0) for label in target_labels]
+                )
 
-                if target_label != _UNMATCHED_LABEL:
-                    total_gt_nums = confusion_matrix_data.total_gt_nums
-                    total_prediction_nums = confusion_matrix_data.total_prediction_nums
-                else:
-                    # FN
-                    total_gt_nums = confusion_matrix_data.total_fn_nums
-                    # FP
-                    total_prediction_nums = confusion_matrix_data.total_fp_nums
+                # Add UNMATCHED GTs (FN) to the row
+                confusion_matrices[-1].append(
+                    confusion_matrix_data.total_fn_nums
+                )
+                cm_row_header.append(f"{target_label} ({confusion_matrix_data.total_gt_nums})")
+                cm_col_header.append(f"{target_label}")
 
-                cm_col_header.append(f"{target_label} ({total_gt_nums})")
-                cm_row_header.append(f"{target_label} ({total_prediction_nums})")
+            # Add an UNMATCHED row (FPs) for predictions
+            confusion_matrices.append(
+                [label_confusion_matrices[label].matched_boxes.get(_UNMATCHED_LABEL, 0) for label in target_labels]
+            )
+
+            # UNMATCHED is not a label, so the last row and column (UNMATCHED x UNMATCHED) is always 0
+            confusion_matrices[-1].append(
+                0
+            )
 
             confusion_matrix: npt.NDArray[np.int32] = np.array(confusion_matrices)
+
+            # Row-wise sum for each column, and thus get the total predicted boxes for each label
+            predicted_label_sums = np.sum(confusion_matrix, axis=0)
+            
+            # Add UNMATCHED label to the column header
+            cm_col_header.append(
+                "FN" 
+            )
+
+            # Add the number to each column header
+            cm_col_header = [f"{col_header} ({label_sum})" for col_header, label_sum in zip(cm_col_header, predicted_label_sums)]
+            
+            # Add UNMATCHED label to the row header
+            # Total FP (last row)
+            total_fp_num = sum(confusion_matrix[-1])
+            cm_row_header.append(
+                f"FP ({total_fp_num})"
+            )
 
             # Plot
             title = f"Matching mode: {matching_mode}, Threshold: {threshold}"
             im = ax.imshow(confusion_matrix, cmap='Blues')
             ax.set_title(title)
 
-            num_labels = len(target_labels)
-            ax.set_xticks(np.arange(num_labels))
-            ax.set_yticks(np.arange(num_labels))
-            ax.set_xticklabels(target_labels, rotation=45, ha='right')
-            ax.set_yticklabels(target_labels)
+            ax.set_xticks(np.arange(len(cm_col_header)))
+            ax.set_yticks(np.arange(len(cm_row_header)))
+            ax.set_xticklabels(cm_col_header, rotation=45, ha='right')
+            ax.set_yticklabels(cm_row_header)
 
             ax.set_xlabel("Predicted Label")
             ax.set_ylabel("True Label")
 
             # Annotate cells
-            for i in range(num_labels):
-                for j in range(num_labels):
+            for i in range(len(cm_row_header)):
+                for j in range(len(cm_col_header)):
                     text_color = 'white' if confusion_matrix[i, j] > confusion_matrix.max() / 2 else 'black'
                     ax.text(j, i, confusion_matrix[i, j], ha='center', va='center', color=text_color)
 
