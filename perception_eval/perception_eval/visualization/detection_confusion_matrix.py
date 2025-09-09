@@ -113,6 +113,7 @@ class DetectionConfusionMatrix:
                     matched_boxes[_UNMATCHED_LABEL] = 0
 
                 total_gt_nums = num_gts[label]
+                print(matched_boxes)
                 matching_threshold_confusion_matrices[threshold][label] = ConfusionMatrixData(
                     label=label, total_tp_nums=total_tp_nums, total_gt_nums=total_gt_nums, matched_boxes=matched_boxes
                 )
@@ -218,7 +219,7 @@ class DetectionConfusionMatrix:
             cm_row_header.append(f"FP ({total_fp_num})")
 
             # Plot
-            title = f"Matching mode: {matching_mode}, Threshold: {threshold}"
+            title = f"Threshold: {threshold}"
             im = ax.imshow(confusion_matrix, cmap='Blues')
             ax.set_title(title)
 
@@ -243,7 +244,7 @@ class DetectionConfusionMatrix:
         # Shared colorbar
         fig.colorbar(im, ax=axes.tolist(), shrink=0.6)
         fig.suptitle(f"Confusion Matrices at Different Thresholds \n Matching mode: {matching_mode}", fontsize=16)
-        fig.tight_layout(rect=[0, 0, 1, 0.96])
+        fig.tight_layout()
 
         output_file = self.output_dir / f"confusion_matrix_{matching_mode}.png"
         fig.savefig(output_file, dpi=300, bbox_inches='tight')  # High resolution
