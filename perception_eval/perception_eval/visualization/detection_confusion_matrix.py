@@ -144,7 +144,7 @@ class DetectionConfusionMatrix:
         for matching_mode, label_to_threshold_map in nuscene_object_results.items():
             target_labels = list(label_to_threshold_map.keys())
             num_gt_dict = {label: num_ground_truth.get(label, 0) for label in target_labels}
-            matching_confusion_matrix = self.get_confusion_matrix(
+            matching_confusion_matrix = self.compute_confusion_matrix(
                 object_results_dict=label_to_threshold_map,
                 num_gts=num_gt_dict,
                 target_labels=target_labels
