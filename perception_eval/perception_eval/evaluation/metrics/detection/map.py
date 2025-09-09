@@ -209,7 +209,7 @@ class Map:
             str_ += "\n"
 
         # Summary about the best
-        str += "\n"
+        str_ += "\n"
 
         return str_
 

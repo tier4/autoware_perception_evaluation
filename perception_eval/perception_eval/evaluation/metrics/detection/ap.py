@@ -97,7 +97,7 @@ class Ap:
         self.ap = self._calculate_ap(precision_list, recall_list)
 
     def __reduce__(self) -> Tuple[Ap, Tuple[Any]]:
-        """Serialize and deserializing the class."""
+        """Serializing and deserializing the class."""
         return (
             self.__class__,
             (

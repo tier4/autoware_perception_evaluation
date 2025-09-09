@@ -32,7 +32,7 @@ from perception_eval.evaluation.result.object_result import DynamicObjectWithPer
 logger = getLogger(__name__)
 
 _UNMATCHED_LABEL = "unmatched"
-_CONFUISION_MATRIX_FOLDER_NAME = "detection_confusion_matrix"
+_CONFUSION_MATRIX_FOLDER_NAME = "detection_confusion_matrix"
 
 
 @dataclass(frozen=True)
@@ -61,7 +61,7 @@ class DetectionConfusionMatrix:
 
     Confusion matrix will be visualized as follows:
     ----------------------------------------------------------------------------------------
-    |            | Predicted_label_1    | Predictted_label_2     | Predicted_label_3        |
+    |            | Predicted_label_1    | Predicted_label_2     | Predicted_label_3        |
     | GT_label_1 |  Num Matched Boxes   |    Num Matched Boxes   |     Num Matched Boxes    |
     | GT_label_2 |  Num Matched Boxes   |    Num Matched Boxes   |     Num Matched Boxes    |
     | GT_label_3 |  Num Matched Boxes   |    Num Matched Boxes   |     Num Matched Boxes    |
@@ -72,7 +72,7 @@ class DetectionConfusionMatrix:
     """
 
     def __init__(self, output_dir: Path) -> None:
-        self.output_dir = output_dir / _CONFUISION_MATRIX_FOLDER_NAME
+        self.output_dir = output_dir / _CONFUSION_MATRIX_FOLDER_NAME
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def compute_confusion_matrix(
@@ -185,7 +185,7 @@ class DetectionConfusionMatrix:
                 confusion_matrix_data = label_confusion_matrices[target_label]
                 confusion_matrices.append(confusion_matrix_data.matched_boxes.get(target_label, 0))
 
-                if target_label is not _UNMATCHED_LABEL:
+                if target_label != _UNMATCHED_LABEL:
                     total_gt_nums = confusion_matrix_data.total_gt_nums
                     total_prediction_nums = confusion_matrix_data.total_prediction_nums
                 else:
