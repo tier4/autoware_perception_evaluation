@@ -105,7 +105,7 @@ class DetectionConfusionMatrix:
                     if object_result.ground_truth_object is not None:
                         if object_result.is_label_correct:
                             total_tp_nums += 1
-                            matched_boxes[predicted_object_label] += 1
+                        matched_boxes[predicted_object_label] += 1
                     else:
                         matched_boxes[_UNMATCHED_LABEL] += 1
 
@@ -113,7 +113,6 @@ class DetectionConfusionMatrix:
                     matched_boxes[_UNMATCHED_LABEL] = 0
 
                 total_gt_nums = num_gts[label]
-                print(matched_boxes)
                 matching_threshold_confusion_matrices[threshold][label] = ConfusionMatrixData(
                     label=label, total_tp_nums=total_tp_nums, total_gt_nums=total_gt_nums, matched_boxes=matched_boxes
                 )
@@ -182,7 +181,6 @@ class DetectionConfusionMatrix:
             for target_label in target_labels:
                 confusion_matrix_data = label_confusion_matrices[target_label]
                 # Ground_truth_label_1: [predicted_label_1_num, predicted_label_2_num, ...]
-                print(confusion_matrix_data.matched_boxes)
                 confusion_matrices.append(
                     [confusion_matrix_data.matched_boxes.get(label.value, 0) for label in target_labels]
                 )
@@ -237,14 +235,20 @@ class DetectionConfusionMatrix:
                     text_color = 'white' if confusion_matrix[i, j] > confusion_matrix.max() / 2 else 'black'
                     ax.text(j, i, confusion_matrix[i, j], ha='center', va='center', color=text_color)
 
-            # Remove any unused subplots
+            # fig.colorbar(im, ax=ax)
+        
+        # Remove any unused subplots
         for ax in axes[num_thresholds:]:
             fig.delaxes(ax)
 
+        fig.tight_layout(rect=[0, 0, 0.9, 1.0])
+        # cbar_ax = fig.add_axes([0.92, 0.15, 0.015, 0.7])  # Position colorbar to the far right
         # Shared colorbar
-        fig.colorbar(im, ax=axes.tolist(), shrink=0.6)
-        fig.suptitle(f"Confusion Matrices at Different Thresholds \n Matching mode: {matching_mode}", fontsize=16)
-        fig.tight_layout()
+        cbar_ax = fig.add_axes([0.92, 0.15, 0.015, 0.7])
+        fig.colorbar(im, cax=cbar_ax)
+        # fig.colorbar(im, ax=axes.tolist(), shrink=0.6)
+        
+        fig.suptitle(f"Confusion Matrices \n Matching mode: {matching_mode}", fontsize=16)
 
         output_file = self.output_dir / f"confusion_matrix_{matching_mode}.png"
         fig.savefig(output_file, dpi=300, bbox_inches='tight')  # High resolution
