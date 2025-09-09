@@ -180,7 +180,7 @@ class Map:
                         str_ += f"  {aph_str} |"
                     else:
                         str_ += " {:^8} |".format("N/A")
-                str_ += f"|{ap.max_f1_score:^8.4f} | {ap.best_conf:^12.6f} |"
+                str_ += f" {ap.max_f1_score:^8.4f} | {ap.best_conf:^12.6f} |"
                 str_ += "\n"
 
         # === Summary Table ===
