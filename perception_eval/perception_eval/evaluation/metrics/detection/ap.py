@@ -149,9 +149,9 @@ class Ap:
         """
         precisions = np.asarray(precisions)
         recalls = np.asarray(recalls)
-        
+
         numerator = 2 * (precisions * recalls)
-        denominator = (precisions + recalls)
+        denominator = precisions + recalls
 
         # Create an output array filled with np.nan
         f1_scores = np.full_like(numerator, np.nan, dtype=np.float64)
