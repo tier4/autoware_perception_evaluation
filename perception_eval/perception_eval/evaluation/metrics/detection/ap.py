@@ -149,7 +149,17 @@ class Ap:
         """
         precisions = np.asarray(precisions)
         recalls = np.asarray(recalls)
-        f1_scores = 2 * (precisions * recalls) / (precisions + recalls)
+        
+        numerator = 2 * (precisions * recalls)
+        denominator = (precisions + recalls)
+
+        # Create an output array filled with np.nan
+        f1_scores = np.full_like(numerator, np.nan, dtype=np.float64)
+
+        # Create a condition: denominator is not zero and not nan
+        condition = (denominator != 0) & ~np.isnan(denominator)
+
+        np.divide(numerator, denominator, where=condition, out=f1_scores)
         return f1_scores.tolist()
 
     def compute_max_f1_index(self) -> Tuple[float, int]:

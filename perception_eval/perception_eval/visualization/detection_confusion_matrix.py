@@ -93,7 +93,7 @@ class DetectionConfusionMatrix:
             A dict of confusion matrix with each matching threshold: {matching threshold: {label: ConfusionMatixData}}.
         """
         # confusion_matrix: {matching_threshold: {predicted_label: ConfusionMatrixData}}}
-        matching_threshold_confusion_matrices = defaultdict(defaultdict(ConfusionMatrixData))
+        matching_threshold_confusion_matrices = defaultdict(lambda: defaultdict(ConfusionMatrixData))
 
         for label in target_labels:
             for threshold, object_results in object_results_dict[label].items():
