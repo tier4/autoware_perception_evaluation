@@ -181,8 +181,9 @@ class DetectionConfusionMatrix:
             for target_label in target_labels:
                 confusion_matrix_data = label_confusion_matrices[target_label]
                 # Ground_truth_label_1: [predicted_label_1_num, predicted_label_2_num, ...]
+                print(confusion_matrix_data.matched_boxes)
                 confusion_matrices.append(
-                    [confusion_matrix_data.matched_boxes.get(label, 0) for label in target_labels]
+                    [confusion_matrix_data.matched_boxes.get(label.value, 0) for label in target_labels]
                 )
 
                 # Add UNMATCHED GTs (FN) to the row
