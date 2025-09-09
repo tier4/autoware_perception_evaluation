@@ -208,7 +208,7 @@ class Map:
                 str_ += f"  {mean_aph_str} |"
             str_ += "\n"
 
-        # Summary about the best 
+        # Summary about the best
         str += "\n"
 
         return str_

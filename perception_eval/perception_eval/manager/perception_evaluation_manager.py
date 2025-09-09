@@ -17,8 +17,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict
 from typing import List
-from typing import Tuple
 from typing import Optional
+from typing import Tuple
 
 from perception_eval.common import ObjectType
 from perception_eval.common.dataset import FrameGroundTruth
@@ -64,11 +64,12 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         output_dir: Main directory to save any artifacts from running metrics.
     """
 
-    def __init__(self, 
-                 evaluation_config: PerceptionEvaluationConfig, 
-                 load_ground_truth: bool = True, 
-                 metric_output_dir: Optional[str] = None
-                 ) -> None:
+    def __init__(
+        self,
+        evaluation_config: PerceptionEvaluationConfig,
+        load_ground_truth: bool = True,
+        metric_output_dir: Optional[str] = None,
+    ) -> None:
         super().__init__(evaluation_config=evaluation_config, load_ground_truth=load_ground_truth)
         self.frame_results: List[PerceptionFrameResult] = []
         self.__visualizer = (
@@ -441,13 +442,10 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         if self.evaluator_config.metrics_config.detection_config is not None:
             scene_metrics_score.evaluate_detection(flattened_nuscene_object_results_dict, aggregated_num_gt)
             if self.metric_output_dir is not None:
-                detection_confusion_matrix = DetectionConfusionMatrix(
-                    output_dir=self._metric_output_dir
-                )
+                detection_confusion_matrix = DetectionConfusionMatrix(output_dir=self._metric_output_dir)
                 # Draw confusion matrices
                 detection_confusion_matrix(
-                    nuscene_object_results=flattened_nuscene_object_results_dict,
-                    num_ground_truth=aggregated_num_gt
+                    nuscene_object_results=flattened_nuscene_object_results_dict, num_ground_truth=aggregated_num_gt
                 )
 
         # Tracking

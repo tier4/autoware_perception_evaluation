@@ -22,10 +22,9 @@ from typing import Dict
 from typing import List
 from typing import Tuple
 
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-import matplotlib.pyplot as plt
-
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
@@ -72,19 +71,16 @@ class DetectionConfusionMatrix:
         output_dir: Main output directory to save confusion matrix figures.
     """
 
-    def __init__(
-        self,
-        output_dir: Path
-    ) -> None:
+    def __init__(self, output_dir: Path) -> None:
         self.output_dir = output_dir / _CONFUISION_MATRIX_FOLDER_NAME
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def compute_confusion_matrix(
-            self, 
-            object_results_dict: Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]], 
-            num_gts: Dict[LabelType, int],
-            target_labels: List[LabelType],
-        ) -> Dict[float, Dict[str, Dict[str, int]]]:
+        self,
+        object_results_dict: Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]],
+        num_gts: Dict[LabelType, int],
+        target_labels: List[LabelType],
+    ) -> Dict[float, Dict[str, Dict[str, int]]]:
         """
         Compute confusion matrix for a dict of {Target labels: {Matching threshold: [Matched results]}}.
         Args:
@@ -92,9 +88,9 @@ class DetectionConfusionMatrix:
                 A nested dictionary mapping from label → threshold to a list of matched object results.
             num_gts: Dict of {label: number of ground truth boxes}.
             target_labels: Targeted label classes to compute confusion matrices.
-        
+
         Returns:
-            A dict of confusion matrix with each matching threshold: {matching threshold: {label: ConfusionMatixData}}. 
+            A dict of confusion matrix with each matching threshold: {matching threshold: {label: ConfusionMatixData}}.
         """
         # confusion_matrix: {matching_threshold: {predicted_label: ConfusionMatrixData}}}
         matching_threshold_confusion_matrices = defaultdict(defaultdict(ConfusionMatrixData))
@@ -131,7 +127,7 @@ class DetectionConfusionMatrix:
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
         """
-        Compute confusion matrix for each matching mode and thresholds, and then visualizing 
+        Compute confusion matrix for each matching mode and thresholds, and then visualizing
         them in a figure.
         Args:
             nuscene_object_results: A nested dictionary of detection results where:
@@ -145,28 +141,27 @@ class DetectionConfusionMatrix:
             target_labels = list(label_to_threshold_map.keys())
             num_gt_dict = {label: num_ground_truth.get(label, 0) for label in target_labels}
             matching_confusion_matrix = self.compute_confusion_matrix(
-                object_results_dict=label_to_threshold_map,
-                num_gts=num_gt_dict,
-                target_labels=target_labels
+                object_results_dict=label_to_threshold_map, num_gts=num_gt_dict, target_labels=target_labels
             )
             self.draw_confusion_matrix(
                 matching_confusion_matrix=matching_confusion_matrix,
                 target_labels=target_labels,
-                matching_mode=matching_mode
+                matching_mode=matching_mode,
             )
 
-    def draw_confusion_matrix(self, 
-                              matching_confusion_matrices: Dict[float, Dict[LabelType, ConfusionMatrixData]], 
-                              target_labels: List[LabelType],
-                              matching_mode: MatchingMode, 
-                              fig_size: Tuple[int] = (6, 6)
-                              ) -> None:
+    def draw_confusion_matrix(
+        self,
+        matching_confusion_matrices: Dict[float, Dict[LabelType, ConfusionMatrixData]],
+        target_labels: List[LabelType],
+        matching_mode: MatchingMode,
+        fig_size: Tuple[int] = (6, 6),
+    ) -> None:
         """
         Draw confusion matrices in subplot and save them to a png figure.
-        
+
         Args:
-            matching_confusion_matrices: A dict of confusion matrix with each matching threshold: 
-                {matching threshold: {label: ConfusionMatixData}}. 
+            matching_confusion_matrices: A dict of confusion matrix with each matching threshold:
+                {matching threshold: {label: ConfusionMatixData}}.
             target_labels: Targeted ground truth labels.
             matching_mode: Matching method to match between predicted and ground truth boxes.
             fig_size: Total figure size for the confusion matrix.
@@ -185,13 +180,11 @@ class DetectionConfusionMatrix:
             confusion_matrix = []
             cm_col_header = []
             cm_row_header = []
-            
+
             for target_label in target_labels:
                 confusion_matrix_data = label_confusion_matrices[target_label]
-                confusion_matrix.append(
-                    confusion_matrix_data.matched_boxes.get(target_label, 0)
-                )
-                
+                confusion_matrix.append(confusion_matrix_data.matched_boxes.get(target_label, 0))
+
                 if target_label is not _UNMATCHED_LABEL:
                     total_gt_nums = confusion_matrix_data.total_gt_nums
                     total_prediction_nums = confusion_matrix_data.total_prediction_nums
@@ -204,10 +197,8 @@ class DetectionConfusionMatrix:
                 cm_col_header.append(f"{target_label} ({total_gt_nums})")
                 cm_row_header.append(f"{target_label} ({total_prediction_nums})")
 
-            confusion_matrix: npt.NDArray[np.int32] = np.array(
-                confusion_matrix
-            )
-            
+            confusion_matrix: npt.NDArray[np.int32] = np.array(confusion_matrix)
+
             # Plot
             title = f"Matching mode: {matching_mode}, Threshold: {threshold}"
             im = ax.imshow(confusion_matrix, cmap='Blues')
@@ -218,7 +209,7 @@ class DetectionConfusionMatrix:
             ax.set_yticks(np.arange(num_labels))
             ax.set_xticklabels(target_labels, rotation=45, ha='right')
             ax.set_yticklabels(target_labels)
-            
+
             ax.set_xlabel("Predicted Label")
             ax.set_ylabel("True Label")
 
@@ -236,7 +227,7 @@ class DetectionConfusionMatrix:
         fig.colorbar(im, ax=axes.tolist(), shrink=0.6)
         fig.suptitle(f"Confusion Matrices at Different Thresholds \n Matching mode: {matching_mode}", fontsize=16)
         fig.tight_layout(rect=[0, 0, 1, 0.96])
-        
+
         output_file = self.output_dir / f"confusion_matrix_{matching_mode}.png"
         fig.savefig(output_file, dpi=300, bbox_inches='tight')  # High resolution
 

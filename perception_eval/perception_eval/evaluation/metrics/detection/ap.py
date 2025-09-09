@@ -15,15 +15,14 @@
 from __future__ import annotations
 
 from logging import getLogger
+from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-from typing import Any
 
 import numpy as np
-import numpy.typing as npt 
-
+import numpy.typing as npt
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
@@ -98,9 +97,19 @@ class Ap:
         self.ap = self._calculate_ap(precision_list, recall_list)
 
     def __reduce__(self) -> Tuple[Ap, Tuple[Any]]:
-        """ Serialize and deserializing the class. """
-        return (self.__class__, (self.tp_metrics, self.objects_results, self.num_ground_truth, self.target_label, self.matching_mode, self.matching_threshold), )
- 
+        """Serialize and deserializing the class."""
+        return (
+            self.__class__,
+            (
+                self.tp_metrics,
+                self.objects_results,
+                self.num_ground_truth,
+                self.target_label,
+                self.matching_mode,
+                self.matching_threshold,
+            ),
+        )
+
     def _calculate_tp_fp(
         self,
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
@@ -142,9 +151,9 @@ class Ap:
         recalls = np.asarray(recalls)
         f1_scores = 2 * (precisions * recalls) / (precisions + recalls)
         return f1_scores.tolist()
-    
+
     def compute_max_f1_index(self) -> Tuple[float, int]:
-        """ Compute the best max-f1 and return the index. """
+        """Compute the best max-f1 and return the index."""
         try:
             max_index = np.nanargmax(self.f1_scores)
         except ValueError:
@@ -152,7 +161,7 @@ class Ap:
             return np.nan, -1
 
         return self.f1_scores[max_index], max_index
-    
+
     def get_precision_recall(self) -> Tuple[List[float], List[float]]:
         """
         Compute the precision and recall list.
