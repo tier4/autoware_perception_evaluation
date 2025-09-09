@@ -186,9 +186,7 @@ class DetectionConfusionMatrix:
                 )
 
                 # Add UNMATCHED GTs (FN) to the row
-                confusion_matrices[-1].append(
-                    confusion_matrix_data.total_fn_nums
-                )
+                confusion_matrices[-1].append(confusion_matrix_data.total_fn_nums)
                 cm_row_header.append(f"{target_label} ({confusion_matrix_data.total_gt_nums})")
                 cm_col_header.append(f"{target_label}")
 
@@ -198,29 +196,25 @@ class DetectionConfusionMatrix:
             )
 
             # UNMATCHED is not a label, so the last row and column (UNMATCHED x UNMATCHED) is always 0
-            confusion_matrices[-1].append(
-                0
-            )
+            confusion_matrices[-1].append(0)
 
             confusion_matrix: npt.NDArray[np.int32] = np.array(confusion_matrices)
 
             # Row-wise sum for each column, and thus get the total predicted boxes for each label
             predicted_label_sums = np.sum(confusion_matrix, axis=0)
-            
+
             # Add UNMATCHED label to the column header
-            cm_col_header.append(
-                "FN" 
-            )
+            cm_col_header.append("FN")
 
             # Add the number to each column header
-            cm_col_header = [f"{col_header} ({label_sum})" for col_header, label_sum in zip(cm_col_header, predicted_label_sums)]
-            
+            cm_col_header = [
+                f"{col_header} ({label_sum})" for col_header, label_sum in zip(cm_col_header, predicted_label_sums)
+            ]
+
             # Add UNMATCHED label to the row header
             # Total FP (last row)
             total_fp_num = sum(confusion_matrix[-1])
-            cm_row_header.append(
-                f"FP ({total_fp_num})"
-            )
+            cm_row_header.append(f"FP ({total_fp_num})")
 
             # Plot
             title = f"Matching mode: {matching_mode}, Threshold: {threshold}"
