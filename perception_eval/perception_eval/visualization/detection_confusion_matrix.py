@@ -236,7 +236,7 @@ class DetectionConfusionMatrix:
                     ax.text(j, i, confusion_matrix[i, j], ha='center', va='center', color=text_color)
 
             # fig.colorbar(im, ax=ax)
-        
+
         # Remove any unused subplots
         for ax in axes[num_thresholds:]:
             fig.delaxes(ax)
@@ -247,7 +247,7 @@ class DetectionConfusionMatrix:
         cbar_ax = fig.add_axes([0.92, 0.15, 0.015, 0.7])
         fig.colorbar(im, cax=cbar_ax)
         # fig.colorbar(im, ax=axes.tolist(), shrink=0.6)
-        
+
         fig.suptitle(f"Confusion Matrices \n Matching mode: {matching_mode}", fontsize=16)
 
         output_file = self.output_dir / f"confusion_matrix_{matching_mode}.png"
