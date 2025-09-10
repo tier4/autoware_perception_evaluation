@@ -245,7 +245,7 @@ class DetectionConfusionMatrix:
         # Shared colorbar
         cbar_ax = fig.add_axes([0.92, 0.15, 0.015, 0.7])
         fig.colorbar(im, cax=cbar_ax)
-        
+
         fig.suptitle(f"Matching mode: {matching_mode}", fontsize=16)
 
         matching_mode_file_name = str(matching_mode).lower().replace(" ", "_")
