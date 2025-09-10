@@ -154,13 +154,13 @@ class Map:
             str_ += "| Threshold | Predict_num | Groundtruth_num |     AP     |"
             if not self.is_detection_2d:
                 str_ += "    APH    |"
-            str_ += "   max_f1   |  optimal recall | optimal precision  | optimal_conf      |"
+            str_ += "   max_f1   |  optimal_recall | optimal_precision  | optimal_conf      |"
             str_ += "\n"
 
-            str_ += "|:---------:|:------------:|:----------------:|:----------:|"
+            str_ += "|:---------:|:------------:|:--------------:|:----------:|"
             if not self.is_detection_2d:
                 str_ += ":---------:|"
-            str_ += ":----------:|:----------:|:----------:|:----------------------:|"
+            str_ += ":----------:|:------------:|:------------:|:--------------------:|"
             str_ += "\n"
 
             aps = self.label_to_aps[label]
