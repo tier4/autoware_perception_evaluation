@@ -92,7 +92,14 @@ class Ap:
         precision_list, recall_list = self.get_precision_recall()
         self.f1_scores = self.compute_f1_scores(precisions=precision_list, recalls=recall_list)
         self.max_f1_score, self.max_f1_index = self.compute_max_f1_index()
-        self.optimal_conf = self.conf_list[self.max_f1_index] if self.max_f1_index > -1 else np.nan
+        if self.max_f1_index > -1:
+            self.optimal_precision = precision_list[self.max_f1_index]
+            self.optimal_recall = recall_list[self.max_f1_index]
+            self.optimal_conf = self.conf_list[self.max_f1_index]
+        else:
+            self.optimal_precision = np.nan
+            self.optimal_recall = np.nan
+            self.optimal_conf = np.nan
 
         self.ap = self._calculate_ap(precision_list, recall_list)
 
