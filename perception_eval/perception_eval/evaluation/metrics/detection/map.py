@@ -151,14 +151,16 @@ class Map:
         # === Per-label AP Table ===
         for label in self.target_labels:
             str_ += f"\nLabel: {label.value}\n"
-            str_ += "| Threshold | Predict_num | Groundtruth_num |     AP     |    max_f1    |       best_conf     |"
+            str_ += "| Threshold | Predict_num | Groundtruth_num |     AP     |"
             if not self.is_detection_2d:
                 str_ += "    APH    |"
+            str_ += "   max_f1   |      optimal_conf      |"
             str_ += "\n"
 
-            str_ += "|:---------:|:------------:|:----------------:|:----------:|:----------:|:----------:|"
+            str_ += "|:---------:|:------------:|:----------------:|:----------:|"
             if not self.is_detection_2d:
                 str_ += ":---------:|"
+            str_ += ":----------:|:----------------------:|"
             str_ += "\n"
 
             aps = self.label_to_aps[label]
@@ -180,7 +182,7 @@ class Map:
                         str_ += f"  {aph_str} |"
                     else:
                         str_ += " {:^8} |".format("N/A")
-                str_ += f" {ap.max_f1_score:^8.4f} | {ap.best_conf:^12.6f} |"
+                str_ += f" {ap.max_f1_score:^8.4f} | {ap.optimal_conf:^12.6f} |"
                 str_ += "\n"
 
         # === Summary Table ===
