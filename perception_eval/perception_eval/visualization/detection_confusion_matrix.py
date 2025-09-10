@@ -242,15 +242,14 @@ class DetectionConfusionMatrix:
             fig.delaxes(ax)
 
         fig.tight_layout(rect=[0, 0, 0.9, 1.0])
-        # cbar_ax = fig.add_axes([0.92, 0.15, 0.015, 0.7])  # Position colorbar to the far right
         # Shared colorbar
         cbar_ax = fig.add_axes([0.92, 0.15, 0.015, 0.7])
         fig.colorbar(im, cax=cbar_ax)
-        # fig.colorbar(im, ax=axes.tolist(), shrink=0.6)
+        
+        fig.suptitle(f"Matching mode: {matching_mode}", fontsize=16)
 
-        fig.suptitle(f"Confusion Matrices \n Matching mode: {matching_mode}", fontsize=16)
-
-        output_file = self.output_dir / f"confusion_matrix_{matching_mode}.png"
+        matching_mode_file_name = str(matching_mode).lower().replace(" ", "_")
+        output_file = self.output_dir / f"confusion_matrix_{matching_mode_file_name}.png"
         fig.savefig(output_file, dpi=300, bbox_inches='tight')  # High resolution
 
         # Optional: Close the figure to free memory
