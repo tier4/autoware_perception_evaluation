@@ -141,10 +141,10 @@ class Map:
 
     def __str__(self) -> str:
         str_ = ""
-        map_str = f"{self.map:.3f}" if not (isinstance(self.map, float) and np.isnan(self.map)) else "NaN"
+        map_str = f"{self.map:.4f}" if not (isinstance(self.map, float) and np.isnan(self.map)) else "NaN"
         str_ += f"\nmAP: {map_str}, "
         if not self.is_detection_2d:
-            maph_str = f"{self.maph:.3f}" if not (isinstance(self.maph, float) and np.isnan(self.maph)) else "NaN"
+            maph_str = f"{self.maph:.4f}" if not (isinstance(self.maph, float) and np.isnan(self.maph)) else "NaN"
             str_ += f"mAPH: {maph_str} "
         str_ += f"({self.matching_mode.value})\n"
 
@@ -157,7 +157,7 @@ class Map:
             str_ += "   max_f1   |  optimal_recall | optimal_precision  | optimal_conf      |"
             str_ += "\n"
 
-            str_ += "|:---------:|:------------:|:--------------:|:----------:|"
+            str_ += "|:---------:|:-----------:|:--------------:|:----------:|"
             if not self.is_detection_2d:
                 str_ += ":---------:|"
             str_ += ":----------:|:---------------:|:------------------:|:-----------------:|"
@@ -170,14 +170,14 @@ class Map:
             for ap in aps:
                 threshold = ap.matching_threshold
                 predict_num = ap.objects_results_num
-                ap_str = f"{ap.ap:^8.3f}" if not (isinstance(ap.ap, float) and np.isnan(ap.ap)) else "   NaN   "
-                str_ += f"|  {threshold:^8.2f} | {predict_num:^12} | {gt_num:^16} |  {ap_str} |"
+                ap_str = f"{ap.ap:^8.4f}" if not (isinstance(ap.ap, float) and np.isnan(ap.ap)) else "   NaN   "
+                str_ += f"|  {threshold:^8.2f} | {predict_num:^11} | {gt_num:^14} |  {ap_str} |"
 
                 if not self.is_detection_2d:
                     aph = next((a for a in aphs if a.matching_threshold == threshold), None)
                     if aph:
                         aph_str = (
-                            f"{aph.ap:^8.3f}" if not (isinstance(aph.ap, float) and np.isnan(aph.ap)) else "   NaN   "
+                            f"{aph.ap:^8.4f}" if not (isinstance(aph.ap, float) and np.isnan(aph.ap)) else "   NaN   "
                         )
                         str_ += f"  {aph_str} |"
                     else:
@@ -187,30 +187,44 @@ class Map:
 
         # === Summary Table ===
         str_ += "\nSummary:\n"
-        str_ += "|      Label      |   Thresholds   |  Mean AP   |"
+        str_ += "|      Label      |  Predict_num   |   GT_nums   |  Thresholds   |  mean AP   |    APs      |"
         if not self.is_detection_2d:
-            str_ += "  Mean APH  |"
+            str_ += "  Mean APH    |   APHs     |"
         str_ += "\n"
 
-        str_ += "|:---------------:|:--------------:|:-----------:|"
+        str_ += "|:---------------:|:--------------:|:-----------:|:-------------:|:----------:|:-----------:|"
         if not self.is_detection_2d:
-            str_ += ":-----------:|"
+            str_ += ":-----------:|:-----------:|"
         str_ += "\n"
 
+        # Write sumamry in
+        # | Label | Predict_num | Groundtruth_num | Thresholds | mean AP | APs | mean APH | APHs |
         for label in self.target_labels:
-            thresholds = [f"{ap.matching_threshold:.2f}" for ap in self.label_to_aps[label]]
+            aps = self.label_to_aps[label]
+            gt_num = self.num_ground_truth_dict[label]
+            predict_num = aps[0].objects_results_num if len(aps) else 0
+            thresholds = [f"{ap.matching_threshold:.2f}" for ap in aps]
+
             mean_ap = self.label_mean_to_ap[label]
-            mean_ap_str = f"{mean_ap:^9.3f}" if not (isinstance(mean_ap, float) and np.isnan(mean_ap)) else "   NaN   "
-            str_ += f"| {label.value:^15} | {'/'.join(thresholds):^14} |  {mean_ap_str} |"
+            mean_ap_str = f"{mean_ap:^9.4f}" if not (isinstance(mean_ap, float) and np.isnan(mean_ap)) else "   NaN   "
+
+            ap_strs = [
+                f"{ap.ap:.2f}" if not (isinstance(ap.ap, float) and np.isnan(ap.ap)) else "   NaN   " for ap in aps
+            ]
+            str_ += f"| {label.value:^15} | {predict_num:^14} | {gt_num:^14} | {'/'.join(thresholds):^14} |  {mean_ap_str} | {'/'.join(ap_strs):^14} |"
             if not self.is_detection_2d:
                 mean_aph = self.label_mean_to_aph[label]
                 mean_aph_str = (
                     f"{mean_aph:^9.3f}" if not (isinstance(mean_aph, float) and np.isnan(mean_aph)) else "   NaN   "
                 )
-                str_ += f"  {mean_aph_str} |"
-            str_ += "\n"
+                aphs = self.label_to_aphs[label]
+                aph_strs = [
+                    f"{aph.ap:.2f}" if not (isinstance(aph.ap, float) and np.isnan(aph.ap)) else "   NaN   "
+                    for aph in aphs
+                ]
+                str_ += f"  {mean_aph_str} | {'/'.join(aph_strs):^14} |"
 
-        # Summary about the best
+            str_ += "\n"
         str_ += "\n"
 
         return str_

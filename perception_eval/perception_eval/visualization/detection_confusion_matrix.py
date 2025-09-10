@@ -246,7 +246,7 @@ class DetectionConfusionMatrix:
         cbar_ax = fig.add_axes([0.92, 0.15, 0.015, 0.7])
         fig.colorbar(im, cax=cbar_ax)
 
-        fig.suptitle(f"Matching mode: {matching_mode}", fontsize=16)
+        fig.suptitle(f"Matching mode: {matching_mode}", fontsize=14)
 
         matching_mode_file_name = str(matching_mode).lower().replace(" ", "_")
         output_file = self.output_dir / f"confusion_matrix_{matching_mode_file_name}.png"
