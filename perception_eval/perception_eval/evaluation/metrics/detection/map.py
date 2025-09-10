@@ -187,14 +187,14 @@ class Map:
 
         # === Summary Table ===
         str_ += "\nSummary:\n"
-        str_ += "|      Label      |  Predict_num   |   GT_nums      |  Thresholds     |  mean AP   |    APs      |"
+        str_ += "|      Label      |  Predict_num   |   GT_nums       |  Thresholds       |  mean AP      |    APs           |"
         if not self.is_detection_2d:
             str_ += "  Mean APH    |   APHs     |"
         str_ += "\n"
 
-        str_ += "|:---------------:|:--------------:|:--------------:|:---------------:|:----------:|:-----------:|"
+        str_ += "|:---------------:|:--------------:|:---------------:|:-----------------:|:-------------:|:----------------:|"
         if not self.is_detection_2d:
-            str_ += ":-----------:|:-----------:|"
+            str_ += ":---------------:|:---------------:|"
         str_ += "\n"
 
         # Write sumamry in
