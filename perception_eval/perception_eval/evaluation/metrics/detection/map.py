@@ -157,7 +157,7 @@ class Map:
             str_ += "   max_f1   |  optimal_recall | optimal_precision  | optimal_conf      |"
             str_ += "\n"
 
-            str_ += "|:---------:|:-----------:|:--------------:|:----------:|"
+            str_ += "|:---------:|:-----------:|:---------------:|:----------:|"
             if not self.is_detection_2d:
                 str_ += ":---------:|"
             str_ += ":----------:|:---------------:|:------------------:|:-----------------:|"
@@ -170,29 +170,29 @@ class Map:
             for ap in aps:
                 threshold = ap.matching_threshold
                 predict_num = ap.objects_results_num
-                ap_str = f"{ap.ap:^8.4f}" if not (isinstance(ap.ap, float) and np.isnan(ap.ap)) else "   NaN   "
-                str_ += f"|  {threshold:^8.2f} | {predict_num:^11} | {gt_num:^14} |  {ap_str} |"
+                ap_str = f"{ap.ap:^9.4f}" if not (isinstance(ap.ap, float) and np.isnan(ap.ap)) else "   NaN   "
+                str_ += f"|  {threshold:^8.2f} | {predict_num:^11} | {gt_num:^14}  |  {ap_str} |"
 
                 if not self.is_detection_2d:
                     aph = next((a for a in aphs if a.matching_threshold == threshold), None)
                     if aph:
                         aph_str = (
-                            f"{aph.ap:^8.4f}" if not (isinstance(aph.ap, float) and np.isnan(aph.ap)) else "   NaN   "
+                            f"{aph.ap:^9.4f}" if not (isinstance(aph.ap, float) and np.isnan(aph.ap)) else "   NaN   "
                         )
                         str_ += f"  {aph_str} |"
                     else:
-                        str_ += " {:^8} |".format("N/A")
-                str_ += f" {ap.max_f1_score:^8.4f} | {ap.optimal_precision:^8.4f} | {ap.optimal_recall:^8.4f}| {ap.optimal_conf:^12.6f} |"
+                        str_ += " {:^9} |".format("N/A")
+                str_ += f" {ap.max_f1_score:^9.4f} | {ap.optimal_precision:^9.4f} | {ap.optimal_recall:^9.4f}| {ap.optimal_conf:^12.6f} |"
                 str_ += "\n"
 
         # === Summary Table ===
         str_ += "\nSummary:\n"
-        str_ += "|      Label      |  Predict_num   |   GT_nums   |  Thresholds   |  mean AP   |    APs      |"
+        str_ += "|      Label      |  Predict_num   |   GT_nums      |  Thresholds     |  mean AP   |    APs      |"
         if not self.is_detection_2d:
             str_ += "  Mean APH    |   APHs     |"
         str_ += "\n"
 
-        str_ += "|:---------------:|:--------------:|:-----------:|:-------------:|:----------:|:-----------:|"
+        str_ += "|:---------------:|:--------------:|:--------------:|:---------------:|:----------:|:-----------:|"
         if not self.is_detection_2d:
             str_ += ":-----------:|:-----------:|"
         str_ += "\n"
@@ -209,9 +209,9 @@ class Map:
             mean_ap_str = f"{mean_ap:^9.4f}" if not (isinstance(mean_ap, float) and np.isnan(mean_ap)) else "   NaN   "
 
             ap_strs = [
-                f"{ap.ap:.2f}" if not (isinstance(ap.ap, float) and np.isnan(ap.ap)) else "   NaN   " for ap in aps
+                f"{ap.ap:.4f}" if not (isinstance(ap.ap, float) and np.isnan(ap.ap)) else "   NaN   " for ap in aps
             ]
-            str_ += f"| {label.value:^15} | {predict_num:^14} | {gt_num:^14} | {'/'.join(thresholds):^14} |  {mean_ap_str} | {'/'.join(ap_strs):^14} |"
+            str_ += f"| {label.value:^15} | {predict_num:^14} | {gt_num:^14} | {'/'.join(thresholds):^14} |  {mean_ap_str} | {' / '.join(ap_strs):^14} |"
             if not self.is_detection_2d:
                 mean_aph = self.label_mean_to_aph[label]
                 mean_aph_str = (
@@ -219,10 +219,10 @@ class Map:
                 )
                 aphs = self.label_to_aphs[label]
                 aph_strs = [
-                    f"{aph.ap:.2f}" if not (isinstance(aph.ap, float) and np.isnan(aph.ap)) else "   NaN   "
+                    f"{aph.ap:.4f}" if not (isinstance(aph.ap, float) and np.isnan(aph.ap)) else "   NaN   "
                     for aph in aphs
                 ]
-                str_ += f"  {mean_aph_str} | {'/'.join(aph_strs):^14} |"
+                str_ += f"  {mean_aph_str} | {' / '.join(aph_strs):^14} |"
 
             str_ += "\n"
         str_ += "\n"
