@@ -72,7 +72,7 @@ class Ap:
         matching_threshold: float,
     ) -> None:
         self.tp_metrics = tp_metrics
-        self.objects_results = object_results
+        self.object_results = object_results
         self.num_ground_truth = num_ground_truth
 
         self.target_label = target_label
@@ -108,7 +108,7 @@ class Ap:
             self.__class__,
             (
                 self.tp_metrics,
-                self.objects_results,
+                self.object_results,
                 self.num_ground_truth,
                 self.target_label,
                 self.matching_mode,
