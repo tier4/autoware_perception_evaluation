@@ -169,7 +169,7 @@ class Ap:
         return f1_scores.tolist()
 
     def compute_max_f1_index(self) -> Tuple[float, int]:
-        """Compute the best max-f1 and return the index."""
+        """Compute max-f1 and return max-f1 and the index."""
         try:
             max_index = np.nanargmax(self.f1_scores)
         except ValueError:
