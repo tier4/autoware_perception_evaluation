@@ -154,7 +154,7 @@ class DetectionConfusionMatrix:
         matching_confusion_matrices: Dict[float, Dict[LabelType, ConfusionMatrixData]],
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
-        fig_size: Tuple[int] = (6, 6),
+        fig_size: Tuple[int, int] = (6, 6),
     ) -> None:
         """
         Draw confusion matrices in subplot and save them to a png figure.
