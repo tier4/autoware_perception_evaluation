@@ -44,7 +44,7 @@ class Ap:
             If there are no object results, this variable is None.
         target_label (LabelType): Target label.
         tp_metrics (TPMetrics): Mode of TP metrics.
-        ground_truth_objects_num (int): Number ground truths.
+        num_ground_truth (int): Number ground truths.
         tp_list (List[float]): List of the number of TP objects ordered by their confidences.
         fp_list (List[float]): List of the number of FP objects ordered by their confidences.
 
