@@ -22,7 +22,6 @@ from typing import Tuple
 from typing import Union
 
 import numpy as np
-import numpy.typing as npt
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
