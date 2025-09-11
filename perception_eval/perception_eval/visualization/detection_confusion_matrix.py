@@ -100,7 +100,7 @@ class DetectionConfusionMatrix:
                 total_tp_nums = 0
                 matched_boxes = defaultdict(int)
                 for object_result in object_results:
-                    predicted_object_label = object_result.estimated_object.semantic_label.name
+                    predicted_object_label = object_result.estimated_object.semantic_label.label.value
 
                     if object_result.ground_truth_object is not None:
                         if object_result.is_label_correct:
