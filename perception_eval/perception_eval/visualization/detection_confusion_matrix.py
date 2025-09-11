@@ -80,7 +80,7 @@ class DetectionConfusionMatrix:
         object_results_dict: Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]],
         num_gts: Dict[LabelType, int],
         target_labels: List[LabelType],
-    ) -> Dict[float, Dict[str, Dict[str, int]]]:
+    ) -> Dict[float, Dict[str, ConfusionMatrixData]]:
         """
         Compute confusion matrix for a dict of {Target labels: {Matching threshold: [Matched results]}}.
         Args:
