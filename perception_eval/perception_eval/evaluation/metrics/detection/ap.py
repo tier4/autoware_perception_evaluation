@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from logging import getLogger
+from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -41,7 +44,7 @@ class Ap:
             If there are no object results, this variable is None.
         target_label (LabelType): Target label.
         tp_metrics (TPMetrics): Mode of TP metrics.
-        ground_truth_objects_num (int): Number ground truths.
+        num_ground_truth (int): Number ground truths.
         tp_list (List[float]): List of the number of TP objects ordered by their confidences.
         fp_list (List[float]): List of the number of FP objects ordered by their confidences.
 
@@ -69,6 +72,7 @@ class Ap:
         matching_threshold: float,
     ) -> None:
         self.tp_metrics = tp_metrics
+        self.object_results = object_results
         self.num_ground_truth = num_ground_truth
 
         self.target_label = target_label
@@ -82,15 +86,41 @@ class Ap:
             object_results=object_results,
             matching_mode=self.matching_mode,
         )
-        self.tp_list, self.fp_list = self._calculate_tp_fp(tp_metrics, object_results)
+        # True positives, false positives and their corresponding confidences
+        self.tp_list, self.fp_list, self.conf_list = self._calculate_tp_fp(tp_metrics, object_results)
         precision_list, recall_list = self.get_precision_recall()
+        self.f1_scores = self.compute_f1_scores(precisions=precision_list, recalls=recall_list)
+        self.max_f1_score, self.max_f1_index = self.compute_max_f1_index()
+        if self.max_f1_index > -1:
+            self.optimal_precision = precision_list[self.max_f1_index]
+            self.optimal_recall = recall_list[self.max_f1_index]
+            self.optimal_conf = self.conf_list[self.max_f1_index]
+        else:
+            self.optimal_precision = np.nan
+            self.optimal_recall = np.nan
+            self.optimal_conf = np.nan
+
         self.ap = self._calculate_ap(precision_list, recall_list)
+
+    def __reduce__(self) -> Tuple[Ap, Tuple[Any]]:
+        """Serializing and deserializing the class."""
+        return (
+            self.__class__,
+            (
+                self.tp_metrics,
+                self.object_results,
+                self.num_ground_truth,
+                self.target_label,
+                self.matching_mode,
+                self.matching_threshold,
+            ),
+        )
 
     def _calculate_tp_fp(
         self,
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
         object_results: List[DynamicObjectWithPerceptionResult],
-    ) -> Tuple[List[float], List[float]]:
+    ) -> Tuple[List[float], List[float], List[float]]:
         """
         Calculate TP/FP when object_results are stored as a dict with (matching_mode, threshold) keys.
         This assumes matching has already occurred.
@@ -106,17 +136,47 @@ class Ap:
             fp_list.append(0.0 if is_tp else 1.0)
 
         if not conf_list:
-            return [], []
+            return [], [], []
 
         # Sort by confidence
         sorted_indices = np.argsort(conf_list)[::-1]
         tp_sorted = [tp_list[i] for i in sorted_indices]
         fp_sorted = [fp_list[i] for i in sorted_indices]
+        conf_sorted = [conf_list[i] for i in sorted_indices]
 
         tp_list = np.cumsum(tp_sorted).tolist()
         fp_list = np.cumsum(fp_sorted).tolist()
 
-        return tp_list, fp_list
+        return tp_list, fp_list, conf_sorted
+
+    def compute_f1_scores(self, precisions: List[float], recalls: List[float]) -> List[float]:
+        """
+        Compute f1 scores from a list of precisions and recalls.
+        """
+        precisions = np.asarray(precisions)
+        recalls = np.asarray(recalls)
+
+        numerator = 2 * (precisions * recalls)
+        denominator = precisions + recalls
+
+        # Create an output array filled with np.nan
+        f1_scores = np.full_like(numerator, np.nan, dtype=np.float64)
+
+        # Create a condition: denominator is not zero and not nan
+        condition = (denominator != 0) & ~np.isnan(denominator)
+
+        np.divide(numerator, denominator, where=condition, out=f1_scores)
+        return f1_scores.tolist()
+
+    def compute_max_f1_index(self) -> Tuple[float, int]:
+        """Compute max-f1 and return max-f1 and the index."""
+        try:
+            max_index = np.nanargmax(self.f1_scores)
+        except ValueError:
+            # In case, all NaN values, for example, empty detection/ground truths
+            return np.nan, -1
+
+        return self.f1_scores[max_index], max_index
 
     def get_precision_recall(self) -> Tuple[List[float], List[float]]:
         """
