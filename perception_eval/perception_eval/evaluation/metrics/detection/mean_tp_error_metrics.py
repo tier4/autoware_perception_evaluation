@@ -14,7 +14,7 @@ from .tp_error_metrics import TPScaleError
 from .tp_error_metrics import TPTranslationError
 
 
-class TPErrors:
+class MeanTPErrorMetrics:
     """
     mAP evaluation class supporting multiple thresholds per label.
 
