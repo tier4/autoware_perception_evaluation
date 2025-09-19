@@ -17,43 +17,17 @@ from .tp_error_metrics import TPTranslationError
 
 class MeanTPErrorMetrics:
     """
-    mAP evaluation class supporting multiple thresholds per label.
-
-    This class calculates Average Precision (AP) and Average Precision with Heading (APH)
-    for a set of perception results grouped by label and matching threshold.
-
-    For each label:
-        - It computes AP and optionally APH for all given matching thresholds.
-        - It then calculates the mean AP (and APH) across thresholds for that label.
-
-    Finally:
-        - It averages the per-label mean AP (and APH) across all target labels
-          to produce the final mAP and mAPH.
-
-    This class supports both 2D and 3D detection evaluation:
-        - In 2D detection, only AP is calculated (APH is skipped).
-        - In 3D detection, both AP and APH are calculated.
+        Mean TP Error Metrics for detection evaluation.
 
     Attributes:
+                object_results_dict (Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]):
+                        Dict that are list of DynamicObjectWithPerceptionResult mapped by their labels and matching thresholds.
         target_labels (List[LabelType]):
             List of target labels evaluated in this instance.
         matching_mode (MatchingMode):
             The matching strategy used for TP/FP calculation (e.g., CENTERDISTANCE, IOU3D).
-        is_detection_2d (bool):
-            If True, only AP is computed; APH is skipped.
-        label_to_aps (Dict[LabelType, List[Ap]]):
-            List of AP instances (one per threshold) for each label.
-        label_mean_to_ap (Dict[LabelType, float]):
-            Mean AP across thresholds for each label. Can be NaN if all AP values are NaN.
-        label_to_aphs (Optional[Dict[LabelType, List[Ap]]]):
-            List of APH instances (one per threshold) for each label (if 3D detection).
-        label_mean_to_aph (Optional[Dict[LabelType, float]]):
-            Mean APH across thresholds for each label (if 3D detection). Can be NaN if all APH values are NaN.
-        map (float):
-            Final mean Average Precision (mAP) across all labels. Can be NaN if all label means are NaN.
-        maph (Optional[float]):
-            Final mean Average Precision with Heading (mAPH) across all labels,
-            or None if `is_detection_2d` is True. Can be NaN if all label means are NaN.
+        labels_to_tp_errors (Dict[LabelType, Dict[float, List[TPErrorMetric]]]):
+                        Nested dictionary mapping each label and matching threshold to a list of TPErrorMetric instances for their corresponding metric score.
     """
 
     def __init__(
@@ -62,13 +36,11 @@ class MeanTPErrorMetrics:
         num_ground_truth_dict: Dict[LabelType, int],
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
-        is_detection_2d: bool = False,
     ) -> None:
         self.object_results_dict = object_results_dict
         self.num_ground_truth_dict = num_ground_truth_dict
         self.target_labels = target_labels
         self.matching_mode = matching_mode
-        self.is_detection_2d = is_detection_2d
         self.num_tps = 0
 
         # All available matching thresholds
@@ -79,8 +51,8 @@ class MeanTPErrorMetrics:
             for threshold, _ in self.object_results_dict[label].items():
                 self.labels_to_tp_errors[label] = {
                     threshold: [
-                        TPTranslationError(is_detection_2d=self.is_detection_2d),
-                        TPScaleError(is_detection_2d=self.is_detection_2d),
+                        TPTranslationError(is_detection_2d=False),
+                        TPScaleError(is_detection_2d=False),
                     ]
                 }
 
@@ -144,7 +116,6 @@ class MeanTPErrorMetrics:
             self.num_ground_truth_dict,
             self.target_labels,
             self.matching_mode,
-            self.is_detection_2d,
         )
         state = {"labels_to_tp_errors": self.labels_to_tp_errors, "num_tps": self.num_tps}
         return (self.__class__, init_args, state)
