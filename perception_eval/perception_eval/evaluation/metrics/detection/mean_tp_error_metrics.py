@@ -99,15 +99,13 @@ class MeanTPErrorMetrics:
                 )
 
             self.num_tps += 1
-        
+
         # Compute average score for each class
         for _, label_to_tp_errors in self.labels_to_tp_errors.items():
             self._compute_average_tp_errors(label_to_tp_errors=label_to_tp_errors)
-        
+
         # Compute final mean average error across each class for each threshold
-
-
-
+        self.mean_average_tp_error_scores = self._compute_mean_tp_errors()
 
     def __reduce__(self) -> Tuple[MeanTPErrorMetrics, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
@@ -135,9 +133,9 @@ class MeanTPErrorMetrics:
         """
         for _, tp_error_metrics in label_to_tp_errors.items():
             for tp_error_metric in tp_error_metrics:
-                tp_error_metric.compute_mean_tp_error_metric(num_tps=self.num_tps)
-    
-    def _compute_mean_tp_errors(self, label_to_to_errors: Dict[float, List[TPErrorMetric]]) -> Dict[LabelType, Dict[float, List[float]]]:
+                tp_error_metric.compute_average_tp_error_metric(num_tps=self.num_tps)
+
+    def _compute_mean_tp_errors(self) -> Dict[LabelType, Dict[float, List[float]]]:
         """
         Compute average TP errors across all target labels and thresholds.
 
@@ -145,26 +143,20 @@ class MeanTPErrorMetrics:
         computes mean TP errors (e.g., translation error, scale error),
         and aggregates the results to calculate mean TP errors across all labels.
         """
-        
         # {MEAN_TP_ERROR_METRIC_NAME: { matching threshold: metric value}}
-        mean_tp_error_scores: Dict[str, float[float, float]] = defaultdict(lambda: defaultdict(float))
-        
+        mean_tp_error_scores: Dict[str, Dict[float, float]] = defaultdict(lambda: defaultdict(float))
+
         for _, label_to_tp_errors in self.labels_to_tp_errors.items():
-            for matching_threshold, tp_error_metrics in label_to_to_errors.items():
+            for matching_threshold, tp_error_metrics in label_to_tp_errors.items():
                 for tp_error_metric in tp_error_metrics:
-                    mean_tp_error_scores[tp_error_metric.MEAN_METRIC_NAME][matching_threshold] += tp_error_metric.average_metric_score
+                    mean_tp_error_scores[tp_error_metric.MEAN_METRIC_NAME][
+                        matching_threshold
+                    ] += tp_error_metric.average_metric_score
 
-        for matching_threshold, threshold_sum_metric_scores in mean_tp_error_scores.items():
-            for 
-        return {
-            label: {
-                threshold: [
-                    tp_error_metric.compute_mean_tp_error_metric(num_tps=self.num_tps)
-                    for tp_error_metric in tp_error_metrics
-                ]
-                for threshold, tp_error_metrics in label_to_tp_errors.items()
-            }
-            for label, label_to_tp_errors in self.labels_to_tp_errors.items()
-        }
+        for metric_name, threshold_sum_metric_scores in mean_tp_error_scores.items():
+            for threshold, sum_metric_score in threshold_sum_metric_scores.items():
+                mean_tp_error_scores[metric_name][threshold] = (
+                    sum_metric_score / len(self.target_labels) if len(self.target_labels) > 0 else float('nan')
+                )
 
-    def compute_mean_tp_errors(self) -> Dict
+        return mean_tp_error_scores

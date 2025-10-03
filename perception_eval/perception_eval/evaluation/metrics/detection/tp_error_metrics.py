@@ -65,12 +65,12 @@ class TPErrorMetric:
         """
         raise NotImplementedError("Subclasses must implement compute_tp_error_metric method.")
 
-    def compute_mean_tp_error_metric(self, num_tps: int) -> float:
+    def compute_average_tp_error_metric(self, num_tps: int) -> float:
         """
-        Compute mean tp error metric value.
+        Compute average tp error metric value.
 
         Returns:
-            float: Computed mean tp error metric value.
+            float: Computed average tp error metric value.
         """
         self.average_metric_score = self.metric_score / num_tps if num_tps > 0 else float('nan')
 
@@ -96,7 +96,8 @@ class TPTranslationError(TPErrorMetric):
             predicted_dynamic_object (ObjectType): Predicted object to evaluate.
         """
         return np.linalg.norm(
-            np.array(ground_truth_dynamic_object.state.position[:2]) - np.array(predicted_dynamic_object.state.position[:2])
+            np.array(ground_truth_dynamic_object.state.position[:2])
+            - np.array(predicted_dynamic_object.state.position[:2])
         )
 
 
