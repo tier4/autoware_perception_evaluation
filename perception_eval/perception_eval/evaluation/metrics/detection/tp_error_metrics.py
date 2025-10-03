@@ -18,21 +18,25 @@ class TPErrorMetric:
     """Tp error metric base class."""
 
     METRIC_NAME: str = "BaseTPErrorMetric"
+    AVERAGE_METRIC_NAME: str = "AverageTPErrorMetric"
+    MEAN_METRIC_NAME: str = "mAverageTPErrorMetric"
 
     def __init__(self, is_detection_2d: bool = False) -> None:
         self.metric_score: float = float('nan')
+        self.average_metric_score: float = float('nan')
         self.is_detection_2d = is_detection_2d
         assert not is_detection_2d, "TPErrorMetric only supports for 3D detection at the moment."
 
     def __reduce__(self) -> Tuple[TPErrorMetric, Tuple[Any], Dict[Any]]:
         """Serialization and deserialization of the object with pickling."""
         init_args = (self.is_detection_2d,)
-        state = {"metric_score": self.metric_score}
+        state = {"metric_score": self.metric_score, "average_metric_score": self.average_metric_score}
         return (self.__class__, init_args, state)
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         """Set the state of the object to preserve states after deserialization."""
         self.metrics_score = state.get("metric_score", self.metrics_score)
+        self.average_metrics_score = state.get("average_metric_score", self.average_metric_score)
 
     def __call__(self, ground_truth_dynamic_object: ObjectType, predicted_dynamic_object: ObjectType) -> None:
         """
@@ -68,13 +72,15 @@ class TPErrorMetric:
         Returns:
             float: Computed mean tp error metric value.
         """
-        return self.metric_value / num_tps if num_tps > 0 else float('nan')
+        self.average_metric_score = self.metric_score / num_tps if num_tps > 0 else float('nan')
 
 
 class TPTranslationError(TPErrorMetric):
     """Translation error metric class."""
 
     METRIC_NAME: str = "TPTranslationError"
+    AVERAGE_METRIC_NAME: str = "AVE"
+    MEAN_METRIC_NAME: str = "mAVE"
 
     def __init__(self, is_detection_2d: bool = False) -> None:
         super().__init__(is_detection_2d=is_detection_2d)
@@ -90,7 +96,7 @@ class TPTranslationError(TPErrorMetric):
             predicted_dynamic_object (ObjectType): Predicted object to evaluate.
         """
         return np.linalg.norm(
-            np.array(ground_truth_dynamic_object.position[:2]) - np.array(predicted_dynamic_object.position[:2])
+            np.array(ground_truth_dynamic_object.state.position[:2]) - np.array(predicted_dynamic_object.state.position[:2])
         )
 
 
@@ -98,6 +104,8 @@ class TPScaleError(TPErrorMetric):
     """Scale error metric class."""
 
     METRIC_NAME: str = "TPScaleError"
+    AVERAGE_METRIC_NAME: str = "ASE"
+    MEAN_METRIC_NAME: str = "mASE"
 
     def __init__(self, is_detection_2d: bool = False) -> None:
         super().__init__(is_detection_2d=is_detection_2d)

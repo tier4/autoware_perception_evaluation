@@ -27,6 +27,7 @@ from perception_eval.evaluation.result.object_result import DynamicObjectWithPer
 
 from .classification import ClassificationMetricsScore
 from .detection import Map
+from .detection.mean_tp_error_metrics import MeanTPErrorMetrics
 from .metrics_score_config import MetricsScoreConfig
 from .prediction import PredictionMetricsScore
 from .tracking import TrackingMetricsScore
@@ -64,6 +65,7 @@ class MetricsScore:
         self.classification_config = config.classification_config
         # detection metrics scores for each matching method
         self.mean_ap_values: List[Map] = []
+        self.mean_tp_error_metrics: List[MeanTPErrorMetrics] = []
         # tracking metrics scores for each matching method
         self.tracking_scores: List[TrackingMetricsScore] = []
         # prediction metrics scores for each matching method
@@ -83,6 +85,7 @@ class MetricsScore:
         )
         state = {
             "mean_ap_values": self.mean_ap_values,
+            "mean_tp_error_metrics": self.mean_tp_error_metrics,
             "tracking_scores": self.tracking_scores,
             "prediction_scores": self.prediction_scores,
             "classification_scores": self.classification_scores,
@@ -191,6 +194,17 @@ class MetricsScore:
                     is_detection_2d=self.evaluation_task.is_2d(),
                 )
             )
+            if not self.evaluation_task.is_2d():
+                self.mean_tp_error_metrics.append(
+                    MeanTPErrorMetrics(
+                        object_results_dict=label_to_threshold_map,
+                        num_ground_truth_dict=num_gt_dict,
+                        target_labels=target_labels,
+                        matching_mode=matching_mode,
+                        is_detection_2d=self.evaluation_task.is_2d(),
+                    )
+                )
+                self.mean_tp_error_metrics[-1].compute_tp_error_metrics()
 
     def evaluate_tracking(
         self,
