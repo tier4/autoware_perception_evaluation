@@ -1123,7 +1123,7 @@ class PerceptionAnalyzerBase(ABC):
                 else:
                     ax.scatter(xaxes, yaxes, err)
 
-        columns_str: str = "".join(columns)
+        columns_str: str = "_".join(columns)
         columns_str += "_heatmap" if heatmap else ""
         self.__post_process_figure(
             fig=fig,
