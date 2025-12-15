@@ -624,7 +624,7 @@ class PerceptionAnalyzer3D(PerceptionAnalyzerBase):
 
         Args:
             column (Union[str, List[str]]): Target column name.
-                Options: ["x", "y", "yaw", "width", "length", "bev_area","vx", "vy", "v_yaw", "speed", "nn_plane", "distance"].
+                Options: ["x", "y", "yaw", "width", "length", "bev_area", "vx", "vy", "v_yaw", "speed", "nn_plane", "distance"].
                 If you want plot multiple column for one image, use List[str].
             show (bool): Whether show the plotted figure. Defaults to False.
         """
