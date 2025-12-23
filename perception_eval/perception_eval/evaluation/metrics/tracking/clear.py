@@ -38,6 +38,7 @@ class CLEAR(_TrackingMetricsBase):
     NOTE: MT, ML, PT is under construction.
 
     Attributes:
+
         target_labels (List[LabelType]): The list of target label.
         matching_mode (MatchingMode): The target matching mode.
         metrics_field (Optional[List[str]]): The list of target metrics name. If not specified, set default supported metrics.
@@ -52,7 +53,7 @@ class CLEAR(_TrackingMetricsBase):
         results (OrderedDict[str, Any]): The dict to keep scores.
 
     Args:
-        object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results for each frames.
+        object_results (List[DynamicObjectWithPerceptionResult]): The list of object results for each frame.
         num_ground_truth (int): The number of ground truth.
         target_labels (List[LabelType]): The list of target labels.
         matching_mode (MatchingMode): Matching mode class.
@@ -98,13 +99,13 @@ class CLEAR(_TrackingMetricsBase):
         self.objects_results_num: int = 0
 
         for i, cur_object_results in enumerate(object_results[1:], 1):
-            prev_object_results: List[DynamicObjectWithPerceptionResult] = object_results[i - 1]
             self.objects_results_num += len(cur_object_results)
+            previous_object_results = object_results[i - 1]
 
             # Calculate TP/FP/IDSwitch and total matching score in TP at frame t
             tp_t, fp_t, id_switch_t, tp_matching_score_t = self._calculate_tp_fp(
                 cur_object_results=cur_object_results,
-                prev_object_results=prev_object_results,
+                prev_object_results=previous_object_results,
             )
             self.tp += tp_t
             self.fp += fp_t
