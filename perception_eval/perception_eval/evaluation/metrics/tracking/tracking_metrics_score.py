@@ -54,36 +54,35 @@ class TrackingMetricsScore:
         previous_nuscene_object_results: Optional[
             Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
         ],
-        # object_results_dict: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
         num_ground_truth_dict: Dict[LabelType, int],
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
-        matching_threshold_list: List[float],
     ) -> None:
-        assert len(target_labels) == len(matching_threshold_list)
         self.target_labels: List[LabelType] = target_labels
         self.matching_mode: MatchingMode = matching_mode
 
         # CLEAR results for each class
         self.clears: List[CLEAR] = []
         # Calculate score for each target labels
-        for target_label, matching_threshold in zip(target_labels, matching_threshold_list):
-            object_results = nuscene_object_results[target_label][matching_threshold]
-            previous_object_results = (
-                previous_nuscene_object_results[target_label][matching_threshold]
-                if previous_nuscene_object_results
-                else None
-            )
-            num_ground_truth = num_ground_truth_dict[target_label]
-            clear_: CLEAR = CLEAR(
-                # Make it a list of list for a sequence of frames since CLEAR should take a sequence of object results for each frame
-                object_results=[previous_object_results, object_results],
-                num_ground_truth=num_ground_truth,
-                target_labels=[target_label],
-                matching_mode=matching_mode,
-                matching_threshold_list=[matching_threshold],
-            )
-            self.clears.append(clear_)
+        for target_label in target_labels:
+            for matching_threshold in nuscene_object_results[target_label].keys():
+                object_results = nuscene_object_results[target_label][matching_threshold]
+                previous_object_results = (
+                    previous_nuscene_object_results[target_label][matching_threshold]
+                    if previous_nuscene_object_results
+                    else None
+                )
+                num_ground_truth = num_ground_truth_dict[target_label]
+                clear_: CLEAR = CLEAR(
+                    # Make it a list of list for a sequence of frames since CLEAR should take a sequence of object results for each frame
+                    object_results=[previous_object_results, object_results],
+                    num_ground_truth=num_ground_truth,
+                    target_labels=[target_label],
+                    matching_mode=matching_mode,
+                    matching_threshold_list=[matching_threshold],
+                )
+                print(str(clear_))
+                self.clears.append(clear_)
 
     def _sum_clear(self) -> Tuple[float, float, int]:
         """Summing up multi CLEAR result.

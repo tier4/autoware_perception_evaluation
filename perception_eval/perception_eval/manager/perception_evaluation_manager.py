@@ -103,23 +103,8 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             else None
         )
 
-        # Match for tracking, prediction, classification (Based on shortest distance)
-        # TODO(vividf): Remove this after using nuscene_object_results for all metrics
-        shortest_distance_matching = any(
-            [
-                self.metrics_config.tracking_config,
-                self.metrics_config.prediction_config,
-                self.metrics_config.classification_config,
-            ]
-        )
-        object_results = (
-            self.match_objects(filtered_estimated_objects, filtered_ground_truth)
-            if shortest_distance_matching
-            else None
-        )
-
         # Validate that at least one matching method was performed
-        if nuscene_object_results is None and object_results is None:
+        if nuscene_object_results is None:
             raise ValueError(
                 "No object matching performed. At least one metric configuration "
                 "(detection, tracking, prediction, or classification) must be enabled."
@@ -140,23 +125,8 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 **critical_object_filter_config.filtering_params,
             )
 
-        if object_results is not None:
-            # Filter objects by critical object filter config
-            object_results: List[DynamicObjectWithPerceptionResult] = filter_object_results(
-                object_results,
-                transforms=filtered_ground_truth.transforms,
-                **critical_object_filter_config.filtering_params,
-            )
-
-        # Note: Since tracking will have detection_config and tracking_config,
-        # We will have both nuscene_object_results and object_results for tracking.
-        # For other metrics, we will have either nuscene_object_results or object_results.
-        # TODO(vividf): Once we have nuscene_object_results for all metrics,
-        # we can remove object_results.
-
         # Create PerceptionFrameResult
         return PerceptionFrameResult(
-            object_results=object_results,
             nuscene_object_results=nuscene_object_results,
             frame_ground_truth=filtered_ground_truth,
             metrics_config=self.metrics_config,
@@ -213,48 +183,17 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
 
         # Match objects based on enabled metrics
         nuscene_object_results = None
-        object_results = None
-
-        # Match for detection metrics (Based on matching policy)
-        if self.metrics_config.detection_config:
-            nuscene_object_results = self.match_nuscene_objects(filtered_estimated_objects, filtered_ground_truth)
-
-        # Match for tracking, prediction, classification, fp_validation (Based on shortest distance)
-        # fp_validation is enabled when no metrics_config is provided.
-        # TODO(vividf): Remove this after using nuscene_object_results for all metrics
-        shortest_distance_matching = any(
-            [
-                self.metrics_config.tracking_config,
-                self.metrics_config.prediction_config,
-                self.metrics_config.classification_config,
-            ]
-        ) or not any(  # If no metrics_config is provided, enable shortest_distance_matching for fp_validation
-            [
-                self.metrics_config.detection_config,
-                self.metrics_config.tracking_config,
-                self.metrics_config.prediction_config,
-                self.metrics_config.classification_config,
-            ]
-        )
-        if shortest_distance_matching:
-            object_results = self.match_objects(filtered_estimated_objects, filtered_ground_truth)
+        nuscene_object_results = self.match_nuscene_objects(filtered_estimated_objects, filtered_ground_truth)
 
         # Validate that at least one matching method was performed
-        if nuscene_object_results is None and object_results is None:
+        if nuscene_object_results is None:
             raise ValueError(
                 "No object matching performed. At least one metric configuration "
                 "(detection, tracking, prediction, classification, or fp_validation) must be enabled."
             )
 
-        # Note: Since tracking will have detection_config and tracking_config,
-        # We will have both nuscene_object_results and object_results for tracking.
-        # For other metrics, we will have either nuscene_object_results or object_results.
-        # TODO(vividf): Once we have nuscene_object_results for all metrics,
-        # we can remove object_results.
-
         # Create PerceptionFrameResult
         perception_frame_result = PerceptionFrameResult(
-            object_results=object_results,
             nuscene_object_results=nuscene_object_results,
             frame_ground_truth=filtered_ground_truth,
             metrics_config=self.metrics_config,
@@ -326,48 +265,10 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             metrics_config=self.metrics_config,
             matching_label_policy=self.evaluator_config.label_params["matching_label_policy"],
             transforms=frame_ground_truth.transforms,
-            matchable_thresholds=self.filtering_params["max_matchable_radii"],
             uuid_matching_first=self.filtering_params["uuid_matching_first"],
+            matching_fps_to_gts=self.label_params.get("matching_fps_to_gts", False),
         )
         return matcher.match(estimated_objects, frame_ground_truth.objects)
-
-    def match_objects(
-        self, estimated_objects: List[ObjectType], frame_ground_truth: FrameGroundTruth
-    ) -> List[DynamicObjectWithPerceptionResult]:
-        """
-        Perform flat one-to-one matching between estimated and ground truth objects.
-
-        This function matches estimated and ground truth objects into a flat list format
-        without categorizing by matching modes or thresholds.
-
-        Args:
-            estimated_objects (List[ObjectType]): Filtered estimated perception objects.
-            frame_ground_truth (FrameGroundTruth): Filtered ground truth objects and transformations for the current frame.
-
-        Returns:
-            object_results (List[DynamicObjectWithPerceptionResult]):
-                List of matched objects.
-        """
-
-        object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-            evaluation_task=self.evaluation_task,
-            estimated_objects=estimated_objects,
-            ground_truth_objects=frame_ground_truth.objects,
-            target_labels=self.target_labels,
-            matching_label_policy=self.evaluator_config.label_params["matching_label_policy"],
-            matchable_thresholds=self.filtering_params["max_matchable_radii"],
-            transforms=frame_ground_truth.transforms,
-            uuid_matching_first=self.filtering_params["uuid_matching_first"],
-        )
-
-        if self.evaluator_config.filtering_params.get("target_uuids"):
-            object_results = filter_object_results(
-                object_results=object_results,
-                transforms=frame_ground_truth.transforms,
-                target_uuids=self.filtering_params["target_uuids"],
-            )
-
-        return object_results
 
     def get_scene_result(self) -> MetricsScore:
         """Evaluate metrics score thorough a scene.

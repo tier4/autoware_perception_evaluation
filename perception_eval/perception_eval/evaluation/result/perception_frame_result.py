@@ -42,7 +42,6 @@ class PerceptionFrameResult:
     """The result for 1 frame (the pair of estimated objects and ground truth objects)
 
     Attributes:
-        object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results to each estimated object.
         nuscene_object_results (Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]):
             Object results grouped by matching mode, target label, and threshold.
         frame_ground_truth (FrameGroundTruth): Filtered ground truth of frame.
@@ -66,8 +65,8 @@ class PerceptionFrameResult:
 
     def __init__(
         self,
-        nuscene_object_results: Optional[
-            Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
+        nuscene_object_results: Dict[
+            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
         ],
         frame_ground_truth: FrameGroundTruth,
         metrics_config: MetricsScoreConfig,
@@ -82,9 +81,7 @@ class PerceptionFrameResult:
         self.unix_time: int = unix_time
         self.target_labels: List[LabelType] = target_labels
 
-        self.nuscene_object_results: Optional[
-            Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
-        ] = nuscene_object_results
+        self.nuscene_object_results = nuscene_object_results
         self.frame_ground_truth: FrameGroundTruth = frame_ground_truth
 
         # init evaluation
@@ -144,13 +141,12 @@ class PerceptionFrameResult:
             self.critical_object_filter_config.target_labels,
         )
 
-        if self.nuscene_object_results is not None:
-            # Filter objects by critical object filter config
-            self.nuscene_object_results = filter_nuscene_object_results(
-                self.nuscene_object_results,
-                transforms=self.frame_ground_truth.transforms,
-                **self.critical_object_filter_config.filtering_params,
-            )
+        # Filter objects by critical object filter config
+        self.nuscene_object_results = filter_nuscene_object_results(
+            self.nuscene_object_results,
+            transforms=self.frame_ground_truth.transforms,
+            **self.critical_object_filter_config.filtering_params,
+        )
 
         self._core_evaluation(
             num_ground_truth_dict=num_ground_truth_dict,
