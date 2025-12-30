@@ -69,6 +69,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         evaluation_config: PerceptionEvaluationConfig,
         load_ground_truth: bool = True,
         metric_output_dir: Optional[str] = None,
+        matching_class_agnostic_fps: bool = False,
     ) -> None:
         super().__init__(evaluation_config=evaluation_config, load_ground_truth=load_ground_truth)
         self.frame_results: List[PerceptionFrameResult] = []
@@ -78,6 +79,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             else PerceptionVisualizer3D(self.evaluator_config)
         )
         self._metric_output_dir = Path(metric_output_dir) if metric_output_dir is not None else None
+        self._matching_class_agnostic_fps = matching_class_agnostic_fps
 
     @property
     def target_labels(self) -> List[LabelType]:
@@ -317,7 +319,9 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         return estimated_objects, frame_ground_truth
 
     def match_nuscene_objects(
-        self, estimated_objects: List[ObjectType], frame_ground_truth: FrameGroundTruth
+        self, 
+        estimated_objects: List[ObjectType], 
+        frame_ground_truth: FrameGroundTruth, 
     ) -> Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]:
         """
         Perform NuScenes-style matching between estimated and ground truth objects.
@@ -340,6 +344,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             metrics_config=self.metrics_config,
             matching_label_policy=self.evaluator_config.label_params["matching_label_policy"],
             transforms=frame_ground_truth.transforms,
+            matching_class_agnostic_fps=self._matching_class_agnostic_fps,
         )
         return matcher.match(estimated_objects, frame_ground_truth.objects)
 
