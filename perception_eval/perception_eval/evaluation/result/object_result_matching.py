@@ -560,7 +560,7 @@ class NuscenesObjectMatcher:
         
         # 1) It iterates over all estimated objects and finds the best matching ground truth objects for each threshold.
         for est_idx in range(len(estimated_objects_sorted)):
-            best_matching = self._find_matching_gt_thresholds(
+            best_matching_gt_indices = self._find_matching_gt_thresholds(
                 est_idx=est_idx,
                 ground_truth_objects=ground_truth_objects,
                 matching_matrices=matching_matrices,
@@ -571,7 +571,7 @@ class NuscenesObjectMatcher:
             
             # 2) Update the matched indices and object results
             self._add_best_matching_gts(
-                best_matching=best_matching,
+                best_matching_gt_indices=best_matching_gt_indices,
                 est_idx=est_idx, 
                 estimated_objects=estimated_objects_sorted,
                 ground_truth_objects=ground_truth_objects,
@@ -584,7 +584,7 @@ class NuscenesObjectMatcher:
         # then it matches the unmatched estimated objects to unmatched ground truth objects
         if self.matching_class_agnostic_fps:
             for est_idx in range(len(estimated_objects_sorted)):
-                best_matching = self._find_matching_gt_thresholds(
+                best_matching_gt_indices = self._find_matching_gt_thresholds(
                     est_idx=est_idx,
                     ground_truth_objects=ground_truth_objects,
                     matching_matrices=matching_matrices,
@@ -596,7 +596,7 @@ class NuscenesObjectMatcher:
                 )
                 # Update the matched indices and object results
                 self._add_best_matching_gts(
-                    best_matching=best_matching,
+                    best_matching_gt_indices=best_matching_gt_indices,
                     est_idx=est_idx,
                     estimated_objects=estimated_objects_sorted,
                     ground_truth_objects=ground_truth_objects,
