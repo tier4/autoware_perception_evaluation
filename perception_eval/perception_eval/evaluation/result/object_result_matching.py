@@ -1144,50 +1144,50 @@ class NuscenesObjectMatcher:
     #             )
     #         )
 
-    def _compute_matching_matrix(
-        self,
-        estimated_objects: List[ObjectType],
-        ground_truth_objects: List[ObjectType],
-        matching_method_module: Callable,
-        label_to_thresholds_map: Dict[LabelType, List[float]]
-    ) -> Optional[MatchingMatrices]:
-        """
-        Compute a matrix of MatchingMethod instances for all est-gt pairs.
+    # def _compute_matching_matrix(
+    #     self,
+    #     estimated_objects: List[ObjectType],
+    #     ground_truth_objects: List[ObjectType],
+    #     matching_method_module: Callable,
+    #     label_to_thresholds_map: Dict[LabelType, List[float]]
+    # ) -> Optional[MatchingMatrices]:
+    #     """
+    #     Compute a matrix of MatchingMethod instances for all est-gt pairs.
 
-        Returns:
-            MatchingMatrix:
-                matching_score: 2D numpy array with shape (num_est, num_gt) storing MatchingMethod instances and values
-                matching_valid_masks: 2D numpy array with shape (num_est, num_gt) to save a boolean value to indicate if a pair is matchable.
-            None if either input is empty.
-        """
-        if not estimated_objects or not ground_truth_objects:
-            return None
+    #     Returns:
+    #         MatchingMatrix:
+    #             matching_score: 2D numpy array with shape (num_est, num_gt) storing MatchingMethod instances and values
+    #             matching_valid_masks: 2D numpy array with shape (num_est, num_gt) to save a boolean value to indicate if a pair is matchable.
+    #         None if either input is empty.
+    #     """
+    #     if not estimated_objects or not ground_truth_objects:
+    #         return None
 
-        matching_scores = np.full(
-            (len(estimated_objects), len(ground_truth_objects)), None)
-        matching_valid_masks = np.zeros_like(matching_scores)
-        matching_valid_thresholds: Dict[LabelType, Dict[float, np.ndarray]] = defaultdict(lambda: defaultdict(lambda: np.zeros_like(matching_valid_masks)))
+    #     matching_scores = np.full(
+    #         (len(estimated_objects), len(ground_truth_objects)), None)
+    #     matching_valid_masks = np.zeros_like(matching_scores)
+    #     matching_valid_thresholds: Dict[LabelType, Dict[float, np.ndarray]] = defaultdict(lambda: defaultdict(lambda: np.zeros_like(matching_valid_masks)))
 
-        for i, est_obj in enumerate(estimated_objects):
-            for j, gt_obj in enumerate(ground_truth_objects):
-                matching_scores[i, j] = matching_method_module(
-                    est_obj, gt_obj, self.transforms)
-                matching_valid_masks[
-                    i, j] = self.matching_label_policy.is_matchable(
-                        est_obj, gt_obj)
+    #     for i, est_obj in enumerate(estimated_objects):
+    #         for j, gt_obj in enumerate(ground_truth_objects):
+    #             matching_scores[i, j] = matching_method_module(
+    #                 est_obj, gt_obj, self.transforms)
+    #             matching_valid_masks[
+    #                 i, j] = self.matching_label_policy.is_matchable(
+    #                     est_obj, gt_obj)
 
-                thresholds = label_to_thresholds_map.get(gt_obj.semantic_label.label, [])
-                for threshold in thresholds:
-                    if matching_scores[i, j].is_better_than(threshold):
-                        matching_valid_thresholds[gt_obj.semantic_label.label][threshold][i, j] = 1
-                    else:
-                        matching_valid_thresholds[gt_obj.semantic_label.label][threshold][i, j] = 0
+    #             thresholds = label_to_thresholds_map.get(gt_obj.semantic_label.label, [])
+    #             for threshold in thresholds:
+    #                 if matching_scores[i, j].is_better_than(threshold):
+    #                     matching_valid_thresholds[gt_obj.semantic_label.label][threshold][i, j] = 1
+    #                 else:
+    #                     matching_valid_thresholds[gt_obj.semantic_label.label][threshold][i, j] = 0
         
-        return MatchingMatrices(
-            matching_scores=matching_scores,
-            matching_valid_masks=matching_valid_masks, 
-            matching_valid_thresholds=matching_valid_thresholds
-        )
+    #     return MatchingMatrices(
+    #         matching_scores=matching_scores,
+    #         matching_valid_masks=matching_valid_masks, 
+    #         matching_valid_thresholds=matching_valid_thresholds
+    #     )
 
 
 def get_object_results(
