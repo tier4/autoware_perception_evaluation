@@ -438,6 +438,8 @@ class NuscenesObjectMatcher:
                 matching_method_module=matching_method_module,
                 label_to_thresholds_map=label_to_thresholds_map,
             )
+            # Empty matching matrices
+
             object_results = self._add_matchable_bounding_boxes(
                 estimated_objects_sorted=estimated_objects_sorted,
                 ground_truth_objects=ground_truth_objects,
@@ -485,6 +487,8 @@ class NuscenesObjectMatcher:
                         None,
                         self.matching_label_policy,
                         transforms=self.transforms))
+                
+                matched_est_indices[threshold].add(est_index)
 
         # If there're target labels not found from predictions, then we create empty results for the label and all thresholds
         for target_label in self.metrics_config.target_labels:
