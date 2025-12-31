@@ -600,7 +600,8 @@ class NuscenesObjectMatcher:
             matched_gt_indices = set()
             for est_idx in range(len(estimated_objects_sorted)):
                 best_match = self._find_best_match(
-                    est_idx=est_idx, 
+                    est_idx=est_idx,
+                    ground_truth_objects=ground_truth_objects, 
                     matching_scores=matching_matrices.matching_scores, 
                     matched_gt_indices=matched_gt_indices, 
                     matching_valid_masks=matching_matrices.matching_valid_masks, 
