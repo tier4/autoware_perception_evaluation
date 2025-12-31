@@ -120,8 +120,8 @@ class NuscenesObjectMatcher:
             MatchingMode.CLASSIFICATION_2D: [-1.0]
         }
         self.uuid_matching_first = uuid_matching_first
-        # If the matching label policy is DEFAULT or ALLOW_UNKNOWN, then it allows matching class_agnostic fps
-        self.matching_class_agnostic_fps = matching_class_agnostic_fps if matching_label_policy in [MatchingLabelPolicy.DEFAULT, MatchingLabelPolicy.ALLOW_UNKNOWN] else False
+        # If the matching label policy is DEFAULT, then it allows matching class_agnostic fps
+        self.matching_class_agnostic_fps = matching_class_agnostic_fps if matching_label_policy in [MatchingLabelPolicy.DEFAULT] else False
 
     def _build_matching_config_map(
             self) -> Dict[MatchingMode, Dict[LabelType, List[float]]]:
@@ -440,16 +440,6 @@ class NuscenesObjectMatcher:
                 label_to_thresholds_map=label_to_thresholds_map,
             )
 
-
-            label_threshold_pairs = [
-                (label, threshold) for label, thresholds in label_to_thresholds_map.items() for threshold in thresholds
-            ]
-
-            # Initialize all entries in the nested result dictionary,
-            # even if no matching results are found later
-            for label, threshold in label_threshold_pairs:
-                nuscene_object_results[matching_mode][label][threshold] = []
-
             object_results = self._add_matchable_bounding_boxes(
                 estimated_objects_sorted=estimated_objects_sorted,
                 ground_truth_objects=ground_truth_objects,
@@ -457,6 +447,17 @@ class NuscenesObjectMatcher:
                 label_to_thresholds_map=label_to_thresholds_map,
             )
             nuscene_object_results[matching_mode] = object_results 
+            
+            label_threshold_pairs = [
+                (label, threshold) for label, thresholds in label_to_thresholds_map.items() for threshold in thresholds
+            ]
+
+            # Initialize all entries in the nested result dictionary,
+            # even if no matching results are found later
+            for label, threshold in label_threshold_pairs:
+                if threshold not in nuscene_object_results[matching_mode][label]:
+                    nuscene_object_results[matching_mode][label][threshold] = []
+            
         return nuscene_object_results
         
     def _add_fps(
@@ -599,6 +600,12 @@ class NuscenesObjectMatcher:
             matched_est_indices = set()
             matched_gt_indices = set()
             for est_idx in range(len(estimated_objects_sorted)):
+                # If the matching label policy is default, and the threshold is not in the label to thresholds map, 
+                # then we skip this estimated object for this threshold by adding it to the matched_est_indices set
+                if self.matching_label_policy in [MatchingLabelPolicy.DEFAULT] and threshold not in label_to_thresholds_map[estimated_objects_sorted[est_idx].semantic_label.label]:
+                    matched_est_indices.add(est_idx)
+                    continue
+                
                 best_match = self._find_best_match(
                     est_idx=est_idx,
                     ground_truth_objects=ground_truth_objects, 

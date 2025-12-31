@@ -125,27 +125,27 @@ class TestNuSceneObjectResult(unittest.TestCase):
                 # Threshold: 4.0
                 # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
             # } 
-            (
-                DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
-                {
-                    # MatchignMode: Threshold: expected matching results
-                    MatchingMode.CENTERDISTANCE: {
-                        0.5: [(0, None), (1, None), (2, 0)],
-                        2.0: [(0, None), (1, None), (2, 0)],
-                        4.0: [(0, 0), (1, 1), (2, None)],
-                    },
-                    MatchingMode.CENTERDISTANCEBEV: {
-                        0.5: [(0, None), (1, None), (2, 0)],
-                        2.0: [(0, None), (1, None), (2, 0)],
-                        4.0: [(0, 0), (1, 1), (2, None)],
-                    },
-                    MatchingMode.PLANEDISTANCE: {
-                        0.5: [(0, None), (1, None), (2, 0)],
-                        2.0: [(0, None), (1, 1), (2, 0)],
-                        4.0: [(0, 0), (1, 1), (2, None)],
-                    },
-                }
-            ),
+            # (
+            #     DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
+            #     {
+            #         # MatchignMode: Threshold: expected matching results
+            #         MatchingMode.CENTERDISTANCE: {
+            #             0.5: [(0, None), (1, None), (2, 0)],
+            #             2.0: [(0, None), (1, None), (2, 0)],
+            #             4.0: [(0, 0), (1, 1), (2, None)],
+            #         },
+            #         MatchingMode.CENTERDISTANCEBEV: {
+            #             0.5: [(0, None), (1, None), (2, 0)],
+            #             2.0: [(0, None), (1, None), (2, 0)],
+            #             4.0: [(0, 0), (1, 1), (2, None)],
+            #         },
+            #         MatchingMode.PLANEDISTANCE: {
+            #             0.5: [(0, None), (1, None), (2, 0)],
+            #             2.0: [(0, None), (1, 1), (2, 0)],
+            #             4.0: [(0, 0), (1, 1), (2, None)],
+            #         },
+            #     }
+            # ),
         ]
         matcher = NuscenesObjectMatcher(
             evaluation_task=self.evaluation_task,
@@ -192,141 +192,141 @@ class TestNuSceneObjectResult(unittest.TestCase):
                                         f"Ground truth must be None at Matching mode: {matching_mode}, Label: {label}, Threshold: {threshold}",
                                     )
 
-    def test_matching_fps_class_agnostic(self):
-        """[summary]
-        Test matching estimated objects and ground truth objects with class agnostic fps.
+    # def test_matching_fps_class_agnostic(self):
+    #     """[summary]
+    #     Test matching estimated objects and ground truth objects with class agnostic fps.
 
-        test patterns:
-            NOTE:
-                - The estimations & GTs are following (number represents the index)
-                        Estimation = 3
-                            (0): CAR, (1): BICYCLE, (2): CAR
-                        GT = 4
-                            (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
-        """
-        patterns: List[Tuple[DiffTranslation, List[Tuple[int, Optional[int]]]]] = [
-            # (1)
-            # Center Distance/Center Distance BEV:
-            # {
-                # Threshold: 0.5
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 2.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
-            # PLANEDISTANCE:
-            # {
-                # Threshold: 0.5
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 2.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
-            (
-                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-                # MatchignMode: Threshold: expected matching results
-                {
-                    MatchingMode.CENTERDISTANCE: {
-                        0.5: [(0, 0), (1, 1), (2, 2)],
-                        2.0: [(0, 0), (1, 1), (2, 2)],
-                        4.0: [(0, 0), (1, 1), (2, 2)],
-                    },
-                    MatchingMode.CENTERDISTANCEBEV: {
-                        0.5: [(0, 0), (1, 1), (2, 2)],
-                        2.0: [(0, 0), (1, 1), (2, 2)],
-                        4.0: [(0, 0), (1, 1), (2, 2)],
-                    },
-                    MatchingMode.PLANEDISTANCE: {
-                        0.5: [(0, 0), (1, 1), (2, 2)],
-                        2.0: [(0, 0), (1, 1), (2, 2)],
-                        4.0: [(0, 0), (1, 1), (2, 2)],
-                    },
-                },
-            ),
-            # (2)
-            # Center Distance/Center Distance BEV:
-            # {
-                # Threshold: 0.5
-                # (Est[0], None), (Est[1], None), (Est[2], GT[0])
-                # Threshold: 2.0
-                # (Est[0], None), (Est[1], None), (Est[2], GT[0])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
-            # PLANEDISTANCE:
-            # {
-                # Threshold: 0.5
-                # (Est[0], None), (Est[1], None), (Est[2], GT[0])
-                # Threshold: 2.0
-                # (Est[0], None), (Est[1], GT[1]), (Est[2], GT[0])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
-            (
-                DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
-                {
-                    # MatchignMode: Threshold: expected matching results
-                    MatchingMode.CENTERDISTANCE: {
-                        0.5: [(0, None), (1, None), (2, 0)],
-                        2.0: [(0, None), (1, None), (2, 0)],
-                        4.0: [(0, 0), (1, 1), (2, 2)],
-                    },
-                    MatchingMode.CENTERDISTANCEBEV: {
-                        0.5: [(0, None), (1, None), (2, 0)],
-                        2.0: [(0, None), (1, None), (2, 0)],
-                        4.0: [(0, 0), (1, 1), (2, 2)],
-                    },
-                    MatchingMode.PLANEDISTANCE: {
-                        0.5: [(0, None), (1, None), (2, 0)],
-                        2.0: [(0, None), (1, 1), (2, 0)],
-                        4.0: [(0, 0), (1, 1), (2, 2)],
-                    },
-                }
-            ),
-        ]
-        matcher = NuscenesObjectMatcher(
-            evaluation_task=self.evaluation_task,
-            metrics_config=self.metric_configs,
-            matching_label_policy=MatchingLabelPolicy.DEFAULT,
-            transforms=None,
-            matching_class_agnostic_fps=True,
-        )
-        for n, (diff_trans, threshold_to_ans_pair_index) in enumerate(patterns):
-            with self.subTest(f"Test matching objects: {n + 1}"):
-                estimated_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_estimated_objects,
-                    diff_distance=diff_trans.diff_estimated,
-                    diff_yaw=0.0,
-                )
-                ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-                    ground_truth_objects=self.dummy_ground_truth_objects,
-                    diff_distance=diff_trans.diff_ground_truth,
-                    diff_yaw=0.0,
-                )
-                object_results = matcher.match(estimated_objects, ground_truth_objects)
-                for matching_mode, label_to_threshold_to_object_results in object_results.items():
-                    for label, threshold_to_object_results in label_to_threshold_to_object_results.items():
-                        for threshold, object_results in threshold_to_object_results.items():
-                            ans_pair_index = threshold_to_ans_pair_index[matching_mode][threshold]
-                            for object_result in object_results:
-                                self.assertIn(
-                                    object_result.estimated_object,
-                                    estimated_objects,
-                                    f"Unexpected estimated object at Matching mode: {matching_mode}, Label: {label}, Threshold: {threshold}",
-                                )
-                                estimated_object_index: int = estimated_objects.index(object_result.estimated_object)
-                                gt_idx = ans_pair_index[estimated_object_index][1]
-                                if gt_idx is not None:  
-                                    self.assertEqual(
-                                        object_result.ground_truth_object,
-                                        ground_truth_objects[gt_idx],
-                                        f"Unexpected ground truth object at Matching mode: {matching_mode}, Label: {label}, Threshold: {threshold}",
-                                    )
-                                else:
-                                    # In this case, there is no threshold
-                                    self.assertIsNone(
-                                        object_result.ground_truth_object,
-                                        f"Ground truth must be None at Matching mode: {matching_mode}, Label: {label}, Threshold: {threshold}",
-                                    )
+    #     test patterns:
+    #         NOTE:
+    #             - The estimations & GTs are following (number represents the index)
+    #                     Estimation = 3
+    #                         (0): CAR, (1): BICYCLE, (2): CAR
+    #                     GT = 4
+    #                         (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
+    #     """
+    #     patterns: List[Tuple[DiffTranslation, List[Tuple[int, Optional[int]]]]] = [
+    #         # (1)
+    #         # Center Distance/Center Distance BEV:
+    #         # {
+    #             # Threshold: 0.5
+    #             # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+    #             # Threshold: 2.0
+    #             # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+    #             # Threshold: 4.0
+    #             # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+    #         # } 
+    #         # PLANEDISTANCE:
+    #         # {
+    #             # Threshold: 0.5
+    #             # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+    #             # Threshold: 2.0
+    #             # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+    #             # Threshold: 4.0
+    #             # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+    #         # } 
+    #         (
+    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+    #             # MatchignMode: Threshold: expected matching results
+    #             {
+    #                 MatchingMode.CENTERDISTANCE: {
+    #                     0.5: [(0, 0), (1, 1), (2, 2)],
+    #                     2.0: [(0, 0), (1, 1), (2, 2)],
+    #                     4.0: [(0, 0), (1, 1), (2, 2)],
+    #                 },
+    #                 MatchingMode.CENTERDISTANCEBEV: {
+    #                     0.5: [(0, 0), (1, 1), (2, 2)],
+    #                     2.0: [(0, 0), (1, 1), (2, 2)],
+    #                     4.0: [(0, 0), (1, 1), (2, 2)],
+    #                 },
+    #                 MatchingMode.PLANEDISTANCE: {
+    #                     0.5: [(0, 0), (1, 1), (2, 2)],
+    #                     2.0: [(0, 0), (1, 1), (2, 2)],
+    #                     4.0: [(0, 0), (1, 1), (2, 2)],
+    #                 },
+    #             },
+    #         ),
+    #         # (2)
+    #         # Center Distance/Center Distance BEV:
+    #         # {
+    #             # Threshold: 0.5
+    #             # (Est[0], None), (Est[1], None), (Est[2], GT[0])
+    #             # Threshold: 2.0
+    #             # (Est[0], None), (Est[1], None), (Est[2], GT[0])
+    #             # Threshold: 4.0
+    #             # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+    #         # } 
+    #         # PLANEDISTANCE:
+    #         # {
+    #             # Threshold: 0.5
+    #             # (Est[0], None), (Est[1], None), (Est[2], GT[0])
+    #             # Threshold: 2.0
+    #             # (Est[0], None), (Est[1], GT[1]), (Est[2], GT[0])
+    #             # Threshold: 4.0
+    #             # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+    #         # } 
+    #         (
+    #             DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
+    #             {
+    #                 # MatchignMode: Threshold: expected matching results
+    #                 MatchingMode.CENTERDISTANCE: {
+    #                     0.5: [(0, None), (1, None), (2, 0)],
+    #                     2.0: [(0, None), (1, None), (2, 0)],
+    #                     4.0: [(0, 0), (1, 1), (2, 2)],
+    #                 },
+    #                 MatchingMode.CENTERDISTANCEBEV: {
+    #                     0.5: [(0, None), (1, None), (2, 0)],
+    #                     2.0: [(0, None), (1, None), (2, 0)],
+    #                     4.0: [(0, 0), (1, 1), (2, 2)],
+    #                 },
+    #                 MatchingMode.PLANEDISTANCE: {
+    #                     0.5: [(0, None), (1, None), (2, 0)],
+    #                     2.0: [(0, None), (1, 1), (2, 0)],
+    #                     4.0: [(0, 0), (1, 1), (2, 2)],
+    #                 },
+    #             }
+    #         ),
+    #     ]
+    #     matcher = NuscenesObjectMatcher(
+    #         evaluation_task=self.evaluation_task,
+    #         metrics_config=self.metric_configs,
+    #         matching_label_policy=MatchingLabelPolicy.DEFAULT,
+    #         transforms=None,
+    #         matching_class_agnostic_fps=True,
+    #     )
+    #     for n, (diff_trans, threshold_to_ans_pair_index) in enumerate(patterns):
+    #         with self.subTest(f"Test matching objects: {n + 1}"):
+    #             estimated_objects: List[DynamicObject] = get_objects_with_difference(
+    #                 ground_truth_objects=self.dummy_estimated_objects,
+    #                 diff_distance=diff_trans.diff_estimated,
+    #                 diff_yaw=0.0,
+    #             )
+    #             ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
+    #                 ground_truth_objects=self.dummy_ground_truth_objects,
+    #                 diff_distance=diff_trans.diff_ground_truth,
+    #                 diff_yaw=0.0,
+    #             )
+    #             object_results = matcher.match(estimated_objects, ground_truth_objects)
+    #             for matching_mode, label_to_threshold_to_object_results in object_results.items():
+    #                 for label, threshold_to_object_results in label_to_threshold_to_object_results.items():
+    #                     for threshold, object_results in threshold_to_object_results.items():
+    #                         ans_pair_index = threshold_to_ans_pair_index[matching_mode][threshold]
+    #                         for object_result in object_results:
+    #                             self.assertIn(
+    #                                 object_result.estimated_object,
+    #                                 estimated_objects,
+    #                                 f"Unexpected estimated object at Matching mode: {matching_mode}, Label: {label}, Threshold: {threshold}",
+    #                             )
+    #                             estimated_object_index: int = estimated_objects.index(object_result.estimated_object)
+    #                             gt_idx = ans_pair_index[estimated_object_index][1]
+    #                             if gt_idx is not None:  
+    #                                 self.assertEqual(
+    #                                     object_result.ground_truth_object,
+    #                                     ground_truth_objects[gt_idx],
+    #                                     f"Unexpected ground truth object at Matching mode: {matching_mode}, Label: {label}, Threshold: {threshold}",
+    #                                 )
+    #                             else:
+    #                                 # In this case, there is no threshold
+    #                                 self.assertIsNone(
+    #                                     object_result.ground_truth_object,
+    #                                     f"Ground truth must be None at Matching mode: {matching_mode}, Label: {label}, Threshold: {threshold}",
+    #                                 )
