@@ -440,6 +440,16 @@ class NuscenesObjectMatcher:
                 label_to_thresholds_map=label_to_thresholds_map,
             )
 
+
+            label_threshold_pairs = [
+                (label, threshold) for label, thresholds in label_to_thresholds_map.items() for threshold in thresholds
+            ]
+
+            # Initialize all entries in the nested result dictionary,
+            # even if no matching results are found later
+            for label, threshold in label_threshold_pairs:
+                nuscene_object_results[matching_mode][label][threshold] = []
+
             object_results = self._add_matchable_bounding_boxes(
                 estimated_objects_sorted=estimated_objects_sorted,
                 ground_truth_objects=ground_truth_objects,
@@ -575,12 +585,6 @@ class NuscenesObjectMatcher:
             float, List[DynamicObjectWithPerceptionResult]]] = defaultdict(
                 lambda: defaultdict(list))
 
-        # {threshold: {gt_idx}}
-        matched_gt_indices: Dict[
-            float, set[int]] = defaultdict(set)
-        # {threshold: {est_idx}}
-        matched_est_indices: Dict[float, set[int]] = defaultdict(set)
-
         available_thresholds = sorted(set([label_to_thresholds_map.values()]))
         # Empty matching matrices
         if matching_matrices is None:
@@ -623,22 +627,22 @@ class NuscenesObjectMatcher:
                     )
                 )
 
-                # Add unmatched estimated objects as false positives if applicable
-                if self.evaluation_task is not None and self.evaluation_task.is_fp_validation():
+            # Add unmatched estimated objects as false positives if applicable
+            if self.evaluation_task is not None and self.evaluation_task.is_fp_validation():
+                continue
+
+            for est_idx in range(len(estimated_objects_sorted)):
+                if est_idx in matched_est_indices:
                     continue
 
-                for est_idx in range(len(estimated_objects_sorted)):
-                    if est_idx in matched_est_indices:
-                        continue
-
-                    object_results[estimated_objects_sorted[est_idx].semantic_label.label][threshold].append(
-                        DynamicObjectWithPerceptionResult(
-                            estimated_objects_sorted[est_idx],
-                            None,
-                            self.matching_label_policy,
-                            transforms=self.transforms,
-                        )
+                object_results[estimated_objects_sorted[est_idx].semantic_label.label][threshold].append(
+                    DynamicObjectWithPerceptionResult(
+                        estimated_objects_sorted[est_idx],
+                        None,
+                        self.matching_label_policy,
+                        transforms=self.transforms,
                     )
+                )
 
         return object_results
  
