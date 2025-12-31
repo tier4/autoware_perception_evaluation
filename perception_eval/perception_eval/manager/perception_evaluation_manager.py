@@ -14,8 +14,10 @@
 
 
 from collections import defaultdict
+from pathlib import Path
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 from perception_eval.common import ObjectType
@@ -36,6 +38,7 @@ from perception_eval.util.aggregation_results import accumulate_nuscene_results
 from perception_eval.visualization import PerceptionVisualizer2D
 from perception_eval.visualization import PerceptionVisualizer3D
 from perception_eval.visualization import PerceptionVisualizerType
+from perception_eval.visualization.detection_confusion_matrix import DetectionConfusionMatrix
 
 from ._evaluation_manager_base import _EvaluationManagerBase
 from ..evaluation.result.object_result import DynamicObjectWithPerceptionResult
@@ -58,9 +61,15 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         evaluator_config (PerceptionEvaluatorConfig): Configuration for perception evaluation.
         load_ground_truth (bool): Whether to automatically load ground truth annotations during initialization.
     Defaults to True. Set to False if you prefer to handle ground truth loading manually — for example, in the Autoware ML evaluation pipeline.
+        output_dir: Main directory to save any artifacts from running metrics.
     """
 
-    def __init__(self, evaluation_config: PerceptionEvaluationConfig, load_ground_truth: bool = True) -> None:
+    def __init__(
+        self,
+        evaluation_config: PerceptionEvaluationConfig,
+        load_ground_truth: bool = True,
+        metric_output_dir: Optional[str] = None,
+    ) -> None:
         super().__init__(evaluation_config=evaluation_config, load_ground_truth=load_ground_truth)
         self.frame_results: List[PerceptionFrameResult] = []
         self.__visualizer = (
@@ -68,6 +77,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             if self.evaluation_task.is_2d()
             else PerceptionVisualizer3D(self.evaluator_config)
         )
+        self._metric_output_dir = Path(metric_output_dir) if metric_output_dir is not None else None
 
     @property
     def target_labels(self) -> List[LabelType]:
@@ -80,6 +90,10 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
     @property
     def visualizer(self) -> PerceptionVisualizerType:
         return self.__visualizer
+
+    @property
+    def metric_output_dir(self) -> Path:
+        return self._metric_output_dir
 
     def preprocess_object_results(
         self,
@@ -242,7 +256,9 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         return estimated_objects, frame_ground_truth
 
     def match_nuscene_objects(
-        self, estimated_objects: List[ObjectType], frame_ground_truth: FrameGroundTruth
+        self, 
+        estimated_objects: List[ObjectType], 
+        frame_ground_truth: FrameGroundTruth, 
     ) -> Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]:
         """
         Perform NuScenes-style matching between estimated and ground truth objects.
@@ -266,7 +282,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             matching_label_policy=self.evaluator_config.label_params["matching_label_policy"],
             transforms=frame_ground_truth.transforms,
             uuid_matching_first=self.filtering_params["uuid_matching_first"],
-            matching_fps_to_gts=self.label_params.get("matching_fps_to_gts", False),
+            matching_class_agnostic_fps=self.evaluator_config.label_params["matching_class_agnostic_fps"],
         )
         return matcher.match(estimated_objects, frame_ground_truth.objects)
 

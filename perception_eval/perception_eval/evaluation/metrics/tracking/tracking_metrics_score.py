@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -60,6 +63,7 @@ class TrackingMetricsScore:
     ) -> None:
         self.target_labels: List[LabelType] = target_labels
         self.matching_mode: MatchingMode = matching_mode
+        self.matching_threshold_list: List[float] = matching_threshold_list
 
         # CLEAR results for each class
         self.clears: List[CLEAR] = []
@@ -83,6 +87,21 @@ class TrackingMetricsScore:
                 )
                 print(str(clear_))
                 self.clears.append(clear_)
+
+    def __reduce__(self) -> Tuple[TrackingMetricsScore, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        init_args = (
+            self.object_results_dict,
+            self.num_ground_truth_dict,
+            self.target_labels,
+            self.matching_mode,
+            self.matching_threshold_list,
+        )
+
+        return (
+            self.__class__,
+            init_args,
+        )
 
     def _sum_clear(self) -> Tuple[float, float, int]:
         """Summing up multi CLEAR result.

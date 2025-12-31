@@ -119,7 +119,7 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             "merge_similar_labels": e_cfg.get("merge_similar_labels", False),
             "matching_label_policy": matching_label_policy,
             "count_label_number": e_cfg.get("count_label_number", True),
-            "matching_fps_to_gts": e_cfg.get("match_fps_to_gts", True),
+            "matching_class_agnostic_fps": e_cfg.get("matching_class_agnostic_fps", False),
         }
         return l_params
 

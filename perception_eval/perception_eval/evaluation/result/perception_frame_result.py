@@ -213,7 +213,7 @@ class PerceptionFrameResult:
                 "Please ensure that at least one of detection, tracking, classification, prediction or fp_validation configs is set."
             )
 
-    def __reduce__(self) -> Tuple[PerceptionFrameResult, Tuple[Any]]:
+    def __reduce__(self) -> Tuple[PerceptionFrameResult, Tuple[Any], Dict[Any]]:
         """Serialization and deserialization of the object with pickling."""
         init_args = (
             self.nuscene_object_results,
@@ -224,12 +224,13 @@ class PerceptionFrameResult:
             self.unix_time,
             self.target_labels,
         )
-        state = {"pass_fail_result": self.pass_fail_result}
+        state = {"pass_fail_result": self.pass_fail_result, "metric_score": self.metrics_score}
         return (self.__class__, init_args, state)
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
-        """Set the state of the object after deserialization."""
-        self.pass_fail_result = state.get("pass_fail_result", None)
+        """Set the state of the object to preserve states after deserialization."""
+        self.pass_fail_result = state.get("pass_fail_result", self.pass_fail_result)
+        self.metrics_score = state.get("metric_score", self.metrics_score)
 
     def serialization(self) -> Dict[str, Any]:
         """Serialize the object to a dict."""
