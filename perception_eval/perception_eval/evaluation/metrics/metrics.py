@@ -179,8 +179,11 @@ class MetricsScore:
         if self.tracking_config is None:
             self.__num_gt += sum(num_ground_truth.values())
 
+        if self.detection_config is None:
+            return
+        
+        target_labels = self.detection_config.target_labels 
         for matching_mode, label_to_threshold_map in nuscene_object_results.items():
-            target_labels = list(label_to_threshold_map.keys())
             num_gt_dict = {label: num_ground_truth.get(label, 0) for label in target_labels}
             self.mean_ap_values.append(
                 Map(

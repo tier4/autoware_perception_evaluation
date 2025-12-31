@@ -18,6 +18,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 import functools
 from re import L, Match
+from token import OP
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -438,14 +439,14 @@ class NuscenesObjectMatcher:
                 matching_method_module=matching_method_module,
                 label_to_thresholds_map=label_to_thresholds_map,
             )
+
             object_results = self._add_matchable_bounding_boxes(
                 estimated_objects_sorted=estimated_objects_sorted,
                 ground_truth_objects=ground_truth_objects,
                 matching_matrices=matching_matrices,
                 label_to_thresholds_map=label_to_thresholds_map,
             )
-            nuscene_object_results[matching_mode] = object_results
-
+            nuscene_object_results[matching_mode] = object_results 
         return nuscene_object_results
         
     def _add_fps(
@@ -485,6 +486,8 @@ class NuscenesObjectMatcher:
                         None,
                         self.matching_label_policy,
                         transforms=self.transforms))
+                
+                matched_est_indices[threshold].add(est_index)
 
         # If there're target labels not found from predictions, then we create empty results for the label and all thresholds
         for target_label in self.metrics_config.target_labels:
@@ -499,7 +502,7 @@ class NuscenesObjectMatcher:
     def _add_matchable_bounding_boxes(
         self, estimated_objects_sorted: List[ObjectType],
         ground_truth_objects: List[ObjectType],
-        matching_matrices: MatchingMatrices,
+        matching_matrices: Optional[MatchingMatrices],
         label_to_thresholds_map: Dict[LabelType, List[float]]
     ) -> Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]:
         """
@@ -529,6 +532,14 @@ class NuscenesObjectMatcher:
             float, set[int]] = defaultdict(set)
         # {threshold: {est_idx}}
         matched_est_indices: Dict[float, set[int]] = defaultdict(set)
+        
+        # Empty matching matrices
+        if matching_matrices is None:
+            return self._add_fps(
+                estimated_objects=estimated_objects_sorted,
+                label_to_thresholds_map=label_to_thresholds_map,
+                matched_est_indices=matched_est_indices,
+            )
         
         # 1) It iterates over all estimated objects and finds the best matching ground truth objects for each threshold.
         for est_idx in range(len(estimated_objects_sorted)):

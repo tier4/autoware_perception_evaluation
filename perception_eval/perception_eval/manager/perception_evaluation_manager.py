@@ -436,6 +436,20 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             config=self.metrics_config,
             used_frame=used_frame,
         )
+        
+        for matching_mode, label_to_threshold_map in flattened_nuscene_object_results_dict.items():
+            print(f"====={matching_mode}=====")
+            for label, threshold_to_results in label_to_threshold_map.items():
+                print(f"====={label}=====")
+                for threshold, results in threshold_to_results.items():
+                    print(f"threshold: {threshold}, results: {len(results)}")
+                    num_ests = 0 
+                    num_gts = 0 
+                    for result in results:
+                        num_ests += 1
+                        if result.ground_truth_object is not None:
+                            num_gts += 1
+                    print(f"num_ests: {num_ests}, num_gts: {num_gts}")
 
         # Classification
         if self.evaluator_config.metrics_config.classification_config is not None:
