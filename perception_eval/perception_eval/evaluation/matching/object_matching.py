@@ -90,6 +90,8 @@ class MatchingMode(Enum):
     IOU2D = "IoU 2D"
     IOU3D = "IoU 3D"
     PLANEDISTANCE = "Plane Distance"
+    TLR_CLASSIFICATION = "TLR Classification 2D"
+    CLASSIFICATION_2D = "Classification 2D"
 
     def __str__(self) -> str:
         return self.value
