@@ -585,7 +585,7 @@ class NuscenesObjectMatcher:
             float, List[DynamicObjectWithPerceptionResult]]] = defaultdict(
                 lambda: defaultdict(list))
 
-        available_thresholds = sorted(set(list(label_to_thresholds_map.values())))
+        available_thresholds = sorted(set(threshold for values in label_to_thresholds_map.values() for threshold in values)) 
         # Empty matching matrices
         if matching_matrices is None:
             return self._add_fps(
