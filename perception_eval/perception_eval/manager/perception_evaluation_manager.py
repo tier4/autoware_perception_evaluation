@@ -446,8 +446,13 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                     num_ests = 0 
                     num_gts = 0 
                     for result in results:
+                        if result.estimated_object.semantic_label.label != label:
+                            print(f"UNMATCHED: estimated_object.semantic_label.label: {result.estimated_object.semantic_label.label}, label: {label}")
+                        
                         num_ests += 1
                         if result.ground_truth_object is not None:
+                            if result.ground_truth_object.semantic_label.label != label:
+                                print(f"UNMATCHED: ground_truth_object.semantic_label.label: {result.ground_truth_object.semantic_label.label}, label: {label}")
                             num_gts += 1
                     print(f"num_ests: {num_ests}, num_gts: {num_gts}")
 
