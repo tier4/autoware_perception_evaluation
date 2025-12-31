@@ -487,16 +487,17 @@ class NuscenesObjectMatcher:
                         self.matching_label_policy,
                         transforms=self.transforms))
                 
+                if est_index in matched_est_indices[threshold]:
+                    print(f"FP: est_index: {est_index} already in matched_est_indices[threshold]: {matched_est_indices[threshold]}")
+
                 matched_est_indices[threshold].add(est_index)
 
         # If there're target labels not found from predictions, then we create empty results for the label and all thresholds
         for target_label in self.metrics_config.target_labels:
             thresholds = label_to_thresholds_map.get(target_label, [])
-            if target_label in object_results:
-                continue
-
             for threshold in thresholds:
-                object_results[target_label][threshold] = []
+                if threshold not in object_results[target_label]:
+                    object_results[target_label][threshold] = []
         return object_results
 
     def _add_matchable_bounding_boxes(
@@ -566,6 +567,7 @@ class NuscenesObjectMatcher:
         # 3) If it allows matching class agnostic fps, 
         # then it matches the unmatched estimated objects to unmatched ground truth objects
         if self.matching_class_agnostic_fps:
+            print(f"matching_class_agnostic_fps: True")
             for est_idx in range(len(estimated_objects_sorted)):
                 best_matching_gt_indices = self._find_matching_gt_thresholds(
                     est_idx=est_idx,
@@ -679,6 +681,12 @@ class NuscenesObjectMatcher:
             if gt_idx is None:
                 continue
             
+            if gt_idx in matched_gt_indices[threshold]:
+                print(f"gt_idx: {gt_idx} already in matched_gt_indices[threshold]: {matched_gt_indices[threshold]}")
+            
+            if est_idx in matched_est_indices[threshold]:
+                print(f"est_idx: {est_idx} already in matched_est_indices[threshold]: {matched_est_indices[threshold]}")
+
             matched_gt_indices[threshold].add(gt_idx)
             matched_est_indices[threshold].add(est_idx)
             object_results[ground_truth_objects[gt_idx].semantic_label.label][threshold].append(

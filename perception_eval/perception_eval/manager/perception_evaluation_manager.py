@@ -437,6 +437,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             used_frame=used_frame,
         )
         
+        print(f"matching_class_agnostic_fps: {self.evaluator_config.label_params["matching_class_agnostic_fps"]}")
         for matching_mode, label_to_threshold_map in flattened_nuscene_object_results_dict.items():
             print(f"====={matching_mode}=====")
             for label, threshold_to_results in label_to_threshold_map.items():
