@@ -488,7 +488,7 @@ class NuscenesObjectMatcher:
                         transforms=self.transforms))
                 
                 if est_index in matched_est_indices[threshold]:
-                    print(f"FP: est_index: {est_index} already in matched_est_indices[threshold]: {matched_est_indices[threshold]}")
+                    print(f"FP: est_index: {est_index} already in matched_est_indices[threshold]: {threshold}")
 
                 matched_est_indices[threshold].add(est_index)
 
@@ -682,10 +682,10 @@ class NuscenesObjectMatcher:
                 continue
             
             if gt_idx in matched_gt_indices[threshold]:
-                print(f"gt_idx: {gt_idx} already in matched_gt_indices[threshold]: {matched_gt_indices[threshold]}")
+                print(f"gt_idx: {gt_idx} already in matched_gt_indices[threshold]: {threshold}")
             
             if est_idx in matched_est_indices[threshold]:
-                print(f"est_idx: {est_idx} already in matched_est_indices[threshold]: {matched_est_indices[threshold]}")
+                print(f"est_idx: {est_idx} already in matched_est_indices[threshold]: {threshold}")
 
             matched_gt_indices[threshold].add(gt_idx)
             matched_est_indices[threshold].add(est_idx)
