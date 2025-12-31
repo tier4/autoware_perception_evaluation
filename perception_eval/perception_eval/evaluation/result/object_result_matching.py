@@ -631,7 +631,7 @@ class NuscenesObjectMatcher:
             
             for threshold, threshold_valid_mask in ground_truth_threshold_masks.items():
                 # If matched_est_indices is not None, then we skip the matching if the estimated object is already matched for this threshold
-                if matched_est_indices is not None and matched_est_indices.get(threshold, None) is not None: 
+                if matched_est_indices is not None and matched_est_indices.get(threshold, None) is not None and est_idx in matched_est_indices[threshold]: 
                     continue 
 
                 # Initialization for the matching threshold
@@ -642,7 +642,7 @@ class NuscenesObjectMatcher:
                 if gt_idx in matched_gt_indices[threshold] or not threshold_valid_mask[est_idx, gt_idx]:
                     continue
                     
-                if best_matching_gt_scores[threshold] is None or matching_score.is_better_than(best_matching_gt_scores[threshold]):
+                if best_matching_gt_scores[threshold] is None or matching_score.is_better_than(best_matching_gt_scores[threshold].value):
                     best_matching_gt_indices[threshold] = gt_idx
                     best_matching_gt_scores[threshold] = matching_score
 
