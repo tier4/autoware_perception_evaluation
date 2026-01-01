@@ -679,26 +679,84 @@ class TestNuSceneObjectResult(unittest.TestCase):
             with self.subTest(f"Test matching objects: {n + 1}"):
                 self._test_object_results(matcher, diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs)
     
-    # def test_empty_estimated_objects(self):
-    #     """Test matching when estimated objects list is empty.
+    def test_empty_estimated_objects(self):
+        """Test matching when estimated objects list is empty.
         
-    #     Expected: All ground truth objects should be unmatched (no results returned).
-    #     """
-    #     matcher = NuscenesObjectMatcher(
-    #         evaluation_task=self.evaluation_task,
-    #         metrics_config=self.metric_configs,
-    #         matching_label_policy=MatchingLabelPolicy.DEFAULT,
-    #         transforms=None,
-    #         matching_class_agnostic_fps=False,
-    #     )
-    #     empty_estimated: List[DynamicObject] = []
-    #     object_results = matcher.match(empty_estimated, self.dummy_ground_truth_objects)
+        Expected: All ground truth objects should be unmatched (no results returned).
+        """
+        matcher = NuscenesObjectMatcher(
+            evaluation_task=self.evaluation_task,
+            metrics_config=self.metric_configs,
+            matching_label_policy=MatchingLabelPolicy.DEFAULT,
+            transforms=None,
+            matching_class_agnostic_fps=False,
+        )
+        empty_estimated: List[DynamicObject] = []
+        object_results = matcher.match(empty_estimated, self.dummy_ground_truth_objects)
         
-    #     # Should have structure but all results should be empty lists
-    #     for matching_mode, label_to_threshold_to_object_results in object_results.items():
-    #         for label, threshold_to_object_results in label_to_threshold_to_object_results.items():
-    #             for threshold, results in threshold_to_object_results.items():
-    #                 self.assertEqual(
-    #                     len(results), 0,
-    #                     f"Expected empty results for empty estimated objects at {matching_mode}, {label}, {threshold}"
-    #                 )
+        # Should have structure but all results should be empty lists
+        for matching_mode, label_to_threshold_to_object_results in object_results.items():
+            for label, threshold_to_object_results in label_to_threshold_to_object_results.items():
+                for threshold, results in threshold_to_object_results.items():
+                    self.assertEqual(
+                        len(results), 0,
+                        f"Expected empty results for empty estimated objects at {matching_mode}, {label}, {threshold}"
+                    )
+    
+    def test_empty_ground_truth_objects(self):
+        """Test matching when ground truth objects list is empty.
+        
+        Expected: All estimated objects should be false positives (FP).
+        """
+        matcher = NuscenesObjectMatcher(
+            evaluation_task=self.evaluation_task,
+            metrics_config=self.metric_configs,
+            matching_label_policy=MatchingLabelPolicy.DEFAULT,
+            transforms=None,
+            matching_class_agnostic_fps=False,
+        )
+        empty_ground_truth: List[DynamicObject] = []
+        object_results = matcher.match(self.dummy_estimated_objects, empty_ground_truth)
+        
+        # All estimated objects should be FPs (ground_truth_object is None)
+        for matching_mode, label_to_threshold_to_object_results in object_results.items():
+            total_fps = defaultdict(int)
+            for label, threshold_to_object_results in label_to_threshold_to_object_results.items():
+                for threshold, results in threshold_to_object_results.items():
+                    for result in results:
+                        self.assertIsNone(
+                            result.ground_truth_object,
+                            f"Expected FP (None GT) for empty ground truth at {matching_mode}, {label}, {threshold}"
+                        )
+                        total_fps[threshold] += 1
+
+            for threshold, num_fps in total_fps.items():
+                self.assertEqual(num_fps, len(self.dummy_estimated_objects),
+                    f"Unexpected number of FPs for empty ground truth objects at Matching mode: {matching_mode}, Threshold: {threshold}",
+                )
+        
+    def test_both_empty(self):
+        """Test matching when both estimated and ground truth lists are empty.
+        
+        Expected: Empty results structure.
+        """
+        matcher = NuscenesObjectMatcher(
+            evaluation_task=self.evaluation_task,
+            metrics_config=self.metric_configs,
+            matching_label_policy=MatchingLabelPolicy.DEFAULT,
+            transforms=None,
+            matching_class_agnostic_fps=False,
+        )
+        empty_estimated: List[DynamicObject] = []
+        empty_ground_truth: List[DynamicObject] = []
+        object_results = matcher.match(empty_estimated, empty_ground_truth)
+        
+        # Should have structure but all results should be empty
+        for matching_mode, label_to_threshold_to_object_results in object_results.items():
+            for label, threshold_to_object_results in label_to_threshold_to_object_results.items():
+                for threshold, results in threshold_to_object_results.items():
+                    self.assertEqual(
+                        len(results), 0,
+                        f"Expected empty results for both empty lists at {matching_mode}, {label}, {threshold}"
+                    )
+    
