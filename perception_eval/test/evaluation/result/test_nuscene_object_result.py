@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from copy import deepcopy
 from test.util.dummy_object import make_dummy_data
 from test.util.object_diff import DiffTranslation
@@ -57,7 +58,9 @@ class TestNuSceneObjectResult(unittest.TestCase):
         self, 
         matcher: NuscenesObjectMatcher, 
         diff_trans: DiffTranslation, 
-        threshold_to_ans_pair_index: Dict[MatchingMode, Dict[float, Optional[int]]]) -> None:
+        threshold_to_ans_pair_index: Dict[MatchingMode, Dict[float, Optional[int]]], 
+        expected_nums_of_result_pairs: Dict[MatchingMode, Dict[float, int]]
+    ) -> None:
         """
         Test matching estimated objects and ground truth objects.
 
@@ -78,8 +81,10 @@ class TestNuSceneObjectResult(unittest.TestCase):
         )
         object_results = matcher.match(estimated_objects, ground_truth_objects)
         for matching_mode, label_to_threshold_to_object_results in object_results.items():
+            num_object_results = defaultdict(int)
             for label, threshold_to_object_results in label_to_threshold_to_object_results.items():
                 for threshold, object_results in threshold_to_object_results.items():
+                    num_object_results[threshold] += len(object_results)
                     ans_pair_index = threshold_to_ans_pair_index[matching_mode][threshold]
                     for object_result in object_results:
                         self.assertIn(
@@ -101,6 +106,13 @@ class TestNuSceneObjectResult(unittest.TestCase):
                                 object_result.ground_truth_object,
                                 f"Ground truth must be None at Matching mode: {matching_mode}, Label: {label}, Threshold: {threshold}",
                             )
+            
+            for threshold, num_object_results in num_object_results.items():
+                expected_nums_of_result_pairs_threshold = expected_nums_of_result_pairs[matching_mode][threshold]
+                self.assertEqual(num_object_results, expected_nums_of_result_pairs_threshold,
+                    f"Unexpected length of matching results at Matching mode: {matching_mode}, Label: {label}, Threshold: {threshold}",
+                )
+
     def test_matching_objects_default(self):
         """[summary]
         Test matching estimated objects and ground truth objects.
@@ -153,6 +165,24 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         4.0: [(0, 0), (1, 1), (2, None)],
                     },
                 },
+                # Expected length of matching results pair index (est_idx: gt_idx)
+                {
+                    MatchingMode.CENTERDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.CENTERDISTANCEBEV: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.PLANEDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                }
             ),
             # (2)
             # Center Distance/Center Distance BEV:
@@ -192,6 +222,24 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         2.0: [(0, None), (1, 1), (2, 0)],
                         4.0: [(0, 0), (1, 1), (2, None)],
                     },
+                },
+                # Expected length of matching results pair index (est_idx: gt_idx)
+                {
+                    MatchingMode.CENTERDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.CENTERDISTANCEBEV: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.PLANEDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
                 }
             ),
         ]
@@ -202,9 +250,9 @@ class TestNuSceneObjectResult(unittest.TestCase):
             transforms=None,
             matching_class_agnostic_fps=False,
         )
-        for n, (diff_trans, threshold_to_ans_pair_index) in enumerate(patterns):
+        for n, (diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs) in enumerate(patterns):
             with self.subTest(f"Test matching objects: {n + 1}"):
-                self._test_object_results(matcher, diff_trans, threshold_to_ans_pair_index)
+                self._test_object_results(matcher, diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs)
 
     def test_matching_fps_class_agnostic(self):
         """[summary]
@@ -258,6 +306,24 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         4.0: [(0, 0), (1, 1), (2, 2)],
                     },
                 },
+                # Expected length of matching results pair index (est_idx: gt_idx)
+                {
+                    MatchingMode.CENTERDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.CENTERDISTANCEBEV: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.PLANEDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                }
             ),
             # (2)
             # Center Distance/Center Distance BEV:
@@ -297,6 +363,24 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         2.0: [(0, None), (1, 1), (2, 0)],
                         4.0: [(0, 0), (1, 1), (2, 2)],
                     },
+                },
+                # Expected length of matching results pair index (est_idx: gt_idx)
+                {
+                    MatchingMode.CENTERDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.CENTERDISTANCEBEV: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.PLANEDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
                 }
             ),
         ]
@@ -307,9 +391,9 @@ class TestNuSceneObjectResult(unittest.TestCase):
             transforms=None,
             matching_class_agnostic_fps=True,
         )
-        for n, (diff_trans, threshold_to_ans_pair_index) in enumerate(patterns):
+        for n, (diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs) in enumerate(patterns):
             with self.subTest(f"Test matching objects: {n + 1}"):
-                self._test_object_results(matcher, diff_trans, threshold_to_ans_pair_index)
+                self._test_object_results(matcher, diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs)
 
     def test_matching_objects_allow_any(self):
         """[summary]
@@ -363,6 +447,24 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         4.0: [(0, 0), (1, 1), (2, 2)],
                     },
                 },
+                # Expected length of matching results pair index (est_idx: gt_idx)
+                {
+                    MatchingMode.CENTERDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.CENTERDISTANCEBEV: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.PLANEDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                }
             ),
             # (2)
             # Center Distance/Center Distance BEV:
@@ -402,6 +504,24 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         2.0: [(0, None), (1, 1), (2, 0)],
                         4.0: [(0, 0), (1, 1), (2, 2)],
                     },
+                },
+                # Expected length of matching results pair index (est_idx: gt_idx)
+                {
+                    MatchingMode.CENTERDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.CENTERDISTANCEBEV: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.PLANEDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
                 }
             ),
         ]
@@ -412,9 +532,9 @@ class TestNuSceneObjectResult(unittest.TestCase):
             transforms=None,
             matching_class_agnostic_fps=False,
         )
-        for n, (diff_trans, threshold_to_ans_pair_index) in enumerate(patterns):
+        for n, (diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs) in enumerate(patterns):
             with self.subTest(f"Test matching objects: {n + 1}"):
-                self._test_object_results(matcher, diff_trans, threshold_to_ans_pair_index)
+                self._test_object_results(matcher, diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs)
 
     def test_matching_objects_allow_any_fps_class_agnostic(self):
         """[summary]
@@ -470,6 +590,24 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         4.0: [(0, 0), (1, 1), (2, 2)],
                     },
                 },
+                # Expected length of matching results pair index (est_idx: gt_idx)
+                {
+                    MatchingMode.CENTERDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.CENTERDISTANCEBEV: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.PLANEDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                }
             ),
             # (2)
             # Center Distance/Center Distance BEV:
@@ -509,6 +647,24 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         2.0: [(0, None), (1, 1), (2, 0)],
                         4.0: [(0, 0), (1, 1), (2, 2)],
                     },
+                },
+                # Expected length of matching results pair index (est_idx: gt_idx)
+                {
+                    MatchingMode.CENTERDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.CENTERDISTANCEBEV: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
+                    MatchingMode.PLANEDISTANCE: {
+                        0.5: 3,
+                        2.0: 3,
+                        4.0: 3,
+                    },
                 }
             ),
         ]
@@ -519,6 +675,30 @@ class TestNuSceneObjectResult(unittest.TestCase):
             transforms=None,
             matching_class_agnostic_fps=True,
         )
-        for n, (diff_trans, threshold_to_ans_pair_index) in enumerate(patterns):
+        for n, (diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs) in enumerate(patterns):
             with self.subTest(f"Test matching objects: {n + 1}"):
-                self._test_object_results(matcher, diff_trans, threshold_to_ans_pair_index)
+                self._test_object_results(matcher, diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs)
+    
+    # def test_empty_estimated_objects(self):
+    #     """Test matching when estimated objects list is empty.
+        
+    #     Expected: All ground truth objects should be unmatched (no results returned).
+    #     """
+    #     matcher = NuscenesObjectMatcher(
+    #         evaluation_task=self.evaluation_task,
+    #         metrics_config=self.metric_configs,
+    #         matching_label_policy=MatchingLabelPolicy.DEFAULT,
+    #         transforms=None,
+    #         matching_class_agnostic_fps=False,
+    #     )
+    #     empty_estimated: List[DynamicObject] = []
+    #     object_results = matcher.match(empty_estimated, self.dummy_ground_truth_objects)
+        
+    #     # Should have structure but all results should be empty lists
+    #     for matching_mode, label_to_threshold_to_object_results in object_results.items():
+    #         for label, threshold_to_object_results in label_to_threshold_to_object_results.items():
+    #             for threshold, results in threshold_to_object_results.items():
+    #                 self.assertEqual(
+    #                     len(results), 0,
+    #                     f"Expected empty results for empty estimated objects at {matching_mode}, {label}, {threshold}"
+    #                 )
