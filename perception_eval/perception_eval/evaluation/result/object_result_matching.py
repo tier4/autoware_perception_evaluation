@@ -432,7 +432,6 @@ class NuscenesObjectMatcher:
                 estimated_objects=estimated_objects_sorted,
                 ground_truth_objects=ground_truth_objects,
                 matching_method_module=matching_method_module,
-                label_to_thresholds_map=label_to_thresholds_map,
             )
 
             object_results = self._add_matchable_bounding_boxes(
@@ -475,9 +474,13 @@ class NuscenesObjectMatcher:
             for est_index, est_obj in enumerate(estimated_objects):
                 if est_index in matched_est_indices:
                     continue 
-
-                if label_to_thresholds_map is not None and threshold not in label_to_thresholds_map[est_obj.semantic_label.label]:
-                    continue
+                
+                # When label to thresholds map is not None, we need to check if the threshold is in the label to thresholds map since we assume 
+                # it's class-to-class matching.
+                if label_to_thresholds_map is not None:
+                    est_label = est_obj.semantic_label.label
+                    if threshold not in label_to_thresholds_map.get(est_label, []):
+                        continue 
 
                 object_results[est_obj.semantic_label.label][threshold].append(
                     DynamicObjectWithPerceptionResult(
@@ -599,8 +602,11 @@ class NuscenesObjectMatcher:
                 # Example, when the label to threshold map is {LabelType.CAR: [0.5, 0.7], LabelType.TRUCK: [0.6, 0.8]}, and the threshold is 0.6, 
                 # then we exclude the estimated object with label LabelType.CAR when matching since it's a class-to-class matching, 
                 # where threshold 0.6 only considers the matching between TRUCK.
-                if self.matching_label_policy in [MatchingLabelPolicy.DEFAULT] and threshold not in label_to_thresholds_map[estimated_objects_sorted[est_idx].semantic_label.label]:
-                    continue
+                est_label = estimated_objects_sorted[est_idx].semantic_label.label
+                if self.matching_label_policy in [MatchingLabelPolicy.DEFAULT]:
+                    thresholds_for_label = label_to_thresholds_map.get(est_label, [])
+                    if threshold not in thresholds_for_label:
+                        continue
                 
                 best_match = self._find_best_match(
                     est_idx=est_idx,
@@ -649,7 +655,77 @@ class NuscenesObjectMatcher:
                 )
 
         return object_results
- 
+    
+    # def _match_boxes_threshold(
+    #     self, 
+    #     estimated_objects_sorted: List[ObjectType],
+    #     ground_truth_objects: List[ObjectType],
+    #     matching_matrices: Optional[MatchingMatrices],
+    #     label_to_thresholds_map: Dict[LabelType, List[float]],
+    #     threshold: float
+    # ):
+    #     """
+    #     """
+    #     matched_est_indices = set()
+    #     matched_gt_indices = set()
+    #     for est_idx in range(len(estimated_objects_sorted)):
+    #         # If the matching label policy is default, and the threshold is not in the label to thresholds map, 
+    #         # then we skip this estimated object for this threshold
+    #         # Example, when the label to threshold map is {LabelType.CAR: [0.5, 0.7], LabelType.TRUCK: [0.6, 0.8]}, and the threshold is 0.6, 
+    #         # then we exclude the estimated object with label LabelType.CAR when matching since it's a class-to-class matching, 
+    #         # where threshold 0.6 only considers the matching between TRUCK.
+    #         est_label = estimated_objects_sorted[est_idx].semantic_label.label
+    #         if self.matching_label_policy in [MatchingLabelPolicy.DEFAULT]:
+    #             thresholds_for_label = label_to_thresholds_map.get(est_label, [])
+    #             if threshold not in thresholds_for_label:
+    #                 continue
+            
+    #         best_match = self._find_best_match(
+    #             est_idx=est_idx,
+    #             ground_truth_objects=ground_truth_objects, 
+    #             matching_scores=matching_matrices.matching_scores, 
+    #             matched_gt_indices=matched_gt_indices, 
+    #             matching_valid_masks=matching_matrices.matching_valid_masks, 
+    #             label_to_thresholds_map=label_to_thresholds_map, 
+    #             threshold=threshold                    
+    #         )
+
+    #         if best_match is None:
+    #             continue
+
+    #         best_gt_idx, best_matching = best_match
+    #         if not best_matching.is_better_than(threshold):
+    #             continue
+
+    #         matched_est_indices.add(est_idx)
+    #         matched_gt_indices.add(best_gt_idx)
+
+    #         object_results[ground_truth_objects[best_gt_idx].semantic_label.label][threshold].append(
+    #             DynamicObjectWithPerceptionResult(
+    #                 estimated_objects_sorted[est_idx],
+    #                 ground_truth_objects[best_gt_idx],
+    #                 self.matching_label_policy,
+    #                 transforms=self.transforms,
+    #             )
+    #         )
+
+    #     # Add unmatched estimated objects as false positives if applicable
+    #     if self.evaluation_task is not None and self.evaluation_task.is_fp_validation():
+    #         continue
+
+    #     for est_idx in range(len(estimated_objects_sorted)):
+    #         if est_idx in matched_est_indices:
+    #             continue
+
+    #         object_results[estimated_objects_sorted[est_idx].semantic_label.label][threshold].append(
+    #             DynamicObjectWithPerceptionResult(
+    #                 estimated_objects_sorted[est_idx],
+    #                 None,
+    #                 self.matching_label_policy,
+    #                 transforms=self.transforms,
+    #             )
+    #         )
+
     def _compute_matching_matrix(
         self,
         estimated_objects: List[ObjectType],
