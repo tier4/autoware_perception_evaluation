@@ -611,7 +611,7 @@ class NuscenesObjectMatcher:
         label_to_thresholds_map: Dict[LabelType, List[float]],
         threshold: float, 
         class_agnostic_matching: bool
-    ):
+    ) -> Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]:
         """
         Match boxes with a specific threshold.
         Args:
