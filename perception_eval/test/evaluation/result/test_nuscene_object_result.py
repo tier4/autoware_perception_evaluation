@@ -125,27 +125,27 @@ class TestNuSceneObjectResult(unittest.TestCase):
                 # Threshold: 4.0
                 # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
             # } 
-            # (
-            #     DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
-            #     {
-            #         # MatchignMode: Threshold: expected matching results
-            #         MatchingMode.CENTERDISTANCE: {
-            #             0.5: [(0, None), (1, None), (2, 0)],
-            #             2.0: [(0, None), (1, None), (2, 0)],
-            #             4.0: [(0, 0), (1, 1), (2, None)],
-            #         },
-            #         MatchingMode.CENTERDISTANCEBEV: {
-            #             0.5: [(0, None), (1, None), (2, 0)],
-            #             2.0: [(0, None), (1, None), (2, 0)],
-            #             4.0: [(0, 0), (1, 1), (2, None)],
-            #         },
-            #         MatchingMode.PLANEDISTANCE: {
-            #             0.5: [(0, None), (1, None), (2, 0)],
-            #             2.0: [(0, None), (1, 1), (2, 0)],
-            #             4.0: [(0, 0), (1, 1), (2, None)],
-            #         },
-            #     }
-            # ),
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
+                {
+                    # MatchignMode: Threshold: expected matching results
+                    MatchingMode.CENTERDISTANCE: {
+                        0.5: [(0, None), (1, None), (2, 0)],
+                        2.0: [(0, None), (1, None), (2, 0)],
+                        4.0: [(0, 0), (1, 1), (2, None)],
+                    },
+                    MatchingMode.CENTERDISTANCEBEV: {
+                        0.5: [(0, None), (1, None), (2, 0)],
+                        2.0: [(0, None), (1, None), (2, 0)],
+                        4.0: [(0, 0), (1, 1), (2, None)],
+                    },
+                    MatchingMode.PLANEDISTANCE: {
+                        0.5: [(0, None), (1, None), (2, 0)],
+                        2.0: [(0, None), (1, 1), (2, 0)],
+                        4.0: [(0, 0), (1, 1), (2, None)],
+                    },
+                }
+            ),
         ]
         matcher = NuscenesObjectMatcher(
             evaluation_task=self.evaluation_task,

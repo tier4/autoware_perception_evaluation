@@ -532,15 +532,12 @@ class NuscenesObjectMatcher:
             if gt_idx in matched_gt_indices or threshold not in label_to_thresholds_map[ground_truth_label]:
                 continue
             
-            # When the matching is not class-agnostic, we need to check if the matching is valid. This is used when we matching fps to 
+            # When the matching is not class-agnostic, we need to check if the matching for class-to-class is valid. This is used when we matching fps to 
             # any ground truth without matching their label.
             if not class_agnostic_matching and not matching_valid_masks[est_idx, gt_idx]:
                 continue 
 
             matching = matching_scores[est_idx, gt_idx]
-            if matching is None:
-                continue
-
             if best_matching is None or matching.is_better_than(best_matching.value):
                 best_matching = matching
                 best_gt_idx = gt_idx
@@ -594,137 +591,132 @@ class NuscenesObjectMatcher:
         
         # 1) It iterates over all estimated objects and finds the best matching ground truth objects for each threshold.
         for threshold in available_thresholds:
-            matched_est_indices = set()
-            matched_gt_indices = set()
-            for est_idx in range(len(estimated_objects_sorted)):
-                # If the matching label policy is default, and the threshold is not in the label to thresholds map, 
-                # then we skip this estimated object for this threshold
-                # Example, when the label to threshold map is {LabelType.CAR: [0.5, 0.7], LabelType.TRUCK: [0.6, 0.8]}, and the threshold is 0.6, 
-                # then we exclude the estimated object with label LabelType.CAR when matching since it's a class-to-class matching, 
-                # where threshold 0.6 only considers the matching between TRUCK.
-                est_label = estimated_objects_sorted[est_idx].semantic_label.label
-                if self.matching_label_policy in [MatchingLabelPolicy.DEFAULT]:
-                    thresholds_for_label = label_to_thresholds_map.get(est_label, [])
-                    if threshold not in thresholds_for_label:
-                        continue
-                
-                best_match = self._find_best_match(
+            object_results_threshold = self._match_boxes_threshold(
+                estimated_objects_sorted=estimated_objects_sorted,
+                ground_truth_objects=ground_truth_objects,
+                matching_matrices=matching_matrices,
+                label_to_thresholds_map=label_to_thresholds_map,
+                threshold=threshold,
+                class_agnostic_matching=False,
+            )
+            object_results = self._merge_object_results(object_results, object_results_threshold)
+
+        return object_results
+    
+    def _match_boxes_threshold(
+        self, 
+        estimated_objects_sorted: List[ObjectType],
+        ground_truth_objects: List[ObjectType],
+        matching_matrices: Optional[MatchingMatrices],
+        label_to_thresholds_map: Dict[LabelType, List[float]],
+        threshold: float, 
+        class_agnostic_matching: bool
+    ):
+        """
+        Match boxes with a specific threshold.
+        Args:
+            estimated_objects_sorted (List[ObjectType]): Sorted estimated objects.
+            ground_truth_objects (List[ObjectType]): Ground truth objects.
+            matching_matrices (Optional[MatchingMatrices]): Matching matrices.
+            label_to_thresholds_map (Dict[LabelType, List[float]]): Label to thresholds map.
+            threshold (float): Threshold.
+            class_agnostic_matching (bool): Whether to use class-agnostic matching.
+        Returns:
+            Nested dict grouped as:
+                {
+                    LabelType.CAR: {
+                        0.5: [DynamicObjectWithPerceptionResult, ...],
+                        ...
+                    },
+                    ...
+                }
+        """
+        object_results: Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]] = defaultdict(lambda: defaultdict(list))
+        matched_est_indices = set()
+        matched_gt_indices = set()
+        for est_idx in range(len(estimated_objects_sorted)):
+            # If the matching label policy is default, and the threshold is not in the label to thresholds map, 
+            # then we skip this estimated object for this threshold
+            # Example, when the label to threshold map is {LabelType.CAR: [0.5, 0.7], LabelType.TRUCK: [0.6, 0.8]}, and the threshold is 0.6, 
+            # then we exclude the estimated object with label LabelType.CAR when matching since it's a class-to-class matching, 
+            # where threshold 0.6 only considers the matching between TRUCK.
+            est_label = estimated_objects_sorted[est_idx].semantic_label.label
+            if self.matching_label_policy in [MatchingLabelPolicy.DEFAULT]:
+                thresholds_for_label = label_to_thresholds_map.get(est_label, [])
+                if threshold not in thresholds_for_label:
+                    continue
+            
+            best_match = self._find_best_match(
                     est_idx=est_idx,
                     ground_truth_objects=ground_truth_objects, 
                     matching_scores=matching_matrices.matching_scores, 
                     matched_gt_indices=matched_gt_indices, 
                     matching_valid_masks=matching_matrices.matching_valid_masks, 
                     label_to_thresholds_map=label_to_thresholds_map, 
-                    threshold=threshold                    
-                )
+                    threshold=threshold,
+                    class_agnostic_matching=class_agnostic_matching,
+            )
 
-                if best_match is None:
-                    continue
-
-                best_gt_idx, best_matching = best_match
-                if not best_matching.is_better_than(threshold):
-                    continue
-
-                matched_est_indices.add(est_idx)
-                matched_gt_indices.add(best_gt_idx)
-
-                object_results[ground_truth_objects[best_gt_idx].semantic_label.label][threshold].append(
-                    DynamicObjectWithPerceptionResult(
-                        estimated_objects_sorted[est_idx],
-                        ground_truth_objects[best_gt_idx],
-                        self.matching_label_policy,
-                        transforms=self.transforms,
-                    )
-                )
-
-            # Add unmatched estimated objects as false positives if applicable
-            if self.evaluation_task is not None and self.evaluation_task.is_fp_validation():
+            if best_match is None:
                 continue
 
-            for est_idx in range(len(estimated_objects_sorted)):
-                if est_idx in matched_est_indices:
-                    continue
+            best_gt_idx, best_matching = best_match
+            if not best_matching.is_better_than(threshold):
+                continue
 
-                object_results[estimated_objects_sorted[est_idx].semantic_label.label][threshold].append(
-                    DynamicObjectWithPerceptionResult(
-                        estimated_objects_sorted[est_idx],
-                        None,
-                        self.matching_label_policy,
-                        transforms=self.transforms,
-                    )
+            matched_est_indices.add(est_idx)
+            matched_gt_indices.add(best_gt_idx)
+
+            object_results[ground_truth_objects[best_gt_idx].semantic_label.label][threshold].append(
+                DynamicObjectWithPerceptionResult(
+                    estimated_objects_sorted[est_idx],
+                    ground_truth_objects[best_gt_idx],
+                    self.matching_label_policy,
+                    transforms=self.transforms,
                 )
+            )
+
+        # Add unmatched estimated objects as false positives if applicable
+        if self.evaluation_task is not None and self.evaluation_task.is_fp_validation():
+            return object_results
+
+        for est_idx in range(len(estimated_objects_sorted)):
+            if est_idx in matched_est_indices:
+                continue
+
+            object_results[estimated_objects_sorted[est_idx].semantic_label.label][threshold].append(
+                DynamicObjectWithPerceptionResult(
+                    estimated_objects_sorted[est_idx],
+                    None,
+                    self.matching_label_policy,
+                    transforms=self.transforms,
+                )
+            )
 
         return object_results
-    
-    # def _match_boxes_threshold(
-    #     self, 
-    #     estimated_objects_sorted: List[ObjectType],
-    #     ground_truth_objects: List[ObjectType],
-    #     matching_matrices: Optional[MatchingMatrices],
-    #     label_to_thresholds_map: Dict[LabelType, List[float]],
-    #     threshold: float
-    # ):
-    #     """
-    #     """
-    #     matched_est_indices = set()
-    #     matched_gt_indices = set()
-    #     for est_idx in range(len(estimated_objects_sorted)):
-    #         # If the matching label policy is default, and the threshold is not in the label to thresholds map, 
-    #         # then we skip this estimated object for this threshold
-    #         # Example, when the label to threshold map is {LabelType.CAR: [0.5, 0.7], LabelType.TRUCK: [0.6, 0.8]}, and the threshold is 0.6, 
-    #         # then we exclude the estimated object with label LabelType.CAR when matching since it's a class-to-class matching, 
-    #         # where threshold 0.6 only considers the matching between TRUCK.
-    #         est_label = estimated_objects_sorted[est_idx].semantic_label.label
-    #         if self.matching_label_policy in [MatchingLabelPolicy.DEFAULT]:
-    #             thresholds_for_label = label_to_thresholds_map.get(est_label, [])
-    #             if threshold not in thresholds_for_label:
-    #                 continue
-            
-    #         best_match = self._find_best_match(
-    #             est_idx=est_idx,
-    #             ground_truth_objects=ground_truth_objects, 
-    #             matching_scores=matching_matrices.matching_scores, 
-    #             matched_gt_indices=matched_gt_indices, 
-    #             matching_valid_masks=matching_matrices.matching_valid_masks, 
-    #             label_to_thresholds_map=label_to_thresholds_map, 
-    #             threshold=threshold                    
-    #         )
 
-    #         if best_match is None:
-    #             continue
-
-    #         best_gt_idx, best_matching = best_match
-    #         if not best_matching.is_better_than(threshold):
-    #             continue
-
-    #         matched_est_indices.add(est_idx)
-    #         matched_gt_indices.add(best_gt_idx)
-
-    #         object_results[ground_truth_objects[best_gt_idx].semantic_label.label][threshold].append(
-    #             DynamicObjectWithPerceptionResult(
-    #                 estimated_objects_sorted[est_idx],
-    #                 ground_truth_objects[best_gt_idx],
-    #                 self.matching_label_policy,
-    #                 transforms=self.transforms,
-    #             )
-    #         )
-
-    #     # Add unmatched estimated objects as false positives if applicable
-    #     if self.evaluation_task is not None and self.evaluation_task.is_fp_validation():
-    #         continue
-
-    #     for est_idx in range(len(estimated_objects_sorted)):
-    #         if est_idx in matched_est_indices:
-    #             continue
-
-    #         object_results[estimated_objects_sorted[est_idx].semantic_label.label][threshold].append(
-    #             DynamicObjectWithPerceptionResult(
-    #                 estimated_objects_sorted[est_idx],
-    #                 None,
-    #                 self.matching_label_policy,
-    #                 transforms=self.transforms,
-    #             )
-    #         )
+    @staticmethod
+    def _merge_object_results(
+        object_results_1: Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]],
+        object_results_2: Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
+    ) -> Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]:
+        """
+        Merge two object results.
+        Returns:
+            Nested dict grouped as:
+                {
+                    LabelType.CAR: {
+                        0.5: [DynamicObjectWithPerceptionResult, ...],
+                        ...
+                    },
+                    ...
+                }
+        """
+        for label, threshold_to_results in object_results_2.items():
+            for threshold, results in threshold_to_results.items():
+                object_results_1[label][threshold].extend(results)
+        
+        return object_results_1
 
     def _compute_matching_matrix(
         self,
@@ -744,8 +736,8 @@ class NuscenesObjectMatcher:
         if not estimated_objects or not ground_truth_objects:
             return None
 
-        matching_scores = np.zeros(
-            (len(estimated_objects), len(ground_truth_objects)))
+        matching_scores = np.full(
+            (len(estimated_objects), len(ground_truth_objects)), None)
         matching_valid_masks = np.zeros_like(matching_scores)
 
         for i, est_obj in enumerate(estimated_objects):
