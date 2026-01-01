@@ -317,6 +317,7 @@ class TestNuSceneObjectResult(unittest.TestCase):
                                     f"Unexpected estimated object at Matching mode: {matching_mode}, Label: {label}, Threshold: {threshold}",
                                 )
                                 estimated_object_index: int = estimated_objects.index(object_result.estimated_object)
+
                                 gt_idx = ans_pair_index[estimated_object_index][1]
                                 if gt_idx is not None:  
                                     self.assertEqual(
@@ -330,3 +331,4 @@ class TestNuSceneObjectResult(unittest.TestCase):
                                         object_result.ground_truth_object,
                                         f"Ground truth must be None at Matching mode: {matching_mode}, Label: {label}, Threshold: {threshold}",
                                     )
+
