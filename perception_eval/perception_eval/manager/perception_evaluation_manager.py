@@ -319,26 +319,6 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             config=self.metrics_config,
             used_frame=used_frame,
         )
-        
-        print(f"matching_class_agnostic_fps: {self.evaluator_config.label_params['matching_class_agnostic_fps']}")
-        for matching_mode, label_to_threshold_map in flattened_nuscene_object_results_dict.items():
-            print(f"====={matching_mode}=====")
-            for label, threshold_to_results in label_to_threshold_map.items():
-                print(f"====={label}=====")
-                for threshold, results in threshold_to_results.items():
-                    print(f"threshold: {threshold}, results: {len(results)}")
-                    num_ests = 0 
-                    num_gts = 0 
-                    for result in results:
-                        if result.estimated_object.semantic_label.label != label:
-                            print(f"UNMATCHED: estimated_object.semantic_label.label: {result.estimated_object.semantic_label.label}, label: {label}")
-                        
-                        num_ests += 1
-                        if result.ground_truth_object is not None:
-                            if result.ground_truth_object.semantic_label.label != label:
-                                print(f"UNMATCHED: ground_truth_object.semantic_label.label: {result.ground_truth_object.semantic_label.label}, label: {label}")
-                            num_gts += 1
-                    print(f"num_ests: {num_ests}, num_gts: {num_gts}")
 
         # Classification
         if self.evaluator_config.metrics_config.classification_config is not None:
