@@ -490,8 +490,6 @@ class NuscenesObjectMatcher:
                         self.matching_label_policy,
                         transforms=self.transforms))
                 
-                matched_est_indices[threshold].add(est_index)
-
         return object_results
     
     def _find_best_match(
