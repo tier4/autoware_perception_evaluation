@@ -22,21 +22,16 @@ from typing import List
 from typing import Tuple
 import unittest
 
-from nuscenes.eval.common.utils import center_distance
 from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching.object_matching import MatchingMode, MatchingLabelPolicy
-from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
 from perception_eval.evaluation.metrics.tracking.tracking_metrics_score import TrackingMetricsScore
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result_matching import get_object_results
 from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
 from perception_eval.util.debug import get_objects_with_difference
-# from perception_eval.evaluation.matching import MatchingLabelPolicy
 
 
 class TestTrackingMetricsScore(unittest.TestCase):
