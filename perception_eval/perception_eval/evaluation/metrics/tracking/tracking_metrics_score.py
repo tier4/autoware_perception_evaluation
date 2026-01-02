@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import select
 from typing import Any
 from typing import Dict
 from typing import List
@@ -87,7 +88,7 @@ class TrackingMetricsScore:
                     matching_threshold_list=[matching_threshold],
                 )
                 self.clears.append(clear_)
-
+        
     def __reduce__(self) -> Tuple[TrackingMetricsScore, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
         init_args = (
