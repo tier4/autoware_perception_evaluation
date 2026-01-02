@@ -583,12 +583,14 @@ class NuscenesObjectMatcher:
         if matching_matrices is None:
             # When the matching label policy is ALLOW_ANY or ALLOW_UNKNOWN, we don't need to consider the threshold, every est must be considered as FP.
             if self.matching_label_policy in [MatchingLabelPolicy.ALLOW_ANY, MatchingLabelPolicy.ALLOW_UNKNOWN]:
-                label_to_thresholds_map = None 
+                thresholds_map = None 
+            else:
+                thresholds_map = label_to_thresholds_map
 
             return self._add_fps(
                 estimated_objects=estimated_objects_sorted,
                 available_thresholds=available_thresholds,
-                label_to_thresholds_map=label_to_thresholds_map,
+                label_to_thresholds_map=thresholds_map,
                 matched_est_indices=set(),
             )
         
@@ -631,12 +633,14 @@ class NuscenesObjectMatcher:
                 
             # When the matching label policy is ALLOW_ANY or ALLOW_UNKNOWN, we don't need to consider the threshold, every est must be considered as FP.
             if self.matching_label_policy in [MatchingLabelPolicy.ALLOW_ANY, MatchingLabelPolicy.ALLOW_UNKNOWN]:
-                label_to_thresholds_map = None 
+                thresholds_map = None
+            else:
+                thresholds_map = label_to_thresholds_map
 
             object_results_fps = self._add_fps(
                 estimated_objects=estimated_objects_sorted,
                 available_thresholds=[threshold],
-                label_to_thresholds_map=label_to_thresholds_map,
+                label_to_thresholds_map=thresholds_map,
                 matched_est_indices=matched_est_indices,
             )
             object_results = self._merge_object_results(object_results, object_results_fps)
