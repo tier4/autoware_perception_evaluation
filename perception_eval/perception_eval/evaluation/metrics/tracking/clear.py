@@ -98,7 +98,6 @@ class CLEAR(_TrackingMetricsBase):
         self.tp_matching_score: float = 0.0
         self.objects_results_num: int = 0
 
-        print(object_results)
         for i, cur_object_results in enumerate(object_results[1:], 1):
             self.objects_results_num += len(cur_object_results)
             previous_object_results = object_results[i - 1]
@@ -187,13 +186,11 @@ class CLEAR(_TrackingMetricsBase):
                 else cur_obj_result.ground_truth_object.semantic_label
             )
 
-            print(self.matching_threshold_list)
             matching_threshold_ = get_label_threshold(
                 semantic_label=semantic_label,
                 target_labels=self.target_labels,
                 threshold_list=self.matching_threshold_list,
             )
-            print(matching_threshold_)
 
             if matching_threshold_ is None:
                 continue
