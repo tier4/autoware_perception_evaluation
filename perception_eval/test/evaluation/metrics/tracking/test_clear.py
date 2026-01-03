@@ -201,7 +201,8 @@ class TestCLEAR(unittest.TestCase):
             # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
             # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
             # -> TP score=0.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=inf
-            # Although Est[0] and GT[0] is assigned as match at the previous frame, they are not matched at the current frame, and thus they are assigned as FP.
+            # Although Est[0] and GT[0] are assigned as match at the previous frame, they are not matched at the current frame due to matching threshold (0.5), 
+            # and thus they are assigned as FP.
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
@@ -293,12 +294,12 @@ class TestCLEAR(unittest.TestCase):
                 True,
                 AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
             ),
-            # # ========== Test non-unique ID association ==========
-            # #   -> The result must be same, whether use unique ID or not.
-            # # (11). Est: 2, GT: 1    = Case(1)
-            # # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-            # # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-            # # -> TP score=0.0, IDsw=0, TP matching score=0.0, MOTA=0.0, MOTP=0.0
+            # ========== Test non-unique ID association ==========
+            #   -> The result must be same, whether use unique ID or not.
+            # (11). Est: 2, GT: 1    = Case(1)
+            # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=0.0, IDsw=0, TP matching score=0.0, MOTA=0.0, MOTP=0.0
             (
                 # prev: (trans est, trans gt)
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
@@ -311,10 +312,10 @@ class TestCLEAR(unittest.TestCase):
                 # num_gt<int>, tp<float>, fp<float>, id_switch<int>, tp_matching_score<float>, mota<float>, motp<float>
                 AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
             ),
-            # # (12). Est: 2, GT: 1    = Case(2)
-            # # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
-            # # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-            # # -> TP score=0.0, IDsw=0, TP matching score=0.0, MOTA=0.0, MOTP=0.0
+            # (12). Est: 2, GT: 1    = Case(2)
+            # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
+            # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=0.0, IDsw=0, TP matching score=0.0, MOTA=0.0, MOTP=0.0
             (
                 DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
@@ -322,94 +323,94 @@ class TestCLEAR(unittest.TestCase):
                 False,
                 AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
             ),
-            # # (13). Est: 2, GT: 1   = Case(3)
-            # # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-            # # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
-            # # -> TP score=0.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=0.0
-            # # When current/previous has same match and previous result is TP, previous TP is assigned.
+            # (13). Est: 2, GT: 1   = Case(3)
+            # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
+            # -> TP score=0.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=0.0
+            # Although Est[0] and GT[0] are assigned as match at the previous frame, they are not matched at the current frame due to matching threshold (0.5), 
+            # and thus they are assigned as FP.
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
                 AutowareLabel.CAR,
-                False,
-                AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
+                True,
+                AnswerCLEAR(1, 0.0, 2.0, 0, 0.0, 0.0, float("inf")),
             ),
-            # # (14). Est: 2, GT: 1     = Case(4)
-            # # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
-            # # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-            # # -> TP score=1.0, IDsw=1, matching score=0.2, MOTA=0.0, MOTP=0.2
-            # # When current/previous has same match, if current is TP IDsw is 0, though previous is FP.
-            # (
-            #     DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
-            #     DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
-            #     AutowareLabel.CAR,
-            #     False,
-            #     AnswerCLEAR(1, 1.0, 1.0, 0, 0.2, 0.0, 0.2),
-            # ),
-            # # (15). Est: 2, GT: 0   = Case(5)
-            # # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-            # # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
-            # # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
-            # # If there is no GT, MOTA get inf. Also, if there is no TP, MOTP get inf.
-            # # In this case, GT is filtered by max_x_position(=100.0).
-            # # When current/previous has same match and previous result is TP, previous TP is assigned even though current is FP.
-            # (
-            #     DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-            #     DiffTranslation((0.0, 0.0, 0.0), (101.0, 0.0, 0.0)),
-            #     AutowareLabel.CAR,
-            #     True,
-            #     AnswerCLEAR(0, 0.0, 2.0, 0, 0.0, float("inf"), float("inf")),
-            # ),
-            # # (16). Est: 2, GT: 1   = Case(6)
-            # # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-            # # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
-            # # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
-            # # If there is no TP, MOTP get inf.
-            # (
-            #     DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
-            #     DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
-            #     AutowareLabel.CAR,
-            #     False,
-            #     AnswerCLEAR(1, 0.0, 2.0, 0, 0.0, 0.0, float("inf")),
-            # ),
-            # # --- Test there is no previous result ---
-            # # (17). Est: 2, GT: 1   = Case(5)
-            # # -> previous   : No result
-            # # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-            # # -> TP score=0.0, IDsw=0, matching score=0.0, MOTA=0.0, MOTP=0.0
-            # (
-            #     None,
-            #     DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-            #     AutowareLabel.CAR,
-            #     False,
-            #     AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0, 0.0),
-            # ),
-            # # (18). Est: 2, GT: 1   = Case(6)
-            # # -> previous   : No result
-            # # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-            # # -> TP score=1.0, IDsw=0, matching score=0.2, MOTA=0.0, MOTP=0.2
-            # (
-            #     None,
-            #     DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
-            #     AutowareLabel.CAR,
-            #     False,
-            #     AnswerCLEAR(1, 1.0, 1.0, 0, 0.2, 0.0, 0.2),
-            # ),
-            # # (19). Est: 1, GT: 1   = Case(7)
-            # # -> previous   : No result
-            # # -> current    : TP=1.0(Est[1], GT[1]), FP=0.0
-            # # -> TP score=1.0, IDsw=0, matching score=0.2, MOTA=0.0, MOTP=0.2
-            # (
-            #     None,
-            #     DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
-            #     AutowareLabel.BICYCLE,
-            #     False,
-            #     AnswerCLEAR(1, 1.0, 0.0, 0, 0.2, 1.0, 0.2),
-            # ),
+            # (14). Est: 2, GT: 1     = Case(4)
+            # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
+            # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=1.0, IDsw=1, matching score=0.2, MOTA=0.0, MOTP=0.2
+            # When current/previous has same match, if current is TP IDsw is 0, though previous is FP.
+            (
+                DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                False,
+                AnswerCLEAR(1, 1.0, 1.0, 0, 0.2, 0.0, 0.2),
+            ),
+            # (15). Est: 2, GT: 0   = Case(5)
+            # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
+            # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
+            # If there is no GT, MOTA get inf. Also, if there is no TP, MOTP get inf.
+            # In this case, GT is filtered by max_x_position(=100.0).
+            # When current/previous has same match and previous result is TP, previous TP is assigned even though current is FP.
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (101.0, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                True,
+                AnswerCLEAR(0, 0.0, 2.0, 0, 0.0, float("inf"), float("inf")),
+            ),
+            # (16). Est: 2, GT: 1   = Case(6)
+            # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
+            # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
+            # If there is no TP, MOTP get inf.
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                False,
+                AnswerCLEAR(1, 0.0, 2.0, 0, 0.0, 0.0, float("inf")),
+            ),
+            # --- Test there is no previous result ---
+            # (17). Est: 2, GT: 1   = Case(5)
+            # -> previous   : No result
+            # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=0.0, IDsw=0, matching score=0.0, MOTA=0.0, MOTP=0.0
+            (
+                None,
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                False,
+                AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0, 0.0),
+            ),
+            # (18). Est: 2, GT: 1   = Case(6)
+            # -> previous   : No result
+            # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=1.0, IDsw=0, matching score=0.2, MOTA=0.0, MOTP=0.2
+            (
+                None,
+                DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                False,
+                AnswerCLEAR(1, 1.0, 1.0, 0, 0.2, 0.0, 0.2),
+            ),
+            # (19). Est: 1, GT: 1   = Case(7)
+            # -> previous   : No result
+            # -> current    : TP=1.0(Est[1], GT[1]), FP=0.0
+            # -> TP score=1.0, IDsw=0, matching score=0.2, MOTA=0.0, MOTP=0.2
+            (
+                None,
+                DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
+                AutowareLabel.BICYCLE,
+                False,
+                AnswerCLEAR(1, 1.0, 0.0, 0, 0.2, 1.0, 0.2),
+            ),
         ]
         matcher = NuscenesObjectMatcher(
             evaluation_task=self.evaluation_task, metrics_config=self.metric_score_config, uuid_matching_first=False, matching_class_agnostic_fps=True, 
-            matching_label_policy=MatchingLabelPolicy.ALLOW_ANY
         )
         for n, (
             prev_diff_trans,
@@ -454,24 +455,10 @@ class TestCLEAR(unittest.TestCase):
                     )
 
                     # Get previous object results
-                    # prev_object_results = get_object_results(
-                    #     evaluation_task=self.evaluation_task,
-                    #     estimated_objects=prev_estimated_objects,
-                    #     ground_truth_objects=prev_ground_truth_objects,
-                    # )
                     prev_object_results = matcher.match(
                         estimated_objects=prev_estimated_objects,
                         ground_truth_objects=prev_ground_truth_objects,
                     )
-
-                    for matching_mode, labels_to_thresholds in prev_object_results.items():
-                        for label, thresholds in labels_to_thresholds.items():
-                            for threshold, obj_result in thresholds.items():
-                                print(matching_mode, " ", label, " ", threshold)
-                                for obj in obj_result:
-                                    gt_label = obj.ground_truth_object.semantic_label.label if obj.ground_truth_object else None
-                                    est_label = obj.estimated_object.semantic_label.label
-                                    print(est_label, " ", gt_label)
                 else:
                     prev_object_results = []
 
@@ -506,24 +493,10 @@ class TestCLEAR(unittest.TestCase):
                 )
 
                 # Current object results
-                # cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-                #     evaluation_task=self.evaluation_task,
-                #     estimated_objects=cur_estimated_objects,
-                #     ground_truth_objects=cur_ground_truth_objects,
-                # )
                 cur_object_results = matcher.match(
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
-                print("cur_object_results")
-                for matching_mode, labels_to_thresholds in cur_object_results.items():
-                        for label, thresholds in labels_to_thresholds.items():
-                            for threshold, obj_result in thresholds.items():
-                                print(matching_mode, " ", label, " ", threshold)
-                                for obj in obj_result:
-                                    gt_label = obj.ground_truth_object.semantic_label.label if obj.ground_truth_object else None
-                                    est_label = obj.estimated_object.semantic_label.label
-                                    print(est_label, " ", gt_label)
                 num_ground_truths = divide_objects_to_num(cur_ground_truth_objects, self.target_labels)
 
                 # num_ground_truth: int = len(cur_ground_truth_objects)
@@ -541,13 +514,7 @@ class TestCLEAR(unittest.TestCase):
                             matching_threshold_list=[matching_threshold],
                         )
                         clear_results.append(clear_)
-                # clear_: CLEAR = CLEAR(
-                #     object_results=[prev_object_results[MatchingMode.CENTERDISTANCE], cur_object_results[MatchingMode.CENTERDISTANCE]],
-                #     num_ground_truth=num_ground_truth,
-                #     target_labels=[target_label],
-                #     matching_mode=MatchingMode.CENTERDISTANCE,
-                #     matching_threshold_list=[0.5],
-                # )
+             
                 # Only one item in a sub test
                 out_clear: AnswerCLEAR = AnswerCLEAR.from_clear(clear_results[0])
                 self.assertEqual(

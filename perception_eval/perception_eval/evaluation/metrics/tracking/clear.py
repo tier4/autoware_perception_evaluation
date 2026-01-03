@@ -193,7 +193,6 @@ class CLEAR(_TrackingMetricsBase):
             )
             gt_label = cur_obj_result.ground_truth_object.semantic_label.label if cur_obj_result.ground_truth_object else None
             est_label = cur_obj_result.estimated_object.semantic_label.label
-            print("est_semantic_label", est_label, "gt_semantic_label", gt_label, "matching_threshold_", matching_threshold_)
 
             if matching_threshold_ is None:
                 continue
@@ -218,7 +217,6 @@ class CLEAR(_TrackingMetricsBase):
                     break
 
                 is_same_match: bool = self._is_same_match(cur_obj_result, prev_obj_result)
-                print("is_tp_prev", is_tp_prev, "is_same_match", is_same_match, "est_semantic_label", est_label, "gt_semantic_label", gt_label)
                 if is_same_match:
                     # NOTE: If current/previous has same matching pair and both current/previous is TP,
                     #       previous TP score is assigned.
@@ -314,8 +312,5 @@ class CLEAR(_TrackingMetricsBase):
         has_same_ground_truth_id: bool = (
             cur_object_result.ground_truth_object.uuid == prev_object_result.ground_truth_object.uuid
         )
-        print("has_same_estimated_id", has_same_estimated_id)
-        print("has_same_estimated_label", has_same_estimated_label)
-        print("has_same_ground_truth_id", has_same_ground_truth_id)
 
         return bool(has_same_estimated_id * has_same_estimated_label * has_same_ground_truth_id)
