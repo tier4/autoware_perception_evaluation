@@ -16,7 +16,6 @@ from test.evaluation.metrics.tracking.test_clear import AnswerCLEAR
 from test.util.dummy_object import make_dummy_data
 from test.util.object_diff import DiffTranslation
 from test.util.object_diff import DiffYaw
-from tkinter import Label
 from typing import Dict
 from typing import List
 from typing import Tuple
