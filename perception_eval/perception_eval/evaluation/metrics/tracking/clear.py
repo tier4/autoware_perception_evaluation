@@ -262,7 +262,7 @@ class CLEAR(_TrackingMetricsBase):
         # current GT = None -> FP
         if cur_object_result.ground_truth_object is None or prev_object_result.ground_truth_object is None:
             return False
-
+        
         # 1. Check whether current/previous estimated objects has same ID.
         # NOTE: There is a case current/previous estimated objects has same ID,
         #       but different label(Checked by 2.)
