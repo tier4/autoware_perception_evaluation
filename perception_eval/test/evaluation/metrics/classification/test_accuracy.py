@@ -21,10 +21,10 @@ import unittest
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
-from perception_eval.evaluation.matching.objects_filter import filter_objects
+from perception_eval.evaluation.matching.objects_filter import filter_objects, divide_objects_to_num
 from perception_eval.evaluation.metrics.classification.accuracy import ClassificationAccuracy
-from perception_eval.evaluation.result.object_result_matching import get_object_results
-
+from perception_eval.evaluation.result.object_result_matching import get_object_results, NuscenesObjectMatcher
+from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
 
 class AnswerAccuracy:
     """Answer class for ClassificationAccuracy to compare result."""
@@ -88,6 +88,22 @@ class TestClassificationAccuracy(unittest.TestCase):
         self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data2d(use_roi=False)
 
         self.evaluation_task: EvaluationTask = EvaluationTask.CLASSIFICATION2D
+        self.target_labels: List[AutowareLabel] = [
+            AutowareLabel.CAR,
+            AutowareLabel.BICYCLE,
+            AutowareLabel.PEDESTRIAN,
+            AutowareLabel.MOTORBIKE,
+        ]
+        self.matching_threshold_list: List[float] = [0.5]
+        self.metric_score_config = MetricsScoreConfig(
+            evaluation_task=self.evaluation_task,
+            target_labels=self.target_labels,
+            center_distance_thresholds=self.matching_threshold_list,
+            center_distance_bev_thresholds=None,
+            plane_distance_thresholds=None,
+            iou_2d_thresholds=None,
+            iou_3d_thresholds=None,
+        )
 
     def test_calculate_accuracy(self):
         # patterns: List[Tuple[AutowareLabel, AnswerAccuracy]]
@@ -95,6 +111,10 @@ class TestClassificationAccuracy(unittest.TestCase):
             (AutowareLabel.CAR, AnswerAccuracy(1, 1, 1, 0.5, 0.5, 1.0, 0.66)),
             (AutowareLabel.BICYCLE, AnswerAccuracy(1, 1, 0, 1.0, 1.0, 1.0, 1.0)),
         ]
+        matcher = NuscenesObjectMatcher(
+            evaluation_task=self.evaluation_task,
+            metrics_config=self.metric_score_config,
+        )
         for n, (target_label, answer) in enumerate(patterns):
             with self.subTest(f"Test calculate Accuracy: {n + 1}"):
                 # Filter objects
@@ -109,16 +129,19 @@ class TestClassificationAccuracy(unittest.TestCase):
                     target_labels=[target_label],
                 )
                 # Get object results
-                object_results = get_object_results(
-                    evaluation_task=self.evaluation_task,
+                object_results = matcher.match(
                     estimated_objects=estimated_objects,
                     ground_truth_objects=ground_truth_objects,
                 )
+                num_ground_truth_dict = divide_objects_to_num(ground_truth_objects, self.target_labels)
                 num_ground_truth = len(ground_truth_objects)
-                accuracy = ClassificationAccuracy(
-                    object_results=object_results,
-                    num_ground_truth=num_ground_truth,
-                    target_labels=[target_label],
-                )
-                out_accuracy = AnswerAccuracy.from_accuracy(accuracy)
-                self.assertEqual(out_accuracy, answer, f"\nout = {str(out_accuracy)},\nanswer = {str(answer)}")
+                for _, label_object_results in object_results.items():
+                    num_ground_truth = num_ground_truth_dict[target_label]
+                    for _, object_results in label_object_results[target_label].items():
+                        accuracy = ClassificationAccuracy(
+                            object_results=object_results,
+                            num_ground_truth=num_ground_truth,
+                            target_labels=[target_label],
+                        )
+                        out_accuracy = AnswerAccuracy.from_accuracy(accuracy)
+                        self.assertEqual(out_accuracy, answer, f"\nout = {str(out_accuracy)},\nanswer = {str(answer)}")

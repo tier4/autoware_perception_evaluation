@@ -72,6 +72,10 @@ class MetricsScoreConfig:
         elif self.evaluation_task == EvaluationTask.PREDICTION:
             self._check_parameters(PredictionMetricsConfig, cfg)
             self.prediction_config = PredictionMetricsConfig(**cfg)
+
+            # NOTE: In prediction, evaluate mAP too
+            # TODO: Check and extract parameters for detection from parameters for tracking
+            self.detection_config = DetectionMetricsConfig(**cfg)
         elif self.evaluation_task == EvaluationTask.CLASSIFICATION2D:
             self._check_parameters(ClassificationMetricsConfig, cfg)
             self.classification_config = ClassificationMetricsConfig(**cfg)

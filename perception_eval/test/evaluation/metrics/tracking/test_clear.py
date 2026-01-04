@@ -18,21 +18,20 @@ from math import isclose
 from test.util.dummy_object import make_dummy_data
 from test.util.object_diff import DiffTranslation
 from typing import List
-from typing import Optional
 from typing import Tuple
+from typing import Optional
 import unittest
 
 from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
-from perception_eval.evaluation.matching.object_matching import MatchingMode, MatchingLabelPolicy
+from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import filter_objects, divide_objects_to_num
 from perception_eval.evaluation.metrics.tracking.clear import CLEAR
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result_matching import get_object_results
 from perception_eval.util.debug import get_objects_with_difference
 from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 
 class AnswerCLEAR:
@@ -147,573 +146,572 @@ class TestCLEAR(unittest.TestCase):
             iou_3d_thresholds=None,
         )
 
-    # def test_calculate_tp_fp(self):
-    #     """[summary]
-    #     Test calculating TP/FP/ID switch.
+    def test_calculate_tp_fp(self):
+        """[summary]
+        Test calculating TP/FP/ID switch.
 
-    #     test patterns:
-    #         Check if TP/FP, ID switch, total matching score in TP, MOTA and MOTP are calculated correctly.
-    #         If prev_diff_trans is None, it means there is no previous results. Then, ID switch must be 0.
-    #         - matching mode     : Center distance
-    #         - matching threshold: 0.5
-    #         - tp metrics        : AP(=1.0)
-    #         NOTE:
-    #             - The flag must be same whether use unique ID or not.
-    #             - Estimated object is only matched with GT that has same label.
-    #             - The estimations & GTs are following (number represents the index)
-    #                 Estimation = 3
-    #                     (0): CAR, (1): BICYCLE, (2): CAR
-    #                 GT = 4
-    #                     (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
-    #     """
-    #     # patterns: (prev_diff_trans, cur_diff_trans, target_label, use_unique_id, ans_clear)
-    #     patterns: List[Tuple[Optional[DiffTranslation], DiffTranslation, AutowareLabel, AnswerCLEAR]] = [
-    #         # ========== Test unique ID association ==========
-    #         # (1). Est: 2, GT: 1
-    #         # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> TP score=0.0, IDsw=0, TP matching score=0.0, MOTA=0.0, MOTP=0.0
-    #         (
-    #             # prev: (trans est, trans gt)
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             # cur: (trans est, trans gt)
-    #             DiffTranslation((1.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
-    #             # target filtered label
-    #             AutowareLabel.CAR,
-    #             # whether use unique ID
-    #             True,
-    #             # num_gt<int>, tp<float>, fp<float>, id_switch<int>, tp_matching_score<float>, mota<float>, motp<float>
-    #             AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
-    #         ),
-    #         # (2). Est: 2, GT: 1
-    #         # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
-    #         # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> TP score=0.0, IDsw=0, TP matching score=0.0, MOTA=0.0, MOTP=0.0
-    #         # Although Est[0] and GT[0] is assigned as match, the matching score(=1.0) is worse than threshold(=0.5)
-    #         (
-    #             DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             AutowareLabel.CAR,
-    #             True,
-    #             AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
-    #         ),
-    #         # (3). Est: 2, GT: 1
-    #         # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
-    #         # -> TP score=0.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=inf
-    #         # Although Est[0] and GT[0] are assigned as match at the previous frame, they are not matched at the current frame due to matching threshold (0.5), 
-    #         # and thus they are assigned as FP.
-    #         (
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
-    #             AutowareLabel.CAR,
-    #             True,
-    #             AnswerCLEAR(1, 0.0, 2.0, 0, 0.0, 0.0, float("inf")),
-    #         ),
-    #         # (4). Est: 2, GT: 1
-    #         # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
-    #         # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> TP score=1.0, IDsw=1, matching score=0.2, MOTA=0.0, MOTP=0.2
-    #         # In case of current/previous has same match, current IDsw is 0 if TP even though previous is FP.
-    #         (
-    #             DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
-    #             AutowareLabel.CAR,
-    #             True,
-    #             AnswerCLEAR(1, 1.0, 1.0, 0, 0.2, 0.0, 0.2),
-    #         ),
-    #         # (5). Est: 2, GT: 0
-    #         # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
-    #         # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
-    #         # If there is no GT, MOTA get inf. Also, if there is no TP, MOTP get inf.
-    #         # In this case, GT is filtered by max_x_position(=100.0).
-    #         # When current/previous has same match and previous result is TP, previous TP is assigned even though current is TP.
-    #         (
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             DiffTranslation((0.0, 0.0, 0.0), (101.0, 0.0, 0.0)),
-    #             AutowareLabel.CAR,
-    #             True,
-    #             AnswerCLEAR(0, 0.0, 2.0, 0, 0.0, float("inf"), float("inf")),
-    #         ),
-    #         # (6). Est: 2, GT: 1
-    #         # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
-    #         # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
-    #         # If there is no TP, MOTP get inf.
-    #         (
-    #             DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
-    #             DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
-    #             AutowareLabel.CAR,
-    #             True,
-    #             AnswerCLEAR(1, 0.0, 2.0, 0, 0.0, 0.0, float("inf")),
-    #         ),
-    #         # --- Test there is no previous result ---
-    #         # (7). Est: 2, GT: 1
-    #         # -> previous   : No result
-    #         # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> TP score=0.0, IDsw=0, matching score=0.0, MOTA=0.0, MOTP=0.0
-    #         (
-    #             None,
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             AutowareLabel.CAR,
-    #             True,
-    #             AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0, 0.0),
-    #         ),
-    #         # (8). Est: 2, GT: 1
-    #         # -> previous   : No result
-    #         # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> TP score=1.0, IDsw=0, matching score=0.2, MOTA=0.0, MOTP=0.2
-    #         (
-    #             None,
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
-    #             AutowareLabel.CAR,
-    #             True,
-    #             AnswerCLEAR(1, 1.0, 1.0, 0, 0.2, 0.0, 0.2),
-    #         ),
-    #         # (9). Est: 1, GT: 1
-    #         # -> previous   : No result
-    #         # -> current    : TP=1.0(Est[1], GT[1]), FP=0.0
-    #         # -> TP score=1.0, IDsw=0, matching score=0.2, MOTA=0.0, MOTP=0.2
-    #         (
-    #             None,
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
-    #             AutowareLabel.BICYCLE,
-    #             True,
-    #             AnswerCLEAR(1, 1.0, 0.0, 0, 0.2, 1.0, 0.2),
-    #         ),
-    #         # (10). Est: 2, GT: 1
-    #         # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> current    : TP=1.0(EST[0], GT[0]), FP=1.0(Est[2])
-    #         # -> TP score=1.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=0.0
-    #         # When current/previous has same match and previous result is TP, previous TP is assigned even though current is TP.
-    #         (
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             DiffTranslation((0.1, 0.0, 0.0), (0.2, 0.2, 0.0)),
-    #             AutowareLabel.CAR,
-    #             True,
-    #             AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
-    #         ),
-    #         # ========== Test non-unique ID association ==========
-    #         #   -> The result must be same, whether use unique ID or not.
-    #         # (11). Est: 2, GT: 1    = Case(1)
-    #         # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> TP score=0.0, IDsw=0, TP matching score=0.0, MOTA=0.0, MOTP=0.0
-    #         (
-    #             # prev: (trans est, trans gt)
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             # cur: (trans est, trans gt)
-    #             DiffTranslation((1.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
-    #             # target filtered label
-    #             AutowareLabel.CAR,
-    #             # whether use unique ID
-    #             False,
-    #             # num_gt<int>, tp<float>, fp<float>, id_switch<int>, tp_matching_score<float>, mota<float>, motp<float>
-    #             AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
-    #         ),
-    #         # (12). Est: 2, GT: 1    = Case(2)
-    #         # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
-    #         # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> TP score=0.0, IDsw=0, TP matching score=0.0, MOTA=0.0, MOTP=0.0
-    #         (
-    #             DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             AutowareLabel.CAR,
-    #             False,
-    #             AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
-    #         ),
-    #         # (13). Est: 2, GT: 1   = Case(3)
-    #         # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
-    #         # -> TP score=0.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=0.0
-    #         # Although Est[0] and GT[0] are assigned as match at the previous frame, they are not matched at the current frame due to matching threshold (0.5), 
-    #         # and thus they are assigned as FP.
-    #         (
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
-    #             AutowareLabel.CAR,
-    #             True,
-    #             AnswerCLEAR(1, 0.0, 2.0, 0, 0.0, 0.0, float("inf")),
-    #         ),
-    #         # (14). Est: 2, GT: 1     = Case(4)
-    #         # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
-    #         # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> TP score=1.0, IDsw=1, matching score=0.2, MOTA=0.0, MOTP=0.2
-    #         # When current/previous has same match, if current is TP IDsw is 0, though previous is FP.
-    #         (
-    #             DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
-    #             AutowareLabel.CAR,
-    #             False,
-    #             AnswerCLEAR(1, 1.0, 1.0, 0, 0.2, 0.0, 0.2),
-    #         ),
-    #         # (15). Est: 2, GT: 0   = Case(5)
-    #         # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
-    #         # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
-    #         # If there is no GT, MOTA get inf. Also, if there is no TP, MOTP get inf.
-    #         # In this case, GT is filtered by max_x_position(=100.0).
-    #         # When current/previous has same match and previous result is TP, previous TP is assigned even though current is FP.
-    #         (
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             DiffTranslation((0.0, 0.0, 0.0), (101.0, 0.0, 0.0)),
-    #             AutowareLabel.CAR,
-    #             True,
-    #             AnswerCLEAR(0, 0.0, 2.0, 0, 0.0, float("inf"), float("inf")),
-    #         ),
-    #         # (16). Est: 2, GT: 1   = Case(6)
-    #         # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
-    #         # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
-    #         # If there is no TP, MOTP get inf.
-    #         (
-    #             DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
-    #             DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
-    #             AutowareLabel.CAR,
-    #             False,
-    #             AnswerCLEAR(1, 0.0, 2.0, 0, 0.0, 0.0, float("inf")),
-    #         ),
-    #         # --- Test there is no previous result ---
-    #         # (17). Est: 2, GT: 1   = Case(5)
-    #         # -> previous   : No result
-    #         # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> TP score=0.0, IDsw=0, matching score=0.0, MOTA=0.0, MOTP=0.0
-    #         (
-    #             None,
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             AutowareLabel.CAR,
-    #             False,
-    #             AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0, 0.0),
-    #         ),
-    #         # (18). Est: 2, GT: 1   = Case(6)
-    #         # -> previous   : No result
-    #         # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
-    #         # -> TP score=1.0, IDsw=0, matching score=0.2, MOTA=0.0, MOTP=0.2
-    #         (
-    #             None,
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
-    #             AutowareLabel.CAR,
-    #             False,
-    #             AnswerCLEAR(1, 1.0, 1.0, 0, 0.2, 0.0, 0.2),
-    #         ),
-    #         # (19). Est: 1, GT: 1   = Case(7)
-    #         # -> previous   : No result
-    #         # -> current    : TP=1.0(Est[1], GT[1]), FP=0.0
-    #         # -> TP score=1.0, IDsw=0, matching score=0.2, MOTA=0.0, MOTP=0.2
-    #         (
-    #             None,
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
-    #             AutowareLabel.BICYCLE,
-    #             False,
-    #             AnswerCLEAR(1, 1.0, 0.0, 0, 0.2, 1.0, 0.2),
-    #         ),
-    #     ]
-    #     matcher = NuscenesObjectMatcher(
-    #         evaluation_task=self.evaluation_task, metrics_config=self.metric_score_config, uuid_matching_first=False, matching_class_agnostic_fps=True, 
-    #     )
-    #     for n, (
-    #         prev_diff_trans,
-    #         cur_diff_trans,
-    #         target_label,
-    #         use_unique_id,
-    #         ans_clear,
-    #     ) in enumerate(patterns):
-    #         with self.subTest(f"Test calculate TP/FP: {n + 1}"):
-    #             # Previous estimated objects
-    #             prev_object_results: Optional[List[DynamicObjectWithPerceptionResult]] = []
+        test patterns:
+            Check if TP/FP, ID switch, total matching score in TP, MOTA and MOTP are calculated correctly.
+            If prev_diff_trans is None, it means there is no previous results. Then, ID switch must be 0.
+            - matching mode     : Center distance
+            - matching threshold: 0.5
+            - tp metrics        : AP(=1.0)
+            NOTE:
+                - The flag must be same whether use unique ID or not.
+                - Estimated object is only matched with GT that has same label.
+                - The estimations & GTs are following (number represents the index)
+                    Estimation = 3
+                        (0): CAR, (1): BICYCLE, (2): CAR
+                    GT = 4
+                        (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
+        """
+        # patterns: (prev_diff_trans, cur_diff_trans, target_label, use_unique_id, ans_clear)
+        patterns: List[Tuple[Optional[DiffTranslation], DiffTranslation, AutowareLabel, AnswerCLEAR]] = [
+            # ========== Test unique ID association ==========
+            # (1). Est: 2, GT: 1
+            # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=0.0, IDsw=0, TP matching score=0.0, MOTA=0.0, MOTP=0.0
+            (
+                # prev: (trans est, trans gt)
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                # cur: (trans est, trans gt)
+                DiffTranslation((1.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+                # target filtered label
+                AutowareLabel.CAR,
+                # whether use unique ID
+                True,
+                # num_gt<int>, tp<float>, fp<float>, id_switch<int>, tp_matching_score<float>, mota<float>, motp<float>
+                AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
+            ),
+            # (2). Est: 2, GT: 1
+            # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
+            # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=0.0, IDsw=0, TP matching score=0.0, MOTA=0.0, MOTP=0.0
+            # Although Est[0] and GT[0] is assigned as match, the matching score(=1.0) is worse than threshold(=0.5)
+            (
+                DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                True,
+                AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
+            ),
+            # (3). Est: 2, GT: 1
+            # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
+            # -> TP score=0.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=inf
+            # Although Est[0] and GT[0] are assigned as match at the previous frame, they are not matched at the current frame due to matching threshold (0.5), 
+            # and thus they are assigned as FP.
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
+                AutowareLabel.CAR,
+                True,
+                AnswerCLEAR(1, 0.0, 2.0, 0, 0.0, 0.0, float("inf")),
+            ),
+            # (4). Est: 2, GT: 1
+            # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
+            # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=1.0, IDsw=1, matching score=0.2, MOTA=0.0, MOTP=0.2
+            # In case of current/previous has same match, current IDsw is 0 if TP even though previous is FP.
+            (
+                DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                True,
+                AnswerCLEAR(1, 1.0, 1.0, 0, 0.2, 0.0, 0.2),
+            ),
+            # (5). Est: 2, GT: 0
+            # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
+            # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
+            # If there is no GT, MOTA get inf. Also, if there is no TP, MOTP get inf.
+            # In this case, GT is filtered by max_x_position(=100.0).
+            # When current/previous has same match and previous result is TP, previous TP is assigned even though current is TP.
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (101.0, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                True,
+                AnswerCLEAR(0, 0.0, 2.0, 0, 0.0, float("inf"), float("inf")),
+            ),
+            # (6). Est: 2, GT: 1
+            # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
+            # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
+            # If there is no TP, MOTP get inf.
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                True,
+                AnswerCLEAR(1, 0.0, 2.0, 0, 0.0, 0.0, float("inf")),
+            ),
+            # --- Test there is no previous result ---
+            # (7). Est: 2, GT: 1
+            # -> previous   : No result
+            # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=0.0, IDsw=0, matching score=0.0, MOTA=0.0, MOTP=0.0
+            (
+                None,
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                True,
+                AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0, 0.0),
+            ),
+            # (8). Est: 2, GT: 1
+            # -> previous   : No result
+            # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=1.0, IDsw=0, matching score=0.2, MOTA=0.0, MOTP=0.2
+            (
+                None,
+                DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                True,
+                AnswerCLEAR(1, 1.0, 1.0, 0, 0.2, 0.0, 0.2),
+            ),
+            # (9). Est: 1, GT: 1
+            # -> previous   : No result
+            # -> current    : TP=1.0(Est[1], GT[1]), FP=0.0
+            # -> TP score=1.0, IDsw=0, matching score=0.2, MOTA=0.0, MOTP=0.2
+            (
+                None,
+                DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
+                AutowareLabel.BICYCLE,
+                True,
+                AnswerCLEAR(1, 1.0, 0.0, 0, 0.2, 1.0, 0.2),
+            ),
+            # (10). Est: 2, GT: 1
+            # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> current    : TP=1.0(EST[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=1.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=0.0
+            # When current/previous has same match and previous result is TP, previous TP is assigned even though current is TP.
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                DiffTranslation((0.1, 0.0, 0.0), (0.2, 0.2, 0.0)),
+                AutowareLabel.CAR,
+                True,
+                AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
+            ),
+            # ========== Test non-unique ID association ==========
+            #   -> The result must be same, whether use unique ID or not.
+            # (11). Est: 2, GT: 1    = Case(1)
+            # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=0.0, IDsw=0, TP matching score=0.0, MOTA=0.0, MOTP=0.0
+            (
+                # prev: (trans est, trans gt)
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                # cur: (trans est, trans gt)
+                DiffTranslation((1.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+                # target filtered label
+                AutowareLabel.CAR,
+                # whether use unique ID
+                False,
+                # num_gt<int>, tp<float>, fp<float>, id_switch<int>, tp_matching_score<float>, mota<float>, motp<float>
+                AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
+            ),
+            # (12). Est: 2, GT: 1    = Case(2)
+            # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
+            # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=0.0, IDsw=0, TP matching score=0.0, MOTA=0.0, MOTP=0.0
+            (
+                DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                False,
+                AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
+            ),
+            # (13). Est: 2, GT: 1   = Case(3)
+            # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
+            # -> TP score=0.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=0.0
+            # Although Est[0] and GT[0] are assigned as match at the previous frame, they are not matched at the current frame due to matching threshold (0.5), 
+            # and thus they are assigned as FP.
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
+                AutowareLabel.CAR,
+                True,
+                AnswerCLEAR(1, 0.0, 2.0, 0, 0.0, 0.0, float("inf")),
+            ),
+            # (14). Est: 2, GT: 1     = Case(4)
+            # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
+            # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=1.0, IDsw=1, matching score=0.2, MOTA=0.0, MOTP=0.2
+            # When current/previous has same match, if current is TP IDsw is 0, though previous is FP.
+            (
+                DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                False,
+                AnswerCLEAR(1, 1.0, 1.0, 0, 0.2, 0.0, 0.2),
+            ),
+            # (15). Est: 2, GT: 0   = Case(5)
+            # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
+            # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
+            # If there is no GT, MOTA get inf. Also, if there is no TP, MOTP get inf.
+            # In this case, GT is filtered by max_x_position(=100.0).
+            # When current/previous has same match and previous result is TP, previous TP is assigned even though current is FP.
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (101.0, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                True,
+                AnswerCLEAR(0, 0.0, 2.0, 0, 0.0, float("inf"), float("inf")),
+            ),
+            # (16). Est: 2, GT: 1   = Case(6)
+            # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
+            # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
+            # If there is no TP, MOTP get inf.
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                False,
+                AnswerCLEAR(1, 0.0, 2.0, 0, 0.0, 0.0, float("inf")),
+            ),
+            # --- Test there is no previous result ---
+            # (17). Est: 2, GT: 1   = Case(5)
+            # -> previous   : No result
+            # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=0.0, IDsw=0, matching score=0.0, MOTA=0.0, MOTP=0.0
+            (
+                None,
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                False,
+                AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0, 0.0),
+            ),
+            # (18). Est: 2, GT: 1   = Case(6)
+            # -> previous   : No result
+            # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=1.0, IDsw=0, matching score=0.2, MOTA=0.0, MOTP=0.2
+            (
+                None,
+                DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
+                AutowareLabel.CAR,
+                False,
+                AnswerCLEAR(1, 1.0, 1.0, 0, 0.2, 0.0, 0.2),
+            ),
+            # (19). Est: 1, GT: 1   = Case(7)
+            # -> previous   : No result
+            # -> current    : TP=1.0(Est[1], GT[1]), FP=0.0
+            # -> TP score=1.0, IDsw=0, matching score=0.2, MOTA=0.0, MOTP=0.2
+            (
+                None,
+                DiffTranslation((0.0, 0.0, 0.0), (0.2, 0.0, 0.0)),
+                AutowareLabel.BICYCLE,
+                False,
+                AnswerCLEAR(1, 1.0, 0.0, 0, 0.2, 1.0, 0.2),
+            ),
+        ]
+        matcher = NuscenesObjectMatcher(
+            evaluation_task=self.evaluation_task, metrics_config=self.metric_score_config, uuid_matching_first=False, matching_class_agnostic_fps=True, 
+        )
+        for n, (
+            prev_diff_trans,
+            cur_diff_trans,
+            target_label,
+            use_unique_id,
+            ans_clear,
+        ) in enumerate(patterns):
+            with self.subTest(f"Test calculate TP/FP: {n + 1}"):
+                # Previous estimated objects
+                prev_object_results: Optional[List[DynamicObjectWithPerceptionResult]] = []
 
-    #             if prev_diff_trans is not None:
-    #                 # Translate previous estimated objects
-    #                 prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
-    #                     ground_truth_objects=(
-    #                         self.dummy_unique_estimated_objects if use_unique_id else self.dummy_estimated_objects
-    #                     ),
-    #                     diff_distance=prev_diff_trans.diff_estimated,
-    #                     diff_yaw=0.0,
-    #                 )
-    #                 prev_ground_truth_objects = get_objects_with_difference(
-    #                     ground_truth_objects=self.dummy_ground_truth_objects,
-    #                     diff_distance=prev_diff_trans.diff_ground_truth,
-    #                     diff_yaw=0.0,
-    #                 )
+                if prev_diff_trans is not None:
+                    # Translate previous estimated objects
+                    prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
+                        ground_truth_objects=(
+                            self.dummy_unique_estimated_objects if use_unique_id else self.dummy_estimated_objects
+                        ),
+                        diff_distance=prev_diff_trans.diff_estimated,
+                        diff_yaw=0.0,
+                    )
+                    prev_ground_truth_objects = get_objects_with_difference(
+                        ground_truth_objects=self.dummy_ground_truth_objects,
+                        diff_distance=prev_diff_trans.diff_ground_truth,
+                        diff_yaw=0.0,
+                    )
 
-    #                 # Filter previous objects
-    #                 prev_estimated_objects = filter_objects(
-    #                     dynamic_objects=prev_estimated_objects,
-    #                     is_gt=False,
-    #                     target_labels=[target_label],
-    #                     max_x_position_list=self.max_x_position_list,
-    #                     max_y_position_list=self.max_y_position_list,
-    #                 )
-    #                 prev_ground_truth_objects = filter_objects(
-    #                     dynamic_objects=prev_ground_truth_objects,
-    #                     is_gt=True,
-    #                     target_labels=[target_label],
-    #                     max_x_position_list=self.max_x_position_list,
-    #                     max_y_position_list=self.max_y_position_list,
-    #                 )
+                    # Filter previous objects
+                    prev_estimated_objects = filter_objects(
+                        dynamic_objects=prev_estimated_objects,
+                        is_gt=False,
+                        target_labels=[target_label],
+                        max_x_position_list=self.max_x_position_list,
+                        max_y_position_list=self.max_y_position_list,
+                    )
+                    prev_ground_truth_objects = filter_objects(
+                        dynamic_objects=prev_ground_truth_objects,
+                        is_gt=True,
+                        target_labels=[target_label],
+                        max_x_position_list=self.max_x_position_list,
+                        max_y_position_list=self.max_y_position_list,
+                    )
 
-    #                 # Get previous object results
-    #                 prev_object_results = matcher.match(
-    #                     estimated_objects=prev_estimated_objects,
-    #                     ground_truth_objects=prev_ground_truth_objects,
-    #                 )
-    #             else:
-    #                 prev_object_results = []
+                    # Get previous object results
+                    prev_object_results = matcher.match(
+                        estimated_objects=prev_estimated_objects,
+                        ground_truth_objects=prev_ground_truth_objects,
+                    )
+                else:
+                    prev_object_results = []
 
-    #             # Translate current objects
-    #             cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
-    #                 ground_truth_objects=(
-    #                     self.dummy_unique_estimated_objects if use_unique_id else self.dummy_estimated_objects
-    #                 ),
-    #                 diff_distance=cur_diff_trans.diff_estimated,
-    #                 diff_yaw=0.0,
-    #             )
-    #             cur_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-    #                 ground_truth_objects=self.dummy_ground_truth_objects,
-    #                 diff_distance=cur_diff_trans.diff_ground_truth,
-    #                 diff_yaw=0.0,
-    #             )
+                # Translate current objects
+                cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
+                    ground_truth_objects=(
+                        self.dummy_unique_estimated_objects if use_unique_id else self.dummy_estimated_objects
+                    ),
+                    diff_distance=cur_diff_trans.diff_estimated,
+                    diff_yaw=0.0,
+                )
+                cur_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
+                    ground_truth_objects=self.dummy_ground_truth_objects,
+                    diff_distance=cur_diff_trans.diff_ground_truth,
+                    diff_yaw=0.0,
+                )
 
-    #             # Filter current objects
-    #             cur_estimated_objects = filter_objects(
-    #                 dynamic_objects=cur_estimated_objects,
-    #                 is_gt=False,
-    #                 target_labels=[target_label],
-    #                 max_x_position_list=self.max_x_position_list,
-    #                 max_y_position_list=self.max_y_position_list,
-    #             )
-    #             cur_ground_truth_objects = filter_objects(
-    #                 dynamic_objects=cur_ground_truth_objects,
-    #                 is_gt=True,
-    #                 target_labels=[target_label],
-    #                 max_x_position_list=self.max_x_position_list,
-    #                 max_y_position_list=self.max_y_position_list,
-    #             )
+                # Filter current objects
+                cur_estimated_objects = filter_objects(
+                    dynamic_objects=cur_estimated_objects,
+                    is_gt=False,
+                    target_labels=[target_label],
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
+                cur_ground_truth_objects = filter_objects(
+                    dynamic_objects=cur_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=[target_label],
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
 
-    #             # Current object results
-    #             cur_object_results = matcher.match(
-    #                 estimated_objects=cur_estimated_objects,
-    #                 ground_truth_objects=cur_ground_truth_objects,
-    #             )
-    #             num_ground_truths = divide_objects_to_num(cur_ground_truth_objects, self.target_labels)
+                # Current object results
+                cur_object_results = matcher.match(
+                    estimated_objects=cur_estimated_objects,
+                    ground_truth_objects=cur_ground_truth_objects,
+                )
+                num_ground_truths = divide_objects_to_num(cur_ground_truth_objects, self.target_labels)
 
-    #             # num_ground_truth: int = len(cur_ground_truth_objects)
-    #             clear_results : List[CLEAR] = []
-    #             for label in [target_label]:
-    #                 for matching_threshold in self.matching_threshold_list:
-    #                     selected_prev_object_results = prev_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold] if prev_object_results else []
-    #                     selected_cur_object_results = cur_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold]
-    #                     object_results = [selected_prev_object_results, selected_cur_object_results]
-    #                     clear_: CLEAR = CLEAR(
-    #                         object_results=object_results,
-    #                         num_ground_truth=num_ground_truths[label],
-    #                         target_labels=[label],
-    #                         matching_mode=MatchingMode.CENTERDISTANCE,
-    #                         matching_threshold_list=[matching_threshold],
-    #                     )
-    #                     clear_results.append(clear_)
+                clear_results : List[CLEAR] = []
+                for label in [target_label]:
+                    for matching_threshold in self.matching_threshold_list:
+                        selected_prev_object_results = prev_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold] if prev_object_results else []
+                        selected_cur_object_results = cur_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold]
+                        object_results = [selected_prev_object_results, selected_cur_object_results]
+                        clear_: CLEAR = CLEAR(
+                            object_results=object_results,
+                            num_ground_truth=num_ground_truths[label],
+                            target_labels=[label],
+                            matching_mode=MatchingMode.CENTERDISTANCE,
+                            matching_threshold_list=[matching_threshold],
+                        )
+                        clear_results.append(clear_)
              
-    #             # Only one item in a sub test
-    #             out_clear: AnswerCLEAR = AnswerCLEAR.from_clear(clear_results[0])
-    #             self.assertEqual(
-    #                 out_clear,
-    #                 ans_clear,
-    #                 f"\noutput={str(out_clear)}\nanswer={str(ans_clear)}",
-    #             )
+                # Only one item in a sub test
+                out_clear: AnswerCLEAR = AnswerCLEAR.from_clear(clear_results[0])
+                self.assertEqual(
+                    out_clear,
+                    ans_clear,
+                    f"\noutput={str(out_clear)}\nanswer={str(ans_clear)}",
+                )
 
-    # def test_is_id_switched(self):
-    #     """[summary]
-    #     Test the method to check if ID is switched between previous and current TP results.
+    def test_is_id_switched(self):
+        """[summary]
+        Test the method to check if ID is switched between previous and current TP results.
 
-    #     test patterns:
-    #         Check if ID was switched between each i-th current object result and j-th previous object.
-    #         ``ans_flags`` represents the answer flag for three object results per one previous result.
-    #         NOTE:
-    #             - The flag must be same whether use unique ID or not.
-    #             - Estimated object is only matched with GT that has same label.
-    #             - The estimations & GTs are following (number represents the index)
-    #                 Estimation = 3
-    #                     (0): CAR, (1): BICYCLE, (2): CAR
-    #                 GT = 4
-    #                     (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
-    #     """
-    #     # patterns: (prev_diff_trans, cur_diff_trans, use_unique_id, ans_flags)
-    #     patterns: List[Tuple[DiffTranslation, DiffTranslation, bool, Tuple[bool]]] = [
-    #         # ========== Test unique ID association ==========
-    #         # (1)
-    #         # -> previous   : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-    #         # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-    #         (
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             True,
-    #             # If ID was switched for cur[i] and prev[j]
-    #             ((False, False, False), (False, False, False), (False, False, False)),
-    #         ),
-    #         # (2)
-    #         # -> previous   : (Est[2], GT[0]), (Est[2], None), (Est[1], None)
-    #         # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-    #         # The IDsw only is counted for TP pairs both previous and current.
-    #         # If current result is TP though previous result is FP, IDsw is not counted
-    #         (
-    #             DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             True,
-    #             ((True, False, False), (False, False, False), (True, False, False)),
-    #         ),
-    #         # (3)
-    #         # -> previous   : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-    #         # -> current    : (Est[2], GT[0]), (Est[2], None), (Est[1], None)
-    #         # The IDsw only is counted for TP pairs both previous and current.
-    #         # If previous result is TP though current result is FP, IDsw is not counted
-    #         (
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
-    #             True,
-    #             ((True, False, True), (False, False, False), (False, False, False)),
-    #         ),
-    #         # --- Test there is no previous result ---
-    #         # (4)
-    #         # -> previous   : (Est[0], None), (Est[1], None), (Est[2], None)
-    #         # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], Est[2])
-    #         # The IDsw only is counted for TP pairs both previous and current.
-    #         # If current result is TP though previous result is FP, IDsw is not counted
-    #         (
-    #             None,
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             True,
-    #             # If ID was switched for cur[i] and prev[j]
-    #             ((False, False, False), (False, False, False), (False, False, False)),
-    #         ),
-    #         # ========== Test non-unique ID association ==========
-    #         # (5)   = Case(1)
-    #         # Est: 3, GT: 4
-    #         # -> previous   : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], Est[2])
-    #         # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], Est[2])
-    #         (
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             False,
-    #             ((False, False, False), (False, False, False), (False, False, False)),
-    #         ),
-    #         # (6)   = Case(2)
-    #         # -> previous   : (Est[2], GT[0]), (Est[2], None), (Est[1], None)
-    #         # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-    #         # ((False, False, False), (False, False, False), (False, False, False))
-    #         (
-    #             DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             False,
-    #             ((True, False, False), (False, False, False), (True, False, False)),
-    #         ),
-    #         # --- Test there is no previous result ---
-    #         # (7)   = Case(3)
-    #         # -> previous   : (Est[0], None), (Est[1], None), (Est[2], None)
-    #         # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], Est[2])
-    #         (
-    #             None,
-    #             DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
-    #             False,
-    #             ((False, False, False), (False, False, False), (False, False, False)),
-    #         ),
-    #     ]
-    #     matcher = NuscenesObjectMatcher(
-    #         evaluation_task=self.evaluation_task, metrics_config=self.metric_score_config, uuid_matching_first=False, matching_class_agnostic_fps=True,
-    #     )
-    #     for n, (prev_diff_trans, cur_diff_trans, use_unique_id, ans_flags) in enumerate(patterns):
-    #         with self.subTest(f"Test is ID switched: {n + 1}"):
-    #             if prev_diff_trans is not None:
-    #                 # Translate previous objects
-    #                 prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
-    #                     ground_truth_objects=(
-    #                         self.dummy_unique_estimated_objects if use_unique_id else self.dummy_estimated_objects
-    #                     ),
-    #                     diff_distance=prev_diff_trans.diff_estimated,
-    #                     diff_yaw=0.0,
-    #                 )
-    #                 prev_ground_truth_objects = get_objects_with_difference(
-    #                     ground_truth_objects=self.dummy_ground_truth_objects,
-    #                     diff_distance=prev_diff_trans.diff_ground_truth,
-    #                     diff_yaw=0.0,
-    #                 )
+        test patterns:
+            Check if ID was switched between each i-th current object result and j-th previous object.
+            ``ans_flags`` represents the answer flag for three object results per one previous result.
+            NOTE:
+                - The flag must be same whether use unique ID or not.
+                - Estimated object is only matched with GT that has same label.
+                - The estimations & GTs are following (number represents the index)
+                    Estimation = 3
+                        (0): CAR, (1): BICYCLE, (2): CAR
+                    GT = 4
+                        (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
+        """
+        # patterns: (prev_diff_trans, cur_diff_trans, use_unique_id, ans_flags)
+        patterns: List[Tuple[DiffTranslation, DiffTranslation, bool, Tuple[bool]]] = [
+            # ========== Test unique ID association ==========
+            # (1)
+            # -> previous   : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                True,
+                # If ID was switched for cur[i] and prev[j]
+                ((False, False, False), (False, False, False), (False, False, False)),
+            ),
+            # (2)
+            # -> previous   : (Est[2], GT[0]), (Est[2], None), (Est[1], None)
+            # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # The IDsw only is counted for TP pairs both previous and current.
+            # If current result is TP though previous result is FP, IDsw is not counted
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                True,
+                ((True, False, False), (False, False, False), (True, False, False)),
+            ),
+            # (3)
+            # -> previous   : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # -> current    : (Est[2], GT[0]), (Est[2], None), (Est[1], None)
+            # The IDsw only is counted for TP pairs both previous and current.
+            # If previous result is TP though current result is FP, IDsw is not counted
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
+                True,
+                ((True, False, True), (False, False, False), (False, False, False)),
+            ),
+            # --- Test there is no previous result ---
+            # (4)
+            # -> previous   : (Est[0], None), (Est[1], None), (Est[2], None)
+            # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], Est[2])
+            # The IDsw only is counted for TP pairs both previous and current.
+            # If current result is TP though previous result is FP, IDsw is not counted
+            (
+                None,
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                True,
+                # If ID was switched for cur[i] and prev[j]
+                ((False, False, False), (False, False, False), (False, False, False)),
+            ),
+            # ========== Test non-unique ID association ==========
+            # (5)   = Case(1)
+            # Est: 3, GT: 4
+            # -> previous   : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], Est[2])
+            # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], Est[2])
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                False,
+                ((False, False, False), (False, False, False), (False, False, False)),
+            ),
+            # (6)   = Case(2)
+            # -> previous   : (Est[2], GT[0]), (Est[2], None), (Est[1], None)
+            # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # ((False, False, False), (False, False, False), (False, False, False))
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                False,
+                ((True, False, False), (False, False, False), (True, False, False)),
+            ),
+            # --- Test there is no previous result ---
+            # (7)   = Case(3)
+            # -> previous   : (Est[0], None), (Est[1], None), (Est[2], None)
+            # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], Est[2])
+            (
+                None,
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                False,
+                ((False, False, False), (False, False, False), (False, False, False)),
+            ),
+        ]
+        matcher = NuscenesObjectMatcher(
+            evaluation_task=self.evaluation_task, metrics_config=self.metric_score_config, uuid_matching_first=False, matching_class_agnostic_fps=True,
+        )
+        for n, (prev_diff_trans, cur_diff_trans, use_unique_id, ans_flags) in enumerate(patterns):
+            with self.subTest(f"Test is ID switched: {n + 1}"):
+                if prev_diff_trans is not None:
+                    # Translate previous objects
+                    prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
+                        ground_truth_objects=(
+                            self.dummy_unique_estimated_objects if use_unique_id else self.dummy_estimated_objects
+                        ),
+                        diff_distance=prev_diff_trans.diff_estimated,
+                        diff_yaw=0.0,
+                    )
+                    prev_ground_truth_objects = get_objects_with_difference(
+                        ground_truth_objects=self.dummy_ground_truth_objects,
+                        diff_distance=prev_diff_trans.diff_ground_truth,
+                        diff_yaw=0.0,
+                    )
 
-    #                 # Filter previous objects
-    #                 prev_estimated_objects = filter_objects(
-    #                     dynamic_objects=prev_estimated_objects,
-    #                     is_gt=False,
-    #                     target_labels=self.target_labels,
-    #                     max_x_position_list=self.max_x_position_list,
-    #                     max_y_position_list=self.max_y_position_list,
-    #                 )
-    #                 prev_ground_truth_objects = filter_objects(
-    #                     dynamic_objects=prev_ground_truth_objects,
-    #                     is_gt=True,
-    #                     target_labels=self.target_labels,
-    #                     max_x_position_list=self.max_x_position_list,
-    #                     max_y_position_list=self.max_y_position_list,
-    #                 )
+                    # Filter previous objects
+                    prev_estimated_objects = filter_objects(
+                        dynamic_objects=prev_estimated_objects,
+                        is_gt=False,
+                        target_labels=self.target_labels,
+                        max_x_position_list=self.max_x_position_list,
+                        max_y_position_list=self.max_y_position_list,
+                    )
+                    prev_ground_truth_objects = filter_objects(
+                        dynamic_objects=prev_ground_truth_objects,
+                        is_gt=True,
+                        target_labels=self.target_labels,
+                        max_x_position_list=self.max_x_position_list,
+                        max_y_position_list=self.max_y_position_list,
+                    )
 
-    #                 # Previous object results
-    #                 prev_object_results = matcher.match(
-    #                     estimated_objects=prev_estimated_objects,
-    #                     ground_truth_objects=prev_ground_truth_objects,
-    #                 )
-    #             else:
-    #                 prev_object_results = []
+                    # Previous object results
+                    prev_object_results = matcher.match(
+                        estimated_objects=prev_estimated_objects,
+                        ground_truth_objects=prev_ground_truth_objects,
+                    )
+                else:
+                    prev_object_results = []
 
-    #             # Translate current objects
-    #             cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
-    #                 ground_truth_objects=(
-    #                     self.dummy_unique_estimated_objects if use_unique_id else self.dummy_estimated_objects
-    #                 ),
-    #                 diff_distance=cur_diff_trans.diff_estimated,
-    #                 diff_yaw=0.0,
-    #             )
-    #             cur_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
-    #                 ground_truth_objects=self.dummy_ground_truth_objects,
-    #                 diff_distance=cur_diff_trans.diff_ground_truth,
-    #                 diff_yaw=0.0,
-    #             )
+                # Translate current objects
+                cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
+                    ground_truth_objects=(
+                        self.dummy_unique_estimated_objects if use_unique_id else self.dummy_estimated_objects
+                    ),
+                    diff_distance=cur_diff_trans.diff_estimated,
+                    diff_yaw=0.0,
+                )
+                cur_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
+                    ground_truth_objects=self.dummy_ground_truth_objects,
+                    diff_distance=cur_diff_trans.diff_ground_truth,
+                    diff_yaw=0.0,
+                )
 
-    #             # Filter current objects
-    #             cur_estimated_objects = filter_objects(
-    #                 dynamic_objects=cur_estimated_objects,
-    #                 is_gt=False,
-    #                 target_labels=self.target_labels,
-    #                 max_x_position_list=self.max_x_position_list,
-    #                 max_y_position_list=self.max_y_position_list,
-    #             )
-    #             cur_ground_truth_objects = filter_objects(
-    #                 dynamic_objects=cur_ground_truth_objects,
-    #                 is_gt=True,
-    #                 target_labels=self.target_labels,
-    #                 max_x_position_list=self.max_x_position_list,
-    #                 max_y_position_list=self.max_y_position_list,
-    #             )
+                # Filter current objects
+                cur_estimated_objects = filter_objects(
+                    dynamic_objects=cur_estimated_objects,
+                    is_gt=False,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
+                cur_ground_truth_objects = filter_objects(
+                    dynamic_objects=cur_ground_truth_objects,
+                    is_gt=True,
+                    target_labels=self.target_labels,
+                    max_x_position_list=self.max_x_position_list,
+                    max_y_position_list=self.max_y_position_list,
+                )
 
-    #              # Current object results
-    #             cur_object_results = matcher.match(
-    #                 estimated_objects=cur_estimated_objects,
-    #                 ground_truth_objects=cur_ground_truth_objects,
-    #             )
+                 # Current object results
+                cur_object_results = matcher.match(
+                    estimated_objects=cur_estimated_objects,
+                    ground_truth_objects=cur_ground_truth_objects,
+                )
 
-    #             # Flatten the object results
-    #             selected_prev_object_results = []
-    #             selected_cur_object_results = []
-    #             for label in self.target_labels:
-    #                 for matching_threshold in self.matching_threshold_list:
-    #                     selected_prev_object_results.extend(prev_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold] if prev_object_results else [])
-    #                     selected_cur_object_results.extend(cur_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold])
+                # Flatten the object results
+                selected_prev_object_results = []
+                selected_cur_object_results = []
+                for label in self.target_labels:
+                    for matching_threshold in self.matching_threshold_list:
+                        selected_prev_object_results.extend(prev_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold] if prev_object_results else [])
+                        selected_cur_object_results.extend(cur_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold])
                 
-    #             for i, cur_obj_result in enumerate(selected_cur_object_results):
-    #                 for j, prev_obj_result in enumerate(selected_prev_object_results):
-    #                     flag: bool = CLEAR._is_id_switched(
-    #                         cur_object_result=cur_obj_result,
-    #                         prev_object_result=prev_obj_result,
-    #                     )
-    #                     self.assertEqual(flag, ans_flags[i][j], f"[{n + 1}] {flag}!=answer[{i}][{j}]]")
+                for i, cur_obj_result in enumerate(selected_cur_object_results):
+                    for j, prev_obj_result in enumerate(selected_prev_object_results):
+                        flag: bool = CLEAR._is_id_switched(
+                            cur_object_result=cur_obj_result,
+                            prev_object_result=prev_obj_result,
+                        )
+                        self.assertEqual(flag, ans_flags[i][j], f"[{n + 1}] {flag}!=answer[{i}][{j}]]")
 
     def test_is_same_match(self):
         """[summary]
