@@ -36,6 +36,7 @@ class DisplacementErrorScores:
     miss_rate: float
     predict_num: int
     ground_truth_num: int
+    top_k: int
 
 
 class PredictionMetricsScore:
@@ -129,6 +130,7 @@ class PredictionMetricsScore:
                     miss_rate=miss_rate_score,
                     predict_num=predict_num,
                     ground_truth_num=ground_truth_num,
+                    top_k=self.top_k,
                 )
 
         return displacement_error_scores
@@ -140,7 +142,7 @@ class PredictionMetricsScore:
 
         # Summarize overall classification scores
         for matching_mode, thresholds in self.displacement_error_scores.items():
-            str_ += "---- Matching Mode: {} ----\n".format(matching_mode.value)
+            str_ += "---- Matching Mode: {}, Top K: {} ----\n".format(matching_mode.value, self.top_k)
             str_ += "|    Threshold | Predict Num | Ground Truth Num | ADE | FDE | Miss Rate | \n"
             str_ += "| :-------: | :---------: | :------: | :------: | :-------: | :----: |\n"
             for threshold, scores in thresholds.items():
@@ -150,7 +152,7 @@ class PredictionMetricsScore:
         # === For each label ===
         # --- Table ---
         for matching_mode, label_displacement_errors in self.displacements.items():
-            str_ += "---- Matching Mode: {} ----\n".format(matching_mode.value)
+            str_ += "---- Matching Mode: {}, Top K: {} ----\n".format(matching_mode.value, self.top_k)
             str_ += "|   Label | Threshold | Predict Num | Ground Truth Num | ADE | FDE | Miss Rate | \n"
             str_ += "| :-----: | :---: | :-------: | :---------: | :------: | :------: | :-------: |\n"
             for label, thresholds in label_displacement_errors.items():
@@ -179,7 +181,7 @@ class PredictionMetricsScore:
                 # Miss Rate column
                 miss_rate_str = " / ".join([f"{v.miss_rate:.4f}" for v in thresholds.values()])
                 str_ += f" {miss_rate_str} |"
-
-        str_ += "\n"
+                str_ += "\n"
+            str_ += "\n"
 
         return str_
