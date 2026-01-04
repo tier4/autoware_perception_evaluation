@@ -18,12 +18,12 @@ import unittest
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
-from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.classification import ClassificationMetricsScore
-from perception_eval.evaluation.result.object_result_matching import get_object_results
-
+from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
+from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
+from perception_eval.evaluation.matching.object_matching import MatchingMode 
 
 class TestClassificationMetricsScore(unittest.TestCase):
     """The class to test ClassificationMetricsScore."""
@@ -37,6 +37,15 @@ class TestClassificationMetricsScore(unittest.TestCase):
             AutowareLabel.PEDESTRIAN,
             AutowareLabel.MOTORBIKE,
         ]
+        self.metric_score_config = MetricsScoreConfig(
+            evaluation_task=self.evaluation_task,
+            target_labels=self.target_labels,
+            center_distance_thresholds=None,
+            center_distance_bev_thresholds=None,
+            plane_distance_thresholds=None,
+            iou_2d_thresholds=None,
+            iou_3d_thresholds=None,
+        )
 
     def test_summarize(self):
         """Test ClassificationMetricsScore._summarize().
@@ -51,6 +60,10 @@ class TestClassificationMetricsScore(unittest.TestCase):
         recall = 2 / 4 = 0.5
         f1score = 2 * 0.5 * 0.66 / (0.5 + 0.66) = 0.57...
         """
+        matcher = NuscenesObjectMatcher(
+            evaluation_task=self.evaluation_task,
+            metrics_config=self.metric_score_config,
+        )
         estimated_objects = filter_objects(
             dynamic_objects=self.dummy_estimated_objects,
             is_gt=False,
@@ -61,14 +74,9 @@ class TestClassificationMetricsScore(unittest.TestCase):
             is_gt=False,
             target_labels=self.target_labels,
         )
-        object_results = get_object_results(
-            evaluation_task=self.evaluation_task,
+        object_results = matcher.match(
             estimated_objects=estimated_objects,
             ground_truth_objects=ground_truth_objects,
-        )
-        object_results_dict = divide_objects(
-            dynamic_objects=object_results,
-            target_labels=self.target_labels,
         )
         num_ground_truth_dict = divide_objects_to_num(
             dynamic_objects=ground_truth_objects,
@@ -76,13 +84,28 @@ class TestClassificationMetricsScore(unittest.TestCase):
         )
 
         classification_score = ClassificationMetricsScore(
-            object_results_dict=object_results_dict,
+            nuscene_object_results=object_results,
             num_ground_truth_dict=num_ground_truth_dict,
             target_labels=self.target_labels,
         )
 
-        accuracy, precision, recall, f1score = classification_score._summarize()
-        self.assertAlmostEqual(accuracy, 0.4, delta=0.01)
-        self.assertAlmostEqual(precision, 0.66, delta=0.01)
-        self.assertAlmostEqual(recall, 0.5, delta=0.01)
-        self.assertAlmostEqual(f1score, 0.57, delta=0.01)
+        summary_results = classification_score._summarize()
+        for _, thresholds_to_score in summary_results.items():
+            for _, scores in thresholds_to_score.items():
+                self.assertAlmostEqual(scores.accuracy, 0.4, delta=0.01)
+                self.assertAlmostEqual(scores.precision, 0.66, delta=0.01)
+                self.assertAlmostEqual(scores.recall, 0.5, delta=0.01)
+                self.assertAlmostEqual(scores.f1score, 0.57, delta=0.01)
+                self.assertEqual(scores.predict_num, 3)
+                self.assertEqual(scores.ground_truth_num, 4)
+
+        # String representation
+        str_ = str(classification_score)
+        self.assertIn(MatchingMode.CLASSIFICATION_2D.value, str_)
+        self.assertIn("Accuracy", str_)
+        self.assertIn("Precision", str_)
+        self.assertIn("Recall", str_)
+        self.assertIn("F1score", str_)
+        self.assertIn("Predict Num", str_)
+        self.assertIn("Ground Truth Num", str_)
+

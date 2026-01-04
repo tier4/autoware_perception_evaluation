@@ -23,7 +23,7 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching.objects_filter import filter_objects, divide_objects_to_num
 from perception_eval.evaluation.metrics.classification.accuracy import ClassificationAccuracy
-from perception_eval.evaluation.result.object_result_matching import get_object_results, NuscenesObjectMatcher
+from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
 
 class AnswerAccuracy:
@@ -94,11 +94,10 @@ class TestClassificationAccuracy(unittest.TestCase):
             AutowareLabel.PEDESTRIAN,
             AutowareLabel.MOTORBIKE,
         ]
-        self.matching_threshold_list: List[float] = [0.5]
         self.metric_score_config = MetricsScoreConfig(
             evaluation_task=self.evaluation_task,
             target_labels=self.target_labels,
-            center_distance_thresholds=self.matching_threshold_list,
+            center_distance_thresholds=None,
             center_distance_bev_thresholds=None,
             plane_distance_thresholds=None,
             iou_2d_thresholds=None,
@@ -145,3 +144,4 @@ class TestClassificationAccuracy(unittest.TestCase):
                         )
                         out_accuracy = AnswerAccuracy.from_accuracy(accuracy)
                         self.assertEqual(out_accuracy, answer, f"\nout = {str(out_accuracy)},\nanswer = {str(answer)}")
+    

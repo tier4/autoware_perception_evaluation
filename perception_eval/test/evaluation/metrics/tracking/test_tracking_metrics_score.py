@@ -333,6 +333,16 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     matching_threshold_list=[0.5],
                 )
 
+                # Test tracking score string representations
+                tracking_score_str = str(tracking_score)
+                self.assertIn("[TOTAL] MOTA:", tracking_score_str)
+                self.assertIn("ID switch:", tracking_score_str)
+                self.assertIn("MOTP:", tracking_score_str)
+                self.assertIn(MatchingMode.CENTERDISTANCE.value, tracking_score_str)
+                self.assertIn("tp", tracking_score_str)
+                self.assertIn("fp", tracking_score_str)
+                self.assertIn("tp_matching_score", tracking_score_str)
+
                 for clear_, ans_clear_ in zip(tracking_score.clears,
                                               ans_clears):
                     out_clear_ = AnswerCLEAR.from_clear(clear_)
@@ -457,6 +467,16 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     matching_mode=MatchingMode.CENTERDISTANCE,
                     matching_threshold_list=[0.5],
                 )
+
+                # Test tracking score string representations
+                tracking_score_str = str(tracking_score)
+                self.assertIn("[TOTAL] MOTA:", tracking_score_str)
+                self.assertIn("ID switch:", tracking_score_str)
+                self.assertIn("MOTP:", tracking_score_str)
+                self.assertIn(MatchingMode.CENTERDISTANCE.value, tracking_score_str)
+                self.assertIn("tp", tracking_score_str)
+                self.assertIn("fp", tracking_score_str)
+                self.assertIn("tp_matching_score", tracking_score_str)
 
                 # Check scores for each target label
                 for clear_, ans_clear_ in zip(tracking_score.clears,
