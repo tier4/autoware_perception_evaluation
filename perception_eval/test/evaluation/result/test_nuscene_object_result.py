@@ -26,12 +26,14 @@ from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import Label
-from perception_eval.evaluation.matching import MatchingLabelPolicy, MatchingMode
-from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher, get_object_results
-from perception_eval.util.debug import get_objects_with_difference
+from perception_eval.evaluation.matching import MatchingLabelPolicy
+from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.config.detection_metrics_config import DetectionMetricsConfig
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.result.object_result_matching import get_object_results
+from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
+from perception_eval.util.debug import get_objects_with_difference
 
 
 class TestNuSceneObjectResult(unittest.TestCase):
@@ -55,11 +57,11 @@ class TestNuSceneObjectResult(unittest.TestCase):
         )
 
     def _test_object_results(
-        self, 
-        matcher: NuscenesObjectMatcher, 
-        diff_trans: DiffTranslation, 
-        threshold_to_ans_pair_index: Dict[MatchingMode, Dict[float, Optional[int]]], 
-        expected_nums_of_result_pairs: Dict[MatchingMode, Dict[float, int]]
+        self,
+        matcher: NuscenesObjectMatcher,
+        diff_trans: DiffTranslation,
+        threshold_to_ans_pair_index: Dict[MatchingMode, Dict[float, Optional[int]]],
+        expected_nums_of_result_pairs: Dict[MatchingMode, Dict[float, int]],
     ) -> None:
         """
         Test matching estimated objects and ground truth objects.
@@ -94,7 +96,7 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         )
                         estimated_object_index: int = estimated_objects.index(object_result.estimated_object)
                         gt_idx = ans_pair_index[estimated_object_index][1]
-                        if gt_idx is not None:  
+                        if gt_idx is not None:
                             self.assertEqual(
                                 object_result.ground_truth_object,
                                 ground_truth_objects[gt_idx],
@@ -106,10 +108,12 @@ class TestNuSceneObjectResult(unittest.TestCase):
                                 object_result.ground_truth_object,
                                 f"Ground truth must be None at Matching mode: {matching_mode}, Label: {label}, Threshold: {threshold}",
                             )
-            
+
             for threshold, num_object_results in num_object_results.items():
                 expected_nums_of_result_pairs_threshold = expected_nums_of_result_pairs[matching_mode][threshold]
-                self.assertEqual(num_object_results, expected_nums_of_result_pairs_threshold,
+                self.assertEqual(
+                    num_object_results,
+                    expected_nums_of_result_pairs_threshold,
                     f"Unexpected length of matching results at Matching mode: {matching_mode}, Label: {label}, Threshold: {threshold}",
                 )
 
@@ -129,22 +133,22 @@ class TestNuSceneObjectResult(unittest.TestCase):
             # (1)
             # Center Distance/Center Distance BEV:
             # {
-                # Threshold: 0.5
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
-                # Threshold: 2.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
-            # } 
+            # Threshold: 0.5
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
+            # Threshold: 2.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
+            # }
             # PLANEDISTANCE:
             # {
-                # Threshold: 0.5
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
-                # Threshold: 2.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
-            # } 
+            # Threshold: 0.5
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
+            # Threshold: 2.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
+            # }
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 # MatchignMode: Threshold: expected matching results
@@ -182,27 +186,27 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         2.0: 3,
                         4.0: 3,
                     },
-                }
+                },
             ),
             # (2)
             # Center Distance/Center Distance BEV:
             # {
-                # Threshold: 0.5
-                # (Est[0], None), (Est[1], None), (Est[2], GT[0])
-                # Threshold: 2.0
-                # (Est[0], None), (Est[1], None), (Est[2], GT[0])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
-            # } 
+            # Threshold: 0.5
+            # (Est[0], None), (Est[1], None), (Est[2], GT[0])
+            # Threshold: 2.0
+            # (Est[0], None), (Est[1], None), (Est[2], GT[0])
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
+            # }
             # PLANEDISTANCE:
             # {
-                # Threshold: 0.5
-                # (Est[0], None), (Est[1], None), (Est[2], GT[0])
-                # Threshold: 2.0
-                # (Est[0], None), (Est[1], GT[1]), (Est[2], GT[0])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
-            # } 
+            # Threshold: 0.5
+            # (Est[0], None), (Est[1], None), (Est[2], GT[0])
+            # Threshold: 2.0
+            # (Est[0], None), (Est[1], GT[1]), (Est[2], GT[0])
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], None)
+            # }
             (
                 DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
                 {
@@ -240,7 +244,7 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         2.0: 3,
                         4.0: 3,
                     },
-                }
+                },
             ),
         ]
         matcher = NuscenesObjectMatcher(
@@ -252,7 +256,9 @@ class TestNuSceneObjectResult(unittest.TestCase):
         )
         for n, (diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs) in enumerate(patterns):
             with self.subTest(f"Test matching objects: {n + 1}"):
-                self._test_object_results(matcher, diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs)
+                self._test_object_results(
+                    matcher, diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs
+                )
 
     def test_matching_fps_class_agnostic(self):
         """[summary]
@@ -270,22 +276,22 @@ class TestNuSceneObjectResult(unittest.TestCase):
             # (1)
             # Center Distance/Center Distance BEV:
             # {
-                # Threshold: 0.5
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 2.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
+            # Threshold: 0.5
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # Threshold: 2.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # }
             # PLANEDISTANCE:
             # {
-                # Threshold: 0.5
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 2.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
+            # Threshold: 0.5
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # Threshold: 2.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # }
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 # MatchignMode: Threshold: expected matching results
@@ -323,27 +329,27 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         2.0: 3,
                         4.0: 3,
                     },
-                }
+                },
             ),
             # (2)
             # Center Distance/Center Distance BEV:
             # {
-                # Threshold: 0.5
-                # (Est[0], None), (Est[1], None), (Est[2], GT[0])
-                # Threshold: 2.0
-                # (Est[0], None), (Est[1], None), (Est[2], GT[0])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
+            # Threshold: 0.5
+            # (Est[0], None), (Est[1], None), (Est[2], GT[0])
+            # Threshold: 2.0
+            # (Est[0], None), (Est[1], None), (Est[2], GT[0])
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # }
             # PLANEDISTANCE:
             # {
-                # Threshold: 0.5
-                # (Est[0], None), (Est[1], None), (Est[2], GT[0])
-                # Threshold: 2.0
-                # (Est[0], None), (Est[1], GT[1]), (Est[2], GT[0])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
+            # Threshold: 0.5
+            # (Est[0], None), (Est[1], None), (Est[2], GT[0])
+            # Threshold: 2.0
+            # (Est[0], None), (Est[1], GT[1]), (Est[2], GT[0])
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # }
             (
                 DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
                 {
@@ -381,7 +387,7 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         2.0: 3,
                         4.0: 3,
                     },
-                }
+                },
             ),
         ]
         matcher = NuscenesObjectMatcher(
@@ -393,7 +399,9 @@ class TestNuSceneObjectResult(unittest.TestCase):
         )
         for n, (diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs) in enumerate(patterns):
             with self.subTest(f"Test matching objects: {n + 1}"):
-                self._test_object_results(matcher, diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs)
+                self._test_object_results(
+                    matcher, diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs
+                )
 
     def test_matching_objects_allow_any(self):
         """[summary]
@@ -411,22 +419,22 @@ class TestNuSceneObjectResult(unittest.TestCase):
             # (1)
             # Center Distance/Center Distance BEV:
             # {
-                # Threshold: 0.5
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 2.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
+            # Threshold: 0.5
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # Threshold: 2.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # }
             # PLANEDISTANCE:
             # {
-                # Threshold: 0.5
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 2.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
+            # Threshold: 0.5
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # Threshold: 2.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # }
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 # MatchignMode: Threshold: expected matching results
@@ -464,27 +472,27 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         2.0: 3,
                         4.0: 3,
                     },
-                }
+                },
             ),
             # (2)
             # Center Distance/Center Distance BEV:
             # {
-                # Threshold: 0.5
-                # (Est[0], None), (Est[1], None), (Est[2], GT[0])
-                # Threshold: 2.0
-                # (Est[0], None), (Est[1], None), (Est[2], GT[0])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
+            # Threshold: 0.5
+            # (Est[0], None), (Est[1], None), (Est[2], GT[0])
+            # Threshold: 2.0
+            # (Est[0], None), (Est[1], None), (Est[2], GT[0])
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # }
             # PLANEDISTANCE:
             # {
-                # Threshold: 0.5
-                # (Est[0], None), (Est[1], None), (Est[2], GT[0])
-                # Threshold: 2.0
-                # (Est[0], None), (Est[1], GT[1]), (Est[2], GT[0])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
+            # Threshold: 0.5
+            # (Est[0], None), (Est[1], None), (Est[2], GT[0])
+            # Threshold: 2.0
+            # (Est[0], None), (Est[1], GT[1]), (Est[2], GT[0])
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # }
             (
                 DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
                 {
@@ -522,7 +530,7 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         2.0: 3,
                         4.0: 3,
                     },
-                }
+                },
             ),
         ]
         matcher = NuscenesObjectMatcher(
@@ -534,13 +542,15 @@ class TestNuSceneObjectResult(unittest.TestCase):
         )
         for n, (diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs) in enumerate(patterns):
             with self.subTest(f"Test matching objects: {n + 1}"):
-                self._test_object_results(matcher, diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs)
+                self._test_object_results(
+                    matcher, diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs
+                )
 
     def test_matching_objects_allow_any_fps_class_agnostic(self):
         """[summary]
-        Test matching estimated objects and ground truth objects with ALLOW_ANY matching label policy and class agnostic fps. 
-        However, it doesn't support this combination since ALLOW_ANY matching label policy match detections without matching their label. 
-        Therefore, matching_class_agnostic_fps will set to False in NuSceneObjectMatcher, and it will have similar behavior 
+        Test matching estimated objects and ground truth objects with ALLOW_ANY matching label policy and class agnostic fps.
+        However, it doesn't support this combination since ALLOW_ANY matching label policy match detections without matching their label.
+        Therefore, matching_class_agnostic_fps will set to False in NuSceneObjectMatcher, and it will have similar behavior
         as ALLOW_ANY matching label policy.
         test patterns:
             NOTE:
@@ -554,22 +564,22 @@ class TestNuSceneObjectResult(unittest.TestCase):
             # (1)
             # Center Distance/Center Distance BEV:
             # {
-                # Threshold: 0.5
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 2.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
+            # Threshold: 0.5
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # Threshold: 2.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # }
             # PLANEDISTANCE:
             # {
-                # Threshold: 0.5
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 2.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
+            # Threshold: 0.5
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # Threshold: 2.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # }
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 # MatchignMode: Threshold: expected matching results
@@ -607,27 +617,27 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         2.0: 3,
                         4.0: 3,
                     },
-                }
+                },
             ),
             # (2)
             # Center Distance/Center Distance BEV:
             # {
-                # Threshold: 0.5
-                # (Est[0], None), (Est[1], None), (Est[2], GT[0])
-                # Threshold: 2.0
-                # (Est[0], None), (Est[1], None), (Est[2], GT[0])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
+            # Threshold: 0.5
+            # (Est[0], None), (Est[1], None), (Est[2], GT[0])
+            # Threshold: 2.0
+            # (Est[0], None), (Est[1], None), (Est[2], GT[0])
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # }
             # PLANEDISTANCE:
             # {
-                # Threshold: 0.5
-                # (Est[0], None), (Est[1], None), (Est[2], GT[0])
-                # Threshold: 2.0
-                # (Est[0], None), (Est[1], GT[1]), (Est[2], GT[0])
-                # Threshold: 4.0
-                # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # } 
+            # Threshold: 0.5
+            # (Est[0], None), (Est[1], None), (Est[2], GT[0])
+            # Threshold: 2.0
+            # (Est[0], None), (Est[1], GT[1]), (Est[2], GT[0])
+            # Threshold: 4.0
+            # (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # }
             (
                 DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
                 {
@@ -665,7 +675,7 @@ class TestNuSceneObjectResult(unittest.TestCase):
                         2.0: 3,
                         4.0: 3,
                     },
-                }
+                },
             ),
         ]
         matcher = NuscenesObjectMatcher(
@@ -677,11 +687,13 @@ class TestNuSceneObjectResult(unittest.TestCase):
         )
         for n, (diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs) in enumerate(patterns):
             with self.subTest(f"Test matching objects: {n + 1}"):
-                self._test_object_results(matcher, diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs)
-    
+                self._test_object_results(
+                    matcher, diff_trans, threshold_to_ans_pair_index, expected_nums_of_result_pairs
+                )
+
     def test_empty_estimated_objects(self):
         """Test matching when estimated objects list is empty.
-        
+
         Expected: All ground truth objects should be unmatched (no results returned).
         """
         matcher = NuscenesObjectMatcher(
@@ -693,19 +705,20 @@ class TestNuSceneObjectResult(unittest.TestCase):
         )
         empty_estimated: List[DynamicObject] = []
         object_results = matcher.match(empty_estimated, self.dummy_ground_truth_objects)
-        
+
         # Should have structure but all results should be empty lists
         for matching_mode, label_to_threshold_to_object_results in object_results.items():
             for label, threshold_to_object_results in label_to_threshold_to_object_results.items():
                 for threshold, results in threshold_to_object_results.items():
                     self.assertEqual(
-                        len(results), 0,
-                        f"Expected empty results for empty estimated objects at {matching_mode}, {label}, {threshold}"
+                        len(results),
+                        0,
+                        f"Expected empty results for empty estimated objects at {matching_mode}, {label}, {threshold}",
                     )
-    
+
     def test_empty_ground_truth_objects(self):
         """Test matching when ground truth objects list is empty.
-        
+
         Expected: All estimated objects should be false positives (FP).
         """
         matcher = NuscenesObjectMatcher(
@@ -717,7 +730,7 @@ class TestNuSceneObjectResult(unittest.TestCase):
         )
         empty_ground_truth: List[DynamicObject] = []
         object_results = matcher.match(self.dummy_estimated_objects, empty_ground_truth)
-        
+
         # All estimated objects should be FPs (ground_truth_object is None)
         for matching_mode, label_to_threshold_to_object_results in object_results.items():
             total_fps = defaultdict(int)
@@ -726,18 +739,20 @@ class TestNuSceneObjectResult(unittest.TestCase):
                     for result in results:
                         self.assertIsNone(
                             result.ground_truth_object,
-                            f"Expected FP (None GT) for empty ground truth at {matching_mode}, {label}, {threshold}"
+                            f"Expected FP (None GT) for empty ground truth at {matching_mode}, {label}, {threshold}",
                         )
                         total_fps[threshold] += 1
 
             for threshold, num_fps in total_fps.items():
-                self.assertEqual(num_fps, len(self.dummy_estimated_objects),
+                self.assertEqual(
+                    num_fps,
+                    len(self.dummy_estimated_objects),
                     f"Unexpected number of FPs for empty ground truth objects at Matching mode: {matching_mode}, Threshold: {threshold}",
                 )
-        
+
     def test_both_empty(self):
         """Test matching when both estimated and ground truth lists are empty.
-        
+
         Expected: Empty results structure.
         """
         matcher = NuscenesObjectMatcher(
@@ -750,13 +765,13 @@ class TestNuSceneObjectResult(unittest.TestCase):
         empty_estimated: List[DynamicObject] = []
         empty_ground_truth: List[DynamicObject] = []
         object_results = matcher.match(empty_estimated, empty_ground_truth)
-        
+
         # Should have structure but all results should be empty
         for matching_mode, label_to_threshold_to_object_results in object_results.items():
             for label, threshold_to_object_results in label_to_threshold_to_object_results.items():
                 for threshold, results in threshold_to_object_results.items():
                     self.assertEqual(
-                        len(results), 0,
-                        f"Expected empty results for both empty lists at {matching_mode}, {label}, {threshold}"
+                        len(results),
+                        0,
+                        f"Expected empty results for both empty lists at {matching_mode}, {label}, {threshold}",
                     )
-    

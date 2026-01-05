@@ -91,14 +91,13 @@ json_result = json.dump(dict_result)
 
   - **3. ラベル設定用のパラメータ**
 
-    | Arguments                |  type  | Mandatory | Description                                                         |
-    | :----------------------- | :----: | :-------: | :------------------------------------------------------------------ |
-    | `label_prefix`           | `str`  |    Yes    | 使用ラベル種類("autoware", "traffic_light")                         |
-    | `merge_similar_labels`   | `bool` |    No     | 類似ラベルをマージするか(Default: `False`)                          |
-    | `allow_matching_unknown` | `bool` |    No     | unknownラベル予測と正解物体とのマージを許容するか(Default: `False`) |
-    | `count_label_number`     | `bool` |    No     | ロードされた各ラベルの数を数えるか(Default: `True`)                 |
-    | `matching_class_agnostic_fps`     | `bool` |    No     | False Positive を別のラベルにマッチさせる（クラス非依存マッチング）場合は True に設定する (Default: `False`)            |
-
+    | Arguments                     |  type  | Mandatory | Description                                                                                                  |
+    | :---------------------------- | :----: | :-------: | :----------------------------------------------------------------------------------------------------------- |
+    | `label_prefix`                | `str`  |    Yes    | 使用ラベル種類("autoware", "traffic_light")                                                                  |
+    | `merge_similar_labels`        | `bool` |    No     | 類似ラベルをマージするか(Default: `False`)                                                                   |
+    | `allow_matching_unknown`      | `bool` |    No     | unknownラベル予測と正解物体とのマージを許容するか(Default: `False`)                                          |
+    | `count_label_number`          | `bool` |    No     | ロードされた各ラベルの数を数えるか(Default: `True`)                                                          |
+    | `matching_class_agnostic_fps` | `bool` |    No     | False Positive を別のラベルにマッチさせる（クラス非依存マッチング）場合は True に設定する (Default: `False`) |
 
   - **2. メトリクス評価時の `DynamicObjectWithPerceptionResult`の TP/FP/FN 判定用の閾値**
 
