@@ -125,23 +125,27 @@ class NuscenesObjectMatcher:
         Returns:
             Dict mapping each MatchingMode to a label-wise threshold dictionary.
         """
-        label_list: List[LabelType] = self.metrics_config.target_labels
-        return {
-            mode: convert_nested_thresholds(thresholds, label_list)
-            for mode, thresholds in [
-                (MatchingMode.CENTERDISTANCE, self.metrics_config.
-                 detection_config.center_distance_thresholds),
-                (MatchingMode.CENTERDISTANCEBEV, self.metrics_config.
-                 detection_config.center_distance_bev_thresholds),
-                (MatchingMode.PLANEDISTANCE,
-                 self.metrics_config.detection_config.plane_distance_thresholds
-                 ),
-                (MatchingMode.IOU2D,
-                 self.metrics_config.detection_config.iou_2d_thresholds),
-                (MatchingMode.IOU3D,
-                 self.metrics_config.detection_config.iou_3d_thresholds),
-            ] if thresholds
-        }
+        if self.metrics_config.detection_config is not None:
+            label_list: List[LabelType] = self.metrics_config.target_labels
+            return {
+                mode: convert_nested_thresholds(thresholds, label_list)
+                for mode, thresholds in [
+                    (MatchingMode.CENTERDISTANCE, self.metrics_config.
+                    detection_config.center_distance_thresholds),
+                    (MatchingMode.CENTERDISTANCEBEV, self.metrics_config.
+                    detection_config.center_distance_bev_thresholds),
+                    (MatchingMode.PLANEDISTANCE,
+                    self.metrics_config.detection_config.plane_distance_thresholds
+                    ),
+                    (MatchingMode.IOU2D,
+                    self.metrics_config.detection_config.iou_2d_thresholds),
+                    (MatchingMode.IOU3D,
+                    self.metrics_config.detection_config.iou_3d_thresholds),
+                ] if thresholds
+            }
+        else:
+            # For example, classification2D doesn't have detection_config, so it returns the empty dictionary
+            return {}
 
     def _match_tlr_classification2d(
         self, 
@@ -286,7 +290,7 @@ class NuscenesObjectMatcher:
         # 1. matching based on same label primary
         for est_index, est_object in enumerate(estimated_objects):
             for gt_index, gt_object in enumerate(ground_truth_objects):
-                if gt_index in matched_gt_indices[default_threshold]:
+                if gt_index in matched_gt_indices:
                     continue
 
                 if est_object.uuid is None or gt_object.uuid is None:
@@ -489,7 +493,7 @@ class NuscenesObjectMatcher:
                         None,
                         self.matching_label_policy,
                         transforms=self.transforms))
-
+                
         return object_results
     
     def _find_best_match(
