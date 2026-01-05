@@ -196,7 +196,6 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         )
 
         # Match objects based on enabled metrics
-        nuscene_object_results = None
         nuscene_object_results = self.match_nuscene_objects(filtered_estimated_objects, filtered_ground_truth)
 
         # Validate that at least one matching method was performed
