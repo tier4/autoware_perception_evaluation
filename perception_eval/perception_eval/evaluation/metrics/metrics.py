@@ -182,8 +182,8 @@ class MetricsScore:
 
         if self.detection_config is None:
             return
-        
-        target_labels = self.detection_config.target_labels 
+
+        target_labels = self.detection_config.target_labels
         for matching_mode, label_to_threshold_map in nuscene_object_results.items():
             num_gt_dict = {label: num_ground_truth.get(label, 0) for label in target_labels}
             self.mean_ap_values.append(
