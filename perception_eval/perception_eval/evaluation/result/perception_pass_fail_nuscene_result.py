@@ -56,14 +56,14 @@ class PassFailNusceneResult:
         self,
         unix_time: int,
         frame_number: int,
-        critical_object_filter_config: CriticalObjectFilterConfig,
+        critical_object_filter_config: Optional[CriticalObjectFilterConfig],
         frame_pass_fail_config: PerceptionPassFailConfig,
         transforms: Optional[TransformDict] = None,
     ) -> None:
         self.unix_time: int = unix_time
         self.frame_number: int = frame_number
         # TODO(ktro2828): merge CriticalObjectFilterConfig and FramePassFailConfig into one
-        self.critical_object_filter_config: CriticalObjectFilterConfig = critical_object_filter_config
+        self.critical_object_filter_config: Optional[CriticalObjectFilterConfig] = critical_object_filter_config
         self.frame_pass_fail_config: PerceptionPassFailConfig = frame_pass_fail_config
         self.transforms = transforms
         if self.frame_pass_fail_config.matching_threshold_list is None:

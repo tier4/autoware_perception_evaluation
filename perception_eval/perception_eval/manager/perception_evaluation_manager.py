@@ -100,8 +100,9 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         unix_time: int,
         ground_truth_now_frame: FrameGroundTruth,
         estimated_objects: List[ObjectType],
-        critical_object_filter_config: CriticalObjectFilterConfig,
         frame_pass_fail_config: PerceptionPassFailConfig,
+        critical_object_filter_config: Optional[CriticalObjectFilterConfig] = None,
+        frame_prefix: Optional[str] = None,
     ) -> PerceptionFrameResult:
         """Preprocess perception result at current frame without appending to `self.frame_results`."""
 
@@ -124,14 +125,15 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 "(detection, tracking, prediction, or classification) must be enabled."
             )
 
-        filtered_ground_truth.objects = filter_objects(
-            filtered_ground_truth.objects,
-            is_gt=True,
-            transforms=filtered_ground_truth.transforms,
-            **critical_object_filter_config.filtering_params,
-        )
+        # Filter ground truth objects by critical object filter config. If critical object filter config is not set, use target labels.
+        if critical_object_filter_config is not None:
+            filtered_ground_truth.objects = filter_objects(
+                filtered_ground_truth.objects,
+                is_gt=True,
+                transforms=filtered_ground_truth.transforms,
+                **critical_object_filter_config.filtering_params,
+            )
 
-        if nuscene_object_results is not None:
             # Filter objects by critical object filter config
             nuscene_object_results = filter_nuscene_object_results(
                 nuscene_object_results,
@@ -148,6 +150,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             frame_pass_fail_config=frame_pass_fail_config,
             unix_time=unix_time,
             target_labels=self.target_labels,
+            frame_prefix=frame_prefix,
         )
 
     def evaluate_perception_frame(
@@ -170,6 +173,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         estimated_objects: List[ObjectType],
         critical_object_filter_config: CriticalObjectFilterConfig,
         frame_pass_fail_config: PerceptionPassFailConfig,
+        frame_prefix: Optional[str] = None,
     ) -> PerceptionFrameResult:
         """Get perception result at current frame.
 
@@ -214,6 +218,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             frame_pass_fail_config=frame_pass_fail_config,
             unix_time=unix_time,
             target_labels=self.target_labels,
+            frame_prefix=frame_prefix,
         )
 
         if self.frame_results:

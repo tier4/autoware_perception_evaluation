@@ -70,10 +70,11 @@ class PerceptionFrameResult:
         ],
         frame_ground_truth: FrameGroundTruth,
         metrics_config: MetricsScoreConfig,
-        critical_object_filter_config: CriticalObjectFilterConfig,
+        critical_object_filter_config: Optional[CriticalObjectFilterConfig],
         frame_pass_fail_config: PerceptionPassFailConfig,
         unix_time: int,
         target_labels: List[LabelType],
+        frame_prefix: Optional[str] = None,
     ) -> None:
         # TODO(ktro2828): rename `frame_name` into `frame_number`
         # frame information
@@ -100,6 +101,8 @@ class PerceptionFrameResult:
             frame_pass_fail_config=frame_pass_fail_config,
             transforms=frame_ground_truth.transforms,
         )
+        # Prefix name for this frame to categorize the frame, for example, "location/vehicle/distance"
+        self.frame_prefix = frame_prefix
 
     def evaluate_perception_frame(
         self,
@@ -111,9 +114,14 @@ class PerceptionFrameResult:
             previous_result (Optional[PerceptionFrameResult]): The previous frame result. If None, set it as empty list []. Defaults to None.
         """
         # TODO(KS): This should be done in preprocessing step
+        target_labels = (
+            self.critical_object_filter_config.target_labels
+            if self.critical_object_filter_config
+            else self.target_labels
+        )
         num_ground_truth_dict: Dict[LabelType, int] = divide_objects_to_num(
             self.frame_ground_truth.objects,
-            self.critical_object_filter_config.target_labels,
+            target_labels,
         )
         self._core_evaluation(
             num_ground_truth_dict=num_ground_truth_dict,
@@ -129,23 +137,29 @@ class PerceptionFrameResult:
         Args:
             previous_result (Optional[PerceptionFrameResult]): The previous frame result. If None, set it as empty list []. Defaults to None.
         """
-        self.frame_ground_truth.objects = filter_objects(
-            self.frame_ground_truth.objects,
-            is_gt=True,
-            transforms=self.frame_ground_truth.transforms,
-            **self.critical_object_filter_config.filtering_params,
-        )
+        # Filter nuscene object results by critical object filter config. If critical object filter config is not set, use target labels.
+        if self.critical_object_filter_config is not None:
+            filter_params = self.critical_object_filter_config.filtering_params
+            self.frame_ground_truth.objects = filter_objects(
+                self.frame_ground_truth.objects,
+                is_gt=True,
+                transforms=self.frame_ground_truth.transforms,
+                **filter_params,
+            )
+            self.nuscene_object_results = filter_nuscene_object_results(
+                self.nuscene_object_results,
+                transforms=self.frame_ground_truth.transforms,
+                **filter_params,
+            )
 
+        target_labels = (
+            self.critical_object_filter_config.target_labels
+            if self.critical_object_filter_config
+            else self.target_labels
+        )
         num_ground_truth_dict: Dict[LabelType, int] = divide_objects_to_num(
             self.frame_ground_truth.objects,
-            self.critical_object_filter_config.target_labels,
-        )
-
-        # Filter objects by critical object filter config
-        self.nuscene_object_results = filter_nuscene_object_results(
-            self.nuscene_object_results,
-            transforms=self.frame_ground_truth.transforms,
-            **self.critical_object_filter_config.filtering_params,
+            target_labels,
         )
 
         self._core_evaluation(
@@ -223,6 +237,7 @@ class PerceptionFrameResult:
             self.frame_pass_fail_config,
             self.unix_time,
             self.target_labels,
+            self.frame_prefix,
         )
         state = {"pass_fail_result": self.pass_fail_result, "metric_score": self.metrics_score}
         return (self.__class__, init_args, state)
@@ -244,7 +259,10 @@ class PerceptionFrameResult:
             "target_labels": [target_label.serialization() for target_label in self.target_labels],
             "metrics_config": self.metrics_config.serialization(),
             "frame_pass_fail_config": self.frame_pass_fail_config.serialization(),
-            "critical_object_filter_config": self.critical_object_filter_config.serialization(),
+            "critical_object_filter_config": self.critical_object_filter_config.serialization()
+            if self.critical_object_filter_config
+            else None,
+            "frame_prefix": self.frame_prefix,
         }
 
     @classmethod
@@ -275,10 +293,13 @@ class PerceptionFrameResult:
             metrics_config=MetricsScoreConfig.deserialization(data["metrics_config"]),
             critical_object_filter_config=CriticalObjectFilterConfig.deserialization(
                 data["critical_object_filter_config"]
-            ),
+            )
+            if data["critical_object_filter_config"]
+            else None,
             frame_pass_fail_config=PerceptionPassFailConfig.deserialization(data["frame_pass_fail_config"]),
             target_labels=target_labels,
             unix_time=data["unix_time"],
+            frame_prefix=data.get("frame_prefix", None),
         )
 
 
