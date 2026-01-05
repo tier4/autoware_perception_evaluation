@@ -763,10 +763,7 @@ class NuscenesObjectMatcher:
                 matching_scores[i, j] = matching_method_module(est_obj, gt_obj, self.transforms)
                 matching_valid_masks[i, j] = self.matching_label_policy.is_matchable(est_obj, gt_obj)
 
-        return MatchingMatrices(
-            matching_scores=matching_scores,
-            matching_valid_masks=matching_valid_masks
-        )
+        return MatchingMatrices(matching_scores=matching_scores, matching_valid_masks=matching_valid_masks)
 
 
 def get_object_results(
