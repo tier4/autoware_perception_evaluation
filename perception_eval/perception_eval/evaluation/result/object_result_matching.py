@@ -67,7 +67,6 @@ def convert_nested_thresholds(thresholds: List[List[float]], labels: List[LabelT
     for row in thresholds:
         for i, value in enumerate(row):
             result[labels[i]].append(value)
-
     return result
 
 
@@ -429,8 +428,8 @@ class NuscenesObjectMatcher:
                 matching_matrices=matching_matrices,
                 label_to_thresholds_map=label_to_thresholds_map,
             )
-            nuscene_object_results[matching_mode] = object_results
 
+            nuscene_object_results[matching_mode] = object_results
             label_threshold_pairs = [
                 (label, threshold) for label, thresholds in label_to_thresholds_map.items() for threshold in thresholds
             ]
@@ -766,7 +765,7 @@ class NuscenesObjectMatcher:
 
         return MatchingMatrices(
             matching_scores=matching_scores,
-            matching_valid_masks=matching_valid_masks,
+            matching_valid_masks=matching_valid_masks
         )
 
 
