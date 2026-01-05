@@ -14,12 +14,9 @@
 
 from __future__ import annotations
 
-from cProfile import label
 from collections import defaultdict
 from dataclasses import dataclass
 import functools
-from re import L, Match
-from token import OP
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -30,13 +27,11 @@ import numpy as np
 from perception_eval.common import DynamicObject2D
 from perception_eval.common import ObjectType
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import Label
 from perception_eval.common.label import LabelType
 from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.schema import FrameID
 from perception_eval.common.threshold import get_label_threshold
 from perception_eval.common.transform import TransformDict
-from perception_eval.common.object import DynamicObject
 from perception_eval.evaluation.matching import CenterDistanceBEVMatching
 from perception_eval.evaluation.matching import CenterDistanceMatching
 from perception_eval.evaluation.matching import IOU2dMatching
