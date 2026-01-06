@@ -271,7 +271,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             frame_name=frame_ground_truth.frame_name,
             # Replace the objects with filtered objects
             objects=frame_ground_truth_objects,
-            transforms=frame_ground_truth.transforms,
+            transforms=frame_ground_truth.transform_matrices,
             raw_data=frame_ground_truth.raw_data,
         )
         return estimated_objects, frame_ground_truth
