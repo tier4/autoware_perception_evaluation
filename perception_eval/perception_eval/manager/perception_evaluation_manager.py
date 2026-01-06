@@ -14,6 +14,7 @@
 
 
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict
 from typing import List
@@ -44,6 +45,13 @@ from ._evaluation_manager_base import _EvaluationManagerBase
 from ..evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from ..evaluation.result.object_result_matching import get_object_results
 from ..evaluation.result.object_result_matching import NuscenesObjectMatcher
+
+
+@dataclass
+class AggregatedNusceneObjectResults:
+    nuscene_object_results: Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
+    num_gts: Dict[LabelType, int]
+    used_frames: List[int]
 
 
 class PerceptionEvaluationManager(_EvaluationManagerBase):
@@ -250,13 +258,22 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             **self.filtering_params,
         )
 
-        frame_ground_truth.objects = filter_objects(
+        frame_ground_truth_objects = filter_objects(
             dynamic_objects=frame_ground_truth.objects,
             is_gt=True,
             transforms=frame_ground_truth.transforms,
             **self.filtering_params,
         )
 
+        # Create a new FrameGroundTruth instance with filtered objects
+        frame_ground_truth = FrameGroundTruth(
+            unix_time=frame_ground_truth.unix_time,
+            frame_name=frame_ground_truth.frame_name,
+            # Replace the objects with filtered objects
+            objects=frame_ground_truth_objects,
+            transforms=frame_ground_truth.transforms,
+            raw_data=frame_ground_truth.raw_data,
+        )
         return estimated_objects, frame_ground_truth
 
     def match_nuscene_objects(
@@ -290,19 +307,19 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         )
         return matcher.match(estimated_objects, frame_ground_truth.objects)
 
-    def get_scene_result(self) -> MetricsScore:
-        """Evaluate metrics score thorough a scene.
+    def _aggregate_nuscene_object_results(self) -> AggregatedNusceneObjectResults:
+        """
+        Aggregate nuscene object results.
+
+        Args:
+            frame_results (List[PerceptionFrameResult]): List of frame results.
 
         Returns:
-            scene_metrics_score (MetricsScore): MetricsScore instance.
+            aggregated_nuscene_object_results (Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]): Aggregated nuscene object results.
         """
-        aggregated_nuscene_object_results: Dict[
-            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
-        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-
+        aggregated_nuscene_object_results = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
         aggregated_num_gt = {label: 0 for label in self.target_labels}
-        used_frame: List[int] = []
-
+        used_frames: List[int] = []
         # Gather objects from frame results
         for frame in self.frame_results:
             num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, self.target_labels)
@@ -317,27 +334,110 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             ):
                 accumulate_nuscene_results(aggregated_nuscene_object_results, frame.nuscene_object_results)
 
-            used_frame.append(int(frame.frame_name))
+            used_frames.append(int(frame.frame_name))
+
+        return AggregatedNusceneObjectResults(
+            nuscene_object_results=aggregated_nuscene_object_results, num_gts=aggregated_num_gt, used_frames=used_frames
+        )
+
+    def _group_nuscene_object_results_by_prefix(self) -> Dict[str, AggregatedNusceneObjectResults]:
+        """
+        Group nuscene object results by prefix.
+
+        Args:
+            frame_results (List[PerceptionFrameResult]): List of frame results.
+
+        Returns:
+            grouped_nuscene_object_results (Dict[str, AggregatedNusceneObjectResults]): Grouped nuscene object results.
+        """
+        grouped_nuscene_object_results: Dict[str, AggregatedNusceneObjectResults] = defaultdict()
+
+        for frame in self.frame_results:
+            if frame.frame_prefix not in grouped_nuscene_object_results:
+                grouped_nuscene_object_results[frame.frame_prefix] = AggregatedNusceneObjectResults(
+                    nuscene_object_results=defaultdict(lambda: defaultdict(lambda: defaultdict(list))),
+                    num_gts={label: 0 for label in self.target_labels},
+                    used_frames=[],
+                )
+
+            aggregated_nuscene_object_results = grouped_nuscene_object_results[
+                frame.frame_prefix
+            ].nuscene_object_results
+            aggregated_num_gts = grouped_nuscene_object_results[frame.frame_prefix].num_gts
+            used_frames = grouped_nuscene_object_results[frame.frame_prefix].used_frames
+
+            num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, self.target_labels)
+            for label in self.target_labels:
+                aggregated_num_gts[label] += num_gt_dict[label]
+
+            # Only aggregate nuscene_object_results if detection_config exists and frame has nuscene_object_results
+            if (
+                self.evaluator_config.metrics_config.detection_config is not None
+                and frame.nuscene_object_results is not None
+            ):
+                accumulate_nuscene_results(aggregated_nuscene_object_results, frame.nuscene_object_results)
+
+            used_frames.append(int(frame.frame_name))
+        return grouped_nuscene_object_results
+
+    def get_scene_result(
+        self, aggregated_nuscene_object_results: Optional[AggregatedNusceneObjectResults] = None
+    ) -> MetricsScore:
+        """Evaluate metrics score thorough a scene.
+
+        Args:
+            aggregated_nuscene_object_results (Optional[AggregatedNusceneObjectResults]): Aggregated nuscene object results. Defaults to None.
+
+        Returns:
+            scene_metrics_score (MetricsScore): MetricsScore instance.
+        """
+        if aggregated_nuscene_object_results is None:
+            aggregated_nuscene_object_results = self._aggregate_nuscene_object_results()
 
         scene_metrics_score: MetricsScore = MetricsScore(
             config=self.metrics_config,
-            used_frame=used_frame,
+            used_frame=aggregated_nuscene_object_results.used_frames,
         )
 
         # Classification
         if self.evaluator_config.metrics_config.classification_config is not None:
-            scene_metrics_score.evaluate_classification(aggregated_nuscene_object_results, aggregated_num_gt)
+            scene_metrics_score.evaluate_classification(
+                aggregated_nuscene_object_results.nuscene_object_results, aggregated_nuscene_object_results.num_gts
+            )
 
         # Detection
         if self.evaluator_config.metrics_config.detection_config is not None:
-            scene_metrics_score.evaluate_detection(aggregated_nuscene_object_results, aggregated_num_gt)
+            scene_metrics_score.evaluate_detection(
+                aggregated_nuscene_object_results.nuscene_object_results, aggregated_nuscene_object_results.num_gts
+            )
 
         # Tracking
         if self.evaluator_config.metrics_config.tracking_config is not None:
-            scene_metrics_score.evaluate_tracking(aggregated_nuscene_object_results, aggregated_num_gt)
+            scene_metrics_score.evaluate_tracking(
+                aggregated_nuscene_object_results.nuscene_object_results, aggregated_nuscene_object_results.num_gts
+            )
 
         # Prediction
         if self.evaluator_config.metrics_config.prediction_config is not None:
-            scene_metrics_score.evaluate_prediction(aggregated_nuscene_object_results, aggregated_num_gt)
+            scene_metrics_score.evaluate_prediction(
+                aggregated_nuscene_object_results.nuscene_object_results, aggregated_nuscene_object_results.num_gts
+            )
 
         return scene_metrics_score
+
+    def get_scene_result_with_prefix(self) -> Dict[str, MetricsScore]:
+        """
+        Get scene result with prefix.
+
+        Args:
+            prefix (str): Prefix of the scene result.
+
+        Returns:
+            scene_result_with_prefix (Dict[str, MetricsScore]): Scene result with prefix.
+        """
+        grouped_nuscene_object_results = self._group_nuscene_object_results_by_prefix()
+        scene_result_with_prefix: Dict[str, MetricsScore] = defaultdict()
+        for prefix, aggregated_nuscene_object_results in grouped_nuscene_object_results.items():
+            scene_result_with_prefix[prefix] = self.get_scene_result(aggregated_nuscene_object_results)
+
+        return scene_result_with_prefix
