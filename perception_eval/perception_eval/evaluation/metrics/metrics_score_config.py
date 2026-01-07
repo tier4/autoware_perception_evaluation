@@ -73,15 +73,34 @@ class MetricsScoreConfig:
             # NOTE: In prediction, evaluate mAP too
             # TODO: Check and extract parameters for detection from parameters for tracking
             # Extract the detection metric parameters from the prediction parameters
-            detection_cfg = {k: v for k, v in cfg.items() 
-                if k in ["center_distance_thresholds", "center_distance_bev_thresholds", "plane_distance_thresholds", "iou_2d_thresholds", "iou_3d_thresholds", "target_labels"]
+            detection_cfg = {
+                k: v
+                for k, v in cfg.items()
+                if k
+                in [
+                    "center_distance_thresholds",
+                    "center_distance_bev_thresholds",
+                    "plane_distance_thresholds",
+                    "iou_2d_thresholds",
+                    "iou_3d_thresholds",
+                    "target_labels",
+                ]
             }
             self._check_parameters(DetectionMetricsConfig, detection_cfg)
             self.detection_config = DetectionMetricsConfig(**detection_cfg)
-            
+
             # Remove the detection metricparameters from the prediction parameters
-            prediction_cfg = {k: v for k, v in cfg.items() 
-                if k not in ["center_distance_thresholds", "center_distance_bev_thresholds", "plane_distance_thresholds", "iou_2d_thresholds", "iou_3d_thresholds"]
+            prediction_cfg = {
+                k: v
+                for k, v in cfg.items()
+                if k
+                not in [
+                    "center_distance_thresholds",
+                    "center_distance_bev_thresholds",
+                    "plane_distance_thresholds",
+                    "iou_2d_thresholds",
+                    "iou_3d_thresholds",
+                ]
             }
             self._check_parameters(PredictionMetricsConfig, prediction_cfg)
             self.prediction_config = PredictionMetricsConfig(**prediction_cfg)

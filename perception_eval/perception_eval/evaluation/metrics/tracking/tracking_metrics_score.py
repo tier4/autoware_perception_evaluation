@@ -76,7 +76,7 @@ class TrackingMetricsScore:
                 previous_object_results = (
                     previous_nuscene_object_results[target_label][matching_threshold]
                     if previous_nuscene_object_results
-                    else [] 
+                    else []
                 )
                 num_ground_truth = num_ground_truth_dict[target_label]
                 clear_: CLEAR = CLEAR(
@@ -88,7 +88,7 @@ class TrackingMetricsScore:
                     matching_threshold_list=[matching_threshold],
                 )
                 self.clears.append(clear_)
-        
+
     def __reduce__(self) -> Tuple[TrackingMetricsScore, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
         init_args = (

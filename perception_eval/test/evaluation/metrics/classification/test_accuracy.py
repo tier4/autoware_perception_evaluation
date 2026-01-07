@@ -21,10 +21,12 @@ import unittest
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
-from perception_eval.evaluation.matching.objects_filter import filter_objects, divide_objects_to_num
+from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
+from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.classification.accuracy import ClassificationAccuracy
-from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
+from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
+
 
 class AnswerAccuracy:
     """Answer class for ClassificationAccuracy to compare result."""
@@ -144,4 +146,3 @@ class TestClassificationAccuracy(unittest.TestCase):
                         )
                         out_accuracy = AnswerAccuracy.from_accuracy(accuracy)
                         self.assertEqual(out_accuracy, answer, f"\nout = {str(out_accuracy)},\nanswer = {str(answer)}")
-    

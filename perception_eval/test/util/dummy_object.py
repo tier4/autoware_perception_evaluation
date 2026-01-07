@@ -16,8 +16,9 @@ from secrets import token_hex
 from typing import List
 from typing import Tuple
 
-from perception_eval.common.label import AutowareLabel, TrafficLightLabel
+from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import Label
+from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
@@ -234,6 +235,7 @@ def make_dummy_data2d(use_roi: bool = True) -> Tuple[List[DynamicObject2D], List
         ),
     ]
     return dummy_estimated_objects, dummy_ground_truth_objects
+
 
 def make_dummy_data2d_traffic_light(use_roi: bool = True) -> Tuple[List[DynamicObject2D], List[DynamicObject2D]]:
     """[summary]

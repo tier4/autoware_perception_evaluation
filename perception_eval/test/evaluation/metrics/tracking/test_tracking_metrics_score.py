@@ -24,7 +24,8 @@ import unittest
 from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
-from perception_eval.evaluation.matching.object_matching import MatchingMode, MatchingLabelPolicy
+from perception_eval.evaluation.matching.object_matching import MatchingLabelPolicy
+from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
@@ -59,10 +60,10 @@ class TestTrackingMetricsScore(unittest.TestCase):
             iou_2d_thresholds=None,
             iou_3d_thresholds=None,
         )
-       
+
     def test_sum_clear_with_class_agnostic_fps(self):
         """[summary]
-        Test summing up CLEAR scores. _sum_clear() returns total MOTA, MOTP and IDsw for same frames. 
+        Test summing up CLEAR scores. _sum_clear() returns total MOTA, MOTP and IDsw for same frames.
         Matching is class agnostic FPS.
 
         test patterns:
@@ -76,7 +77,10 @@ class TestTrackingMetricsScore(unittest.TestCase):
                         (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
         """
         matcher = NuscenesObjectMatcher(
-            evaluation_task=self.evaluation_task, metrics_config=self.metric_score_config, uuid_matching_first=False, matching_class_agnostic_fps=True
+            evaluation_task=self.evaluation_task,
+            metrics_config=self.metric_score_config,
+            uuid_matching_first=False,
+            matching_class_agnostic_fps=True,
         )
         # patterns: (PrevTrans, CurrTrans, MOTA, MOTP, IDsw)
         patterns: List[Tuple[DiffTranslation, DiffTranslation, float, float, int]] = [
@@ -155,7 +159,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     estimated_objects=prev_estimated_objects,
                     ground_truth_objects=prev_ground_truth_objects,
                 )
-              
+
                 # Current estimated objects
                 cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
                     ground_truth_objects=self.dummy_estimated_objects,
@@ -216,50 +220,39 @@ class TestTrackingMetricsScore(unittest.TestCase):
             Check the clear score for each target label with translated previous and current results.
         """
         matcher = NuscenesObjectMatcher(
-            evaluation_task=self.evaluation_task, 
-            metrics_config=self.metric_score_config, 
-            uuid_matching_first=False, 
+            evaluation_task=self.evaluation_task,
+            metrics_config=self.metric_score_config,
+            uuid_matching_first=False,
             matching_class_agnostic_fps=True,
-            matching_label_policy=MatchingLabelPolicy.ALLOW_ANY
+            matching_label_policy=MatchingLabelPolicy.ALLOW_ANY,
         )
         # patterns: (prev_diff_difference, cur_diff_difference, ans_clears)
-        patterns: List[Tuple[DiffTranslation, DiffTranslation,
-                             Tuple[AnswerCLEAR]]] = [
-                                 (
-                                     DiffTranslation((0.0, 0.0, 0.0),
-                                                     (0.0, 0.0, 0.0)),
-                                     DiffTranslation((1.0, 0.0, 0.0),
-                                                     (1.0, 0.0, 0.0)),
-                                     (
-                                         AnswerCLEAR(1, 1.0, 0.0, 0, 0.0, 1.0,
-                                                     0.0),
-                                         AnswerCLEAR(1, 1.0, 0.0, 0, 0.0, 1.0,
-                                                     0.0),
-                                         # Matches are based on ground truth labels, so pedestrian (GT[2]) matched to car (EST[2]) in this case, and they are TP with MatchingLabelPolicy.ALLOW_ANY in tracking
-                                         AnswerCLEAR(1, 1.0, 0.0, 0, 0.0, 1.0,
-                                                     0.0),
-                                         AnswerCLEAR(1, 0.0, 0.0, 0, 0.0, 0.0,
-                                                     float("inf")),
-                                     ),
-                                 ),
-                             ]
-        for n, (prev_diff_trans, cur_diff_trans,
-                ans_clears) in enumerate(patterns):
-            with self.subTest(
-                    f"Test tracking score with center distance: {n + 1}"):
-                prev_estimated_objects: List[
-                    DynamicObject] = get_objects_with_difference(
-                        ground_truth_objects=self.dummy_estimated_objects,
-                        diff_distance=prev_diff_trans.diff_estimated,
-                        diff_yaw=0.0,
-                    )
+        patterns: List[Tuple[DiffTranslation, DiffTranslation, Tuple[AnswerCLEAR]]] = [
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                DiffTranslation((1.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+                (
+                    AnswerCLEAR(1, 1.0, 0.0, 0, 0.0, 1.0, 0.0),
+                    AnswerCLEAR(1, 1.0, 0.0, 0, 0.0, 1.0, 0.0),
+                    # Matches are based on ground truth labels, so pedestrian (GT[2]) matched to car (EST[2]) in this case, and they are TP with MatchingLabelPolicy.ALLOW_ANY in tracking
+                    AnswerCLEAR(1, 1.0, 0.0, 0, 0.0, 1.0, 0.0),
+                    AnswerCLEAR(1, 0.0, 0.0, 0, 0.0, 0.0, float("inf")),
+                ),
+            ),
+        ]
+        for n, (prev_diff_trans, cur_diff_trans, ans_clears) in enumerate(patterns):
+            with self.subTest(f"Test tracking score with center distance: {n + 1}"):
+                prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
+                    ground_truth_objects=self.dummy_estimated_objects,
+                    diff_distance=prev_diff_trans.diff_estimated,
+                    diff_yaw=0.0,
+                )
                 # Previous ground truth objects
-                prev_ground_truth_objects: List[
-                    DynamicObject] = get_objects_with_difference(
-                        ground_truth_objects=self.dummy_ground_truth_objects,
-                        diff_distance=prev_diff_trans.diff_ground_truth,
-                        diff_yaw=0.0,
-                    )
+                prev_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
+                    ground_truth_objects=self.dummy_ground_truth_objects,
+                    diff_distance=prev_diff_trans.diff_ground_truth,
+                    diff_yaw=0.0,
+                )
                 # Filter previous objects
                 prev_estimated_objects = filter_objects(
                     dynamic_objects=prev_estimated_objects,
@@ -275,7 +268,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                 )
-                
+
                 # Previous object results
                 prev_object_results = matcher.match(
                     estimated_objects=prev_estimated_objects,
@@ -283,19 +276,17 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
 
                 # Current estimated objects
-                cur_estimated_objects: List[
-                    DynamicObject] = get_objects_with_difference(
-                        ground_truth_objects=self.dummy_estimated_objects,
-                        diff_distance=cur_diff_trans.diff_estimated,
-                        diff_yaw=0.0,
-                    )
+                cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
+                    ground_truth_objects=self.dummy_estimated_objects,
+                    diff_distance=cur_diff_trans.diff_estimated,
+                    diff_yaw=0.0,
+                )
                 # Current ground truth objects
-                cur_ground_truth_objects: List[
-                    DynamicObject] = get_objects_with_difference(
-                        ground_truth_objects=self.dummy_ground_truth_objects,
-                        diff_distance=cur_diff_trans.diff_ground_truth,
-                        diff_yaw=0.0,
-                    )
+                cur_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
+                    ground_truth_objects=self.dummy_ground_truth_objects,
+                    diff_distance=cur_diff_trans.diff_ground_truth,
+                    diff_yaw=0.0,
+                )
                 # Filter current objects
                 cur_estimated_objects = filter_objects(
                     dynamic_objects=cur_estimated_objects,
@@ -317,7 +308,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
-                
+
                 num_ground_truth_dict = divide_objects_to_num(
                     cur_ground_truth_objects,
                     self.target_labels,
@@ -342,8 +333,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 self.assertIn("fp", tracking_score_str)
                 self.assertIn("tp_matching_score", tracking_score_str)
 
-                for clear_, ans_clear_ in zip(tracking_score.clears,
-                                              ans_clears):
+                for clear_, ans_clear_ in zip(tracking_score.clears, ans_clears):
                     out_clear_ = AnswerCLEAR.from_clear(clear_)
                     self.assertEqual(
                         out_clear_,
@@ -373,30 +363,25 @@ class TestTrackingMetricsScore(unittest.TestCase):
             ),
         ]
         matcher = NuscenesObjectMatcher(
-            evaluation_task=self.evaluation_task, 
-            metrics_config=self.metric_score_config, 
-            uuid_matching_first=False, 
+            evaluation_task=self.evaluation_task,
+            metrics_config=self.metric_score_config,
+            uuid_matching_first=False,
             matching_class_agnostic_fps=True,
-            matching_label_policy=MatchingLabelPolicy.ALLOW_ANY
+            matching_label_policy=MatchingLabelPolicy.ALLOW_ANY,
         )
-        for n, (prev_diff_yaw, cur_diff_yaw,
-                ans_clears) in enumerate(patterns):
-            with self.subTest(
-                    f"Test tracking score with center distance matching translated by yaw: {n + 1}"
-            ):
-                prev_estimated_objects: List[
-                    DynamicObject] = get_objects_with_difference(
-                        ground_truth_objects=self.dummy_estimated_objects,
-                        diff_distance=(0.0, 0.0, 0.0),
-                        diff_yaw=prev_diff_yaw.diff_estimated,
-                    )
+        for n, (prev_diff_yaw, cur_diff_yaw, ans_clears) in enumerate(patterns):
+            with self.subTest(f"Test tracking score with center distance matching translated by yaw: {n + 1}"):
+                prev_estimated_objects: List[DynamicObject] = get_objects_with_difference(
+                    ground_truth_objects=self.dummy_estimated_objects,
+                    diff_distance=(0.0, 0.0, 0.0),
+                    diff_yaw=prev_diff_yaw.diff_estimated,
+                )
                 # Previous ground truth objects
-                prev_ground_truth_objects: List[
-                    DynamicObject] = get_objects_with_difference(
-                        ground_truth_objects=self.dummy_ground_truth_objects,
-                        diff_distance=(0.0, 0.0, 0.0),
-                        diff_yaw=prev_diff_yaw.diff_ground_truth,
-                    )
+                prev_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
+                    ground_truth_objects=self.dummy_ground_truth_objects,
+                    diff_distance=(0.0, 0.0, 0.0),
+                    diff_yaw=prev_diff_yaw.diff_ground_truth,
+                )
                 # Filter previous objects
                 prev_estimated_objects = filter_objects(
                     dynamic_objects=prev_estimated_objects,
@@ -420,19 +405,17 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 )
 
                 # Current estimated objects
-                cur_estimated_objects: List[
-                    DynamicObject] = get_objects_with_difference(
-                        ground_truth_objects=self.dummy_estimated_objects,
-                        diff_distance=(0.0, 0.0, 0.0),
-                        diff_yaw=cur_diff_yaw.diff_estimated,
-                    )
+                cur_estimated_objects: List[DynamicObject] = get_objects_with_difference(
+                    ground_truth_objects=self.dummy_estimated_objects,
+                    diff_distance=(0.0, 0.0, 0.0),
+                    diff_yaw=cur_diff_yaw.diff_estimated,
+                )
                 # Current ground truth objects
-                cur_ground_truth_objects: List[
-                    DynamicObject] = get_objects_with_difference(
-                        ground_truth_objects=self.dummy_ground_truth_objects,
-                        diff_distance=(0.0, 0.0, 0.0),
-                        diff_yaw=cur_diff_yaw.diff_ground_truth,
-                    )
+                cur_ground_truth_objects: List[DynamicObject] = get_objects_with_difference(
+                    ground_truth_objects=self.dummy_ground_truth_objects,
+                    diff_distance=(0.0, 0.0, 0.0),
+                    diff_yaw=cur_diff_yaw.diff_ground_truth,
+                )
                 # Filter current objects
                 cur_estimated_objects = filter_objects(
                     dynamic_objects=cur_estimated_objects,
@@ -448,15 +431,14 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     max_x_position_list=self.max_x_position_list,
                     max_y_position_list=self.max_y_position_list,
                 )
-                
+
                 # Current object results
                 cur_object_results = matcher.match(
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
-                
-                num_ground_truth_dict = divide_objects_to_num(
-                    cur_ground_truth_objects, self.target_labels)
+
+                num_ground_truth_dict = divide_objects_to_num(cur_ground_truth_objects, self.target_labels)
 
                 tracking_score: TrackingMetricsScore = TrackingMetricsScore(
                     nuscene_object_results=cur_object_results[MatchingMode.CENTERDISTANCE],
@@ -478,8 +460,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 self.assertIn("tp_matching_score", tracking_score_str)
 
                 # Check scores for each target label
-                for clear_, ans_clear_ in zip(tracking_score.clears,
-                                              ans_clears):
+                for clear_, ans_clear_ in zip(tracking_score.clears, ans_clears):
                     out_clear_: AnswerCLEAR = AnswerCLEAR.from_clear(clear_)
                     self.assertEqual(
                         out_clear_,

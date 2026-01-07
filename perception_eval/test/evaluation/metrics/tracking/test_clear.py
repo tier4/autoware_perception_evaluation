@@ -18,20 +18,21 @@ from math import isclose
 from test.util.dummy_object import make_dummy_data
 from test.util.object_diff import DiffTranslation
 from typing import List
-from typing import Tuple
 from typing import Optional
+from typing import Tuple
 import unittest
 
 from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching.object_matching import MatchingMode
-from perception_eval.evaluation.matching.objects_filter import filter_objects, divide_objects_to_num
-from perception_eval.evaluation.metrics.tracking.clear import CLEAR
-from perception_eval.util.debug import get_objects_with_difference
-from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
+from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
+from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
+from perception_eval.evaluation.metrics.tracking.clear import CLEAR
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
+from perception_eval.util.debug import get_objects_with_difference
 
 
 class AnswerCLEAR:
@@ -200,7 +201,7 @@ class TestCLEAR(unittest.TestCase):
             # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
             # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
             # -> TP score=0.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=inf
-            # Although Est[0] and GT[0] are assigned as match at the previous frame, they are not matched at the current frame due to matching threshold (0.5), 
+            # Although Est[0] and GT[0] are assigned as match at the previous frame, they are not matched at the current frame due to matching threshold (0.5),
             # and thus they are assigned as FP.
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
@@ -326,7 +327,7 @@ class TestCLEAR(unittest.TestCase):
             # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
             # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
             # -> TP score=0.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=0.0
-            # Although Est[0] and GT[0] are assigned as match at the previous frame, they are not matched at the current frame due to matching threshold (0.5), 
+            # Although Est[0] and GT[0] are assigned as match at the previous frame, they are not matched at the current frame due to matching threshold (0.5),
             # and thus they are assigned as FP.
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
@@ -409,7 +410,10 @@ class TestCLEAR(unittest.TestCase):
             ),
         ]
         matcher = NuscenesObjectMatcher(
-            evaluation_task=self.evaluation_task, metrics_config=self.metric_score_config, uuid_matching_first=False, matching_class_agnostic_fps=True, 
+            evaluation_task=self.evaluation_task,
+            metrics_config=self.metric_score_config,
+            uuid_matching_first=False,
+            matching_class_agnostic_fps=True,
         )
         for n, (
             prev_diff_trans,
@@ -498,11 +502,17 @@ class TestCLEAR(unittest.TestCase):
                 )
                 num_ground_truths = divide_objects_to_num(cur_ground_truth_objects, self.target_labels)
 
-                clear_results : List[CLEAR] = []
+                clear_results: List[CLEAR] = []
                 for label in [target_label]:
                     for matching_threshold in self.matching_threshold_list:
-                        selected_prev_object_results = prev_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold] if prev_object_results else []
-                        selected_cur_object_results = cur_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold]
+                        selected_prev_object_results = (
+                            prev_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold]
+                            if prev_object_results
+                            else []
+                        )
+                        selected_cur_object_results = cur_object_results[MatchingMode.CENTERDISTANCE][label][
+                            matching_threshold
+                        ]
                         object_results = [selected_prev_object_results, selected_cur_object_results]
                         clear_: CLEAR = CLEAR(
                             object_results=object_results,
@@ -512,7 +522,7 @@ class TestCLEAR(unittest.TestCase):
                             matching_threshold_list=[matching_threshold],
                         )
                         clear_results.append(clear_)
-             
+
                 # Only one item in a sub test
                 out_clear: AnswerCLEAR = AnswerCLEAR.from_clear(clear_results[0])
                 self.assertEqual(
@@ -618,7 +628,10 @@ class TestCLEAR(unittest.TestCase):
             ),
         ]
         matcher = NuscenesObjectMatcher(
-            evaluation_task=self.evaluation_task, metrics_config=self.metric_score_config, uuid_matching_first=False, matching_class_agnostic_fps=True,
+            evaluation_task=self.evaluation_task,
+            metrics_config=self.metric_score_config,
+            uuid_matching_first=False,
+            matching_class_agnostic_fps=True,
         )
         for n, (prev_diff_trans, cur_diff_trans, use_unique_id, ans_flags) in enumerate(patterns):
             with self.subTest(f"Test is ID switched: {n + 1}"):
@@ -691,7 +704,7 @@ class TestCLEAR(unittest.TestCase):
                     max_y_position_list=self.max_y_position_list,
                 )
 
-                 # Current object results
+                # Current object results
                 cur_object_results = matcher.match(
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
@@ -702,9 +715,15 @@ class TestCLEAR(unittest.TestCase):
                 selected_cur_object_results = []
                 for label in self.target_labels:
                     for matching_threshold in self.matching_threshold_list:
-                        selected_prev_object_results.extend(prev_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold] if prev_object_results else [])
-                        selected_cur_object_results.extend(cur_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold])
-                
+                        selected_prev_object_results.extend(
+                            prev_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold]
+                            if prev_object_results
+                            else []
+                        )
+                        selected_cur_object_results.extend(
+                            cur_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold]
+                        )
+
                 for i, cur_obj_result in enumerate(selected_cur_object_results):
                     for j, prev_obj_result in enumerate(selected_prev_object_results):
                         flag: bool = CLEAR._is_id_switched(
@@ -812,7 +831,10 @@ class TestCLEAR(unittest.TestCase):
             ),
         ]
         matcher = NuscenesObjectMatcher(
-            evaluation_task=self.evaluation_task, metrics_config=self.metric_score_config, uuid_matching_first=False, matching_class_agnostic_fps=True,
+            evaluation_task=self.evaluation_task,
+            metrics_config=self.metric_score_config,
+            uuid_matching_first=False,
+            matching_class_agnostic_fps=True,
         )
         for n, (prev_diff_trans, cur_diff_trans, use_unique_id, ans_flags) in enumerate(patterns):
             with self.subTest(f"Test is same result: {n + 1}"):
@@ -896,9 +918,15 @@ class TestCLEAR(unittest.TestCase):
                 selected_cur_object_results = []
                 for label in self.target_labels:
                     for matching_threshold in self.matching_threshold_list:
-                        selected_prev_object_results.extend(prev_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold] if prev_object_results else [])
-                        selected_cur_object_results.extend(cur_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold])
-                
+                        selected_prev_object_results.extend(
+                            prev_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold]
+                            if prev_object_results
+                            else []
+                        )
+                        selected_cur_object_results.extend(
+                            cur_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold]
+                        )
+
                 for i, cur_obj_result in enumerate(selected_cur_object_results):
                     for j, prev_obj_result in enumerate(selected_prev_object_results):
                         flag: bool = CLEAR._is_same_match(

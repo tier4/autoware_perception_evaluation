@@ -191,7 +191,9 @@ class CLEAR(_TrackingMetricsBase):
                 target_labels=self.target_labels,
                 threshold_list=self.matching_threshold_list,
             )
-            gt_label = cur_obj_result.ground_truth_object.semantic_label.label if cur_obj_result.ground_truth_object else None
+            gt_label = (
+                cur_obj_result.ground_truth_object.semantic_label.label if cur_obj_result.ground_truth_object else None
+            )
             est_label = cur_obj_result.estimated_object.semantic_label.label
 
             if matching_threshold_ is None:
@@ -262,7 +264,7 @@ class CLEAR(_TrackingMetricsBase):
         # current GT = None -> FP
         if cur_object_result.ground_truth_object is None or prev_object_result.ground_truth_object is None:
             return False
-        
+
         # 1. Check whether current/previous estimated objects has same ID.
         # NOTE: There is a case current/previous estimated objects has same ID,
         #       but different label(Checked by 2.)

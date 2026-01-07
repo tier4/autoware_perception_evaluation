@@ -76,7 +76,7 @@ class ClassificationMetricsScore:
             for target_label in target_labels:
                 num_ground_truth = num_ground_truth_dict[target_label]
                 selected_object_results = label_object_results.get(target_label, [])
-                
+
                 # Empty object results, but there are ground truths
                 if not selected_object_results:
                     acc_: ClassificationAccuracy = ClassificationAccuracy(

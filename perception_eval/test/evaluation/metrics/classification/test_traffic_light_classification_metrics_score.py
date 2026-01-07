@@ -18,13 +18,14 @@ import unittest
 
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import TrafficLightLabel
+from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.classification import ClassificationMetricsScore
-from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
-from perception_eval.evaluation.matching.object_matching import MatchingMode 
+from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
+
 
 class TestTrafficLightClassificationMetricsScore(unittest.TestCase):
     """The class to test ClassificationMetricsScore."""
@@ -110,4 +111,3 @@ class TestTrafficLightClassificationMetricsScore(unittest.TestCase):
         self.assertIn("F1score", str_)
         self.assertIn("Predict Num", str_)
         self.assertIn("Ground Truth Num", str_)
-
