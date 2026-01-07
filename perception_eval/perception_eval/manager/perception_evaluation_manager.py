@@ -71,20 +71,20 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         evaluator_config (PerceptionEvaluatorConfig): Configuration for perception evaluation.
         load_ground_truth (bool): Whether to automatically load ground truth annotations during initialization.
     Defaults to True. Set to False if you prefer to handle ground truth loading manually — for example, in the Autoware ML evaluation pipeline.
-        output_dir: Main directory to save any artifacts from running metrics.
+        metric_output_dir: Main directory to save any artifacts from running metrics.
     """
 
     def __init__(
         self,
         evaluation_config: PerceptionEvaluationConfig,
-        enable_visualization: bool = True,
+        enable_visualizer: bool = True,
         load_ground_truth: bool = True,
         metric_output_dir: Optional[str] = None,
     ) -> None:
         super().__init__(evaluation_config=evaluation_config, load_ground_truth=load_ground_truth)
         self.frame_results: List[PerceptionFrameResult] = []
-        self.enable_visualization = enable_visualization
-        if enable_visualization:
+        self.enable_visualizer = enable_visualizer
+        if enable_visualizer:
             self.__visualizer = (
                 PerceptionVisualizer2D(self.evaluator_config)
                 if self.evaluation_task.is_2d()
@@ -99,7 +99,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         """Serialization and deserialization of the object with pickling."""
         init_args = (
             self.evaluator_config,
-            self.enable_visualization,
+            False,  # When pickling, visualizer is disabled
             self.load_ground_truth,
             self.metric_output_dir,
         )
@@ -140,7 +140,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         return self.evaluator_config.metrics_config
 
     @property
-    def visualizer(self) -> Optional[PerceptionVisualizerType]:
+    def visualizer(self) -> PerceptionVisualizerType:
         return self.__visualizer
 
     @property
@@ -384,46 +384,6 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             nuscene_object_results=aggregated_nuscene_object_results, num_gts=aggregated_num_gt, used_frames=used_frames
         )
 
-    def _group_nuscene_object_results_by_prefix(self) -> Dict[str, AggregatedNusceneObjectResults]:
-        """
-        Group nuscene object results by prefix.
-
-        Args:
-            frame_results (List[PerceptionFrameResult]): List of frame results.
-
-        Returns:
-            grouped_nuscene_object_results (Dict[str, AggregatedNusceneObjectResults]): Grouped nuscene object results.
-        """
-        grouped_nuscene_object_results: Dict[str, AggregatedNusceneObjectResults] = defaultdict()
-
-        for frame in self.frame_results:
-            if frame.frame_prefix not in grouped_nuscene_object_results:
-                grouped_nuscene_object_results[frame.frame_prefix] = AggregatedNusceneObjectResults(
-                    nuscene_object_results=defaultdict(lambda: defaultdict(lambda: defaultdict(list))),
-                    num_gts={label: 0 for label in self.target_labels},
-                    used_frames=[],
-                )
-
-            aggregated_nuscene_object_results = grouped_nuscene_object_results[
-                frame.frame_prefix
-            ].nuscene_object_results
-            aggregated_num_gts = grouped_nuscene_object_results[frame.frame_prefix].num_gts
-            used_frames = grouped_nuscene_object_results[frame.frame_prefix].used_frames
-
-            num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, self.target_labels)
-            for label in self.target_labels:
-                aggregated_num_gts[label] += num_gt_dict[label]
-
-            # Only aggregate nuscene_object_results if detection_config exists and frame has nuscene_object_results
-            if (
-                self.evaluator_config.metrics_config.detection_config is not None
-                and frame.nuscene_object_results is not None
-            ):
-                accumulate_nuscene_results(aggregated_nuscene_object_results, frame.nuscene_object_results)
-
-            used_frames.append(int(frame.frame_name))
-        return grouped_nuscene_object_results
-
     def get_scene_result(
         self, aggregated_nuscene_object_results: Optional[AggregatedNusceneObjectResults] = None
     ) -> MetricsScore:
@@ -456,7 +416,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             )
 
             if self.metric_output_dir is not None:
-                detection_confusion_matrix = DetectionConfusionMatrix(output_dir=self._metric_output_dir)
+                detection_confusion_matrix = DetectionConfusionMatrix(output_dir=self.metric_output_dir)
                 # Draw confusion matrices
                 detection_confusion_matrix(
                     nuscene_object_results=aggregated_nuscene_object_results.nuscene_object_results,
