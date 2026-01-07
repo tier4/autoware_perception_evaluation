@@ -636,11 +636,7 @@ class NuscenesObjectMatcher:
             )
             object_results = self._merge_object_results(object_results, object_results_fps)
 
-        # Convert to a dict to prevent lambda in pickle issue
-        return {
-            label: {threshold: results for threshold, results in threshold_to_results.items()}
-            for label, threshold_to_results in object_results.items()
-        }
+        return object_results
 
     def _match_boxes_threshold(
         self,
