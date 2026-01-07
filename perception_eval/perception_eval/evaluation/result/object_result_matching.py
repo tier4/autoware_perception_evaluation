@@ -167,9 +167,10 @@ class NuscenesObjectMatcher:
             }
 
         """
+        # Use functools.partial instead of lambda to ensure the nested defaultdict structure is pickleable.
         matching_object_results: Dict[
             MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
-        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+        ] = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
 
         # Set only uses O(1) for searching, so we should use Set instead of removing from a list, since removing in List takes O(n)
         matched_est_indices: set = set()
@@ -262,9 +263,10 @@ class NuscenesObjectMatcher:
             }
 
         """
+        # Use functools.partial instead of lambda to ensure the nested defaultdict structure is pickleable.
         matching_object_results: Dict[
             MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
-        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+        ] = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
 
         # Set only uses O(1) for searching, so we should use Set instead of removing from a list, since removing in List takes O(n)
         matched_est_indices: set = set()
@@ -454,8 +456,9 @@ class NuscenesObjectMatcher:
             - If there are predictions but no ground truth, treat all predictions as false positives (FP).
             - If both are empty or only ground truth is present, return empty results for all thresholds.
         """
+        # Use functools.partial instead of lambda to ensure the nested defaultdict structure is pickleable.
         object_results: Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]] = defaultdict(
-            lambda: defaultdict(list)
+            functools.partial(defaultdict, list)
         )
 
         for threshold in available_thresholds:
@@ -559,8 +562,9 @@ class NuscenesObjectMatcher:
                     ...
                 }
         """
+        # Use functools.partial instead of lambda to ensure the nested defaultdict structure is pickleable.
         object_results: Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]] = defaultdict(
-            lambda: defaultdict(list)
+            functools.partial(defaultdict, list)
         )
 
         available_thresholds = sorted(
@@ -632,7 +636,11 @@ class NuscenesObjectMatcher:
             )
             object_results = self._merge_object_results(object_results, object_results_fps)
 
-        return object_results
+        # Convert to a dict to prevent lambda in pickle issue
+        return {
+            label: {threshold: results for threshold, results in threshold_to_results.items()}
+            for label, threshold_to_results in object_results.items()
+        }
 
     def _match_boxes_threshold(
         self,
