@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -86,6 +88,40 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             else PerceptionVisualizer3D(self.evaluator_config)
         )
         self._metric_output_dir = Path(metric_output_dir) if metric_output_dir is not None else None
+
+    def __reduce__(self) -> Tuple[PerceptionEvaluationManager, Tuple[Any], Dict[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        init_args = (
+            self.evaluator_config,
+            self.load_ground_truth,
+            self.metric_output_dir,
+        )
+        state = {
+            "frame_results": self.frame_results,
+        }
+        return (self.__class__, init_args, state)
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        """Set the state of the object to preserve states after deserialization."""
+        self.frame_results = state.get("frame_results", self.frame_results)
+
+    def serialization(self) -> Dict[str, Any]:
+        """Serialize the object to a dict."""
+        return {
+            "evaluation_config": self.evaluator_config.serialization(),
+            "load_ground_truth": self.load_ground_truth,
+            "metric_output_dir": self.metric_output_dir,
+        }
+
+    @classmethod
+    def deserialization(cls, data: Dict[str, Any]) -> PerceptionEvaluationManager:
+        """Deserialize the data to PerceptionEvaluationManager."""
+
+        return cls(
+            evaluation_config=PerceptionEvaluationConfig.deserialization(data["evaluation_config"]),
+            load_ground_truth=data["load_ground_truth"],
+            metric_output_dir=data["metric_output_dir"],
+        )
 
     @property
     def target_labels(self) -> List[LabelType]:
