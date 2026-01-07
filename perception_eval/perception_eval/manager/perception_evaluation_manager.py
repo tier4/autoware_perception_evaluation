@@ -140,7 +140,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         return self.evaluator_config.metrics_config
 
     @property
-    def visualizer(self) -> PerceptionVisualizerType:
+    def visualizer(self) -> Optional[PerceptionVisualizerType]:
         return self.__visualizer
 
     @property
