@@ -77,22 +77,29 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
     def __init__(
         self,
         evaluation_config: PerceptionEvaluationConfig,
+        enable_visualization: bool = True,
         load_ground_truth: bool = True,
         metric_output_dir: Optional[str] = None,
     ) -> None:
         super().__init__(evaluation_config=evaluation_config, load_ground_truth=load_ground_truth)
         self.frame_results: List[PerceptionFrameResult] = []
-        self.__visualizer = (
-            PerceptionVisualizer2D(self.evaluator_config)
-            if self.evaluation_task.is_2d()
-            else PerceptionVisualizer3D(self.evaluator_config)
-        )
+        self.enable_visualization = enable_visualization
+        if enable_visualization:
+            self.__visualizer = (
+                PerceptionVisualizer2D(self.evaluator_config)
+                if self.evaluation_task.is_2d()
+                else PerceptionVisualizer3D(self.evaluator_config)
+            )
+        else:
+            self.__visualizer = None
+
         self._metric_output_dir = Path(metric_output_dir) if metric_output_dir is not None else None
 
     def __reduce__(self) -> Tuple[PerceptionEvaluationManager, Tuple[Any], Dict[Any]]:
         """Serialization and deserialization of the object with pickling."""
         init_args = (
             self.evaluator_config,
+            self.enable_visualization,
             self.load_ground_truth,
             self.metric_output_dir,
         )
@@ -109,6 +116,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         """Serialize the object to a dict."""
         return {
             "evaluation_config": self.evaluator_config.serialization(),
+            "enable_visualization": self.enable_visualization,
             "load_ground_truth": self.load_ground_truth,
             "metric_output_dir": self.metric_output_dir,
         }
@@ -132,7 +140,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         return self.evaluator_config.metrics_config
 
     @property
-    def visualizer(self) -> PerceptionVisualizerType:
+    def visualizer(self) -> Optional[PerceptionVisualizerType]:
         return self.__visualizer
 
     @property
@@ -446,6 +454,14 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             scene_metrics_score.evaluate_detection(
                 aggregated_nuscene_object_results.nuscene_object_results, aggregated_nuscene_object_results.num_gts
             )
+
+            if self.metric_output_dir is not None:
+                detection_confusion_matrix = DetectionConfusionMatrix(output_dir=self._metric_output_dir)
+                # Draw confusion matrices
+                detection_confusion_matrix(
+                    nuscene_object_results=aggregated_nuscene_object_results.nuscene_object_results,
+                    num_ground_truth=aggregated_nuscene_object_results.num_gts,
+                )
 
         # Tracking
         if self.evaluator_config.metrics_config.tracking_config is not None:
