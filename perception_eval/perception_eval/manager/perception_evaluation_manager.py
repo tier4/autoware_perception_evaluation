@@ -326,6 +326,13 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         # Detection
         if self.evaluator_config.metrics_config.detection_config is not None:
             scene_metrics_score.evaluate_detection(aggregated_nuscene_object_results, aggregated_num_gt)
+            if self.metric_output_dir is not None:
+                detection_confusion_matrix = DetectionConfusionMatrix(output_dir=self.metric_output_dir)
+                # Draw confusion matrices
+                detection_confusion_matrix(
+                    nuscene_object_results=aggregated_nuscene_object_results,
+                    num_ground_truth=aggregated_num_gt,
+                )
 
         # Tracking
         if self.evaluator_config.metrics_config.tracking_config is not None:
