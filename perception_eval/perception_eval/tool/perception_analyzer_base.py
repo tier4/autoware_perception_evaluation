@@ -201,7 +201,7 @@ class PerceptionAnalyzerBase(ABC):
         """
         df = self.df
 
-        mask = np.ones(len(self), dtype=np.bool)
+        mask = np.ones(len(self), dtype=np.bool_)
         for key, item in kwargs.items():
             if item is None:
                 continue
