@@ -94,7 +94,6 @@ class TestTrafficLightClassificationMetricsScore(unittest.TestCase):
         summary_results = classification_score._summarize()
         for _, thresholds_to_score in summary_results.items():
             for _, scores in thresholds_to_score.items():
-                print(scores)
                 self.assertAlmostEqual(scores.accuracy, 0.75, delta=0.01)
                 self.assertAlmostEqual(scores.precision, 1.0, delta=0.01)
                 self.assertAlmostEqual(scores.recall, 0.75, delta=0.01)
