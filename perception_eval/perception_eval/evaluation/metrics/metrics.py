@@ -19,8 +19,8 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Union
 from typing import Tuple
+from typing import Union
 
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching import MatchingMode

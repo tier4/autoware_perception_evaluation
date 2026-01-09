@@ -247,7 +247,7 @@ def _extract_metric_params(
         else:
             raise ValueError(f"Not supported {max_matchable_radii}")
 
-        matching_params.update("center_distance_thresholds", max_matchable_radii)
+        matching_params.update({"center_distance_thresholds": max_matchable_radii})
 
     params.update(matching_params)
 

@@ -24,14 +24,16 @@ import unittest
 from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
-from perception_eval.evaluation.matching.object_matching import MatchingMode, MatchingLabelPolicy
+from perception_eval.evaluation.matching.object_matching import MatchingLabelPolicy
+from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
+from perception_eval.evaluation.metrics.prediction.prediction_metrics_score import DisplacementErrorScores
+from perception_eval.evaluation.metrics.prediction.prediction_metrics_score import PredictionMetricsScore
 from perception_eval.evaluation.metrics.tracking.tracking_metrics_score import TrackingMetricsScore
 from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
 from perception_eval.util.debug import get_objects_with_difference
-from perception_eval.evaluation.metrics.prediction.prediction_metrics_score import PredictionMetricsScore, DisplacementErrorScores
 
 
 class TestTrackingMetricsScore(unittest.TestCase):
@@ -61,10 +63,10 @@ class TestTrackingMetricsScore(unittest.TestCase):
             iou_3d_thresholds=None,
             top_ks=[1, 3],
         )
-       
+
     def test_sum_clear_with_class_agnostic_fps(self):
         """[summary]
-        Test summing up CLEAR scores. _sum_clear() returns total MOTA, MOTP and IDsw for same frames. 
+        Test summing up CLEAR scores. _sum_clear() returns total MOTA, MOTP and IDsw for same frames.
         Matching is class agnostic FPS.
 
         test patterns:
@@ -78,10 +80,10 @@ class TestTrackingMetricsScore(unittest.TestCase):
                         (0): CAR, (1): BICYCLE, (2): PEDESTRIAN, (3): MOTORBIKE
         """
         matcher = NuscenesObjectMatcher(
-            evaluation_task=self.evaluation_task, 
-            metrics_config=self.metric_score_config, 
-            uuid_matching_first=False, 
-            matching_class_agnostic_fps=False
+            evaluation_task=self.evaluation_task,
+            metrics_config=self.metric_score_config,
+            uuid_matching_first=False,
+            matching_class_agnostic_fps=False,
         )
         # patterns: (PrevTrans, CurrTrans, MOTA, MOTP, IDsw)
         patterns: List[Tuple[DiffTranslation, DiffTranslation, float, float, int]] = [
@@ -92,10 +94,14 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 [
                     # top_k = 1
-                    DisplacementErrorScores(ade=2.6235, top_k=1, fde=3.9241, miss_rate=0.6666, predict_num=3, ground_truth_num=4),
+                    DisplacementErrorScores(
+                        ade=2.6235, top_k=1, fde=3.9241, miss_rate=0.6666, predict_num=3, ground_truth_num=4
+                    ),
                     # top_k = 3
-                    DisplacementErrorScores(ade=1.3118, top_k=3, fde=1.9620, miss_rate=0.3333, predict_num=3, ground_truth_num=4),
-                ]
+                    DisplacementErrorScores(
+                        ade=1.3118, top_k=3, fde=1.9620, miss_rate=0.3333, predict_num=3, ground_truth_num=4
+                    ),
+                ],
             ),
             # (2)
             # -> current    : (Est[2], GT[0]), (Est[2], None), (Est[1], None)
@@ -103,10 +109,14 @@ class TestTrackingMetricsScore(unittest.TestCase):
                 DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
                 [
                     # top_k = 1
-                    DisplacementErrorScores(ade=2.8284, top_k=1, fde=4.2426, miss_rate=0.6666, predict_num=3, ground_truth_num=4),
+                    DisplacementErrorScores(
+                        ade=2.8284, top_k=1, fde=4.2426, miss_rate=0.6666, predict_num=3, ground_truth_num=4
+                    ),
                     # top_k = 3
-                    DisplacementErrorScores(ade=1.4142, top_k=3, fde=2.1213, miss_rate=0.3333, predict_num=3, ground_truth_num=4),
-                ]
+                    DisplacementErrorScores(
+                        ade=1.4142, top_k=3, fde=2.1213, miss_rate=0.3333, predict_num=3, ground_truth_num=4
+                    ),
+                ],
             ),
         ]
         for n, (cur_diff_trans, displacement_error_answers) in enumerate(patterns):
@@ -159,7 +169,7 @@ class TestTrackingMetricsScore(unittest.TestCase):
                         miss_tolerance=2.0,
                     )
                     prediction_scores_.append(prediction_score_)
-                    
+
                     # String representation test
                     prediction_score_str = str(prediction_score_)
                     self.assertIn(f"Matching Mode: {MatchingMode.CENTERDISTANCE}, Top K: {top_k}", prediction_score_str)
@@ -170,13 +180,16 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     self.assertIn(f"Miss Rate", prediction_score_str)
                     for target_label in self.target_labels:
                         self.assertIn(f"{target_label}", prediction_score_str)
-                
+
                 for index, prediction_score_ in enumerate(prediction_scores_):
                     for _, thresholds in prediction_score_.displacement_error_scores.items():
                         for _, scores in thresholds.items():
                             self.assertAlmostEqual(scores.ade, displacement_error_answers[index].ade, delta=1e-4)
                             self.assertAlmostEqual(scores.fde, displacement_error_answers[index].fde, delta=1e-4)
-                            self.assertAlmostEqual(scores.miss_rate, displacement_error_answers[index].miss_rate, delta=1e-4)
+                            self.assertAlmostEqual(
+                                scores.miss_rate, displacement_error_answers[index].miss_rate, delta=1e-4
+                            )
                             self.assertEqual(scores.predict_num, displacement_error_answers[index].predict_num)
-                            self.assertEqual(scores.ground_truth_num, displacement_error_answers[index].ground_truth_num)
-                        
+                            self.assertEqual(
+                                scores.ground_truth_num, displacement_error_answers[index].ground_truth_num
+                            )

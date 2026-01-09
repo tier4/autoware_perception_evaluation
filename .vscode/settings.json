@@ -23,6 +23,5 @@
     "files.insertFinalNewline": true
   },
   "python.defaultInterpreterPath": ".venv/bin/python3",
-  "ros.distro": "humble",
-  "cmake.ignoreCMakeListsMissing": true
+  "ros.distro": "humble"
 }

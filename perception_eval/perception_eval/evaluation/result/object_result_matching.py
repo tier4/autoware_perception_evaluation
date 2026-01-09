@@ -46,7 +46,7 @@ from perception_eval.evaluation.result.object_result import DynamicObjectWithPer
 
 @dataclass(frozen=True)
 class MatchingMatrices:
-    matching_scores: np.ndarray  # [num_est_box, num_gt_box]
+    matching_methods: np.ndarray  # [num_est_box, num_gt_box]
     matching_valid_masks: np.ndarray  # [est_box, gt_box]
 
 
@@ -486,7 +486,7 @@ class NuscenesObjectMatcher:
         self,
         est_idx: int,
         ground_truth_objects: List[ObjectType],
-        matching_scores: np.ndarray,
+        matching_methods: np.ndarray,
         matched_gt_indices: set,
         matching_valid_masks: np.ndarray,
         label_to_thresholds_map: Dict[LabelType, List[float]],
@@ -515,7 +515,7 @@ class NuscenesObjectMatcher:
         best_gt_idx = None
         best_matching = None
 
-        for gt_idx in range(matching_scores.shape[1]):
+        for gt_idx in range(matching_methods.shape[1]):
             ground_truth_label = ground_truth_objects[gt_idx].semantic_label.label
             # When the ground truth object is already matched or the threshold is not in the label to thresholds map, then we skip it
             # Only consider the matching when the threshold is defined for the ground truth label for both class-to-class and class-agnostic matching.
@@ -528,7 +528,7 @@ class NuscenesObjectMatcher:
             if not class_agnostic_matching and not matching_valid_masks[est_idx, gt_idx]:
                 continue
 
-            matching = matching_scores[est_idx, gt_idx]
+            matching = matching_methods[est_idx, gt_idx]
             if best_matching is None or matching.is_better_than(best_matching.value):
                 best_matching = matching
                 best_gt_idx = gt_idx
@@ -668,9 +668,11 @@ class NuscenesObjectMatcher:
                     ...
                 }
         """
+        # Use functools.partial instead of lambda to ensure the nested defaultdict structure is pickleable.
         object_results: Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]] = defaultdict(
-            lambda: defaultdict(list)
+            functools.partial(defaultdict, list)
         )
+
         for est_idx in range(len(estimated_objects_sorted)):
             # If the matching label policy is default, and the threshold is not in the label to thresholds map,
             # then we skip this estimated object for this threshold
@@ -689,7 +691,7 @@ class NuscenesObjectMatcher:
             best_match = self._find_best_match(
                 est_idx=est_idx,
                 ground_truth_objects=ground_truth_objects,
-                matching_scores=matching_matrices.matching_scores,
+                matching_methods=matching_matrices.matching_methods,
                 matched_gt_indices=matched_gt_indices,
                 matching_valid_masks=matching_matrices.matching_valid_masks,
                 label_to_thresholds_map=label_to_thresholds_map,
@@ -752,22 +754,22 @@ class NuscenesObjectMatcher:
 
         Returns:
             MatchingMatrix:
-                matching_score: 2D numpy array with shape (num_est, num_gt) storing MatchingMethod instances and values
+                matching_methods: 2D numpy array with shape (num_est, num_gt) storing MatchingMethod instances and values
                 matching_valid_masks: 2D numpy array with shape (num_est, num_gt) to save a boolean value to indicate if a pair is matchable.
             None if either input is empty.
         """
         if not estimated_objects or not ground_truth_objects:
             return None
 
-        matching_scores = np.full((len(estimated_objects), len(ground_truth_objects)), None)
-        matching_valid_masks = np.zeros_like(matching_scores)
+        matching_methods = np.empty((len(estimated_objects), len(ground_truth_objects)), dtype=object)
+        matching_valid_masks = np.zeros_like(matching_methods)
 
         for i, est_obj in enumerate(estimated_objects):
             for j, gt_obj in enumerate(ground_truth_objects):
-                matching_scores[i, j] = matching_method_module(est_obj, gt_obj, self.transforms)
+                matching_methods[i, j] = matching_method_module(est_obj, gt_obj, self.transforms)
                 matching_valid_masks[i, j] = self.matching_label_policy.is_matchable(est_obj, gt_obj)
 
-        return MatchingMatrices(matching_scores=matching_scores, matching_valid_masks=matching_valid_masks)
+        return MatchingMatrices(matching_methods=matching_methods, matching_valid_masks=matching_valid_masks)
 
 
 def get_object_results(

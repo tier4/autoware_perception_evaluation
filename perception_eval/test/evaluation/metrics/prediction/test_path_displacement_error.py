@@ -15,25 +15,22 @@
 from __future__ import annotations
 
 import math
-from turtle import numinput
 from test.util.dummy_object import make_dummy_data
 from typing import List
 from typing import Tuple
 
 import numpy as np
-
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import LabelType
 from perception_eval.common.schema import FrameID
 from perception_eval.common.transform import HomogeneousMatrix
 from perception_eval.common.transform import TransformDict
+from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
+from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
 from perception_eval.evaluation.metrics.prediction.path_displacement_error import PathDisplacementError
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
-from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
-from perception_eval.evaluation.matching.object_matching import MatchingMode
 import pytest
 
 
@@ -44,10 +41,10 @@ def setup() -> Tuple[List[DynamicObjectWithPerceptionResult], int, List[LabelTyp
         HomogeneousMatrix(position=(0, 0, 0), rotation=(1, 0, 0, 0), src=FrameID.BASE_LINK, dst=FrameID.MAP)
     )
     target_labels: List[AutowareLabel] = [
-            AutowareLabel.CAR,
-            AutowareLabel.BICYCLE,
-            AutowareLabel.PEDESTRIAN,
-            AutowareLabel.MOTORBIKE,
+        AutowareLabel.CAR,
+        AutowareLabel.BICYCLE,
+        AutowareLabel.PEDESTRIAN,
+        AutowareLabel.MOTORBIKE,
     ]
     metric_score_config = MetricsScoreConfig(
         evaluation_task=EvaluationTask.PREDICTION,
@@ -86,7 +83,7 @@ def test_all_path_displacement_error(setup) -> None:
             num_gts += num_ground_truth
             for _, object_results in threshold_object_results.items():
                 selected_object_results.extend(object_results)
-    
+
     displacement_err = PathDisplacementError(
         object_results=selected_object_results,
         num_ground_truth=num_gts,
@@ -109,7 +106,7 @@ def test_min_path_displacement_error(setup) -> None:
             num_gts += num_ground_truth
             for _, object_results in threshold_object_results.items():
                 selected_object_results.extend(object_results)
-    
+
     displacement_err = PathDisplacementError(
         object_results=selected_object_results,
         num_ground_truth=num_gts,
@@ -133,7 +130,7 @@ def test_max_path_displacement_error(setup) -> None:
             num_gts += num_ground_truth
             for _, object_results in threshold_object_results.items():
                 selected_object_results.extend(object_results)
-    
+
     displacement_err = PathDisplacementError(
         object_results=selected_object_results,
         num_ground_truth=num_gts,
@@ -195,12 +192,12 @@ def test_all_path_displacement_error_thresholds(setup) -> None:
                     assert math.isnan(displacement_err.ade)
                 else:
                     assert math.isclose(displacement_err.ade, ans[label_index][0], rel_tol=1e-3)
-                
+
                 if ans[label_index][1] is np.nan:
                     assert math.isnan(displacement_err.fde)
                 else:
                     assert math.isclose(displacement_err.fde, ans[label_index][1], rel_tol=1e-3)
-                
+
                 if ans[label_index][2] is np.nan:
                     assert math.isnan(displacement_err.miss_rate)
                 else:
@@ -234,12 +231,12 @@ def test_min_path_displacement_error_thresholds(setup) -> None:
                     assert math.isnan(displacement_err.ade)
                 else:
                     assert math.isclose(displacement_err.ade, ans[label_index][0], rel_tol=1e-3)
-                
+
                 if ans[label_index][1] is np.nan:
                     assert math.isnan(displacement_err.fde)
                 else:
                     assert math.isclose(displacement_err.fde, ans[label_index][1], rel_tol=1e-3)
-                
+
                 if ans[label_index][2] is np.nan:
                     assert math.isnan(displacement_err.miss_rate)
                 else:
@@ -273,12 +270,12 @@ def test_max_path_displacement_error_thresholds(setup) -> None:
                     assert math.isnan(displacement_err.ade)
                 else:
                     assert math.isclose(displacement_err.ade, ans[label_index][0], rel_tol=1e-3)
-                
+
                 if ans[label_index][1] is np.nan:
                     assert math.isnan(displacement_err.fde)
                 else:
                     assert math.isclose(displacement_err.fde, ans[label_index][1], rel_tol=1e-3)
-                
+
                 if ans[label_index][2] is np.nan:
                     assert math.isnan(displacement_err.miss_rate)
                 else:
@@ -312,12 +309,12 @@ def test_highest_path_displacement_error_thresholds(setup) -> None:
                     assert math.isnan(displacement_err.ade)
                 else:
                     assert math.isclose(displacement_err.ade, ans[label_index][0], rel_tol=1e-3)
-                
+
                 if ans[label_index][1] is np.nan:
                     assert math.isnan(displacement_err.fde)
                 else:
                     assert math.isclose(displacement_err.fde, ans[label_index][1], rel_tol=1e-3)
-                
+
                 if ans[label_index][2] is np.nan:
                     assert math.isnan(displacement_err.miss_rate)
                 else:

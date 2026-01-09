@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import select
 from typing import Any
 from typing import Dict
 from typing import List
@@ -35,10 +34,10 @@ class TrackingMetricsScore:
     Length of input `target_labels` and `matching_threshold_list` must be same.
 
     Attributes:
-                nuscene_object_results: (Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]):
-                        Dict that items are nuscene object results list mapped by their labels and matching thresholds.
-                previous_nuscene_object_results: (Optional[Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]):
-                        Dict that items are previous nuscene object results list mapped by their labels and matching thresholds.
+        nuscene_object_results: (Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]):
+            Dict that items are nuscene object results list mapped by their labels and matching thresholds.
+        previous_nuscene_object_results: (Optional[Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]):
+            Dict that items are previous nuscene object results list mapped by their labels and matching thresholds.
         target_labels: (List[LabelType]): Target labels list.
         matching_mode (MatchingMode): MatchingMode instance.
         clears (List[CLEAR]): List of CLEAR instances.
@@ -76,7 +75,7 @@ class TrackingMetricsScore:
                 previous_object_results = (
                     previous_nuscene_object_results[target_label][matching_threshold]
                     if previous_nuscene_object_results
-                    else [] 
+                    else []
                 )
                 num_ground_truth = num_ground_truth_dict[target_label]
                 clear_: CLEAR = CLEAR(
@@ -88,7 +87,7 @@ class TrackingMetricsScore:
                     matching_threshold_list=[matching_threshold],
                 )
                 self.clears.append(clear_)
-        
+
     def __reduce__(self) -> Tuple[TrackingMetricsScore, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
         init_args = (
