@@ -486,7 +486,7 @@ class NuscenesObjectMatcher:
         self,
         est_idx: int,
         ground_truth_objects: List[ObjectType],
-        matching_scores: np.ndarray,
+        matching_methods: np.ndarray,
         matched_gt_indices: set,
         matching_valid_masks: np.ndarray,
         label_to_thresholds_map: Dict[LabelType, List[float]],
@@ -515,7 +515,7 @@ class NuscenesObjectMatcher:
         best_gt_idx = None
         best_matching = None
 
-        for gt_idx in range(matching_scores.shape[1]):
+        for gt_idx in range(matching_methods.shape[1]):
             ground_truth_label = ground_truth_objects[gt_idx].semantic_label.label
             # When the ground truth object is already matched or the threshold is not in the label to thresholds map, then we skip it
             # Only consider the matching when the threshold is defined for the ground truth label for both class-to-class and class-agnostic matching.
@@ -528,7 +528,7 @@ class NuscenesObjectMatcher:
             if not class_agnostic_matching and not matching_valid_masks[est_idx, gt_idx]:
                 continue
 
-            matching = matching_scores[est_idx, gt_idx]
+            matching = matching_methods[est_idx, gt_idx]
             if best_matching is None or matching.is_better_than(best_matching.value):
                 best_matching = matching
                 best_gt_idx = gt_idx
@@ -691,7 +691,7 @@ class NuscenesObjectMatcher:
             best_match = self._find_best_match(
                 est_idx=est_idx,
                 ground_truth_objects=ground_truth_objects,
-                matching_scores=matching_matrices.matching_scores,
+                matching_methods=matching_matrices.matching_methods,
                 matched_gt_indices=matched_gt_indices,
                 matching_valid_masks=matching_matrices.matching_valid_masks,
                 label_to_thresholds_map=label_to_thresholds_map,
