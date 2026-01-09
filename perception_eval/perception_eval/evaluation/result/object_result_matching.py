@@ -754,7 +754,7 @@ class NuscenesObjectMatcher:
 
         Returns:
             MatchingMatrix:
-                matching_score: 2D numpy array with shape (num_est, num_gt) storing MatchingMethod instances and values
+                matching_methods: 2D numpy array with shape (num_est, num_gt) storing MatchingMethod instances and values
                 matching_valid_masks: 2D numpy array with shape (num_est, num_gt) to save a boolean value to indicate if a pair is matchable.
             None if either input is empty.
         """
