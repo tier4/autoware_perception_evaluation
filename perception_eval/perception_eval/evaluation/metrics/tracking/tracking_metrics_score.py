@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import select
 from typing import Any
 from typing import Dict
 from typing import List
@@ -35,10 +34,10 @@ class TrackingMetricsScore:
     Length of input `target_labels` and `matching_threshold_list` must be same.
 
     Attributes:
-                nuscene_object_results: (Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]):
-                        Dict that items are nuscene object results list mapped by their labels and matching thresholds.
-                previous_nuscene_object_results: (Optional[Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]):
-                        Dict that items are previous nuscene object results list mapped by their labels and matching thresholds.
+        nuscene_object_results: (Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]):
+            Dict that items are nuscene object results list mapped by their labels and matching thresholds.
+        previous_nuscene_object_results: (Optional[Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]):
+            Dict that items are previous nuscene object results list mapped by their labels and matching thresholds.
         target_labels: (List[LabelType]): Target labels list.
         matching_mode (MatchingMode): MatchingMode instance.
         clears (List[CLEAR]): List of CLEAR instances.

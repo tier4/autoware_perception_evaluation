@@ -191,11 +191,6 @@ class CLEAR(_TrackingMetricsBase):
                 target_labels=self.target_labels,
                 threshold_list=self.matching_threshold_list,
             )
-            gt_label = (
-                cur_obj_result.ground_truth_object.semantic_label.label if cur_obj_result.ground_truth_object else None
-            )
-            est_label = cur_obj_result.estimated_object.semantic_label.label
-
             if matching_threshold_ is None:
                 continue
 

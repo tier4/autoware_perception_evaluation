@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import math
 from test.util.dummy_object import make_dummy_data
-from turtle import numinput
 from typing import List
 from typing import Tuple
 
@@ -27,7 +26,6 @@ from perception_eval.common.label import LabelType
 from perception_eval.common.schema import FrameID
 from perception_eval.common.transform import HomogeneousMatrix
 from perception_eval.common.transform import TransformDict
-from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
 from perception_eval.evaluation.metrics.prediction.path_displacement_error import PathDisplacementError
