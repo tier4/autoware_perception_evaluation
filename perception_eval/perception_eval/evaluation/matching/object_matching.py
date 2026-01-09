@@ -83,6 +83,8 @@ class MatchingMode(Enum):
     IOU2D : IoU (Intersection over Union) in BEV (Bird Eye View) for 3D objects, pixel for 2D objects.
     IOU3D : IoU (Intersection over Union) in 3D
     PLANEDISTANCE: The plane distance
+        TLR_CLASSIFICATION: Traffic Light Recognition (TLR) in 2D classification task
+        CLASSIFICATION_2D: Classification in 2D task
     """
 
     CENTERDISTANCE = "Center Distance"

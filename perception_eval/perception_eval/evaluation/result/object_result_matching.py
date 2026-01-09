@@ -46,7 +46,7 @@ from perception_eval.evaluation.result.object_result import DynamicObjectWithPer
 
 @dataclass(frozen=True)
 class MatchingMatrices:
-    matching_scores: np.ndarray  # [num_est_box, num_gt_box]
+    matching_methods: np.ndarray  # [num_est_box, num_gt_box]
     matching_valid_masks: np.ndarray  # [est_box, gt_box]
 
 
@@ -167,9 +167,10 @@ class NuscenesObjectMatcher:
             }
 
         """
+        # Use functools.partial instead of lambda to ensure the nested defaultdict structure is pickleable.
         matching_object_results: Dict[
             MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
-        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+        ] = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
 
         # Set only uses O(1) for searching, so we should use Set instead of removing from a list, since removing in List takes O(n)
         matched_est_indices: set = set()
@@ -262,9 +263,10 @@ class NuscenesObjectMatcher:
             }
 
         """
+        # Use functools.partial instead of lambda to ensure the nested defaultdict structure is pickleable.
         matching_object_results: Dict[
             MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
-        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+        ] = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
 
         # Set only uses O(1) for searching, so we should use Set instead of removing from a list, since removing in List takes O(n)
         matched_est_indices: set = set()
@@ -454,8 +456,9 @@ class NuscenesObjectMatcher:
             - If there are predictions but no ground truth, treat all predictions as false positives (FP).
             - If both are empty or only ground truth is present, return empty results for all thresholds.
         """
+        # Use functools.partial instead of lambda to ensure the nested defaultdict structure is pickleable.
         object_results: Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]] = defaultdict(
-            lambda: defaultdict(list)
+            functools.partial(defaultdict, list)
         )
 
         for threshold in available_thresholds:
@@ -559,8 +562,9 @@ class NuscenesObjectMatcher:
                     ...
                 }
         """
+        # Use functools.partial instead of lambda to ensure the nested defaultdict structure is pickleable.
         object_results: Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]] = defaultdict(
-            lambda: defaultdict(list)
+            functools.partial(defaultdict, list)
         )
 
         available_thresholds = sorted(
@@ -664,9 +668,11 @@ class NuscenesObjectMatcher:
                     ...
                 }
         """
+        # Use functools.partial instead of lambda to ensure the nested defaultdict structure is pickleable.
         object_results: Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]] = defaultdict(
-            lambda: defaultdict(list)
+            functools.partial(defaultdict, list)
         )
+
         for est_idx in range(len(estimated_objects_sorted)):
             # If the matching label policy is default, and the threshold is not in the label to thresholds map,
             # then we skip this estimated object for this threshold
@@ -755,15 +761,15 @@ class NuscenesObjectMatcher:
         if not estimated_objects or not ground_truth_objects:
             return None
 
-        matching_scores = np.full((len(estimated_objects), len(ground_truth_objects)), None)
-        matching_valid_masks = np.zeros_like(matching_scores)
+        matching_methods = np.empty((len(estimated_objects), len(ground_truth_objects)), dtype=object)
+        matching_valid_masks = np.zeros_like(matching_methods)
 
         for i, est_obj in enumerate(estimated_objects):
             for j, gt_obj in enumerate(ground_truth_objects):
-                matching_scores[i, j] = matching_method_module(est_obj, gt_obj, self.transforms)
+                matching_methods[i, j] = matching_method_module(est_obj, gt_obj, self.transforms)
                 matching_valid_masks[i, j] = self.matching_label_policy.is_matchable(est_obj, gt_obj)
 
-        return MatchingMatrices(matching_scores=matching_scores, matching_valid_masks=matching_valid_masks)
+        return MatchingMatrices(matching_methods=matching_methods, matching_valid_masks=matching_valid_masks)
 
 
 def get_object_results(
