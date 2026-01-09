@@ -317,7 +317,9 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         return estimated_objects, frame_ground_truth
 
     def match_nuscene_objects(
-        self, estimated_objects: List[ObjectType], frame_ground_truth: FrameGroundTruth
+        self,
+        estimated_objects: List[ObjectType],
+        frame_ground_truth: FrameGroundTruth,
     ) -> Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]:
         """
         Perform NuScenes-style matching between estimated and ground truth objects.
@@ -340,6 +342,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             metrics_config=self.metrics_config,
             matching_label_policy=self.evaluator_config.label_params["matching_label_policy"],
             transforms=frame_ground_truth.transforms,
+            matching_class_agnostic_fps=self.evaluator_config.label_params["matching_class_agnostic_fps"],
         )
         return matcher.match(estimated_objects, frame_ground_truth.objects)
 

@@ -74,12 +74,13 @@
 
   - **2. Parameters for label settings**
 
-    | Arguments                |  type  | Mandatory | Description                                                               |
-    | :----------------------- | :----: | :-------: | :------------------------------------------------------------------------ |
-    | `label_prefix`           | `str`  |    Yes    | Type of label to be used ("autoware", "traffic_light")                    |
-    | `merge_similar_labels`   | `bool` |    No     | Whether to merge similar labels (Default: `False`)                        |
-    | `allow_matching_unknown` | `bool` |    No     | Whether allow to match unknown label estimation and GT (Default: `False`) |
-    | `count_label_number`     | `bool` |    No     | Whether to count the number of loaded labels (Default: `True`)            |
+    | Arguments                     |  type  | Mandatory | Description                                                                                         |
+    | :---------------------------- | :----: | :-------: | :-------------------------------------------------------------------------------------------------- |
+    | `label_prefix`                | `str`  |    Yes    | Type of label to be used ("autoware", "traffic_light")                                              |
+    | `merge_similar_labels`        | `bool` |    No     | Whether to merge similar labels (Default: `False`)                                                  |
+    | `allow_matching_unknown`      | `bool` |    No     | Whether allow to match unknown label estimation and GT (Default: `False`)                           |
+    | `count_label_number`          | `bool` |    No     | Whether to count the number of loaded labels (Default: `True`)                                      |
+    | `matching_class_agnostic_fps` | `bool` |    No     | Set True to match false positives to a different label (class-agnostic matching) (Default: `False`) |
 
   - **3. Thresholds to determine TP/FP/FN for `DynamicObjectWithPerceptionResult`**
 
