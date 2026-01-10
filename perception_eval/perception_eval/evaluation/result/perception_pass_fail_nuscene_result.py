@@ -18,6 +18,7 @@ from typing import Optional
 import warnings
 
 from perception_eval.common import ObjectType
+from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import LabelType
 from perception_eval.common.status import MatchingStatus
 from perception_eval.common.threshold import get_label_threshold
@@ -26,7 +27,6 @@ from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
-from perception_eval.common.evaluation_task import EvaluationTask
 
 
 # Change the class name back to PassFailResult after deleting the old PassFailResult class
@@ -67,7 +67,10 @@ class PassFailNusceneResult:
         self.critical_object_filter_config: CriticalObjectFilterConfig = critical_object_filter_config
         self.frame_pass_fail_config: PerceptionPassFailConfig = frame_pass_fail_config
         self.transforms = transforms
-        if self.frame_pass_fail_config.evaluation_task not in [EvaluationTask.CLASSIFICATION2D] and self.frame_pass_fail_config.matching_threshold_list is None:
+        if (
+            self.frame_pass_fail_config.evaluation_task not in [EvaluationTask.CLASSIFICATION2D]
+            and self.frame_pass_fail_config.matching_threshold_list is None
+        ):
             raise ValueError(
                 "Only for classification 2d task can set PerceptionPassFailConfig.matching_threshold_list to None. Please provide a valid list of thresholds."
             )
@@ -138,13 +141,13 @@ class PassFailNusceneResult:
             )
         for label in self.frame_pass_fail_config.target_labels:
             threshold = self.label_thresholds[label]
-            
+
             label_dict = nuscene_object_results[self.mode].get(label)
             if label_dict is None:
                 raise ValueError(
                     f"Required label {label} not found in nuscene_object_results. Please check the frame_pass_fail_config again."
                 )
-                
+
             results_for_label_and_threshold = label_dict.get(threshold)
             if results_for_label_and_threshold is None:
                 raise ValueError(
