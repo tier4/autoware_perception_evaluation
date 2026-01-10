@@ -305,7 +305,7 @@ class MetricsScore:
     ) -> None:
         self.__num_gt += sum(num_ground_truth.values())
         classification_score_ = ClassificationMetricsScore(
-            nuscenes_object_results=nuscene_object_results,
+            nuscene_object_results=nuscene_object_results,
             num_ground_truth_dict=num_ground_truth,
             target_labels=self.classification_config.target_labels,
         )

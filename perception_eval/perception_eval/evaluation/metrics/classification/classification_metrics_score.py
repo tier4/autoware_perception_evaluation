@@ -84,7 +84,8 @@ class ClassificationMetricsScore:
                         num_ground_truth=num_ground_truth,
                         target_labels=[target_label],
                     )
-                    self.accuracies[matching_mode][target_label][threshold] = acc_
+                    # Always only one threshold for classification, which is -1.0
+                    self.accuracies[matching_mode][target_label][-1.0] = acc_
                 else:
                     for threshold, object_results in label_object_results[target_label].items():
                         acc_: ClassificationAccuracy = ClassificationAccuracy(

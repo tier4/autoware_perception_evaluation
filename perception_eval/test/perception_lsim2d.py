@@ -50,7 +50,9 @@ class PerceptionLSimMoc:
                 "iou_2d_thresholds": [0.5],  # = [[0.5, 0.5, 0.5, 0.5]]
             }
         elif evaluation_task == "classification2d":
-            evaluation_config_dict = {"evaluation_task": evaluation_task}
+            evaluation_config_dict = {
+                "evaluation_task": evaluation_task
+            }
         else:
             raise ValueError(f"Unexpected evaluation task: {evaluation_task}")
 
@@ -119,7 +121,7 @@ class PerceptionLSimMoc:
         else:
             raise ValueError(f"Unexpected label prefix: {self.label_prefix}")
 
-        matching_threshold_list = None if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5]
+        matching_threshold_list = [-1.0, -1.0, -1.0, -1.0] if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5]
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam
         critical_object_filter_config: CriticalObjectFilterConfig = CriticalObjectFilterConfig(
@@ -297,21 +299,21 @@ if __name__ == "__main__":
         logging.info(result.confusion_matrix.to_string())
 
     # ========================================= Classification =========================================
-    # print("=" * 50 + "Start Classification 2D" + "=" * 50)
-    # classification_lsim = PerceptionLSimMoc(
-    #     dataset_paths,
-    #     "classification2d",
-    #     result_root_directory,
-    #     args.label_prefix,
-    #     args.camera_type,
-    # )
+    print("=" * 50 + "Start Classification 2D" + "=" * 50)
+    classification_lsim = PerceptionLSimMoc(
+        dataset_paths,
+        "classification2d",
+        result_root_directory,
+        args.label_prefix,
+        args.camera_type,
+    )
 
-    # for ground_truth_frame in classification_lsim.evaluator.ground_truth_frames:
-    #     objects_with_difference = ground_truth_frame.objects
-    #     classification_lsim.callback(
-    #         ground_truth_frame.unix_time,
-    #         objects_with_difference,
-    #     )
+    for ground_truth_frame in classification_lsim.evaluator.ground_truth_frames:
+        objects_with_difference = ground_truth_frame.objects
+        classification_lsim.callback(
+            ground_truth_frame.unix_time,
+            objects_with_difference,
+        )
 
     # # final result
     # classification_final_metric_score = classification_lsim.get_final_result()

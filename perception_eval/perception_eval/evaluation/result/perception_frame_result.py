@@ -213,14 +213,14 @@ class PerceptionFrameResult:
         # Classification
         elif self.metrics_score.classification_config is not None:
             self.metrics_score.evaluate_classification(
-                object_results_dict=self.nuscene_object_results, num_ground_truth=num_ground_truth_dict
+                nuscene_object_results=self.nuscene_object_results, num_ground_truth=num_ground_truth_dict
             )
             self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
 
         # Prediction
         elif self.metrics_score.prediction_config is not None:
             self.metrics_score.evaluate_prediction(
-                object_results_dict=self.nuscene_object_results, num_ground_truth=num_ground_truth_dict
+                nuscene_object_results=self.nuscene_object_results, num_ground_truth=num_ground_truth_dict
             )
             self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
 
