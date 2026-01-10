@@ -222,7 +222,7 @@ class PerceptionPassFailConfig:
         self.matching_threshold_list: Optional[List[float]] = None
         if matching_threshold_list is not None:
             self.matching_threshold_list = check_thresholds(matching_threshold_list, num_elements)
-        
+
         self.confidence_threshold_list: Optional[List[float]] = None
         if confidence_threshold_list is not None:
             self.confidence_threshold_list = check_thresholds(confidence_threshold_list, num_elements)
@@ -239,8 +239,12 @@ class PerceptionPassFailConfig:
         return {
             "evaluator_config": self.evaluator_config.serialization(),
             "target_labels": self.labels,
-            "matching_threshold_list": self.matching_threshold_list if self.matching_threshold_list is not None else None,
-            "confidence_threshold_list": self.confidence_threshold_list if self.confidence_threshold_list is not None else None,
+            "matching_threshold_list": self.matching_threshold_list
+            if self.matching_threshold_list is not None
+            else None,
+            "confidence_threshold_list": self.confidence_threshold_list
+            if self.confidence_threshold_list is not None
+            else None,
         }
 
     @classmethod
