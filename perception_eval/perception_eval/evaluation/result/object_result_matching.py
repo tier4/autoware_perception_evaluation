@@ -359,14 +359,14 @@ class NuscenesObjectMatcher:
         """
         if len(estimated_objects):
             is_dynamic_2d = isinstance(estimated_objects[0], DynamicObject2D)
-            # When roi is None, it's classification 2d task 
+            # When roi is None, it's classification 2d task
             is_classification_2d_task = is_dynamic_2d and estimated_objects[0].roi is None
             if is_classification_2d_task:
                 if isinstance(estimated_objects[0].semantic_label.label, TrafficLightLabel):
                     nuscene_object_results = self._match_tlr_classification2d(estimated_objects, ground_truth_objects)
                 else:
                     nuscene_object_results = self._match_classification2d_uuid(estimated_objects, ground_truth_objects)
-                
+
                 label_threshold_pairs = [
                     (label, -1.0) for label in self.metrics_config.classification_config.target_labels
                 ]
