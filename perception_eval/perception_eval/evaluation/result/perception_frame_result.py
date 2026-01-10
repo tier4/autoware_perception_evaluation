@@ -183,17 +183,22 @@ class PerceptionFrameResult:
             nuscene_object_tracking_results: Dict[
                 MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
             ] = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
-            for nuscene_object_results in [previous_nuscene_object_results, self.nuscene_object_results]:
+            if previous_nuscene_object_results is None:
                 # First frame, initialize the nuscene object tracking results dictionary an empty list
-                if nuscene_object_results is None:
-                    initialize_nuscene_object_results(
-                        accumulated_results=nuscene_object_tracking_results,
-                        frame_results=self.nuscene_object_results,
-                    )
-                else:
+                initialize_nuscene_object_results(
+                    accumulated_results=nuscene_object_tracking_results,
+                    frame_results=self.nuscene_object_results,
+                )
+                # Accumulate the nuscene object tracking results from the current frame
+                accumulate_nuscene_tracking_results(
+                    accumulated_results=nuscene_object_tracking_results,
+                    frame_results=self.nuscene_object_results,
+                )
+            else: 
+                for nuscene_object_results in [previous_nuscene_object_results, self.nuscene_object_results]:
                     # Accumulate the nuscene object tracking results from the current frame if not None
                     accumulate_nuscene_tracking_results(
-                        nuscene_object_tracking_results=nuscene_object_results,
+                        accumulated_results=nuscene_object_tracking_results,
                         frame_results=nuscene_object_results,
                     )
 
