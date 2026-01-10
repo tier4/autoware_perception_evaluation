@@ -194,7 +194,7 @@ class PerceptionFrameResult:
                     accumulated_results=nuscene_object_tracking_results,
                     frame_results=self.nuscene_object_results,
                 )
-            else: 
+            else:
                 for nuscene_object_results in [previous_nuscene_object_results, self.nuscene_object_results]:
                     # Accumulate the nuscene object tracking results from the current frame if not None
                     accumulate_nuscene_tracking_results(
