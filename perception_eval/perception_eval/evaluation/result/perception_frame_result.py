@@ -38,7 +38,7 @@ from perception_eval.evaluation.result.object_result import DynamicObjectWithPer
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.evaluation.result.perception_pass_fail_nuscene_result import PassFailNusceneResult
-from perception_eval.util.aggregation_results import accumulate_nuscene_tracking_results
+from perception_eval.util.aggregation_results import accumulate_nuscene_tracking_results, initialize_nuscene_object_results
 
 
 class PerceptionFrameResult:
@@ -183,15 +183,21 @@ class PerceptionFrameResult:
                 MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
             ] = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
             for nuscene_object_results in [previous_nuscene_object_results, self.nuscene_object_results]:
+                # First frame, initialize the nuscene object tracking results dictionary an empty list
                 if nuscene_object_results is None:
+                    initialize_nuscene_object_results(
+                        accumulated_results=nuscene_object_tracking_results,
+                        frame_results=self.nuscene_object_results,
+                    )
+                else:
+                    # Accumulate the nuscene object tracking results from the current frame if not None
                     accumulate_nuscene_tracking_results(
-                        nuscene_object_tracking_results=previous_nuscene_object_results,
+                        nuscene_object_tracking_results=nuscene_object_results,
                         frame_results=nuscene_object_results,
                     )
 
             self.metrics_score.evaluate_tracking(
-                nuscene_object_results=self.nuscene_object_results,
-                previous_nuscene_object_results=previous_nuscene_object_results,
+                nuscene_object_tracking_results=nuscene_object_tracking_results,
                 num_ground_truth=num_ground_truth_dict,
             )
 

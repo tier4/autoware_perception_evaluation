@@ -303,7 +303,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         used_frame: List[int] = []
 
         # Gather objects from frame results
-        for frame_index, frame in enumerate(self.frame_results):
+        for frame in self.frame_results:
             num_gt_dict = divide_objects_to_num(frame.frame_ground_truth.objects, self.target_labels)
 
             for label in self.target_labels:
