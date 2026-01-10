@@ -120,7 +120,7 @@ class PerceptionLSimMoc:
             raise ValueError(f"Unexpected label prefix: {self.label_prefix}")
 
         matching_threshold_list = (
-            [-1.0, -1.0, -1.0, -1.0] if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5]
+            None if self.evaluation_task == "classification2d" else [0.5, 0.5, 0.5, 0.5]
         )
         # 距離などでUC評価objectを選別するためのインターフェイス（PerceptionEvaluationManager初期化時にConfigを設定せず、関数受け渡しにすることで動的に変更可能なInterface）
         # どれを注目物体とするかのparam

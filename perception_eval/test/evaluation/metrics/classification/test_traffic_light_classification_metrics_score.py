@@ -103,7 +103,7 @@ class TestTrafficLightClassificationMetricsScore(unittest.TestCase):
 
         # String representation
         str_ = str(classification_score)
-        self.assertIn(MatchingMode.IOU2D.value, str_)
+        self.assertIn(MatchingMode.CLASSIFICATION_2D.value, str_)
         self.assertIn("Accuracy", str_)
         self.assertIn("Precision", str_)
         self.assertIn("Recall", str_)

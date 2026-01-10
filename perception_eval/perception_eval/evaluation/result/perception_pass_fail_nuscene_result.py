@@ -26,6 +26,7 @@ from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
+from perception_eval.common.evaluation_task import EvaluationTask
 
 
 # Change the class name back to PassFailResult after deleting the old PassFailResult class
@@ -66,14 +67,17 @@ class PassFailNusceneResult:
         self.critical_object_filter_config: CriticalObjectFilterConfig = critical_object_filter_config
         self.frame_pass_fail_config: PerceptionPassFailConfig = frame_pass_fail_config
         self.transforms = transforms
-        if self.frame_pass_fail_config.matching_threshold_list is None:
+        if self.frame_pass_fail_config.evaluation_task not in [EvaluationTask.CLASSIFICATION2D] and self.frame_pass_fail_config.matching_threshold_list is None:
             raise ValueError(
-                "PerceptionPassFailConfig.matching_threshold_list cannot be None. Please provide a valid list of thresholds."
+                "Only for classification 2d task can set PerceptionPassFailConfig.matching_threshold_list to None. Please provide a valid list of thresholds."
             )
         self.label_thresholds: Dict[LabelType, float] = self._build_label_thresholds()
-        self.mode = (
-            MatchingMode.IOU2D if self.frame_pass_fail_config.evaluation_task.is_2d() else MatchingMode.PLANEDISTANCE
-        )
+        if self.frame_pass_fail_config.evaluation_task in [EvaluationTask.CLASSIFICATION2D]:
+            self.mode = MatchingMode.CLASSIFICATION_2D
+        elif self.frame_pass_fail_config.evaluation_task.is_2d():
+            self.mode = MatchingMode.IOU2D
+        else:
+            self.mode = MatchingMode.PLANEDISTANCE
         self.selected_object_results: List[DynamicObjectWithPerceptionResult] = []
 
         # Results after evaluation
@@ -89,8 +93,12 @@ class PassFailNusceneResult:
             Dict[LabelType, float]: Dict mapping each LabelType to its threshold.
         """
         label_list: List[LabelType] = self.frame_pass_fail_config.target_labels
-        threshold_list: List[float] = self.frame_pass_fail_config.matching_threshold_list
-        return {label: threshold for label, threshold in zip(label_list, threshold_list)}
+        threshold_list: Optional[List[float]] = self.frame_pass_fail_config.matching_threshold_list
+        # For classification 2d task, there is no threshold, so it always sets to the default threshold
+        if threshold_list is None:
+            return {label: -1 for label in label_list}
+        else:
+            return {label: threshold for label, threshold in zip(label_list, threshold_list)}
 
     def evaluate(
         self,
@@ -130,11 +138,13 @@ class PassFailNusceneResult:
             )
         for label in self.frame_pass_fail_config.target_labels:
             threshold = self.label_thresholds[label]
+            
             label_dict = nuscene_object_results[self.mode].get(label)
             if label_dict is None:
                 raise ValueError(
                     f"Required label {label} not found in nuscene_object_results. Please check the frame_pass_fail_config again."
                 )
+                
             results_for_label_and_threshold = label_dict.get(threshold)
             if results_for_label_and_threshold is None:
                 raise ValueError(

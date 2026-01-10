@@ -184,7 +184,7 @@ class NuscenesObjectMatcher:
                 matched_est_indices=matched_est_indices,
                 available_thresholds=[default_threshold],
             )
-            matching_object_results[MatchingMode.IOU2D].update(fp_object_results)
+            matching_object_results[MatchingMode.CLASSIFICATION_2D].update(fp_object_results)
             return matching_object_results
 
         # 1. matching based on same label primary
@@ -204,7 +204,7 @@ class NuscenesObjectMatcher:
                 uuid_matching = est_object.uuid == gt_object.uuid if self.uuid_matching_first else True
                 if label_matching and uuid_matching:
                     # For TLR classification, there is no threshold, so it always sets to the default threshold
-                    matching_object_results[MatchingMode.IOU2D][gt_object.semantic_label.label][
+                    matching_object_results[MatchingMode.CLASSIFICATION_2D][gt_object.semantic_label.label][
                         default_threshold
                     ].append(
                         DynamicObjectWithPerceptionResult(estimated_object=est_object, ground_truth_object=gt_object)
@@ -227,7 +227,7 @@ class NuscenesObjectMatcher:
                 if uuid_matching:
                     # For TLR classification, there is no threshold, so it always sets to the default threshold
                     # When uuid is matched, we report metrics based on the ground truth labels
-                    matching_object_results[MatchingMode.IOU2D][gt_object.semantic_label.label][
+                    matching_object_results[MatchingMode.CLASSIFICATION_2D][gt_object.semantic_label.label][
                         default_threshold
                     ].append(
                         DynamicObjectWithPerceptionResult(estimated_object=est_object, ground_truth_object=gt_object)
@@ -280,7 +280,7 @@ class NuscenesObjectMatcher:
                 label_to_thresholds_map=None,
                 matched_est_indices=matched_est_indices,
             )
-            matching_object_results[MatchingMode.IOU2D].update(fp_object_results)
+            matching_object_results[MatchingMode.CLASSIFICATION_2D].update(fp_object_results)
             return matching_object_results
 
         # 1. matching based on same label primary
@@ -297,7 +297,7 @@ class NuscenesObjectMatcher:
                 uuid_matching = est_object.uuid == gt_object.uuid and est_object.frame_id == gt_object.frame_id
                 if uuid_matching:
                     # For classification 2d, there is no threshold, so it always sets to the default threshold
-                    matching_object_results[MatchingMode.IOU2D][gt_object.semantic_label.label][
+                    matching_object_results[MatchingMode.CLASSIFICATION_2D][gt_object.semantic_label.label][
                         default_threshold
                     ].append(
                         DynamicObjectWithPerceptionResult(estimated_object=est_object, ground_truth_object=gt_object)
@@ -324,7 +324,7 @@ class NuscenesObjectMatcher:
             )
             for label, threshold_to_results in fp_object_results.items():
                 for threshold, results in threshold_to_results.items():
-                    matching_object_results[MatchingMode.IOU2D][label][threshold] += results
+                    matching_object_results[MatchingMode.CLASSIFICATION_2D][label][threshold] += results
 
         return matching_object_results
 
@@ -373,8 +373,8 @@ class NuscenesObjectMatcher:
                 # Initialize all entries in the nested result dictionary,
                 # even if no matching results are found
                 for label, threshold in label_threshold_pairs:
-                    if threshold not in nuscene_object_results[MatchingMode.IOU2D][label]:
-                        nuscene_object_results[MatchingMode.IOU2D][label][threshold] = []
+                    if threshold not in nuscene_object_results[MatchingMode.CLASSIFICATION_2D][label]:
+                        nuscene_object_results[MatchingMode.CLASSIFICATION_2D][label][threshold] = []
                 return nuscene_object_results
 
         # Bounding boxes matching
