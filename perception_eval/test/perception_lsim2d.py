@@ -297,33 +297,33 @@ if __name__ == "__main__":
         logging.info(result.confusion_matrix.to_string())
 
     # ========================================= Classification =========================================
-    print("=" * 50 + "Start Classification 2D" + "=" * 50)
-    classification_lsim = PerceptionLSimMoc(
-        dataset_paths,
-        "classification2d",
-        result_root_directory,
-        args.label_prefix,
-        args.camera_type,
-    )
+    # print("=" * 50 + "Start Classification 2D" + "=" * 50)
+    # classification_lsim = PerceptionLSimMoc(
+    #     dataset_paths,
+    #     "classification2d",
+    #     result_root_directory,
+    #     args.label_prefix,
+    #     args.camera_type,
+    # )
 
-    for ground_truth_frame in classification_lsim.evaluator.ground_truth_frames:
-        objects_with_difference = ground_truth_frame.objects
-        classification_lsim.callback(
-            ground_truth_frame.unix_time,
-            objects_with_difference,
-        )
+    # for ground_truth_frame in classification_lsim.evaluator.ground_truth_frames:
+    #     objects_with_difference = ground_truth_frame.objects
+    #     classification_lsim.callback(
+    #         ground_truth_frame.unix_time,
+    #         objects_with_difference,
+    #     )
 
-    # final result
-    classification_final_metric_score = classification_lsim.get_final_result()
+    # # final result
+    # classification_final_metric_score = classification_lsim.get_final_result()
 
-    # Classification performance report
-    classification_analyzer = PerceptionAnalyzer2D(classification_lsim.evaluator.evaluator_config)
-    classification_analyzer.add(classification_lsim.evaluator.frame_results)
-    result = classification_analyzer.analyze()
-    if result.score is not None:
-        logging.info(result.score.to_string())
-    if result.confusion_matrix is not None:
-        logging.info(result.confusion_matrix.to_string())
+    # # Classification performance report
+    # classification_analyzer = PerceptionAnalyzer2D(classification_lsim.evaluator.evaluator_config)
+    # classification_analyzer.add(classification_lsim.evaluator.frame_results)
+    # result = classification_analyzer.analyze()
+    # if result.score is not None:
+    #     logging.info(result.score.to_string())
+    # if result.confusion_matrix is not None:
+    #     logging.info(result.confusion_matrix.to_string())
 
     # Clean up tmpdir
     if args.use_tmpdir:
