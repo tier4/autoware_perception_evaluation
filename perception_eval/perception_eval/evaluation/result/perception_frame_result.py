@@ -38,7 +38,8 @@ from perception_eval.evaluation.result.object_result import DynamicObjectWithPer
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.evaluation.result.perception_pass_fail_nuscene_result import PassFailNusceneResult
-from perception_eval.util.aggregation_results import accumulate_nuscene_tracking_results, initialize_nuscene_object_results
+from perception_eval.util.aggregation_results import accumulate_nuscene_tracking_results
+from perception_eval.util.aggregation_results import initialize_nuscene_object_results
 
 
 class PerceptionFrameResult:
