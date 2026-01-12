@@ -53,10 +53,7 @@ class TrackingMetricsScore:
 
     def __init__(
         self,
-        nuscene_object_results: Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]],
-        previous_nuscene_object_results: Optional[
-            Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
-        ],
+        nuscene_object_results: Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]],
         num_ground_truth_dict: Dict[LabelType, int],
         target_labels: List[LabelType],
         matching_mode: MatchingMode,
@@ -72,15 +69,10 @@ class TrackingMetricsScore:
         for target_label in target_labels:
             for matching_threshold in self.matching_threshold_list:
                 object_results = nuscene_object_results[target_label][matching_threshold]
-                previous_object_results = (
-                    previous_nuscene_object_results[target_label][matching_threshold]
-                    if previous_nuscene_object_results
-                    else []
-                )
                 num_ground_truth = num_ground_truth_dict[target_label]
                 clear_: CLEAR = CLEAR(
                     # Make it a list of list for a sequence of frames since CLEAR should take a sequence of object results for each frame
-                    object_results=[previous_object_results, object_results],
+                    object_results=object_results,
                     num_ground_truth=num_ground_truth,
                     target_labels=[target_label],
                     matching_mode=matching_mode,

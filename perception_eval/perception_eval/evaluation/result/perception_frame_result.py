@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
+import functools
 from typing import Any
 from typing import Dict
 from typing import List
@@ -36,6 +38,8 @@ from perception_eval.evaluation.result.object_result import DynamicObjectWithPer
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.evaluation.result.perception_pass_fail_nuscene_result import PassFailNusceneResult
+from perception_eval.util.aggregation_results import accumulate_nuscene_tracking_results
+from perception_eval.util.aggregation_results import initialize_nuscene_object_results
 
 
 class PerceptionFrameResult:
@@ -188,9 +192,32 @@ class PerceptionFrameResult:
             self.metrics_score.evaluate_detection(
                 nuscene_object_results=self.nuscene_object_results, num_ground_truth=num_ground_truth_dict
             )
+
+            # Merge previous and current frame results to {MatchingMode: {LabelType: {threshold: [List[List[DynamicObjectWithPerceptionResult]]]]}}}
+            nuscene_object_tracking_results: Dict[
+                MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
+            ] = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
+            if previous_nuscene_object_results is None:
+                # First frame, initialize the nuscene object tracking results dictionary an empty list
+                initialize_nuscene_object_results(
+                    accumulated_results=nuscene_object_tracking_results,
+                    frame_results=self.nuscene_object_results,
+                )
+                # Accumulate the nuscene object tracking results from the current frame
+                accumulate_nuscene_tracking_results(
+                    accumulated_results=nuscene_object_tracking_results,
+                    frame_results=self.nuscene_object_results,
+                )
+            else:
+                for nuscene_object_results in [previous_nuscene_object_results, self.nuscene_object_results]:
+                    # Accumulate the nuscene object tracking results from the current frame if not None
+                    accumulate_nuscene_tracking_results(
+                        accumulated_results=nuscene_object_tracking_results,
+                        frame_results=nuscene_object_results,
+                    )
+
             self.metrics_score.evaluate_tracking(
-                nuscene_object_results=self.nuscene_object_results,
-                previous_nuscene_object_results=previous_nuscene_object_results,
+                nuscene_object_tracking_results=nuscene_object_tracking_results,
                 num_ground_truth=num_ground_truth_dict,
             )
 
@@ -200,14 +227,14 @@ class PerceptionFrameResult:
         # Classification
         elif self.metrics_score.classification_config is not None:
             self.metrics_score.evaluate_classification(
-                object_results_dict=self.nuscene_object_results, num_ground_truth=num_ground_truth_dict
+                nuscene_object_results=self.nuscene_object_results, num_ground_truth=num_ground_truth_dict
             )
             self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
 
         # Prediction
         elif self.metrics_score.prediction_config is not None:
             self.metrics_score.evaluate_prediction(
-                object_results_dict=self.nuscene_object_results, num_ground_truth=num_ground_truth_dict
+                nuscene_object_results=self.nuscene_object_results, num_ground_truth=num_ground_truth_dict
             )
             self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
 

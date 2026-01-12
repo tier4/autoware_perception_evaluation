@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+import functools
 from pathlib import Path
 from typing import Any
 from typing import Dict
@@ -28,16 +29,15 @@ from perception_eval.common.dataset import FrameGroundTruth
 from perception_eval.common.label import LabelType
 from perception_eval.config import PerceptionEvaluationConfig
 from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_nuscene_object_results
-from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
 from perception_eval.util.aggregation_results import accumulate_nuscene_results
+from perception_eval.util.aggregation_results import accumulate_nuscene_tracking_results
 from perception_eval.visualization import PerceptionVisualizer2D
 from perception_eval.visualization import PerceptionVisualizer3D
 from perception_eval.visualization import PerceptionVisualizerType
@@ -45,15 +45,16 @@ from perception_eval.visualization.detection_confusion_matrix import DetectionCo
 
 from ._evaluation_manager_base import _EvaluationManagerBase
 from ..evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from ..evaluation.result.object_result_matching import get_object_results
 from ..evaluation.result.object_result_matching import NuscenesObjectMatcher
 
 
 @dataclass
 class AggregatedNusceneObjectResults:
     nuscene_object_results: Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
+    nuscene_object_tracking_results: Dict[MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]]
     num_gts: Dict[LabelType, int]
     used_frames: List[int]
+
 
 
 class PerceptionEvaluationManager(_EvaluationManagerBase):
@@ -361,7 +362,15 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         Returns:
             aggregated_nuscene_object_results (Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]): Aggregated nuscene object results.
         """
-        aggregated_nuscene_object_results = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+        aggregated_nuscene_object_results: Dict[
+            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
+        ] = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
+
+        # If the task is Tracking, we need to aggregate previous frame results
+        aggregated_nuscene_object_tracking_results: Dict[
+            MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
+        ] = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
+
         aggregated_num_gt = {label: 0 for label in self.target_labels}
         used_frames: List[int] = []
         # Gather objects from frame results
@@ -377,11 +386,19 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 and frame.nuscene_object_results is not None
             ):
                 accumulate_nuscene_results(aggregated_nuscene_object_results, frame.nuscene_object_results)
+                # Aggregate a sequence of frame results
+                if self.evaluator_config.metrics_config.tracking_config is not None:
+                    accumulate_nuscene_tracking_results(
+                        aggregated_nuscene_object_tracking_results, frame.nuscene_object_results
+                    )
 
             used_frames.append(int(frame.frame_name))
 
         return AggregatedNusceneObjectResults(
-            nuscene_object_results=aggregated_nuscene_object_results, num_gts=aggregated_num_gt, used_frames=used_frames
+            nuscene_object_results=aggregated_nuscene_object_results, 
+            num_gts=aggregated_num_gt, 
+            used_frames=used_frames,
+            nuscene_object_tracking_results=aggregated_nuscene_object_tracking_results
         )
 
     def get_scene_result(
@@ -428,6 +445,9 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             scene_metrics_score.evaluate_tracking(
                 aggregated_nuscene_object_results.nuscene_object_results, aggregated_nuscene_object_results.num_gts
             )
+            scene_metrics_score.evaluate_tracking(
+                aggregated_nuscene_object_results.nuscene_object_tracking_results, 
+                aggregated_nuscene_object_results.num_gts)
 
         # Prediction
         if self.evaluator_config.metrics_config.prediction_config is not None:

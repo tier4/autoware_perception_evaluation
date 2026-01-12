@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
+import functools
 from test.evaluation.metrics.tracking.test_clear import AnswerCLEAR
 from test.util.dummy_object import make_dummy_data
 from test.util.object_diff import DiffTranslation
@@ -24,13 +26,17 @@ import unittest
 from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching.object_matching import MatchingLabelPolicy
 from perception_eval.evaluation.matching.object_matching import MatchingMode
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
 from perception_eval.evaluation.metrics.tracking.tracking_metrics_score import TrackingMetricsScore
+from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
+from perception_eval.util.aggregation_results import accumulate_nuscene_tracking_results
+from perception_eval.util.aggregation_results import initialize_nuscene_object_results
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -198,9 +204,23 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     cur_ground_truth_objects, self.target_labels
                 )
 
+                nuscene_object_tracking_results: Dict[
+                    MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
+                ] = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
+
+                for object_results in [prev_object_results, cur_object_results]:
+                    if object_results is None:
+                        initialize_nuscene_object_results(
+                            accumulated_results=nuscene_object_tracking_results,
+                            frame_results=cur_object_results,
+                        )
+                    else:
+                        accumulate_nuscene_tracking_results(
+                            accumulated_results=nuscene_object_tracking_results, frame_results=object_results
+                        )
+
                 tracking_score: TrackingMetricsScore = TrackingMetricsScore(
-                    nuscene_object_results=cur_object_results[MatchingMode.CENTERDISTANCE],
-                    previous_nuscene_object_results=prev_object_results[MatchingMode.CENTERDISTANCE],
+                    nuscene_object_results=nuscene_object_tracking_results[MatchingMode.CENTERDISTANCE],
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
@@ -314,9 +334,23 @@ class TestTrackingMetricsScore(unittest.TestCase):
                     self.target_labels,
                 )
 
+                nuscene_object_tracking_results: Dict[
+                    MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
+                ] = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
+
+                for object_results in [prev_object_results, cur_object_results]:
+                    if object_results is None:
+                        initialize_nuscene_object_results(
+                            accumulated_results=nuscene_object_tracking_results,
+                            frame_results=cur_object_results,
+                        )
+                    else:
+                        accumulate_nuscene_tracking_results(
+                            accumulated_results=nuscene_object_tracking_results, frame_results=object_results
+                        )
+
                 tracking_score: TrackingMetricsScore = TrackingMetricsScore(
-                    nuscene_object_results=cur_object_results[MatchingMode.CENTERDISTANCE],
-                    previous_nuscene_object_results=prev_object_results[MatchingMode.CENTERDISTANCE],
+                    nuscene_object_results=nuscene_object_tracking_results[MatchingMode.CENTERDISTANCE],
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,
@@ -440,9 +474,23 @@ class TestTrackingMetricsScore(unittest.TestCase):
 
                 num_ground_truth_dict = divide_objects_to_num(cur_ground_truth_objects, self.target_labels)
 
+                nuscene_object_tracking_results: Dict[
+                    MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
+                ] = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
+
+                for object_results in [prev_object_results, cur_object_results]:
+                    if object_results is None:
+                        initialize_nuscene_object_results(
+                            accumulated_results=nuscene_object_tracking_results,
+                            frame_results=cur_object_results,
+                        )
+                    else:
+                        accumulate_nuscene_tracking_results(
+                            accumulated_results=nuscene_object_tracking_results, frame_results=object_results
+                        )
+
                 tracking_score: TrackingMetricsScore = TrackingMetricsScore(
-                    nuscene_object_results=cur_object_results[MatchingMode.CENTERDISTANCE],
-                    previous_nuscene_object_results=prev_object_results[MatchingMode.CENTERDISTANCE],
+                    nuscene_object_results=nuscene_object_tracking_results[MatchingMode.CENTERDISTANCE],
                     num_ground_truth_dict=num_ground_truth_dict,
                     target_labels=self.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCE,

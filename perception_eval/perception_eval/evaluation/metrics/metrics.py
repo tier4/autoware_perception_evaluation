@@ -198,11 +198,8 @@ class MetricsScore:
 
     def evaluate_tracking(
         self,
-        nuscene_object_results: Dict[
-            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
-        ],
-        previous_nuscene_object_results: Optional[
-            Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
+        nuscene_object_tracking_results: Dict[
+            MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
         ],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
@@ -228,10 +225,7 @@ class MetricsScore:
 
         for distance_threshold_ in self.tracking_config.center_distance_thresholds:
             tracking_score_ = TrackingMetricsScore(
-                nuscene_object_results=nuscene_object_results[MatchingMode.CENTERDISTANCE],
-                previous_nuscene_object_results=previous_nuscene_object_results[MatchingMode.CENTERDISTANCE]
-                if previous_nuscene_object_results
-                else None,
+                nuscene_object_results=nuscene_object_tracking_results[MatchingMode.CENTERDISTANCE],
                 num_ground_truth_dict=num_ground_truth,
                 target_labels=self.tracking_config.target_labels,
                 matching_mode=MatchingMode.CENTERDISTANCE,
@@ -240,10 +234,7 @@ class MetricsScore:
             self.tracking_scores.append(tracking_score_)
         for iou_threshold_2d_ in self.tracking_config.iou_2d_thresholds:
             tracking_score_ = TrackingMetricsScore(
-                nuscene_object_results=nuscene_object_results[MatchingMode.IOU2D],
-                previous_nuscene_object_results=previous_nuscene_object_results[MatchingMode.IOU2D]
-                if previous_nuscene_object_results
-                else None,
+                nuscene_object_results=nuscene_object_tracking_results[MatchingMode.IOU2D],
                 num_ground_truth_dict=num_ground_truth,
                 target_labels=self.tracking_config.target_labels,
                 matching_mode=MatchingMode.IOU2D,
@@ -254,10 +245,7 @@ class MetricsScore:
         if self.evaluation_task.is_3d():
             for distance_bev_threshold_ in self.tracking_config.center_distance_bev_thresholds:
                 tracking_score_ = TrackingMetricsScore(
-                    nuscene_object_results=nuscene_object_results[MatchingMode.CENTERDISTANCEBEV],
-                    previous_nuscene_object_results=previous_nuscene_object_results[MatchingMode.CENTERDISTANCEBEV]
-                    if previous_nuscene_object_results
-                    else None,
+                    nuscene_object_results=nuscene_object_tracking_results[MatchingMode.CENTERDISTANCEBEV],
                     num_ground_truth_dict=num_ground_truth,
                     target_labels=self.tracking_config.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCEBEV,
@@ -266,10 +254,7 @@ class MetricsScore:
                 self.tracking_scores.append(tracking_score_)
             for iou_threshold_3d_ in self.tracking_config.iou_3d_thresholds:
                 tracking_score_ = TrackingMetricsScore(
-                    nuscene_object_results=nuscene_object_results[MatchingMode.IOU3D],
-                    previous_nuscene_object_results=previous_nuscene_object_results[MatchingMode.IOU3D]
-                    if previous_nuscene_object_results
-                    else None,
+                    nuscene_object_results=nuscene_object_tracking_results[MatchingMode.IOU3D],
                     num_ground_truth_dict=num_ground_truth,
                     target_labels=self.tracking_config.target_labels,
                     matching_mode=MatchingMode.IOU3D,
@@ -278,10 +263,7 @@ class MetricsScore:
                 self.tracking_scores.append(tracking_score_)
             for plane_distance_threshold_ in self.tracking_config.plane_distance_thresholds:
                 tracking_score_ = TrackingMetricsScore(
-                    nuscene_object_results=nuscene_object_results[MatchingMode.PLANEDISTANCE],
-                    previous_nuscene_object_results=previous_nuscene_object_results[MatchingMode.PLANEDISTANCE]
-                    if previous_nuscene_object_results
-                    else None,
+                    nuscene_object_results=nuscene_object_tracking_results[MatchingMode.PLANEDISTANCE],
                     num_ground_truth_dict=num_ground_truth,
                     target_labels=self.tracking_config.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
@@ -323,7 +305,7 @@ class MetricsScore:
     ) -> None:
         self.__num_gt += sum(num_ground_truth.values())
         classification_score_ = ClassificationMetricsScore(
-            nuscenes_object_results=nuscene_object_results,
+            nuscene_object_results=nuscene_object_results,
             num_ground_truth_dict=num_ground_truth,
             target_labels=self.classification_config.target_labels,
         )

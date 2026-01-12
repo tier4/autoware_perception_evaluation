@@ -83,7 +83,6 @@ class MatchingMode(Enum):
     IOU2D : IoU (Intersection over Union) in BEV (Bird Eye View) for 3D objects, pixel for 2D objects.
     IOU3D : IoU (Intersection over Union) in 3D
     PLANEDISTANCE: The plane distance
-    TLR_CLASSIFICATION: Traffic Light Recognition (TLR) in 2D classification task
     CLASSIFICATION_2D: Classification in 2D task
     """
 
@@ -92,7 +91,6 @@ class MatchingMode(Enum):
     IOU2D = "IoU 2D"
     IOU3D = "IoU 3D"
     PLANEDISTANCE = "Plane Distance"
-    TLR_CLASSIFICATION = "TLR Classification 2D"
     CLASSIFICATION_2D = "Classification 2D"
 
     def __str__(self) -> str:
