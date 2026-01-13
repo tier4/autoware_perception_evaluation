@@ -78,7 +78,6 @@ class PerceptionFrameResult:
         frame_pass_fail_config: PerceptionPassFailConfig,
         unix_time: int,
         target_labels: List[LabelType],
-        frame_prefix: Optional[str] = None,
     ) -> None:
         # TODO(ktro2828): rename `frame_name` into `frame_number`
         # frame information
@@ -106,7 +105,7 @@ class PerceptionFrameResult:
             transforms=frame_ground_truth.transforms,
         )
         # Prefix name for this frame to categorize the frame, for example, "location/vehicle/distance"
-        self.frame_prefix = frame_prefix
+        self.frame_prefix = frame_ground_truth.frame_prefix 
 
     def evaluate_perception_frame(
         self,

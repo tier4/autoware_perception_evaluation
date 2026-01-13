@@ -117,7 +117,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         """Serialize the object to a dict."""
         return {
             "evaluation_config": self.evaluator_config.serialization(),
-            "enable_visualization": self.enable_visualization,
+            "enable_visualization": self.enable_visualizer,
             "load_ground_truth": self.load_ground_truth,
             "metric_output_dir": self.metric_output_dir,
         }
@@ -130,6 +130,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             evaluation_config=PerceptionEvaluationConfig.deserialization(data["evaluation_config"]),
             load_ground_truth=data["load_ground_truth"],
             metric_output_dir=data["metric_output_dir"],
+            enable_visualizer=data['enable_visualizer']
         )
 
     @property
@@ -155,7 +156,6 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         estimated_objects: List[ObjectType],
         frame_pass_fail_config: PerceptionPassFailConfig,
         critical_object_filter_config: Optional[CriticalObjectFilterConfig] = None,
-        frame_prefix: Optional[str] = None,
     ) -> PerceptionFrameResult:
         """Preprocess perception result at current frame without appending to `self.frame_results`."""
 
@@ -203,7 +203,6 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             frame_pass_fail_config=frame_pass_fail_config,
             unix_time=unix_time,
             target_labels=self.target_labels,
-            frame_prefix=frame_prefix,
         )
 
     def evaluate_perception_frame(
@@ -226,7 +225,6 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         estimated_objects: List[ObjectType],
         critical_object_filter_config: CriticalObjectFilterConfig,
         frame_pass_fail_config: PerceptionPassFailConfig,
-        frame_prefix: Optional[str] = None,
     ) -> PerceptionFrameResult:
         """Get perception result at current frame.
 
@@ -271,7 +269,6 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             frame_pass_fail_config=frame_pass_fail_config,
             unix_time=unix_time,
             target_labels=self.target_labels,
-            frame_prefix=frame_prefix,
         )
 
         if self.frame_results:
@@ -318,6 +315,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             objects=frame_ground_truth_objects,
             transforms=frame_ground_truth.transform_matrices,
             raw_data=frame_ground_truth.raw_data,
+            frame_prefix=frame_ground_truth.frame_prefix
         )
         return estimated_objects, frame_ground_truth
 

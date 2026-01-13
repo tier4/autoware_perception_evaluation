@@ -53,6 +53,7 @@ class FrameGroundTruth:
         unix_time: int,
         frame_name: str,
         objects: List[ObjectType],
+        frame_prefix: Optional[str] = None, 
         transforms: TransformDictArgType = None,
         raw_data: Optional[Dict[FrameID, NDArray]] = None,
     ) -> None:
@@ -70,10 +71,11 @@ class FrameGroundTruth:
         self.transform_matrices = transforms
         self.transforms = TransformDict(self.transform_matrices)
         self.raw_data = raw_data
+        self.frame_prefix = frame_prefix
 
     def __reduce__(self) -> Tuple[FrameGroundTruth, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
-        return (self.__class__, (self.unix_time, self.frame_name, self.objects, self.transform_matrices, self.raw_data))
+        return (self.__class__, (self.unix_time, self.frame_name, self.objects, self.frame_prefix, self.transform_matrices, self.raw_data))
 
     def serialization(self) -> Dict[str, Any]:
         """Serialize the object to a dict."""
@@ -89,6 +91,7 @@ class FrameGroundTruth:
             "unix_time": self.unix_time,
             "frame_name": self.frame_name,
             "objects": [object.serialization() for object in self.objects],
+            "frame_prefix": self.frame_prefix,
             "transform_matrices": transform_matrices,
             "transform_matrices_type": transform_matrices_type,
             "raw_data": {frame_id.value: data.tolist() for frame_id, data in self.raw_data.items()},
@@ -121,6 +124,7 @@ class FrameGroundTruth:
             unix_time=data["unix_time"],
             frame_name=data["frame_name"],
             objects=objects,
+            frame_prefix=data['frame_prefix'],
             transforms=transform_matrices,
             raw_data={FrameID(frame_id): np.array(data) for frame_id, data in data["raw_data"].items()}
             if data["raw_data"] is not None
