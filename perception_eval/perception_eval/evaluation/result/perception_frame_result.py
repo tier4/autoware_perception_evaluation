@@ -263,7 +263,6 @@ class PerceptionFrameResult:
             self.frame_pass_fail_config,
             self.unix_time,
             self.target_labels,
-            self.frame_prefix,
         )
         state = {"pass_fail_result": self.pass_fail_result, "metric_score": self.metrics_score}
         return (self.__class__, init_args, state)
@@ -288,7 +287,6 @@ class PerceptionFrameResult:
             "critical_object_filter_config": self.critical_object_filter_config.serialization()
             if self.critical_object_filter_config
             else None,
-            "frame_prefix": self.frame_prefix,
         }
 
     @classmethod
@@ -325,7 +323,6 @@ class PerceptionFrameResult:
             frame_pass_fail_config=PerceptionPassFailConfig.deserialization(data["frame_pass_fail_config"]),
             target_labels=target_labels,
             unix_time=data["unix_time"],
-            frame_prefix=data.get("frame_prefix", None),
         )
 
 
