@@ -400,7 +400,9 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         )
 
     def get_scene_result(
-        self, aggregated_nuscene_object_results: Optional[AggregatedNusceneObjectResults] = None
+        self, 
+        aggregated_nuscene_object_results: Optional[AggregatedNusceneObjectResults] = None,
+        prefix_frame: Optional[str] = None
     ) -> MetricsScore:
         """Evaluate metrics score thorough a scene.
 
@@ -431,7 +433,12 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             )
 
             if self.metric_output_dir is not None:
-                detection_confusion_matrix = DetectionConfusionMatrix(output_dir=self.metric_output_dir)
+                if prefix_frame is not None:
+                    metric_output_dir = self.metric_output_dir / prefix_frame
+                else:
+                    metric_output_dir = self.metric_output_dir
+
+                detection_confusion_matrix = DetectionConfusionMatrix(output_dir=metric_output_dir)
                 # Draw confusion matrices
                 detection_confusion_matrix(
                     nuscene_object_results=aggregated_nuscene_object_results.nuscene_object_results,
@@ -514,6 +521,6 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         grouped_nuscene_object_results = self._group_nuscene_object_results_by_prefix()
         scene_result_with_prefix: Dict[str, MetricsScore] = defaultdict()
         for prefix, aggregated_nuscene_object_results in grouped_nuscene_object_results.items():
-            scene_result_with_prefix[prefix] = self.get_scene_result(aggregated_nuscene_object_results)
+            scene_result_with_prefix[prefix] = self.get_scene_result(aggregated_nuscene_object_results, prefix)
 
         return scene_result_with_prefix
