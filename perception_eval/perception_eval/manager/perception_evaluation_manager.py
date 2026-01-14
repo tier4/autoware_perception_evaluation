@@ -51,10 +51,11 @@ from ..evaluation.result.object_result_matching import NuscenesObjectMatcher
 @dataclass
 class AggregatedNusceneObjectResults:
     nuscene_object_results: Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
-    nuscene_object_tracking_results: Dict[MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]]
+    nuscene_object_tracking_results: Dict[
+        MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
+    ]
     num_gts: Dict[LabelType, int]
     used_frames: List[int]
-
 
 
 class PerceptionEvaluationManager(_EvaluationManagerBase):
@@ -130,7 +131,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             evaluation_config=PerceptionEvaluationConfig.deserialization(data["evaluation_config"]),
             load_ground_truth=data["load_ground_truth"],
             metric_output_dir=data["metric_output_dir"],
-            enable_visualizer=data['enable_visualizer']
+            enable_visualizer=data['enable_visualizer'],
         )
 
     @property
@@ -315,7 +316,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             objects=frame_ground_truth_objects,
             transforms=frame_ground_truth.transform_matrices,
             raw_data=frame_ground_truth.raw_data,
-            frame_prefix=frame_ground_truth.frame_prefix
+            frame_prefix=frame_ground_truth.frame_prefix,
         )
         return estimated_objects, frame_ground_truth
 
@@ -393,16 +394,16 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             used_frames.append(int(frame.frame_name))
 
         return AggregatedNusceneObjectResults(
-            nuscene_object_results=aggregated_nuscene_object_results, 
-            num_gts=aggregated_num_gt, 
+            nuscene_object_results=aggregated_nuscene_object_results,
+            num_gts=aggregated_num_gt,
             used_frames=used_frames,
-            nuscene_object_tracking_results=aggregated_nuscene_object_tracking_results
+            nuscene_object_tracking_results=aggregated_nuscene_object_tracking_results,
         )
 
     def get_scene_result(
-        self, 
+        self,
         aggregated_nuscene_object_results: Optional[AggregatedNusceneObjectResults] = None,
-        prefix_frame: Optional[str] = None
+        prefix_frame: Optional[str] = None,
     ) -> MetricsScore:
         """Evaluate metrics score thorough a scene.
 
@@ -451,8 +452,9 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 aggregated_nuscene_object_results.nuscene_object_results, aggregated_nuscene_object_results.num_gts
             )
             scene_metrics_score.evaluate_tracking(
-                aggregated_nuscene_object_results.nuscene_object_tracking_results, 
-                aggregated_nuscene_object_results.num_gts)
+                aggregated_nuscene_object_results.nuscene_object_tracking_results,
+                aggregated_nuscene_object_results.num_gts,
+            )
 
         # Prediction
         if self.evaluator_config.metrics_config.prediction_config is not None:
@@ -472,19 +474,27 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         Returns:
             aggregated_nuscene_object_results (Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]): Aggregated nuscene object results.
         """
-        aggregated_nuscene_object_results: Dict[str, AggregatedNusceneObjectResults] = defaultdict(AggregatedNusceneObjectResults)
+        aggregated_nuscene_object_results: Dict[str, AggregatedNusceneObjectResults] = defaultdict(
+            AggregatedNusceneObjectResults
+        )
         # Gather objects from frame results
         for frame in self.frame_results:
             if frame.frame_prefix not in aggregated_nuscene_object_results:
                 aggregated_nuscene_object_results[frame.frame_prefix] = AggregatedNusceneObjectResults(
-                    nuscene_object_results=defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list))),
-                    nuscene_object_tracking_results=defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list))),
+                    nuscene_object_results=defaultdict(
+                        functools.partial(defaultdict, functools.partial(defaultdict, list))
+                    ),
+                    nuscene_object_tracking_results=defaultdict(
+                        functools.partial(defaultdict, functools.partial(defaultdict, list))
+                    ),
                     num_gts={label: 0 for label in self.target_labels},
-                    used_frames=[]
+                    used_frames=[],
                 )
-            
+
             nuscene_object_results = aggregated_nuscene_object_results[frame.frame_prefix].nuscene_object_results
-            nuscene_object_tracking_results = aggregated_nuscene_object_results[frame.frame_prefix].nuscene_object_tracking_results
+            nuscene_object_tracking_results = aggregated_nuscene_object_results[
+                frame.frame_prefix
+            ].nuscene_object_tracking_results
             num_gts = aggregated_nuscene_object_results[frame.frame_prefix].num_gts
             used_frames = aggregated_nuscene_object_results[frame.frame_prefix].used_frames
 
@@ -500,14 +510,12 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
                 accumulate_nuscene_results(nuscene_object_results, frame.nuscene_object_results)
                 # Aggregate a sequence of frame results
                 if self.evaluator_config.metrics_config.tracking_config is not None:
-                    accumulate_nuscene_tracking_results(
-                        nuscene_object_tracking_results, frame.nuscene_object_results
-                    )
+                    accumulate_nuscene_tracking_results(nuscene_object_tracking_results, frame.nuscene_object_results)
 
             used_frames.append(int(frame.frame_name))
 
         return aggregated_nuscene_object_results
-    
+
     def get_scene_result_with_prefix(self) -> Dict[str, MetricsScore]:
         """
         Get scene result with prefix.

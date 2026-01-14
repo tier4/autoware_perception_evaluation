@@ -53,7 +53,7 @@ class FrameGroundTruth:
         unix_time: int,
         frame_name: str,
         objects: List[ObjectType],
-        frame_prefix: Optional[str] = None, 
+        frame_prefix: Optional[str] = None,
         transforms: TransformDictArgType = None,
         raw_data: Optional[Dict[FrameID, NDArray]] = None,
     ) -> None:
@@ -75,7 +75,10 @@ class FrameGroundTruth:
 
     def __reduce__(self) -> Tuple[FrameGroundTruth, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
-        return (self.__class__, (self.unix_time, self.frame_name, self.objects, self.frame_prefix, self.transform_matrices, self.raw_data))
+        return (
+            self.__class__,
+            (self.unix_time, self.frame_name, self.objects, self.frame_prefix, self.transform_matrices, self.raw_data),
+        )
 
     def serialization(self) -> Dict[str, Any]:
         """Serialize the object to a dict."""
