@@ -88,19 +88,22 @@ class Ap:
         )
         # True positives, false positives and their corresponding confidences
         self.tp_list, self.fp_list, self.conf_list = self._calculate_tp_fp(tp_metrics, object_results)
-        precision_list, recall_list = self.get_precision_recall()
-        self.f1_scores = self.compute_f1_scores(precisions=precision_list, recalls=recall_list)
+        self.precision_list, self.recall_list = self.get_precision_recall()
+        self.precision_interp, self.recall_interp = self._interpolate_precision_recall(
+            self.precision_list, self.recall_list
+        )
+        self.f1_scores = self.compute_f1_scores(precisions=self.precision_list, recalls=self.recall_list)
         self.max_f1_score, self.max_f1_index = self.compute_max_f1_index()
         if self.max_f1_index > -1:
-            self.optimal_precision = precision_list[self.max_f1_index]
-            self.optimal_recall = recall_list[self.max_f1_index]
+            self.optimal_precision = self.precision_list[self.max_f1_index]
+            self.optimal_recall = self.recall_list[self.max_f1_index]
             self.optimal_conf = self.conf_list[self.max_f1_index]
         else:
             self.optimal_precision = np.nan
             self.optimal_recall = np.nan
             self.optimal_conf = np.nan
 
-        self.ap = self._calculate_ap(precision_list, recall_list)
+        self.ap = self._calculate_ap(self.precision_interp, self.recall_interp)
 
     def __reduce__(self) -> Tuple[Ap, Tuple[Any]]:
         """Serializing and deserializing the class."""
@@ -197,24 +200,14 @@ class Ap:
             recall.append(self.tp_list[i] / self.num_ground_truth if self.num_ground_truth > 0 else 0.0)
         return precision, recall
 
-    def _calculate_ap(
-        self,
-        precision_list: List[float],
-        recall_list: List[float],
-        min_recall: float = 0.1,
-        min_precision: float = 0.1,
-    ) -> float:
+    def _interpolate_precision_recall(
+        self, precision_list: List[float], recall_list: List[float]
+    ) -> Tuple[List[float], List[float]]:
         """
-        Calculate Average Precision (AP) using 101 uniformly spaced recall thresholds
+        Interpolate the precision list using the recall list.
         """
-
-        # Special case: If ground truth is zero and prediction is zero, return NaN
-        if self.num_ground_truth == 0 and self.objects_results_num == 0:
-            return np.nan
-
-        # If there are no precision values, return AP = 0.0
         if len(precision_list) == 0:
-            return 0.0
+            return []
 
         # Create a precision envelope: ensures non-increasing precision
         # max accumulate from right to left
@@ -227,11 +220,31 @@ class Ap:
         # 'right=0' means values beyond the max recall get precision=0
         precision_interp = np.interp(recall_interp, recall_list, precision_envelope, right=0)
 
+        return precision_interp, recall_interp
+
+    def _calculate_ap(
+        self,
+        precisions: np.ndarray,
+        min_recall: float = 0.1,
+        min_precision: float = 0.1,
+    ) -> float:
+        """
+        Calculate Average Precision (AP) using 101 uniformly spaced recall thresholds
+        """
+
+        # Special case: If ground truth is zero and prediction is zero, return NaN
+        if self.num_ground_truth == 0 and self.objects_results_num == 0:
+            return np.nan
+
+        # If there are no precision values, return AP = 0.0
+        if len(precisions) == 0:
+            return 0.0
+
         # Apply a minimum recall threshold: ignore low-recall range
         first_ind = int(round(100 * min_recall)) + 1
 
         # Subtract the minimum precision threshold and clamp negative values to 0
-        filtered_prec = precision_interp[first_ind:] - min_precision
+        filtered_prec = precisions[first_ind:] - min_precision
         filtered_prec[filtered_prec < 0] = 0.0
 
         # Return the normalized mean of the filtered precision values
