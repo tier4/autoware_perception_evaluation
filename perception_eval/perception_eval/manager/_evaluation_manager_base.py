@@ -50,6 +50,7 @@ class _EvaluationManagerBase(ABC):
         super().__init__()
 
         self.evaluator_config = evaluation_config
+        self.load_ground_truth = load_ground_truth
 
         if load_ground_truth:
             self.ground_truth_frames: List[FrameGroundTruth] = load_all_datasets(

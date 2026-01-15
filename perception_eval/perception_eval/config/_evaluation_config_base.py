@@ -134,16 +134,45 @@ class _EvaluationConfigBase(ABC):
 
     def __reduce__(self) -> Tuple[_EvaluationConfigBase, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
-        return (
-            self.__class__,
-            (
-                self.dataset_paths,
-                self.frame_id,
-                self.result_root_directory,
-                self.evaluation_config_dict,
-                self.load_raw_data,
-            ),
+        init_args = (
+            self.dataset_paths,
+            self.frame_id,
+            self.result_root_directory,
+            self.evaluation_config_dict,
+            self.load_raw_data,
         )
+        state = {
+            "label_params": self.label_params,
+            "filtering_params": self.filtering_params,
+            "metrics_params": self.metrics_params,
+            "evaluation_config_dict": self.evaluation_config_dict,
+            "frame_ids": self.frame_ids,
+            "result_root_directory": self.result_root_directory,
+            "__log_directory": self.__log_directory,
+            "__visualization_directory": self.__visualization_directory,
+        }
+        return (self.__class__, init_args, state)
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        """Set the state of the object to preserve states after deserialization."""
+        state_keys = [
+            "label_params",
+            "filtering_params",
+            "metrics_params",
+            "evaluation_config_dict",
+            "frame_ids",
+            "result_root_directory",
+            "__log_directory",
+            "__visualization_directory",
+        ]
+
+        for state_key in state_keys:
+            value = state.get(state_key, None)
+            if state_key.startswith("__"):  # private
+                mangled = f"_{self.__class__.__name__}{state_key}"
+                setattr(self, mangled, value)
+            else:
+                setattr(self, state_key, value)
 
     @property
     def support_tasks(self) -> List[str]:

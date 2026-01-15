@@ -97,6 +97,16 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             **self.metrics_params,
         )
 
+    def __reduce__(self) -> Tuple[PerceptionEvaluationConfig, Tuple[Any]]:
+        """Serialization and deserialization of the object with pickling."""
+        _, init_args, state = super().__reduce__()
+        state.update(
+            {
+                "metrics_config": self.metrics_config,
+            }
+        )
+        return (self.__class__, init_args, state)
+
     @staticmethod
     def _extract_label_params(evaluation_config_dict: Dict[str, Any]) -> Dict[str, Any]:
         e_cfg = evaluation_config_dict.copy()

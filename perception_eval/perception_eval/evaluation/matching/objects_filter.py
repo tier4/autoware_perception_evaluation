@@ -626,6 +626,8 @@ def _is_target_object(
             Keep all `dynamic_objects` that their confidence is bigger than `confidence_threshold`. Defaults to None.
         target_uuids (Optional[List[str]]): Filter target list of ground truths' uuids.
             Keep all `dynamic_objects` that their each uuid is in `target_uuids`. Defaults to None.
+        distance_ranges (Optional[Tuple[float, float]]): Distance range of the object. For example, (0.0, 10.0) means the object is within 0.0 to 10.0 meters from the ego vehicle. Defaults to None.
+            And this cannot be used together with `max_distance_list` and `min_distance_list`.
 
     Returns:
         bool: If the object is filter target, return True
@@ -745,7 +747,9 @@ def _is_target_object(
                 if use_unknown_threshold
                 else label_threshold.get_label_threshold(min_distance_list)
             )
-            is_target = is_target and bev_distance_ > min_distance
+
+            # min distance is the lower bound of the distance range, and it should be inclusive
+            is_target = is_target and bev_distance_ >= min_distance
 
         if is_target and min_point_numbers is not None and is_gt:
             min_point_number = 0 if use_unknown_threshold else label_threshold.get_label_threshold(min_point_numbers)
