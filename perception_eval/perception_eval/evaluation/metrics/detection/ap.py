@@ -103,7 +103,7 @@ class Ap:
             self.optimal_recall = np.nan
             self.optimal_conf = np.nan
 
-        self.ap = self._calculate_ap(self.precision_interp, self.recall_interp)
+        self.ap = self._calculate_ap(self.precision_interp)
 
     def __reduce__(self) -> Tuple[Ap, Tuple[Any]]:
         """Serializing and deserializing the class."""
