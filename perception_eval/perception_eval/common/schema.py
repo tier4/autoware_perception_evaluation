@@ -42,6 +42,7 @@ class FrameID(Enum):
     CAM_FRONT_RIGHT = "cam_front_right"
     CAM_FRONT_LEFT = "cam_front_left"
     CAM_FRONT_LOWER = "cam_front_lower"
+    CAM_FRONT_WIDE = "cam_front_wide"
     CAM_BACK = "cam_back"
     CAM_BACK_LEFT = "cam_back_left"
     CAM_BACK_RIGHT = "cam_back_right"
