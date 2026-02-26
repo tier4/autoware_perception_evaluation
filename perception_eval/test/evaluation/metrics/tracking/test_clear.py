@@ -26,10 +26,12 @@ from perception_eval.common import DynamicObject
 from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.label import AutowareLabel
 from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_objects
+from perception_eval.evaluation.metrics.metrics_score_config import MetricsScoreConfig
 from perception_eval.evaluation.metrics.tracking.clear import CLEAR
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-from perception_eval.evaluation.result.object_result_matching import get_object_results
+from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
 from perception_eval.util.debug import get_objects_with_difference
 
 
@@ -134,6 +136,16 @@ class TestCLEAR(unittest.TestCase):
         ]
         self.max_x_position_list: List[float] = [100.0, 100.0, 100.0, 100.0]
         self.max_y_position_list: List[float] = [100.0, 100.0, 100.0, 100.0]
+        self.matching_threshold_list: List[float] = [0.5]
+        self.metric_score_config = MetricsScoreConfig(
+            evaluation_task=self.evaluation_task,
+            target_labels=self.target_labels,
+            center_distance_thresholds=self.matching_threshold_list,
+            center_distance_bev_thresholds=None,
+            plane_distance_thresholds=None,
+            iou_2d_thresholds=None,
+            iou_3d_thresholds=None,
+        )
 
     def test_calculate_tp_fp(self):
         """[summary]
@@ -188,14 +200,15 @@ class TestCLEAR(unittest.TestCase):
             # (3). Est: 2, GT: 1
             # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
             # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
-            # -> TP score=1.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=0.0
-            # When current/previous has same match and previous result is TP, previous TP is assigned even though current is TP.
+            # -> TP score=0.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=inf
+            # Although Est[0] and GT[0] are assigned as match at the previous frame, they are not matched at the current frame due to matching threshold (0.5),
+            # and thus they are assigned as FP.
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
                 AutowareLabel.CAR,
                 True,
-                AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
+                AnswerCLEAR(1, 0.0, 2.0, 0, 0.0, 0.0, float("inf")),
             ),
             # (4). Est: 2, GT: 1
             # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
@@ -269,9 +282,21 @@ class TestCLEAR(unittest.TestCase):
                 True,
                 AnswerCLEAR(1, 1.0, 0.0, 0, 0.2, 1.0, 0.2),
             ),
+            # (10). Est: 2, GT: 1
+            # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
+            # -> current    : TP=1.0(EST[0], GT[0]), FP=1.0(Est[2])
+            # -> TP score=1.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=0.0
+            # When current/previous has same match and previous result is TP, previous TP is assigned even though current is TP.
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                DiffTranslation((0.1, 0.0, 0.0), (0.2, 0.2, 0.0)),
+                AutowareLabel.CAR,
+                True,
+                AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
+            ),
             # ========== Test non-unique ID association ==========
             #   -> The result must be same, whether use unique ID or not.
-            # (10). Est: 2, GT: 1    = Case(1)
+            # (11). Est: 2, GT: 1    = Case(1)
             # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
             # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
             # -> TP score=0.0, IDsw=0, TP matching score=0.0, MOTA=0.0, MOTP=0.0
@@ -287,7 +312,7 @@ class TestCLEAR(unittest.TestCase):
                 # num_gt<int>, tp<float>, fp<float>, id_switch<int>, tp_matching_score<float>, mota<float>, motp<float>
                 AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
             ),
-            # (11). Est: 2, GT: 1    = Case(2)
+            # (12). Est: 2, GT: 1    = Case(2)
             # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
             # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
             # -> TP score=0.0, IDsw=0, TP matching score=0.0, MOTA=0.0, MOTP=0.0
@@ -298,19 +323,20 @@ class TestCLEAR(unittest.TestCase):
                 False,
                 AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
             ),
-            # (12). Est: 2, GT: 1   = Case(3)
+            # (13). Est: 2, GT: 1   = Case(3)
             # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
             # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
-            # -> TP score=1.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=0.0
-            # When current/previous has same match and previous result is TP, previous TP is assigned.
+            # -> TP score=0.0, IDsw=1, matching score=0.0, MOTA=0.0, MOTP=0.0
+            # Although Est[0] and GT[0] are assigned as match at the previous frame, they are not matched at the current frame due to matching threshold (0.5),
+            # and thus they are assigned as FP.
             (
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 DiffTranslation((1.0, 0.0, 0.0), (1.0, 1.0, 0.0)),
                 AutowareLabel.CAR,
-                False,
-                AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0.0, 0.0),
+                True,
+                AnswerCLEAR(1, 0.0, 2.0, 0, 0.0, 0.0, float("inf")),
             ),
-            # (13). Est: 2, GT: 1     = Case(4)
+            # (14). Est: 2, GT: 1     = Case(4)
             # -> previous   : TP=0.0, FP=2.0(Est[0], Est[2])
             # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
             # -> TP score=1.0, IDsw=1, matching score=0.2, MOTA=0.0, MOTP=0.2
@@ -322,7 +348,7 @@ class TestCLEAR(unittest.TestCase):
                 False,
                 AnswerCLEAR(1, 1.0, 1.0, 0, 0.2, 0.0, 0.2),
             ),
-            # (14). Est: 2, GT: 0   = Case(5)
+            # (15). Est: 2, GT: 0   = Case(5)
             # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
             # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
             # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
@@ -336,7 +362,7 @@ class TestCLEAR(unittest.TestCase):
                 True,
                 AnswerCLEAR(0, 0.0, 2.0, 0, 0.0, float("inf"), float("inf")),
             ),
-            # (15). Est: 2, GT: 1   = Case(6)
+            # (16). Est: 2, GT: 1   = Case(6)
             # -> previous   : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
             # -> current    : TP=0.0, FP=2.0(Est[0], Est[2])
             # -> TP score=0.0, IDsw=1, TP matching score=0.0, MOTA=inf, MOTP=0.0
@@ -349,7 +375,7 @@ class TestCLEAR(unittest.TestCase):
                 AnswerCLEAR(1, 0.0, 2.0, 0, 0.0, 0.0, float("inf")),
             ),
             # --- Test there is no previous result ---
-            # (16). Est: 2, GT: 1   = Case(5)
+            # (17). Est: 2, GT: 1   = Case(5)
             # -> previous   : No result
             # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
             # -> TP score=0.0, IDsw=0, matching score=0.0, MOTA=0.0, MOTP=0.0
@@ -360,7 +386,7 @@ class TestCLEAR(unittest.TestCase):
                 False,
                 AnswerCLEAR(1, 1.0, 1.0, 0, 0.0, 0, 0.0),
             ),
-            # (17). Est: 2, GT: 1   = Case(6)
+            # (18). Est: 2, GT: 1   = Case(6)
             # -> previous   : No result
             # -> current    : TP=1.0(Est[0], GT[0]), FP=1.0(Est[2])
             # -> TP score=1.0, IDsw=0, matching score=0.2, MOTA=0.0, MOTP=0.2
@@ -371,7 +397,7 @@ class TestCLEAR(unittest.TestCase):
                 False,
                 AnswerCLEAR(1, 1.0, 1.0, 0, 0.2, 0.0, 0.2),
             ),
-            # (18). Est: 1, GT: 1   = Case(7)
+            # (19). Est: 1, GT: 1   = Case(7)
             # -> previous   : No result
             # -> current    : TP=1.0(Est[1], GT[1]), FP=0.0
             # -> TP score=1.0, IDsw=0, matching score=0.2, MOTA=0.0, MOTP=0.2
@@ -383,6 +409,12 @@ class TestCLEAR(unittest.TestCase):
                 AnswerCLEAR(1, 1.0, 0.0, 0, 0.2, 1.0, 0.2),
             ),
         ]
+        matcher = NuscenesObjectMatcher(
+            evaluation_task=self.evaluation_task,
+            metrics_config=self.metric_score_config,
+            uuid_matching_first=False,
+            matching_class_agnostic_fps=True,
+        )
         for n, (
             prev_diff_trans,
             cur_diff_trans,
@@ -426,8 +458,7 @@ class TestCLEAR(unittest.TestCase):
                     )
 
                     # Get previous object results
-                    prev_object_results = get_object_results(
-                        evaluation_task=self.evaluation_task,
+                    prev_object_results = matcher.match(
                         estimated_objects=prev_estimated_objects,
                         ground_truth_objects=prev_ground_truth_objects,
                     )
@@ -465,22 +496,35 @@ class TestCLEAR(unittest.TestCase):
                 )
 
                 # Current object results
-                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-                    evaluation_task=self.evaluation_task,
+                cur_object_results = matcher.match(
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
+                num_ground_truths = divide_objects_to_num(cur_ground_truth_objects, self.target_labels)
 
-                num_ground_truth: int = len(cur_ground_truth_objects)
+                clear_results: List[CLEAR] = []
+                for label in [target_label]:
+                    for matching_threshold in self.matching_threshold_list:
+                        selected_prev_object_results = (
+                            prev_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold]
+                            if prev_object_results
+                            else []
+                        )
+                        selected_cur_object_results = cur_object_results[MatchingMode.CENTERDISTANCE][label][
+                            matching_threshold
+                        ]
+                        object_results = [selected_prev_object_results, selected_cur_object_results]
+                        clear_: CLEAR = CLEAR(
+                            object_results=object_results,
+                            num_ground_truth=num_ground_truths[label],
+                            target_labels=[label],
+                            matching_mode=MatchingMode.CENTERDISTANCE,
+                            matching_threshold_list=[matching_threshold],
+                        )
+                        clear_results.append(clear_)
 
-                clear_: CLEAR = CLEAR(
-                    object_results=[prev_object_results, cur_object_results],
-                    num_ground_truth=num_ground_truth,
-                    target_labels=[target_label],
-                    matching_mode=MatchingMode.CENTERDISTANCE,
-                    matching_threshold_list=[0.5],
-                )
-                out_clear: AnswerCLEAR = AnswerCLEAR.from_clear(clear_)
+                # Only one item in a sub test
+                out_clear: AnswerCLEAR = AnswerCLEAR.from_clear(clear_results[0])
                 self.assertEqual(
                     out_clear,
                     ans_clear,
@@ -517,19 +561,29 @@ class TestCLEAR(unittest.TestCase):
                 ((False, False, False), (False, False, False), (False, False, False)),
             ),
             # (2)
-            # -> previous   : (Est[2], GT[0]), (Est[1], GT[1]), (Est[0], GT[2])
+            # -> previous   : (Est[2], GT[0]), (Est[2], None), (Est[1], None)
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
-            # ((False, False, False), (False, False, False), (False, False, False))
             # The IDsw only is counted for TP pairs both previous and current.
-            # If previous result is TP though current result is FP, IDsw is not counted
+            # If current result is TP though previous result is FP, IDsw is not counted
             (
                 DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 True,
-                ((True, False, True), (False, False, False), (True, False, True)),
+                ((True, False, False), (False, False, False), (True, False, False)),
+            ),
+            # (3)
+            # -> previous   : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
+            # -> current    : (Est[2], GT[0]), (Est[2], None), (Est[1], None)
+            # The IDsw only is counted for TP pairs both previous and current.
+            # If previous result is TP though current result is FP, IDsw is not counted
+            (
+                DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
+                True,
+                ((True, False, True), (False, False, False), (False, False, False)),
             ),
             # --- Test there is no previous result ---
-            # (3)
+            # (4)
             # -> previous   : (Est[0], None), (Est[1], None), (Est[2], None)
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], Est[2])
             # The IDsw only is counted for TP pairs both previous and current.
@@ -542,7 +596,7 @@ class TestCLEAR(unittest.TestCase):
                 ((False, False, False), (False, False, False), (False, False, False)),
             ),
             # ========== Test non-unique ID association ==========
-            # (4)   = Case(1)
+            # (5)   = Case(1)
             # Est: 3, GT: 4
             # -> previous   : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], Est[2])
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], Est[2])
@@ -552,18 +606,18 @@ class TestCLEAR(unittest.TestCase):
                 False,
                 ((False, False, False), (False, False, False), (False, False, False)),
             ),
-            # (5)   = Case(2)
-            # -> previous   : (Est[2], GT[0]), (Est[1], GT[1]), (Est[0], GT[2])
+            # (6)   = Case(2)
+            # -> previous   : (Est[2], GT[0]), (Est[2], None), (Est[1], None)
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], GT[2])
             # ((False, False, False), (False, False, False), (False, False, False))
             (
                 DiffTranslation((0.0, 0.0, 0.0), (-2.0, 0.0, 0.0)),
                 DiffTranslation((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
                 False,
-                ((True, False, True), (False, False, False), (True, False, True)),
+                ((True, False, False), (False, False, False), (True, False, False)),
             ),
             # --- Test there is no previous result ---
-            # (6)   = Case(3)
+            # (7)   = Case(3)
             # -> previous   : (Est[0], None), (Est[1], None), (Est[2], None)
             # -> current    : (Est[0], GT[0]), (Est[1], GT[1]), (Est[2], Est[2])
             (
@@ -573,6 +627,12 @@ class TestCLEAR(unittest.TestCase):
                 ((False, False, False), (False, False, False), (False, False, False)),
             ),
         ]
+        matcher = NuscenesObjectMatcher(
+            evaluation_task=self.evaluation_task,
+            metrics_config=self.metric_score_config,
+            uuid_matching_first=False,
+            matching_class_agnostic_fps=True,
+        )
         for n, (prev_diff_trans, cur_diff_trans, use_unique_id, ans_flags) in enumerate(patterns):
             with self.subTest(f"Test is ID switched: {n + 1}"):
                 if prev_diff_trans is not None:
@@ -607,8 +667,7 @@ class TestCLEAR(unittest.TestCase):
                     )
 
                     # Previous object results
-                    prev_object_results = get_object_results(
-                        evaluation_task=self.evaluation_task,
+                    prev_object_results = matcher.match(
                         estimated_objects=prev_estimated_objects,
                         ground_truth_objects=prev_ground_truth_objects,
                     )
@@ -646,13 +705,27 @@ class TestCLEAR(unittest.TestCase):
                 )
 
                 # Current object results
-                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-                    evaluation_task=self.evaluation_task,
+                cur_object_results = matcher.match(
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
-                for i, cur_obj_result in enumerate(cur_object_results):
-                    for j, prev_obj_result in enumerate(prev_object_results):
+
+                # Flatten the object results
+                selected_prev_object_results = []
+                selected_cur_object_results = []
+                for label in self.target_labels:
+                    for matching_threshold in self.matching_threshold_list:
+                        selected_prev_object_results.extend(
+                            prev_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold]
+                            if prev_object_results
+                            else []
+                        )
+                        selected_cur_object_results.extend(
+                            cur_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold]
+                        )
+
+                for i, cur_obj_result in enumerate(selected_cur_object_results):
+                    for j, prev_obj_result in enumerate(selected_prev_object_results):
                         flag: bool = CLEAR._is_id_switched(
                             cur_object_result=cur_obj_result,
                             prev_object_result=prev_obj_result,
@@ -757,6 +830,12 @@ class TestCLEAR(unittest.TestCase):
                 ((False, False, False), (False, False, False), (False, False, False)),
             ),
         ]
+        matcher = NuscenesObjectMatcher(
+            evaluation_task=self.evaluation_task,
+            metrics_config=self.metric_score_config,
+            uuid_matching_first=False,
+            matching_class_agnostic_fps=True,
+        )
         for n, (prev_diff_trans, cur_diff_trans, use_unique_id, ans_flags) in enumerate(patterns):
             with self.subTest(f"Test is same result: {n + 1}"):
                 if prev_diff_trans is not None:
@@ -791,8 +870,7 @@ class TestCLEAR(unittest.TestCase):
                     )
 
                     # Previous object results
-                    prev_object_results = get_object_results(
-                        evaluation_task=self.evaluation_task,
+                    prev_object_results = matcher.match(
                         estimated_objects=prev_estimated_objects,
                         ground_truth_objects=prev_ground_truth_objects,
                     )
@@ -830,15 +908,29 @@ class TestCLEAR(unittest.TestCase):
                 )
 
                 # Current object results
-                cur_object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
-                    evaluation_task=self.evaluation_task,
+                cur_object_results = matcher.match(
                     estimated_objects=cur_estimated_objects,
                     ground_truth_objects=cur_ground_truth_objects,
                 )
-                for i, cur_obj_result in enumerate(cur_object_results):
-                    for j, prev_obj_result in enumerate(prev_object_results):
+
+                # Flatten the object results
+                selected_prev_object_results = []
+                selected_cur_object_results = []
+                for label in self.target_labels:
+                    for matching_threshold in self.matching_threshold_list:
+                        selected_prev_object_results.extend(
+                            prev_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold]
+                            if prev_object_results
+                            else []
+                        )
+                        selected_cur_object_results.extend(
+                            cur_object_results[MatchingMode.CENTERDISTANCE][label][matching_threshold]
+                        )
+
+                for i, cur_obj_result in enumerate(selected_cur_object_results):
+                    for j, prev_obj_result in enumerate(selected_prev_object_results):
                         flag: bool = CLEAR._is_same_match(
                             cur_object_result=cur_obj_result,
                             prev_object_result=prev_obj_result,
                         )
-                    self.assertEqual(flag, ans_flags[i][j], f"{flag}!=answer[{i}][{j}]")
+                        self.assertEqual(flag, ans_flags[i][j], f"[{n + 1}] {flag}!=answer[{i}][{j}]]")
