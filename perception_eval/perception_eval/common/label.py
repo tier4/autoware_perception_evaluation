@@ -509,3 +509,33 @@ def is_same_label(object1: ObjectType, object2: ObjectType) -> bool:
         bool: Return True if both labels are same.
     """
     return object1.semantic_label == object2.semantic_label
+
+
+def is_same_label_group(object1: ObjectType, object2: ObjectType) -> bool:
+    """Indicate whether both objects have same label group.
+
+    For example, if the label is AutowareLabel, the label group is determined by the value of the label.
+    If both labels are AutowareLabel.CAR, AutowareLabel.BUS, or AutowareLabel.TRUCK, they are considered to be in the same label group.
+
+    Args:
+    ----
+        object1 (ObjectType): An object.
+        object2 (ObjectType): An object.
+
+    Returns:
+    -------
+        bool: Return True if both labels are in the same label group.
+    """
+    VEHICLE_LABELS = [AutowareLabel.CAR, AutowareLabel.BUS, AutowareLabel.TRUCK]
+    VRU_LABELS = [AutowareLabel.BICYCLE, AutowareLabel.MOTORBIKE, AutowareLabel.PEDESTRIAN]
+    if not isinstance(object1.semantic_label, AutowareLabel) or not isinstance(object2.semantic_label, AutowareLabel):
+        raise ValueError("Both labels must be AutowareLabel.")
+
+    if object1.semantic_label == object2.semantic_label:
+        return True
+    else:
+        if object1.semantic_label in VEHICLE_LABELS and object2.semantic_label in VEHICLE_LABELS:
+            return True
+        elif object1.semantic_label in VRU_LABELS and object2.semantic_label in VRU_LABELS:
+            return True
+    return False
