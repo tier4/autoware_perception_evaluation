@@ -340,6 +340,20 @@ class PlaneDistanceMatching(MatchingMethod):
 
         return self.value < threshold_value
 
+    def get_nearest_corner_index(
+        self, object: DynamicObject, corners: np.ndarray, transforms: Optional[TransformDict] = None
+    ) -> np.ndarray:
+        # Calculate min distance from ego vehicle
+        if object.frame_id != FrameID.BASE_LINK:
+            assert transforms is not None, f"`transforms` must be specified for {object.frame_id}"
+            corners_base_link = np.array(
+                [transforms.transform((object.frame_id, FrameID.BASE_LINK), corner) for corner in corners]
+            )
+            gt_distances = np.linalg.norm(corners_base_link[:, :2], axis=1)
+        else:
+            gt_distances = np.linalg.norm(corners[:, :2], axis=1)
+        return np.argsort(gt_distances)
+
     def _calculate_matching_score(
         self,
         estimated_object: DynamicObject,
@@ -381,19 +395,7 @@ class PlaneDistanceMatching(MatchingMethod):
             if abs(error_yaw) > np.pi / 2:
                 est_corners = est_corners[[2, 3, 0, 1]]  # based on reverse clockwise order from left top
 
-            # Calculate min distance from ego vehicle
-            if ground_truth_object.frame_id != FrameID.BASE_LINK:
-                assert transforms is not None, f"`transforms` must be specified for {ground_truth_object.frame_id}"
-                gt_corners_base_link = np.array(
-                    [
-                        transforms.transform((ground_truth_object.frame_id, FrameID.BASE_LINK), corner)
-                        for corner in gt_corners
-                    ]
-                )
-                gt_distances = np.linalg.norm(gt_corners_base_link[:, :2], axis=1)
-            else:
-                gt_distances = np.linalg.norm(gt_corners[:, :2], axis=1)
-            sort_idx = np.argsort(gt_distances)
+            sort_idx = self.get_nearest_corner_index(ground_truth_object, gt_corners, transforms)
 
             gt_corners = gt_corners[sort_idx]
             est_corners = est_corners[sort_idx]
@@ -411,8 +413,30 @@ class PlaneDistanceMatching(MatchingMethod):
             distance = round(plane_distance, 10)
             self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
             self.estimated_nn_plane = (est_left_point, est_right_point)
+        elif (
+            estimated_object.state.shape_type == ShapeType.POLYGON
+            or ground_truth_object.state.shape_type == ShapeType.BOUNDING_BOX
+        ):
+            sort_idx = self.get_nearest_corner_index(ground_truth_object, gt_corners, transforms)
+            gt_corners = gt_corners[sort_idx]
+            gt_plane_points = gt_corners[:2].tolist()
+
+            sort_idx = self.get_nearest_corner_index(ground_truth_object, gt_corners, transforms)
+            est_corners = est_corners[sort_idx]
+            est_plane_points = est_corners[:2].tolist()
+            average_point = [
+                (est_plane_points[0][0] + est_plane_points[1][0]) / 2,
+                (est_plane_points[0][1] + est_plane_points[1][1]) / 2,
+            ]
+            distance_first_point: float = distance_points_bev(average_point, gt_plane_points[0])
+            distance_second_point: float = distance_points_bev(average_point, gt_plane_points[1])
+            distance_squared = distance_first_point**2 + distance_second_point**2
+            plane_distance = math.sqrt(0.5 * distance_squared)
+            distance = round(plane_distance, 10)
+            self.ground_truth_nn_plane = (gt_plane_points[0], gt_plane_points[1])
+            self.estimated_nn_plane = (average_point, average_point)
         else:
-            distance = distance_points_bev(estimated_object.state.position, ground_truth_object.state.position)
+            distance = distance_objects_bev(estimated_object, ground_truth_object)
 
         return distance
 
