@@ -32,8 +32,10 @@ from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import get_point_left_right_index
 from perception_eval.common.point import polygon_to_list
 from perception_eval.common.schema import FrameID
+from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
 from perception_eval.common.transform import TransformDict
+from pyquaternion import Quaternion
 from shapely.geometry import Polygon
 
 
@@ -340,6 +342,51 @@ class PlaneDistanceMatching(MatchingMethod):
 
         return self.value < threshold_value
 
+    def _get_nearest_corner_index(
+        self, object: DynamicObject, corners: np.ndarray, transforms: Optional[TransformDict] = None
+    ) -> np.ndarray:
+        # Calculate min distance from ego vehicle
+        if object.frame_id != FrameID.BASE_LINK:
+            assert transforms is not None, f"`transforms` must be specified for {object.frame_id}"
+            corners_base_link = np.array(
+                [transforms.transform((object.frame_id, FrameID.BASE_LINK), corner) for corner in corners]
+            )
+            gt_distances = np.linalg.norm(corners_base_link[:, :2], axis=1)
+        else:
+            gt_distances = np.linalg.norm(corners[:, :2], axis=1)
+        return np.argsort(gt_distances)
+
+    def _align_corners_order(self, corners: np.ndarray, base_corners: np.ndarray) -> np.ndarray:
+        """Align the order of corners of estimated object to that of GT by checking all possible combinations and calculating the distance between them, then choose the one with minimum distance.
+
+        The sequence with the minimum total vertex distance sum geometrically restores the correct vertex order: aligned with the GT standard of reverse clockwise, left-top start.
+        This is because, based on the centroid-to-vertex vectors, a minimum distance sum is mathematically equivalent to a minimum angular difference between the two boxes, automatically correcting the heading via the Law of Cosines.
+
+        Args:
+            corners (np.ndarray): Corners of object to be aligned.
+            base_corners (np.ndarray): Corners of object to align with.
+
+        Returns:
+            np.ndarray: Aligned corners of estimated object.
+        """
+        corners = corners[:-1] if len(corners) == 5 else corners
+        centroid = np.mean(corners[:, :2], axis=0)
+
+        # Sort corners in reverse clockwise order with respect to the centroid
+        angles = np.arctan2(corners[:, 1] - centroid[1], corners[:, 0] - centroid[0])
+        corners_rcw = corners[np.argsort(angles)]
+
+        # Search for the corner order with minimum distance to base_corners
+        min_distance = float("inf")
+        best_corners = corners_rcw
+        for i in range(4):
+            shifted_corners = np.roll(corners_rcw, shift=i, axis=0)
+            distance = np.sum(np.linalg.norm(shifted_corners[:, :2] - base_corners[:, :2], axis=1))
+            if distance < min_distance:
+                min_distance = distance
+                best_corners = shifted_corners
+        return best_corners
+
     def _calculate_matching_score(
         self,
         estimated_object: DynamicObject,
@@ -365,54 +412,77 @@ class PlaneDistanceMatching(MatchingMethod):
         if ground_truth_object is None:
             return None
 
-        # Get corner points of estimated object from footprint
-        est_footprint: Polygon = estimated_object.get_footprint()
-        est_corners = np.array(polygon_to_list(est_footprint))
-
         # Get corner points of ground truth object from footprint
         gt_footprint: Polygon = ground_truth_object.get_footprint()
+        if ground_truth_object.state.shape_type == ShapeType.POLYGON:
+            raise ValueError("Plane distance matching does not support POLYGON shape type for GT object.")
         gt_corners = np.array(polygon_to_list(gt_footprint))
 
-        if (
-            estimated_object.state.shape_type == ShapeType.BOUNDING_BOX
-            and ground_truth_object.state.shape_type == ShapeType.BOUNDING_BOX
-        ):
-            _, _, error_yaw = estimated_object.get_heading_error(ground_truth_object)
-            if abs(error_yaw) > np.pi / 2:
-                est_corners = est_corners[[2, 3, 0, 1]]  # based on reverse clockwise order from left top
+        # Get corner points of estimated object from footprint
+        est_footprint: Polygon = estimated_object.get_footprint()
+        if estimated_object.state.shape_type == ShapeType.POLYGON:
+            est_footprint = est_footprint.minimum_rotated_rectangle  # rack of z value so add it later
+        est_corners = np.array(polygon_to_list(est_footprint))
+        if est_corners.shape[1] == 2:  # if z value is not included, add it as 0.0
+            est_corners = np.hstack((est_corners, np.zeros((est_corners.shape[0], 1))))
+        est_corners = self._align_corners_order(est_corners, gt_corners)
+        tmp = est_corners.copy()
 
-            # Calculate min distance from ego vehicle
-            if ground_truth_object.frame_id != FrameID.BASE_LINK:
-                assert transforms is not None, f"`transforms` must be specified for {ground_truth_object.frame_id}"
-                gt_corners_base_link = np.array(
-                    [
-                        transforms.transform((ground_truth_object.frame_id, FrameID.BASE_LINK), corner)
-                        for corner in gt_corners
-                    ]
-                )
-                gt_distances = np.linalg.norm(gt_corners_base_link[:, :2], axis=1)
-            else:
-                gt_distances = np.linalg.norm(gt_corners[:, :2], axis=1)
-            sort_idx = np.argsort(gt_distances)
+        sort_idx = self._get_nearest_corner_index(ground_truth_object, gt_corners, transforms)
+        gt_corners = gt_corners[sort_idx]
+        est_corners = est_corners[sort_idx]
 
-            gt_corners = gt_corners[sort_idx]
-            est_corners = est_corners[sort_idx]
+        est_plane_points = est_corners[:2].tolist()
+        gt_plane_points = gt_corners[:2].tolist()
+        left_idx, right_idx = get_point_left_right_index(gt_plane_points[0], gt_plane_points[1])
+        gt_left_point, gt_right_point = gt_plane_points[left_idx], gt_plane_points[right_idx]
+        est_left_point, est_right_point = est_plane_points[left_idx], est_plane_points[right_idx]
+        distance_left_point: float = distance_points_bev(est_left_point, gt_left_point)
+        distance_right_point: float = distance_points_bev(est_right_point, gt_right_point)
+        distance_squared = distance_left_point**2 + distance_right_point**2
+        plane_distance = math.sqrt(0.5 * distance_squared)
+        # NOTE: round because the distance become 0.9999999... expecting 1.0
+        distance = round(plane_distance, 10)
+        self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
+        self.estimated_nn_plane = (est_left_point, est_right_point)
 
-            est_plane_points = est_corners[:2].tolist()
-            gt_plane_points = gt_corners[:2].tolist()
-            left_idx, right_idx = get_point_left_right_index(gt_plane_points[0], gt_plane_points[1])
-            gt_left_point, gt_right_point = gt_plane_points[left_idx], gt_plane_points[right_idx]
-            est_left_point, est_right_point = est_plane_points[left_idx], est_plane_points[right_idx]
-            distance_left_point: float = distance_points_bev(est_left_point, gt_left_point)
-            distance_right_point: float = distance_points_bev(est_right_point, gt_right_point)
-            distance_squared = distance_left_point**2 + distance_right_point**2
-            plane_distance = math.sqrt(0.5 * distance_squared)
-            # NOTE: round because the distance become 0.9999999... expecting 1.0
-            distance = round(plane_distance, 10)
-            self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
-            self.estimated_nn_plane = (est_left_point, est_right_point)
+        ## debug
+        coords = tmp.tolist()
+        new_x = sum([point[0] for point in coords]) / 4
+        new_y = sum([point[1] for point in coords]) / 4
+
+        edge1 = ((coords[0][0] - coords[1][0]) ** 2 + (coords[0][1] - coords[1][1]) ** 2) ** 0.5
+        edge2 = ((coords[1][0] - coords[2][0]) ** 2 + (coords[1][1] - coords[2][1]) ** 2) ** 0.5
+
+        new_dx = max(edge1, edge2)
+        new_dy = min(edge1, edge2)
+
+        new_z = estimated_object.state.position[2]
+        new_dz = estimated_object.state.size[2]
+
+        # Calculate the new orientation
+        if edge1 >= edge2:
+            new_yaw = np.arctan2(
+                coords[1][1] - coords[0][1],
+                coords[1][0] - coords[0][0],
+            )
         else:
-            distance = distance_points_bev(estimated_object.state.position, ground_truth_object.state.position)
+            new_yaw = np.arctan2(
+                coords[2][1] - coords[1][1],
+                coords[2][0] - coords[1][0],
+            )
+
+        base_link_center = np.array([new_x, new_y, new_z])
+        target_yaw_quaternion = Quaternion(axis=[0, 0, 1], angle=new_yaw)
+        target_size = np.array([new_dx, new_dy, new_dz])[
+            [1, 0, 2]
+        ]  # length, width, height -> width, length, height for nuscenes format
+
+        estimated_object.state.position = base_link_center
+        estimated_object.state.orientation = target_yaw_quaternion
+        estimated_object.state.shape.type = ShapeType.BOUNDING_BOX
+        estimated_object.state.shape.size = target_size
+        estimated_object.state.shape.footprint = Shape._Shape__calculate_corners(ShapeType.BOUNDING_BOX, target_size)
 
         return distance
 
