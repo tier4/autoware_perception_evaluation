@@ -16,7 +16,7 @@ dependencies = [
   "numpy<2.0.0",
   "nuscenes-devkit>=1.1.9,<1.2.0",
   "plotly>=6.1.2",
-  "setuptools>=80.9.0,<81.0.0",
+  "setuptools>=80.9.0,<82.0.0",
   "tqdm>=4.67.1",
   "ydata-profiling>=4.16.1",
   "shapely<2.0.0; python_version=='3.10'",
