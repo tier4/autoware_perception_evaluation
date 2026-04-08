@@ -184,7 +184,7 @@ class NuscenesObjectMatcher:
                 matched_est_indices=matched_est_indices,
                 available_thresholds=[default_threshold],
             )
-            matching_object_results[MatchingMode.TLR_CLASSIFICATION].update(fp_object_results)
+            matching_object_results[MatchingMode.CLASSIFICATION_2D].update(fp_object_results)
             return matching_object_results
 
         # 1. matching based on same label primary
@@ -204,7 +204,7 @@ class NuscenesObjectMatcher:
                 uuid_matching = est_object.uuid == gt_object.uuid if self.uuid_matching_first else True
                 if label_matching and uuid_matching:
                     # For TLR classification, there is no threshold, so it always sets to the default threshold
-                    matching_object_results[MatchingMode.TLR_CLASSIFICATION][gt_object.semantic_label.label][
+                    matching_object_results[MatchingMode.CLASSIFICATION_2D][gt_object.semantic_label.label][
                         default_threshold
                     ].append(
                         DynamicObjectWithPerceptionResult(estimated_object=est_object, ground_truth_object=gt_object)
@@ -227,7 +227,7 @@ class NuscenesObjectMatcher:
                 if uuid_matching:
                     # For TLR classification, there is no threshold, so it always sets to the default threshold
                     # When uuid is matched, we report metrics based on the ground truth labels
-                    matching_object_results[MatchingMode.TLR_CLASSIFICATION][gt_object.semantic_label.label][
+                    matching_object_results[MatchingMode.CLASSIFICATION_2D][gt_object.semantic_label.label][
                         default_threshold
                     ].append(
                         DynamicObjectWithPerceptionResult(estimated_object=est_object, ground_truth_object=gt_object)
@@ -359,12 +359,23 @@ class NuscenesObjectMatcher:
         """
         if len(estimated_objects):
             is_dynamic_2d = isinstance(estimated_objects[0], DynamicObject2D)
+            # When roi is None, it's classification 2d task
             is_classification_2d_task = is_dynamic_2d and estimated_objects[0].roi is None
             if is_classification_2d_task:
                 if isinstance(estimated_objects[0].semantic_label.label, TrafficLightLabel):
-                    return self._match_tlr_classification2d(estimated_objects, ground_truth_objects)
+                    nuscene_object_results = self._match_tlr_classification2d(estimated_objects, ground_truth_objects)
                 else:
-                    return self._match_classification2d_uuid(estimated_objects, ground_truth_objects)
+                    nuscene_object_results = self._match_classification2d_uuid(estimated_objects, ground_truth_objects)
+
+                label_threshold_pairs = [
+                    (label, -1.0) for label in self.metrics_config.classification_config.target_labels
+                ]
+                # Initialize all entries in the nested result dictionary,
+                # even if no matching results are found
+                for label, threshold in label_threshold_pairs:
+                    if threshold not in nuscene_object_results[MatchingMode.CLASSIFICATION_2D][label]:
+                        nuscene_object_results[MatchingMode.CLASSIFICATION_2D][label][threshold] = []
+                return nuscene_object_results
 
         # Bounding boxes matching
         return self._match_bounding_boxes(

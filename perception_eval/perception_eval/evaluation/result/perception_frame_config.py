@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+from token import OP
 from typing import Any
 from typing import Dict
 from typing import List
@@ -218,14 +219,13 @@ class PerceptionPassFailConfig:
         )
 
         num_elements: int = len(self.target_labels)
-        if matching_threshold_list is None:
-            self.matching_threshold_list = None
-        else:
-            self.matching_threshold_list: List[float] = check_thresholds(matching_threshold_list, num_elements)
-        if confidence_threshold_list is None:
-            self.confidence_threshold_list = None
-        else:
-            self.confidence_threshold_list: List[float] = check_thresholds(confidence_threshold_list, num_elements)
+        self.matching_threshold_list: Optional[List[float]] = None
+        if matching_threshold_list is not None:
+            self.matching_threshold_list = check_thresholds(matching_threshold_list, num_elements)
+
+        self.confidence_threshold_list: Optional[List[float]] = None
+        if confidence_threshold_list is not None:
+            self.confidence_threshold_list = check_thresholds(confidence_threshold_list, num_elements)
 
     def __reduce__(self) -> Tuple[PerceptionPassFailConfig, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
@@ -239,8 +239,12 @@ class PerceptionPassFailConfig:
         return {
             "evaluator_config": self.evaluator_config.serialization(),
             "target_labels": self.labels,
-            "matching_threshold_list": self.matching_threshold_list,
-            "confidence_threshold_list": self.confidence_threshold_list,
+            "matching_threshold_list": self.matching_threshold_list
+            if self.matching_threshold_list is not None
+            else None,
+            "confidence_threshold_list": self.confidence_threshold_list
+            if self.confidence_threshold_list is not None
+            else None,
         }
 
     @classmethod

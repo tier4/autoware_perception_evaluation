@@ -18,6 +18,7 @@ from typing import Tuple
 
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import Label
+from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
@@ -229,6 +230,80 @@ def make_dummy_data2d(use_roi: bool = True) -> Tuple[List[DynamicObject2D], List
             frame_id=frame_id,
             semantic_score=1.0,
             semantic_label=Label(AutowareLabel.MOTORBIKE, "motorbike", []),
+            roi=(300, 100, 50, 50) if use_roi else None,
+            uuid=token_hex(16) if use_roi else "3",
+        ),
+    ]
+    return dummy_estimated_objects, dummy_ground_truth_objects
+
+
+def make_dummy_data2d_traffic_light(use_roi: bool = True) -> Tuple[List[DynamicObject2D], List[DynamicObject2D]]:
+    """[summary]
+    Make 2D dummy predicted objects and ground truth objects.
+
+    Args:
+        use_roi (bool): If False, roi is None and uuid will be specified. Defaults to True.
+
+    Returns:
+        List[DynamicObject2D], List[DynamicObject2D]: dummy_estimated_objects and dummy_ground_truth_objects.
+    """
+    frame_id = FrameID.CAM_FRONT
+    dummy_estimated_objects: List[DynamicObject2D] = [
+        DynamicObject2D(
+            unix_time=100,
+            frame_id=frame_id,
+            semantic_score=0.9,
+            semantic_label=Label(TrafficLightLabel.GREEN, "green", []),
+            roi=(100, 100, 200, 100) if use_roi else None,
+            uuid=token_hex(16) if use_roi else "0",
+        ),
+        DynamicObject2D(
+            unix_time=100,
+            frame_id=frame_id,
+            semantic_score=0.9,
+            semantic_label=Label(TrafficLightLabel.RED, "red", []),
+            roi=(0, 0, 50, 50) if use_roi else None,
+            uuid=token_hex(16) if use_roi else "1",
+        ),
+        DynamicObject2D(
+            unix_time=100,
+            frame_id=frame_id,
+            semantic_score=0.9,
+            semantic_label=Label(TrafficLightLabel.YELLOW, "yellow", []),
+            roi=(200, 200, 200, 100) if use_roi else None,
+            uuid=token_hex(16) if use_roi else "2",
+        ),
+    ]
+    dummy_ground_truth_objects: List[DynamicObject2D] = [
+        DynamicObject2D(
+            unix_time=100,
+            frame_id=frame_id,
+            semantic_score=1.0,
+            semantic_label=Label(TrafficLightLabel.GREEN, "green", []),
+            roi=(100, 100, 200, 100) if use_roi else None,
+            uuid=token_hex(16) if use_roi else "0",
+        ),
+        DynamicObject2D(
+            unix_time=100,
+            frame_id=frame_id,
+            semantic_score=1.0,
+            semantic_label=Label(TrafficLightLabel.RED, "red", []),
+            roi=(0, 0, 50, 50) if use_roi else None,
+            uuid=token_hex(16) if use_roi else "1",
+        ),
+        DynamicObject2D(
+            unix_time=100,
+            frame_id=frame_id,
+            semantic_score=1.0,
+            semantic_label=Label(TrafficLightLabel.YELLOW, "yellow", []),
+            roi=(200, 200, 200, 100) if use_roi else None,
+            uuid=token_hex(16) if use_roi else "2",
+        ),
+        DynamicObject2D(
+            unix_time=100,
+            frame_id=frame_id,
+            semantic_score=1.0,
+            semantic_label=Label(TrafficLightLabel.GREEN, "green", []),
             roi=(300, 100, 50, 50) if use_roi else None,
             uuid=token_hex(16) if use_roi else "3",
         ),

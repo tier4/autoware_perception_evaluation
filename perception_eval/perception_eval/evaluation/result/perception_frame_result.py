@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
+import functools
 from typing import Any
 from typing import Dict
 from typing import List
@@ -27,10 +29,8 @@ from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.status import GroundTruthStatus
 from perception_eval.common.status import MatchingStatus
 from perception_eval.evaluation.matching import MatchingMode
-from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_nuscene_object_results
-from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.metrics import MetricsScoreConfig
@@ -38,14 +38,14 @@ from perception_eval.evaluation.result.object_result import DynamicObjectWithPer
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.evaluation.result.perception_pass_fail_nuscene_result import PassFailNusceneResult
-from perception_eval.evaluation.result.perception_pass_fail_result import PassFailResult
+from perception_eval.util.aggregation_results import accumulate_nuscene_tracking_results
+from perception_eval.util.aggregation_results import initialize_nuscene_object_results
 
 
 class PerceptionFrameResult:
     """The result for 1 frame (the pair of estimated objects and ground truth objects)
 
     Attributes:
-        object_results (List[DynamicObjectWithPerceptionResult]): Filtered object results to each estimated object.
         nuscene_object_results (Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]):
             Object results grouped by matching mode, target label, and threshold.
         frame_ground_truth (FrameGroundTruth): Filtered ground truth of frame.
@@ -69,9 +69,8 @@ class PerceptionFrameResult:
 
     def __init__(
         self,
-        object_results: Optional[List[DynamicObjectWithPerceptionResult]],
-        nuscene_object_results: Optional[
-            Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
+        nuscene_object_results: Dict[
+            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
         ],
         frame_ground_truth: FrameGroundTruth,
         metrics_config: MetricsScoreConfig,
@@ -86,10 +85,7 @@ class PerceptionFrameResult:
         self.unix_time: int = unix_time
         self.target_labels: List[LabelType] = target_labels
 
-        self.object_results: Optional[List[DynamicObjectWithPerceptionResult]] = object_results
-        self.nuscene_object_results: Optional[
-            Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
-        ] = nuscene_object_results
+        self.nuscene_object_results = nuscene_object_results
         self.frame_ground_truth: FrameGroundTruth = frame_ground_truth
 
         # init evaluation
@@ -101,23 +97,13 @@ class PerceptionFrameResult:
         self.critical_object_filter_config = critical_object_filter_config
         self.frame_pass_fail_config = frame_pass_fail_config
 
-        # For tracking and detection, we use PassFailNusceneResult
-        if self.metrics_score.detection_config or self.metrics_score.tracking_config:
-            self.pass_fail_result: PassFailNusceneResult = PassFailNusceneResult(
-                unix_time=unix_time,
-                frame_number=frame_ground_truth.frame_name,
-                critical_object_filter_config=critical_object_filter_config,
-                frame_pass_fail_config=frame_pass_fail_config,
-                transforms=frame_ground_truth.transforms,
-            )
-        else:
-            self.pass_fail_result: PassFailResult = PassFailResult(
-                unix_time=unix_time,
-                frame_number=frame_ground_truth.frame_name,
-                critical_object_filter_config=critical_object_filter_config,
-                frame_pass_fail_config=frame_pass_fail_config,
-                transforms=frame_ground_truth.transforms,
-            )
+        self.pass_fail_result = PassFailNusceneResult(
+            unix_time=unix_time,
+            frame_number=frame_ground_truth.frame_name,
+            critical_object_filter_config=critical_object_filter_config,
+            frame_pass_fail_config=frame_pass_fail_config,
+            transforms=frame_ground_truth.transforms,
+        )
 
     def evaluate_perception_frame(
         self,
@@ -135,7 +121,7 @@ class PerceptionFrameResult:
         )
         self._core_evaluation(
             num_ground_truth_dict=num_ground_truth_dict,
-            previous_object_results=previous_result.object_results if previous_result else None,
+            previous_nuscene_object_results=previous_result.nuscene_object_results if previous_result else None,
         )
 
     def evaluate_frame(
@@ -159,31 +145,24 @@ class PerceptionFrameResult:
             self.critical_object_filter_config.target_labels,
         )
 
-        if self.nuscene_object_results is not None:
-            # Filter objects by critical object filter config
-            self.nuscene_object_results = filter_nuscene_object_results(
-                self.nuscene_object_results,
-                transforms=self.frame_ground_truth.transforms,
-                **self.critical_object_filter_config.filtering_params,
-            )
-
-        if self.object_results is not None:
-            # Filter objects by critical object filter config
-            self.object_results: List[DynamicObjectWithPerceptionResult] = filter_object_results(
-                self.object_results,
-                transforms=self.frame_ground_truth.transforms,
-                **self.critical_object_filter_config.filtering_params,
-            )
+        # Filter objects by critical object filter config
+        self.nuscene_object_results = filter_nuscene_object_results(
+            self.nuscene_object_results,
+            transforms=self.frame_ground_truth.transforms,
+            **self.critical_object_filter_config.filtering_params,
+        )
 
         self._core_evaluation(
             num_ground_truth_dict=num_ground_truth_dict,
-            previous_object_results=previous_result.object_results if previous_result else None,
+            previous_nuscene_object_results=previous_result.nuscene_object_results if previous_result else None,
         )
 
     def _core_evaluation(
         self,
         num_ground_truth_dict: Dict[LabelType, int],
-        previous_object_results: Optional[List[DynamicObjectWithPerceptionResult]],
+        previous_nuscene_object_results: Optional[
+            Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
+        ],
     ) -> None:
         """Core evaluation logic for the frame result."""
         # Only detection
@@ -194,43 +173,56 @@ class PerceptionFrameResult:
 
             return
 
-        assert self.object_results is not None, "Object results must be provided for evaluation in the following tasks."
-
-        # TODO(KS): This should be done in preprocessing step
-        # Group objects results based on the Label
-        object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
-            self.object_results,
-            self.critical_object_filter_config.target_labels,
-        )
-
         # Detection and Tracking
         if self.metrics_score.detection_config is not None and self.metrics_score.tracking_config is not None:
-            # Use object_results for tracking and nuscene_object_results for detection/pass_fail
-            if previous_object_results is None:
-                previous_results_dict = {label: [] for label in self.critical_object_filter_config.target_labels}
-            else:
-                previous_results_dict = divide_objects(
-                    previous_object_results,
-                    self.critical_object_filter_config.target_labels,
-                )
+            self.metrics_score.evaluate_detection(
+                nuscene_object_results=self.nuscene_object_results, num_ground_truth=num_ground_truth_dict
+            )
 
-            tracking_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = object_results_dict.copy()
-            for label, prev_results in previous_results_dict.items():
-                tracking_results[label] = [prev_results, tracking_results[label]]
-            self.metrics_score.evaluate_detection(self.nuscene_object_results, num_ground_truth_dict)
-            self.metrics_score.evaluate_tracking(tracking_results, num_ground_truth_dict)
+            # Merge previous and current frame results to {MatchingMode: {LabelType: {threshold: [List[List[DynamicObjectWithPerceptionResult]]]]}}}
+            nuscene_object_tracking_results: Dict[
+                MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
+            ] = defaultdict(functools.partial(defaultdict, functools.partial(defaultdict, list)))
+            if previous_nuscene_object_results is None:
+                # First frame, initialize the nuscene object tracking results dictionary an empty list
+                initialize_nuscene_object_results(
+                    accumulated_results=nuscene_object_tracking_results,
+                    frame_results=self.nuscene_object_results,
+                )
+                # Accumulate the nuscene object tracking results from the current frame
+                accumulate_nuscene_tracking_results(
+                    accumulated_results=nuscene_object_tracking_results,
+                    frame_results=self.nuscene_object_results,
+                )
+            else:
+                for nuscene_object_results in [previous_nuscene_object_results, self.nuscene_object_results]:
+                    # Accumulate the nuscene object tracking results from the current frame if not None
+                    accumulate_nuscene_tracking_results(
+                        accumulated_results=nuscene_object_tracking_results,
+                        frame_results=nuscene_object_results,
+                    )
+
+            self.metrics_score.evaluate_tracking(
+                nuscene_object_tracking_results=nuscene_object_tracking_results,
+                num_ground_truth=num_ground_truth_dict,
+            )
+
             # Calculate TP/FP/TN/FN based on plane distance
             self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
 
         # Classification
         elif self.metrics_score.classification_config is not None:
-            self.metrics_score.evaluate_classification(object_results_dict, num_ground_truth_dict)
-            self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
+            self.metrics_score.evaluate_classification(
+                nuscene_object_results=self.nuscene_object_results, num_ground_truth=num_ground_truth_dict
+            )
+            self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
 
         # Prediction
         elif self.metrics_score.prediction_config is not None:
-            self.metrics_score.evaluate_prediction(object_results_dict, num_ground_truth_dict)
-            self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
+            self.metrics_score.evaluate_prediction(
+                nuscene_object_results=self.nuscene_object_results, num_ground_truth=num_ground_truth_dict
+            )
+            self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
 
         # Fp validation
         elif not any(
@@ -241,7 +233,7 @@ class PerceptionFrameResult:
                 self.metrics_config.classification_config,
             ]
         ):
-            self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
+            self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
         else:
             raise ValueError(
                 "No matched metrics config. "
@@ -251,7 +243,6 @@ class PerceptionFrameResult:
     def __reduce__(self) -> Tuple[PerceptionFrameResult, Tuple[Any], Dict[Any]]:
         """Serialization and deserialization of the object with pickling."""
         init_args = (
-            self.object_results,
             self.nuscene_object_results,
             self.frame_ground_truth,
             self.metrics_config,
@@ -271,7 +262,6 @@ class PerceptionFrameResult:
     def serialization(self) -> Dict[str, Any]:
         """Serialize the object to a dict."""
         return {
-            "object_results": [object_result.serialization() for object_result in self.object_results],
             "nuscene_object_results": [
                 nuscene_object_result.serialization() for nuscene_object_result in (self.nuscene_object_results or [])
             ],
@@ -307,7 +297,6 @@ class PerceptionFrameResult:
             target_labels.append(label_class.deserialization(label))
 
         return cls(
-            object_results=[DynamicObjectWithPerceptionResult.deserialization(obj) for obj in data["object_results"]],
             nuscene_object_results=nuscene_object_results,
             frame_ground_truth=FrameGroundTruth.deserialization(data["frame_ground_truth"]),
             metrics_config=MetricsScoreConfig.deserialization(data["metrics_config"]),

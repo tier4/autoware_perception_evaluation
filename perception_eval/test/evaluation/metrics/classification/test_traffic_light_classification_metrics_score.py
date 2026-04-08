@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from test.util.dummy_object import make_dummy_data2d
+from test.util.dummy_object import make_dummy_data2d_traffic_light
 from typing import List
 import unittest
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import TrafficLightLabel
 from perception_eval.evaluation.matching.object_matching import MatchingMode
+from perception_eval.evaluation.matching.objects_filter import divide_objects
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.classification import ClassificationMetricsScore
@@ -26,18 +27,18 @@ from perception_eval.evaluation.metrics.metrics_score_config import MetricsScore
 from perception_eval.evaluation.result.object_result_matching import NuscenesObjectMatcher
 
 
-class TestClassificationMetricsScore(unittest.TestCase):
+class TestTrafficLightClassificationMetricsScore(unittest.TestCase):
     """The class to test ClassificationMetricsScore."""
 
     def setUp(self) -> None:
-        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data2d(use_roi=False)
+        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data2d_traffic_light(use_roi=False)
         self.evaluation_task: EvaluationTask = EvaluationTask.CLASSIFICATION2D
-        self.target_labels: List[AutowareLabel] = [
-            AutowareLabel.CAR,
-            AutowareLabel.BICYCLE,
-            AutowareLabel.PEDESTRIAN,
-            AutowareLabel.MOTORBIKE,
+        self.target_labels: List[TrafficLightLabel] = [
+            TrafficLightLabel.GREEN,
+            TrafficLightLabel.RED,
+            TrafficLightLabel.YELLOW,
         ]
+        self.matching_threshold_list: List[float] = [0.5]
         self.metric_score_config = MetricsScoreConfig(
             evaluation_task=self.evaluation_task,
             target_labels=self.target_labels,
@@ -53,13 +54,13 @@ class TestClassificationMetricsScore(unittest.TestCase):
 
         num_est = 3
         num_gt = 4
-        num_tp = 2
-        num_fp = 1
+        num_tp = 3
+        num_fp = 0
 
-        accuracy = 2 / (3 + 4 - 2) = 0.4
-        precision = 2 / 3 = 0.66...
-        recall = 2 / 4 = 0.5
-        f1score = 2 * 0.5 * 0.66 / (0.5 + 0.66) = 0.57...
+        accuracy = 3 / (3 + 4 - 3) = 0.75
+        precision = 3 / 3 (TP + FP) = 1.0
+        recall = 3 / 4 (TP + FN) = 0.75
+        f1score = 2 * 1.0 * 0.75 / (1.0 + 0.75) = 0.857...
         """
         matcher = NuscenesObjectMatcher(
             evaluation_task=self.evaluation_task,
@@ -93,10 +94,10 @@ class TestClassificationMetricsScore(unittest.TestCase):
         summary_results = classification_score._summarize()
         for _, thresholds_to_score in summary_results.items():
             for _, scores in thresholds_to_score.items():
-                self.assertAlmostEqual(scores.accuracy, 0.4, delta=0.01)
-                self.assertAlmostEqual(scores.precision, 0.66, delta=0.01)
-                self.assertAlmostEqual(scores.recall, 0.5, delta=0.01)
-                self.assertAlmostEqual(scores.f1score, 0.57, delta=0.01)
+                self.assertAlmostEqual(scores.accuracy, 0.75, delta=0.01)
+                self.assertAlmostEqual(scores.precision, 1.0, delta=0.01)
+                self.assertAlmostEqual(scores.recall, 0.75, delta=0.01)
+                self.assertAlmostEqual(scores.f1score, 0.857, delta=0.01)
                 self.assertEqual(scores.predict_num, 3)
                 self.assertEqual(scores.ground_truth_num, 4)
 
