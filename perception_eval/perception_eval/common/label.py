@@ -272,6 +272,7 @@ class LabelConverter:
         if label_prefix == "autoware":
             self.label_type = AutowareLabel
             pair_list = _get_autoware_pairs(merge_similar_labels)
+            self.merge_info = _get_autoware_labels_to_merge(merge_similar_labels)
         elif label_prefix == "traffic_light":
             self.label_type = TrafficLightLabel
             pair_list = _get_traffic_light_paris(evaluation_task)
@@ -421,6 +422,21 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
             (AutowareLabel.MOTORBIKE, "vehicle.motorcycle"),
         ]
     return pair_list
+
+
+def _get_autoware_labels_to_merge(merge_similar_labels: bool) -> Tuple[Label, List[str], List[str]]:
+    """Set pairs of Label and list of str to merge similar labels.
+
+    Args:
+        merge_similar_labels (bool): Whether to merge similar labels.
+
+    Returns:
+        Tuple[Label, List[str], List[str]]: The target label and two groups of labels to merge.
+    """
+    label = Label(AutowareLabel.CAR, "car") if merge_similar_labels else Label(AutowareLabel.TRUCK, "truck")
+    group1 = ["truck", "vehicle.truck", "tractor_unit"]
+    group2 = ["trailer", "vehicle.trailer", "semi_trailer"]
+    return label, group1, group2
 
 
 def _get_traffic_light_paris(
