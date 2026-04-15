@@ -43,7 +43,11 @@ from perception_eval.common.shape import ShapeType
 from perception_eval.common.transform import HomogeneousMatrix
 from PIL import Image
 from pyquaternion.quaternion import Quaternion
+from shapely.affinity import rotate as shapely_rotate
+from shapely.affinity import translate as shapely_translate
+from shapely.geometry import box as shapely_box
 from shapely.geometry import Polygon
+from shapely.ops import unary_union
 
 from . import dataset
 
@@ -626,6 +630,86 @@ def _get_boxes_to_merge(
     return pairs
 
 
+def _merge_boxes_based_on_size(bbox1: DynamicObject, bbox2: DynamicObject) -> DynamicObject:
+    max_len1 = max(bbox1.state.shape.size)
+    max_len2 = max(bbox2.state.shape.size)
+
+    base_box = bbox1 if max_len1 >= max_len2 else bbox2
+    target_yaw_quaternion = base_box.state.orientation
+
+    corners1 = bbox1.get_corners()
+    corners2 = bbox2.get_corners()
+    all_corners = np.vstack((corners1, corners2))
+
+    inverse_target_yaw_quaternion = target_yaw_quaternion.inverse
+    local_corners = np.array([inverse_target_yaw_quaternion.rotate(corner) for corner in all_corners])
+
+    min_corner = np.min(local_corners, axis=0)
+    max_corner = np.max(local_corners, axis=0)
+
+    target_size = max_corner - min_corner
+    target_size = target_size[[1, 0, 2]]  # length, width, height -> width, length, height for nuscenes format
+    local_center = (min_corner + max_corner) / 2.0
+    base_link_center = target_yaw_quaternion.rotate(local_center)
+
+    return base_link_center, target_yaw_quaternion, target_size
+
+
+def _merge_boxes_based_on_minimum_rotated_rectangle(bbox1: DynamicObject, bbox2: DynamicObject) -> DynamicObject:
+    def get_shapely_box(box: DynamicObject) -> Tuple[Polygon, float, float, float]:
+        x, y, z = box.state.position
+        width, length, height = box.state.shape.size
+        yaw, _, _ = box.state.orientation.yaw_pitch_roll
+        # Create a 2D shapely box
+        shapely_box_object = shapely_box(-length / 2, -width / 2, length / 2, width / 2)
+        # Rotate and translate the box
+        shapely_box_object = shapely_rotate(shapely_box_object, yaw, origin=(0, 0), use_radians=True)
+        shapely_box_object = shapely_translate(shapely_box_object, x, y)
+        return shapely_box_object, z, height
+
+    bbox1_shapely, z1, height1 = get_shapely_box(bbox1)
+    bbox2_shapely, z2, height2 = get_shapely_box(bbox2)
+
+    # Merge the two shapely boxes
+    merged_box = unary_union([bbox1_shapely, bbox2_shapely]).minimum_rotated_rectangle
+
+    # Get the coordinates of the rectangle
+    coords = list(merged_box.exterior.coords)[:-1]  # Exclude the repeated first/last point
+
+    # Calculate the new dimensions and center
+    new_x = sum([point[0] for point in coords]) / 4
+    new_y = sum([point[1] for point in coords]) / 4
+
+    edge1 = ((coords[0][0] - coords[1][0]) ** 2 + (coords[0][1] - coords[1][1]) ** 2) ** 0.5
+    edge2 = ((coords[1][0] - coords[2][0]) ** 2 + (coords[1][1] - coords[2][1]) ** 2) ** 0.5
+
+    new_dx = max(edge1, edge2)
+    new_dy = min(edge1, edge2)
+
+    new_z = min(z1, z2)
+    new_dz = max(z1 + height1, z2 + height2) - new_z
+
+    # Calculate the new orientation
+    if edge1 >= edge2:
+        new_yaw = np.arctan2(
+            coords[1][1] - coords[0][1],
+            coords[1][0] - coords[0][0],
+        )
+    else:
+        new_yaw = np.arctan2(
+            coords[2][1] - coords[1][1],
+            coords[2][0] - coords[1][0],
+        )
+
+    base_link_center = np.array([new_x, new_y, new_z])
+    target_yaw_quaternion = Quaternion(axis=[0, 0, 1], angle=new_yaw)
+    target_size = np.array([new_dx, new_dy, new_dz])[
+        [1, 0, 2]
+    ]  # length, width, height -> width, length, height for nuscenes format
+
+    return base_link_center, target_yaw_quaternion, target_size
+
+
 def _create_encompassing_box(
     boxes_to_merge: List[Tuple[DynamicObject, DynamicObject]], target_label: Label
 ) -> List[DynamicObject]:
@@ -642,26 +726,10 @@ def _create_encompassing_box(
     merged_boxes: List[DynamicObject] = []
     for pair in boxes_to_merge:
         bbox1, bbox2 = pair
-        max_len1 = max(bbox1.state.shape.size)
-        max_len2 = max(bbox2.state.shape.size)
-
-        base_box = bbox1 if max_len1 >= max_len2 else bbox2
-        target_yaw_quaternion = base_box.state.orientation
-
-        corners1 = bbox1.get_corners()
-        corners2 = bbox2.get_corners()
-        all_corners = np.vstack((corners1, corners2))
-
-        inverse_target_yaw_quaternion = target_yaw_quaternion.inverse
-        local_corners = np.array([inverse_target_yaw_quaternion.rotate(corner) for corner in all_corners])
-
-        min_corner = np.min(local_corners, axis=0)
-        max_corner = np.max(local_corners, axis=0)
-
-        target_size = max_corner - min_corner
-        target_size = target_size[[1, 0, 2]]  # length, width, height -> width, length, height for nuscenes format
-        local_center = (min_corner + max_corner) / 2.0
-        base_link_center = target_yaw_quaternion.rotate(local_center)
+        base_link_center, target_yaw_quaternion, target_size = _merge_boxes_based_on_minimum_rotated_rectangle(
+            bbox1, bbox2
+        )
+        base_box = bbox1 if max(bbox1.state.shape.size) >= max(bbox2.state.shape.size) else bbox2
 
         # Re-calculate tracking and prediction
         base_link_offset = np.array(base_link_center) - base_box.state.position
