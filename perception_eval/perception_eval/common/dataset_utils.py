@@ -630,31 +630,6 @@ def _get_boxes_to_merge(
     return pairs
 
 
-def _merge_boxes_based_on_size(bbox1: DynamicObject, bbox2: DynamicObject) -> DynamicObject:
-    max_len1 = max(bbox1.state.shape.size)
-    max_len2 = max(bbox2.state.shape.size)
-
-    base_box = bbox1 if max_len1 >= max_len2 else bbox2
-    target_yaw_quaternion = base_box.state.orientation
-
-    corners1 = bbox1.get_corners()
-    corners2 = bbox2.get_corners()
-    all_corners = np.vstack((corners1, corners2))
-
-    inverse_target_yaw_quaternion = target_yaw_quaternion.inverse
-    local_corners = np.array([inverse_target_yaw_quaternion.rotate(corner) for corner in all_corners])
-
-    min_corner = np.min(local_corners, axis=0)
-    max_corner = np.max(local_corners, axis=0)
-
-    target_size = max_corner - min_corner
-    target_size = target_size[[1, 0, 2]]  # length, width, height -> width, length, height for nuscenes format
-    local_center = (min_corner + max_corner) / 2.0
-    base_link_center = target_yaw_quaternion.rotate(local_center)
-
-    return base_link_center, target_yaw_quaternion, target_size
-
-
 def _merge_boxes_based_on_minimum_rotated_rectangle(bbox1: DynamicObject, bbox2: DynamicObject) -> DynamicObject:
     def get_shapely_box(box: DynamicObject) -> Tuple[Polygon, float, float, float]:
         x, y, z = box.state.position
