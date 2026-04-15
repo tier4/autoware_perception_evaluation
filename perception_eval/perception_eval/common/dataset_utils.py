@@ -564,7 +564,9 @@ def _get_closest_edge_midpoint_distance(footprint1: Polygon, footprint2: Polygon
     return min_dist
 
 
-def _get_boxes_to_merge(boxes: List[DynamicObject], group1: List[str], group2: List[str]) -> List[List[DynamicObject]]:
+def _get_boxes_to_merge(
+    boxes: List[DynamicObject], group1: List[str], group2: List[str]
+) -> List[Tuple[DynamicObject, DynamicObject]]:
     """Get boxes to merge based on the target label and two groups of labels to merge.
 
     Args:
@@ -580,7 +582,7 @@ def _get_boxes_to_merge(boxes: List[DynamicObject], group1: List[str], group2: L
     g2_boxes: List[DynamicObject] = [box for box in boxes if box.semantic_label.name in group2]
     g1_matched_boxes: set[int] = set()
     g2_matched_boxes: set[int] = set()
-    pairs = []
+    pairs: List[Tuple[DynamicObject, DynamicObject]] = []
 
     # Matching boxes based on IoU
     ious: List[Tuple[float, int, int]] = []
