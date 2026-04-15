@@ -659,26 +659,53 @@ def _create_encompassing_box(
         max_corner = np.max(local_corners, axis=0)
 
         target_size = max_corner - min_corner
+        target_size = target_size[[1, 0, 2]]  # length, width, height -> width, length, height for nuscenes format
         local_center = (min_corner + max_corner) / 2.0
         base_link_center = target_yaw_quaternion.rotate(local_center)
+
+        # Re-calculate tracking and prediction
+        base_link_offset = np.array(base_link_center) - base_box.state.position
+        local_offset = target_yaw_quaternion.inverse.rotate(base_link_offset)
+
+        new_tracked_positions = None
+        if base_box.tracked_positions is not None:
+            new_tracked_positions = []
+            for position, orientation in zip(base_box.tracked_positions, base_box.tracked_orientations):
+                tracked_position = np.array(position) + orientation.rotate(local_offset)
+                new_tracked_positions.append(tuple(tracked_position))
+
+        new_tracked_shapes = None
+        if base_box.tracked_shapes is not None:
+            new_shape = Shape(shape_type=ShapeType.BOUNDING_BOX, size=target_size)
+            new_tracked_shapes = [new_shape for _ in base_box.tracked_shapes]
+
+        new_predicted_positions = None
+        if base_box.predicted_positions is not None:
+            new_predicted_positions = []
+            for position_mode, orientation_mode in zip(base_box.predicted_positions, base_box.predicted_orientations):
+                new_path_position_mode = []
+                for position, orientation in zip(position_mode, orientation_mode):
+                    new_path_position = np.array(position) + orientation.rotate(local_offset)
+                    new_path_position_mode.append(tuple(new_path_position))
+                new_predicted_positions.append(new_path_position_mode)
 
         merged_box = DynamicObject(
             unix_time=base_box.unix_time,
             frame_id=base_box.frame_id,
             position=tuple(base_link_center),
             orientation=target_yaw_quaternion,
-            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=tuple(target_size[[1, 0, 2]])),
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=tuple(target_size)),
             velocity=base_box.state.velocity,
             semantic_score=1.0,
             semantic_label=target_label,
-            pointcloud_num=base_box.pointcloud_num,
+            pointcloud_num=bbox1.pointcloud_num + bbox2.pointcloud_num,
             uuid=base_box.uuid,
-            tracked_positions=base_box.tracked_positions,
+            tracked_positions=new_tracked_positions,
             tracked_orientations=base_box.tracked_orientations,
-            tracked_shapes=base_box.tracked_shapes,
+            tracked_shapes=new_tracked_shapes,
             tracked_twists=base_box.tracked_twists,
             relative_timestamps=base_box.relative_timestamps,
-            predicted_positions=base_box.predicted_positions,
+            predicted_positions=new_predicted_positions,
             predicted_orientations=base_box.predicted_orientations,
             predicted_twists=base_box.predicted_twists,
             predicted_scores=base_box.predicted_scores,
