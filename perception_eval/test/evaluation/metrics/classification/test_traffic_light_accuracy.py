@@ -15,12 +15,12 @@
 from __future__ import annotations
 
 from math import isclose
-from test.util.dummy_object import make_dummy_data2d
+from test.util.dummy_object import make_dummy_data2d_traffic_light
 from typing import List
 import unittest
 
 from perception_eval.common.evaluation_task import EvaluationTask
-from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import TrafficLightLabel
 from perception_eval.evaluation.matching.objects_filter import divide_objects_to_num
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics.classification.accuracy import ClassificationAccuracy
@@ -85,16 +85,15 @@ class AnswerAccuracy:
         return str_
 
 
-class TestClassificationAccuracy(unittest.TestCase):
+class TestTrafficLightClassificationAccuracy(unittest.TestCase):
     def setUp(self) -> None:
-        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data2d(use_roi=False)
+        self.dummy_estimated_objects, self.dummy_ground_truth_objects = make_dummy_data2d_traffic_light(use_roi=False)
 
         self.evaluation_task: EvaluationTask = EvaluationTask.CLASSIFICATION2D
-        self.target_labels: List[AutowareLabel] = [
-            AutowareLabel.CAR,
-            AutowareLabel.BICYCLE,
-            AutowareLabel.PEDESTRIAN,
-            AutowareLabel.MOTORBIKE,
+        self.target_labels: List[TrafficLightLabel] = [
+            TrafficLightLabel.GREEN,
+            TrafficLightLabel.RED,
+            TrafficLightLabel.YELLOW,
         ]
         self.metric_score_config = MetricsScoreConfig(
             evaluation_task=self.evaluation_task,
@@ -109,8 +108,12 @@ class TestClassificationAccuracy(unittest.TestCase):
     def test_calculate_accuracy(self):
         # patterns: List[Tuple[AutowareLabel, AnswerAccuracy]]
         patterns: List[AnswerAccuracy] = [
-            (AutowareLabel.CAR, AnswerAccuracy(1, 1, 1, 0.5, 0.5, 1.0, 0.66)),
-            (AutowareLabel.BICYCLE, AnswerAccuracy(1, 1, 0, 1.0, 1.0, 1.0, 1.0)),
+            # One green light estimated, Two green lights ground truths
+            (TrafficLightLabel.GREEN, AnswerAccuracy(2, 1, 0, 0.5, 1.0, 0.5, 0.66)),
+            # One red light estimated, one red light ground truth
+            (TrafficLightLabel.RED, AnswerAccuracy(1, 1, 0, 1.0, 1.0, 1.0, 1.0)),
+            # One yellow light estimated, one yellow light ground truth
+            (TrafficLightLabel.YELLOW, AnswerAccuracy(1, 1, 0, 1.0, 1.0, 1.0, 1.0)),
         ]
         matcher = NuscenesObjectMatcher(
             evaluation_task=self.evaluation_task,

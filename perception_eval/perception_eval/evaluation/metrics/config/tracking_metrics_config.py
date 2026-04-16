@@ -47,11 +47,11 @@ class TrackingMetricsConfig(_MetricsConfigBase):
     def __init__(
         self,
         target_labels: List[LabelType],
-        center_distance_thresholds: List[List[float]],
+        center_distance_thresholds: List[float],
         center_distance_bev_thresholds: Optional[List[float]],
-        plane_distance_thresholds: List[List[float]],
-        iou_2d_thresholds: List[List[float]],
-        iou_3d_thresholds: List[List[float]],
+        plane_distance_thresholds: List[float],
+        iou_2d_thresholds: List[float],
+        iou_3d_thresholds: List[float],
     ) -> None:
         super().__init__(
             target_labels=target_labels,

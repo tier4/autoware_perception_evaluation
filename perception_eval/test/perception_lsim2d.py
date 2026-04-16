@@ -313,17 +313,17 @@ if __name__ == "__main__":
             objects_with_difference,
         )
 
-    # final result
-    classification_final_metric_score = classification_lsim.get_final_result()
+    # # final result
+    # classification_final_metric_score = classification_lsim.get_final_result()
 
-    # Classification performance report
-    classification_analyzer = PerceptionAnalyzer2D(classification_lsim.evaluator.evaluator_config)
-    classification_analyzer.add(classification_lsim.evaluator.frame_results)
-    result = classification_analyzer.analyze()
-    if result.score is not None:
-        logging.info(result.score.to_string())
-    if result.confusion_matrix is not None:
-        logging.info(result.confusion_matrix.to_string())
+    # # Classification performance report
+    # classification_analyzer = PerceptionAnalyzer2D(classification_lsim.evaluator.evaluator_config)
+    # classification_analyzer.add(classification_lsim.evaluator.frame_results)
+    # result = classification_analyzer.analyze()
+    # if result.score is not None:
+    #     logging.info(result.score.to_string())
+    # if result.confusion_matrix is not None:
+    #     logging.info(result.confusion_matrix.to_string())
 
     # Clean up tmpdir
     if args.use_tmpdir:

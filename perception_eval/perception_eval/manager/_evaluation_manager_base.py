@@ -77,6 +77,10 @@ class _EvaluationManagerBase(ABC):
         return self.evaluator_config.metrics_params
 
     @property
+    def label_params(self):
+        return self.evaluator_config.label_params
+
+    @property
     @abstractmethod
     def visualizer(self) -> VisualizerType:
         ...

@@ -65,6 +65,22 @@ class PerceptionLSimMoc:
         if evaluation_task == "prediction":
             evaluation_config_dict.update(
                 {
+                    "center_distance_thresholds": [
+                        [1.0, 1.0, 1.0, 1.0, 1.0],
+                        [2.0, 2.0, 2.0, 2.0, 2.0],
+                    ],  # = [[1.0, 1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0, 2.0]]
+                    "center_distance_bev_thresholds": [
+                        [1.0, 1.0, 1.0, 1.0, 1.0],
+                        [2.0, 2.0, 2.0, 2.0, 2.0],
+                    ],  # = [[1.0, 1.0, 1.0, 1.0, 1.0], [2.0, 2.0, 2.0, 2.0, 2.0]]
+                    # objectごとに同じparamの場合はこのような指定が可能
+                    "plane_distance_thresholds": [
+                        2.0,
+                        3.0,
+                    ],  # = [[2.0, 2.0, 2.0, 2.0], [3.0, 3.0, 3.0, 3.0]]
+                    "iou_2d_thresholds": [0.5, 0.5, 0.5, 0.5, 0.5],  # = [[0.5, 0.5, 0.5, 0.5, 0.5]]
+                    "iou_3d_thresholds": [0.5, 0.5, 0.5, 0.5, 0.5],  # = [[0.5, 0.5, 0.5, 0.5, 0.5]]
+                    "min_point_numbers": [0, 0, 0, 0, 0],
                     "top_ks": [1, 3, 6],  # List of the numbers of top k modes to be evaluated
                     "miss_tolerance": 2.0,  # Threshold to determine miss
                 }
@@ -395,11 +411,20 @@ if __name__ == "__main__":
             f"{format_class_for_log(prediction_lsim.evaluator.frame_results[0], 1)}",
         )
 
-        if len(prediction_lsim.evaluator.frame_results[0].object_results) > 0:
-            logging.info(
-                "Object result example (frame_results[0].object_results[0]): "
-                f"{format_class_for_log(prediction_lsim.evaluator.frame_results[0].object_results[0])}",
-            )
+        frame_result = prediction_lsim.evaluator.frame_results[0]
+        nuscene_object_results = frame_result.nuscene_object_results
+        if nuscene_object_results is not None:
+            center_distance_results = nuscene_object_results.get(MatchingMode.CENTERDISTANCE)
+            if center_distance_results:
+                for label, threshold_dict in center_distance_results.items():
+                    for threshold, results_list in threshold_dict.items():
+                        if results_list and len(results_list) > 0:
+                            logging.info(
+                                "Object result example (nuscene_object_results[MatchingMode.CENTERDISTANCE][label][threshold][0]): "
+                                f"{format_class_for_log(results_list[0])}",
+                            )
+                        break  # Only show one example
+                    break
 
     # Metrics config
     logging.info(

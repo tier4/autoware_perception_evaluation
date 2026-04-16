@@ -13,6 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
+from numbers import Real
 from typing import Any
 from typing import Dict
 from typing import List
@@ -169,10 +170,6 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
         else:
             raise RuntimeError("Either max x/y position or max/min distance should be specified")
 
-        max_matchable_radii: Optional[Union[float, List[float]]] = e_cfg.get("max_matchable_radii")
-        if max_matchable_radii is not None:
-            max_matchable_radii: List[float] = set_thresholds(max_matchable_radii, num_elements, False)
-
         min_point_numbers: Optional[List[int]] = e_cfg.get("min_point_numbers")
         if min_point_numbers is not None:
             min_point_numbers: List[int] = set_thresholds(min_point_numbers, num_elements, False)
@@ -196,14 +193,18 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
             "max_y_position_list": max_y_position_list,
             "max_distance_list": max_distance_list,
             "min_distance_list": min_distance_list,
-            "max_matchable_radii": max_matchable_radii,
             "min_point_numbers": min_point_numbers,
             "confidence_threshold_list": confidence_threshold_list,
             "target_uuids": target_uuids,
             "uuid_matching_first": e_cfg.get("uuid_matching_first", False),
         }
 
-        m_params: Dict[str, Any] = _extract_metric_params(e_cfg, self.evaluation_task, target_labels)
+        # Deprecated, keep it for backward compatible
+        max_matchable_radii: Optional[Union[float, List[float]]] = e_cfg.get("max_matchable_radii", None)
+
+        m_params: Dict[str, Any] = _extract_metric_params(
+            e_cfg, self.evaluation_task, target_labels, max_matchable_radii
+        )
         return f_params, m_params
 
 
@@ -211,24 +212,40 @@ def _extract_metric_params(
     cfg: Dict[str, Any],
     evaluation_task: EvaluationTask,
     target_labels: List[LabelType],
+    max_matchable_radii: Optional[Union[Real, List[Real]]],
 ) -> Dict[str, Any]:
     params = {"target_labels": target_labels}
+
+    matching_keys = [
+        "center_distance_thresholds",
+        "center_distance_bev_thresholds",
+        "plane_distance_thresholds",
+        "iou_2d_thresholds",
+        "iou_3d_thresholds",
+    ]
+    matching_params = {}
+    for matching_key in matching_keys:
+        matching_params[matching_key] = cfg.get(matching_key, None)
+
+    if all([matching_param is None for matching_param in matching_params.values()]):
+        # By default, it runs center_distance_matching, use max_matchable_radii for backward compatibility
+        if max_matchable_radii is None:
+            # Set a very huge maximum matching distance
+            max_matchable_radii = [100000]
+        elif isinstance(max_matchable_radii, Real):
+            max_matchable_radii = [max_matchable_radii]
+        else:
+            raise ValueError(f"Not supported {max_matchable_radii}")
+
+        matching_params.update({"center_distance_thresholds": max_matchable_radii})
+
+    params.update(matching_params)
 
     if evaluation_task == EvaluationTask.PREDICTION:
         params.update(
             {
                 "top_ks": cfg.get("top_ks", [1, 3, 6]),
                 "miss_tolerance": cfg.get("miss_tolerance", 2.0),
-            }
-        )
-    else:
-        params.update(
-            {
-                "center_distance_thresholds": cfg.get("center_distance_thresholds"),
-                "center_distance_bev_thresholds": cfg.get("center_distance_bev_thresholds"),
-                "plane_distance_thresholds": cfg.get("plane_distance_thresholds"),
-                "iou_2d_thresholds": cfg.get("iou_2d_thresholds"),
-                "iou_3d_thresholds": cfg.get("iou_3d_thresholds"),
             }
         )
 

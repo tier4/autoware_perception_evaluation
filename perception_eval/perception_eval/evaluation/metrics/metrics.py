@@ -18,6 +18,7 @@ from itertools import chain
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Tuple
 from typing import Union
 
@@ -197,11 +198,13 @@ class MetricsScore:
 
     def evaluate_tracking(
         self,
-        object_results: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
+        nuscene_object_tracking_results: Dict[
+            MatchingMode, Dict[LabelType, Dict[float, List[List[DynamicObjectWithPerceptionResult]]]]
+        ],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
-        """[summary]
-        Calculate tracking metrics.
+        """
+        Evaluate tracking performance and calculate tracking-related metrics.
 
         NOTE:
             object_results and ground_truth_objects must be nested list.
@@ -209,13 +212,20 @@ class MetricsScore:
             In case of evaluating multi frame, [[], [t1], [t2], ..., [tn]]
 
         Args:
-            object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object result for each frame.
+            nuscene_object_results: A nested dictionary of tracking results where:
+                - The first key is a MatchingMode (e.g., IoU),
+                - The second key is a label (e.g., car, pedestrian),
+                - The third key is a threshold (e.g., 0.5),
+                - The value is either a list of DynamicObjectWithPerceptionResult instances.
+            previous_nuscene_object_results: A nested dictionary similar to nuscene_object_results
+                                but for the previous frame, or None if not applicable.
+            num_ground_truth: A dictionary mapping each label to the number of ground truth objects.
         """
         self.__num_gt += sum(num_ground_truth.values())
 
         for distance_threshold_ in self.tracking_config.center_distance_thresholds:
             tracking_score_ = TrackingMetricsScore(
-                object_results_dict=object_results,
+                nuscene_object_results=nuscene_object_tracking_results[MatchingMode.CENTERDISTANCE],
                 num_ground_truth_dict=num_ground_truth,
                 target_labels=self.tracking_config.target_labels,
                 matching_mode=MatchingMode.CENTERDISTANCE,
@@ -224,7 +234,7 @@ class MetricsScore:
             self.tracking_scores.append(tracking_score_)
         for iou_threshold_2d_ in self.tracking_config.iou_2d_thresholds:
             tracking_score_ = TrackingMetricsScore(
-                object_results_dict=object_results,
+                nuscene_object_results=nuscene_object_tracking_results[MatchingMode.IOU2D],
                 num_ground_truth_dict=num_ground_truth,
                 target_labels=self.tracking_config.target_labels,
                 matching_mode=MatchingMode.IOU2D,
@@ -235,7 +245,7 @@ class MetricsScore:
         if self.evaluation_task.is_3d():
             for distance_bev_threshold_ in self.tracking_config.center_distance_bev_thresholds:
                 tracking_score_ = TrackingMetricsScore(
-                    object_results_dict=object_results,
+                    nuscene_object_results=nuscene_object_tracking_results[MatchingMode.CENTERDISTANCEBEV],
                     num_ground_truth_dict=num_ground_truth,
                     target_labels=self.tracking_config.target_labels,
                     matching_mode=MatchingMode.CENTERDISTANCEBEV,
@@ -244,7 +254,7 @@ class MetricsScore:
                 self.tracking_scores.append(tracking_score_)
             for iou_threshold_3d_ in self.tracking_config.iou_3d_thresholds:
                 tracking_score_ = TrackingMetricsScore(
-                    object_results_dict=object_results,
+                    nuscene_object_results=nuscene_object_tracking_results[MatchingMode.IOU3D],
                     num_ground_truth_dict=num_ground_truth,
                     target_labels=self.tracking_config.target_labels,
                     matching_mode=MatchingMode.IOU3D,
@@ -253,7 +263,7 @@ class MetricsScore:
                 self.tracking_scores.append(tracking_score_)
             for plane_distance_threshold_ in self.tracking_config.plane_distance_thresholds:
                 tracking_score_ = TrackingMetricsScore(
-                    object_results_dict=object_results,
+                    nuscene_object_results=nuscene_object_tracking_results[MatchingMode.PLANEDISTANCE],
                     num_ground_truth_dict=num_ground_truth,
                     target_labels=self.tracking_config.target_labels,
                     matching_mode=MatchingMode.PLANEDISTANCE,
@@ -263,20 +273,22 @@ class MetricsScore:
 
     def evaluate_prediction(
         self,
-        object_results: Dict[LabelType, List[DynamicObjectWithPerceptionResult]],
+        nuscene_object_results: Dict[
+            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
+        ],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
         """[summary]
         Calculate prediction metrics
 
         Args:
-            object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
+            nuscene_object_results (Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]): The list of object results with their matching mode, label and threshold.
         """
         self.__num_gt += sum(num_ground_truth.values())
 
         for top_k in self.prediction_config.top_ks:
             prediction_score_ = PredictionMetricsScore(
-                object_results_dict=object_results,
+                nuscene_object_results=nuscene_object_results,
                 num_ground_truth_dict=num_ground_truth,
                 target_labels=self.prediction_config.target_labels,
                 top_k=top_k,
@@ -286,12 +298,14 @@ class MetricsScore:
 
     def evaluate_classification(
         self,
-        object_results: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
+        nuscene_object_results: Dict[
+            MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]
+        ],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
         self.__num_gt += sum(num_ground_truth.values())
         classification_score_ = ClassificationMetricsScore(
-            object_results_dict=object_results,
+            nuscene_object_results=nuscene_object_results,
             num_ground_truth_dict=num_ground_truth,
             target_labels=self.classification_config.target_labels,
         )
