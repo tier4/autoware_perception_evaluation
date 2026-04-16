@@ -32,10 +32,8 @@ from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import get_point_left_right_index
 from perception_eval.common.point import polygon_to_list
 from perception_eval.common.schema import FrameID
-from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
 from perception_eval.common.transform import TransformDict
-from pyquaternion import Quaternion
 from shapely.geometry import Polygon
 
 
@@ -426,7 +424,6 @@ class PlaneDistanceMatching(MatchingMethod):
         if est_corners.shape[1] == 2:  # if z value is not included, add it as 0.0
             est_corners = np.hstack((est_corners, np.zeros((est_corners.shape[0], 1))))
         est_corners = self._align_corners_order(est_corners, gt_corners)
-        tmp = est_corners.copy()
 
         sort_idx = self._get_nearest_corner_index(ground_truth_object, gt_corners, transforms)
         gt_corners = gt_corners[sort_idx]
@@ -445,44 +442,6 @@ class PlaneDistanceMatching(MatchingMethod):
         distance = round(plane_distance, 10)
         self.ground_truth_nn_plane = (gt_left_point, gt_right_point)
         self.estimated_nn_plane = (est_left_point, est_right_point)
-
-        ## debug
-        coords = tmp.tolist()
-        new_x = sum([point[0] for point in coords]) / 4
-        new_y = sum([point[1] for point in coords]) / 4
-
-        edge1 = ((coords[0][0] - coords[1][0]) ** 2 + (coords[0][1] - coords[1][1]) ** 2) ** 0.5
-        edge2 = ((coords[1][0] - coords[2][0]) ** 2 + (coords[1][1] - coords[2][1]) ** 2) ** 0.5
-
-        new_dx = max(edge1, edge2)
-        new_dy = min(edge1, edge2)
-
-        new_z = estimated_object.state.position[2]
-        new_dz = estimated_object.state.size[2]
-
-        # Calculate the new orientation
-        if edge1 >= edge2:
-            new_yaw = np.arctan2(
-                coords[1][1] - coords[0][1],
-                coords[1][0] - coords[0][0],
-            )
-        else:
-            new_yaw = np.arctan2(
-                coords[2][1] - coords[1][1],
-                coords[2][0] - coords[1][0],
-            )
-
-        base_link_center = np.array([new_x, new_y, new_z])
-        target_yaw_quaternion = Quaternion(axis=[0, 0, 1], angle=new_yaw)
-        target_size = np.array([new_dx, new_dy, new_dz])[
-            [1, 0, 2]
-        ]  # length, width, height -> width, length, height for nuscenes format
-
-        estimated_object.state.position = base_link_center
-        estimated_object.state.orientation = target_yaw_quaternion
-        estimated_object.state.shape.type = ShapeType.BOUNDING_BOX
-        estimated_object.state.shape.size = target_size
-        estimated_object.state.shape.footprint = Shape._Shape__calculate_corners(ShapeType.BOUNDING_BOX, target_size)
 
         return distance
 
