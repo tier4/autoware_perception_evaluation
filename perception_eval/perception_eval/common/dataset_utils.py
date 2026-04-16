@@ -43,6 +43,11 @@ from perception_eval.common.shape import ShapeType
 from perception_eval.common.transform import HomogeneousMatrix
 from PIL import Image
 from pyquaternion.quaternion import Quaternion
+from shapely.affinity import rotate as shapely_rotate
+from shapely.affinity import translate as shapely_translate
+from shapely.geometry import box as shapely_box
+from shapely.geometry import Polygon
+from shapely.ops import unary_union
 
 from . import dataset
 
@@ -133,6 +138,8 @@ def _sample_to_frame(
             continue
 
         objects_.append(object_)
+
+    objects_ = _merge_boxes(objects_, label_converter.merge_info)
 
     frame = dataset.FrameGroundTruth(
         unix_time=unix_time_,
@@ -523,6 +530,284 @@ def _get_prediction_data(
     relative_timestamps = [t - future_timestamps[0] for t in future_timestamps]
 
     return relative_timestamps, future_positions, future_orientations, future_velocities
+
+
+def _get_closest_edge_midpoint_distance(footprint1: Polygon, footprint2: Polygon) -> float:
+    """Calculate the minimum distance between the midpoints of the edges of two polygons.
+
+    Args:
+        footprint1 (Polygon): The first polygon.
+        footprint2 (Polygon): The second polygon.
+
+     Returns:
+        float: The minimum distance between the midpoints of the edges of the two polygons.
+    """
+
+    def get_midpoints(poly: Polygon) -> List[np.ndarray]:
+        coords = list(poly.exterior.coords)
+        midpoints = []
+        assert len(coords) == 5, "Expected footprint to be a rectangle with 5 coordinates (including closing point)."
+        for i in range(len(coords) - 1):
+            p1 = coords[i]
+            p2 = coords[i + 1]
+            mid_x = (p1[0] + p2[0]) / 2.0
+            mid_y = (p1[1] + p2[1]) / 2.0
+            midpoints.append(np.array([mid_x, mid_y]))
+        return midpoints
+
+    mid1_list = get_midpoints(footprint1)
+    mid2_list = get_midpoints(footprint2)
+
+    min_dist = float('inf')
+    for mid1 in mid1_list:
+        for mid2 in mid2_list:
+            dist = np.linalg.norm(mid1 - mid2)
+            if dist < min_dist:
+                min_dist = dist
+
+    return min_dist
+
+
+def _get_boxes_to_merge(
+    boxes: List[DynamicObject], group1: List[str], group2: List[str]
+) -> List[Tuple[DynamicObject, DynamicObject]]:
+    """Get boxes to merge based on the target label and two groups of labels to merge.
+
+    Args:
+        boxes (List[DynamicObject]): List of DynamicObject instances.
+        group1 (List[str]): The first group of labels to merge.
+        group2 (List[str]): The second group of labels to merge.
+
+    Returns:
+        List[List[DynamicObject]]: A list of lists of DynamicObject instances to be merged.
+    """
+    DISTANCE_THRESHOLD: float = 1.0
+    g1_boxes: List[DynamicObject] = [box for box in boxes if box.semantic_label.name in group1]
+    g2_boxes: List[DynamicObject] = [box for box in boxes if box.semantic_label.name in group2]
+    g1_matched_boxes: set[int] = set()
+    g2_matched_boxes: set[int] = set()
+    pairs: List[Tuple[DynamicObject, DynamicObject]] = []
+
+    # Matching boxes based on IoU
+    ious: List[Tuple[float, int, int]] = []
+    for i, g1_box in enumerate(g1_boxes):
+        for j, g2_box in enumerate(g2_boxes):
+            g1_footprint = g1_box.get_footprint()
+            g2_footprint = g2_box.get_footprint()
+            if g1_footprint.intersects(g2_footprint):
+                intersection_area = g1_footprint.intersection(g2_footprint).area
+                union_area = g1_footprint.union(g2_footprint).area
+                iou = intersection_area / union_area if union_area > 0 else 0.0
+                if iou > 0.0:
+                    ious.append((iou, i, j))
+    ious.sort(reverse=True, key=lambda x: x[0])
+    for iou, i, j in ious:
+        if i not in g1_matched_boxes and j not in g2_matched_boxes:
+            g1_matched_boxes.add(i)
+            g2_matched_boxes.add(j)
+            pairs.append((g1_boxes[i], g2_boxes[j]))
+
+    # Matching boxes based on distance between midpoints of the nearest sides
+    distances: List[Tuple[float, int, int]] = []
+    for i, g1_box in enumerate(g1_boxes):
+        if i in g1_matched_boxes:
+            continue
+        for j, g2_box in enumerate(g2_boxes):
+            if j in g2_matched_boxes:
+                continue
+            g1_footprint = g1_box.get_footprint()
+            g2_footprint = g2_box.get_footprint()
+            distance = _get_closest_edge_midpoint_distance(g1_footprint, g2_footprint)
+            if distance < DISTANCE_THRESHOLD:
+                distances.append((distance, i, j))
+
+    distances.sort(key=lambda x: x[0])
+    for distance, i, j in distances:
+        if i not in g1_matched_boxes and j not in g2_matched_boxes:
+            g1_matched_boxes.add(i)
+            g2_matched_boxes.add(j)
+            pairs.append((g1_boxes[i], g2_boxes[j]))
+    return pairs
+
+
+def _merge_boxes_based_on_minimum_rotated_rectangle(bbox1: DynamicObject, bbox2: DynamicObject) -> DynamicObject:
+    """Merge two boxes into one box based on the minimum rotated rectangle that covers the two boxes.
+
+    Args:
+        bbox1 (DynamicObject): The first box to merge.
+        bbox2 (DynamicObject): The second box to merge.
+
+    Returns:
+        Tuple[np.ndarray, Quaternion, np.ndarray]: The merged box's center, orientation, and size.
+    """
+
+    def get_shapely_box(box: DynamicObject) -> Tuple[Polygon, float, float, float]:
+        x, y, z = box.state.position
+        width, length, height = box.state.shape.size
+        yaw, _, _ = box.state.orientation.yaw_pitch_roll
+        shapely_box_object = shapely_box(-length / 2, -width / 2, length / 2, width / 2)
+        shapely_box_object = shapely_rotate(shapely_box_object, yaw, origin=(0, 0), use_radians=True)
+        shapely_box_object = shapely_translate(shapely_box_object, x, y)
+        return shapely_box_object, z, height
+
+    bbox1_shapely, z1, height1 = get_shapely_box(bbox1)
+    bbox2_shapely, z2, height2 = get_shapely_box(bbox2)
+
+    # Merge the two shapely boxes
+    merged_box = unary_union([bbox1_shapely, bbox2_shapely]).minimum_rotated_rectangle
+
+    # Get the coordinates of the rectangle
+    coords = list(merged_box.exterior.coords)[:-1]  # Exclude the repeated first/last point
+
+    # Calculate the new dimensions and center
+    new_x = sum([point[0] for point in coords]) / 4
+    new_y = sum([point[1] for point in coords]) / 4
+
+    edge1 = ((coords[0][0] - coords[1][0]) ** 2 + (coords[0][1] - coords[1][1]) ** 2) ** 0.5
+    edge2 = ((coords[1][0] - coords[2][0]) ** 2 + (coords[1][1] - coords[2][1]) ** 2) ** 0.5
+
+    new_dx = max(edge1, edge2)
+    new_dy = min(edge1, edge2)
+
+    new_z = min(z1, z2)
+    new_dz = max(z1 + height1, z2 + height2) - new_z
+
+    # Calculate the new orientation
+    if edge1 >= edge2:
+        new_yaw = np.arctan2(
+            coords[1][1] - coords[0][1],
+            coords[1][0] - coords[0][0],
+        )
+    else:
+        new_yaw = np.arctan2(
+            coords[2][1] - coords[1][1],
+            coords[2][0] - coords[1][0],
+        )
+
+    base_link_center = np.array([new_x, new_y, new_z])
+    target_yaw_quaternion = Quaternion(axis=[0, 0, 1], angle=new_yaw)
+    target_size = np.array([new_dx, new_dy, new_dz])[
+        [1, 0, 2]
+    ]  # length, width, height -> width, length, height for nuscenes format
+
+    return base_link_center, target_yaw_quaternion, target_size
+
+
+def _create_encompassing_box(
+    boxes_to_merge: List[Tuple[DynamicObject, DynamicObject]], target_label: Label
+) -> List[DynamicObject]:
+    """Create encompassing boxes for the given pairs of boxes to merge.
+
+    Args:
+        boxes_to_merge (List[Tuple[DynamicObject, DynamicObject]]): A list of tuples of DynamicObject instances to be merged, where each tuple contains two DynamicObjects to merge.
+        target_label (Label): The target label for the merged boxes.
+
+    Returns:
+        List[DynamicObject]: A list of merged DynamicObject instances.
+    """
+
+    merged_boxes: List[DynamicObject] = []
+    for pair in boxes_to_merge:
+        bbox1, bbox2 = pair
+        base_link_center, target_yaw_quaternion, target_size = _merge_boxes_based_on_minimum_rotated_rectangle(
+            bbox1, bbox2
+        )
+        base_box = bbox1 if max(bbox1.state.shape.size) >= max(bbox2.state.shape.size) else bbox2
+
+        # Re-calculate tracking and prediction
+        base_link_offset = np.array(base_link_center) - base_box.state.position
+        local_offset = base_box.state.orientation.inverse.rotate(base_link_offset)
+        orientation_offset = base_box.state.orientation.inverse * target_yaw_quaternion
+
+        new_tracked_positions = None
+        new_tracked_orientations = None
+        if base_box.tracked_positions is not None and base_box.tracked_orientations is not None:
+            new_tracked_positions = []
+            new_tracked_orientations = []
+            for position, orientation in zip(base_box.tracked_positions, base_box.tracked_orientations):
+                # update position by applying the same offset in the local coordinate system of the base box
+                tracked_position = np.array(position) + orientation.rotate(local_offset)
+                new_tracked_positions.append(tuple(tracked_position))
+                # update orientation by applying the same rotation from the base box's original orientation to the new orientation
+                tracked_orientation = orientation * orientation_offset
+                new_tracked_orientations.append(tracked_orientation)
+
+        new_tracked_shapes = None
+        if base_box.tracked_shapes is not None:
+            new_shape = Shape(shape_type=ShapeType.BOUNDING_BOX, size=target_size)
+            new_tracked_shapes = [new_shape for _ in base_box.tracked_shapes]
+
+        new_predicted_positions = None
+        new_predicted_orientations = None
+        if base_box.predicted_positions is not None and base_box.predicted_orientations is not None:
+            new_predicted_positions = []
+            new_predicted_orientations = []
+            for position_mode, orientation_mode in zip(base_box.predicted_positions, base_box.predicted_orientations):
+                new_path_position_mode = []
+                new_path_orientation_mode = []
+                for position, orientation in zip(position_mode, orientation_mode):
+                    new_path_position = np.array(position) + orientation.rotate(local_offset)
+                    new_path_position_mode.append(tuple(new_path_position))
+                    new_path_orientation = orientation * orientation_offset
+                    new_path_orientation_mode.append(new_path_orientation)
+                new_predicted_positions.append(new_path_position_mode)
+                new_predicted_orientations.append(new_path_orientation_mode)
+
+        merged_box = DynamicObject(
+            unix_time=base_box.unix_time,
+            frame_id=base_box.frame_id,
+            position=tuple(base_link_center),
+            orientation=target_yaw_quaternion,
+            shape=Shape(shape_type=ShapeType.BOUNDING_BOX, size=tuple(target_size)),
+            velocity=base_box.state.velocity,
+            semantic_score=1.0,
+            semantic_label=target_label,
+            pointcloud_num=bbox1.pointcloud_num + bbox2.pointcloud_num,
+            uuid=base_box.uuid,
+            tracked_positions=new_tracked_positions,
+            tracked_orientations=new_tracked_orientations,
+            tracked_shapes=new_tracked_shapes,
+            tracked_twists=base_box.tracked_twists,
+            relative_timestamps=base_box.relative_timestamps,
+            predicted_positions=new_predicted_positions,
+            predicted_orientations=new_predicted_orientations,
+            predicted_twists=base_box.predicted_twists,
+            predicted_scores=base_box.predicted_scores,
+            visibility=base_box.visibility,
+        )
+
+        merged_boxes.append(merged_box)
+
+    return merged_boxes
+
+
+def _merge_boxes(boxes: List[DynamicObject], merge_info: Tuple[Label, List[str], List[str]]) -> List[DynamicObject]:
+    """Merge boxes based on the target label and two groups of labels to merge.
+
+    Args:
+        boxes (List[DynamicObject]): A list of DynamicObject instances.
+        merge_info (Tuple[Label, List[str], List[str]]): A tuple containing the target label and two groups of labels to merge.
+
+    Returns:
+        List[DynamicObject]: A list of merged DynamicObject instances.
+    """
+    target_label, group1, group2 = merge_info
+
+    boxes_to_merge: List[Tuple[DynamicObject, DynamicObject]] = _get_boxes_to_merge(boxes, group1, group2)
+    merged_boxes: List[DynamicObject] = _create_encompassing_box(boxes_to_merge, target_label)
+
+    consumed_boxes: set[int] = set()
+    for box1, box2 in boxes_to_merge:
+        consumed_boxes.add(id(box1))
+        consumed_boxes.add(id(box2))
+
+    all_boxes: List[DynamicObject] = []
+    for box in boxes:
+        if id(box) not in consumed_boxes:
+            all_boxes.append(box)
+    all_boxes.extend(merged_boxes)
+
+    return all_boxes
 
 
 #################################
