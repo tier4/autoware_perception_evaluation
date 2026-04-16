@@ -631,13 +631,21 @@ def _get_boxes_to_merge(
 
 
 def _merge_boxes_based_on_minimum_rotated_rectangle(bbox1: DynamicObject, bbox2: DynamicObject) -> DynamicObject:
+    """Merge two boxes into one box based on the minimum rotated rectangle that covers the two boxes.
+
+    Args:
+        bbox1 (DynamicObject): The first box to merge.
+        bbox2 (DynamicObject): The second box to merge.
+
+    Returns:
+        Tuple[np.ndarray, Quaternion, np.ndarray]: The merged box's center, orientation, and size.
+    """
+
     def get_shapely_box(box: DynamicObject) -> Tuple[Polygon, float, float, float]:
         x, y, z = box.state.position
         width, length, height = box.state.shape.size
         yaw, _, _ = box.state.orientation.yaw_pitch_roll
-        # Create a 2D shapely box
         shapely_box_object = shapely_box(-length / 2, -width / 2, length / 2, width / 2)
-        # Rotate and translate the box
         shapely_box_object = shapely_rotate(shapely_box_object, yaw, origin=(0, 0), use_radians=True)
         shapely_box_object = shapely_translate(shapely_box_object, x, y)
         return shapely_box_object, z, height
@@ -708,14 +716,21 @@ def _create_encompassing_box(
 
         # Re-calculate tracking and prediction
         base_link_offset = np.array(base_link_center) - base_box.state.position
-        local_offset = target_yaw_quaternion.inverse.rotate(base_link_offset)
+        local_offset = base_box.state.orientation.inverse.rotate(base_link_offset)
+        orientation_offset = base_box.state.orientation.inverse * target_yaw_quaternion
 
         new_tracked_positions = None
-        if base_box.tracked_positions is not None:
+        new_tracked_orientations = None
+        if base_box.tracked_positions is not None and base_box.tracked_orientations is not None:
             new_tracked_positions = []
+            new_tracked_orientations = []
             for position, orientation in zip(base_box.tracked_positions, base_box.tracked_orientations):
+                # update position by applying the same offset in the local coordinate system of the base box
                 tracked_position = np.array(position) + orientation.rotate(local_offset)
                 new_tracked_positions.append(tuple(tracked_position))
+                # update orientation by applying the same rotation from the base box's original orientation to the new orientation
+                tracked_orientation = orientation * orientation_offset
+                new_tracked_orientations.append(tracked_orientation)
 
         new_tracked_shapes = None
         if base_box.tracked_shapes is not None:
@@ -723,14 +738,20 @@ def _create_encompassing_box(
             new_tracked_shapes = [new_shape for _ in base_box.tracked_shapes]
 
         new_predicted_positions = None
-        if base_box.predicted_positions is not None:
+        new_predicted_orientations = None
+        if base_box.predicted_positions is not None and base_box.predicted_orientations is not None:
             new_predicted_positions = []
+            new_predicted_orientations = []
             for position_mode, orientation_mode in zip(base_box.predicted_positions, base_box.predicted_orientations):
                 new_path_position_mode = []
+                new_path_orientation_mode = []
                 for position, orientation in zip(position_mode, orientation_mode):
                     new_path_position = np.array(position) + orientation.rotate(local_offset)
                     new_path_position_mode.append(tuple(new_path_position))
+                    new_path_orientation = orientation * orientation_offset
+                    new_path_orientation_mode.append(new_path_orientation)
                 new_predicted_positions.append(new_path_position_mode)
+                new_predicted_orientations.append(new_path_orientation_mode)
 
         merged_box = DynamicObject(
             unix_time=base_box.unix_time,
@@ -744,12 +765,12 @@ def _create_encompassing_box(
             pointcloud_num=bbox1.pointcloud_num + bbox2.pointcloud_num,
             uuid=base_box.uuid,
             tracked_positions=new_tracked_positions,
-            tracked_orientations=base_box.tracked_orientations,
+            tracked_orientations=new_tracked_orientations,
             tracked_shapes=new_tracked_shapes,
             tracked_twists=base_box.tracked_twists,
             relative_timestamps=base_box.relative_timestamps,
             predicted_positions=new_predicted_positions,
-            predicted_orientations=base_box.predicted_orientations,
+            predicted_orientations=new_predicted_orientations,
             predicted_twists=base_box.predicted_twists,
             predicted_scores=base_box.predicted_scores,
             visibility=base_box.visibility,
