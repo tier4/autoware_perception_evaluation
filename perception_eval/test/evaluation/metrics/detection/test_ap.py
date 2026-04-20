@@ -665,14 +665,14 @@ class TestAp(unittest.TestCase):
             # Given vertical diff_yaw
             (
                 DiffYaw(math.pi / 2.0, 0.0),
-                self.answer_fp_full,
-                self.answer_fp_full,
+                self.answer_tp_full,
+                self.answer_aph_yaw_pi_2,
             ),
             # Given vertical diff_yaw
             (
                 DiffYaw(-math.pi / 2.0, 0.0),
-                self.answer_fp_full,
-                self.answer_fp_full,
+                self.answer_tp_full,
+                self.answer_aph_yaw_pi_2,
             ),
             # Given opposite direction, aph is 0.0.
             (

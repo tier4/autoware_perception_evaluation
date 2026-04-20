@@ -185,7 +185,7 @@ class TestMap(unittest.TestCase):
                 "yaw",
                 [
                     (0.0, 0.498, 0.498),
-                    (math.pi / 2, 0.25, 0.111),
+                    (math.pi / 2, 0.498, 0.220),
                     (math.pi, 0.498, 0.0),
                     (math.pi / 4, 0.498, 0.359),
                     (3 * math.pi / 4, 0.498, 0.08080),
