@@ -289,6 +289,10 @@ class TestObjectResult(unittest.TestCase):
                 -> TP: [(CAR, CAR), (BICYCLE, BICYCLE), (UNKNOWN, CAR)]
             3. Est: (CAR, BICYCLE, PEDESTRIAN), GT: (CAR, BICYCLE, CAR)
                 -> TP: [(CAR, CAR), (BICYCLE, BICYCLE), (PEDESTRIAN, CAR)]
+            4. Est: (CAR, PEDESTRIAN, CAR), GT: (CAR, BICYCLE, CAR)
+                -> TP: [(CAR, CAR), (PEDESTRIAN, BICYCLE), (CAR, CAR)]
+            5. Est: (CAR, BICYCLE, TRUCK), GT: (CAR, BICYCLE, CAR)
+                -> TP: [(CAR, CAR), (BICYCLE, BICYCLE), (TRUCK, CAR)]
         """
         patterns: List[Tuple[Dict[int, Label], List[Tuple[Label, Label, bool]]]] = [
             (
@@ -320,7 +324,7 @@ class TestObjectResult(unittest.TestCase):
                 [
                     (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
                     (Label(AutowareLabel.PEDESTRIAN, "pedestrian"), Label(AutowareLabel.BICYCLE, "bicycle"), True),
-                    (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), False),
+                    (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
                 ],
             ),
             (  # check matching labels in different groups (TRUCK vs CAR)

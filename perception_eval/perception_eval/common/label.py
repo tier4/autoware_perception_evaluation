@@ -579,9 +579,6 @@ def is_same_label_group(object1: ObjectType, object2: ObjectType) -> bool:
     -------
         bool: Return True if both labels are in the same label group.
     """
-    if not isinstance(object1.semantic_label, AutowareLabel) or not isinstance(object2.semantic_label, AutowareLabel):
-        raise ValueError("Both labels must be AutowareLabel.")
-
     if object1.semantic_label == object2.semantic_label:
         return True
     else:
