@@ -176,7 +176,7 @@ class MetricsScore:
                 - The value is either a list of DynamicObjectWithPerceptionResult instances.
             num_ground_truth: A dictionary mapping each label to the number of ground truth objects.
         """
-        if self.tracking_config is None:
+        if self.tracking_config is None and self.prediction_config is None:
             self.__num_gt += sum(num_ground_truth.values())
 
         if self.detection_config is None:

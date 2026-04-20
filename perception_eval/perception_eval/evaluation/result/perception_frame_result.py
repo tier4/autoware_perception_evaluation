@@ -101,8 +101,12 @@ class PerceptionFrameResult:
         self.critical_object_filter_config = critical_object_filter_config
         self.frame_pass_fail_config = frame_pass_fail_config
 
-        # For tracking and detection, we use PassFailNusceneResult
-        if self.metrics_score.detection_config or self.metrics_score.tracking_config:
+        # For tracking, detection, and prediction, we use PassFailNusceneResult
+        if (
+            self.metrics_score.detection_config
+            or self.metrics_score.tracking_config
+            or self.metrics_score.prediction_config
+        ):
             self.pass_fail_result: PassFailNusceneResult = PassFailNusceneResult(
                 unix_time=unix_time,
                 frame_number=frame_ground_truth.frame_name,
@@ -187,7 +191,11 @@ class PerceptionFrameResult:
     ) -> None:
         """Core evaluation logic for the frame result."""
         # Only detection
-        if self.metrics_score.detection_config is not None and self.metrics_score.tracking_config is None:
+        if (
+            self.metrics_score.detection_config is not None
+            and self.metrics_score.tracking_config is None
+            and self.metrics_score.prediction_config is None
+        ):
             self.metrics_score.evaluate_detection(self.nuscene_object_results, num_ground_truth_dict)
             # Calculate TP/FP/TN/FN based on plane distance
             self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
@@ -228,9 +236,10 @@ class PerceptionFrameResult:
             self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
 
         # Prediction
-        elif self.metrics_score.prediction_config is not None:
+        elif self.metrics_score.detection_config is not None and self.metrics_score.prediction_config is not None:
+            self.metrics_score.evaluate_detection(self.nuscene_object_results, num_ground_truth_dict)
             self.metrics_score.evaluate_prediction(object_results_dict, num_ground_truth_dict)
-            self.pass_fail_result.evaluate(self.object_results, self.frame_ground_truth.objects)
+            self.pass_fail_result.evaluate(self.nuscene_object_results, self.frame_ground_truth.objects)
 
         # Fp validation
         elif not any(
