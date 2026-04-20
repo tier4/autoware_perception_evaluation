@@ -107,11 +107,14 @@ class PerceptionEvaluationConfig(_EvaluationConfigBase):
                 MatchingLabelPolicy.ALLOW_UNKNOWN if allow_matching_unknown else MatchingLabelPolicy.DEFAULT
             )
 
-        # If using MatchingLabelPolicy.ALLOW_UNKNOWN, it is required unknown label in target label
-        if matching_label_policy is MatchingLabelPolicy.ALLOW_UNKNOWN and "unknown" not in e_cfg.get(
-            "target_labels", []
-        ):
-            raise ValueError("MatchingLabelPolicy.ALLOW_UNKNOWN requires 'unknown' to be included in target_labels")
+        # If using MatchingLabelPolicy.ALLOW_UNKNOWN or MatchingLabelPolicy.ALLOW_SAME_GROUP, it is required unknown label in target label
+        if matching_label_policy in (
+            MatchingLabelPolicy.ALLOW_UNKNOWN,
+            MatchingLabelPolicy.ALLOW_SAME_GROUP,
+        ) and "unknown" not in e_cfg.get("target_labels", []):
+            raise ValueError(
+                "MatchingLabelPolicy.ALLOW_UNKNOWN or MatchingLabelPolicy.ALLOW_SAME_GROUP requires 'unknown' to be included in target_labels"
+            )
 
         l_params: Dict[str, Any] = {
             "label_prefix": e_cfg["label_prefix"],
