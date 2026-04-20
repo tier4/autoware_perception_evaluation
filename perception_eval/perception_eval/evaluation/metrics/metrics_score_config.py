@@ -60,21 +60,29 @@ class MetricsScoreConfig:
 
         self.evaluation_task: EvaluationTask = evaluation_task
         self.target_labels: List[LabelType] = cfg["target_labels"]
+
+        detection_cfg = {k: v for k, v in cfg.items() if k in signature(DetectionMetricsConfig).parameters}
+        tracking_cfg = {k: v for k, v in cfg.items() if k in signature(TrackingMetricsConfig).parameters}
+        prediction_cfg = {k: v for k, v in cfg.items() if k in signature(PredictionMetricsConfig).parameters}
+        classification_cfg = {k: v for k, v in cfg.items() if k in signature(ClassificationMetricsConfig).parameters}
         if self.evaluation_task in (EvaluationTask.DETECTION2D, EvaluationTask.DETECTION):
-            self._check_parameters(DetectionMetricsConfig, cfg)
-            self.detection_config = DetectionMetricsConfig(**cfg)
+            self._check_parameters(DetectionMetricsConfig, detection_cfg)
+            self.detection_config = DetectionMetricsConfig(**detection_cfg)
         elif self.evaluation_task in (EvaluationTask.TRACKING2D, EvaluationTask.TRACKING):
-            self._check_parameters(TrackingMetricsConfig, cfg)
-            self.tracking_config = TrackingMetricsConfig(**cfg)
+            self._check_parameters(TrackingMetricsConfig, tracking_cfg)
+            self.tracking_config = TrackingMetricsConfig(**tracking_cfg)
             # NOTE: In tracking, evaluate mAP too
-            # TODO: Check and extract parameters for detection from parameters for tracking
-            self.detection_config = DetectionMetricsConfig(**cfg)
+            self._check_parameters(DetectionMetricsConfig, detection_cfg)
+            self.detection_config = DetectionMetricsConfig(**detection_cfg)
         elif self.evaluation_task == EvaluationTask.PREDICTION:
-            self._check_parameters(PredictionMetricsConfig, cfg)
-            self.prediction_config = PredictionMetricsConfig(**cfg)
+            self._check_parameters(PredictionMetricsConfig, prediction_cfg)
+            self.prediction_config = PredictionMetricsConfig(**prediction_cfg)
+            # NOTE: In prediction, evaluate mAP too
+            self._check_parameters(DetectionMetricsConfig, detection_cfg)
+            self.detection_config = DetectionMetricsConfig(**detection_cfg)
         elif self.evaluation_task == EvaluationTask.CLASSIFICATION2D:
-            self._check_parameters(ClassificationMetricsConfig, cfg)
-            self.classification_config = ClassificationMetricsConfig(**cfg)
+            self._check_parameters(ClassificationMetricsConfig, classification_cfg)
+            self.classification_config = ClassificationMetricsConfig(**classification_cfg)
 
     def __reduce__(self) -> Tuple[MetricsScoreConfig, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""

@@ -72,7 +72,7 @@ class MetricsScore:
         self.evaluation_task = config.evaluation_task
 
         self.__num_frame: int = len(used_frame)
-        self.__num_gt: int = 0
+        self.__num_gt: int = -1  # Set to -1 to indicate that the number of ground truth objects has not been set yet
         self.__used_frame: List[int] = used_frame
 
     def __reduce__(self) -> Tuple[MetricsScore, Tuple[Any], Dict[Any]]:
@@ -154,6 +154,10 @@ class MetricsScore:
     def num_ground_truth(self) -> int:
         return self.__num_gt
 
+    def _set_num_ground_truth(self, num_gt: int) -> None:
+        if self.__num_gt == -1:
+            self.__num_gt = num_gt
+
     def evaluate_detection(
         self,
         nuscene_object_results: Dict[
@@ -176,8 +180,7 @@ class MetricsScore:
                 - The value is either a list of DynamicObjectWithPerceptionResult instances.
             num_ground_truth: A dictionary mapping each label to the number of ground truth objects.
         """
-        if self.tracking_config is None:
-            self.__num_gt += sum(num_ground_truth.values())
+        self._set_num_ground_truth(sum(num_ground_truth.values()))
 
         if self.detection_config is None:
             return
@@ -211,7 +214,7 @@ class MetricsScore:
         Args:
             object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object result for each frame.
         """
-        self.__num_gt += sum(num_ground_truth.values())
+        self._set_num_ground_truth(sum(num_ground_truth.values()))
 
         for distance_threshold_ in self.tracking_config.center_distance_thresholds:
             tracking_score_ = TrackingMetricsScore(
@@ -272,7 +275,7 @@ class MetricsScore:
         Args:
             object_results (List[DynamicObjectWithPerceptionResult]): The list of object result
         """
-        self.__num_gt += sum(num_ground_truth.values())
+        self._set_num_ground_truth(sum(num_ground_truth.values()))
 
         for top_k in self.prediction_config.top_ks:
             prediction_score_ = PredictionMetricsScore(
@@ -289,7 +292,7 @@ class MetricsScore:
         object_results: Dict[LabelType, List[List[DynamicObjectWithPerceptionResult]]],
         num_ground_truth: Dict[LabelType, int],
     ) -> None:
-        self.__num_gt += sum(num_ground_truth.values())
+        self._set_num_ground_truth(sum(num_ground_truth.values()))
         classification_score_ = ClassificationMetricsScore(
             object_results_dict=object_results,
             num_ground_truth_dict=num_ground_truth,
