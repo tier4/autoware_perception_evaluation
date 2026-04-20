@@ -277,3 +277,77 @@ class TestObjectResult(unittest.TestCase):
                     assert est_label == result.estimated_object.semantic_label
                     assert gt_label == result.ground_truth_object.semantic_label
                     assert is_label_correct == result.is_label_correct
+
+    def test_matching_label_policy_allow_same_group(self) -> None:
+        """Test retrieving object results with `MatchingLabelPolicy.ALLOW_SAME_GROUP`.
+
+        Patterns:
+        --------
+            1. Est: (CAR, BICYCLE, CAR), GT: (CAR, BICYCLE, CAR)
+                -> TP: [(CAR, CAR), (BICYCLE, BICYCLE), (CAR, CAR)]
+            2. Est: (CAR, BICYCLE, UNKNOWN), GT: (CAR, BICYCLE, CAR)
+                -> TP: [(CAR, CAR), (BICYCLE, BICYCLE), (UNKNOWN, CAR)]
+            3. Est: (CAR, BICYCLE, PEDESTRIAN), GT: (CAR, BICYCLE, CAR)
+                -> TP: [(CAR, CAR), (BICYCLE, BICYCLE), (PEDESTRIAN, CAR)]
+        """
+        patterns: List[Tuple[Dict[int, Label], List[Tuple[Label, Label, bool]]]] = [
+            (
+                {},
+                [
+                    (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
+                    (Label(AutowareLabel.BICYCLE, "bicycle"), Label(AutowareLabel.BICYCLE, "bicycle"), True),
+                    (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
+                ],
+            ),
+            (
+                {2: Label(AutowareLabel.UNKNOWN, "unknown")},
+                [
+                    (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
+                    (Label(AutowareLabel.BICYCLE, "bicycle"), Label(AutowareLabel.BICYCLE, "bicycle"), True),
+                    (Label(AutowareLabel.UNKNOWN, "unknown"), Label(AutowareLabel.CAR, "car"), True),
+                ],
+            ),
+            (  # check unmatching labels in the same group (CAR vs PEDESTRIAN)
+                {2: Label(AutowareLabel.PEDESTRIAN, "pedestrian")},
+                [
+                    (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
+                    (Label(AutowareLabel.BICYCLE, "bicycle"), Label(AutowareLabel.BICYCLE, "bicycle"), True),
+                    (Label(AutowareLabel.PEDESTRIAN, "pedestrian"), Label(AutowareLabel.CAR, "car"), False),
+                ],
+            ),
+            (  # check matching labels in different groups (PEDESTRIAN vs BICYCLE)
+                {1: Label(AutowareLabel.PEDESTRIAN, "pedestrian")},
+                [
+                    (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
+                    (Label(AutowareLabel.PEDESTRIAN, "pedestrian"), Label(AutowareLabel.BICYCLE, "bicycle"), True),
+                    (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), False),
+                ],
+            ),
+            (  # check matching labels in different groups (TRUCK vs CAR)
+                {2: Label(AutowareLabel.TRUCK, "truck")},
+                [
+                    (Label(AutowareLabel.CAR, "car"), Label(AutowareLabel.CAR, "car"), True),
+                    (Label(AutowareLabel.BICYCLE, "bicycle"), Label(AutowareLabel.BICYCLE, "bicycle"), True),
+                    (Label(AutowareLabel.TRUCK, "truck"), Label(AutowareLabel.CAR, "car"), True),
+                ],
+            ),
+        ]
+        for n, (label_remap, expect_list) in enumerate(patterns):
+            with self.subTest(f"Test matching objects: {n + 1}"):
+                estimated_objects = deepcopy(self.dummy_estimated_objects)
+                ground_truth_objects = deepcopy(self.dummy_estimated_objects)
+                for idx, label in label_remap.items():
+                    estimated_objects[idx].semantic_label = label
+
+                object_results: List[DynamicObjectWithPerceptionResult] = get_object_results(
+                    evaluation_task=self.evaluation_task,
+                    estimated_objects=estimated_objects,
+                    ground_truth_objects=ground_truth_objects,
+                    matching_label_policy=MatchingLabelPolicy.ALLOW_SAME_GROUP,
+                )
+
+                for result, expect in zip(object_results, expect_list):
+                    est_label, gt_label, is_label_correct = expect
+                    assert est_label == result.estimated_object.semantic_label
+                    assert gt_label == result.ground_truth_object.semantic_label
+                    assert is_label_correct == result.is_label_correct
