@@ -99,6 +99,8 @@ class TestPerceptionEvaluationConfig(unittest.TestCase):
             ({"matching_label_policy": "allow_unknown"}, MatchingLabelPolicy.ALLOW_UNKNOWN),
             ({"matching_label_policy": "ALLOW_ANY"}, MatchingLabelPolicy.ALLOW_ANY),
             ({"matching_label_policy": "allow_any"}, MatchingLabelPolicy.ALLOW_ANY),
+            ({"matching_label_policy": "ALLOW_SAME_GROUP"}, MatchingLabelPolicy.ALLOW_SAME_GROUP),
+            ({"matching_label_policy": "allow_same_group"}, MatchingLabelPolicy.ALLOW_SAME_GROUP),
         ]
         for n, (policy, expect) in enumerate(patterns):
             with self.subTest(f"Test case: {n + 1}"):

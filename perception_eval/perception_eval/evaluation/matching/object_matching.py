@@ -28,6 +28,7 @@ from perception_eval.common import distance_objects_bev
 from perception_eval.common import distance_points_bev
 from perception_eval.common import ObjectType
 from perception_eval.common.label import is_same_label
+from perception_eval.common.label import is_same_label_group
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import get_point_left_right_index
 from perception_eval.common.point import polygon_to_list
@@ -39,6 +40,7 @@ from shapely.geometry import Polygon
 
 class MatchingLabelPolicy(Enum):
     DEFAULT = "DEFAULT"
+    ALLOW_SAME_GROUP = "ALLOW_SAME_GROUP"
     ALLOW_UNKNOWN = "ALLOW_UNKNOWN"
     ALLOW_ANY = "ALLOW_ANY"
 
@@ -70,6 +72,8 @@ class MatchingLabelPolicy(Enum):
             return True
         elif self == MatchingLabelPolicy.ALLOW_UNKNOWN:
             return is_same_label(estimation, ground_truth) or estimation.semantic_label.is_unknown()
+        elif self == MatchingLabelPolicy.ALLOW_SAME_GROUP:
+            return is_same_label_group(estimation, ground_truth) or estimation.semantic_label.is_unknown()
         else:  # STRICT
             return is_same_label(estimation, ground_truth)
 

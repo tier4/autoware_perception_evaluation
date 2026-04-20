@@ -66,6 +66,14 @@ class AutowareLabel(Enum):
         """Deserialize the data to AutowareLabel."""
         return cls(data["value"])
 
+    def is_in_vehicle_labels(self) -> bool:
+        """Return whether myself is in vehicle labels."""
+        return self in [AutowareLabel.CAR, AutowareLabel.TRUCK, AutowareLabel.BUS]
+
+    def is_in_vru_labels(self) -> bool:
+        """Return whether myself is in VRU labels."""
+        return self in [AutowareLabel.BICYCLE, AutowareLabel.MOTORBIKE, AutowareLabel.PEDESTRIAN]
+
 
 class TrafficLightLabel(Enum):
     # except of classification
@@ -210,6 +218,18 @@ class Label:
             bool: Whether myself is `unknown`.
         """
         return self.label == CommonLabel.UNKNOWN
+
+    def is_in_vehicle_labels(self) -> bool:
+        """Return whether myself is in vehicle labels."""
+        if isinstance(self.label, AutowareLabel):
+            return self.label.is_in_vehicle_labels()
+        raise ValueError(f"Unexpected label type: {type(self.label)}")
+
+    def is_in_vru_labels(self) -> bool:
+        """Return whether myself is in VRU labels."""
+        if isinstance(self.label, AutowareLabel):
+            return self.label.is_in_vru_labels()
+        raise ValueError(f"Unexpected label type: {type(self.label)}")
 
     def __eq__(self, other: Label) -> bool:
         return self.label == other.label
@@ -542,3 +562,28 @@ def is_same_label(object1: ObjectType, object2: ObjectType) -> bool:
         bool: Return True if both labels are same.
     """
     return object1.semantic_label == object2.semantic_label
+
+
+def is_same_label_group(object1: ObjectType, object2: ObjectType) -> bool:
+    """Indicate whether both objects have same label group.
+
+    For example, if the label is AutowareLabel, the label group is determined by the value of the label.
+    If both labels are AutowareLabel.CAR, AutowareLabel.BUS, or AutowareLabel.TRUCK, they are considered to be in the same label group.
+
+    Args:
+    ----
+        object1 (ObjectType): An object.
+        object2 (ObjectType): An object.
+
+    Returns:
+    -------
+        bool: Return True if both labels are in the same label group.
+    """
+    if object1.semantic_label == object2.semantic_label:
+        return True
+    else:
+        if object1.semantic_label.is_in_vehicle_labels() and object2.semantic_label.is_in_vehicle_labels():
+            return True
+        elif object1.semantic_label.is_in_vru_labels() and object2.semantic_label.is_in_vru_labels():
+            return True
+    return False
