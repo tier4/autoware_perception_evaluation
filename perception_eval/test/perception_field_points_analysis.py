@@ -18,25 +18,27 @@ import argparse
 import os
 from os.path import expandvars
 from pathlib import Path
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 from perception_eval.tool import DataTableIdx
+from perception_eval.consts import LABELS_DEFAULT, PLOT_DIR
 from perception_eval.tool import PerceptionAnalyzer3DField
 from perception_eval.visualization.perception_visualizer3dfield import PerceptionFieldPlot
 
 
 class PerceptionLoadDatabaseResult:
+
     def __init__(self, result_root_directory: str, scenario_path: str, show: bool = False) -> None:
         self._result_root_directory: str = result_root_directory
-        self._plot_dir: str = Path(result_root_directory, "plot").as_posix()
-        self._show: bool = show
+        self.analysis_configure(plot_subfolder=PLOT_DIR, show=show)
 
         if not os.path.isdir(self._plot_dir):
             os.makedirs(self._plot_dir)
 
         # Initialize
-        analyzer: PerceptionAnalyzer3DField = PerceptionAnalyzer3DField.from_scenario(
+        self._analyzer: PerceptionAnalyzer3DField = PerceptionAnalyzer3DField.from_scenario(
             result_root_directory,
             scenario_path,
         )
@@ -44,36 +46,38 @@ class PerceptionLoadDatabaseResult:
         # Load files
         pickle_file_paths = Path(result_root_directory).glob("**/scene_result.pkl")
         for filepath in pickle_file_paths:
-            analyzer.add_from_pkl(filepath.as_posix())
+            self._analyzer.add_from_pkl(filepath.as_posix())
 
         # Add columns
-        analyzer.add_additional_column()
+        self._analyzer.add_additional_column()
 
-        # Analyze and visualize, for each label group
-        label_lists: dict = {}
-        label_lists["All"] = None
-        label_lists["Vehicle"] = ["car", "truck"]
-        label_lists["VRU"] = ["pedestrian", "bicycle"]
-        label_lists["Motorbike"] = ["motorbike"]
+    def analysis_configure(
+        self, plot_subfolder: Optional[str] = None, show: Optional[bool] = None
+    ) -> None:
+        if plot_subfolder is not None:
+            self._plot_dir: str = Path(
+                self._result_root_directory,
+                plot_subfolder,
+            ).as_posix()
+        if show is not None:
+            self._show = show
 
-        for label_group, labels in label_lists.items():
-            print('Analyzing label group: {}, label list of "{}" '.format(label_group, labels))
-            self.analyse_and_visualize(analyzer, subfolder=label_group, label=labels)
-            print("Done")
+    def analyzer(self) -> PerceptionAnalyzer3DField:
+        return self._analyzer
 
-    def analyse_and_visualize(self, analyzer: PerceptionAnalyzer3DField, subfolder: str, **kwargs) -> None:
+    def analyse_and_visualize(self, subfolder: str, **kwargs) -> None:
         plot_dir: str = Path(self._plot_dir, subfolder).as_posix()
         if not os.path.isdir(plot_dir):
             os.makedirs(plot_dir)
 
         # all objects analysis
         figures: list[PerceptionFieldPlot] = []
-        analyzer.analyze_points(**kwargs)
+        self._analyzer.analyze_points(**kwargs)
 
         # true positives
         prefix = "points_tp"
-        table_gt = analyzer.data_tp_gt
-        table_est = analyzer.data_tp_est
+        table_gt = self._analyzer.data_tp_gt
+        table_est = self._analyzer.data_tp_est
 
         figures.append(PerceptionFieldPlot(prefix + "_" + "dist_diff", "Distance error [m]"))
         figures[-1].plot_scatter(table_gt[:, DataTableIdx.DIST], table_est[:, DataTableIdx.DIST])
@@ -81,16 +85,22 @@ class PerceptionLoadDatabaseResult:
         figures[-1].ax.set_ylabel("Est Distance [m]")
 
         figures.append(PerceptionFieldPlot(prefix + "_" + "azimuth_diff", "Azimuth error [rad]"))
-        figures[-1].plot_scatter(table_gt[:, DataTableIdx.AZIMUTH], table_est[:, DataTableIdx.AZIMUTH])
+        figures[-1].plot_scatter(
+            table_gt[:, DataTableIdx.AZIMUTH], table_est[:, DataTableIdx.AZIMUTH]
+        )
         figures[-1].ax.set_xlabel("GT Azimuth [rad]")
         figures[-1].ax.set_ylabel("Est Azimuth [rad]")
 
-        azimuth_error: np.ndarray = table_est[:, DataTableIdx.AZIMUTH] - table_gt[:, DataTableIdx.AZIMUTH]
+        azimuth_error: np.ndarray = (
+            table_est[:, DataTableIdx.AZIMUTH] - table_gt[:, DataTableIdx.AZIMUTH]
+        )
         azimuth_error[azimuth_error > np.pi] -= 2 * np.pi
         azimuth_error[azimuth_error < -np.pi] += 2 * np.pi
         azimuth_dist_error: np.ndarray = azimuth_error * table_gt[:, DataTableIdx.DIST]
         figures.append(
-            PerceptionFieldPlot(prefix + "_" + "dist_latitudinal_position_error", "Latitudinal position error [m]")
+            PerceptionFieldPlot(
+                prefix + "_" + "dist_latitudinal_position_error", "Latitudinal position error [m]"
+            )
         )
         figures[-1].plot_scatter(table_gt[:, DataTableIdx.DIST], azimuth_dist_error)
         figures[-1].ax.set_xlabel("GT Distance [m]")
@@ -98,14 +108,18 @@ class PerceptionLoadDatabaseResult:
 
         dist_error = table_est[:, DataTableIdx.DIST] - table_gt[:, DataTableIdx.DIST]
         figures.append(PerceptionFieldPlot(prefix + "_" + "TP_XY_dist_error", "Position error [m]"))
-        figures[-1].plot_scatter_3d(table_gt[:, DataTableIdx.X], table_gt[:, DataTableIdx.Y], dist_error)
+        figures[-1].plot_scatter_3d(
+            table_gt[:, DataTableIdx.X], table_gt[:, DataTableIdx.Y], dist_error
+        )
         figures[-1].ax.set_xlabel("X [m]")
         figures[-1].ax.set_ylabel("Y [m]")
 
         # false negatives
-        table = analyzer.data_fn
+        table = self._analyzer.data_fn
         figures.append(PerceptionFieldPlot(prefix + "_" + "FN_XY_width", "Width [m]"))
-        figures[-1].plot_scatter_3d(table[:, DataTableIdx.X], table[:, DataTableIdx.Y], table[:, DataTableIdx.WIDTH])
+        figures[-1].plot_scatter_3d(
+            table[:, DataTableIdx.X], table[:, DataTableIdx.Y], table[:, DataTableIdx.WIDTH]
+        )
         figures[-1].ax.set_xlabel("X [m]")
         figures[-1].ax.set_ylabel("Y [m]")
 
@@ -118,6 +132,15 @@ class PerceptionLoadDatabaseResult:
             plt.show()
 
         plt.close("all")
+
+    def analyze_by_labels(self, labels: Optional[dict] = None, **kwargs) -> None:
+        if not labels:
+            labels = LABELS_DEFAULT
+
+        for label_group, labels in LABELS_DEFAULT.items():
+            print('Analyzing label group: {}, label list of "{}" '.format(label_group, labels))
+            self.analyse_and_visualize(subfolder=label_group, label=labels, **kwargs)
+            print("Done")
 
 
 def main() -> None:
@@ -141,12 +164,12 @@ def main() -> None:
         help="show plots",
     )
     args = parser.parse_args()
-    PerceptionLoadDatabaseResult(
+    analysis_res = PerceptionLoadDatabaseResult(
         expandvars(args.result_root_directory),
         expandvars(args.scenario_path),
         args.show,
     )
-
+    analysis_res.analyze_by_labels()
 
 if __name__ == "__main__":
     main()
