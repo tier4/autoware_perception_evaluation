@@ -47,6 +47,8 @@ class AutowareLabel(Enum):
     MOTORBIKE = "motorbike"
     PEDESTRIAN = "pedestrian"
     ANIMAL = "animal"
+    TRAFFIC_CONE = "traffic_cone"
+    BARRIER = "barrier"
 
     # for FP validation
     FP = "false_positive"
