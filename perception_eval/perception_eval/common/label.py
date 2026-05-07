@@ -47,6 +47,8 @@ class AutowareLabel(Enum):
     MOTORBIKE = "motorbike"
     PEDESTRIAN = "pedestrian"
     ANIMAL = "animal"
+    TRAFFIC_CONE = "traffic_cone"
+    BARRIER = "barrier"
 
     # for FP validation
     FP = "false_positive"
@@ -365,11 +367,13 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
         (AutowareLabel.PEDESTRIAN, "construction_worker"),
         (AutowareLabel.UNKNOWN, "animal"),
         (AutowareLabel.UNKNOWN, "unknown"),
-        (AutowareLabel.UNKNOWN, "movable_object.barrier"),
+        (AutowareLabel.BARRIER, "barrier"),
+        (AutowareLabel.BARRIER, "movable_object.barrier"),
         (AutowareLabel.UNKNOWN, "movable_object.debris"),
         (AutowareLabel.UNKNOWN, "movable_object.pushable_pullable"),
-        (AutowareLabel.UNKNOWN, "movable_object.trafficcone"),
-        (AutowareLabel.UNKNOWN, "movable_object.traffic_cone"),
+        (AutowareLabel.TRAFFIC_CONE, "traffic_cone"),
+        (AutowareLabel.TRAFFIC_CONE, "movable_object.trafficcone"),
+        (AutowareLabel.TRAFFIC_CONE, "movable_object.traffic_cone"),
         (AutowareLabel.UNKNOWN, "static_object.bicycle rack"),
         (AutowareLabel.UNKNOWN, "static_object.bollard"),
         (AutowareLabel.UNKNOWN, "forklift"),

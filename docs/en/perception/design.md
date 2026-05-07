@@ -253,7 +253,7 @@
 | `max_x_position_list`       |        `List[float]`         |       \*        | Maximum x position of area to be evaluated (Only 3D)                                                            |
 | `max_y_position_list`       |        `List[float]`         |       \*        | Maximum y position of area to be evaluated (Only 3D)                                                            |
 | `max_distance_list`         |        `List[float]`         |       \*        | Maximum distance from `base_link` of ego to be evaluated (Only 3D)                                              |
-| `min_distance_list`         |        `List[float]`         |       \*        | Minimum distance from `base_link` of ego to be evaluated (Only 3D)                                              |
+| `min_distance_list`         |        `List[float]`         |       \*        | Minimum distance from `base_link` of ego to be evaluated (Only 3D). Note that it's inclusive.                   |
 | `min_point_numbers`         |         `List[int]`          | Yes (Detection) | Minimum number of pointcloud included in GT's bounding box. If `min_point_numbers=0`, evaluate all GT (Only 3D) |
 | `confidence_threshold_list` |        `List[float]`         |       No        | Threshold of confidence of estimation                                                                           |
 | `target_uuids`              |         `List[str]`          |       No        | List of GTs' ID. Specify if you want to evaluated specific objects                                              |
