@@ -32,6 +32,7 @@ class TPErrorMetric(ABC):
 
     mode: str
     average_mode: str 
+    mean_average_mode: str
 
     def __init__(self) -> None:
         super().__init__()
@@ -140,6 +141,7 @@ class TPErrorBEVCenterDistance(TPErrorMetric):
 
     mode: str = "bev_center_distance_err"
     average_mode: str = "ATE"
+    mean_average_mode: str = "mATE"
 
     def compute_value(self, object_result: DynamicObjectWithPerceptionResult) -> float:
         """Get TP error BEV center distance metric value
@@ -169,6 +171,7 @@ class TPErrorOrientation(TPErrorMetric):
 
     mode: str = "orientation_err"
     average_mode: str = "AOE"
+    mean_average_mode: str = "mAOE"
     
     @staticmethod
     def angle_diff(x: float, y: float, period: float) -> float:
@@ -227,6 +230,7 @@ class TPErrorScale(TPErrorMetric):
 
     mode: str = "scale_err"
     average_mode: str = "ASE"
+    mean_average_mode: str = "mASE"
 
     def compute_value(self, object_result: DynamicObjectWithPerceptionResult) -> float:
         """Get TP error scale metric value between estimated and ground truth object.
@@ -256,6 +260,7 @@ class TPErrorBEVVelocity(TPErrorMetric):
 
     mode: str = "bev_velocity_err"
     average_mode: str = "AVE"
+    mean_average_mode: str = "mAVE"
     
     def compute_value(self, object_result: DynamicObjectWithPerceptionResult) -> float:
         """Get TP error BEV velocity metric value
