@@ -21,6 +21,7 @@ from typing import Tuple
 
 from perception_eval.common import distance_objects
 from perception_eval.common import distance_objects_bev
+from perception_eval.common import velocity_objects_bev
 from perception_eval.common import DynamicObject
 from perception_eval.common import DynamicObject2D
 from perception_eval.common import ObjectType
@@ -236,6 +237,17 @@ class DynamicObjectWithPerceptionResult:
         return distance_objects(self.estimated_object, self.ground_truth_object)
 
     @property
+    def velocity_error_bev(self) -> Optional[float]:
+        """Get the velocity error between estimated and ground truth object in BEV space.
+
+        If `self.ground_truth_object=None`, returns None.
+        Also, velocity of estimated or ground truth object is None, returns None too.
+        """
+        if self.ground_truth_object is None:
+            return None
+        return velocity_objects_bev(self.estimated_object, self.ground_truth_object)
+    
+    @property
     def position_error(self) -> Optional[Tuple[float, float, float]]:
         """Get the position error vector from estimated to ground truth object.
 
@@ -260,7 +272,18 @@ class DynamicObjectWithPerceptionResult:
             float: Yaw error, in [-pi, pi].
         """
         return self.estimated_object.get_heading_error(self.ground_truth_object)
+    
+    @property
+    def scale_iou(self) -> Optional[float]:
+        """Get the scale IOU between estimated and ground truth object.
 
+        If `self.ground_truth_object=None`, returns None.
+
+        Returns:
+            float: Scale IOU between two objects.
+        """
+        return self.estimated_object.get_scale_iou(self.ground_truth_object)
+    
     @property
     def velocity_error(self) -> Optional[Tuple[float, float, float]]:
         """Get the velocity error vector from estimated to ground truth object.
@@ -274,7 +297,7 @@ class DynamicObjectWithPerceptionResult:
             float: z-axis velocity error[m/s].
         """
         return self.estimated_object.get_velocity_error(self.ground_truth_object)
-
+    
     @property
     def is_label_correct(self) -> bool:
         """Get whether label is correct.

@@ -398,6 +398,36 @@ class DynamicObject:
         err_vz: float = other.state.velocity[2] - self.state.velocity[2]
 
         return err_vx, err_vy, err_vz
+    
+    def get_scale_iou(self, other: Optional[DynamicObject]) -> Optional[float]:
+        """
+        Get the scale error between myself and other. 
+        If other is None, returns None.
+        
+        Following the implementation in nuScenes (https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/utils.py#L86)
+        It is equivalent to intersection over union (IOU) between the two boxes in 3D, 
+        and we assume that the boxes are aligned, i.e. translation and rotation are considered identical. 
+        
+        Returns:
+            float: Scale IOU between two objects.
+        """
+        if other is None:
+            return None
+        
+        assert all(self.state.size > 0), 'Current object sizes must be >0.'
+        assert all(other.state.size > 0), 'Other object sizes must be >0.'
+        
+        # Compute IOU.
+        sa_size = self.state.size
+        sr_size = other.state.size
+
+        min_wlh = np.minimum(sa_size, sr_size)
+        volume_annotation = np.prod(sa_size)
+        volume_result = np.prod(sr_size)
+        intersection = np.prod(min_wlh) 
+        union = volume_annotation + volume_result - intersection  
+        iou = (intersection / union)
+        return iou 
 
     def get_path_error(self, other: Optional[DynamicObject]) -> Optional[np.ndarray]:
         """Returns displacement errors of path as numpy.ndarray.

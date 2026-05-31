@@ -14,18 +14,21 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from logging import getLogger
 from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from typing import Dict
 
 import numpy as np
-from perception_eval.common.label import LabelType
+from perception_eval.common.label import AutowareLabel, LabelType
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
+from perception_eval.evaluation.metrics.detection.tp_error_metrics import TPErrorMetric
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 logger = getLogger(__name__)
@@ -47,6 +50,12 @@ class Ap:
         num_ground_truth (int): Number ground truths.
         tp_list (List[float]): List of the number of TP objects ordered by their confidences.
         fp_list (List[float]): List of the number of FP objects ordered by their confidences.
+        num_tp (int): Total number of prediction matches (TPs) for this matching threshold,
+            considering all predictions regardless of confidence.
+        num_tp_at_optimal_conf (int): Number of prediction matches (TPs) at the optimal
+            confidence threshold (i.e. predictions whose confidence is greater than or equal
+            to ``optimal_conf``). NaN if there are no valid predictions.
+        tp_error_metrics (Optional[List[TPErrorMetric]]): List of TP error metrics.
 
     Args:
         tp_metrics (TPMetrics): Mode of TP (True positive) metrics.
@@ -70,6 +79,7 @@ class Ap:
         target_label: LabelType,
         matching_mode: MatchingMode,
         matching_threshold: float,
+        tp_error_metrics: Optional[List[TPErrorMetric]] = None,
     ) -> None:
         self.tp_metrics = tp_metrics
         self.object_results = object_results
@@ -87,10 +97,13 @@ class Ap:
             matching_mode=self.matching_mode,
         )
         # True positives, false positives and their corresponding confidences
-        self.tp_list, self.fp_list, self.conf_list = self._calculate_tp_fp(tp_metrics, object_results)
+        self.tp_list, self.fp_list, self.conf_list, self.sorted_indices, self.num_tp = self._calculate_tp_fp(
+            tp_metrics, object_results
+        )
+        
         self.precision_list, self.recall_list = self.get_precision_recall()
-        self.precision_interp, self.recall_interp = self._interpolate_precision_recall(
-            self.precision_list, self.recall_list
+        self.precision_interp, self.recall_interp, self.conf_interp = self._interpolate_precision_recall(
+            self.precision_list, self.recall_list, self.conf_list
         )
         self.f1_scores = self.compute_f1_scores(precisions=self.precision_list, recalls=self.recall_list)
         self.max_f1_score, self.max_f1_index = self.compute_max_f1_index()
@@ -98,12 +111,33 @@ class Ap:
             self.optimal_precision = self.precision_list[self.max_f1_index]
             self.optimal_recall = self.recall_list[self.max_f1_index]
             self.optimal_conf = self.conf_list[self.max_f1_index]
+            
+            # Number of TPs at the optimal confidence threshold. Computed from the raw
+            # (unweighted) TP indicators so it represents an actual prediction count for
+            # both AP and APH instances.
+            self.num_tp_at_optimal_conf = self._count_tp_at_index(
+                object_results, self.conf_list, self.max_f1_index
+            )
+
         else:
             self.optimal_precision = np.nan
             self.optimal_recall = np.nan
             self.optimal_conf = np.nan
+            self.num_tp_at_optimal_conf = 0
 
         self.ap = self._calculate_ap(self.precision_interp)
+
+        # Compute TP error metrics.
+        self.tp_error_metrics = tp_error_metrics
+        self.compute_tp_error_metrics_values()
+
+        # Compute average of TP error metrics.
+        self.compute_average_tp_error_metrics()
+
+        # Compute optimal average of TP error metrics.
+        self.compute_optimal_average_tp_error_metrics(
+            optimal_conf=self.optimal_conf
+        )
 
     def __reduce__(self) -> Tuple[Ap, Tuple[Any]]:
         """Serializing and deserializing the class."""
@@ -116,30 +150,59 @@ class Ap:
                 self.target_label,
                 self.matching_mode,
                 self.matching_threshold,
+                self.tp_error_metrics,
             ),
         )
+    
+    @property
+    def max_recall_ind(self):
+        """ 
+        Returns index of max recall achieved. 
+        Taken from nuScenes-devkit.
+        https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/detection/data_classes.py#L127
+        Returns:
+            int: Index of max recall achieved.
+        """
+        # Last instance of confidence > 0 is index of max achieved recall.
+        non_zero = np.nonzero(self.conf_interp)[0]
+        if len(non_zero) == 0:  # If there are no matches, all the confidence values will be zero.
+            max_recall_ind = 0
+        else:
+            max_recall_ind = non_zero[-1]
 
+        return max_recall_ind
+    
     def _calculate_tp_fp(
         self,
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
         object_results: List[DynamicObjectWithPerceptionResult],
-    ) -> Tuple[List[float], List[float], List[float]]:
+    ) -> Tuple[List[float], List[float], List[float], int]:
         """
         Calculate TP/FP when object_results are stored as a dict with (matching_mode, threshold) keys.
         This assumes matching has already occurred.
+
+        Returns:
+            Tuple[List[float], List[float], List[float], List[int], int]:
+                - tp_list: List of True Positive (TP) values
+                - fp_list: List of False Positive (FP) values
+                - conf_list: List of confidence values
+                - sorted_indices: List of indices sorted by confidence in descending order
+                - num_tp: Number of True Positives
         """
         tp_list: List[float] = []
         fp_list: List[float] = []
         conf_list: List[float] = []
+        num_tp: int = 0
 
         for obj in object_results:
             is_tp = obj.ground_truth_object is not None and obj.is_label_correct
             conf_list.append(obj.estimated_object.semantic_score)
             tp_list.append(tp_metrics.get_value(obj) if is_tp else 0.0)
             fp_list.append(0.0 if is_tp else 1.0)
+            num_tp += 1 if is_tp else 0
 
         if not conf_list:
-            return [], [], []
+            return [], [], [], [], 0
 
         # Sort by confidence
         sorted_indices = np.argsort(conf_list)[::-1]
@@ -150,7 +213,7 @@ class Ap:
         tp_list = np.cumsum(tp_sorted).tolist()
         fp_list = np.cumsum(fp_sorted).tolist()
 
-        return tp_list, fp_list, conf_sorted
+        return tp_list, fp_list, conf_sorted, sorted_indices, num_tp
 
     def compute_f1_scores(self, precisions: List[float], recalls: List[float]) -> List[float]:
         """
@@ -201,7 +264,7 @@ class Ap:
         return precision, recall
 
     def _interpolate_precision_recall(
-        self, precision_list: List[float], recall_list: List[float]
+        self, precision_list: List[float], recall_list: List[float], conf_list: List[float]
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Interpolate the precision list using the recall list.
@@ -219,8 +282,10 @@ class Ap:
         # Interpolate precision at those recall levels using the envelope
         # 'right=0' means values beyond the max recall get precision=0
         precision_interp = np.interp(recall_interp, recall_list, precision_envelope, right=0)
-
-        return precision_interp, recall_interp
+        
+        confidences_interp = np.interp(recall_interp, recall_list, conf_list, right=0)
+        
+        return precision_interp, recall_interp, confidences_interp
 
     def _calculate_ap(
         self,
@@ -284,3 +349,73 @@ class Ap:
         mean = float(np.mean(matching_score_list))
         std = float(np.std(matching_score_list))
         return mean, std
+    
+    @staticmethod
+    def _count_tp_at_index(
+        object_results: List[DynamicObjectWithPerceptionResult],
+        conf_list_sorted_desc: List[float],
+        index: int,
+    ) -> int:
+        """Count the raw number of TPs among predictions whose confidence is greater than
+        or equal to the confidence at ``index`` in ``conf_list_sorted_desc``.
+        ``conf_list_sorted_desc`` is the per-prediction confidence list sorted by
+        descending confidence. ``index`` is the cut-off (inclusive) corresponding to the
+        optimal F1 operating point.
+        """
+        if index < 0 or index >= len(conf_list_sorted_desc):
+            return 0
+        threshold = conf_list_sorted_desc[index]
+        num_tp = 0
+        for obj in object_results:
+            if obj.estimated_object.semantic_score < threshold:
+                continue
+            if obj.ground_truth_object is not None and obj.is_label_correct:
+                num_tp += 1
+        return num_tp
+    
+    def compute_tp_error_metrics_values(self, sorted_indices: List[int]) -> None:
+        """Compute the values of TP error metrics."""
+        if self.tp_error_metrics is None:
+            return
+        
+        # Sort object results by confidence in descending order
+        object_results_sorted = [
+            self.object_results[i] for i in sorted_indices
+        ]
+
+        for tp_error_metric in self.tp_error_metrics:
+            tp_error_metric_values = []
+            tp_error_metric_confidences = []
+            for object_result in object_results_sorted:
+                tp_error_metric_value = tp_error_metric.compute_value(object_result)
+                if tp_error_metric_value is not None:
+                    tp_error_metric_values.append(tp_error_metric_value)
+                    tp_error_metric_confidences.append(object_result.estimated_object.semantic_score)
+            tp_error_metric.values = np.array(tp_error_metric_values)
+            tp_error_metric.confidences = np.array(tp_error_metric_confidences)
+
+    def compute_average_tp_error_metrics(self, min_recall: float = 0.1) -> None:
+        """Compute the average of TP error metrics."""
+        if self.tp_error_metrics is None:
+            return
+        
+        max_recall_ind = self.max_recall_ind
+        for tp_error_metric in self.tp_error_metrics:
+            tp_error_metric.interpolated_values = tp_error_metric.interpolate_values(
+                conf_interp=self.conf_interp,
+                ascending_sorted=False
+            )
+            tp_error_metric.avg_metric = tp_error_metric.compute_average_value(
+                min_recall=min_recall,
+                max_recall_ind=max_recall_ind
+            ) 
+
+    def compute_optimal_average_tp_error_metrics(self, optimal_conf: int) -> None:
+        """Compute the optimal average of TP error metrics."""
+        if self.tp_error_metrics is None:
+            return
+        
+        for tp_error_metric in self.tp_error_metrics:
+            tp_error_metric.optimal_avg_metric = tp_error_metric.compute_optimal_average_value(
+                optimal_conf=optimal_conf
+            )

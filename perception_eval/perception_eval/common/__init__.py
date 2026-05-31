@@ -50,3 +50,15 @@ def distance_objects_bev(object_1: DynamicObject, object_2: DynamicObject) -> fl
     """
     assert isinstance(object_1, DynamicObject) and isinstance(object_2, DynamicObject)
     return distance_points_bev(object_1.state.position, object_2.state.position)
+
+
+def velocity_objects_bev(object_1: DynamicObject, object_2: DynamicObject) -> float:
+    """[summary]
+    Calculate the BEV velocity between two objects.
+    Args:
+         object_1 (DynamicObject): An object
+         object_2 (DynamicObject): An object
+    Returns: float: The BEV velocity between object_1 and object_2.
+    """
+    assert isinstance(object_1, DynamicObject) and isinstance(object_2, DynamicObject)
+    return distance_points_bev(object_1.state.velocity, object_2.state.velocity)
