@@ -189,7 +189,7 @@ class TPErrorOrientation(TPErrorMetric):
 
         return diff
 
-    def get_value(self, object_result: DynamicObjectWithPerceptionResult) -> float:
+    def compute_value(self, object_result: DynamicObjectWithPerceptionResult) -> float:
         """Get TP error orientation metric value
 
         Args:
@@ -228,7 +228,7 @@ class TPErrorScale(TPErrorMetric):
     mode: str = "scale_err"
     average_mode: str = "ASE"
 
-    def get_value(self, object_result: DynamicObjectWithPerceptionResult) -> float:
+    def compute_value(self, object_result: DynamicObjectWithPerceptionResult) -> float:
         """Get TP error scale metric value between estimated and ground truth object.
 
         Args:
@@ -257,7 +257,7 @@ class TPErrorBEVVelocity(TPErrorMetric):
     mode: str = "bev_velocity_err"
     average_mode: str = "AVE"
     
-    def get_value(self, object_result: DynamicObjectWithPerceptionResult) -> float:
+    def compute_value(self, object_result: DynamicObjectWithPerceptionResult) -> float:
         """Get TP error BEV velocity metric value
 
         Args:
