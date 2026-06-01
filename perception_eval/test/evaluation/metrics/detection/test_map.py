@@ -240,6 +240,9 @@ class TestMap(unittest.TestCase):
 
         if not map_result.is_detection_2d:
             self.assertIn("APH", output_str)
+            for mean_tp_error_name in map_result.mean_tp_error_names:
+                self.assertIn(mean_tp_error_name, output_str)
+                self.assertIn(mean_tp_error_name, output_str.split("(")[0])
         else:
             self.assertNotIn("APH", output_str)
 

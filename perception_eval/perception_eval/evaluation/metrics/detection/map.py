@@ -23,13 +23,22 @@ import numpy as np
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.ap import Ap
-from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
-from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
+from perception_eval.evaluation.metrics.detection.tp_error_metrics import TPErrorAttribute
 from perception_eval.evaluation.metrics.detection.tp_error_metrics import TPErrorBEVCenterDistance
+from perception_eval.evaluation.metrics.detection.tp_error_metrics import TPErrorBEVVelocity
 from perception_eval.evaluation.metrics.detection.tp_error_metrics import TPErrorOrientation
 from perception_eval.evaluation.metrics.detection.tp_error_metrics import TPErrorScale
-from perception_eval.evaluation.metrics.detection.tp_error_metrics import TPErrorBEVVelocity
+from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
+from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
+
+_TP_ERROR_METRIC_TYPES = (
+    TPErrorBEVCenterDistance,
+    TPErrorOrientation,
+    TPErrorScale,
+    TPErrorBEVVelocity,
+    TPErrorAttribute,
+)
 
 
 class Map:
@@ -71,6 +80,10 @@ class Map:
         maph (Optional[float]):
             Final mean Average Precision with Heading (mAPH) across all labels,
             or None if `is_detection_2d` is True. Can be NaN if all label means are NaN.
+        label_mean_to_tp_error (Optional[Dict[str, Dict[LabelType, float]]]):
+            Per-label mean TP error across thresholds for each metric (e.g. mATE), or None if 2D.
+        mean_tp_errors (Optional[Dict[str, float]]):
+            Final mean TP errors (mATE, mAOE, etc.) across all labels, or None if 2D.
     """
 
     def __init__(
@@ -91,13 +104,17 @@ class Map:
         self.label_mean_to_ap: Dict[LabelType, float] = {}
         self.label_to_aphs: Dict[LabelType, List[Ap]] = {} if not self.is_detection_2d else None
         self.label_mean_to_aph: Dict[LabelType, float] = {} if not self.is_detection_2d else None
-        
-        self.avg_tp_error_names: Dict[str] = {
-            TPErrorBEVCenterDistance.average_mode: 0,
-            TPErrorOrientation.average_mode: 1,
-            TPErrorScale.average_mode: 2,
-            TPErrorBEVVelocity.average_mode: 3,
+
+        self.avg_tp_error_names: Dict[str, int] = {
+            metric_type.average_mode: index for index, metric_type in enumerate(_TP_ERROR_METRIC_TYPES)
         }
+        self.mean_tp_error_names: Dict[str, int] = {
+            metric_type.mean_average_mode: index for index, metric_type in enumerate(_TP_ERROR_METRIC_TYPES)
+        }
+        self.label_mean_to_tp_error: Dict[str, Dict[LabelType, float]] | None = (
+            {name: {} for name in self.mean_tp_error_names} if not self.is_detection_2d else None
+        )
+        self.mean_tp_errors: Dict[str, float] | None = None if self.is_detection_2d else {}
 
         for label in target_labels:
             ap_per_threshold = []
@@ -123,12 +140,7 @@ class Map:
                         target_label=label,
                         matching_mode=matching_mode,
                         matching_threshold=threshold,
-                        tp_error_metrics=[
-                            TPErrorBEVCenterDistance(),
-                            TPErrorOrientation(),
-                            TPErrorScale(),
-                            TPErrorBEVVelocity(),
-                        ],
+                        tp_error_metrics=[metric_type() for metric_type in _TP_ERROR_METRIC_TYPES],
                     )
                     aph_per_threshold.append(aph)
 
@@ -141,6 +153,17 @@ class Map:
 
         self.map: float = self._mean(list(self.label_mean_to_ap.values()))
         self.maph: float = self._mean(list(self.label_mean_to_aph.values())) if not self.is_detection_2d else None
+
+        if not self.is_detection_2d:
+            for mean_tp_error_name, tp_error_index in self.mean_tp_error_names.items():
+                label_means: List[float] = []
+                for label in target_labels:
+                    aphs = self.label_to_aphs[label]
+                    per_threshold = [aph.tp_error_metrics[tp_error_index].avg_metric for aph in aphs]
+                    label_mean = self._mean(per_threshold)
+                    self.label_mean_to_tp_error[mean_tp_error_name][label] = label_mean
+                    label_means.append(label_mean)
+                self.mean_tp_errors[mean_tp_error_name] = self._mean(label_means)
 
     def __reduce__(self) -> Tuple[Map, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
@@ -156,13 +179,20 @@ class Map:
             init_args,
         )
 
+    @staticmethod
+    def _format_metric(value: float) -> str:
+        if isinstance(value, float) and np.isnan(value):
+            return "NaN"
+        return f"{value:.4f}"
+
     def __str__(self) -> str:
         str_ = ""
-        map_str = f"{self.map:.4f}" if not (isinstance(self.map, float) and np.isnan(self.map)) else "NaN"
-        str_ += f"\nmAP: {map_str}, "
+        str_ += f"\nmAP: {self._format_metric(self.map)}, "
         if not self.is_detection_2d:
-            maph_str = f"{self.maph:.4f}" if not (isinstance(self.maph, float) and np.isnan(self.maph)) else "NaN"
-            str_ += f"mAPH: {maph_str} "
+            str_ += f"mAPH: {self._format_metric(self.maph)}, "
+            for mean_tp_error_name in self.mean_tp_error_names:
+                mean_tp_error = self.mean_tp_errors[mean_tp_error_name]
+                str_ += f"{mean_tp_error_name}: {self._format_metric(mean_tp_error)}, "
         str_ += f"({self.matching_mode.value})\n"
 
         # === Per-label AP Table ===
@@ -217,7 +247,7 @@ class Map:
                     else:
                         str_ += " {:^9} |".format("N/A")
                 str_ += f" {ap.max_f1_score:^9.4f} | {ap.optimal_precision:^9.4f} | {ap.optimal_recall:^9.4f}| {ap.optimal_conf:^12.6f} |"
-                
+
                 if aph is not None:
                     for tp_error_name in tp_error_names:
                         tp_error_index = self.avg_tp_error_names[tp_error_name]

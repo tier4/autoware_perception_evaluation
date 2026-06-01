@@ -17,10 +17,9 @@ from abc import abstractmethod
 import stat
 
 import numpy as np
-
-from perception_eval.common.label import AutowareLabel, LabelType
+from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
-
 
 
 class TPErrorMetric(ABC):
@@ -31,7 +30,7 @@ class TPErrorMetric(ABC):
     """
 
     mode: str
-    average_mode: str 
+    average_mode: str
     mean_average_mode: str
 
     def __init__(self) -> None:
@@ -41,7 +40,7 @@ class TPErrorMetric(ABC):
         self.avg_metric: float = np.nan
         self.interpolated_values: np.ndarray = np.array([])
         self.optimal_avg_metric: float = np.nan
-        
+
     @abstractmethod
     def compute_value(
         self,
@@ -56,13 +55,13 @@ class TPErrorMetric(ABC):
             float: TP metrics value
         """
         pass
-    
+
     @abstractmethod
     def ignore_target_labels(self, label_type: LabelType) -> bool:
         """Check if the target label is ignored."""
         pass
 
-    def compute_average_value(self, min_recall: float, max_recall_ind: int) -> float:
+    def compute_average_value(self, target_label: LabelType, min_recall: float, max_recall_ind: int) -> float:
         """
         Get average value of TP error metric.
         Taken from nuScenes-devkit.
@@ -74,24 +73,27 @@ class TPErrorMetric(ABC):
         Returns:
             float: Average value of TP error metric.
         """
+        if self.ignore_target_labels(target_label):
+            return np.nan
+
         first_ind = round(100 * min_recall) + 1  # +1 to exclude the error at min recall.
-        last_ind = self.max_recall_ind  # First instance of confidence = 0 is index of max achieved recall.
+        last_ind = max_recall_ind  # First instance of confidence = 0 is index of max achieved recall.
         if last_ind < first_ind:
             return 1.0  # Assign 1 here. If this happens for all classes, the score for that TP metric will be 0
         else:
-            return np.mean(self.interpolated_values[first_ind: last_ind + 1])  # +1 to include error at max recall.
-    
+            return np.mean(self.interpolated_values[first_ind : last_ind + 1])  # +1 to include error at max recall.
+
     def compute_optimal_average_value(self, optimal_conf: int) -> float:
         """
         Get optimal average value of TP error metric.
         """
         if np.isnan(optimal_conf):
             return np.nan
-        
+
         valid_mask = [True if s > optimal_conf else False for s in self.confidences]
         valid_values = np.nanmean(self.values[valid_mask])
         return valid_values
-    
+
     def compute_cummean_values(self) -> np.array:
         """
         This is taken from nuScenes-devkit.
@@ -108,7 +110,7 @@ class TPErrorMetric(ABC):
             sum_vals = np.nancumsum(self.values.astype(float))  # Cumulative sum ignoring nans.
             count_vals = np.cumsum(~np.isnan(self.values))  # Number of non-nans up to each position.
             return np.divide(sum_vals, count_vals, out=np.zeros_like(sum_vals), where=count_vals != 0)
-    
+
     def interpolate_values(self, conf_interp: np.array, ascending_sorted: bool = False) -> np.array:
         """
         Interpolate the values using the confidence interpolation to assign them to the same confidence/recall bucket.
@@ -156,9 +158,9 @@ class TPErrorBEVCenterDistance(TPErrorMetric):
         if distance_error_bev is None:
             return np.nan
         return distance_error_bev
-    
+
     def ignore_target_labels(self, label_type: LabelType) -> bool:
-        """Check if the target label is ignored. """
+        """Check if the target label is ignored."""
         return False
 
 
@@ -172,7 +174,7 @@ class TPErrorOrientation(TPErrorMetric):
     mode: str = "orientation_err"
     average_mode: str = "AOE"
     mean_average_mode: str = "mAOE"
-    
+
     @staticmethod
     def angle_diff(x: float, y: float, period: float) -> float:
         """
@@ -206,15 +208,15 @@ class TPErrorOrientation(TPErrorMetric):
 
         yaw1, _, _ = self.object_result.estimated_object.state.orientation.yaw_pitch_roll
         yaw2, _, _ = self.object_result.ground_truth_object.state.orientation.yaw_pitch_roll
-        
+
         # https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/detection/algo.py#L106
         if object_result.estimated_object.semantic_label.name in [AutowareLabel.BARRIER.value]:
-            period = np.pi 
+            period = np.pi
         else:
             period = 2 * np.pi
-        
+
         return self.angle_diff(yaw1, yaw2, period)
-   
+
     def ignore_target_labels(self, label_type: LabelType) -> bool:
         """Check if the target label is ignored."""
         # Ignore traffic cones for orientation error calculation when computing AOE
@@ -245,9 +247,9 @@ class TPErrorScale(TPErrorMetric):
         if scale_iou is None:
             return np.nan
         return 1 - scale_iou
-    
+
     def ignore_target_labels(self, label_type: LabelType) -> bool:
-        """Check if the target label is ignored. """
+        """Check if the target label is ignored."""
         return False
 
 
@@ -261,7 +263,7 @@ class TPErrorBEVVelocity(TPErrorMetric):
     mode: str = "bev_velocity_err"
     average_mode: str = "AVE"
     mean_average_mode: str = "mAVE"
-    
+
     def compute_value(self, object_result: DynamicObjectWithPerceptionResult) -> float:
         """Get TP error BEV velocity metric value
 
@@ -279,4 +281,27 @@ class TPErrorBEVVelocity(TPErrorMetric):
     def ignore_target_labels(self, label_type: LabelType) -> bool:
         """Check if the target label is ignored."""
         # Ignore traffic cones and barriers for velocity error calculation when computing AVE
-        return label_type.name in [AutowareLabel.TRAFFIC_CONE.value, AutowareLabel.BARRIER.value] 
+        return label_type.name in [AutowareLabel.TRAFFIC_CONE.value, AutowareLabel.BARRIER.value]
+
+
+class TPErrorAttribute(TPErrorMetric):
+    """TP error attribute metric class
+
+    Attributes:
+        mode (str): TP error attribute metric name.
+    """
+
+    mode: str = "attribute_err"
+    average_mode: str = "AAE"
+    mean_average_mode: str = "mAAE"
+
+    def compute_value(self, object_result: DynamicObjectWithPerceptionResult) -> float:
+        """Get TP error attribute metric value"""
+        if object_result.ground_truth_object is None:
+            return np.nan
+        # Always return 1.0 for attribute errors
+        return 1.0
+
+    def ignore_target_labels(self, label_type: LabelType) -> bool:
+        """Check if the target label is ignored."""
+        return label_type.name in [AutowareLabel.BARRIER.value]
