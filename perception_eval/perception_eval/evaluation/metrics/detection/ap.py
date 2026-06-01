@@ -17,18 +17,19 @@ from __future__ import annotations
 from collections import defaultdict
 from logging import getLogger
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-from typing import Dict
 
 import numpy as np
-from perception_eval.common.label import AutowareLabel, LabelType
+from perception_eval.common.label import AutowareLabel
+from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching import MatchingMode
+from perception_eval.evaluation.metrics.detection.tp_error_metrics import TPErrorMetric
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAp
 from perception_eval.evaluation.metrics.detection.tp_metrics import TPMetricsAph
-from perception_eval.evaluation.metrics.detection.tp_error_metrics import TPErrorMetric
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 logger = getLogger(__name__)
@@ -100,7 +101,7 @@ class Ap:
         self.tp_list, self.fp_list, self.conf_list, self.sorted_indices, self.num_tp = self._calculate_tp_fp(
             tp_metrics, object_results
         )
-        
+
         self.precision_list, self.recall_list = self.get_precision_recall()
         self.precision_interp, self.recall_interp, self.conf_interp = self._interpolate_precision_recall(
             self.precision_list, self.recall_list, self.conf_list
@@ -111,13 +112,11 @@ class Ap:
             self.optimal_precision = self.precision_list[self.max_f1_index]
             self.optimal_recall = self.recall_list[self.max_f1_index]
             self.optimal_conf = self.conf_list[self.max_f1_index]
-            
+
             # Number of TPs at the optimal confidence threshold. Computed from the raw
             # (unweighted) TP indicators so it represents an actual prediction count for
             # both AP and APH instances.
-            self.num_tp_at_optimal_conf = self._count_tp_at_index(
-                object_results, self.conf_list, self.max_f1_index
-            )
+            self.num_tp_at_optimal_conf = self._count_tp_at_index(object_results, self.conf_list, self.max_f1_index)
 
         else:
             self.optimal_precision = np.nan
@@ -129,15 +128,13 @@ class Ap:
 
         # Compute TP error metrics.
         self.tp_error_metrics = tp_error_metrics
-        self.compute_tp_error_metrics_values()
+        self.compute_tp_error_metrics_values(sorted_indices=self.sorted_indices)
 
         # Compute average of TP error metrics.
         self.compute_average_tp_error_metrics()
 
         # Compute optimal average of TP error metrics.
-        self.compute_optimal_average_tp_error_metrics(
-            optimal_conf=self.optimal_conf
-        )
+        self.compute_optimal_average_tp_error_metrics(optimal_conf=self.optimal_conf)
 
     def __reduce__(self) -> Tuple[Ap, Tuple[Any]]:
         """Serializing and deserializing the class."""
@@ -153,11 +150,11 @@ class Ap:
                 self.tp_error_metrics,
             ),
         )
-    
+
     @property
     def max_recall_ind(self):
-        """ 
-        Returns index of max recall achieved. 
+        """
+        Returns index of max recall achieved.
         Taken from nuScenes-devkit.
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/detection/data_classes.py#L127
         Returns:
@@ -171,7 +168,7 @@ class Ap:
             max_recall_ind = non_zero[-1]
 
         return max_recall_ind
-    
+
     def _calculate_tp_fp(
         self,
         tp_metrics: Union[TPMetricsAp, TPMetricsAph],
@@ -282,9 +279,9 @@ class Ap:
         # Interpolate precision at those recall levels using the envelope
         # 'right=0' means values beyond the max recall get precision=0
         precision_interp = np.interp(recall_interp, recall_list, precision_envelope, right=0)
-        
+
         confidences_interp = np.interp(recall_interp, recall_list, conf_list, right=0)
-        
+
         return precision_interp, recall_interp, confidences_interp
 
     def _calculate_ap(
@@ -349,7 +346,7 @@ class Ap:
         mean = float(np.mean(matching_score_list))
         std = float(np.std(matching_score_list))
         return mean, std
-    
+
     @staticmethod
     def _count_tp_at_index(
         object_results: List[DynamicObjectWithPerceptionResult],
@@ -372,16 +369,14 @@ class Ap:
             if obj.ground_truth_object is not None and obj.is_label_correct:
                 num_tp += 1
         return num_tp
-    
+
     def compute_tp_error_metrics_values(self, sorted_indices: List[int]) -> None:
         """Compute the values of TP error metrics."""
         if self.tp_error_metrics is None:
             return
-        
+
         # Sort object results by confidence in descending order
-        object_results_sorted = [
-            self.object_results[i] for i in sorted_indices
-        ]
+        object_results_sorted = [self.object_results[i] for i in sorted_indices]
 
         for tp_error_metric in self.tp_error_metrics:
             tp_error_metric_values = []
@@ -398,23 +393,21 @@ class Ap:
         """Compute the average of TP error metrics."""
         if self.tp_error_metrics is None:
             return
-        
+
         max_recall_ind = self.max_recall_ind
         for tp_error_metric in self.tp_error_metrics:
             tp_error_metric.interpolated_values = tp_error_metric.interpolate_values(
-                conf_interp=self.conf_interp,
-                ascending_sorted=False
+                conf_interp=self.conf_interp, ascending_sorted=False
             )
             tp_error_metric.avg_metric = tp_error_metric.compute_average_value(
-                min_recall=min_recall,
-                max_recall_ind=max_recall_ind
-            ) 
+                min_recall=min_recall, max_recall_ind=max_recall_ind
+            )
 
     def compute_optimal_average_tp_error_metrics(self, optimal_conf: int) -> None:
         """Compute the optimal average of TP error metrics."""
         if self.tp_error_metrics is None:
             return
-        
+
         for tp_error_metric in self.tp_error_metrics:
             tp_error_metric.optimal_avg_metric = tp_error_metric.compute_optimal_average_value(
                 optimal_conf=optimal_conf
