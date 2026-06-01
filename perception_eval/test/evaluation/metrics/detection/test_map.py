@@ -243,6 +243,9 @@ class TestMap(unittest.TestCase):
             for mean_tp_error_name in map_result.mean_tp_error_names:
                 self.assertIn(mean_tp_error_name, output_str)
                 self.assertIn(mean_tp_error_name, output_str.split("(")[0])
+            self.assertIn("map_based NDS", output_str)
+            self.assertIn("mapH_based NDS", output_str)
+            self.assertIn("Overall", output_str)
         else:
             self.assertNotIn("APH", output_str)
 

@@ -23,6 +23,7 @@ import numpy as np
 from perception_eval.common.label import LabelType
 from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.metrics.detection.ap import Ap
+from perception_eval.evaluation.metrics.detection.nds import NuScenesDetectionScore
 from perception_eval.evaluation.metrics.detection.tp_error_metrics import TPErrorAttribute
 from perception_eval.evaluation.metrics.detection.tp_error_metrics import TPErrorBEVCenterDistance
 from perception_eval.evaluation.metrics.detection.tp_error_metrics import TPErrorBEVVelocity
@@ -84,6 +85,10 @@ class Map:
             Per-label mean TP error across thresholds for each metric (e.g. mATE), or None if 2D.
         mean_tp_errors (Optional[Dict[str, float]]):
             Final mean TP errors (mATE, mAOE, etc.) across all labels, or None if 2D.
+        map_based_nds (Optional[NuScenesDetectionScore]):
+            NuScenes Detection Score using mAP and mean TP errors, or None if 2D.
+        mapH_based_nds (Optional[NuScenesDetectionScore]):
+            NuScenes Detection Score using mAPH and mean TP errors, or None if 2D.
     """
 
     def __init__(
@@ -154,6 +159,9 @@ class Map:
         self.map: float = self._mean(list(self.label_mean_to_ap.values()))
         self.maph: float = self._mean(list(self.label_mean_to_aph.values())) if not self.is_detection_2d else None
 
+        self.map_based_nds: NuScenesDetectionScore | None = None
+        self.mapH_based_nds: NuScenesDetectionScore | None = None
+
         if not self.is_detection_2d:
             for mean_tp_error_name, tp_error_index in self.mean_tp_error_names.items():
                 label_means: List[float] = []
@@ -164,6 +172,17 @@ class Map:
                     self.label_mean_to_tp_error[mean_tp_error_name][label] = label_mean
                     label_means.append(label_mean)
                 self.mean_tp_errors[mean_tp_error_name] = self._mean(label_means)
+
+            self.map_based_nds = NuScenesDetectionScore(
+                map=self.map,
+                metric_prefix_name=f"map_based",
+                mean_tp_error_metrics=self.mean_tp_errors,
+            )
+            self.mapH_based_nds = NuScenesDetectionScore(
+                map=self.maph,
+                metric_prefix_name=f"mapH_based",
+                mean_tp_error_metrics=self.mean_tp_errors,
+            )
 
     def __reduce__(self) -> Tuple[Map, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
@@ -193,6 +212,12 @@ class Map:
             for mean_tp_error_name in self.mean_tp_error_names:
                 mean_tp_error = self.mean_tp_errors[mean_tp_error_name]
                 str_ += f"{mean_tp_error_name}: {self._format_metric(mean_tp_error)}, "
+            str_ += (
+                f"{self.map_based_nds.metric_prefix_name} NDS: "
+                f"{self._format_metric(self.map_based_nds.nds)}, "
+                f"{self.mapH_based_nds.metric_prefix_name} NDS: "
+                f"{self._format_metric(self.mapH_based_nds.nds)}, "
+            )
         str_ += f"({self.matching_mode.value})\n"
 
         # === Per-label AP Table ===
@@ -274,7 +299,7 @@ class Map:
             "   GT_nums       |  Thresholds       |  mean AP      |    APs           |"
         )
         if not self.is_detection_2d:
-            str_ += "  Mean APH    |   APHs     |"
+            str_ += "  Mean APH    |   APHs     | map_based NDS | mapH_based NDS |"
         str_ += "\n"
 
         str_ += (
@@ -282,7 +307,7 @@ class Map:
             ":---------------:|:-----------------:|:-------------:|:----------------:|"
         )
         if not self.is_detection_2d:
-            str_ += ":---------------:|:---------------:|"
+            str_ += ":---------------:|:---------------:|:---------------:|:---------------:|"
         str_ += "\n"
 
         for label in self.target_labels:
@@ -316,8 +341,19 @@ class Map:
                     for aph in aphs
                 ]
                 str_ += f"  {mean_aph_str} | {' / '.join(aph_strs):^14} |"
+                str_ += " {:^15} | {:^16} |".format("", "")
 
             str_ += "\n"
+
+        if not self.is_detection_2d:
+            map_based_nds_str = self._format_metric(self.map_based_nds.nds)
+            mapH_based_nds_str = self._format_metric(self.mapH_based_nds.nds)
+            str_ += (
+                f"| {'Overall':^15} | {'':^14} | {'':^14} | {'':^14} | "
+                f"{'':^14} | {'':^14} | {'':^14} | {'':^14} | "
+                f"{'':^14} | {'':^14} | {map_based_nds_str:^15} | {mapH_based_nds_str:^16} |"
+                "\n"
+            )
         str_ += "\n"
 
         return str_
