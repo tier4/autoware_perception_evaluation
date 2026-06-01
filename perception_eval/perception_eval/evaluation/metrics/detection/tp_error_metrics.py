@@ -243,7 +243,7 @@ class TPErrorScale(TPErrorMetric):
         Returns:
             float: TP error scale metric value
         """
-        scale_iou = object_result.scale_iou()
+        scale_iou = object_result.scale_iou
         if scale_iou is None:
             return np.nan
         return 1 - scale_iou
