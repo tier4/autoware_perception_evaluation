@@ -414,13 +414,12 @@ class DynamicObject:
         if other is None:
             return None
         
-        assert all(self.state.size > 0), 'Current object sizes must be >0.'
-        assert all(other.state.size > 0), 'Other object sizes must be >0.'
+        sa_size = np.array(self.state.size)
+        sr_size = np.array(other.state.size)
+        assert all(sa_size > 0), 'Current object sizes must be >0.'
+        assert all(sr_size > 0), 'Other object sizes must be >0.'
         
         # Compute IOU.
-        sa_size = self.state.size
-        sr_size = other.state.size
-
         min_wlh = np.minimum(sa_size, sr_size)
         volume_annotation = np.prod(sa_size)
         volume_result = np.prod(sr_size)
