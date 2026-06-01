@@ -206,8 +206,8 @@ class TPErrorOrientation(TPErrorMetric):
         if object_result.ground_truth_object is None:
             return np.nan
 
-        yaw1, _, _ = self.object_result.estimated_object.state.orientation.yaw_pitch_roll
-        yaw2, _, _ = self.object_result.ground_truth_object.state.orientation.yaw_pitch_roll
+        yaw1, _, _ = object_result.estimated_object.state.orientation.yaw_pitch_roll
+        yaw2, _, _ = object_result.ground_truth_object.state.orientation.yaw_pitch_roll
 
         # https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/detection/algo.py#L106
         if object_result.estimated_object.semantic_label.name in [AutowareLabel.BARRIER.value]:
