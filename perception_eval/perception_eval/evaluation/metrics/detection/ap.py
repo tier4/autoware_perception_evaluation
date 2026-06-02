@@ -160,6 +160,9 @@ class Ap:
         Returns:
             int: Index of max recall achieved.
         """
+        # No matches, return 0
+        if len(self.conf_interp) == 0:
+            return 0
         # Last instance of confidence > 0 is index of max achieved recall.
         non_zero = np.nonzero(self.conf_interp)[0]
         if len(non_zero) == 0:  # If there are no matches, all the confidence values will be zero.

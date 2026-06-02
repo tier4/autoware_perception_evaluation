@@ -73,6 +73,9 @@ class TPErrorMetric(ABC):
         Returns:
             float: Average value of TP error metric.
         """
+        if len(self.interpolated_values) == 0:
+            return 1.0  # Since TP score will be zero if no TP exists
+
         if self.ignore_target_labels(target_label):
             return np.nan
 
@@ -92,7 +95,7 @@ class TPErrorMetric(ABC):
 
         valid_mask = [True if s >= optimal_conf else False for s in self.confidences]
         if np.sum(valid_mask) == 0:
-            return 0.0
+            return 1.0  # Highest when no valid predictions are found
         valid_values = np.nanmean(self.values[valid_mask])
         return valid_values
 
