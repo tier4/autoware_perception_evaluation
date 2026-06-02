@@ -280,10 +280,10 @@ class TPErrorBEVVelocity(TPErrorMetric):
         Returns:
             float: TP error BEV velocity metric value
         """
-        distance_error_bev = object_result.distance_error_bev
-        if distance_error_bev is None:
+        velocity_error_bev = object_result.velocity_error_bev
+        if velocity_error_bev is None:
             return np.nan
-        return distance_error_bev
+        return velocity_error_bev
 
     def ignore_target_labels(self, label_type: LabelType) -> bool:
         """Check if the target label is ignored."""

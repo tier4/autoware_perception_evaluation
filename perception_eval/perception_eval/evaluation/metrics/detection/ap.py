@@ -386,9 +386,11 @@ class Ap:
             tp_error_metric_confidences = []
             for object_result in object_results_sorted:
                 tp_error_metric_value = tp_error_metric.compute_value(object_result)
-                if tp_error_metric_value is not None:
-                    tp_error_metric_values.append(tp_error_metric_value)
-                    tp_error_metric_confidences.append(object_result.estimated_object.semantic_score)
+                if np.isnan(tp_error_metric_value):
+                    continue
+                
+                tp_error_metric_values.append(tp_error_metric_value)
+                tp_error_metric_confidences.append(object_result.estimated_object.semantic_score)
             tp_error_metric.values = np.array(tp_error_metric_values)
             tp_error_metric.confidences = np.array(tp_error_metric_confidences)
 
