@@ -262,12 +262,12 @@ class Ap:
 
     def _interpolate_precision_recall(
         self, precision_list: List[float], recall_list: List[float], conf_list: List[float]
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Interpolate the precision list using the recall list.
         """
         if len(precision_list) == 0:
-            return np.array([]), np.array([])
+            return np.array([]), np.array([]), np.array([])
 
         # Create a precision envelope: ensures non-increasing precision
         # max accumulate from right to left
@@ -280,9 +280,9 @@ class Ap:
         # 'right=0' means values beyond the max recall get precision=0
         precision_interp = np.interp(recall_interp, recall_list, precision_envelope, right=0)
 
-        confidences_interp = np.interp(recall_interp, recall_list, conf_list, right=0)
+        conf_interp = np.interp(recall_interp, recall_list, conf_list, right=0)
 
-        return precision_interp, recall_interp, confidences_interp
+        return precision_interp, recall_interp, conf_interp
 
     def _calculate_ap(
         self,

@@ -90,7 +90,9 @@ class TPErrorMetric(ABC):
         if np.isnan(optimal_conf):
             return np.nan
 
-        valid_mask = [True if s > optimal_conf else False for s in self.confidences]
+        valid_mask = [True if s >= optimal_conf else False for s in self.confidences]
+        if np.sum(valid_mask) == 0:
+            return 0.0
         valid_values = np.nanmean(self.values[valid_mask])
         return valid_values
 
