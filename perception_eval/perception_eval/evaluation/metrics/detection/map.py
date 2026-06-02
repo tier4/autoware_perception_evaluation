@@ -85,6 +85,10 @@ class Map:
             Per-label mean TP error across thresholds for each metric (e.g. mATE), or None if 2D.
         mean_tp_errors (Optional[Dict[str, float]]):
             Final mean TP errors (mATE, mAOE, etc.) across all labels, or None if 2D.
+        optimal_mean_tp_errors (Optional[Dict[str, float]]):
+            Final mean TP errors at the F1-optimal confidence, or None if 2D.
+        medium_mean_tp_errors (Optional[Dict[str, float]]):
+            Final mean TP errors over the medium recall band (min_recall=0.4), or None if 2D.
         map_based_nds (Optional[NuScenesDetectionScore]):
             NuScenes Detection Score using mAP and mean TP errors, or None if 2D.
         mapH_based_nds (Optional[NuScenesDetectionScore]):
@@ -122,8 +126,12 @@ class Map:
         self.label_mean_to_medium_tp_error: Dict[str, Dict[LabelType, float]] | None = (
             {name: {} for name in self.mean_tp_error_names} if not self.is_detection_2d else None
         )
+        self.label_mean_to_optimal_tp_error: Dict[str, Dict[LabelType, float]] | None = (
+            {name: {} for name in self.mean_tp_error_names} if not self.is_detection_2d else None
+        )
         self.mean_tp_errors: Dict[str, float] | None = None if self.is_detection_2d else {}
         self.medium_mean_tp_errors: Dict[str, float] | None = None if self.is_detection_2d else {}
+        self.optimal_mean_tp_errors: Dict[str, float] | None = None if self.is_detection_2d else {}
 
         for label in target_labels:
             ap_per_threshold = []
@@ -131,6 +139,7 @@ class Map:
 
             for threshold, object_results in self.object_results_dict[label].items():
                 num_ground_truth = num_ground_truth_dict[label]
+                tp_error_metrics = [metric_type() for metric_type in _TP_ERROR_METRIC_TYPES] if not self.is_detection_2d else None
                 ap = Ap(
                     tp_metrics=TPMetricsAp(),
                     object_results=object_results,
@@ -138,6 +147,7 @@ class Map:
                     target_label=label,
                     matching_mode=matching_mode,
                     matching_threshold=threshold,
+                    tp_error_metrics=tp_error_metrics,
                 )
                 ap_per_threshold.append(ap)
 
@@ -148,8 +158,7 @@ class Map:
                         num_ground_truth=num_ground_truth,
                         target_label=label,
                         matching_mode=matching_mode,
-                        matching_threshold=threshold,
-                        tp_error_metrics=[metric_type() for metric_type in _TP_ERROR_METRIC_TYPES],
+                        matching_threshold=threshold
                     )
                     aph_per_threshold.append(aph)
 
@@ -172,21 +181,32 @@ class Map:
             for mean_tp_error_name, tp_error_index in self.mean_tp_error_names.items():
                 label_means: List[float] = []
                 medium_label_means: List[float] = []
+                optimal_label_means: List[float] = []
                 for label in target_labels:
-                    aphs = self.label_to_aphs[label]
-                    per_threshold = [aph.tp_error_metrics[tp_error_index].avg_metric for aph in aphs]
+                    aps_for_label = self.label_to_aps[label]
+                    per_threshold = [ap.tp_error_metrics[tp_error_index].avg_metric for ap in aps_for_label]
                     label_mean = self._mean(per_threshold)
                     self.label_mean_to_tp_error[mean_tp_error_name][label] = label_mean
                     label_means.append(label_mean)
-                    
-                    medium_per_threshold = [aph.tp_error_metrics[tp_error_index].medium_avg_metric for aph in aphs]
+
+                    medium_per_threshold = [
+                        ap.tp_error_metrics[tp_error_index].medium_avg_metric for ap in aps_for_label
+                    ]
                     medium_label_mean = self._mean(medium_per_threshold)
                     self.label_mean_to_medium_tp_error[mean_tp_error_name][label] = medium_label_mean
                     medium_label_means.append(medium_label_mean)
 
+                    optimal_per_threshold = [
+                        ap.tp_error_metrics[tp_error_index].optimal_avg_metric for ap in aps_for_label
+                    ]
+                    optimal_label_mean = self._mean(optimal_per_threshold)
+                    self.label_mean_to_optimal_tp_error[mean_tp_error_name][label] = optimal_label_mean
+                    optimal_label_means.append(optimal_label_mean)
+
                 self.mean_tp_errors[mean_tp_error_name] = self._mean(label_means)
                 self.medium_mean_tp_errors[mean_tp_error_name] = self._mean(medium_label_means)
-            
+                self.optimal_mean_tp_errors[mean_tp_error_name] = self._mean(optimal_label_means)
+
             self.map_based_nds = NuScenesDetectionScore(
                 map=self.map,
                 metric_prefix_name=f"map_based",
@@ -236,8 +256,10 @@ class Map:
             for mean_tp_error_name in self.mean_tp_error_names:
                 mean_tp_error = self.mean_tp_errors[mean_tp_error_name]
                 medium_tp_error = self.medium_mean_tp_errors[mean_tp_error_name]
+                optimal_tp_error = self.optimal_mean_tp_errors[mean_tp_error_name]
                 str_ += (
                     f"{mean_tp_error_name}: {self._format_metric(mean_tp_error)}, "
+                    f"{mean_tp_error_name}(opt): {self._format_metric(optimal_tp_error)}, "
                     f"{mean_tp_error_name}(med): {self._format_metric(medium_tp_error)}, "
                 )
             str_ += (
@@ -317,9 +339,8 @@ class Map:
 
                 for ap in aps:
                     threshold = ap.matching_threshold
-                    aph = next((a for a in aphs if a.matching_threshold == threshold), None)
                     str_ += f"|  {threshold:^8.2f} |"
-                    if aph is None:
+                    if ap.tp_error_metrics is None:
                         for _ in tp_error_names:
                             str_ += " {:^8} | {:^8} | {:^8} |".format("N/A", "N/A", "N/A")
                         str_ += "\n"
@@ -327,7 +348,7 @@ class Map:
 
                     for tp_error_name in tp_error_names:
                         tp_error_index = self.avg_tp_error_names[tp_error_name]
-                        tp_error_metric = aph.tp_error_metrics[tp_error_index]
+                        tp_error_metric = ap.tp_error_metrics[tp_error_index]
                         metric_val = tp_error_metric.avg_metric
                         opt_metric_val = tp_error_metric.optimal_avg_metric
                         medium_metric_val = tp_error_metric.medium_avg_metric
@@ -358,7 +379,10 @@ class Map:
         if not self.is_detection_2d:
             str_ += "  Mean APH    |   APHs     |"
             for mean_tp_error_name in self.mean_tp_error_names:
-                str_ += f" {mean_tp_error_name:^8} | {mean_tp_error_name + '(med)':^12} |"
+                str_ += (
+                    f" {mean_tp_error_name:^8} | {mean_tp_error_name + '(opt)':^12} |"
+                    f" {mean_tp_error_name + '(med)':^12} |"
+                )
         str_ += "\n"
 
         str_ += (
@@ -368,7 +392,7 @@ class Map:
         if not self.is_detection_2d:
             str_ += ":---------------:|:---------------:|"
             for _ in self.mean_tp_error_names:
-                str_ += ":----------:|:------------:|"
+                str_ += ":----------:|:------------:|:------------:|"
         str_ += "\n"
 
         for label in self.target_labels:
@@ -403,18 +427,24 @@ class Map:
                 str_ += f"  {mean_aph_str} | {' / '.join(aph_strs):^14} |"
                 for mean_tp_error_name in self.mean_tp_error_names:
                     label_mean_tp = self.label_mean_to_tp_error[mean_tp_error_name][label]
+                    label_optimal_tp = self.label_mean_to_optimal_tp_error[mean_tp_error_name][label]
                     label_medium_tp = self.label_mean_to_medium_tp_error[mean_tp_error_name][label]
                     label_mean_str = (
                         f"{label_mean_tp:^8.4f}"
                         if not (isinstance(label_mean_tp, float) and np.isnan(label_mean_tp))
                         else "  NaN  "
                     )
+                    label_optimal_str = (
+                        f"{label_optimal_tp:^12.4f}"
+                        if not (isinstance(label_optimal_tp, float) and np.isnan(label_optimal_tp))
+                        else "    NaN    "
+                    )
                     label_medium_str = (
                         f"{label_medium_tp:^12.4f}"
                         if not (isinstance(label_medium_tp, float) and np.isnan(label_medium_tp))
                         else "    NaN    "
                     )
-                    str_ += f" {label_mean_str} | {label_medium_str} |"
+                    str_ += f" {label_mean_str} | {label_optimal_str} | {label_medium_str} |"
 
             str_ += "\n"
 
