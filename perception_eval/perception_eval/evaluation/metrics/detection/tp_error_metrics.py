@@ -222,7 +222,7 @@ class TPErrorOrientation(TPErrorMetric):
         else:
             period = 2 * np.pi
 
-        return self.angle_diff(yaw1, yaw2, period)
+        return abs(self.angle_diff(yaw1, yaw2, period))
 
     def ignore_target_labels(self, label_type: LabelType) -> bool:
         """Check if the target label is ignored."""
