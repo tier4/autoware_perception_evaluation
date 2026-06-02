@@ -232,22 +232,17 @@ class Map:
             if not self.is_detection_2d:
                 tp_error_names = list(self.avg_tp_error_names.keys())
 
+            # --- Table 1: AP/APH + optimal operating point stats ---
             str_ += "| Threshold | Predict_num | Predict_match | Match@opt_conf | Groundtruth_num |     AP     |"
             if not self.is_detection_2d:
                 str_ += "    APH    |"
             str_ += "   max_f1   |  optimal_recall | optimal_precision  | optimal_conf      |"
-            for mode in tp_error_names:
-                # One column for the recall-range average error, one for the same
-                # metric evaluated at the F1-optimal confidence threshold.
-                str_ += f" {mode:^8} | {mode + '@opt':^8} |"
             str_ += "\n"
 
             str_ += "|:---------:|:-----------:|:-------------:|:--------------:|:---------------:|:----------:|"
             if not self.is_detection_2d:
                 str_ += ":---------:|"
             str_ += ":----------:|:---------------:|:------------------:|:-----------------:|"
-            for _ in tp_error_names:
-                str_ += ":----------:|:----------:|"
             str_ += "\n"
 
             for ap in aps:
@@ -272,8 +267,33 @@ class Map:
                     else:
                         str_ += " {:^9} |".format("N/A")
                 str_ += f" {ap.max_f1_score:^9.4f} | {ap.optimal_precision:^9.4f} | {ap.optimal_recall:^9.4f}| {ap.optimal_conf:^12.6f} |"
+                str_ += "\n"
 
-                if aph is not None:
+            # --- Table 2: TP error metrics (moved after optimal_conf) ---
+            if not self.is_detection_2d and tp_error_names:
+                str_ += "\n"
+                str_ += "| Threshold |"
+                for mode in tp_error_names:
+                    # One column for the recall-range average error, one for the same
+                    # metric evaluated at the F1-optimal confidence threshold.
+                    str_ += f" {mode:^8} | {mode + '@opt':^8} |"
+                str_ += "\n"
+
+                str_ += "|:---------:|"
+                for _ in tp_error_names:
+                    str_ += ":----------:|:----------:|"
+                str_ += "\n"
+
+                for ap in aps:
+                    threshold = ap.matching_threshold
+                    aph = next((a for a in aphs if a.matching_threshold == threshold), None)
+                    str_ += f"|  {threshold:^8.2f} |"
+                    if aph is None:
+                        for _ in tp_error_names:
+                            str_ += " {:^10} | {:^10} |".format("N/A", "N/A")
+                        str_ += "\n"
+                        continue
+
                     for tp_error_name in tp_error_names:
                         tp_error_index = self.avg_tp_error_names[tp_error_name]
                         tp_error_metric = aph.tp_error_metrics[tp_error_index]
@@ -290,33 +310,32 @@ class Map:
                             else "   NaN    "
                         )
                         str_ += f" {metric_str} | {opt_metric_str} |"
-                str_ += "\n"
+                    str_ += "\n"
 
         # === Summary Table ===
         str_ += "\nSummary:\n"
         str_ += (
-            "|      Label      |  Predict_num   | Predict_match  | Match@opt_conf |"
+            "|      Label      |  Predict_num   | Predict_match  |"
             "   GT_nums       |  Thresholds       |  mean AP      |    APs           |"
         )
         if not self.is_detection_2d:
-            str_ += "  Mean APH    |   APHs     | map_based NDS | mapH_based NDS |"
+            str_ += "  Mean APH    |   APHs     |"
         str_ += "\n"
 
         str_ += (
-            "|:---------------:|:--------------:|:--------------:|:--------------:|"
+            "|:---------------:|:--------------:|:--------------:|"
             ":---------------:|:-----------------:|:-------------:|:----------------:|"
         )
         if not self.is_detection_2d:
-            str_ += ":---------------:|:---------------:|:---------------:|:---------------:|"
+            str_ += ":---------------:|:---------------:|"
         str_ += "\n"
 
         for label in self.target_labels:
             aps = self.label_to_aps[label]
             gt_num = self.num_ground_truth_dict[label]
             predict_num = aps[0].objects_results_num if len(aps) else 0
-            # Per-threshold prediction match counts (raw TPs) and matches at optimal conf.
+            # Per-threshold prediction match counts (raw TPs).
             predict_match_strs = [str(ap.num_tp) for ap in aps]
-            predict_match_opt_strs = [str(ap.num_tp_at_optimal_conf) for ap in aps]
             thresholds = [f"{ap.matching_threshold:.2f}" for ap in aps]
 
             mean_ap = self.label_mean_to_ap[label]
@@ -327,7 +346,7 @@ class Map:
             ]
             str_ += (
                 f"| {label.value:^15} | {predict_num:^14} | "
-                f"{' / '.join(predict_match_strs):^14} | {' / '.join(predict_match_opt_strs):^14} | "
+                f"{' / '.join(predict_match_strs):^14} | "
                 f"{gt_num:^14} | {'/'.join(thresholds):^14} |  {mean_ap_str} | {' / '.join(ap_strs):^14} |"
             )
             if not self.is_detection_2d:
@@ -341,19 +360,9 @@ class Map:
                     for aph in aphs
                 ]
                 str_ += f"  {mean_aph_str} | {' / '.join(aph_strs):^14} |"
-                str_ += " {:^15} | {:^16} |".format("", "")
 
             str_ += "\n"
 
-        if not self.is_detection_2d:
-            map_based_nds_str = self._format_metric(self.map_based_nds.nds)
-            mapH_based_nds_str = self._format_metric(self.mapH_based_nds.nds)
-            str_ += (
-                f"| {'Overall':^15} | {'':^14} | {'':^14} | {'':^14} | "
-                f"{'':^14} | {'':^14} | {'':^14} | {'':^14} | "
-                f"{'':^14} | {'':^14} | {map_based_nds_str:^15} | {mapH_based_nds_str:^16} |"
-                "\n"
-            )
         str_ += "\n"
 
         return str_
