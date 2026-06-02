@@ -126,6 +126,8 @@ class TPErrorMetric(ABC):
         Returns:
             np.array: Interpolated values.
         """
+        if len(self.values) == 0:
+            return np.array([])
         # For each match_data, we first calculate the accumulated mean.
         cummean_value = self.compute_cummean_values()
 
