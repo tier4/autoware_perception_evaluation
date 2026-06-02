@@ -135,7 +135,7 @@ class Ap:
 
         # Compute optimal average of TP error metrics.
         self.compute_optimal_average_tp_error_metrics(optimal_conf=self.optimal_conf)
-
+        
     def __reduce__(self) -> Tuple[Ap, Tuple[Any]]:
         """Serializing and deserializing the class."""
         return (
@@ -394,7 +394,7 @@ class Ap:
             tp_error_metric.values = np.array(tp_error_metric_values)
             tp_error_metric.confidences = np.array(tp_error_metric_confidences)
 
-    def compute_average_tp_error_metrics(self, min_recall: float = 0.1) -> None:
+    def compute_average_tp_error_metrics(self, min_recall: float = 0.1, medium_recall: float = 0.4) -> None:
         """Compute the average of TP error metrics."""
         if self.tp_error_metrics is None:
             return
@@ -406,6 +406,9 @@ class Ap:
             )
             tp_error_metric.avg_metric = tp_error_metric.compute_average_value(
                 min_recall=min_recall, max_recall_ind=max_recall_ind, target_label=self.target_label
+            )
+            tp_error_metric.medium_avg_metric = tp_error_metric.compute_average_value(
+                min_recall=medium_recall, max_recall_ind=max_recall_ind, target_label=self.target_label
             )
 
     def compute_optimal_average_tp_error_metrics(self, optimal_conf: int) -> None:

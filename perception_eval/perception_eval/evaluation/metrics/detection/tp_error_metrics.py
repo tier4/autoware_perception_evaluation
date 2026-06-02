@@ -40,6 +40,7 @@ class TPErrorMetric(ABC):
         self.avg_metric: float = np.nan
         self.interpolated_values: np.ndarray = np.array([])
         self.optimal_avg_metric: float = np.nan
+        self.medium_avg_metric: float = np.nan
 
     @abstractmethod
     def compute_value(
