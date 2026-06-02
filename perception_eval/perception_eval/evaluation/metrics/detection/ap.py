@@ -400,7 +400,7 @@ class Ap:
                 conf_interp=self.conf_interp, ascending_sorted=False
             )
             tp_error_metric.avg_metric = tp_error_metric.compute_average_value(
-                min_recall=min_recall, max_recall_ind=max_recall_ind
+                min_recall=min_recall, max_recall_ind=max_recall_ind, target_label=self.target_label
             )
 
     def compute_optimal_average_tp_error_metrics(self, optimal_conf: int) -> None:
