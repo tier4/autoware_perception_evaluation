@@ -133,7 +133,7 @@ class TPErrorMetric(ABC):
         if ascending_sorted:
             return np.interp(conf_interp, self.confidences, cummean_value)[::-1]
         else:
-            return np.interp(conf_interp, self.confidences[::-1], cummean_value[::-1])[::-1]
+            return np.interp(conf_interp[::-1], self.confidences[::-1], cummean_value[::-1])[::-1]
 
 
 class TPErrorBEVCenterDistance(TPErrorMetric):
