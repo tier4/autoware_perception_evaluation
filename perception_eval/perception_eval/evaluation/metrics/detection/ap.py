@@ -136,6 +136,9 @@ class Ap:
         # Compute optimal average of TP error metrics.
         self.compute_optimal_average_tp_error_metrics(optimal_conf=self.optimal_conf)
         
+        # Compute recall confidence of TP error metrics.
+        self.compute_recall_conf(min_recall=0.1, medium_recall=0.4, conf_interp=self.conf_interp)
+        
     def __reduce__(self) -> Tuple[Ap, Tuple[Any]]:
         """Serializing and deserializing the class."""
         return (
@@ -420,3 +423,27 @@ class Ap:
             tp_error_metric.optimal_avg_metric = tp_error_metric.compute_optimal_average_value(
                 optimal_conf=optimal_conf
             )
+    
+    def compute_recall_conf(self, min_recall: float, medium_recall: float, conf_interp: np.ndarray) -> float:
+        """Compute the recall confidence of TP error metrics."""
+        if self.tp_error_metrics is None:
+            return
+        
+        max_recall_ind = self.max_recall_ind
+        for tp_error_metric in self.tp_error_metrics:
+            if len(tp_error_metric.interpolated_values) == 0:
+                continue 
+
+            first_ind = round(100 * min_recall) + 1  # +1 to exclude the error at min recall.
+            last_ind = max_recall_ind  # First instance of confidence = 0 is index of max achieved recall.
+            if last_ind < first_ind:
+                tp_error_metric.min_recall_conf = np.nan
+            else:
+                tp_error_metric.min_recall_conf = conf_interp[first_ind]
+
+
+            first_ind = round(100 * medium_recall) + 1  # +1 to exclude the error at medium recall.
+            if last_ind < first_ind:
+                tp_error_metric.medium_recall_conf = np.nan
+            else:
+                tp_error_metric.medium_recall_conf = conf_interp[first_ind]

@@ -248,6 +248,18 @@ class Map:
             return "NaN"
         return f"{value:.4f}"
 
+    @staticmethod
+    def _format_conf(value: float, width: int = 12) -> str:
+        if isinstance(value, float) and np.isnan(value):
+            return f"{'NaN':^{width}}"
+        return f"{value:^{width}.6f}"
+
+    @staticmethod
+    def _format_conf_compact(value: float) -> str:
+        if isinstance(value, float) and np.isnan(value):
+            return "NaN"
+        return f"{value:.4f}"
+
     def __str__(self) -> str:
         str_ = ""
         str_ += f"\nmAP: {self._format_metric(self.map)}, "
@@ -326,13 +338,15 @@ class Map:
             # --- Table 2: TP error metrics (moved after optimal_conf) ---
             if not self.is_detection_2d and tp_error_names:
                 str_ += "\n"
-                str_ += "| Threshold |"
+                str_ += (
+                    "| Threshold | min_recall_conf | medium_recall_conf |"
+                )
                 for mode in tp_error_names:
                     # Recall-band avg (min_recall=0.1), F1-optimal conf, medium recall band (0.4).
                     str_ += f" {mode:^8} | {mode + '@opt':^8} | {mode + '@med':^8} |"
                 str_ += "\n"
 
-                str_ += "|:---------:|"
+                str_ += "|:---------:|:---------------:|:------------------:|"
                 for _ in tp_error_names:
                     str_ += ":----------:|:----------:|:----------:|"
                 str_ += "\n"
@@ -341,10 +355,21 @@ class Map:
                     threshold = ap.matching_threshold
                     str_ += f"|  {threshold:^8.2f} |"
                     if ap.tp_error_metrics is None:
+                        str_ += (
+                            f" {self._format_conf(np.nan, 15)} |"
+                            f" {self._format_conf(np.nan, 18)} |"
+                        )
                         for _ in tp_error_names:
                             str_ += " {:^8} | {:^8} | {:^8} |".format("N/A", "N/A", "N/A")
                         str_ += "\n"
                         continue
+
+                    # Confidence at the start of each recall band (same for all TP error metrics).
+                    ref_metric = ap.tp_error_metrics[0]
+                    str_ += (
+                        f" {self._format_conf(ref_metric.min_recall_conf, 15)} |"
+                        f" {self._format_conf(ref_metric.medium_recall_conf, 18)} |"
+                    )
 
                     for tp_error_name in tp_error_names:
                         tp_error_index = self.avg_tp_error_names[tp_error_name]
@@ -377,7 +402,7 @@ class Map:
             "   GT_nums       |  Thresholds       |  mean AP      |    APs           |"
         )
         if not self.is_detection_2d:
-            str_ += "  Mean APH    |   APHs     |"
+            str_ += "  Mean APH    |   APHs     | min_recall_conf | medium_recall_conf |"
             for mean_tp_error_name in self.mean_tp_error_names:
                 str_ += (
                     f" {mean_tp_error_name:^8} | {mean_tp_error_name + '(opt)':^12} |"
@@ -390,7 +415,7 @@ class Map:
             ":---------------:|:-----------------:|:-------------:|:----------------:|"
         )
         if not self.is_detection_2d:
-            str_ += ":---------------:|:---------------:|"
+            str_ += ":---------------:|:---------------:|:------------------:|"
             for _ in self.mean_tp_error_names:
                 str_ += ":----------:|:------------:|:------------:|"
         str_ += "\n"
@@ -425,6 +450,22 @@ class Map:
                     for aph in aphs
                 ]
                 str_ += f"  {mean_aph_str} | {' / '.join(aph_strs):^14} |"
+                min_recall_conf_strs = [
+                    self._format_conf_compact(ap.tp_error_metrics[0].min_recall_conf)
+                    if ap.tp_error_metrics is not None
+                    else "NaN"
+                    for ap in aps
+                ]
+                medium_recall_conf_strs = [
+                    self._format_conf_compact(ap.tp_error_metrics[0].medium_recall_conf)
+                    if ap.tp_error_metrics is not None
+                    else "NaN"
+                    for ap in aps
+                ]
+                str_ += (
+                    f" {' / '.join(min_recall_conf_strs):^15} |"
+                    f" {' / '.join(medium_recall_conf_strs):^18} |"
+                )
                 for mean_tp_error_name in self.mean_tp_error_names:
                     label_mean_tp = self.label_mean_to_tp_error[mean_tp_error_name][label]
                     label_optimal_tp = self.label_mean_to_optimal_tp_error[mean_tp_error_name][label]

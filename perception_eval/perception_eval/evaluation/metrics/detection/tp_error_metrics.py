@@ -41,6 +41,8 @@ class TPErrorMetric(ABC):
         self.interpolated_values: np.ndarray = np.array([])
         self.optimal_avg_metric: float = np.nan
         self.medium_avg_metric: float = np.nan
+        self.min_recall_conf: float = np.nan 
+        self.medium_recall_conf: float = np.nan
 
     @abstractmethod
     def compute_value(
@@ -61,7 +63,7 @@ class TPErrorMetric(ABC):
     def ignore_target_labels(self, label_type: LabelType) -> bool:
         """Check if the target label is ignored."""
         pass
-
+     
     def compute_average_value(self, target_label: LabelType, min_recall: float, max_recall_ind: int) -> float:
         """
         Get average value of TP error metric.
