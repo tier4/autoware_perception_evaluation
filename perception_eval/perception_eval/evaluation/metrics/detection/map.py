@@ -219,12 +219,12 @@ class Map:
             )
             self.medium_map_based_nds = NuScenesDetectionScore(
                 map=self.map,
-                metric_prefix_name=f"map_based_medium_",
+                metric_prefix_name=f"map_based_medium",
                 mean_tp_error_metrics=self.medium_mean_tp_errors,
             )
             self.medium_mapH_based_nds = NuScenesDetectionScore(
                 map=self.maph,
-                metric_prefix_name=f"mapH_based_medium_",
+                metric_prefix_name=f"mapH_based_medium",
                 mean_tp_error_metrics=self.medium_mean_tp_errors,
             )
 
