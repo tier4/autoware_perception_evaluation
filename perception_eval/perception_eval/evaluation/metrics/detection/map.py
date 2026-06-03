@@ -340,13 +340,17 @@ class Map:
                 str_ += "\n"
                 str_ += (
                     "| Threshold | min_recall_conf | medium_recall_conf |"
+                    " Match@min_recall | Match@med_recall |"
                 )
                 for mode in tp_error_names:
                     # Recall-band avg (min_recall=0.1), F1-optimal conf, medium recall band (0.4).
                     str_ += f" {mode:^8} | {mode + '@opt':^8} | {mode + '@med':^8} |"
                 str_ += "\n"
 
-                str_ += "|:---------:|:---------------:|:------------------:|"
+                str_ += (
+                    "|:---------:|:---------------:|:------------------:|"
+                    ":----------------:|:----------------:|"
+                )
                 for _ in tp_error_names:
                     str_ += ":----------:|:----------:|:----------:|"
                 str_ += "\n"
@@ -358,6 +362,8 @@ class Map:
                         str_ += (
                             f" {self._format_conf(np.nan, 15)} |"
                             f" {self._format_conf(np.nan, 18)} |"
+                            f" {0:^16} |"
+                            f" {0:^16} |"
                         )
                         for _ in tp_error_names:
                             str_ += " {:^8} | {:^8} | {:^8} |".format("N/A", "N/A", "N/A")
@@ -369,6 +375,8 @@ class Map:
                     str_ += (
                         f" {self._format_conf(ref_metric.min_recall_conf, 15)} |"
                         f" {self._format_conf(ref_metric.medium_recall_conf, 18)} |"
+                        f" {ap.num_tp_at_min_recall_conf:^16} |"
+                        f" {ap.num_tp_at_medium_recall_conf:^16} |"
                     )
 
                     for tp_error_name in tp_error_names:
@@ -402,7 +410,10 @@ class Map:
             "   GT_nums       |  Thresholds       |  mean AP      |    APs           |"
         )
         if not self.is_detection_2d:
-            str_ += "  Mean APH    |   APHs     | min_recall_conf | medium_recall_conf |"
+            str_ += (
+                "  Mean APH    |   APHs     | min_recall_conf | medium_recall_conf |"
+                " Match@min_recall | Match@med_recall |"
+            )
             for mean_tp_error_name in self.mean_tp_error_names:
                 str_ += (
                     f" {mean_tp_error_name:^8} | {mean_tp_error_name + '(opt)':^12} |"
@@ -415,7 +426,10 @@ class Map:
             ":---------------:|:-----------------:|:-------------:|:----------------:|"
         )
         if not self.is_detection_2d:
-            str_ += ":---------------:|:---------------:|:------------------:|"
+            str_ += (
+                ":---------------:|:---------------:|:------------------:|"
+                ":----------------:|:----------------:|"
+            )
             for _ in self.mean_tp_error_names:
                 str_ += ":----------:|:------------:|:------------:|"
         str_ += "\n"
@@ -462,9 +476,13 @@ class Map:
                     else "NaN"
                     for ap in aps
                 ]
+                min_recall_match_strs = [str(ap.num_tp_at_min_recall_conf) for ap in aps]
+                medium_recall_match_strs = [str(ap.num_tp_at_medium_recall_conf) for ap in aps]
                 str_ += (
                     f" {' / '.join(min_recall_conf_strs):^15} |"
                     f" {' / '.join(medium_recall_conf_strs):^18} |"
+                    f" {' / '.join(min_recall_match_strs):^16} |"
+                    f" {' / '.join(medium_recall_match_strs):^16} |"
                 )
                 for mean_tp_error_name in self.mean_tp_error_names:
                     label_mean_tp = self.label_mean_to_tp_error[mean_tp_error_name][label]

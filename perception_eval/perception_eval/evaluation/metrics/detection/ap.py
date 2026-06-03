@@ -56,6 +56,10 @@ class Ap:
         num_tp_at_optimal_conf (int): Number of prediction matches (TPs) at the optimal
             confidence threshold (i.e. predictions whose confidence is greater than or equal
             to ``optimal_conf``). NaN if there are no valid predictions.
+        num_tp_at_min_recall_conf (int): Number of prediction matches (TPs) at the
+            confidence threshold at the start of the min recall band (default 0.1).
+        num_tp_at_medium_recall_conf (int): Number of prediction matches (TPs) at the
+            confidence threshold at the start of the medium recall band (default 0.4).
         tp_error_metrics (Optional[List[TPErrorMetric]]): List of TP error metrics.
 
     Args:
@@ -93,6 +97,8 @@ class Ap:
         self.objects_results_num: int = len(object_results)
         self.matching_average: Optional[float] = None
         self.matching_standard_deviation: Optional[float] = None
+        self.num_tp_at_min_recall_conf = 0
+        self.num_tp_at_medium_recall_conf = 0
         self.matching_average, self.matching_standard_deviation = self._calculate_average_std(
             object_results=object_results,
             matching_mode=self.matching_mode,
@@ -368,6 +374,16 @@ class Ap:
         if index < 0 or index >= len(conf_list_sorted_desc):
             return 0
         threshold = conf_list_sorted_desc[index]
+        return Ap._count_tp_at_conf_threshold(object_results, threshold)
+
+    @staticmethod
+    def _count_tp_at_conf_threshold(
+        object_results: List[DynamicObjectWithPerceptionResult],
+        threshold: float,
+    ) -> int:
+        """Count the raw number of TPs among predictions with confidence >= ``threshold``."""
+        if np.isnan(threshold):
+            return 0
         num_tp = 0
         for obj in object_results:
             if obj.estimated_object.semantic_score < threshold:
@@ -424,26 +440,34 @@ class Ap:
                 optimal_conf=optimal_conf
             )
     
-    def compute_recall_conf(self, min_recall: float, medium_recall: float, conf_interp: np.ndarray) -> float:
-        """Compute the recall confidence of TP error metrics."""
+    def compute_recall_conf(self, min_recall: float, medium_recall: float, conf_interp: np.ndarray) -> None:
+        """Compute recall-band confidence thresholds and TP match counts for TP error metrics."""
+        self.num_tp_at_min_recall_conf = 0
+        self.num_tp_at_medium_recall_conf = 0
         if self.tp_error_metrics is None:
             return
-        
+
         max_recall_ind = self.max_recall_ind
+        min_recall_conf = np.nan
+        medium_recall_conf = np.nan
+
+        first_ind = round(100 * min_recall) + 1  # +1 to exclude the error at min recall.
+        if max_recall_ind >= first_ind:
+            min_recall_conf = conf_interp[first_ind]
+
+        first_ind = round(100 * medium_recall) + 1  # +1 to exclude the error at medium recall.
+        if max_recall_ind >= first_ind:
+            medium_recall_conf = conf_interp[first_ind]
+
+        self.num_tp_at_min_recall_conf = self._count_tp_at_conf_threshold(
+            self.object_results, min_recall_conf
+        )
+        self.num_tp_at_medium_recall_conf = self._count_tp_at_conf_threshold(
+            self.object_results, medium_recall_conf
+        )
+
         for tp_error_metric in self.tp_error_metrics:
             if len(tp_error_metric.interpolated_values) == 0:
-                continue 
-
-            first_ind = round(100 * min_recall) + 1  # +1 to exclude the error at min recall.
-            last_ind = max_recall_ind  # First instance of confidence = 0 is index of max achieved recall.
-            if last_ind < first_ind:
-                tp_error_metric.min_recall_conf = np.nan
-            else:
-                tp_error_metric.min_recall_conf = conf_interp[first_ind]
-
-
-            first_ind = round(100 * medium_recall) + 1  # +1 to exclude the error at medium recall.
-            if last_ind < first_ind:
-                tp_error_metric.medium_recall_conf = np.nan
-            else:
-                tp_error_metric.medium_recall_conf = conf_interp[first_ind]
+                continue
+            tp_error_metric.min_recall_conf = min_recall_conf
+            tp_error_metric.medium_recall_conf = medium_recall_conf
