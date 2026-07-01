@@ -36,17 +36,18 @@ if TYPE_CHECKING:
 class AutowareLabel(Enum):
     """[summary]
     Autoware label enum.
-    See https://github.com/tier4/autoware_iv_msgs/blob/main/autoware_perception_msgs/msg/object_recognition/Semantic.msg
+    See https://github.com/autowarefoundation/autoware_msgs/blob/main/autoware_perception_msgs/msg/ObjectClassification.msg
     """
 
     UNKNOWN = "unknown"
     CAR = "car"
     TRUCK = "truck"
     BUS = "bus"
-    BICYCLE = "bicycle"
     MOTORBIKE = "motorbike"
+    BICYCLE = "bicycle"
     PEDESTRIAN = "pedestrian"
     ANIMAL = "animal"
+    HAZARD = "hazard"
 
     # for FP validation
     FP = "false_positive"
@@ -401,6 +402,7 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
         (AutowareLabel.UNKNOWN, "static_object.bicycle rack"),
         (AutowareLabel.UNKNOWN, "static_object.bicycle_rack"),
         (AutowareLabel.UNKNOWN, "static_object.bollard"),
+        (AutowareLabel.HAZARD, "hazard"),
         (AutowareLabel.FP, "false_positive"),
     ]
     if merge_similar_labels:
