@@ -73,7 +73,7 @@ class AutowareLabel(Enum):
 
     def is_in_vru_labels(self) -> bool:
         """Return whether myself is in VRU labels."""
-        return self in [AutowareLabel.BICYCLE, AutowareLabel.MOTORBIKE, AutowareLabel.PEDESTRIAN]
+        return self in [AutowareLabel.BICYCLE, AutowareLabel.MOTORBIKE, AutowareLabel.PEDESTRIAN, AutowareLabel.ANIMAL]
 
 
 class TrafficLightLabel(Enum):
@@ -219,6 +219,17 @@ class Label:
             bool: Whether myself is `unknown`.
         """
         return self.label == CommonLabel.UNKNOWN
+
+    def is_hazard(self) -> bool:
+        """Returns `True`, if myself is `hazard` label.
+
+        Returns:
+            bool: Whether myself is `hazard`.
+        """
+        if isinstance(self.label, AutowareLabel):
+            return self.label == AutowareLabel.HAZARD
+        else:
+            return False
 
     def is_in_vehicle_labels(self) -> bool:
         """Return whether myself is in vehicle labels."""
@@ -398,13 +409,6 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
         (AutowareLabel.UNKNOWN, "unknown"),
         (AutowareLabel.UNKNOWN, "static_object.bicycle rack"),
         (AutowareLabel.UNKNOWN, "static_object.bicycle_rack"),
-        (AutowareLabel.HAZARD, "movable_object.pushable_pullable"),
-        (AutowareLabel.HAZARD, "movable_object.barrier"),
-        (AutowareLabel.HAZARD, "movable_object.debris"),
-        (AutowareLabel.HAZARD, "movable_object.trafficcone"),
-        (AutowareLabel.HAZARD, "movable_object.traffic_cone"),
-        (AutowareLabel.HAZARD, "static_object.bollard"),
-        (AutowareLabel.HAZARD, "hazard"),
         (AutowareLabel.FP, "false_positive"),
     ]
     if merge_similar_labels:
@@ -425,6 +429,13 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
             (AutowareLabel.BICYCLE, "motorbike"),
             (AutowareLabel.BICYCLE, "motorcycle"),
             (AutowareLabel.BICYCLE, "vehicle.motorcycle"),
+            (AutowareLabel.HAZARD, "movable_object.pushable_pullable"),
+            (AutowareLabel.HAZARD, "movable_object.barrier"),
+            (AutowareLabel.HAZARD, "movable_object.debris"),
+            (AutowareLabel.HAZARD, "movable_object.trafficcone"),
+            (AutowareLabel.HAZARD, "movable_object.traffic_cone"),
+            (AutowareLabel.HAZARD, "static_object.bollard"),
+            (AutowareLabel.HAZARD, "hazard"),
         ]
     else:
         pair_list += [
@@ -444,6 +455,13 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
             (AutowareLabel.MOTORBIKE, "motorbike"),
             (AutowareLabel.MOTORBIKE, "motorcycle"),
             (AutowareLabel.MOTORBIKE, "vehicle.motorcycle"),
+            (AutowareLabel.UNKNOWN, "movable_object.pushable_pullable"),
+            (AutowareLabel.UNKNOWN, "movable_object.barrier"),
+            (AutowareLabel.UNKNOWN, "movable_object.debris"),
+            (AutowareLabel.UNKNOWN, "movable_object.trafficcone"),
+            (AutowareLabel.UNKNOWN, "movable_object.traffic_cone"),
+            (AutowareLabel.UNKNOWN, "static_object.bollard"),
+            (AutowareLabel.UNKNOWN, "hazard"),
         ]
     return pair_list
 
