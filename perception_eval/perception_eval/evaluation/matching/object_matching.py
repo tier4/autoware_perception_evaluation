@@ -71,9 +71,17 @@ class MatchingLabelPolicy(Enum):
         if ground_truth.semantic_label.is_fp() or self == MatchingLabelPolicy.ALLOW_ANY:
             return True
         elif self == MatchingLabelPolicy.ALLOW_UNKNOWN:
-            return is_same_label(estimation, ground_truth) or estimation.semantic_label.is_unknown()
+            return (
+                is_same_label(estimation, ground_truth)
+                or estimation.semantic_label.is_unknown()
+                or estimation.semantic_label.is_hazard()
+            )
         elif self == MatchingLabelPolicy.ALLOW_SAME_GROUP:
-            return is_same_label_group(estimation, ground_truth) or estimation.semantic_label.is_unknown()
+            return (
+                is_same_label_group(estimation, ground_truth)
+                or estimation.semantic_label.is_unknown()
+                or estimation.semantic_label.is_hazard()
+            )
         else:  # STRICT
             return is_same_label(estimation, ground_truth)
 
