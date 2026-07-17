@@ -435,6 +435,9 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
             (AutowareLabel.UNKNOWN, "movable_object.trafficcone"),
             (AutowareLabel.UNKNOWN, "movable_object.traffic_cone"),
             (AutowareLabel.UNKNOWN, "static_object.bollard"),
+            (AutowareLabel.UNKNOWN, "traffic_cone"),
+            (AutowareLabel.UNKNOWN, "trafficcone"),
+            (AutowareLabel.UNKNOWN, "barrier"),
             (AutowareLabel.UNKNOWN, "hazard"),
         ]
     else:
@@ -461,6 +464,9 @@ def _get_autoware_pairs(merge_similar_labels: bool) -> List[Tuple[AutowareLabel,
             (AutowareLabel.HAZARD, "movable_object.trafficcone"),
             (AutowareLabel.HAZARD, "movable_object.traffic_cone"),
             (AutowareLabel.HAZARD, "static_object.bollard"),
+            (AutowareLabel.HAZARD, "traffic_cone"),
+            (AutowareLabel.HAZARD, "trafficcone"),
+            (AutowareLabel.HAZARD, "barrier"),
             (AutowareLabel.HAZARD, "hazard"),
         ]
     return pair_list
