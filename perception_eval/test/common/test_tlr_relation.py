@@ -29,14 +29,12 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock
 
+from perception_eval.common.tlr_relation import build_linestring_to_regulatory_element_index
+from perception_eval.common.tlr_relation import build_traffic_light_id_resolver
+from perception_eval.common.tlr_relation import LegacyInstanceNameResolver
+from perception_eval.common.tlr_relation import TrafficLightLineStringResolver
+from perception_eval.common.tlr_relation import TrafficLightRelationError
 import pytest
-from perception_eval.common.tlr_relation import (
-    LegacyInstanceNameResolver,
-    TrafficLightLineStringResolver,
-    TrafficLightRelationError,
-    build_linestring_to_regulatory_element_index,
-    build_traffic_light_id_resolver,
-)
 
 _HAS_T4_DEVKIT = importlib.util.find_spec("t4_devkit") is not None
 requires_t4_devkit = pytest.mark.skipif(not _HAS_T4_DEVKIT, reason="t4-devkit is not installed")
@@ -123,12 +121,8 @@ def test_linestring_resolver_missing_relation_falls_back_when_allowed() -> None:
     traffic_light_records = [
         {"token": "rel_0", "instance_token": "inst_0", "traffic_light_linestring_id": "400"},
     ]
-    legacy_fallback = LegacyInstanceNameResolver(
-        [{"token": "inst_missing", "instance_name": "camera0:9999"}]
-    )
-    resolver = TrafficLightLineStringResolver(
-        traffic_light_records, {"400": "2000"}, legacy_fallback=legacy_fallback
-    )
+    legacy_fallback = LegacyInstanceNameResolver([{"token": "inst_missing", "instance_name": "camera0:9999"}])
+    resolver = TrafficLightLineStringResolver(traffic_light_records, {"400": "2000"}, legacy_fallback=legacy_fallback)
 
     assert resolver.resolve_re_id("inst_missing") == "9999"
     assert resolver.fallback_count == 1
@@ -243,9 +237,7 @@ def test_build_traffic_light_id_resolver_builds_map_index_once(tmp_path, monkeyp
     dataset_path = tmp_path / "dataset"
     (dataset_path / "annotation").mkdir(parents=True)
     (dataset_path / "annotation" / "traffic_light_instance_map.json").write_text(
-        json.dumps(
-            [{"token": "rel_0", "instance_token": "inst_0", "traffic_light_linestring_id": "400"}]
-        ),
+        json.dumps([{"token": "rel_0", "instance_token": "inst_0", "traffic_light_linestring_id": "400"}]),
         encoding="utf-8",
     )
 
@@ -286,17 +278,13 @@ def test_build_traffic_light_id_resolver_accepts_injected_index(tmp_path) -> Non
     dataset_path = tmp_path / "dataset"
     (dataset_path / "annotation").mkdir(parents=True)
     (dataset_path / "annotation" / "traffic_light_instance_map.json").write_text(
-        json.dumps(
-            [{"token": "rel_0", "instance_token": "inst_0", "traffic_light_linestring_id": "400"}]
-        ),
+        json.dumps([{"token": "rel_0", "instance_token": "inst_0", "traffic_light_linestring_id": "400"}]),
         encoding="utf-8",
     )
 
     nusc = MagicMock()
     nusc.instance = []
 
-    resolver = build_traffic_light_id_resolver(
-        nusc, dataset_path.as_posix(), linestring_to_re_id={"400": "2000"}
-    )
+    resolver = build_traffic_light_id_resolver(nusc, dataset_path.as_posix(), linestring_to_re_id={"400": "2000"})
 
     assert resolver.resolve_re_id("inst_0") == "2000"

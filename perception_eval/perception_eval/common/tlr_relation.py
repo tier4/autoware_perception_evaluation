@@ -42,7 +42,12 @@ from __future__ import annotations
 import json
 import logging
 import os.path as osp
-from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Protocol
+from typing import runtime_checkable
 
 __all__ = [
     "TRAFFIC_LIGHT_RELATION_FILENAME",
@@ -97,16 +102,12 @@ class LegacyInstanceNameResolver:
             instance_records (List[Dict[str, Any]]): Raw `instance.json` records
                 (e.g. `nusc.instance`).
         """
-        self._instance_by_token: Dict[str, Dict[str, Any]] = {
-            record["token"]: record for record in instance_records
-        }
+        self._instance_by_token: Dict[str, Dict[str, Any]] = {record["token"]: record for record in instance_records}
 
     def resolve_re_id(self, instance_token: str) -> str:
         record = self._instance_by_token.get(instance_token)
         if record is None:
-            raise TrafficLightRelationError(
-                f"instance_token '{instance_token}' is not found in instance.json."
-            )
+            raise TrafficLightRelationError(f"instance_token '{instance_token}' is not found in instance.json.")
 
         instance_name: str = record.get("instance_name", "")
         if ":" not in instance_name:
@@ -233,13 +234,9 @@ def build_linestring_to_regulatory_element_index(map_path: str) -> Dict[str, str
             is referred to by more than one traffic-light Regulatory Element.
     """
     try:
-        from t4_devkit.lanelet import (
-            AmbiguousRegulatoryElementError,
-            LaneletParser,
-        )
-        from t4_devkit.lanelet import (
-            build_linestring_to_regulatory_element_index as _build_index,
-        )
+        from t4_devkit.lanelet import AmbiguousRegulatoryElementError
+        from t4_devkit.lanelet import build_linestring_to_regulatory_element_index as _build_index
+        from t4_devkit.lanelet import LaneletParser
     except ImportError as e:
         raise TrafficLightRelationError(
             "t4-devkit is required to resolve the Lanelet2 map for TLR relation "
@@ -322,9 +319,7 @@ def build_traffic_light_id_resolver(
         map_path = osp.join(dataset_path, map_records[0]["filename"])
         linestring_to_re_id = build_linestring_to_regulatory_element_index(map_path)
 
-    legacy_fallback = (
-        LegacyInstanceNameResolver(nusc.instance) if allow_legacy_tlr_fallback else None
-    )
+    legacy_fallback = LegacyInstanceNameResolver(nusc.instance) if allow_legacy_tlr_fallback else None
 
     return TrafficLightLineStringResolver(
         traffic_light_records,
