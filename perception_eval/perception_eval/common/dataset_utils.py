@@ -40,6 +40,7 @@ from perception_eval.common.schema import FrameID
 from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
+from perception_eval.common.tlr_relation import TrafficLightIdResolver
 from perception_eval.common.transform import HomogeneousMatrix
 from PIL import Image
 from pyquaternion.quaternion import Quaternion
@@ -824,6 +825,7 @@ def _sample_to_frame_2d(
     frame_ids: List[FrameID],
     frame_name: str,
     load_raw_data: bool,
+    traffic_light_id_resolver: Optional[TrafficLightIdResolver] = None,
 ) -> dataset.FrameGroundTruth:
     """Returns FrameGroundTruth constructed with DynamicObject2D.
 
@@ -836,6 +838,11 @@ def _sample_to_frame_2d(
         frame_ids (List[FrameID]): List of FrameID instances, where 2D objects are with respect, related to CAM_**.
         frame_name (str): Name of frame.
         load_raw_data (bool): The flag to load image data.
+        traffic_light_id_resolver (Optional[TrafficLightIdResolver]): Resolver from a
+            traffic-light `object_ann.instance_token` to its Regulatory Element ID
+            (`DynamicObject2D.uuid`). Built once per dataset load by
+            `build_traffic_light_id_resolver` and reused across every frame; required
+            when `label_converter.label_type == TrafficLightLabel`, unused otherwise.
 
     Returns:
         frame (FrameGroundTruth): GT objects in one frame.
@@ -889,13 +896,15 @@ def _sample_to_frame_2d(
         semantic_label: LabelType = label_converter.convert_label(category_info["name"], attributes)
 
         if label_converter.label_type == TrafficLightLabel:
-            # NOTE: Check whether Regulatory Element is used
-            # in scene.json => description: "TLR, regulatory_element"
-            for instance_record in nusc.instance:
-                if instance_record["token"] == ann["instance_token"]:
-                    instance_name: str = instance_record["instance_name"]
-                    uuid: str = instance_name.split(":")[-1]
-                    break
+            # `uuid` is always the Regulatory Element ID: resolved either from
+            # `instance.instance_name` (legacy datasets) or from `traffic_light_instance_map.json` +
+            # the Lanelet2 map (see `perception_eval.common.tlr_relation`), depending on
+            # which format this dataset uses. The resolver is built once per dataset
+            # load, not per annotation.
+            assert (
+                traffic_light_id_resolver is not None
+            ), "traffic_light_id_resolver is required when label_type is TrafficLightLabel."
+            uuid: str = traffic_light_id_resolver.resolve_re_id(ann["instance_token"])
             uuids.append(uuid)
         else:
             uuid: str = ann["instance_token"]

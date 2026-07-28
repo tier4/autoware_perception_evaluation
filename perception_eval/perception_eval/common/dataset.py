@@ -35,9 +35,12 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.geometry import interpolate_homogeneous_matrix
 from perception_eval.common.geometry import interpolate_object_list
 from perception_eval.common.label import LabelConverter
+from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
+from perception_eval.common.tlr_relation import build_traffic_light_id_resolver
+from perception_eval.common.tlr_relation import TrafficLightIdResolver
 from perception_eval.common.transform import HomogeneousMatrix
 from perception_eval.common.transform import TransformDict
 from perception_eval.common.transform import TransformDictArgType
@@ -135,6 +138,7 @@ def load_all_datasets(
     frame_id: Union[FrameID, Sequence[FrameID]],
     load_raw_data: bool = False,
     path_seconds: float = 10.0,
+    allow_legacy_tlr_fallback: bool = False,
 ) -> List[FrameGroundTruth]:
     """
     Load tier4 datasets.
@@ -147,6 +151,13 @@ def load_all_datasets(
         load_raw_data (bool): The flag of setting pointcloud or image.
             For 3D task, pointcloud will be loaded. For 2D, image will be loaded. Defaults to False.
         path_seconds (float): Time length of path in seconds. Defaults to 10.0.
+        allow_legacy_tlr_fallback (bool): Migration-only escape hatch for traffic-light
+            datasets that carry `traffic_light_instance_map.json` (relation+map format) but are
+            missing the relation for some `instance_token`. When True, those
+            annotations fall back to legacy `instance.instance_name` resolution instead
+            of failing dataset load; every fallback is logged. Defaults to False.
+            Unused for datasets without `traffic_light_instance_map.json` (always legacy) or for
+            non-TrafficLightLabel evaluation.
 
     Returns:
         List[FrameGroundTruth]: FrameGroundTruth instance list.
@@ -181,6 +192,7 @@ def load_all_datasets(
             frame_ids=frame_ids,
             load_raw_data=load_raw_data,
             path_seconds=path_seconds,
+            allow_legacy_tlr_fallback=allow_legacy_tlr_fallback,
         )
     logging.info("Finish loading dataset\n" + _get_str_objects_number_info(label_converter))
     return all_datasets
@@ -193,6 +205,7 @@ def _load_dataset(
     frame_ids: List[FrameID],
     load_raw_data: bool,
     path_seconds: float = 10.0,
+    allow_legacy_tlr_fallback: bool = False,
 ) -> List[FrameGroundTruth]:
     """
     Load one tier4 dataset.
@@ -203,6 +216,7 @@ def _load_dataset(
         frame_ids (List[FrameID]): FrameID instance, where objects are with respect.
         load_raw_data (bool): Whether load pointcloud/image data.
         path_seconds (float): Time length of path in seconds. Defaults to 10.0.
+        allow_legacy_tlr_fallback (bool): See `load_all_datasets`.
 
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
@@ -225,6 +239,18 @@ def _load_dataset(
     # Read out all sample_tokens in DB.
     sample_tokens = _get_sample_tokens(nusc.sample)
 
+    # Built once per dataset load and reused for every frame/annotation below, per the
+    # TLR relation design (see perception_eval.common.tlr_relation).
+    traffic_light_id_resolver: Optional[TrafficLightIdResolver] = (
+        build_traffic_light_id_resolver(
+            nusc,
+            dataset_path,
+            allow_legacy_tlr_fallback=allow_legacy_tlr_fallback,
+        )
+        if evaluation_task.is_2d() and label_converter.label_type == TrafficLightLabel
+        else None
+    )
+
     dataset: List[FrameGroundTruth] = []
     for n, sample_token in enumerate(tqdm(sample_tokens)):
         if evaluation_task.is_2d():
@@ -237,6 +263,7 @@ def _load_dataset(
                 frame_ids=frame_ids,
                 frame_name=str(n),
                 load_raw_data=load_raw_data,
+                traffic_light_id_resolver=traffic_light_id_resolver,
             )
         else:
             assert len(frame_ids) == 1, f"For 3D evaluation, only one Frame ID must be specified, but got {frame_ids}"
