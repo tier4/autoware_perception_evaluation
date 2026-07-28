@@ -21,6 +21,16 @@ from typing import Union
 
 from perception_eval.common.evaluation_task import EvaluationTask
 
+# Alternate sensor-channel names seen in real T4 datasets for a FrameID that already
+# exists under a different canonical name (different vehicles/sensor kits name the same
+# physical/functional camera role differently). Kept outside the Enum body: a plain
+# dict assigned inside an Enum class becomes a member, not a class attribute.
+_FRAME_ID_ALIASES: Dict[str, str] = {
+    # Telephoto camera used for far-away traffic-light recognition; some sensor kits
+    # call it "cam_front_far" instead of the canonical "cam_traffic_light_far".
+    "cam_front_far": "cam_traffic_light_far",
+}
+
 
 class FrameID(Enum):
     # 3D
@@ -74,6 +84,9 @@ class FrameID(Enum):
 
         NOTE:
             This method allow that input value is upper case.
+            Some alternate sensor-channel names are mapped to their canonical FrameID
+            (see `_FRAME_ID_ALIASES`), for real datasets that name the same
+            physical/functional camera differently.
 
         Args:
             name (str): Value in string.
@@ -82,6 +95,7 @@ class FrameID(Enum):
             FrameID: Corresponding FrameID instance.
         """
         name = name.lower()
+        name = _FRAME_ID_ALIASES.get(name, name)
         for _, v in cls.__members__.items():
             if v == name:
                 return v
