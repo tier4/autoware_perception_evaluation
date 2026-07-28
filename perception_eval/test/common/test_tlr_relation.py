@@ -136,9 +136,7 @@ def test_build_default_resolver_uses_table_when_file_present(tmp_path: Path) -> 
     dataset_path = tmp_path / "dataset"
     (dataset_path / "annotation").mkdir(parents=True)
     (dataset_path / "annotation" / "traffic_light.json").write_text(
-        json.dumps(
-            [{"token": "rel_0", "instance_token": "inst_0", "traffic_light_linestring_id": "400"}]
-        ),
+        json.dumps([{"token": "rel_0", "instance_token": "inst_0", "traffic_light_linestring_id": "400"}]),
         encoding="utf-8",
     )
 
@@ -214,9 +212,7 @@ def test_build_default_resolver_end_to_end_with_real_lanelet2_map(tmp_path: Path
     (dataset_path / "annotation").mkdir(parents=True)
     (dataset_path / "map").mkdir(parents=True)
     (dataset_path / "annotation" / "traffic_light.json").write_text(
-        json.dumps(
-            [{"token": "rel_0", "instance_token": "inst_0", "traffic_light_linestring_id": "400"}]
-        ),
+        json.dumps([{"token": "rel_0", "instance_token": "inst_0", "traffic_light_linestring_id": "400"}]),
         encoding="utf-8",
     )
     (dataset_path / "map" / "lanelet2_map.osm").write_text(

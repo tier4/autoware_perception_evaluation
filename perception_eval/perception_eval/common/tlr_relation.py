@@ -48,7 +48,12 @@ from __future__ import annotations
 
 import json
 import os.path as osp
-from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Protocol
+from typing import runtime_checkable
 
 __all__ = [
     "TRAFFIC_LIGHT_RELATION_FILENAME",
@@ -107,16 +112,12 @@ class LegacyInstanceNameResolver:
             instance_records (List[Dict[str, Any]]): Raw `instance.json` records
                 (e.g. `nusc.instance`).
         """
-        self._instance_by_token: Dict[str, Dict[str, Any]] = {
-            record["token"]: record for record in instance_records
-        }
+        self._instance_by_token: Dict[str, Dict[str, Any]] = {record["token"]: record for record in instance_records}
 
     def resolve_re_ids(self, instance_token: str) -> List[str]:
         record = self._instance_by_token.get(instance_token)
         if record is None:
-            raise TrafficLightRelationError(
-                f"instance_token '{instance_token}' is not found in instance.json."
-            )
+            raise TrafficLightRelationError(f"instance_token '{instance_token}' is not found in instance.json.")
 
         instance_name: str = record.get("instance_name", "")
         if ":" not in instance_name:
@@ -197,8 +198,7 @@ class TrafficLightTableResolver:
         linestring_id = self._instance_to_linestring.get(instance_token)
         if linestring_id is None:
             raise TrafficLightRelationError(
-                f"No {TRAFFIC_LIGHT_RELATION_FILENAME} relation for "
-                f"instance_token={instance_token!r}."
+                f"No {TRAFFIC_LIGHT_RELATION_FILENAME} relation for " f"instance_token={instance_token!r}."
             )
         return sorted(set(self._linestring_to_re_ids[linestring_id]))
 
@@ -211,8 +211,8 @@ def _build_linestring_to_re_ids(map_path: str) -> Dict[str, List[str]]:
     only when `traffic_light.json` is actually present in the dataset.
     """
     try:
-        from t4_devkit.lanelet import LaneletParser
         from t4_devkit.lanelet import group_traffic_light_linestrings
+        from t4_devkit.lanelet import LaneletParser
     except ImportError as e:
         raise TrafficLightRelationError(
             "t4-devkit is required to resolve the Lanelet2 map for TLR relation "
