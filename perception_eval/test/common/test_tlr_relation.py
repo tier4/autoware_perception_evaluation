@@ -18,9 +18,9 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-import pytest
 from perception_eval.common.tlr_relation import LegacyInstanceNameResolver
 from perception_eval.common.tlr_relation import TrafficLightRelationError
+import pytest
 
 
 def test_legacy_resolver_resolves_re_id() -> None:

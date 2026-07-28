@@ -26,7 +26,11 @@ instead of forking this file.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Protocol, runtime_checkable
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Protocol
+from typing import runtime_checkable
 
 __all__ = [
     "LegacyInstanceNameResolver",
@@ -71,16 +75,12 @@ class LegacyInstanceNameResolver:
             instance_records (List[Dict[str, Any]]): Raw `instance.json` records
                 (e.g. `nusc.instance`).
         """
-        self._instance_by_token: Dict[str, Dict[str, Any]] = {
-            record["token"]: record for record in instance_records
-        }
+        self._instance_by_token: Dict[str, Dict[str, Any]] = {record["token"]: record for record in instance_records}
 
     def resolve_re_id(self, instance_token: str) -> str:
         record = self._instance_by_token.get(instance_token)
         if record is None:
-            raise TrafficLightRelationError(
-                f"instance_token '{instance_token}' is not found in instance.json."
-            )
+            raise TrafficLightRelationError(f"instance_token '{instance_token}' is not found in instance.json.")
 
         instance_name: str = record.get("instance_name", "")
         if ":" not in instance_name:
