@@ -40,7 +40,7 @@ from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
-from perception_eval.common.tlr_relation import LegacyInstanceNameResolver
+from perception_eval.common.tlr_relation import build_default_traffic_light_id_resolver
 from perception_eval.common.tlr_relation import TrafficLightIdResolver
 from perception_eval.common.transform import HomogeneousMatrix
 from perception_eval.common.transform import TransformDict
@@ -158,11 +158,11 @@ def load_all_datasets(
         path_seconds (float): Time length of path in seconds. Defaults to 10.0.
         traffic_light_id_resolver_factory (Optional[TrafficLightIdResolverFactory]):
             Builds the `TrafficLightIdResolver` used to resolve a traffic-light
-            annotation's `DynamicObject2D.uuid` (its Regulatory Element ID), given
+            annotation's `DynamicObject2D.uuid` (its Regulatory Element ID(s)), given
             `(nusc, dataset_path)`. Called once per dataset load. If omitted, defaults
-            to `LegacyInstanceNameResolver` (`instance.instance_name`), the only
-            instance-to-RE convention perception_eval assumes by default; pass this to
-            resolve RE IDs from a different, caller-owned relation source instead. See
+            to `build_default_traffic_light_id_resolver` (`traffic_light.json` + the
+            Lanelet2 map when present, otherwise `instance.instance_name`); pass this
+            only to override with a different, caller-owned relation source. See
             `perception_eval.common.tlr_relation`. Unused for non-TrafficLightLabel
             evaluation.
 
@@ -248,13 +248,16 @@ def _load_dataset(
     sample_tokens = _get_sample_tokens(nusc.sample)
 
     # Built once per dataset load and reused for every frame/annotation below, per the
-    # TLR relation design (see perception_eval.common.tlr_relation).
+    # TLR relation design (see perception_eval.common.tlr_relation). Defaults to
+    # traffic_light.json + the Lanelet2 map when present, otherwise instance_name --
+    # callers (including driving_log_replayer_v2) get correct resolution for either
+    # format without passing anything.
     traffic_light_id_resolver: Optional[TrafficLightIdResolver] = None
     if evaluation_task.is_2d() and label_converter.label_type == TrafficLightLabel:
         traffic_light_id_resolver = (
             traffic_light_id_resolver_factory(nusc, dataset_path)
             if traffic_light_id_resolver_factory is not None
-            else LegacyInstanceNameResolver(nusc.instance)
+            else build_default_traffic_light_id_resolver(nusc, dataset_path)
         )
 
     dataset: List[FrameGroundTruth] = []

@@ -41,6 +41,7 @@ from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
 from perception_eval.common.tlr_relation import TrafficLightIdResolver
+from perception_eval.common.tlr_relation import TrafficLightRelationError
 from perception_eval.common.transform import HomogeneousMatrix
 from PIL import Image
 from pyquaternion.quaternion import Quaternion
@@ -908,7 +909,12 @@ def _sample_to_frame_2d(
             assert (
                 traffic_light_id_resolver is not None
             ), "traffic_light_id_resolver is required when label_type is TrafficLightLabel."
-            re_ids: List[str] = traffic_light_id_resolver.resolve_re_ids(ann["instance_token"])
+            re_ids: List[str] = sorted(set(traffic_light_id_resolver.resolve_re_ids(ann["instance_token"])))
+            if not re_ids:
+                raise TrafficLightRelationError(
+                    "resolve_re_ids() returned no Regulatory Element IDs for "
+                    f"instance_token={ann['instance_token']!r}."
+                )
             for re_id in re_ids:
                 uuids.append(re_id)
                 objects_.append(
