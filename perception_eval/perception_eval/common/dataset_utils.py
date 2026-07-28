@@ -841,8 +841,9 @@ def _sample_to_frame_2d(
         traffic_light_id_resolver (Optional[TrafficLightIdResolver]): Resolver from a
             traffic-light `object_ann.instance_token` to its Regulatory Element ID
             (`DynamicObject2D.uuid`). Built once per dataset load by
-            `build_traffic_light_id_resolver` and reused across every frame; required
-            when `label_converter.label_type == TrafficLightLabel`, unused otherwise.
+            `perception_eval.common.dataset._load_dataset` and reused across every
+            frame; required when `label_converter.label_type == TrafficLightLabel`,
+            unused otherwise.
 
     Returns:
         frame (FrameGroundTruth): GT objects in one frame.
@@ -896,11 +897,9 @@ def _sample_to_frame_2d(
         semantic_label: LabelType = label_converter.convert_label(category_info["name"], attributes)
 
         if label_converter.label_type == TrafficLightLabel:
-            # `uuid` is always the Regulatory Element ID: resolved either from
-            # `instance.instance_name` (legacy datasets) or from `traffic_light_instance_map.json` +
-            # the Lanelet2 map (see `perception_eval.common.tlr_relation`), depending on
-            # which format this dataset uses. The resolver is built once per dataset
-            # load, not per annotation.
+            # `uuid` is always the Regulatory Element ID, resolved by
+            # traffic_light_id_resolver (see `perception_eval.common.tlr_relation`).
+            # The resolver is built once per dataset load, not per annotation.
             assert (
                 traffic_light_id_resolver is not None
             ), "traffic_light_id_resolver is required when label_type is TrafficLightLabel."
