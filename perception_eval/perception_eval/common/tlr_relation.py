@@ -11,11 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Resolve a 2D traffic-light `object_ann.instance_token` to a Regulatory Element (RE) ID.
+"""Resolve a 2D traffic-light `object_ann.instance_token` to the Regulatory Element
+(RE) ID(s) it corresponds to.
 
-`DynamicObject2D.uuid` for a traffic-light annotation is the RE ID. The only convention
-this package assumes is the one already baked into standard T4 datasets:
-`Instance.instance_name` ending in `"...:<RE ID>"` (see `LegacyInstanceNameResolver`).
+`DynamicObject2D.uuid` for a traffic-light annotation is a Regulatory Element ID, and
+matching between estimated and ground truth objects for TLR classification is done by
+`uuid` equality (see `evaluation.result.object_result_matching`), not by geometry. The
+live Autoware node reports one state per Regulatory Element, and a single physical
+traffic light can legitimately be attached to more than one Regulatory Element (e.g.
+one lamp shared by two lanelets, each with its own stop line). So resolving an
+`instance_token` can yield more than one RE ID, and ground truth must be duplicated
+across all of them for `uuid`-based matching to line up with what the live system
+reports per RE.
+
+The only convention this package assumes by default is the one already baked into
+standard T4 datasets: `Instance.instance_name` ending in `"...:<RE ID>"` (see
+`LegacyInstanceNameResolver`), which always yields exactly one RE ID per instance.
 
 Any other instance-to-RE relation source (a separate relation table, a map lookup, etc.)
 is not part of any officially agreed t4dataset IF today, so this module does not assume
@@ -40,21 +51,27 @@ __all__ = [
 
 
 class TrafficLightRelationError(Exception):
-    """Raised when a traffic-light `object_ann.instance_token` cannot be resolved to an
-    RE ID."""
+    """Raised when a traffic-light `object_ann.instance_token` cannot be resolved to at
+    least one RE ID."""
 
 
 @runtime_checkable
 class TrafficLightIdResolver(Protocol):
-    """Resolves a 2D traffic-light `object_ann.instance_token` to a Regulatory Element ID.
+    """Resolves a 2D traffic-light `object_ann.instance_token` to the Regulatory
+    Element ID(s) it corresponds to.
 
     Implementations are constructed once per dataset load (see
     `perception_eval.common.dataset._load_dataset`) and reused across every
-    frame/annotation of that dataset; `resolve_re_id` itself must not re-scan any table.
+    frame/annotation of that dataset; `resolve_re_ids` itself must not re-scan any
+    table.
     """
 
-    def resolve_re_id(self, instance_token: str) -> str:
-        """Return the Regulatory Element ID related to `instance_token`.
+    def resolve_re_ids(self, instance_token: str) -> List[str]:
+        """Return the Regulatory Element ID(s) related to `instance_token`.
+
+        Almost always a single-element list; more than one only when the physical
+        traffic light is attached to more than one Regulatory Element (see module
+        docstring). Never empty.
 
         Raises:
             TrafficLightRelationError: If `instance_token` cannot be resolved.
@@ -66,7 +83,8 @@ class LegacyInstanceNameResolver:
     """Resolves the RE ID from `Instance.instance_name` (`"...:<RE ID>"`).
 
     The RE ID is the text after the last `:` in `instance_name`. This is the only
-    instance-to-RE convention perception_eval assumes by default.
+    instance-to-RE convention perception_eval assumes by default, and it only ever
+    encodes a single RE ID per instance.
     """
 
     def __init__(self, instance_records: List[Dict[str, Any]]) -> None:
@@ -77,7 +95,7 @@ class LegacyInstanceNameResolver:
         """
         self._instance_by_token: Dict[str, Dict[str, Any]] = {record["token"]: record for record in instance_records}
 
-    def resolve_re_id(self, instance_token: str) -> str:
+    def resolve_re_ids(self, instance_token: str) -> List[str]:
         record = self._instance_by_token.get(instance_token)
         if record is None:
             raise TrafficLightRelationError(f"instance_token '{instance_token}' is not found in instance.json.")
@@ -96,4 +114,4 @@ class LegacyInstanceNameResolver:
                 "Legacy TLR instance_name has an empty Regulatory Element ID: "
                 f"instance_name={instance_name!r} (instance_token={instance_token!r})."
             )
-        return re_id
+        return [re_id]

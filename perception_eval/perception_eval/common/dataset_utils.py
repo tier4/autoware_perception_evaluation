@@ -897,17 +897,34 @@ def _sample_to_frame_2d(
         semantic_label: LabelType = label_converter.convert_label(category_info["name"], attributes)
 
         if label_converter.label_type == TrafficLightLabel:
-            # `uuid` is always the Regulatory Element ID, resolved by
-            # traffic_light_id_resolver (see `perception_eval.common.tlr_relation`).
-            # The resolver is built once per dataset load, not per annotation.
+            # A single physical traffic-light detection can correspond to more than
+            # one Regulatory Element (e.g. one lamp shared by two lanelets, each with
+            # its own stop line and its own RE). The live Autoware node reports state
+            # per RE, so ground truth must fan out the same way for uuid-based
+            # matching to work: one DynamicObject2D per applicable RE ID, all sharing
+            # this annotation's roi/label. `_merge_duplicated_traffic_lights` below
+            # then aggregates per RE for the frame. The resolver is built once per
+            # dataset load, not per annotation (see `perception_eval.common.tlr_relation`).
             assert (
                 traffic_light_id_resolver is not None
             ), "traffic_light_id_resolver is required when label_type is TrafficLightLabel."
-            uuid: str = traffic_light_id_resolver.resolve_re_id(ann["instance_token"])
-            uuids.append(uuid)
-        else:
-            uuid: str = ann["instance_token"]
+            re_ids: List[str] = traffic_light_id_resolver.resolve_re_ids(ann["instance_token"])
+            for re_id in re_ids:
+                uuids.append(re_id)
+                objects_.append(
+                    DynamicObject2D(
+                        unix_time=unix_time,
+                        frame_id=frame_id_mapping[ann["sample_data_token"]],
+                        semantic_score=1.0,
+                        semantic_label=semantic_label,
+                        roi=roi,
+                        uuid=re_id,
+                        visibility=None,
+                    )
+                )
+            continue
 
+        uuid: str = ann["instance_token"]
         object_: DynamicObject2D = DynamicObject2D(
             unix_time=unix_time,
             frame_id=frame_id_mapping[ann["sample_data_token"]],
