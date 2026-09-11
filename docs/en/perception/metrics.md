@@ -305,3 +305,109 @@
 | TPMetricsAp         | 1.0                                        |
 | TPMetricsAph        | Heading error between two objects[-pi, pi] |
 | TPMetricsConfidence | Confidence of estimation                   |
+
+## Advanced detection metrics (driving-aware)
+
+Opt-in metrics ported from [`tier4/autoware-ml` PR #109](https://github.com/tier4/autoware-ml/pull/109)
+(commit `fcf86419`). They run in addition to mAP/mAPH and never change the existing values. Enable them
+by adding one nested section to the detection `evaluation_config_dict`; when the section is absent the
+evaluator behaves exactly as before.
+
+```yaml
+advanced_detection_metrics:
+  ranges: # optional radial BEV windows [min, max) on the box center
+    - { name: 0_30, min_distance: 0.0, max_distance: 30.0 }
+    - { name: 30_60, min_distance: 30.0, max_distance: 60.0 }
+  class_groups: # optional full partition of target_labels (AutowareLabel names)
+    grouped_vehicle: [car, truck, bus]
+    grouped_vru: [pedestrian, bicycle, motorbike]
+    grouped_static: [hazard, unknown]
+  filters: # optional spatial views (the whole-scene view is always evaluated)
+    - { name: corridor, type: corridor, width_m: 3.0 }
+    - { name: road, type: region, regions: [road, road_shoulder, crosswalk] }
+    - { name: collision, type: collision }
+  components: # at least one
+    - { type: corner_error, tp_threshold: 2.0, percentiles: [95.0] }
+    - { type: heading_flip, tp_threshold: 2.0, flip_threshold: 1.57079632679 }
+    - { type: nearest_surface_error, tp_threshold: 2.0 }
+    - { type: calibration, tp_threshold: 2.0, num_bins: 15 }
+    - { type: confident_error, tp_threshold: 2.0, min_score: 0.1, score_threshold: 0.5 }
+    - { type: confusion_matrix, match_threshold: 2.0, min_score: 0.1 }
+    - { type: critical_fp_fn, confidences: [0.3, 0.5], match_threshold: 2.0 }
+    - { type: collision_weighted_map, thresholds: [0.5, 1.0, 2.0, 4.0], decay: 0.5 }
+  map: # required by region/collision filters and by critical_fp_fn / collision_weighted_map
+    resolver: t4_scene_directory # <scene dir>/map/lanelet2_map.osm (or <scene dir>/*/map/...)
+    # resolver: explicit
+    # mapping: { "/path/to/scene": "/path/to/lanelet2_map.osm" }
+```
+
+`type` tokens form a closed registry; unknown tokens or keys are rejected at configuration time.
+
+### Output
+
+`MetricsScore.detection_metric_report` (`MetricReport`) holds:
+
+- `values`: `{key: float}` with slash-separated keys
+  `detection/<taxonomy?>/<filter?>/<range?>/<metric-key>`, e.g. `detection/corner_mean_car`,
+  `detection/road/0m_30m/corner_p95_car`, `detection/grouped/corridor/mflip_rate`. The `grouped`
+  level appears only when `class_groups` is configured, the filter level only for non-identity
+  filters, the range level only when `ranges` is configured. `MetricReport.to_flat_keys()` gives
+  `detection_road_0m_30m_corner_p95_car` for consumers that cannot accept slashes.
+- `coverage`: `{view: (covered_frames, seen_frames)}` for every filter and, when TTC is used, `ttc`.
+- `warnings`: partial coverage, skipped frames (e.g. polygon-shaped objects) and similar notes.
+
+`NaN` means "undefined" (no true positive for a class, zero covered frames, ...). It is never
+reported as `0`.
+
+### Matching
+
+Components use their own score-ordered greedy matcher (BEV center distance, per frame; ties go to
+the lowest ground-truth index). Boxes are represented in `base_link` as
+`[cx, cy, cz, dx=length, dy=width, dz=height, yaw]`; objects in the `map` frame are transformed
+with the frame's `base_link -> map` transform. Polygon-shaped objects are not supported and skip the
+frame with a warning.
+
+### Components
+
+| `type`                   | Definition (defaults)                                                                                                                                                                                                                    | Keys                                                                                                                    |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `corner_error`           | Mean BEV corner displacement of each TP (`tp_threshold=2.0`) under the best cyclic corner assignment; mean / max / `percentiles=[95]` per class, macro mean over classes.                                                                | `corner_mean_<c>`, `corner_max_<c>`, `corner_p95_<c>`, `mcorner_mean`, `mcorner_max`                                    |
+| `heading_flip`           | Fraction of TPs whose absolute wrapped yaw error exceeds `flip_threshold=pi/2`.                                                                                                                                                          | `flip_rate_<c>`, `flip_count_<c>`, `mflip_rate`                                                                         |
+| `nearest_surface_error`  | Signed `d(pred) - d(gt)` where `d` is the distance from ego to the nearest point of the BEV footprint; positive = predicted near face too far (late braking). Mean, `low_percentile=5`, `high_percentile=95`, absolute max.              | `nsurf_mean_<c>`, `nsurf_low_<c>`, `nsurf_high_<c>`, `nsurf_absmax_<c>`, `mnsurf_high`, `mnsurf_absmax`                 |
+| `calibration`            | Expected calibration error of the score against TP precision over `num_bins=15` equal-width bins; scores must be probabilities in `[0, 1]`.                                                                                              | `ece` (pooled), `ece_macro` (mean over predicted classes)                                                               |
+| `confident_error`        | Among FPs with score `>= min_score=0.1`, the fraction with score `>= score_threshold=0.5`.                                                                                                                                               | `confident_error_rate`, `confident_error_count`, `confident_errors_per_frame`                                           |
+| `confusion_matrix`       | Class-agnostic greedy match at `match_threshold=2.0` of predictions with score `>= min_score=0.1`; counts matched `(true, predicted)` label pairs only.                                                                                  | `confusion_<true>__<pred>`                                                                                              |
+| `critical_fp_fn`         | At each confidence in `confidences=[0.3, 0.5]`, class-agnostic match at `match_threshold=2.0`; count unmatched predictions / GTs whose reachability TTC is finite, divided by the number of TTC-covered frames. Needs `map`.             | `critical_fp_<conf>`, `critical_fn_<conf>`, `critical_fp_<c>_<conf>`, `critical_fn_<c>_<conf>` (conf token e.g. `0p5m`) |
+| `collision_weighted_map` | nuScenes-style AP (same convention as `Ap`) where every object is weighted by `exp(-decay * TTC)` (`decay=0.5`, unreachable = 0); a TP inherits its GT weight, an FP keeps its own; averaged over `thresholds` and classes. Needs `map`. | `cw_mAP`, `cw_mAP_<c>`                                                                                                  |
+
+### Filters
+
+| `type`      | Elements kept                                                                                                                                                                                                  | Needs map |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| `corridor`  | Boxes whose forward (`x >= 0`) footprint overlaps the strip `abs(y) <= width_m / 2` in `base_link`.                                                                                                            | no        |
+| `region`    | Boxes whose footprint intersects the union of the lanelet2 `regions` (lanelet `subtype` or area way `type`); `margin_m` erodes the mapped surface inward or, with `expand: true`, dilates the region outward.  | yes       |
+| `collision` | Boxes intersecting the ego reachable region within the horizon (bounded steering at the lanelet speed limit, clipped to the drivable lanelets). Parameters: `horizon_s`, `dt_s`, `max_lateral_accel_mps2`, ... | yes       |
+
+Frames whose scene has no lanelet map (or no ego pose) are excluded only from the map-dependent
+views; the whole-scene view keeps them. A view with zero covered frames reports `NaN` for every key
+and one warning.
+
+### Reachability model (TTC)
+
+Every agent, including ego, moves at the maximum legal speed of its class: wheeled classes
+(`car`, `truck`, `bus`, `motorbike`) follow constant-curvature arcs at the lanelet `speed_limit`
+(off-map fallback `map.max_speed_mps=16.7`), VRUs (`pedestrian` 3 m/s, `bicycle` 6 m/s, `animal`
+4 m/s) move isotropically, static classes (`hazard`, `unknown`) keep their footprint. TTC is the
+first `t` at which the reachable-at-`t` sets of ego and the object overlap, or `inf`. A lead vehicle
+travelling at the same speed is therefore unreachable and never critical. Override the class table
+with `map.collision_kinds` / `map.vru_speeds`.
+
+### Example
+
+```python
+score = evaluator.get_scene_result()
+report = score.detection_metric_report  # None when the section is not configured
+print(report.summary())
+value = report.values["detection/road/0m_30m/corner_p95_car"]
+flat = report.to_flat_keys()
+```

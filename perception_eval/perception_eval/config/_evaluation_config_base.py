@@ -64,6 +64,7 @@ class _EvaluationConfigBase(ABC):
                 "classification2d"
             ]
             SensingEvaluationManager: ["sensing"]
+            SegmentationEvaluationManager: ["segmentation"]
 
     Args:
         dataset_paths (List[str]): Dataset paths list.

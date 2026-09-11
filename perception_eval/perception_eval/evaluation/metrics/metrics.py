@@ -18,6 +18,8 @@ from itertools import chain
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Union
 
@@ -26,7 +28,9 @@ from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 from .classification import ClassificationMetricsScore
+from .component import MetricReport
 from .detection import Map
+from .detection.frame import DetectionFrame
 from .metrics_score_config import MetricsScoreConfig
 from .prediction import PredictionMetricsScore
 from .tracking import TrackingMetricsScore
@@ -69,6 +73,8 @@ class MetricsScore:
         # prediction metrics scores for each matching method
         self.prediction_scores: List = []
         self.classification_scores: List[ClassificationMetricsScore] = []
+        # opt-in driving-aware detection metrics report (None unless configured and evaluated)
+        self.detection_metric_report: Optional[MetricReport] = None
         self.evaluation_task = config.evaluation_task
 
         self.__num_frame: int = len(used_frame)
@@ -86,13 +92,21 @@ class MetricsScore:
             "tracking_scores": self.tracking_scores,
             "prediction_scores": self.prediction_scores,
             "classification_scores": self.classification_scores,
+            "detection_metric_report": self.detection_metric_report,
             "__num_gt": self.__num_gt,
         }
         return (self.__class__, init_args, state)
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         """Set the state of the object to preserve states after deserialization."""
-        state_keys = ["mean_ap_values", "tracking_scores", "prediction_scores", "classification_scores", "__num_gt"]
+        state_keys = [
+            "mean_ap_values",
+            "tracking_scores",
+            "prediction_scores",
+            "classification_scores",
+            "detection_metric_report",
+            "__num_gt",
+        ]
 
         for state_key in state_keys:
             value = state.get(state_key, None)
@@ -124,6 +138,12 @@ class MetricsScore:
         for mean_ap in self.mean_ap_values:
             # whole result
             str_ += str(mean_ap)
+
+        # advanced (driving-aware) detection metrics
+        if self.detection_metric_report is not None:
+            str_ += "\nAdvanced detection metrics:\n"
+            str_ += self.detection_metric_report.summary()
+            str_ += "\n"
 
         # tracking
         for track_score in self.tracking_scores:
@@ -194,6 +214,25 @@ class MetricsScore:
                     is_detection_2d=self.evaluation_task.is_2d(),
                 )
             )
+
+    def evaluate_advanced_detection(self, detection_frames: Sequence[DetectionFrame]) -> None:
+        """Evaluate the opt-in driving-aware detection metrics over the ordered scene frames.
+
+        No-op unless ``detection_config.advanced_detection_metrics`` is configured. Existing
+        mAP/mAPH values are never touched; results land in ``self.detection_metric_report``.
+
+        Args:
+            detection_frames (Sequence[DetectionFrame]): Filtered per-frame objects in scene order.
+        """
+        if self.detection_config is None:
+            return
+        advanced_config = getattr(self.detection_config, "advanced_detection_metrics", None)
+        if advanced_config is None:
+            return
+        from .detection.suite import AdvancedDetectionSuite
+
+        suite = AdvancedDetectionSuite(advanced_config)
+        self.detection_metric_report = suite.evaluate(list(detection_frames))
 
     def evaluate_tracking(
         self,

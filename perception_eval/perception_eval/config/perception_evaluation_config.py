@@ -222,6 +222,8 @@ def _extract_metric_params(
         "plane_distance_thresholds": cfg.get("plane_distance_thresholds"),
         "iou_2d_thresholds": cfg.get("iou_2d_thresholds"),
         "iou_3d_thresholds": cfg.get("iou_3d_thresholds"),
+        # Optional opt-in driving-aware detection metrics (absent -> legacy behaviour)
+        "advanced_detection_metrics": cfg.get("advanced_detection_metrics"),
         # For prediction task
         "top_ks": cfg.get("top_ks", [1, 3, 6]),
         "miss_tolerance": cfg.get("miss_tolerance", 2.0),

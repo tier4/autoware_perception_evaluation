@@ -15,7 +15,8 @@
 from typing import Union
 
 from perception_eval.config.perception_evaluation_config import PerceptionEvaluationConfig
+from perception_eval.config.segmentation_evaluation_config import SegmentationEvaluationConfig
 from perception_eval.config.sensing_evaluation_config import SensingEvaluationConfig
 
 # type aliases
-EvaluationConfigType = Union[PerceptionEvaluationConfig, SensingEvaluationConfig]
+EvaluationConfigType = Union[PerceptionEvaluationConfig, SensingEvaluationConfig, SegmentationEvaluationConfig]

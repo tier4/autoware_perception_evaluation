@@ -13,3 +13,7 @@
 
 - [Design document for sensing evaluation](./sensing/design.md)
 - [FAQ for sensing](./sensing/faq.md)
+
+## Segmentation evaluation
+
+- [点群セマンティックセグメンテーション評価](./perception/segmentation.md)

@@ -31,6 +31,7 @@ from perception_eval.evaluation.matching.objects_filter import filter_nuscene_ob
 from perception_eval.evaluation.matching.objects_filter import filter_object_results
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics import MetricsScore
+from perception_eval.evaluation.metrics.detection.frame import DetectionFrame
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
@@ -109,6 +110,8 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         filtered_estimated_objects, filtered_ground_truth = self.filter_objects(
             estimated_objects, ground_truth_now_frame
         )
+        # Snapshot the filtered objects (before any matching) for the advanced detection metrics
+        detection_frame = self._build_detection_frame(filtered_estimated_objects, filtered_ground_truth)
 
         # Match for detection metrics (Based on matching policy)
         nuscene_object_results = (
@@ -178,6 +181,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             frame_pass_fail_config=frame_pass_fail_config,
             unix_time=unix_time,
             target_labels=self.target_labels,
+            detection_frame=detection_frame,
         )
 
     def evaluate_perception_frame(
@@ -224,6 +228,8 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         filtered_estimated_objects, filtered_ground_truth = self.filter_objects(
             estimated_objects, ground_truth_now_frame
         )
+        # Snapshot the filtered objects (before any matching) for the advanced detection metrics
+        detection_frame = self._build_detection_frame(filtered_estimated_objects, filtered_ground_truth)
 
         # Match objects based on enabled metrics
         nuscene_object_results = None
@@ -276,6 +282,7 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
             frame_pass_fail_config=frame_pass_fail_config,
             unix_time=unix_time,
             target_labels=self.target_labels,
+            detection_frame=detection_frame,
         )
 
         if self.frame_results:
@@ -285,6 +292,31 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
 
         self.frame_results.append(perception_frame_result)
         return perception_frame_result
+
+    def _build_detection_frame(
+        self, estimated_objects: List[ObjectType], frame_ground_truth: FrameGroundTruth
+    ) -> Optional[DetectionFrame]:
+        """Snapshot the metrics-filtered objects for the opt-in advanced detection metrics.
+
+        Returns ``None`` unless ``advanced_detection_metrics`` is configured for a 3D task. The
+        ground truths are copied into a tuple here because ``PerceptionFrameResult.evaluate_frame``
+        later replaces ``frame_ground_truth.objects`` with the critical-filtered subset.
+        """
+        detection_config = self.metrics_config.detection_config
+        if (
+            detection_config is None
+            or getattr(detection_config, "advanced_detection_metrics", None) is None
+            or not self.evaluation_task.is_3d()
+        ):
+            return None
+        return DetectionFrame(
+            frame_name=frame_ground_truth.frame_name,
+            unix_time=frame_ground_truth.unix_time,
+            scene_id=getattr(frame_ground_truth, "scene_id", None),
+            estimated_objects=tuple(estimated_objects),
+            ground_truth_objects=tuple(frame_ground_truth.objects),
+            transforms=frame_ground_truth.transforms,
+        )
 
     def filter_objects(
         self, estimated_objects: List[ObjectType], frame_ground_truth: FrameGroundTruth
@@ -409,8 +441,11 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
 
         aggregated_num_gt = {label: 0 for label in target_labels}
         used_frame: List[int] = []
+        detection_frames: List[DetectionFrame] = []
 
         for frame in self.frame_results:
+            if getattr(frame, "detection_frame", None) is not None:
+                detection_frames.append(frame.detection_frame)
             object_results_dict = None
             if frame.object_results is not None:
                 object_results_dict: Dict[LabelType, List[DynamicObjectWithPerceptionResult]] = divide_objects(
@@ -444,6 +479,8 @@ class PerceptionEvaluationManager(_EvaluationManagerBase):
         # Detection
         if self.evaluator_config.metrics_config.detection_config is not None:
             scene_metrics_score.evaluate_detection(flattened_nuscene_object_results_dict, aggregated_num_gt)
+            # Opt-in driving-aware metrics over the ordered frames (no-op when not configured)
+            scene_metrics_score.evaluate_advanced_detection(detection_frames)
             if self.metric_output_dir is not None:
                 detection_confusion_matrix = DetectionConfusionMatrix(output_dir=self._metric_output_dir)
                 # Draw confusion matrices

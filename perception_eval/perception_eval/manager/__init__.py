@@ -15,6 +15,7 @@
 from typing import Union
 
 from perception_eval.manager.perception_evaluation_manager import PerceptionEvaluationManager
+from perception_eval.manager.segmentation_evaluation_manager import SegmentationEvaluationManager
 from perception_eval.manager.sensing_evaluation_manager import SensingEvaluationManager
 
-EvaluationManagerType = Union[PerceptionEvaluationManager, SensingEvaluationManager]
+EvaluationManagerType = Union[PerceptionEvaluationManager, SensingEvaluationManager, SegmentationEvaluationManager]

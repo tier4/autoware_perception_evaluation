@@ -29,6 +29,7 @@ class EvaluationTask(Enum):
     - TRACKING
     - PREDICTION
     - SENSING
+    - SEGMENTATION
 
     # 2D
     - DETECTION2D
@@ -45,6 +46,7 @@ class EvaluationTask(Enum):
     TRACKING = "tracking"
     PREDICTION = "prediction"
     SENSING = "sensing"
+    SEGMENTATION = "segmentation"
 
     # 2D
     DETECTION2D = "detection2d"
@@ -72,6 +74,7 @@ class EvaluationTask(Enum):
             EvaluationTask.TRACKING,
             EvaluationTask.PREDICTION,
             EvaluationTask.SENSING,
+            EvaluationTask.SEGMENTATION,
             EvaluationTask.FP_VALIDATION,
         )
 
