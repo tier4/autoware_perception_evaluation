@@ -299,6 +299,32 @@ def _get_sample_tokens(nuscenes_sample: dict) -> List[Any]:
     return sample_tokens_all
 
 
+def copy_frame_ground_truth(frame: FrameGroundTruth) -> FrameGroundTruth:
+    """Return a copy of `frame` which can be filtered safely.
+
+    Downstream code (e.g. `PerceptionEvaluationManager.filter_objects()`) assigns the filtered
+    object list to `FrameGroundTruth.objects` in place. When the frame instance is the one stored
+    in `EvaluationManagerBase.ground_truth_frames`, the annotation of that frame is destroyed for
+    every later access, which used to make the first/last evaluated frame look like GT=0.
+
+    `objects` and the transform matrices are deep-copied, `raw_data` is shared because it is
+    read-only and can be huge (raw point cloud / image).
+
+    Args:
+        frame (FrameGroundTruth): Source frame ground truth.
+
+    Returns:
+        FrameGroundTruth: Copied frame ground truth.
+    """
+    return FrameGroundTruth(
+        unix_time=frame.unix_time,
+        frame_name=frame.frame_name,
+        objects=deepcopy(frame.objects),
+        transforms=deepcopy(frame.transform_matrices),
+        raw_data=frame.raw_data,
+    )
+
+
 def get_now_frame(
     ground_truth_frames: List[FrameGroundTruth],
     unix_time: int,
@@ -348,7 +374,8 @@ def get_now_frame(
         )
         return None
     else:
-        return ground_truth_now_frame
+        # NOTE: return a copy, the returned frame is filtered in place by the evaluation manager.
+        return copy_frame_ground_truth(ground_truth_now_frame)
 
 
 def get_interpolated_now_frame(
@@ -406,10 +433,12 @@ def get_interpolated_now_frame(
         return None
     elif before_frame is None:
         logging.info("Only after frame is available for interpolation")
-        return after_frame
+        # NOTE: return a copy, the returned frame is filtered in place by the evaluation manager.
+        return copy_frame_ground_truth(after_frame)
     elif after_frame is None:
         logging.info("Only before frame is available for interpolation")
-        return before_frame
+        # NOTE: return a copy, the returned frame is filtered in place by the evaluation manager.
+        return copy_frame_ground_truth(before_frame)
     else:
         # do interpolation
         return interpolate_ground_truth_frames(before_frame, after_frame, unix_time, return_frame_id)
