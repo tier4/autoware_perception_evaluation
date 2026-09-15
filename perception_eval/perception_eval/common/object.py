@@ -262,7 +262,10 @@ class DynamicObject:
             float: The heading (radian)
         """
         if self.frame_id == FrameID.BASE_LINK:
-            rots: float = self.state.orientation.radians
+            # NOTE: Quaternion.radians is the absolute rotation angle and drops the yaw
+            # sign, which collapses mirrored headings (e.g. +theta vs -theta) to zero
+            # error. Use the signed yaw instead.
+            rots: float = self.state.orientation.yaw_pitch_roll[0]
         else:
             if transforms is None:
                 raise ValueError("transforms must be specified.")
