@@ -40,6 +40,8 @@ from perception_eval.common.schema import FrameID
 from perception_eval.common.schema import Visibility
 from perception_eval.common.shape import Shape
 from perception_eval.common.shape import ShapeType
+from perception_eval.common.tlr_relation import TrafficLightIdResolver
+from perception_eval.common.tlr_relation import TrafficLightRelationError
 from perception_eval.common.transform import HomogeneousMatrix
 from PIL import Image
 from pyquaternion.quaternion import Quaternion
@@ -824,6 +826,7 @@ def _sample_to_frame_2d(
     frame_ids: List[FrameID],
     frame_name: str,
     load_raw_data: bool,
+    traffic_light_id_resolver: Optional[TrafficLightIdResolver] = None,
 ) -> dataset.FrameGroundTruth:
     """Returns FrameGroundTruth constructed with DynamicObject2D.
 
@@ -836,6 +839,12 @@ def _sample_to_frame_2d(
         frame_ids (List[FrameID]): List of FrameID instances, where 2D objects are with respect, related to CAM_**.
         frame_name (str): Name of frame.
         load_raw_data (bool): The flag to load image data.
+        traffic_light_id_resolver (Optional[TrafficLightIdResolver]): Resolver from a
+            traffic-light `object_ann.instance_token` to its Regulatory Element ID
+            (`DynamicObject2D.uuid`). Built once per dataset load by
+            `perception_eval.common.dataset._load_dataset` and reused across every
+            frame; required when `label_converter.label_type == TrafficLightLabel`,
+            unused otherwise.
 
     Returns:
         frame (FrameGroundTruth): GT objects in one frame.
@@ -889,17 +898,39 @@ def _sample_to_frame_2d(
         semantic_label: LabelType = label_converter.convert_label(category_info["name"], attributes)
 
         if label_converter.label_type == TrafficLightLabel:
-            # NOTE: Check whether Regulatory Element is used
-            # in scene.json => description: "TLR, regulatory_element"
-            for instance_record in nusc.instance:
-                if instance_record["token"] == ann["instance_token"]:
-                    instance_name: str = instance_record["instance_name"]
-                    uuid: str = instance_name.split(":")[-1]
-                    break
-            uuids.append(uuid)
-        else:
-            uuid: str = ann["instance_token"]
+            # A single physical traffic-light detection can correspond to more than
+            # one Regulatory Element (e.g. one lamp shared by two lanelets, each with
+            # its own stop line and its own RE). The live Autoware node reports state
+            # per RE, so ground truth must fan out the same way for uuid-based
+            # matching to work: one DynamicObject2D per applicable RE ID, all sharing
+            # this annotation's roi/label. `_merge_duplicated_traffic_lights` below
+            # then aggregates per RE for the frame. The resolver is built once per
+            # dataset load, not per annotation (see `perception_eval.common.tlr_relation`).
+            assert (
+                traffic_light_id_resolver is not None
+            ), "traffic_light_id_resolver is required when label_type is TrafficLightLabel."
+            re_ids: List[str] = sorted(set(traffic_light_id_resolver.resolve_re_ids(ann["instance_token"])))
+            if not re_ids:
+                raise TrafficLightRelationError(
+                    "resolve_re_ids() returned no Regulatory Element IDs for "
+                    f"instance_token={ann['instance_token']!r}."
+                )
+            for re_id in re_ids:
+                uuids.append(re_id)
+                objects_.append(
+                    DynamicObject2D(
+                        unix_time=unix_time,
+                        frame_id=frame_id_mapping[ann["sample_data_token"]],
+                        semantic_score=1.0,
+                        semantic_label=semantic_label,
+                        roi=roi,
+                        uuid=re_id,
+                        visibility=None,
+                    )
+                )
+            continue
 
+        uuid: str = ann["instance_token"]
         object_: DynamicObject2D = DynamicObject2D(
             unix_time=unix_time,
             frame_id=frame_id_mapping[ann["sample_data_token"]],
