@@ -47,4 +47,5 @@ jobs:
           uv run python -m test.perception_lsim test/sample_data/ --use_tmpdir
           uv run python -m test.perception_lsim2d test/sample_data/ --use_tmpdir
           uv run python -m test.sensing_lsim test/sample_data/ --use_tmpdir
+          uv run python -m test.segmentation_lsim --use_tmpdir
           uv run python -m test.eda test/sample_data/

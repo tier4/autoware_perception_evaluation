@@ -24,11 +24,12 @@ from perception_eval.common.dataset import get_now_frame
 from perception_eval.common.dataset import load_all_datasets
 from perception_eval.common.schema import FrameID
 from perception_eval.config import EvaluationConfigType
+from perception_eval.evaluation.metrics.segmentation.state import SegmentationFrameSummary
 from perception_eval.evaluation.result.perception_frame_result import PerceptionFrameResult
 from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
 from perception_eval.visualization import VisualizerType
 
-FrameResultType = Union[PerceptionFrameResult, SensingFrameResult]
+FrameResultType = Union[PerceptionFrameResult, SensingFrameResult, SegmentationFrameSummary]
 
 
 class _EvaluationManagerBase(ABC):
