@@ -95,7 +95,7 @@ class FrameID(Enum):
             task (Union[str, EvaluationTask]): Task name.
 
         Returns:
-            FrameID: For DETECTION or SENSING, Returns BASE_LINK. For TRACKING or PREDICTION, returns MAP.
+            FrameID: For DETECTION, SENSING or SEGMENTATION, Returns BASE_LINK. For TRACKING or PREDICTION, returns MAP.
 
         Raises:
             ValueError: When `task` is evaluation for 2D input data.
@@ -106,7 +106,7 @@ class FrameID(Enum):
         if task.is_2d():
             raise ValueError("For 2D task, FrameID must be initialized explicitly, or use `FrameID.from_value(name)`.")
 
-        if task in (EvaluationTask.DETECTION, EvaluationTask.SENSING):
+        if task in (EvaluationTask.DETECTION, EvaluationTask.SENSING, EvaluationTask.SEGMENTATION):
             return FrameID.BASE_LINK
         elif task in (EvaluationTask.TRACKING, EvaluationTask.PREDICTION):
             return FrameID.MAP
