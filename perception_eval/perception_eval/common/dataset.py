@@ -16,6 +16,7 @@ from __future__ import annotations
 from copy import deepcopy
 import logging
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -35,14 +36,21 @@ from perception_eval.common.evaluation_task import EvaluationTask
 from perception_eval.common.geometry import interpolate_homogeneous_matrix
 from perception_eval.common.geometry import interpolate_object_list
 from perception_eval.common.label import LabelConverter
+from perception_eval.common.label import TrafficLightLabel
 from perception_eval.common.object2d import DynamicObject2D
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.schema import FrameID
+from perception_eval.common.tlr_relation import build_default_traffic_light_id_resolver
+from perception_eval.common.tlr_relation import TrafficLightIdResolver
 from perception_eval.common.transform import HomogeneousMatrix
 from perception_eval.common.transform import TransformDict
 from perception_eval.common.transform import TransformDictArgType
 from perception_eval.common.transform import TransformKey
 from tqdm import tqdm
+
+# Builds a TrafficLightIdResolver for one dataset, given (nusc, dataset_path). See
+# `load_all_datasets`'s `traffic_light_id_resolver_factory` argument.
+TrafficLightIdResolverFactory = Callable[[NuScenes, str], TrafficLightIdResolver]
 
 
 class FrameGroundTruth:
@@ -135,6 +143,7 @@ def load_all_datasets(
     frame_id: Union[FrameID, Sequence[FrameID]],
     load_raw_data: bool = False,
     path_seconds: float = 10.0,
+    traffic_light_id_resolver_factory: Optional[TrafficLightIdResolverFactory] = None,
 ) -> List[FrameGroundTruth]:
     """
     Load tier4 datasets.
@@ -147,6 +156,15 @@ def load_all_datasets(
         load_raw_data (bool): The flag of setting pointcloud or image.
             For 3D task, pointcloud will be loaded. For 2D, image will be loaded. Defaults to False.
         path_seconds (float): Time length of path in seconds. Defaults to 10.0.
+        traffic_light_id_resolver_factory (Optional[TrafficLightIdResolverFactory]):
+            Builds the `TrafficLightIdResolver` used to resolve a traffic-light
+            annotation's `DynamicObject2D.uuid` (its Regulatory Element ID(s)), given
+            `(nusc, dataset_path)`. Called once per dataset load. If omitted, defaults
+            to `build_default_traffic_light_id_resolver` (`traffic_light.json` + the
+            Lanelet2 map when present, otherwise `instance.instance_name`); pass this
+            only to override with a different, caller-owned relation source. See
+            `perception_eval.common.tlr_relation`. Unused for non-TrafficLightLabel
+            evaluation.
 
     Returns:
         List[FrameGroundTruth]: FrameGroundTruth instance list.
@@ -181,6 +199,7 @@ def load_all_datasets(
             frame_ids=frame_ids,
             load_raw_data=load_raw_data,
             path_seconds=path_seconds,
+            traffic_light_id_resolver_factory=traffic_light_id_resolver_factory,
         )
     logging.info("Finish loading dataset\n" + _get_str_objects_number_info(label_converter))
     return all_datasets
@@ -193,6 +212,7 @@ def _load_dataset(
     frame_ids: List[FrameID],
     load_raw_data: bool,
     path_seconds: float = 10.0,
+    traffic_light_id_resolver_factory: Optional[TrafficLightIdResolverFactory] = None,
 ) -> List[FrameGroundTruth]:
     """
     Load one tier4 dataset.
@@ -203,6 +223,8 @@ def _load_dataset(
         frame_ids (List[FrameID]): FrameID instance, where objects are with respect.
         load_raw_data (bool): Whether load pointcloud/image data.
         path_seconds (float): Time length of path in seconds. Defaults to 10.0.
+        traffic_light_id_resolver_factory (Optional[TrafficLightIdResolverFactory]):
+            See `load_all_datasets`.
 
     Reference
         https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/common/loaders.py
@@ -225,6 +247,19 @@ def _load_dataset(
     # Read out all sample_tokens in DB.
     sample_tokens = _get_sample_tokens(nusc.sample)
 
+    # Built once per dataset load and reused for every frame/annotation below, per the
+    # TLR relation design (see perception_eval.common.tlr_relation). Defaults to
+    # traffic_light.json + the Lanelet2 map when present, otherwise instance_name --
+    # callers (including driving_log_replayer_v2) get correct resolution for either
+    # format without passing anything.
+    traffic_light_id_resolver: Optional[TrafficLightIdResolver] = None
+    if evaluation_task.is_2d() and label_converter.label_type == TrafficLightLabel:
+        traffic_light_id_resolver = (
+            traffic_light_id_resolver_factory(nusc, dataset_path)
+            if traffic_light_id_resolver_factory is not None
+            else build_default_traffic_light_id_resolver(nusc, dataset_path)
+        )
+
     dataset: List[FrameGroundTruth] = []
     for n, sample_token in enumerate(tqdm(sample_tokens)):
         if evaluation_task.is_2d():
@@ -237,6 +272,7 @@ def _load_dataset(
                 frame_ids=frame_ids,
                 frame_name=str(n),
                 load_raw_data=load_raw_data,
+                traffic_light_id_resolver=traffic_light_id_resolver,
             )
         else:
             assert len(frame_ids) == 1, f"For 3D evaluation, only one Frame ID must be specified, but got {frame_ids}"
