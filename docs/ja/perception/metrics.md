@@ -412,3 +412,51 @@ print(report.summary())
 value = report.values["detection/road/0m_30m/corner_p95_car"]
 flat = report.to_flat_keys()
 ```
+
+### Prepared samples とシーン横断のプーリング
+
+suite は 2 段階で動作します。`prepare(frames)` はフレームを NumPy 配列（base_link の box 行、score、label、
+設定時は到達可能性 TTC）に変換し、全フィルタのマスクを事前計算します。lanelet マップを解決するのはこの段階だけです。
+`evaluate_prepared(prepared)` はその配列から `(taxonomy, filter, range)` ビューを組み立ててコンポーネントを実行し、
+マップには一切触れません。`evaluate(frames)` は厳密に `evaluate_prepared(prepare(frames))` と同じです。
+
+```python
+from perception_eval.evaluation.metrics.detection.prepared import PreparedSamples, evaluate_prepared
+from perception_eval.evaluation.metrics.detection.suite import AdvancedDetectionSuite
+
+suite = AdvancedDetectionSuite(config)  # map provider・フィルタ・TTC は遅延生成
+prepared = suite.prepare(frames)  # PreparedSamples（MetricsScore.detection_prepared と同じもの）
+report = suite.evaluate_prepared(prepared)  # == suite.evaluate(frames)
+
+prepared.to_npz("advanced_detection_samples.npz")  # ファイルの sha256 を返す
+parts = [PreparedSamples.from_npz(path) for path in sorted_scene_files]
+pooled_report = evaluate_prepared(config, parts)  # プールしてから評価。マップアクセス無し
+```
+
+`PreparedSamples` は `schema_version`, `config_digest`, `class_names`, `filter_names`
+（非 identity フィルタを設定順に）, `has_ttc`, 変換済みの `frames`, `counts`
+（`input_frames`, `skipped_frames`, `polygon_as_box`, `non_finite_score`, `pred_total`,
+`pred_kept`, `zero_score`）と準備時の `warnings` を持ちます。`PreparedSamples.concat(parts)` は
+与えられた順にフレームを連結し、counts を合計し、warnings を重複排除します。`evaluate_prepared` は
+`PreparedSamples` 1 つ、またはプールするシーケンスのどちらも受け付けます。
+
+- `config_digest(config)` は `{"class_names", "advanced", "prepared_schema_version"}` の正規化 JSON
+  （`sort_keys=True`, `separators=(",", ":")`）の `sha256:<hex>` です。`advanced` は
+  `config.serialization()` から `map.data_root` と `map.mapping` を除いたものです。digest
+  （または `class_names`, `filter_names`, `schema_version`）が異なる設定で準備したシーンはプールできず、
+  `evaluate_prepared` は digest の異なる設定を拒否します。いずれも `PoolingError` になります。
+- **決定性**: `evaluate_prepared([P_a, P_b, ...])` は `suite.evaluate(frames_a + frames_b + ...)` と
+  ビット単位で一致します。グリーディマッチャは score で安定ソートするため、同一 score の予測は入力順に
+  マッチされ、同点では parts の順序が結果に影響します。シーンをプールするツールは正規の順序
+  （`(dataset_name, scenario_path)` でシーンをソート、フレームはファイル順）を使います。
+- coverage はプールしたフレーム全体で合計され（`road: (covered, seen)` がシーン横断で足し上がる）、
+  カバーされたフレームが 0 のビューはプール後のレポートでも `NaN` です。プール後の warnings は
+  各シーンの準備時 warnings の重複排除した和集合に、プール全体の coverage 注記を加えたものです。
+- `MetricsScore.detection_prepared` は `detection_metric_report` の元になった prepared samples を
+  保持します。一時的な属性で、score と一緒に pickle されず、pickle から復元した後は `None` です。下流ツールは
+  自身のレポートの隣に `to_npz` でファイル化します。
+- `PerceptionAnalyzer3D.get_metrics_score(frame_results, advanced=True)` で analyzer 内でも suite を
+  実行できます。既定では analyzer は mAP/mAPH のみ計算します。
+
+`.npz` のレイアウトと、ログ再生ツールが書き出すシナリオ毎のレポートは
+[advanced_metrics_files.md](advanced_metrics_files.md) に規定しています。

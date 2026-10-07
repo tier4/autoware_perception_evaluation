@@ -420,3 +420,54 @@ print(report.summary())
 value = report.values["detection/road/0m_30m/corner_p95_car"]
 flat = report.to_flat_keys()
 ```
+
+### Prepared samples and pooling across scenes
+
+The suite runs in two steps. `prepare(frames)` converts the frames to NumPy arrays (base_link box
+rows, scores, labels, the reachability TTC when configured) and computes every filter mask; this
+is the only step that resolves a lanelet map. `evaluate_prepared(prepared)` builds the
+`(taxonomy, filter, range)` views from those arrays and runs the components; it never touches a
+map. `evaluate(frames)` is exactly `evaluate_prepared(prepare(frames))`.
+
+```python
+from perception_eval.evaluation.metrics.detection.prepared import PreparedSamples, evaluate_prepared
+from perception_eval.evaluation.metrics.detection.suite import AdvancedDetectionSuite
+
+suite = AdvancedDetectionSuite(config)  # map provider, filters and TTC are built lazily
+prepared = suite.prepare(frames)  # PreparedSamples (also MetricsScore.detection_prepared)
+report = suite.evaluate_prepared(prepared)  # == suite.evaluate(frames)
+
+prepared.to_npz("advanced_detection_samples.npz")  # returns the file's sha256
+parts = [PreparedSamples.from_npz(path) for path in sorted_scene_files]
+pooled_report = evaluate_prepared(config, parts)  # pools, then evaluates; no map access
+```
+
+`PreparedSamples` carries `schema_version`, `config_digest`, `class_names`, `filter_names`
+(non-identity filters in configuration order), `has_ttc`, the prepared `frames`, `counts`
+(`input_frames`, `skipped_frames`, `polygon_as_box`, `non_finite_score`, `pred_total`,
+`pred_kept`, `zero_score`) and the preparation `warnings`. `PreparedSamples.concat(parts)`
+concatenates frames in the given order, sums the counts and deduplicates the warnings;
+`evaluate_prepared` accepts either one `PreparedSamples` or a sequence to pool.
+
+- `config_digest(config)` is `sha256:<hex>` of the canonical JSON (`sort_keys=True`,
+  `separators=(",", ":")`) of `{"class_names", "advanced", "prepared_schema_version"}`, where
+  `advanced` is `config.serialization()` without `map.data_root` and `map.mapping`. Scenes prepared
+  with configurations that differ in the digest (or in `class_names`, `filter_names` or
+  `schema_version`) cannot be pooled, and `evaluate_prepared` refuses a configuration whose digest
+  differs from the samples': both raise `PoolingError`.
+- **Determinism**: `evaluate_prepared([P_a, P_b, ...])` is bit-identical to
+  `suite.evaluate(frames_a + frames_b + ...)`. Because the greedy matcher sorts predictions by
+  score (stable sort), frames with equal scores are matched in input order, so the order of the
+  parts matters for ties. Tools that pool scenes use the canonical order: scenes sorted by
+  `(dataset_name, scenario_path)`, frames in file order.
+- Coverage sums over the pooled frames (`road: (covered, seen)` adds up across scenes) and a view
+  with zero covered frames is `NaN` in the pooled report too. Pooled warnings are the deduplicated
+  union of the per-scene preparation warnings plus the pooled coverage notes.
+- `MetricsScore.detection_prepared` holds the prepared samples behind
+  `detection_metric_report`. It is transient: it is not pickled with the score and is `None` after
+  loading a pickle. Downstream tools write it to a file with `to_npz` next to their own report.
+- `PerceptionAnalyzer3D.get_metrics_score(frame_results, advanced=True)` runs the suite in the
+  analyzer; by default the analyzer computes mAP/mAPH only.
+
+The `.npz` layout and the per-scenario report written by log-replay tools are specified in
+[advanced_metrics_files.md](advanced_metrics_files.md).
