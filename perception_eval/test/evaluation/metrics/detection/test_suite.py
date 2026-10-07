@@ -16,6 +16,7 @@ import math
 from test.util.dummy_object import make_dummy_data
 import unittest
 
+import numpy as np
 from perception_eval.common.label import AutowareLabel
 from perception_eval.common.label import Label
 from perception_eval.common.object import DynamicObject
@@ -157,8 +158,10 @@ class TestAdvancedDetectionSuite(unittest.TestCase):
         frames = [_frame("0", estimated, ground_truth), _frame("1", estimated + [polygon_object], ground_truth)]
         config = AdvancedDetectionMetricsConfig.from_dict({"components": [{"type": "confident_error"}]}, TARGET_LABELS)
         report = AdvancedDetectionSuite(config).evaluate(frames, TARGET_LABELS)
-        self.assertEqual(len(report.warnings), 1)
+        self.assertEqual(len(report.warnings), 2)
         self.assertIn("skipped", report.warnings[0])
+        # Frame names repeat in practice, so the total is reported once as well.
+        self.assertIn("1/2 frames skipped", report.warnings[1])
         # Only the surviving frame counts in the per-frame denominator.
         self.assertEqual(
             report.values["detection/confident_errors_per_frame"], report.values["detection/confident_error_count"]
@@ -177,3 +180,69 @@ class TestAdvancedDetectionSuite(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestAdvancedDetectionSuiteInputs(unittest.TestCase):
+    """Score source, POLYGON policy and non-finite scores (inputs as produced by a log replayer)."""
+
+    @staticmethod
+    def _polygon_frame(name="1"):
+        estimated, ground_truth = make_dummy_data()
+        polygon_object = DynamicObject(
+            unix_time=100,
+            frame_id=FrameID.BASE_LINK,
+            position=(1.0, 1.0, 1.0),
+            orientation=Quaternion(),
+            shape=Shape(ShapeType.POLYGON, (0.0, 0.0, 1.0), footprint=Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])),
+            velocity=None,
+            semantic_score=0.9,
+            semantic_label=Label(AutowareLabel.CAR, "car"),
+        )
+        return _frame(name, estimated + [polygon_object], ground_truth)
+
+    def test_as_box_keeps_polygon_frames(self):
+        config = AdvancedDetectionMetricsConfig.from_dict(
+            {"components": [{"type": "confident_error"}], "polygon_shapes": "as_box"}, TARGET_LABELS
+        )
+        report = AdvancedDetectionSuite(config).evaluate([self._polygon_frame()], TARGET_LABELS)
+        self.assertFalse(any("skipped" in warning for warning in report.warnings))
+        self.assertTrue(any("1 POLYGON-shaped objects" in warning for warning in report.warnings))
+
+    def test_nan_score_is_dropped_not_fatal(self):
+        estimated, ground_truth = make_dummy_data()
+        estimated[0].semantic_score = float("nan")
+        config = AdvancedDetectionMetricsConfig.from_dict(
+            {"components": [{"type": "calibration"}, {"type": "confident_error"}]}, TARGET_LABELS
+        )
+        report = AdvancedDetectionSuite(config).evaluate([_frame("0", estimated, ground_truth)], TARGET_LABELS)
+        self.assertTrue(np.isfinite(report.values["detection/ece"]))
+        self.assertTrue(any("1 predictions dropped" in warning for warning in report.warnings))
+
+    def test_existence_probability_score_source(self):
+        estimated, ground_truth = make_dummy_data()
+        for obj in estimated:
+            obj.existence_probability = 0.25
+        frames = [_frame("0", estimated, ground_truth)]
+        by_semantic = AdvancedDetectionSuite(
+            AdvancedDetectionMetricsConfig.from_dict({"components": [{"type": "confident_error"}]}, TARGET_LABELS)
+        ).evaluate(frames, TARGET_LABELS)
+        by_existence = AdvancedDetectionSuite(
+            AdvancedDetectionMetricsConfig.from_dict(
+                {"components": [{"type": "confident_error"}], "score_source": "existence_probability"},
+                TARGET_LABELS,
+            )
+        ).evaluate(frames, TARGET_LABELS)
+        # Every existence probability sits below the 0.5 threshold, so no confident errors remain.
+        self.assertEqual(by_existence.values["detection/confident_error_count"], 0.0)
+        self.assertGreaterEqual(
+            by_semantic.values["detection/confident_error_count"],
+            by_existence.values["detection/confident_error_count"],
+        )
+
+    def test_missing_existence_probability_is_reported(self):
+        estimated, ground_truth = make_dummy_data()
+        config = AdvancedDetectionMetricsConfig.from_dict(
+            {"components": [{"type": "confident_error"}], "score_source": "existence_probability"}, TARGET_LABELS
+        )
+        report = AdvancedDetectionSuite(config).evaluate([_frame("0", estimated, ground_truth)], TARGET_LABELS)
+        self.assertTrue(any("missing existence_probability" in warning for warning in report.warnings))

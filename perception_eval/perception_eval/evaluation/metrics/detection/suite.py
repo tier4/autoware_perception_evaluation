@@ -138,14 +138,31 @@ class AdvancedDetectionSuite:
     # ------------------------------------------------------------------------------------------
 
     def _prepare_frame(
-        self, frame: DetectionFrame, target_labels: Sequence[Any], report: MetricReport
+        self,
+        frame: DetectionFrame,
+        target_labels: Sequence[Any],
+        report: MetricReport,
+        counts: Optional[Dict[str, int]] = None,
     ) -> Optional[_PreparedFrame]:
+        counts = {} if counts is None else counts
         try:
             pred_boxes, pred_labels, pred_scores = objects_to_arrays(
-                frame.estimated_objects, frame.transforms, target_labels
+                frame.estimated_objects,
+                frame.transforms,
+                target_labels,
+                score_source=self.config.score_source,
+                polygon_shapes=self.config.polygon_shapes,
+                counts=counts,
+                drop_non_finite_scores=True,
             )
-            gt_boxes, gt_labels, _ = objects_to_arrays(frame.ground_truth_objects, frame.transforms, target_labels)
+            gt_boxes, gt_labels, _ = objects_to_arrays(
+                frame.ground_truth_objects,
+                frame.transforms,
+                target_labels,
+                polygon_shapes=self.config.polygon_shapes,
+            )
         except (UnsupportedShapeError, MissingTransformError) as error:
+            counts["skipped_frames"] = counts.get("skipped_frames", 0) + 1
             report.warn(f"frame {frame.frame_name!r} skipped by the advanced detection metrics: {error}")
             return None
 
@@ -205,8 +222,18 @@ class AdvancedDetectionSuite:
         report = MetricReport()
         labels = list(target_labels) if target_labels is not None else self._labels_from_class_names()
 
-        prepared = [self._prepare_frame(frame, labels, report) for frame in frames]
+        counts: Dict[str, int] = {}
+        prepared = [self._prepare_frame(frame, labels, report, counts) for frame in frames]
         prepared = [frame for frame in prepared if frame is not None]
+        # Frame names repeat across a scene, so per-frame warnings report too few: also report totals once.
+        if counts.get("skipped_frames"):
+            report.warn(f"{counts['skipped_frames']}/{len(frames)} frames skipped by the advanced detection metrics.")
+        if counts.get("polygon_as_box"):
+            report.warn(f"{counts['polygon_as_box']} POLYGON-shaped objects evaluated as their footprint box.")
+        if counts.get("non_finite_score"):
+            report.warn(
+                f"{counts['non_finite_score']} predictions dropped: non-finite or missing {self.config.score_source}."
+            )
 
         # Coverage per availability-gated filter and for TTC.
         for metric_filter in self.filters:

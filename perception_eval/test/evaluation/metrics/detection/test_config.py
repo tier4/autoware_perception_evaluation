@@ -186,3 +186,28 @@ class TestDetectionMetricsConfigIntegration(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestInputPolicyConfig(unittest.TestCase):
+    def test_defaults_keep_legacy_behavior(self):
+        config = AdvancedDetectionMetricsConfig.from_dict({"components": [{"type": "heading_flip"}]}, TARGET_LABELS)
+        self.assertEqual(config.score_source, "semantic_score")
+        self.assertEqual(config.polygon_shapes, "skip")
+
+    def test_round_trip(self):
+        raw = {
+            "components": [{"type": "heading_flip"}],
+            "score_source": "existence_probability",
+            "polygon_shapes": "as_box",
+        }
+        config = AdvancedDetectionMetricsConfig.from_dict(raw, TARGET_LABELS)
+        again = AdvancedDetectionMetricsConfig.from_dict(config.serialization(), TARGET_LABELS)
+        self.assertEqual(again.score_source, "existence_probability")
+        self.assertEqual(again.polygon_shapes, "as_box")
+
+    def test_invalid_values_are_rejected(self):
+        for key, value in (("score_source", "classification"), ("polygon_shapes", "footprint")):
+            with self.subTest(key=key), self.assertRaises(MetricsConfigError):
+                AdvancedDetectionMetricsConfig.from_dict(
+                    {"components": [{"type": "heading_flip"}], key: value}, TARGET_LABELS
+                )

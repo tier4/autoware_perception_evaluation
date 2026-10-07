@@ -28,6 +28,8 @@ Example::
         - {type: corner_error, tp_threshold: 2.0, percentiles: [95.0]}
         - {type: heading_flip}
       map: {resolver: t4_scene_directory}
+      score_source: existence_probability   # optional, default semantic_score
+      polygon_shapes: as_box                # optional, default skip
 """
 
 from __future__ import annotations
@@ -49,6 +51,8 @@ from perception_eval.common.label import LabelType
 from perception_eval.evaluation.metrics.class_groups import resolve_class_groups
 from perception_eval.evaluation.metrics.component import MetricRange
 from perception_eval.evaluation.metrics.detection.adapter import class_names_of
+from perception_eval.evaluation.metrics.detection.adapter import POLYGON_SHAPE_POLICIES
+from perception_eval.evaluation.metrics.detection.adapter import SCORE_SOURCES
 from perception_eval.evaluation.metrics.detection.state import DEFAULT_MATCH_THRESHOLDS
 from perception_eval.evaluation.metrics.detection.state import DEFAULT_TP_THRESHOLD
 from perception_eval.evaluation.metrics.detection.state import MATCH_COSTS
@@ -258,6 +262,11 @@ class AdvancedDetectionMetricsConfig:
         components (tuple): Component configs to run on every view.
         map (MapConfig | None): Lanelet map resolution, required by map-dependent filters and TTC.
         match_cost (str): ``center`` (default) or ``corner`` matching cost for the TP-based metrics.
+        score_source (str): Prediction attribute used as the score by every component:
+            ``semantic_score`` (default, the score mAP uses) or ``existence_probability``. Choosing
+            ``existence_probability`` leaves mAP/mAPH untouched.
+        polygon_shapes (str): ``skip`` (default) skips frames containing a POLYGON-shaped object;
+            ``as_box`` evaluates such objects as the bounding box of their footprint.
     """
 
     class_names: Tuple[str, ...]
@@ -267,6 +276,8 @@ class AdvancedDetectionMetricsConfig:
     components: Tuple[ComponentConfigType, ...] = ()
     map: Optional[MapConfig] = None
     match_cost: str = "center"
+    score_source: str = "semantic_score"
+    polygon_shapes: str = "skip"
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "class_names", tuple(str(name) for name in self.class_names))
@@ -276,6 +287,12 @@ class AdvancedDetectionMetricsConfig:
             raise MetricsConfigError(f"match_cost must be one of {list(MATCH_COSTS)}, got {self.match_cost!r}.")
         if not self.components:
             raise MetricsConfigError("advanced_detection_metrics.components must list at least one component.")
+        if self.score_source not in SCORE_SOURCES:
+            raise MetricsConfigError(f"score_source must be one of {list(SCORE_SOURCES)}, got {self.score_source!r}.")
+        if self.polygon_shapes not in POLYGON_SHAPE_POLICIES:
+            raise MetricsConfigError(
+                f"polygon_shapes must be one of {list(POLYGON_SHAPE_POLICIES)}, got {self.polygon_shapes!r}."
+            )
         if self.class_groups is not None:
             groups = {
                 str(name): tuple(str(member) for member in members) for name, members in self.class_groups.items()
@@ -313,7 +330,16 @@ class AdvancedDetectionMetricsConfig:
         """Parse the raw section for the configured ``target_labels``."""
         if not isinstance(raw, Mapping):
             raise MetricsConfigError(f"advanced_detection_metrics must be a mapping, got {type(raw).__name__}.")
-        allowed = {"ranges", "class_groups", "filters", "components", "map", "match_cost"}
+        allowed = {
+            "ranges",
+            "class_groups",
+            "filters",
+            "components",
+            "map",
+            "match_cost",
+            "score_source",
+            "polygon_shapes",
+        }
         unknown = sorted(set(raw) - allowed)
         if unknown:
             raise MetricsConfigError(f"advanced_detection_metrics: unknown keys {unknown}; allowed {sorted(allowed)}.")
@@ -328,6 +354,8 @@ class AdvancedDetectionMetricsConfig:
             components=parse_components(raw.get("components")),
             map=parse_map(raw.get("map")),
             match_cost=str(raw.get("match_cost", "center")),
+            score_source=str(raw.get("score_source", "semantic_score")),
+            polygon_shapes=str(raw.get("polygon_shapes", "skip")),
         )
 
     def serialization(self) -> Dict[str, Any]:
@@ -339,6 +367,8 @@ class AdvancedDetectionMetricsConfig:
             "filters": [filter_config_serialization(config) for config in self.filters],
             "components": [{"type": component_token(c), **component_kwargs(c)} for c in self.components],
             "match_cost": self.match_cost,
+            "score_source": self.score_source,
+            "polygon_shapes": self.polygon_shapes,
         }
         for component in data["components"]:
             for key, value in list(component.items()):

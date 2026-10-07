@@ -339,9 +339,18 @@ advanced_detection_metrics:
     resolver: t4_scene_directory # <scene dir>/map/lanelet2_map.osm (or <scene dir>/*/map/...)
     # resolver: explicit
     # mapping: { "/path/to/scene": "/path/to/lanelet2_map.osm" }
+  score_source: semantic_score # optional: semantic_score (default) | existence_probability
+  polygon_shapes: skip # optional: skip (default) | as_box
 ```
 
 `type` tokens form a closed registry; unknown tokens or keys are rejected at configuration time.
+
+- `score_source` selects the prediction attribute every component reads as the score.
+  `existence_probability` uses `DynamicObject.existence_probability` (for example a tracker's
+  existence probability) while mAP/mAPH keep using `semantic_score`. Predictions whose score is
+  NaN, infinite or missing are dropped from the advanced metrics and counted in `warnings`.
+- `polygon_shapes: as_box` evaluates POLYGON-shaped objects as the bounding box of their footprint
+  in the object frame (counted in `warnings`) instead of skipping every frame that contains one.
 
 ### Output
 
@@ -364,8 +373,8 @@ reported as `0`.
 Components use their own score-ordered greedy matcher (BEV center distance, per frame; ties go to
 the lowest ground-truth index). Boxes are represented in `base_link` as
 `[cx, cy, cz, dx=length, dy=width, dz=height, yaw]`; objects in the `map` frame are transformed
-with the frame's `base_link -> map` transform. Polygon-shaped objects are not supported and skip the
-frame with a warning.
+with the frame's `base_link -> map` transform. Polygon-shaped objects skip the frame with a warning
+unless `polygon_shapes: as_box` is set; skipped frames are also totalled in one warning.
 
 ### Components
 
