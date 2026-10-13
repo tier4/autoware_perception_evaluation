@@ -471,11 +471,14 @@ class PerceptionAnalyzerBase(ABC):
         return len(self.df)
 
     # TODO(vividf): duplicate code as get_scene_result function in percpetion_evaluation_manager.py
-    def get_metrics_score(self, frame_results: List[PerceptionFrameResult]) -> MetricsScore:
+    def get_metrics_score(self, frame_results: List[PerceptionFrameResult], *, advanced: bool = False) -> MetricsScore:
         """Returns the metrics score for each evaluator
 
         Args:
             frame_results (List[PerceptionFrameResult]): List of frame results.
+            advanced (bool): Also run the opt-in advanced detection metrics suite over the frames'
+                ``detection_frame`` snapshots. Off by default: the analyzer's per-scene, per-distance
+                and per-area summaries only need mAP/mAPH, and the suite is comparatively expensive.
 
         Returns:
             metrics_score (MetricsScore): The final metrics score.
@@ -513,7 +516,8 @@ class PerceptionAnalyzerBase(ABC):
         )
         if self.config.metrics_config.detection_config is not None:
             metrics_score.evaluate_detection(nuscene_scene_results_dict, scene_num_gt)
-            metrics_score.evaluate_advanced_detection(detection_frames)
+            if advanced:
+                metrics_score.evaluate_advanced_detection(detection_frames)
         if self.config.metrics_config.tracking_config is not None:
             metrics_score.evaluate_tracking(scene_results, scene_num_gt)
         if self.config.metrics_config.prediction_config is not None:

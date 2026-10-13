@@ -1,0 +1,90 @@
+{
+  "_comment": "Expected pooled result of the three synthetic scenes A (mapped), B (no map) and C (all frames skipped) built in test_prepared.py; values are exact float64 (null = NaN).",
+  "config_digest": "sha256:e5c057007b13ff9f890728977ed94dcbe57d9eea9054d3fcba3ba39d0b2a8232",
+  "values": {
+    "detection/corner_mean_car": 0.29154759474226505,
+    "detection/corner_max_car": 0.5830951894845301,
+    "detection/corner_p95_car": 0.5830951894845301,
+    "detection/corner_mean_pedestrian": null,
+    "detection/corner_max_pedestrian": null,
+    "detection/corner_p95_pedestrian": null,
+    "detection/mcorner_mean": 0.29154759474226505,
+    "detection/mcorner_max": 0.5830951894845301,
+    "detection/critical_fp_0p5m": 1.0,
+    "detection/critical_fn_0p5m": 0.0,
+    "detection/critical_fp_car_0p5m": 0.0,
+    "detection/critical_fn_car_0p5m": 0.0,
+    "detection/critical_fp_pedestrian_0p5m": 1.0,
+    "detection/critical_fn_pedestrian_0p5m": 0.0,
+    "detection/cw_mAP": 1.0000000000000004,
+    "detection/cw_mAP_car": 1.0000000000000004,
+    "detection/cw_mAP_pedestrian": null,
+    "detection/road/corner_mean_car": 0.0,
+    "detection/road/corner_max_car": 0.0,
+    "detection/road/corner_p95_car": 0.0,
+    "detection/road/corner_mean_pedestrian": null,
+    "detection/road/corner_max_pedestrian": null,
+    "detection/road/corner_p95_pedestrian": null,
+    "detection/road/mcorner_mean": 0.0,
+    "detection/road/mcorner_max": 0.0,
+    "detection/road/critical_fp_0p5m": 1.0,
+    "detection/road/critical_fn_0p5m": 0.0,
+    "detection/road/critical_fp_car_0p5m": 0.0,
+    "detection/road/critical_fn_car_0p5m": 0.0,
+    "detection/road/critical_fp_pedestrian_0p5m": 1.0,
+    "detection/road/critical_fn_pedestrian_0p5m": 0.0,
+    "detection/road/cw_mAP": 1.0000000000000004,
+    "detection/road/cw_mAP_car": 1.0000000000000004,
+    "detection/road/cw_mAP_pedestrian": null,
+    "detection/collision/corner_mean_car": 0.0,
+    "detection/collision/corner_max_car": 0.0,
+    "detection/collision/corner_p95_car": 0.0,
+    "detection/collision/corner_mean_pedestrian": null,
+    "detection/collision/corner_max_pedestrian": null,
+    "detection/collision/corner_p95_pedestrian": null,
+    "detection/collision/mcorner_mean": 0.0,
+    "detection/collision/mcorner_max": 0.0,
+    "detection/collision/critical_fp_0p5m": 1.0,
+    "detection/collision/critical_fn_0p5m": 0.0,
+    "detection/collision/critical_fp_car_0p5m": 0.0,
+    "detection/collision/critical_fn_car_0p5m": 0.0,
+    "detection/collision/critical_fp_pedestrian_0p5m": 1.0,
+    "detection/collision/critical_fn_pedestrian_0p5m": 0.0,
+    "detection/collision/cw_mAP": 1.0000000000000004,
+    "detection/collision/cw_mAP_car": 1.0000000000000004,
+    "detection/collision/cw_mAP_pedestrian": null
+  },
+  "coverage": {
+    "road": [
+      2,
+      4
+    ],
+    "collision": [
+      2,
+      4
+    ],
+    "ttc": [
+      2,
+      4
+    ]
+  },
+  "counts": {
+    "input_frames": 7,
+    "skipped_frames": 3,
+    "polygon_as_box": 0,
+    "non_finite_score": 0,
+    "pred_total": 8,
+    "pred_kept": 8,
+    "zero_score": 0
+  },
+  "num_frames": 4,
+  "warnings": [
+    "frame '0' skipped by the advanced detection metrics: advanced detection metrics require ShapeType.BOUNDING_BOX, got polygon",
+    "frame '1' skipped by the advanced detection metrics: advanced detection metrics require ShapeType.BOUNDING_BOX, got polygon",
+    "frame '2' skipped by the advanced detection metrics: advanced detection metrics require ShapeType.BOUNDING_BOX, got polygon",
+    "3/3 frames skipped by the advanced detection metrics.",
+    "filter 'road' covered 2/4 frames; uncovered frames (no ego pose or no lanelet map for the scene) are excluded from its view only.",
+    "filter 'collision' covered 2/4 frames; uncovered frames (no ego pose or no lanelet map for the scene) are excluded from its view only.",
+    "collision TTC covered 2/4 frames; uncovered frames are excluded from the criticality metrics' denominators."
+  ]
+}

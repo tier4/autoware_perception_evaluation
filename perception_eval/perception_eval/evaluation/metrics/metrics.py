@@ -21,6 +21,7 @@ from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
+from typing import TYPE_CHECKING
 from typing import Union
 
 from perception_eval.common.label import LabelType
@@ -34,6 +35,9 @@ from .detection.frame import DetectionFrame
 from .metrics_score_config import MetricsScoreConfig
 from .prediction import PredictionMetricsScore
 from .tracking import TrackingMetricsScore
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from .detection.prepared import PreparedSamples
 
 
 class MetricsScore:
@@ -75,6 +79,8 @@ class MetricsScore:
         self.classification_scores: List[ClassificationMetricsScore] = []
         # opt-in driving-aware detection metrics report (None unless configured and evaluated)
         self.detection_metric_report: Optional[MetricReport] = None
+        # prepared samples behind that report (pooled across scenes by downstream tools); transient: never pickled, None after unpickling
+        self.detection_prepared: Optional[PreparedSamples] = None
         self.evaluation_task = config.evaluation_task
 
         self.__num_frame: int = len(used_frame)
@@ -219,7 +225,9 @@ class MetricsScore:
         """Evaluate the opt-in driving-aware detection metrics over the ordered scene frames.
 
         No-op unless ``detection_config.advanced_detection_metrics`` is configured. Existing
-        mAP/mAPH values are never touched; results land in ``self.detection_metric_report``.
+        mAP/mAPH values are never touched; results land in ``self.detection_metric_report`` and
+        the prepared samples (for pooling across scenes) in the transient
+        ``self.detection_prepared``.
 
         Args:
             detection_frames (Sequence[DetectionFrame]): Filtered per-frame objects in scene order.
@@ -232,7 +240,9 @@ class MetricsScore:
         from .detection.suite import AdvancedDetectionSuite
 
         suite = AdvancedDetectionSuite(advanced_config)
-        self.detection_metric_report = suite.evaluate(list(detection_frames))
+        prepared = suite.prepare(list(detection_frames))
+        self.detection_prepared = prepared
+        self.detection_metric_report = suite.evaluate_prepared(prepared)
 
     def evaluate_tracking(
         self,
