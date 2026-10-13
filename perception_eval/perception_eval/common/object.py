@@ -92,6 +92,10 @@ class DynamicObject:
                 The list of twist for predicted object. Defaults to None.
         predicted_scores (Optional[List[float]]): Prediction scores for each mode. Defaults to None.
         visibility (Optional[Visibility]): Visibility status. Defaults to None.
+        existence_probability (Optional[float]): Probability that the object exists, as reported by the
+            producer (e.g. a tracker). Unlike ``semantic_score`` it is not used by mAP; the advanced
+            detection metrics can opt into it with ``score_source: existence_probability``.
+            Defaults to None.
     """
 
     def __init__(
@@ -118,6 +122,7 @@ class DynamicObject:
         predicted_twists: Optional[List[List[Tuple[float, float, float]]]] = None,
         predicted_scores: Optional[List[float]] = None,
         visibility: Optional[Visibility] = None,
+        existence_probability: Optional[float] = None,
     ) -> None:
         # TODO(KokSeang): Pass detection/tracking/prediction to the constructor instead of building them here
         # detection
@@ -168,36 +173,45 @@ class DynamicObject:
         )
 
         self.visibility: Optional[Visibility] = visibility
-
-    def __reduce__(self) -> Tuple[ObjectState, Tuple[Any]]:
-        """Serialization and deserialization of the object with pickling."""
-        return (
-            self.__class__,
-            (
-                self.unix_time,
-                self.frame_id,
-                self.state.position,
-                self.state.orientation,
-                self.state.shape,
-                self.state.velocity,
-                self.semantic_score,
-                self.semantic_label,
-                self.pointcloud_num,
-                self.uuid,
-                self.state.pose_covariance,
-                self.state.twist_covariance,
-                self.tracked_positions,
-                self.tracked_orientations,
-                self.tracked_shapes,
-                self.tracked_twists,
-                self.relative_timestamps,
-                self.predicted_positions,
-                self.predicted_orientations,
-                self.predicted_twists,
-                self.predicted_scores,
-                self.visibility,
-            ),
+        self.existence_probability: Optional[float] = (
+            None if existence_probability is None else float(existence_probability)
         )
+
+    def __reduce__(self) -> Tuple[Any, ...]:
+        """Serialization and deserialization of the object with pickling.
+
+        ``existence_probability`` travels in the optional state dict, not in the constructor
+        arguments: readers built before the field existed then restore it as a plain attribute
+        instead of failing on an unexpected positional argument. Unset, the pickle is unchanged.
+        """
+        args = (
+            self.unix_time,
+            self.frame_id,
+            self.state.position,
+            self.state.orientation,
+            self.state.shape,
+            self.state.velocity,
+            self.semantic_score,
+            self.semantic_label,
+            self.pointcloud_num,
+            self.uuid,
+            self.state.pose_covariance,
+            self.state.twist_covariance,
+            self.tracked_positions,
+            self.tracked_orientations,
+            self.tracked_shapes,
+            self.tracked_twists,
+            self.relative_timestamps,
+            self.predicted_positions,
+            self.predicted_orientations,
+            self.predicted_twists,
+            self.predicted_scores,
+            self.visibility,
+        )
+        existence_probability = getattr(self, "existence_probability", None)
+        if existence_probability is None:
+            return (self.__class__, args)
+        return (self.__class__, args, {"existence_probability": existence_probability})
 
     def __eq__(self, other: Optional[DynamicObject]) -> bool:
         """Check if other equals this object.
@@ -565,6 +579,7 @@ class DynamicObject:
             "predicted_twists": self.predicted_twists if self.predicted_twists is not None else None,
             "predicted_scores": self.predicted_scores if self.predicted_scores is not None else None,
             "visibility": self.visibility,
+            "existence_probability": getattr(self, "existence_probability", None),
         }
 
     @classmethod
@@ -599,4 +614,5 @@ class DynamicObject:
             predicted_twists=data["predicted_twists"],
             predicted_scores=data["predicted_scores"],
             visibility=data["visibility"],
+            existence_probability=data.get("existence_probability"),
         )

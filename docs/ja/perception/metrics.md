@@ -337,9 +337,18 @@ advanced_detection_metrics:
     resolver: t4_scene_directory # <scene dir>/map/lanelet2_map.osm（または <scene dir>/*/map/...）
     # resolver: explicit
     # mapping: { "/path/to/scene": "/path/to/lanelet2_map.osm" }
+  score_source: semantic_score # 任意: semantic_score（既定）| existence_probability
+  polygon_shapes: skip # 任意: skip（既定）| as_box
 ```
 
 `type` トークンは閉じたレジストリで、未知のトークンやキーは設定時にエラーになります。
+
+- `score_source` は、各コンポーネントが score として読む予測側の属性を選びます。
+  `existence_probability` を指定すると `DynamicObject.existence_probability`（tracker の存在確率など）を使い、
+  mAP/mAPH は引き続き `semantic_score` を使います。score が NaN・無限大・未設定の予測は advanced metrics から除外され、
+  件数が `warnings` に記録されます。
+- `polygon_shapes: as_box` を指定すると、POLYGON 形状の object を、object 座標系での footprint を囲む box として評価します
+  （件数は `warnings` に記録）。未指定の場合、POLYGON を含むフレームはスキップされます。
 
 ### 出力
 
@@ -359,7 +368,8 @@ advanced_detection_metrics:
 
 各コンポーネントは独自の score 順グリーディマッチャ（フレーム毎の BEV 中心距離、同距離なら GT インデックスが小さい方）を使います。
 box は `base_link` で `[cx, cy, cz, dx=length, dy=width, dz=height, yaw]` として扱い、`map` 座標系の object は
-フレームの `base_link -> map` 変換で変換します。ポリゴン形状の object は非対応で、そのフレームは警告付きでスキップされます。
+フレームの `base_link -> map` 変換で変換します。ポリゴン形状の object を含むフレームは、`polygon_shapes: as_box` を
+指定しない限り警告付きでスキップされます。スキップしたフレーム数は 1 件の warning にまとめても報告されます。
 
 ### コンポーネント
 

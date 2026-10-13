@@ -28,6 +28,7 @@ from perception_eval.common.transform import TransformDict
 from perception_eval.evaluation.metrics.detection.adapter import class_names_of
 from perception_eval.evaluation.metrics.detection.adapter import label_index
 from perception_eval.evaluation.metrics.detection.adapter import MissingTransformError
+from perception_eval.evaluation.metrics.detection.adapter import object_score
 from perception_eval.evaluation.metrics.detection.adapter import object_to_base_link_row
 from perception_eval.evaluation.metrics.detection.adapter import objects_to_arrays
 from perception_eval.evaluation.metrics.detection.adapter import objects_to_box_rows
@@ -109,3 +110,56 @@ class TestAdapter(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestAdapterInputPolicies(unittest.TestCase):
+    @staticmethod
+    def _polygon(yaw=0.0, footprint=((1.0, -0.5), (3.0, -0.5), (3.0, 1.5), (1.0, 1.5))):
+        return _object(
+            position=(10.0, 0.0, 0.5),
+            yaw=yaw,
+            shape=Shape(ShapeType.POLYGON, (0.0, 0.0, 1.2), footprint=Polygon(footprint)),
+        )
+
+    def test_polygon_is_rejected_by_default(self):
+        with self.assertRaises(UnsupportedShapeError):
+            object_to_base_link_row(self._polygon(), None)
+
+    def test_polygon_as_box_uses_footprint_extent_and_offset(self):
+        counts = {}
+        row = object_to_base_link_row(self._polygon(), None, polygon_shapes="as_box", counts=counts)
+        # Footprint spans x in [1, 3] and y in [-0.5, 1.5] around the object origin.
+        np.testing.assert_allclose(row[:3], [12.0, 0.5, 0.5])
+        self.assertAlmostEqual(row[3], 2.0)  # dx = length (x extent)
+        self.assertAlmostEqual(row[4], 2.0)  # dy = width (y extent)
+        self.assertAlmostEqual(row[5], 1.2)
+        self.assertEqual(counts, {"polygon_as_box": 1})
+
+    def test_polygon_as_box_offset_follows_object_yaw(self):
+        row = object_to_base_link_row(self._polygon(yaw=pi / 2), None, polygon_shapes="as_box")
+        # The (+2, +0.5) footprint centre rotates by +90 deg into (-0.5, +2).
+        np.testing.assert_allclose(row[:2], [9.5, 2.0], atol=1e-9)
+        self.assertAlmostEqual(row[6], pi / 2)
+
+    def test_score_source(self):
+        obj = _object()
+        self.assertAlmostEqual(object_score(obj), 0.7)
+        self.assertTrue(np.isnan(object_score(obj, "existence_probability")))
+        obj.existence_probability = 0.4
+        self.assertAlmostEqual(object_score(obj, "existence_probability"), 0.4)
+        with self.assertRaises(ValueError):
+            object_score(obj, "classification")
+
+    def test_non_finite_scores_are_dropped_and_counted(self):
+        good, bad = _object(), _object()
+        bad.semantic_score = float("nan")
+        counts = {}
+        _, labels, scores = objects_to_arrays(
+            [good, bad], None, [AutowareLabel.CAR], counts=counts, drop_non_finite_scores=True
+        )
+        self.assertEqual(labels.tolist(), [0])
+        np.testing.assert_allclose(scores, [0.7])
+        self.assertEqual(counts, {"non_finite_score": 1})
+        # Without the flag the scores are passed through unchanged (ground truth path).
+        _, _, scores = objects_to_arrays([good, bad], None, [AutowareLabel.CAR])
+        self.assertEqual(len(scores), 2)

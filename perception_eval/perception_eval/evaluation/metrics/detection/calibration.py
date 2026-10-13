@@ -36,12 +36,16 @@ def expected_calibration_error(scores: NDArray, correct: NDArray, num_bins: int)
     """Prediction-weighted mean gap between confidence and correctness over equal-width score bins.
 
     Raises:
-        ValueError: If any score falls outside [0, 1] (scores must be probabilities, not logits).
+        ValueError: If any score is not finite or falls outside [0, 1] (scores must be probabilities,
+            not logits).
     """
     scores = np.asarray(scores, dtype=np.float64).reshape(-1)
     correct = np.asarray(correct, dtype=np.float64).reshape(-1)
     if scores.shape[0] == 0:
         return float("nan")
+    if not np.all(np.isfinite(scores)):
+        # NaN passes the range check below and then breaks np.bincount with an unrelated message.
+        raise ValueError("detection scores must be finite; drop NaN/inf scores before calibration.")
     if float(scores.min()) < 0.0 or float(scores.max()) > 1.0:
         raise ValueError(
             "detection scores must be probabilities in [0, 1] but values fall outside, "

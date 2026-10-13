@@ -60,3 +60,9 @@ class TestCalibrationError(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestCalibrationNonFinite(unittest.TestCase):
+    def test_nan_score_raises_a_clear_error(self):
+        with self.assertRaisesRegex(ValueError, "finite"):
+            expected_calibration_error(np.array([0.5, float("nan")]), np.array([1.0, 0.0]), 15)

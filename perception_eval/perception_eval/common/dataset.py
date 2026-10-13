@@ -343,6 +343,7 @@ def copy_frame_ground_truth(frame: FrameGroundTruth) -> FrameGroundTruth:
         objects=deepcopy(frame.objects),
         transforms=deepcopy(frame.transform_matrices),
         raw_data=frame.raw_data,
+        scene_id=frame.scene_id,
     )
 
 

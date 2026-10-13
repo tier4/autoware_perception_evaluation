@@ -6,6 +6,8 @@
 
 #     http://www.apache.org/licenses/LICENSE-2.0
 
+from test.util.dummy_object import make_dummy_data
+
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,8 +21,6 @@ from perception_eval.common.dataset import get_interpolated_now_frame
 from perception_eval.common.dataset import get_now_frame
 from perception_eval.common.schema import FrameID
 from perception_eval.common.transform import HomogeneousMatrix
-
-from test.util.dummy_object import make_dummy_data
 
 THRESHOLD_MIN_TIME: int = 75000  # [us]
 FRAME_INTERVAL: int = 100000  # [us], 10 Hz
@@ -56,6 +56,31 @@ def test_copy_frame_ground_truth() -> None:
     # filtering the copy in place must not affect the source frame
     copied.objects = []
     assert len(frame.objects) == num_object
+
+
+def test_scene_id_survives_every_now_frame_path() -> None:
+    """scene_id resolves the lanelet map of the advanced metrics; a copy that drops it disables them."""
+    ground_truth_frames = _make_ground_truth_frames()
+    for frame in ground_truth_frames:
+        frame.scene_id = "/datasets/scene_a"
+
+    assert copy_frame_ground_truth(ground_truth_frames[0]).scene_id == "/datasets/scene_a"
+    for frame in ground_truth_frames:
+        now_frame = get_now_frame(
+            ground_truth_frames=ground_truth_frames,
+            unix_time=frame.unix_time,
+            threshold_min_time=75000,
+        )
+        assert now_frame is not None and now_frame.scene_id == "/datasets/scene_a"
+    # interpolation with a single neighbor returns a copy of that neighbor
+    tail = ground_truth_frames[-1]
+    tail_frame = get_interpolated_now_frame(
+        ground_truth_frames=ground_truth_frames,
+        unix_time=tail.unix_time + 10000,
+        threshold_min_time=75000,
+        return_frame_id=FrameID.BASE_LINK,
+    )
+    assert tail_frame is not None and tail_frame.scene_id == "/datasets/scene_a"
 
 
 def test_get_now_frame_does_not_expose_source_frame() -> None:

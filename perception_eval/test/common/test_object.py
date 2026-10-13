@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import math
+import pickle
 from test.util.dummy_object import make_dummy_data
 from typing import List
 from typing import Tuple
@@ -346,3 +347,22 @@ class TestObject(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestObjectExistenceProbability(unittest.TestCase):
+    def test_default_is_none_and_pickle_is_unchanged(self):
+        obj = make_dummy_data()[0][0]
+        self.assertIsNone(obj.existence_probability)
+        reduced = obj.__reduce__()
+        # Constructor arguments are untouched so readers that predate the field still unpickle it.
+        self.assertEqual(len(reduced), 2)
+        self.assertEqual(len(reduced[1]), 22)
+        self.assertIsNone(pickle.loads(pickle.dumps(obj)).existence_probability)
+
+    def test_value_round_trips_through_pickle(self):
+        obj = make_dummy_data()[0][0]
+        obj.existence_probability = 0.42
+        reduced = obj.__reduce__()
+        self.assertEqual(len(reduced[1]), 22)
+        self.assertEqual(reduced[2], {"existence_probability": 0.42})
+        self.assertAlmostEqual(pickle.loads(pickle.dumps(obj)).existence_probability, 0.42)
