@@ -11,3 +11,7 @@
 
 - [Design document for sensing evaluation](./sensing/design.md)
 - [FAQ for sensing](./sensing/faq.md)
+
+## Segmentation evaluation
+
+- [Point-cloud semantic segmentation evaluation](./perception/segmentation.md)
