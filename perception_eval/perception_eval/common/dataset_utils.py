@@ -66,6 +66,7 @@ def _sample_to_frame(
     frame_name: str,
     load_raw_data: bool,
     path_seconds: float,
+    scene_id: Optional[str] = None,
 ) -> dataset.FrameGroundTruth:
     """Load FrameGroundTruth instance from sample record.
 
@@ -147,6 +148,7 @@ def _sample_to_frame(
         objects=objects_,
         transforms=transforms,
         raw_data=raw_data,
+        scene_id=scene_id,
     )
     return frame
 
@@ -824,6 +826,7 @@ def _sample_to_frame_2d(
     frame_ids: List[FrameID],
     frame_name: str,
     load_raw_data: bool,
+    scene_id: Optional[str] = None,
 ) -> dataset.FrameGroundTruth:
     """Returns FrameGroundTruth constructed with DynamicObject2D.
 
@@ -920,6 +923,7 @@ def _sample_to_frame_2d(
         objects=objects_,
         transforms=transforms,
         raw_data=raw_data,
+        scene_id=scene_id,
     )
 
     return frame

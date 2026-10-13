@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 import logging
+from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
@@ -55,6 +56,7 @@ class FrameGroundTruth:
         objects: List[ObjectType],
         transforms: TransformDictArgType = None,
         raw_data: Optional[Dict[FrameID, NDArray]] = None,
+        scene_id: Optional[str] = None,
     ) -> None:
         """
         Args:
@@ -63,6 +65,8 @@ class FrameGroundTruth:
             objects (list[ObjectType]): Ground truth objects.
             transforms (TransformDict | None, optional): 4x4 transform matrices. Defaults to None.
             raw_data (dict[FrameID, NDArray] | None, optional): Raw data for each sensor. Defaults to None.
+            scene_id (str | None, optional): Scene identifier (the dataset directory by default) used to
+                resolve per-scene resources such as a lanelet map. Defaults to None.
         """
         self.unix_time: int = unix_time
         self.frame_name: str = frame_name
@@ -70,10 +74,14 @@ class FrameGroundTruth:
         self.transform_matrices = transforms
         self.transforms = TransformDict(self.transform_matrices)
         self.raw_data = raw_data
+        self.scene_id: Optional[str] = scene_id
 
     def __reduce__(self) -> Tuple[FrameGroundTruth, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
-        return (self.__class__, (self.unix_time, self.frame_name, self.objects, self.transform_matrices, self.raw_data))
+        return (
+            self.__class__,
+            (self.unix_time, self.frame_name, self.objects, self.transform_matrices, self.raw_data, self.scene_id),
+        )
 
     def serialization(self) -> Dict[str, Any]:
         """Serialize the object to a dict."""
@@ -91,7 +99,12 @@ class FrameGroundTruth:
             "objects": [object.serialization() for object in self.objects],
             "transform_matrices": transform_matrices,
             "transform_matrices_type": transform_matrices_type,
-            "raw_data": {frame_id.value: data.tolist() for frame_id, data in self.raw_data.items()},
+            "raw_data": (
+                {frame_id.value: data.tolist() for frame_id, data in self.raw_data.items()}
+                if self.raw_data is not None
+                else None
+            ),
+            "scene_id": self.scene_id,
         }
 
     @classmethod
@@ -108,7 +121,7 @@ class FrameGroundTruth:
 
             objects.append(object_class.deserialization(object_data))
 
-        if data["transform_matrices_type"] == HomogeneousMatrix.MATRIX_TYPE:
+        if data["transform_matrices_type"] == HomogeneousMatrix.__name__:
             transform_matrices = HomogeneousMatrix.deserialization(
                 data=data["transform_matrices"],
             )
@@ -122,9 +135,12 @@ class FrameGroundTruth:
             frame_name=data["frame_name"],
             objects=objects,
             transforms=transform_matrices,
-            raw_data={FrameID(frame_id): np.array(data) for frame_id, data in data["raw_data"].items()}
-            if data["raw_data"] is not None
-            else None,
+            raw_data=(
+                {FrameID(frame_id): np.array(data) for frame_id, data in data["raw_data"].items()}
+                if data["raw_data"] is not None
+                else None
+            ),
+            scene_id=data.get("scene_id"),
         )
 
 
@@ -209,6 +225,9 @@ def _load_dataset(
     """
 
     nusc: NuScenes = NuScenes(version="annotation", dataroot=dataset_path, verbose=False)
+    # The dataset directory identifies the scene (a T4 dataset ships `map/lanelet2_map.osm` next to
+    # `annotation/`), so downstream metrics can resolve per-scene resources from it.
+    scene_id: str = str(Path(dataset_path).resolve())
     nuim: Optional[NuImages] = (
         NuImages(version="annotation", dataroot=dataset_path, verbose=False) if evaluation_task.is_2d() else None
     )
@@ -237,6 +256,7 @@ def _load_dataset(
                 frame_ids=frame_ids,
                 frame_name=str(n),
                 load_raw_data=load_raw_data,
+                scene_id=scene_id,
             )
         else:
             assert len(frame_ids) == 1, f"For 3D evaluation, only one Frame ID must be specified, but got {frame_ids}"
@@ -250,6 +270,7 @@ def _load_dataset(
                 frame_name=str(n),
                 load_raw_data=load_raw_data,
                 path_seconds=path_seconds,
+                scene_id=scene_id,
             )
         dataset.append(frame)
     return dataset
