@@ -304,3 +304,101 @@
 | TPMetricsAp         | 1.0                           |
 | TPMetricsAph        | 2 つの object の heading 残差 |
 | TPMetricsConfidence | 予測 object の confidence     |
+
+## Advanced detection metrics（運転文脈を考慮した検出メトリクス）
+
+[`tier4/autoware-ml` PR #109](https://github.com/tier4/autoware-ml/pull/109)（コミット `fcf86419`）から移植した
+オプトインのメトリクス群です。既存の mAP/mAPH に追加して計算され、既存の値を変更することはありません。
+detection の `evaluation_config_dict` に以下のセクションを追加すると有効になり、セクションが無ければ従来通りの挙動です。
+
+```yaml
+advanced_detection_metrics:
+  ranges: # 任意: box 中心の BEV 距離レンジ [min, max)
+    - { name: 0_30, min_distance: 0.0, max_distance: 30.0 }
+    - { name: 30_60, min_distance: 30.0, max_distance: 60.0 }
+  class_groups: # 任意: target_labels を漏れなく分割するグループ（AutowareLabel 名）
+    grouped_vehicle: [car, truck, bus]
+    grouped_vru: [pedestrian, bicycle, motorbike]
+    grouped_static: [hazard, unknown]
+  filters: # 任意: 空間的なビュー（全体ビューは常に評価される）
+    - { name: corridor, type: corridor, width_m: 3.0 }
+    - { name: road, type: region, regions: [road, road_shoulder, crosswalk] }
+    - { name: collision, type: collision }
+  components: # 1 つ以上
+    - { type: corner_error, tp_threshold: 2.0, percentiles: [95.0] }
+    - { type: heading_flip, tp_threshold: 2.0, flip_threshold: 1.57079632679 }
+    - { type: nearest_surface_error, tp_threshold: 2.0 }
+    - { type: calibration, tp_threshold: 2.0, num_bins: 15 }
+    - { type: confident_error, tp_threshold: 2.0, min_score: 0.1, score_threshold: 0.5 }
+    - { type: confusion_matrix, match_threshold: 2.0, min_score: 0.1 }
+    - { type: critical_fp_fn, confidences: [0.3, 0.5], match_threshold: 2.0 }
+    - { type: collision_weighted_map, thresholds: [0.5, 1.0, 2.0, 4.0], decay: 0.5 }
+  map: # region/collision フィルタと critical_fp_fn / collision_weighted_map に必須
+    resolver: t4_scene_directory # <scene dir>/map/lanelet2_map.osm（または <scene dir>/*/map/...）
+    # resolver: explicit
+    # mapping: { "/path/to/scene": "/path/to/lanelet2_map.osm" }
+```
+
+`type` トークンは閉じたレジストリで、未知のトークンやキーは設定時にエラーになります。
+
+### 出力
+
+`MetricsScore.detection_metric_report`（`MetricReport`）が以下を持ちます。
+
+- `values`: `{key: float}`。キーはスラッシュ区切り `detection/<taxonomy?>/<filter?>/<range?>/<metric-key>`
+  （例: `detection/corner_mean_car`, `detection/road/0m_30m/corner_p95_car`,
+  `detection/grouped/corridor/mflip_rate`）。`grouped` は `class_groups` 指定時、filter 階層は非 identity の
+  フィルタ、range 階層は `ranges` 指定時のみ現れます。スラッシュを受け付けない下流には
+  `MetricReport.to_flat_keys()`（`detection_road_0m_30m_corner_p95_car`）を使ってください。
+- `coverage`: フィルタごと（および TTC 使用時は `ttc`）の `(covered_frames, seen_frames)`。
+- `warnings`: 部分的なカバレッジやスキップしたフレーム（ポリゴン形状など）の注記。
+
+`NaN` は「未定義」（そのクラスに TP が無い、カバーされたフレームが 0、など）を意味し、`0` として報告されることはありません。
+
+### マッチング
+
+各コンポーネントは独自の score 順グリーディマッチャ（フレーム毎の BEV 中心距離、同距離なら GT インデックスが小さい方）を使います。
+box は `base_link` で `[cx, cy, cz, dx=length, dy=width, dz=height, yaw]` として扱い、`map` 座標系の object は
+フレームの `base_link -> map` 変換で変換します。ポリゴン形状の object は非対応で、そのフレームは警告付きでスキップされます。
+
+### コンポーネント
+
+| `type`                   | 定義（既定値）                                                                                                                                                                               | キー                                                                                                        |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `corner_error`           | TP（`tp_threshold=2.0`）の BEV 4 頂点変位の平均（4 通りの巡回対応の最小）。クラス毎の mean / max / `percentiles=[95]` と全クラス平均。                                                       | `corner_mean_<c>`, `corner_max_<c>`, `corner_p95_<c>`, `mcorner_mean`, `mcorner_max`                        |
+| `heading_flip`           | yaw 誤差（wrap 後の絶対値）が `flip_threshold=pi/2` を超える TP の割合。                                                                                                                     | `flip_rate_<c>`, `flip_count_<c>`, `mflip_rate`                                                             |
+| `nearest_surface_error`  | 自車から BEV footprint 最近点までの距離について `d(pred) - d(gt)`（正 = 予測の手前面が遠すぎる = ブレーキ遅れ）。mean / `low_percentile=5` / `high_percentile=95` / 絶対値最大。             | `nsurf_mean_<c>`, `nsurf_low_<c>`, `nsurf_high_<c>`, `nsurf_absmax_<c>`, `mnsurf_high`, `mnsurf_absmax`     |
+| `calibration`            | score と TP precision の期待較正誤差（`num_bins=15` の等幅ビン）。score は `[0, 1]` の確率であること。                                                                                       | `ece`, `ece_macro`                                                                                          |
+| `confident_error`        | score `>= min_score=0.1` の FP のうち score `>= score_threshold=0.5` の割合。                                                                                                                | `confident_error_rate`, `confident_error_count`, `confident_errors_per_frame`                               |
+| `confusion_matrix`       | score `>= min_score=0.1` の予測をクラス非依存に `match_threshold=2.0` でマッチし、マッチした `(true, pred)` ラベル対のみを数える。                                                           | `confusion_<true>__<pred>`                                                                                  |
+| `critical_fp_fn`         | 各 `confidences=[0.3, 0.5]` で クラス非依存マッチ（`match_threshold=2.0`）。到達可能性 TTC が有限な未マッチ予測 / GT を数え、TTC がカバーされたフレーム数で割る。`map` 必須。                | `critical_fp_<conf>`, `critical_fn_<conf>`, `critical_fp_<c>_<conf>`, `critical_fn_<c>_<conf>`（例 `0p5m`） |
+| `collision_weighted_map` | 各 object を `exp(-decay * TTC)`（`decay=0.5`、到達不能は 0）で重み付けした nuScenes 形式 AP（`Ap` と同じ規約）。TP は GT の重み、FP は自身の重み。`thresholds` とクラスで平均。`map` 必須。 | `cw_mAP`, `cw_mAP_<c>`                                                                                      |
+
+### フィルタ
+
+| `type`      | 残す要素                                                                                                                                                             | map  |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| `corridor`  | `base_link` で前方（`x >= 0`）の footprint が `abs(y) <= width_m / 2` の帯と重なる box。                                                                             | 不要 |
+| `region`    | lanelet2 の `regions`（lanelet の `subtype` または area way の `type`）の和集合と footprint が交差する box。`margin_m` で内側に削り、`expand: true` で外側に広げる。 | 必要 |
+| `collision` | ホライズン内に自車が到達可能な領域（lanelet 速度制限・操舵制約・走行可能領域でクリップ）と交差する box。`horizon_s`, `dt_s`, `max_lateral_accel_mps2` など。         | 必要 |
+
+lanelet マップ（または自車姿勢）が無いシーンのフレームは map 依存ビューからのみ除外され、全体ビューには残ります。
+カバーされたフレームが 0 のビューは全キーが `NaN` になり、警告が 1 件出ます。
+
+### 到達可能性モデル（TTC）
+
+自車を含む全エージェントがクラス毎の最大合法速度で動くと仮定します。車輪付きクラス（`car`, `truck`, `bus`, `motorbike`）は
+lanelet の `speed_limit`（マップ外は `map.max_speed_mps=16.7`）で一定曲率の弧を描き、VRU（`pedestrian` 3 m/s,
+`bicycle` 6 m/s, `animal` 4 m/s）は全方向に移動し、静的クラス（`hazard`, `unknown`）は footprint を保ちます。
+TTC は自車と object の「時刻 `t` に到達可能な集合」が初めて重なる `t`、無ければ `inf` です。したがって同速で先行する
+車両は到達不能となり critical にはなりません。クラス表は `map.collision_kinds` / `map.vru_speeds` で上書きできます。
+
+### 例
+
+```python
+score = evaluator.get_scene_result()
+report = score.detection_metric_report  # セクション未設定なら None
+print(report.summary())
+value = report.values["detection/road/0m_30m/corner_p95_car"]
+flat = report.to_flat_keys()
+```

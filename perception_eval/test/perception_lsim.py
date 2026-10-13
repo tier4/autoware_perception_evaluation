@@ -86,6 +86,31 @@ class PerceptionLSimMoc:
             }
         )
 
+        if evaluation_task == "detection":
+            # Opt-in driving-aware detection metrics (see docs/en/perception/metrics.md).
+            # Map-free example: corridor filter, range buckets and behaviour class groups.
+            # Region/collision filters and TTC-based metrics additionally need a `map` section.
+            evaluation_config_dict["advanced_detection_metrics"] = {
+                "ranges": [
+                    {"name": "0_30", "min_distance": 0.0, "max_distance": 30.0},
+                    {"name": "30_60", "min_distance": 30.0, "max_distance": 60.0},
+                ],
+                "class_groups": {
+                    "grouped_vehicle": ["car", "motorbike"],
+                    "grouped_vru": ["pedestrian", "bicycle"],
+                    "grouped_static": ["unknown"],
+                },
+                "filters": [{"name": "corridor", "type": "corridor", "width_m": 3.0}],
+                "components": [
+                    {"type": "corner_error", "tp_threshold": 2.0, "percentiles": [95.0]},
+                    {"type": "heading_flip", "tp_threshold": 2.0},
+                    {"type": "nearest_surface_error", "tp_threshold": 2.0},
+                    {"type": "calibration", "tp_threshold": 2.0, "num_bins": 15},
+                    {"type": "confident_error", "tp_threshold": 2.0, "min_score": 0.1, "score_threshold": 0.5},
+                    {"type": "confusion_matrix", "match_threshold": 2.0, "min_score": 0.1},
+                ],
+            }
+
         evaluation_config = PerceptionEvaluationConfig(
             dataset_paths=dataset_paths,
             frame_id="base_link" if evaluation_task == "detection" else "map",
@@ -247,6 +272,12 @@ if __name__ == "__main__":
         "mAP result example (final_metric_score.mean_ap_values[0].label_to_aps[AutowareLabel.CAR][0]): "
         f"{format_class_for_log(detection_final_metric_score.mean_ap_values[0].label_to_aps[AutowareLabel.CAR][0], 100)}",
     )
+    if detection_final_metric_score.detection_metric_report is not None:
+        # Slash-separated keys `detection/<taxonomy?>/<filter?>/<range?>/<metric>`; NaN means undefined.
+        logging.info(
+            "Advanced detection metrics example (final_metric_score.detection_metric_report): "
+            f"{detection_final_metric_score.detection_metric_report.summary(max_rows=20)}",
+        )
 
     if detection_lsim.evaluator.evaluator_config.load_raw_data:
         # Visualize all frame results.

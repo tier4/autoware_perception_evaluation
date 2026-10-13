@@ -489,7 +489,10 @@ class PerceptionAnalyzerBase(ABC):
 
         scene_num_gt = {label: 0 for label in target_labels}
         used_frame: List[int] = []
+        detection_frames = []
         for frame in frame_results:
+            if getattr(frame, "detection_frame", None) is not None:
+                detection_frames.append(frame.detection_frame)
             obj_results_dict = None
             if frame.object_results is not None:
                 obj_results_dict = divide_objects(frame.object_results, target_labels)
@@ -510,6 +513,7 @@ class PerceptionAnalyzerBase(ABC):
         )
         if self.config.metrics_config.detection_config is not None:
             metrics_score.evaluate_detection(nuscene_scene_results_dict, scene_num_gt)
+            metrics_score.evaluate_advanced_detection(detection_frames)
         if self.config.metrics_config.tracking_config is not None:
             metrics_score.evaluate_tracking(scene_results, scene_num_gt)
         if self.config.metrics_config.prediction_config is not None:

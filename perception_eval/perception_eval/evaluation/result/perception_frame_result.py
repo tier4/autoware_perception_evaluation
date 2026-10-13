@@ -34,6 +34,7 @@ from perception_eval.evaluation.matching.objects_filter import filter_object_res
 from perception_eval.evaluation.matching.objects_filter import filter_objects
 from perception_eval.evaluation.metrics import MetricsScore
 from perception_eval.evaluation.metrics import MetricsScoreConfig
+from perception_eval.evaluation.metrics.detection.frame import DetectionFrame
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 from perception_eval.evaluation.result.perception_frame_config import CriticalObjectFilterConfig
 from perception_eval.evaluation.result.perception_frame_config import PerceptionPassFailConfig
@@ -79,6 +80,7 @@ class PerceptionFrameResult:
         frame_pass_fail_config: PerceptionPassFailConfig,
         unix_time: int,
         target_labels: List[LabelType],
+        detection_frame: Optional[DetectionFrame] = None,
     ) -> None:
         # TODO(ktro2828): rename `frame_name` into `frame_number`
         # frame information
@@ -91,6 +93,8 @@ class PerceptionFrameResult:
             Dict[MatchingMode, Dict[LabelType, Dict[float, List[DynamicObjectWithPerceptionResult]]]]
         ] = nuscene_object_results
         self.frame_ground_truth: FrameGroundTruth = frame_ground_truth
+        # Filtered objects snapshot (before matching) for the opt-in advanced detection metrics
+        self.detection_frame: Optional[DetectionFrame] = detection_frame
 
         # init evaluation
         self.metrics_config = metrics_config
@@ -269,13 +273,19 @@ class PerceptionFrameResult:
             self.unix_time,
             self.target_labels,
         )
-        state = {"pass_fail_result": self.pass_fail_result, "metric_score": self.metrics_score}
+        state = {
+            "pass_fail_result": self.pass_fail_result,
+            "metric_score": self.metrics_score,
+            "detection_frame": self.detection_frame,
+        }
         return (self.__class__, init_args, state)
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         """Set the state of the object to preserve states after deserialization."""
         self.pass_fail_result = state.get("pass_fail_result", self.pass_fail_result)
         self.metrics_score = state.get("metric_score", self.metrics_score)
+        # Pickles produced before the advanced metrics existed carry no detection_frame.
+        self.detection_frame = state.get("detection_frame", getattr(self, "detection_frame", None))
 
     def serialization(self) -> Dict[str, Any]:
         """Serialize the object to a dict."""
@@ -291,6 +301,7 @@ class PerceptionFrameResult:
             "metrics_config": self.metrics_config.serialization(),
             "frame_pass_fail_config": self.frame_pass_fail_config.serialization(),
             "critical_object_filter_config": self.critical_object_filter_config.serialization(),
+            "detection_frame": self.detection_frame.serialization() if self.detection_frame is not None else None,
         }
 
     @classmethod
@@ -326,6 +337,9 @@ class PerceptionFrameResult:
             frame_pass_fail_config=PerceptionPassFailConfig.deserialization(data["frame_pass_fail_config"]),
             target_labels=target_labels,
             unix_time=data["unix_time"],
+            detection_frame=(
+                DetectionFrame.deserialization(data["detection_frame"]) if data.get("detection_frame") else None
+            ),
         )
 
 
