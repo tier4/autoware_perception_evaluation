@@ -14,11 +14,13 @@
 
 import logging
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 import numpy as np
 from perception_eval.common.object import DynamicObject
 from perception_eval.common.point import crop_pointcloud
+from perception_eval.evaluation.sensing.bounding_box_scale_config import BoundingBoxScaleConfig
 from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
 from perception_eval.evaluation.sensing.sensing_result import DynamicObjectWithSensingResult
 
@@ -53,9 +55,11 @@ class SensingFrameResult:
         sensing_frame_config: SensingFrameConfig,
         unix_time: int,
         frame_name: str,
+        non_detection_box_scale: Optional[BoundingBoxScaleConfig] = None,
     ) -> None:
         # Config
         self.sensing_frame_config = sensing_frame_config
+        self.non_detection_box_scale = non_detection_box_scale
 
         # Frame information
         self.unix_time: int = unix_time
@@ -108,7 +112,9 @@ class SensingFrameResult:
             return
 
         for ground_truth_object in ground_truth_objects:
-            scale_factor_: float = self.sensing_frame_config.get_scale_factor(ground_truth_object.get_distance())
+            scale_factor_: float = self.sensing_frame_config.get_scale_factor(
+                ground_truth_object.get_distance()
+            )
             sensing_result: DynamicObjectWithSensingResult = DynamicObjectWithSensingResult(
                 ground_truth_object,
                 pointcloud_for_detection,
@@ -141,9 +147,17 @@ class SensingFrameResult:
         for point_non_detection in pointcloud_for_non_detection:
             for ground_truth_object in ground_truth_objects:
                 # Get bbox scale factor
-                scale_factor_: float = self.sensing_frame_config.get_scale_factor(ground_truth_object.get_distance())
+                # Older pickles have no non_detection_box_scale attribute.
+                scale_config = getattr(self, "non_detection_box_scale", None)
+                if scale_config is None:
+                    scale_config = self.sensing_frame_config
+                scale_factor_: float = scale_config.get_scale_factor(
+                    ground_truth_object.get_distance()
+                )
                 # Get object area, the start position is looped
-                object_area_: List[List[float]] = ground_truth_object.get_corners(scale_factor_).tolist()
+                object_area_: List[List[float]] = ground_truth_object.get_corners(
+                    scale_factor_
+                ).tolist()
                 # Convert object_area_ to tuple and make it un-looped
                 object_area_: List[Tuple[float]] = [tuple(e) for e in object_area_]
                 # Remove pointcloud in bounding boxes

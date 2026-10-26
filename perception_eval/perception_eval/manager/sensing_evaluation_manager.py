@@ -23,6 +23,7 @@ from perception_eval.common.point import crop_pointcloud
 from perception_eval.common.transform import TransformDict
 from perception_eval.config import SensingEvaluationConfig
 from perception_eval.evaluation.matching.objects_filter import filter_objects
+from perception_eval.evaluation.sensing.bounding_box_scale_config import BoundingBoxScaleConfig
 from perception_eval.evaluation.sensing.sensing_frame_config import SensingFrameConfig
 from perception_eval.evaluation.sensing.sensing_frame_result import SensingFrameResult
 from perception_eval.util.math import get_bbox_scale
@@ -62,6 +63,7 @@ class SensingEvaluationManager(_EvaluationManagerBase):
         pointcloud: np.ndarray,
         non_detection_areas: List[List[Tuple[float, float, float]]],
         sensing_frame_config: Optional[SensingFrameConfig] = None,
+        non_detection_box_scale: Optional[BoundingBoxScaleConfig] = None,
     ) -> SensingFrameResult:
         """Get sensing result at current frame.
 
@@ -75,6 +77,8 @@ class SensingEvaluationManager(_EvaluationManagerBase):
             non_detection_area (List[List[Tuple[float, float, float]]]): List of non-detection areas.
             sensing_frame_config (Optional[SensingFrameConfig]): Evaluation config for one frame.
                 If not specified, filtering and metrics parameters will be used specified in initialization. Defaults to None.
+            non_detection_box_scale: Explicit scale for both non-detection crop stages.
+                None preserves the legacy, stage-specific scale sources.
 
         Returns:
             result (SensingFrameResult): Frame result.
@@ -91,6 +95,7 @@ class SensingEvaluationManager(_EvaluationManagerBase):
             pointcloud=pointcloud,
             non_detection_areas=non_detection_areas,
             transforms=ground_truth_now_frame.transforms,
+            non_detection_box_scale=non_detection_box_scale,
         )
 
         ground_truth_objects: List[DynamicObject] = self.filter_ground_truth(
@@ -102,6 +107,7 @@ class SensingEvaluationManager(_EvaluationManagerBase):
             sensing_frame_config=sensing_frame_config,
             unix_time=unix_time,
             frame_name=ground_truth_now_frame.frame_name,
+            non_detection_box_scale=non_detection_box_scale,
         )
 
         result.evaluate_frame(
@@ -140,6 +146,7 @@ class SensingEvaluationManager(_EvaluationManagerBase):
         pointcloud: np.ndarray,
         non_detection_areas: List[List[Tuple[float, float, float]]],
         transforms: Optional[TransformDict] = None,
+        non_detection_box_scale: Optional[BoundingBoxScaleConfig] = None,
     ) -> List[np.ndarray]:
         """Crop pointcloud from (N, 3) to (M, 3) with the non-detection area.
 
@@ -147,6 +154,7 @@ class SensingEvaluationManager(_EvaluationManagerBase):
             ground_truth_objects (List[DynamicObject]): Ground truth objects list.
             pointcloud (numpy.ndarray): Array of pointcloud, in shape (N, 3).
             non_detection_areas (List[List[Tuple[float, float, float]]]): List of 3D-polygon areas for non-detection.
+            non_detection_box_scale: Optional explicit exclusion scale. None uses manager metrics.
 
         Returns:
             cropped_pointcloud (List[numpy.ndarray]): List of cropped pointcloud array.
@@ -163,6 +171,9 @@ class SensingEvaluationManager(_EvaluationManagerBase):
         # Crop pointcloud for non-detection outside of objects' bbox
         box_scale_0m: float = self.evaluator_config.metrics_params["box_scale_0m"]
         box_scale_100m: float = self.evaluator_config.metrics_params["box_scale_100m"]
+        if non_detection_box_scale is not None:
+            box_scale_0m = non_detection_box_scale.box_scale_0m
+            box_scale_100m = non_detection_box_scale.box_scale_100m
         for i, points in enumerate(cropped_pointcloud):
             outside_points: np.ndarray = points.copy()
             for ground_truth in ground_truth_objects:
