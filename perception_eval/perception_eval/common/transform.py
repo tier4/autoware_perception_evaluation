@@ -441,11 +441,7 @@ class HomogeneousMatrix:
         Returns:
             NDArray: Transformed 3D position.
         """
-        rotation = Quaternion()
-        matrix = self.__generate_homogeneous_matrix(position, rotation)
-        ret_mat = self.matrix.dot(matrix)
-        ret_pos, _ = self.__extract_position_and_rotation_from_matrix(ret_mat)
-        return ret_pos
+        return self.matrix.dot(np.append(np.asarray(position, dtype=float), 1.0))[:3]
 
     def __transform_position_and_rotation(
         self, position: ArrayLike, rotation: Union[ArrayLike, Quaternion]
