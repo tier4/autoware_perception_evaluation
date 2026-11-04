@@ -313,7 +313,7 @@ json_result = json.dump(dict_result)
 |  Metrics   |      Sub Metrics      |
 | :--------: | :-------------------: |
 |   CLEAR    | MOTA, MOTP, ID switch |
-| HOTA (TBD) |   HOTA, DetA, AssA    |
+| HOTA |   HOTA, DetA, AssA    |
 
 ### Prediction (TBD)
 

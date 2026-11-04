@@ -25,6 +25,7 @@ from perception_eval.evaluation.matching import MatchingMode
 from perception_eval.evaluation.result.object_result import DynamicObjectWithPerceptionResult
 
 from .clear import CLEAR
+from .hota import HOTA
 
 
 class TrackingMetricsScore:
@@ -63,6 +64,7 @@ class TrackingMetricsScore:
 
         # CLEAR results for each class
         self.clears: List[CLEAR] = []
+        self.hotas: List[HOTA] = []
         # Calculate score for each target labels
         for target_label, matching_threshold in zip(target_labels, matching_threshold_list):
             object_results = object_results_dict[target_label]
@@ -75,6 +77,15 @@ class TrackingMetricsScore:
                 matching_threshold_list=[matching_threshold],
             )
             self.clears.append(clear_)
+            self.hotas.append(
+                HOTA(
+                    object_results=object_results,
+                    num_ground_truth=num_ground_truth,
+                    target_labels=[target_label],
+                    matching_mode=matching_mode,
+                    matching_threshold_list=[matching_threshold],
+                )
+            )
 
     def __reduce__(self) -> Tuple[TrackingMetricsScore, Tuple[Any]]:
         """Serialization and deserialization of the object with pickling."""
@@ -119,6 +130,21 @@ class TrackingMetricsScore:
         motp = float("inf") if num_tp == 0 else motp / num_tp
         return mota, motp, num_id_switch
 
+    def _sum_hota(self) -> Tuple[float, float, float]:
+        """GT-weighted HOTA, DetA, AssA over labels (inf if no GT)."""
+        sums = [0.0, 0.0, 0.0]
+        weight = 0
+        for hota in self.hotas:
+            scores = (hota.hota, hota.det_a, hota.ass_a)
+            if hota.num_ground_truth == 0 or float("inf") in scores:
+                continue
+            for i, v in enumerate(scores):
+                sums[i] += v * hota.num_ground_truth
+            weight += hota.num_ground_truth
+        if weight == 0:
+            return (float("inf"),) * 3
+        return tuple(v / weight for v in sums)
+
     def __str__(self) -> str:
         """__str__ method
 
@@ -131,6 +157,8 @@ class TrackingMetricsScore:
         mota, motp, id_switch = self._sum_clear()
         str_ += f"[TOTAL] MOTA: {mota:.3f}, MOTP: {motp:.3f}, ID switch: {id_switch:d} "
         str_ += f"({self.matching_mode.value})\n"
+        hota, det_a, ass_a = self._sum_hota()
+        str_ += f"[TOTAL] HOTA: {hota:.3f}, DetA: {det_a:.3f}, AssA: {ass_a:.3f}\n"
         # === For each label ===
         # --- Table ---
         str_ += "\n"
@@ -152,6 +180,11 @@ class TrackingMetricsScore:
                     str_ += f" {score:d} |"
                 else:
                     str_ += f" {score:.3f} |"
+            str_ += "\n"
+        for field_name in self.hotas[0].metrics_field:
+            str_ += f"|   {field_name} |"
+            for hota_ in self.hotas:
+                str_ += f" {hota_.results[field_name]:.3f} |"
             str_ += "\n"
 
         return str_
