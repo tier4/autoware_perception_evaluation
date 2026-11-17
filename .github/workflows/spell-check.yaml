@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 1
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.7.0
 
       - name: Retrieve spell check dictionary
         run: |
@@ -19,10 +19,10 @@ jobs:
             https://raw.githubusercontent.com/tier4/autoware-spell-check-dict/main/cspell/.cspell.json
 
       - name: Merge .cspell.json
-        uses: sergeysova/jq-action@v2
+        uses: sergeysova/jq-action@v2.3.0
         with:
           cmd: jq ".words += $(jq '.words' .cspell.json)" .github/.cspell-base.json > .github/.cspell.json
 
-      - uses: streetsidesoftware/cspell-action@v2
+      - uses: streetsidesoftware/cspell-action@v2.26.3
         with:
           config: ".github/.cspell.json"
