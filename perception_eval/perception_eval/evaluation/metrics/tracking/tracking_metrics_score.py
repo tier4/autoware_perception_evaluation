@@ -65,8 +65,10 @@ class TrackingMetricsScore:
         self.clears: List[CLEAR] = []
         # Calculate score for each target labels
         for target_label, matching_threshold in zip(target_labels, matching_threshold_list):
-            object_results = object_results_dict[target_label]
-            num_ground_truth = num_ground_truth_dict[target_label]
+            # The dicts are grouped by the critical object filter's labels, which may be a
+            # subset of these metric labels; a label outside it has nothing to score.
+            object_results = object_results_dict.get(target_label, [[], []])  # [previous, current]
+            num_ground_truth = num_ground_truth_dict.get(target_label, 0)
             clear_: CLEAR = CLEAR(
                 object_results=object_results,
                 num_ground_truth=num_ground_truth,

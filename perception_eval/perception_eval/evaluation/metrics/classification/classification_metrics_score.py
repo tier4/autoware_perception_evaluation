@@ -51,8 +51,10 @@ class ClassificationMetricsScore:
 
         self.accuracies: List[ClassificationAccuracy] = []
         for target_label in target_labels:
-            object_results = object_results_dict[target_label]
-            num_ground_truth = num_ground_truth_dict[target_label]
+            # The dicts are grouped by the critical object filter's labels, which may be a
+            # subset of these metric labels; a label outside it has nothing to score.
+            object_results = object_results_dict.get(target_label, [])
+            num_ground_truth = num_ground_truth_dict.get(target_label, 0)
 
             acc_: ClassificationAccuracy = ClassificationAccuracy(
                 object_results=object_results,
