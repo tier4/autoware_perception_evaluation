@@ -162,7 +162,7 @@ class DynamicObject2D:
                 self.frame_id,
                 self.semantic_score,
                 self.semantic_label,
-                self.roi,
+                (*self.roi.offset, *self.roi.size) if self.roi is not None else None,
                 self.uuid,
                 self.visibility,
                 self.state.position,
