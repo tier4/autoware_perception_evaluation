@@ -13,6 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
+from functools import lru_cache
 from inspect import signature
 from typing import Any
 from typing import Dict
@@ -29,6 +30,12 @@ from .config.classification_metrics_config import ClassificationMetricsConfig
 from .config.detection_metrics_config import DetectionMetricsConfig
 from .config.prediction_metrics_config import PredictionMetricsConfig
 from .config.tracking_metrics_config import TrackingMetricsConfig
+
+
+@lru_cache(maxsize=None)
+def _parameter_names(config: type) -> frozenset:
+    """Names of the parameters of a metrics config class; inspect.signature is slow."""
+    return frozenset(signature(config).parameters)
 
 
 def deserializer(evaluation_task: EvaluationTask, kwargs):
@@ -61,10 +68,10 @@ class MetricsScoreConfig:
         self.evaluation_task: EvaluationTask = evaluation_task
         self.target_labels: List[LabelType] = cfg["target_labels"]
 
-        detection_cfg = {k: v for k, v in cfg.items() if k in signature(DetectionMetricsConfig).parameters}
-        tracking_cfg = {k: v for k, v in cfg.items() if k in signature(TrackingMetricsConfig).parameters}
-        prediction_cfg = {k: v for k, v in cfg.items() if k in signature(PredictionMetricsConfig).parameters}
-        classification_cfg = {k: v for k, v in cfg.items() if k in signature(ClassificationMetricsConfig).parameters}
+        detection_cfg = {k: v for k, v in cfg.items() if k in _parameter_names(DetectionMetricsConfig)}
+        tracking_cfg = {k: v for k, v in cfg.items() if k in _parameter_names(TrackingMetricsConfig)}
+        prediction_cfg = {k: v for k, v in cfg.items() if k in _parameter_names(PredictionMetricsConfig)}
+        classification_cfg = {k: v for k, v in cfg.items() if k in _parameter_names(ClassificationMetricsConfig)}
         if self.evaluation_task in (EvaluationTask.DETECTION2D, EvaluationTask.DETECTION):
             self._check_parameters(DetectionMetricsConfig, detection_cfg)
             self.detection_config = DetectionMetricsConfig(**detection_cfg)
@@ -99,7 +106,7 @@ class MetricsScoreConfig:
         Raises:
             KeyError: When got invalid parameter names.
         """
-        valid_parameters: Set = set(signature(config).parameters)
+        valid_parameters: Set = set(_parameter_names(config))
         input_params: Set = set(params.keys())
         if not input_params <= valid_parameters:
             raise MetricsParameterError(
