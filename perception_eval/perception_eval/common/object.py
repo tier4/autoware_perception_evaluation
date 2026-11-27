@@ -432,6 +432,10 @@ class DynamicObject:
         path_errors: List[np.ndarray] = []
         for self_path, other_path in zip(self.predicted_paths, other.predicted_paths, strict=True):
             path_errors.append(self_path.get_path_error(other_path))
+        if not path_errors:
+            # No mode to compare. This happens when the estimation has no predicted path, e.g. a path that
+            # held only the current pose (one waypoint) is dropped on conversion; callers skip an empty error.
+            return np.zeros((0, 0, 3))
         return np.stack(path_errors)
 
     def get_area_bev(self) -> float:
