@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
+from collections import Counter
+from collections import OrderedDict
+from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -26,16 +28,18 @@ from ._metrics_base import _TrackingMetricsBase
 
 
 class HOTA(_TrackingMetricsBase):
-    """==== TODO ====
-    HOTA metrics class that has HOTA, LocA, DetA and AssA as sub metrics.
+    """HOTA metrics (Luiten et al., 2020) at a single matching threshold.
 
-    Attributes:
-        self.target_labels (List[LabelType]): The list of target label.
-        self.matching_mode (MatchingMode): The target matching mode.
-        self.metrics_field (Optional[List[str]]): The list of target metrics name. If not specified, set default supported metrics.
-        self.ground_truth_objects_num (int): The number of ground truth.
-        self.tp_metrics (TPMetrics): The way of calculating TP value.
-        self.support_metrics (List[str]): The list of supported metrics name.
+    HOTA = sqrt(DetA * AssA)
+        DetA = TP / (TP + FN + FP)
+        AssA = mean over TP of  TPA / (TPA + FNA + FPA), where for a TP pair (gt g, est e)
+            TPA = #TP with (g, e), FNA = #gt detections of g not matched to e,
+            FPA = #est detections of e not matched to g.
+
+    shortcut: one threshold instead of averaging over alpha in 0.05..0.95, because the
+    library thresholds are in the matching mode's own unit; average by running several
+    thresholds. GT ids that are never matched are not in `object_results`, so they are
+    missing from FNA (AssA slightly optimistic); DetA uses `num_ground_truth` and is exact.
     """
 
     _support_metrics: List[str] = ["HOTA", "DetA", "AssA"]
@@ -50,20 +54,8 @@ class HOTA(_TrackingMetricsBase):
         tp_metrics: TPMetrics = TPMetricsAp(),
         metrics_field: Optional[List[str]] = None,
     ) -> None:
-        """[summary]
-        HOTA metrics.
-
-        NOTE: objects_results, ground_truth_objects
-            If evaluate 1-frame, index 0 is previous object results.
-            If evaluate all frames, index 0 is empty list.
-
-        Args:
-            object_results (List[List[DynamicObjectWithPerceptionResult]]): The list of object results for each frames.
-            num_ground_truth (int): The number of ground truth.
-            target_labels (List[LabelType]): The list of target labels.
-            matching_mode: (MatchingMode): Matching mode class.
-            tp_metrics (TPMetrics): The way of calculating TP value. Defaults to TPMetricsAP.
-            metrics_field: List[str]: The list of target sub metrics.
+        """
+        NOTE: Index 0 of `object_results` is skipped, as in CLEAR.
         """
         super().__init__(
             num_ground_truth=num_ground_truth,
@@ -73,41 +65,40 @@ class HOTA(_TrackingMetricsBase):
             tp_metrics=tp_metrics,
             metrics_field=metrics_field,
         )
+        threshold = matching_threshold_list[0]
 
-        self.tp: float = 0.0
-        self.fp: float = 0.0
-        self.tpa: float = 0.0
-        self.fpa: float = 0.0
-        self.tp_matching_score: float = 0.0
+        gt_count: Counter = Counter()  # gt id -> #TP detections
+        est_count: Counter = Counter()  # est id -> #detections (TP and FP)
+        pair_count: Counter = Counter()  # (gt id, est id) -> #TP
+        self.tp = 0
+        self.fp = 0
+        for frame in object_results[1:]:
+            for res in frame:
+                est_count[res.estimated_object.uuid] += 1
+                if res.ground_truth_object is not None and res.is_result_correct(matching_mode, threshold):
+                    self.tp += 1
+                    gt_count[res.ground_truth_object.uuid] += 1
+                    pair_count[(res.ground_truth_object.uuid, res.estimated_object.uuid)] += 1
+                else:
+                    self.fp += 1
+        self.fn = max(0, num_ground_truth - self.tp)
 
-        num_frame: int = len(object_results)
-        for i in range(1, num_frame):
-            # Comparing matching pair
-            tp_t, fp_t, tpa_t, fpa_t = self._calculate_tp_fp(
-                cur_object_results=object_results[i],
-                prev_object_results=object_results[i - 1],
+        denom = self.tp + self.fn + self.fp
+        self.det_a: float = self.tp / denom if denom else float("inf")
+        if self.tp == 0:
+            self.ass_a: float = float("inf") if denom == 0 else 0.0
+        else:
+            # sum over TP of TPA/(TPA+FNA+FPA) == sum over pairs of pair^2/(gt+est-pair)
+            self.ass_a = (
+                sum(n * n / (gt_count[g] + est_count[e] - n) for (g, e), n in pair_count.items()) / self.tp
             )
-            self.tp += tp_t
-            self.fp += fp_t
-            self.tpa += tpa_t
-            self.fpa += fpa_t
+        self.hota: float = (
+            float("inf") if self.det_a == float("inf") else (self.det_a * self.ass_a) ** 0.5
+        )
 
-    def _calculate_tp_fp(
-        self,
-        cur_object_results: List[DynamicObjectWithPerceptionResult],
-        prev_object_results: List[DynamicObjectWithPerceptionResult],
-    ) -> Any:
-        """Calculate TP/FP and TPA/FPA
+    @property
+    def results(self) -> Dict[str, float]:
+        return OrderedDict({"HOTA": self.hota, "DetA": self.det_a, "AssA": self.ass_a})
 
-        Args:
-            cur_object_results
-            prev_object_results (List[DynamicObjectWithPerceptionResult])
-            prev_object_results (List[DynamicObjectWithPerceptionResult])
-            matching_threshold (float)
-        Returns:
-            tp_list (List[float])
-            fp_list (List[float])
-            tpa_list (List[float])
-            fpa_list (List[float])
-        """
-        pass
+    def _calculate_tp_fp(self, cur_object_results, prev_object_results):
+        raise NotImplementedError("HOTA is computed over all frames at once.")
